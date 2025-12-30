@@ -1,0 +1,376 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== ORGANIZATION MODULE ====================
+
+// Organization Profile
+model Organization {
+  id                 String   @id @default(cuid())
+  name               String
+  establishedDate    String?
+  employeeCount      Int      @default(0)
+  branchCount        Int      @default(0)
+  headOfficeLocation String?
+  headOfficeAddress  String?
+  website            String?
+  description        String?
+  vision             String?
+  mission            String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+// Departments
+model Department {
+  id           String        @id @default(cuid())
+  name         String        @unique
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  users        User[]
+  issues       Issue[]
+  stakeholders Stakeholder[]
+  controls     Control[]
+  processes    Process[]
+  policies     Policy[]
+  assets       Asset[]
+  risks        Risk[]
+  audits       Audit[]
+  evidences    Evidence[]
+  exceptions   Exception[]
+}
+
+// Users
+model User {
+  id           String      @id @default(cuid())
+  userName     String      @unique
+  email        String      @unique
+  password     String
+  firstName    String
+  lastName     String
+  fullName     String
+  designation  String?
+  function     String?
+  role         String      @default("User")
+  language     String      @default("English")
+  timezone     String      @default("UTC")
+  isActive     Boolean     @default(true)
+  isBlocked    Boolean     @default(false)
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  // Relations
+  ownedControls    Control[]    @relation("ControlOwner")
+  assignedControls Control[]    @relation("ControlAssignee")
+  ownedRisks       Risk[]       @relation("RiskOwner")
+  ownedProcesses   Process[]    @relation("ProcessOwner")
+  ownedAssets      Asset[]      @relation("AssetOwner")
+  assignedEvidences Evidence[]  @relation("EvidenceAssignee")
+  auditor          Audit[]      @relation("Auditor")
+}
+
+// Stakeholders
+model Stakeholder {
+  id           String      @id @default(cuid())
+  name         String
+  email        String?
+  type         String      @default("Internal") // Internal, External, Third Party
+  status       String      @default("Active") // Active, Inactive
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+// Issues
+model Issue {
+  id           String      @id @default(cuid())
+  title        String
+  description  String?
+  domain       String // Internal, External, IT, GRC
+  category     String // Finance, Human Resources, Data breach, etc.
+  status       String      @default("Open") // Open, In Progress, Pending, Resolved, Closed
+  dueDate      DateTime?
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+// Services
+model Service {
+  id              String   @id @default(cuid())
+  title           String
+  description     String?
+  serviceUser     String // Internal, External, Public
+  serviceCategory String?
+  serviceItem     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// ==================== COMPLIANCE MODULE ====================
+
+// Frameworks
+model Framework {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  description String?
+  version     String?
+  status      String    @default("Subscribed") // Subscribed, Not Subscribed
+  logo        String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  controls    Control[]
+  evidences   Evidence[]
+}
+
+// Regulations (legacy - keeping for backwards compatibility)
+model Regulation {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  status    String   @default("Subscribed") // Subscribed, Not Subscribed
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Control Domains
+model ControlDomain {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  controls  Control[]
+}
+
+// Controls
+model Control {
+  id                String         @id @default(cuid())
+  controlCode       String         @unique
+  name              String
+  description       String?
+  controlQuestion   String?
+  functionalGrouping String?       // Govern, Identify, Protect, Detect, Respond, Recover
+  status            String         @default("Non Compliant") // Non Compliant, Compliant, Not Applicable
+  domainId          String?
+  domain            ControlDomain? @relation(fields: [domainId], references: [id])
+  frameworkId       String?
+  framework         Framework?     @relation(fields: [frameworkId], references: [id])
+  departmentId      String?
+  department        Department?    @relation(fields: [departmentId], references: [id])
+  ownerId           String?
+  owner             User?          @relation("ControlOwner", fields: [ownerId], references: [id])
+  assigneeId        String?
+  assignee          User?          @relation("ControlAssignee", fields: [assigneeId], references: [id])
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  evidences         Evidence[]
+  exceptions        Exception[]
+}
+
+// Processes
+model Process {
+  id           String      @id @default(cuid())
+  processCode  String      @unique
+  name         String
+  description  String?
+  processType  String      @default("Primary") // Primary, Management, Supporting
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+  ownerId      String?
+  owner        User?       @relation("ProcessOwner", fields: [ownerId], references: [id])
+  status       String      @default("Active")
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+// Governance - Policies, Standards, Procedures
+model Policy {
+  id            String      @id @default(cuid())
+  name          String
+  version       String      @default("1.0")
+  documentType  String      @default("Policy") // Policy, Standard, Procedure
+  departmentId  String?
+  department    Department? @relation(fields: [departmentId], references: [id])
+  status        String      @default("Draft") // Not Uploaded, Draft, Approved, Needs Review, Published
+  effectiveDate DateTime?
+  reviewDate    DateTime?
+  content       String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+// Evidence
+model Evidence {
+  id           String      @id @default(cuid())
+  name         String
+  description  String?
+  frameworkId  String?
+  framework    Framework?  @relation(fields: [frameworkId], references: [id])
+  controlId    String?
+  control      Control?    @relation(fields: [controlId], references: [id])
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+  assigneeId   String?
+  assignee     User?       @relation("EvidenceAssignee", fields: [assigneeId], references: [id])
+  dueDate      DateTime?
+  status       String      @default("Pending") // Pending, Submitted, Approved, Rejected, Overdue
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+// Exceptions
+model Exception {
+  id           String      @id @default(cuid())
+  title        String
+  description  String?
+  exceptionType String     // Control, Compliance, Policy
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+  controlId    String?
+  control      Control?    @relation(fields: [controlId], references: [id])
+  status       String      @default("Pending") // Pending, Approved, Authorized, Closed, Overdue
+  startDate    DateTime?
+  endDate      DateTime?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+// ==================== ASSET MANAGEMENT MODULE ====================
+
+// Asset Classification
+model AssetClassification {
+  id          String   @id @default(cuid())
+  name        String   @unique // Critical, High, Medium, Low
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  assets      Asset[]
+}
+
+// Assets
+model Asset {
+  id               String               @id @default(cuid())
+  assetId          String               @unique
+  name             String
+  description      String?
+  assetType        String // Hardware, Software, Information, People, Services, Facility
+  departmentId     String?
+  department       Department?          @relation(fields: [departmentId], references: [id])
+  ownerId          String?
+  owner            User?                @relation("AssetOwner", fields: [ownerId], references: [id])
+  classificationId String?
+  classification   AssetClassification? @relation(fields: [classificationId], references: [id])
+  status           String               @default("Active") // Active, Inactive, Disposed, Under Maintenance
+  value            Float?
+  location         String?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+}
+
+// ==================== RISK MANAGEMENT MODULE ====================
+
+// Risk Categories
+model RiskCategory {
+  id          String   @id @default(cuid())
+  name        String   @unique // Strategic, Operational, Financial, Compliance, IT/Cyber, Reputational
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  risks       Risk[]
+}
+
+// Risks
+model Risk {
+  id           String        @id @default(cuid())
+  riskId       String        @unique
+  name         String
+  description  String?
+  categoryId   String?
+  category     RiskCategory? @relation(fields: [categoryId], references: [id])
+  departmentId String?
+  department   Department?   @relation(fields: [departmentId], references: [id])
+  ownerId      String?
+  owner        User?         @relation("RiskOwner", fields: [ownerId], references: [id])
+  likelihood   Int           @default(1) // 1-5 scale
+  impact       Int           @default(1) // 1-5 scale
+  riskRating   String        @default("Low") // Catastrophic, Very High, High, Medium, Low
+  status       String        @default("Open") // Open, Mitigate, Transfer, Accept, Avoid, Closed
+  responseStrategy String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+// ==================== INTERNAL AUDIT MODULE ====================
+
+// Audits
+model Audit {
+  id           String         @id @default(cuid())
+  auditId      String         @unique
+  name         String
+  description  String?
+  auditType    String?        // Internal, External
+  departmentId String?
+  department   Department?    @relation(fields: [departmentId], references: [id])
+  auditorId    String?
+  auditor      User?          @relation("Auditor", fields: [auditorId], references: [id])
+  status       String         @default("Planned") // Planned, In Progress, Completed, Cancelled
+  startDate    DateTime?
+  endDate      DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  findings     AuditFinding[]
+}
+
+// Audit Findings
+model AuditFinding {
+  id          String   @id @default(cuid())
+  findingId   String   @unique
+  title       String
+  description String?
+  auditId     String?
+  audit       Audit?   @relation(fields: [auditId], references: [id])
+  severity    String   @default("Medium") // High, Medium, Low
+  status      String   @default("Open") // Open, In Progress, Closed
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  capas       CAPA[]
+}
+
+// CAPA (Corrective and Preventive Actions)
+model CAPA {
+  id          String        @id @default(cuid())
+  capaId      String        @unique
+  title       String
+  description String?
+  findingId   String?
+  finding     AuditFinding? @relation(fields: [findingId], references: [id])
+  actionType  String        @default("Corrective") // Corrective, Preventive
+  status      String        @default("Open") // Open, In Progress, Closed, Overdue
+  dueDate     DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+// ==================== AUDIT LOGS ====================
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  changeType  String // CREATE, UPDATE, DELETE
+  entityType  String // e.g., Control, User, Risk
+  entityId    String
+  userId      String?
+  userName    String?
+  changes     String? // JSON string of old/new values
+  createdAt   DateTime @default(now())
+}
