@@ -233,12 +233,14 @@ export default function ContextPage() {
           description: "",
           domain: "Internal",
           category: "Finance",
+          issueType: "",
           status: "Open",
           dueDate: "",
           departmentId: "",
-          selectedRegulations: [],
-          selectedProcesses: [],
-          selectedStakeholders: [],
+          ownerId: "",
+          selectedRegulations: [] as string[],
+          selectedProcesses: [] as string[],
+          selectedStakeholders: [] as string[],
         });
         setShowAddIssue(false);
         setCurrentStep(1);

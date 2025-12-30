@@ -43,6 +43,7 @@ interface DataGridProps<TData, TValue> {
   className?: string;
   onRowClick?: (row: TData) => void;
   showColumnSelector?: boolean;
+  hideSearch?: boolean;
 }
 
 export function DataGrid<TData, TValue>({
@@ -54,6 +55,7 @@ export function DataGrid<TData, TValue>({
   className,
   onRowClick,
   showColumnSelector = false,
+  hideSearch = false,
 }: DataGridProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -92,14 +94,18 @@ export function DataGrid<TData, TValue>({
   return (
     <div className={cn("space-y-4", className)}>
       {/* Search and Column Selector */}
-      <div className="flex items-center justify-between gap-4">
-        <Input
-          placeholder={searchPlaceholder}
-          value={globalFilter ?? ""}
-          onChange={(e) => setGlobalFilter(e.target.value)}
-          className="max-w-sm"
-        />
-        {showColumnSelector && (
+      {(!hideSearch || showColumnSelector) && (
+        <div className="flex items-center justify-between gap-4">
+          {!hideSearch && (
+            <Input
+              placeholder={searchPlaceholder}
+              value={globalFilter ?? ""}
+              onChange={(e) => setGlobalFilter(e.target.value)}
+              className="max-w-sm"
+            />
+          )}
+          {hideSearch && !showColumnSelector && <div />}
+          {showColumnSelector && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">
@@ -127,8 +133,9 @@ export function DataGrid<TData, TValue>({
                 })}
             </DropdownMenuContent>
           </DropdownMenu>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       {/* Table */}
       <div className="rounded-md border">

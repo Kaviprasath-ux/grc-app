@@ -208,6 +208,19 @@ export default function ProcessPage() {
           departmentId: "",
           ownerId: "",
           status: "Active",
+          frequency: "",
+          natureOfImplementation: "",
+          assetDependency: false,
+          externalDependency: false,
+          location: "",
+          kpiMeasurementRequired: false,
+          piiCapture: false,
+          operationalComplexity: "",
+          lastAuditDate: "",
+          responsible: "",
+          accountable: "",
+          consulted: "",
+          informed: "",
         });
         setIsAddProcessOpen(false);
       } else {
