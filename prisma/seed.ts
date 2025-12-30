@@ -374,18 +374,185 @@ async function main() {
   }
   console.log("✅ Asset Classifications created");
 
-  // Create Assets
+  // Create Asset Categories
+  const assetCategories = [
+    { name: "Hardware", description: "Physical computing devices and equipment" },
+    { name: "Software", description: "Applications and operating systems" },
+    { name: "Data", description: "Information and data assets" },
+    { name: "Network", description: "Network infrastructure and connectivity" },
+    { name: "People", description: "Human resources and personnel" },
+    { name: "Services", description: "Business and IT services" },
+    { name: "Facilities", description: "Physical locations and infrastructure" },
+  ];
+
+  const createdAssetCategories: { [key: string]: string } = {};
+  for (const cat of assetCategories) {
+    const category = await prisma.assetCategory.upsert({
+      where: { name: cat.name },
+      update: {},
+      create: cat,
+    });
+    createdAssetCategories[cat.name] = category.id;
+  }
+  console.log("✅ Asset Categories created");
+
+  // Create Asset Sub Categories
+  const assetSubCategories = [
+    { name: "Server", description: "Physical and virtual servers", category: "Hardware" },
+    { name: "Workstation", description: "Desktop computers and laptops", category: "Hardware" },
+    { name: "Firewall", description: "Network security devices", category: "Hardware" },
+    { name: "Router/Switch", description: "Network routing equipment", category: "Hardware" },
+    { name: "Storage Device", description: "Data storage hardware", category: "Hardware" },
+    { name: "Mobile Device", description: "Smartphones and tablets", category: "Hardware" },
+    { name: "Enterprise Application", description: "Business applications", category: "Software" },
+    { name: "Operating System", description: "System software", category: "Software" },
+    { name: "Database", description: "Database management systems", category: "Software" },
+    { name: "Security Software", description: "Security tools and applications", category: "Software" },
+    { name: "Customer Data", description: "Customer information", category: "Data" },
+    { name: "Financial Data", description: "Financial records and transactions", category: "Data" },
+    { name: "Employee Data", description: "HR and employee information", category: "Data" },
+    { name: "Intellectual Property", description: "Patents, trade secrets, source code", category: "Data" },
+    { name: "LAN/WAN", description: "Local and wide area networks", category: "Network" },
+    { name: "Cloud Infrastructure", description: "Cloud-based resources", category: "Network" },
+    { name: "Data Center", description: "Primary data center facilities", category: "Facilities" },
+    { name: "Office Building", description: "Office locations", category: "Facilities" },
+  ];
+
+  const createdAssetSubCategories: { [key: string]: string } = {};
+  for (const subCat of assetSubCategories) {
+    const subCategory = await prisma.assetSubCategory.upsert({
+      where: {
+        name_categoryId: {
+          name: subCat.name,
+          categoryId: createdAssetCategories[subCat.category],
+        },
+      },
+      update: {},
+      create: {
+        name: subCat.name,
+        description: subCat.description,
+        categoryId: createdAssetCategories[subCat.category],
+      },
+    });
+    createdAssetSubCategories[subCat.name] = subCategory.id;
+  }
+  console.log("✅ Asset Sub Categories created");
+
+  // Create Asset Groups
+  const assetGroups = [
+    { name: "Security Tools", description: "Security-related assets" },
+    { name: "Payment Systems", description: "Payment processing assets" },
+    { name: "Core Banking", description: "Core banking system assets" },
+    { name: "Customer Facing", description: "Customer-facing applications" },
+    { name: "Internal Operations", description: "Internal business operations" },
+    { name: "Development", description: "Development and testing assets" },
+    { name: "Infrastructure", description: "Core infrastructure assets" },
+    { name: "Communication", description: "Communication systems" },
+  ];
+
+  const createdAssetGroups: { [key: string]: string } = {};
+  for (const group of assetGroups) {
+    const created = await prisma.assetGroup.upsert({
+      where: { name: group.name },
+      update: {},
+      create: group,
+    });
+    createdAssetGroups[group.name] = created.id;
+  }
+  console.log("✅ Asset Groups created");
+
+  // Create Asset Sensitivities
+  const assetSensitivities = [
+    { name: "Public", description: "Information that can be freely shared" },
+    { name: "Internal", description: "Information for internal use only" },
+    { name: "Confidential", description: "Sensitive business information" },
+    { name: "Restricted", description: "Highly sensitive, limited access" },
+  ];
+
+  const createdSensitivities: { [key: string]: string } = {};
+  for (const sens of assetSensitivities) {
+    const created = await prisma.assetSensitivity.upsert({
+      where: { name: sens.name },
+      update: {},
+      create: sens,
+    });
+    createdSensitivities[sens.name] = created.id;
+  }
+  console.log("✅ Asset Sensitivities created");
+
+  // Create Asset Lifecycle Statuses
+  const lifecycleStatuses = [
+    { name: "Planned", description: "Asset is planned for acquisition", order: 1 },
+    { name: "Active", description: "Asset is in active use", order: 2 },
+    { name: "In Use", description: "Asset is currently being used", order: 3 },
+    { name: "Needs Maintenance", description: "Asset requires maintenance", order: 4 },
+    { name: "Under Review", description: "Asset is under review", order: 5 },
+    { name: "Retired", description: "Asset has been retired", order: 6 },
+    { name: "Disposed", description: "Asset has been disposed", order: 7 },
+  ];
+
+  const createdLifecycleStatuses: { [key: string]: string } = {};
+  for (const status of lifecycleStatuses) {
+    const created = await prisma.assetLifecycleStatus.upsert({
+      where: { name: status.name },
+      update: {},
+      create: status,
+    });
+    createdLifecycleStatuses[status.name] = created.id;
+  }
+  console.log("✅ Asset Lifecycle Statuses created");
+
+  // Create CIA Classifications
+  const ciaClassifications = [
+    { subCategory: "Server", group: "Infrastructure", c: "high", cScore: 10, i: "high", iScore: 10, a: "high", aScore: 10 },
+    { subCategory: "Server", group: "Core Banking", c: "high", cScore: 10, i: "high", iScore: 10, a: "high", aScore: 10 },
+    { subCategory: "Firewall", group: "Security Tools", c: "high", cScore: 10, i: "high", iScore: 10, a: "high", aScore: 10 },
+    { subCategory: "Database", group: "Core Banking", c: "high", cScore: 10, i: "high", iScore: 10, a: "medium", aScore: 5 },
+    { subCategory: "Customer Data", group: "Customer Facing", c: "high", cScore: 10, i: "high", iScore: 10, a: "medium", aScore: 5 },
+    { subCategory: "Workstation", group: "Internal Operations", c: "medium", cScore: 5, i: "medium", iScore: 5, a: "low", aScore: 0 },
+    { subCategory: "Enterprise Application", group: "Internal Operations", c: "medium", cScore: 5, i: "high", iScore: 10, a: "medium", aScore: 5 },
+  ];
+
+  for (const cia of ciaClassifications) {
+    const maxScore = Math.max(cia.cScore, cia.iScore, cia.aScore);
+    const criticality = maxScore >= 10 ? "high" : maxScore >= 5 ? "medium" : "low";
+
+    await prisma.assetCIAClassification.upsert({
+      where: {
+        subCategoryId_groupId: {
+          subCategoryId: createdAssetSubCategories[cia.subCategory],
+          groupId: createdAssetGroups[cia.group],
+        },
+      },
+      update: {},
+      create: {
+        subCategoryId: createdAssetSubCategories[cia.subCategory],
+        groupId: createdAssetGroups[cia.group],
+        confidentiality: cia.c,
+        confidentialityScore: cia.cScore,
+        integrity: cia.i,
+        integrityScore: cia.iScore,
+        availability: cia.a,
+        availabilityScore: cia.aScore,
+        assetCriticality: criticality,
+        assetCriticalityScore: maxScore,
+      },
+    });
+  }
+  console.log("✅ CIA Classifications created");
+
+  // Create Assets with enhanced fields
   const assets = [
-    { assetId: "AST-001", name: "Production Server 1", assetType: "Hardware", department: "IT Operations", classification: "Critical", status: "Active" },
-    { assetId: "AST-002", name: "Production Server 2", assetType: "Hardware", department: "IT Operations", classification: "Critical", status: "Active" },
-    { assetId: "AST-003", name: "Employee Laptops", assetType: "Hardware", department: "IT Support", classification: "Medium", status: "Active" },
-    { assetId: "AST-004", name: "ERP System", assetType: "Software", department: "IT Operations", classification: "Critical", status: "Active" },
-    { assetId: "AST-005", name: "CRM Database", assetType: "Information", department: "Revenue", classification: "High", status: "Active" },
-    { assetId: "AST-006", name: "HR Management System", assetType: "Software", department: "Human Resources", classification: "High", status: "Active" },
-    { assetId: "AST-007", name: "Server Room", assetType: "Facility", department: "IT Operations", classification: "Critical", status: "Active" },
-    { assetId: "AST-008", name: "Network Infrastructure", assetType: "Hardware", department: "IT Operations", classification: "Critical", status: "Active" },
-    { assetId: "AST-009", name: "Backup Storage", assetType: "Hardware", department: "IT Operations", classification: "High", status: "Active" },
-    { assetId: "AST-010", name: "Development Environment", assetType: "Software", department: "Product Development", classification: "Medium", status: "Active" },
+    { assetId: "AST-001", name: "Production Database Server", assetType: "Hardware", department: "IT Operations", classification: "Critical", category: "Hardware", subCategory: "Server", group: "Infrastructure", sensitivity: "Restricted", lifecycle: "Active", owner: "bts.admin", custodian: "david.jones", location: "Data Center A", value: 50000, acquisitionDate: "2023-01-15", nextReviewDate: "2025-06-15" },
+    { assetId: "AST-002", name: "Core Banking Application Server", assetType: "Hardware", department: "IT Operations", classification: "Critical", category: "Hardware", subCategory: "Server", group: "Core Banking", sensitivity: "Restricted", lifecycle: "Active", owner: "bts.admin", custodian: "david.jones", location: "Data Center A", value: 75000, acquisitionDate: "2023-03-01", nextReviewDate: "2025-06-01" },
+    { assetId: "AST-003", name: "Perimeter Firewall", assetType: "Hardware", department: "IT Operations", classification: "Critical", category: "Hardware", subCategory: "Firewall", group: "Security Tools", sensitivity: "Restricted", lifecycle: "Active", owner: "john.doe", custodian: "david.jones", location: "Data Center A", value: 25000, acquisitionDate: "2023-06-15", nextReviewDate: "2025-03-15" },
+    { assetId: "AST-004", name: "Customer Database", assetType: "Information", department: "IT Operations", classification: "Critical", category: "Data", subCategory: "Customer Data", group: "Customer Facing", sensitivity: "Restricted", lifecycle: "Active", owner: "john.doe", custodian: "lisa.taylor", location: "Cloud AWS", value: 100000, acquisitionDate: "2022-01-01", nextReviewDate: "2025-01-01" },
+    { assetId: "AST-005", name: "ERP System", assetType: "Software", department: "IT Operations", classification: "High", category: "Software", subCategory: "Enterprise Application", group: "Internal Operations", sensitivity: "Confidential", lifecycle: "Active", owner: "bts.admin", custodian: "david.jones", location: "On-Premise", value: 200000, acquisitionDate: "2021-06-01", nextReviewDate: "2025-06-01" },
+    { assetId: "AST-006", name: "HR Management System", assetType: "Software", department: "Human Resources", classification: "High", category: "Software", subCategory: "Enterprise Application", group: "Internal Operations", sensitivity: "Confidential", lifecycle: "Active", owner: "emily.brown", custodian: "david.jones", location: "Cloud Azure", value: 50000, acquisitionDate: "2022-03-15", nextReviewDate: "2025-03-15" },
+    { assetId: "AST-007", name: "Employee Workstations", assetType: "Hardware", department: "IT Support", classification: "Medium", category: "Hardware", subCategory: "Workstation", group: "Internal Operations", sensitivity: "Internal", lifecycle: "Active", owner: "david.jones", custodian: "david.jones", location: "All Offices", value: 150000, acquisitionDate: "2023-01-01", nextReviewDate: "2025-12-01" },
+    { assetId: "AST-008", name: "Development Server", assetType: "Hardware", department: "Product Development", classification: "Medium", category: "Hardware", subCategory: "Server", group: "Development", sensitivity: "Internal", lifecycle: "Active", owner: "lisa.taylor", custodian: "david.jones", location: "Data Center B", value: 30000, acquisitionDate: "2023-09-01", nextReviewDate: "2025-09-01" },
+    { assetId: "AST-009", name: "Backup Storage System", assetType: "Hardware", department: "IT Operations", classification: "High", category: "Hardware", subCategory: "Storage Device", group: "Infrastructure", sensitivity: "Restricted", lifecycle: "Active", owner: "bts.admin", custodian: "david.jones", location: "Data Center A", value: 80000, acquisitionDate: "2023-04-01", nextReviewDate: "2025-04-01" },
+    { assetId: "AST-010", name: "CRM Database", assetType: "Information", department: "Revenue", classification: "High", category: "Data", subCategory: "Customer Data", group: "Customer Facing", sensitivity: "Confidential", lifecycle: "Active", owner: "james.anderson", custodian: "lisa.taylor", location: "Cloud AWS", value: 75000, acquisitionDate: "2022-06-01", nextReviewDate: "2025-06-01" },
   ];
 
   for (const asset of assets) {
@@ -398,8 +565,18 @@ async function main() {
         assetType: asset.assetType,
         departmentId: createdDepts[asset.department],
         classificationId: createdClassifications[asset.classification],
-        ownerId: createdUsers["bts.admin"],
-        status: asset.status,
+        categoryId: createdAssetCategories[asset.category],
+        subCategoryId: createdAssetSubCategories[asset.subCategory],
+        groupId: createdAssetGroups[asset.group],
+        sensitivityId: createdSensitivities[asset.sensitivity],
+        lifecycleStatusId: createdLifecycleStatuses[asset.lifecycle],
+        ownerId: createdUsers[asset.owner],
+        custodianId: createdUsers[asset.custodian],
+        location: asset.location,
+        value: asset.value,
+        acquisitionDate: new Date(asset.acquisitionDate),
+        nextReviewDate: new Date(asset.nextReviewDate),
+        status: "Active",
       },
     });
   }

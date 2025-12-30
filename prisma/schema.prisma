@@ -75,6 +75,7 @@ model User {
   ownedRisks       Risk[]       @relation("RiskOwner")
   ownedProcesses   Process[]    @relation("ProcessOwner")
   ownedAssets      Asset[]      @relation("AssetOwner")
+  custodianAssets  Asset[]      @relation("AssetCustodian")
   assignedEvidences Evidence[]  @relation("EvidenceAssignee")
   auditor          Audit[]      @relation("Auditor")
 }
@@ -248,7 +249,100 @@ model Exception {
 
 // ==================== ASSET MANAGEMENT MODULE ====================
 
-// Asset Classification
+// Asset Category (Top-level categories: Hardware, Software, Data, etc.)
+model AssetCategory {
+  id            String             @id @default(cuid())
+  name          String             @unique
+  description   String?
+  status        String             @default("Active") // Active, Inactive
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  subCategories AssetSubCategory[]
+  assets        Asset[]
+}
+
+// Asset Sub Category (e.g., Server, Firewall under Hardware)
+model AssetSubCategory {
+  id                      String                   @id @default(cuid())
+  name                    String
+  description             String?
+  categoryId              String
+  category                AssetCategory            @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  status                  String                   @default("Active") // Active, Inactive
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  assets                  Asset[]
+  assetCIAClassifications AssetCIAClassification[]
+
+  @@unique([name, categoryId])
+}
+
+// Asset Group (Logical groupings: Security Tools, Payment Systems, etc.)
+model AssetGroup {
+  id                   String                @id @default(cuid())
+  name                 String                @unique
+  description          String?
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  assets               Asset[]
+  assetCIAClassifications AssetCIAClassification[]
+}
+
+// CIA Rating Levels (for Confidentiality, Integrity, Availability)
+model CIARating {
+  id        String   @id @default(cuid())
+  type      String   // Confidentiality, Integrity, Availability
+  label     String   // high, medium, low
+  value     Int      // Score value (e.g., 10, 5, 1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([type, label])
+}
+
+// Asset Sensitivity Levels
+model AssetSensitivity {
+  id          String   @id @default(cuid())
+  name        String   @unique // Public, Internal, Confidential, Restricted
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  assets      Asset[]
+}
+
+// Asset CIA Classification (Links Sub Category + Group with CIA ratings)
+model AssetCIAClassification {
+  id                    String           @id @default(cuid())
+  subCategoryId         String
+  subCategory           AssetSubCategory @relation(fields: [subCategoryId], references: [id], onDelete: Cascade)
+  groupId               String
+  group                 AssetGroup       @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  confidentiality       String           @default("low") // high, medium, low
+  confidentialityScore  Int              @default(1)
+  integrity             String           @default("low") // high, medium, low
+  integrityScore        Int              @default(1)
+  availability          String           @default("low") // high, medium, low
+  availabilityScore     Int              @default(0)
+  assetCriticality      String           @default("low") // high, medium, low
+  assetCriticalityScore Int              @default(1)
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+
+  @@unique([subCategoryId, groupId])
+}
+
+// Asset Lifecycle Status
+model AssetLifecycleStatus {
+  id          String   @id @default(cuid())
+  name        String   @unique // Active, In Use, Needs Maintenance, Retired
+  description String?
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  assets      Asset[]
+}
+
+// Asset Classification (Legacy - keeping for backwards compatibility)
 model AssetClassification {
   id          String   @id @default(cuid())
   name        String   @unique // Critical, High, Medium, Low
@@ -260,22 +354,43 @@ model AssetClassification {
 
 // Assets
 model Asset {
-  id               String               @id @default(cuid())
-  assetId          String               @unique
-  name             String
-  description      String?
-  assetType        String // Hardware, Software, Information, People, Services, Facility
-  departmentId     String?
-  department       Department?          @relation(fields: [departmentId], references: [id])
-  ownerId          String?
-  owner            User?                @relation("AssetOwner", fields: [ownerId], references: [id])
-  classificationId String?
-  classification   AssetClassification? @relation(fields: [classificationId], references: [id])
-  status           String               @default("Active") // Active, Inactive, Disposed, Under Maintenance
-  value            Float?
-  location         String?
-  createdAt        DateTime             @default(now())
-  updatedAt        DateTime             @updatedAt
+  id                String                @id @default(cuid())
+  assetId           String                @unique
+  name              String
+  description       String?
+  // Category hierarchy
+  categoryId        String?
+  category          AssetCategory?        @relation(fields: [categoryId], references: [id])
+  subCategoryId     String?
+  subCategory       AssetSubCategory?     @relation(fields: [subCategoryId], references: [id])
+  groupId           String?
+  group             AssetGroup?           @relation(fields: [groupId], references: [id])
+  // Legacy asset type (keeping for backwards compatibility)
+  assetType         String?               // Hardware, Software, Information, People, Services, Facility
+  // Department and ownership
+  departmentId      String?
+  department        Department?           @relation(fields: [departmentId], references: [id])
+  ownerId           String?
+  owner             User?                 @relation("AssetOwner", fields: [ownerId], references: [id])
+  custodianId       String?
+  custodian         User?                 @relation("AssetCustodian", fields: [custodianId], references: [id])
+  // Classification
+  classificationId  String?
+  classification    AssetClassification?  @relation(fields: [classificationId], references: [id])
+  sensitivityId     String?
+  sensitivity       AssetSensitivity?     @relation(fields: [sensitivityId], references: [id])
+  // Lifecycle
+  lifecycleStatusId String?
+  lifecycleStatus   AssetLifecycleStatus? @relation(fields: [lifecycleStatusId], references: [id])
+  status            String                @default("Active") // Legacy status field
+  // Asset details
+  value             Float?
+  location          String?
+  acquisitionDate   DateTime?
+  nextReviewDate    DateTime?
+  // Timestamps
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
 }
 
 // ==================== RISK MANAGEMENT MODULE ====================
