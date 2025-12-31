@@ -592,11 +592,167 @@ async function main() {
     const category = await prisma.riskCategory.upsert({
       where: { name },
       update: {},
-      create: { name, description: `${name} risk category` },
+      create: { name, description: `${name} risk category`, status: "Active" },
     });
     createdRiskCategories[name] = category.id;
   }
   console.log("✅ Risk Categories created");
+
+  // Create Threat Categories
+  const threatCategories = ["Cybersecurity", "Operational", "Strategic", "Compliance", "Ransomware"];
+  for (const name of threatCategories) {
+    await prisma.threatCategory.upsert({
+      where: { name },
+      update: {},
+      create: { name },
+    });
+  }
+  console.log("✅ Threat Categories created");
+
+  // Create Threats
+  const threats = [
+    "Malware Attack", "Phishing", "Data Breach", "Insider Threat", "DDoS Attack",
+    "Social Engineering", "Ransomware", "System Failure", "Network Intrusion",
+    "Supply Chain Attack", "Third Party Risk", "Compliance Violation"
+  ];
+  for (const name of threats) {
+    await prisma.threat.upsert({
+      where: { name },
+      update: {},
+      create: { name },
+    });
+  }
+  console.log("✅ Threats created");
+
+  // Create Vulnerability Categories
+  const vulnCategories = ["Network Vulnerability", "Application Vulnerability", "Configuration Weakness"];
+  for (const name of vulnCategories) {
+    await prisma.vulnerabilityCategory.upsert({
+      where: { name },
+      update: {},
+      create: { name },
+    });
+  }
+  console.log("✅ Vulnerability Categories created");
+
+  // Create Vulnerabilities
+  const vulnerabilities = [
+    "Outdated Software", "Weak Passwords", "Missing Patches", "Insecure Configuration",
+    "Lack of Encryption", "Insufficient Access Controls", "Unmonitored Systems",
+    "Poor Security Awareness", "Legacy Systems", "Inadequate Backup"
+  ];
+  for (const name of vulnerabilities) {
+    await prisma.vulnerability.upsert({
+      where: { name },
+      update: {},
+      create: { name },
+    });
+  }
+  console.log("✅ Vulnerabilities created");
+
+  // Create Likelihoods
+  const likelihoods = [
+    { title: "Rare", score: 1, probability: "Minimum", timeFrame: "Very unlikely to occur" },
+    { title: "Moderate", score: 5, probability: "Medium", timeFrame: "May occur occasionally" },
+    { title: "High", score: 10, probability: "High", timeFrame: "Likely to occur frequently" },
+  ];
+  for (const l of likelihoods) {
+    await prisma.likelihood.upsert({
+      where: { title: l.title },
+      update: {},
+      create: l,
+    });
+  }
+  console.log("✅ Likelihoods created");
+
+  // Create Impact Categories
+  const impactCategories = ["Financial", "Reputational impact", "Regulatory", "Safety", "Operational"];
+  for (const name of impactCategories) {
+    await prisma.impactCategory.upsert({
+      where: { name },
+      update: {},
+      create: { name },
+    });
+  }
+  console.log("✅ Impact Categories created");
+
+  // Create Impact Ratings
+  const impactRatings = [
+    { name: "Insignificant", score: 5, description: "Negligible effect" },
+    { name: "Minor", score: 2, description: "Low impact" },
+    { name: "Low", score: 10, description: "Financial impact" },
+    { name: "High impact", score: 20, description: "Significant disruption" },
+  ];
+  for (const r of impactRatings) {
+    await prisma.impactRating.upsert({
+      where: { name: r.name },
+      update: {},
+      create: r,
+    });
+  }
+  console.log("✅ Impact Ratings created");
+
+  // Create Vulnerability Ratings
+  const vulnRatings = [
+    { name: "Weak", score: 5, description: "Weak control strength" },
+    { name: "Medium", score: 7, description: "Medium control strength" },
+    { name: "Strong", score: 10, description: "Strong control strength" },
+  ];
+  for (const r of vulnRatings) {
+    await prisma.vulnerabilityRating.upsert({
+      where: { name: r.name },
+      update: {},
+      create: r,
+    });
+  }
+  console.log("✅ Vulnerability Ratings created");
+
+  // Create Control Strengths
+  const controlStrengths = [
+    { name: "Ineffective", score: 1, description: "Control not working" },
+    { name: "Partially Effective", score: 20, description: "Partially working" },
+    { name: "Optimized", score: 30, description: "Optimized control" },
+    { name: "Effective", score: 100, description: "Fully effective control" },
+  ];
+  for (const c of controlStrengths) {
+    await prisma.controlStrength.upsert({
+      where: { name: c.name },
+      update: {},
+      create: c,
+    });
+  }
+  console.log("✅ Control Strengths created");
+
+  // Create Risk Ranges
+  const riskRanges = [
+    { title: "Low Risk", color: "#7ed321", lowRange: 0, highRange: 10, description: "Low risk" },
+    { title: "High", color: "#f5a623", lowRange: 11, highRange: 50, description: "11-50 is High risk" },
+    { title: "very high", color: "#f8e71c", lowRange: 51, highRange: 99, description: "very high" },
+    { title: "Catastrophic", color: "#d0021b", lowRange: 100, highRange: 500, description: "Catastrophic" },
+  ];
+  for (const r of riskRanges) {
+    await prisma.riskRange.upsert({
+      where: { title: r.title },
+      update: {},
+      create: r,
+    });
+  }
+  console.log("✅ Risk Ranges created");
+
+  // Create Risk Methodology
+  await prisma.riskMethodology.upsert({
+    where: { id: "default-methodology" },
+    update: {},
+    create: {
+      id: "default-methodology",
+      includeLikelihood: true,
+      includeImpact: true,
+      includeAssetScore: false,
+      includeVulnerability: true,
+      riskTolerance: 10,
+    },
+  });
+  console.log("✅ Risk Methodology created");
 
   // Create Risks
   const risks = [
@@ -624,8 +780,8 @@ async function main() {
         ownerId: createdUsers["mike.wilson"],
         riskRating: risk.riskRating,
         status: risk.status,
-        likelihood: Math.floor(Math.random() * 5) + 1,
-        impact: Math.floor(Math.random() * 5) + 1,
+        likelihoodScore: Math.floor(Math.random() * 5) + 1,
+        impactScore: Math.floor(Math.random() * 5) + 1,
       },
     });
   }
