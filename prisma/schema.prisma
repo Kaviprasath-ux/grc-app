@@ -43,7 +43,6 @@ model Department {
   processes    Process[]
   policies     Policy[]
   assets       Asset[]
-  risks        Risk[]
   audits       Audit[]
   evidences    Evidence[]
   exceptions   Exception[]
@@ -72,7 +71,6 @@ model User {
   // Relations
   ownedControls    Control[]    @relation("ControlOwner")
   assignedControls Control[]    @relation("ControlAssignee")
-  ownedRisks       Risk[]       @relation("RiskOwner")
   ownedProcesses   Process[]    @relation("ProcessOwner")
   ownedAssets      Asset[]      @relation("AssetOwner")
   custodianAssets  Asset[]      @relation("AssetCustodian")
@@ -177,7 +175,6 @@ model Control {
   updatedAt         DateTime       @updatedAt
   evidences         Evidence[]
   exceptions        Exception[]
-  riskControls      RiskControl[]
 }
 
 // Processes
@@ -194,7 +191,6 @@ model Process {
   status       String      @default("Active")
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
-  risks        Risk[]      @relation("RiskProcess")
 }
 
 // Governance - Policies, Standards, Procedures
@@ -288,7 +284,6 @@ model AssetGroup {
   updatedAt               DateTime                 @updatedAt
   assets                  Asset[]
   assetCIAClassifications AssetCIAClassification[]
-  riskAssetGroups         RiskAssetGroup[]
 }
 
 // CIA Rating Levels (for Confidentiality, Integrity, Availability)
@@ -394,314 +389,6 @@ model Asset {
   // Timestamps
   createdAt         DateTime              @default(now())
   updatedAt         DateTime              @updatedAt
-}
-
-// ==================== RISK MANAGEMENT MODULE ====================
-
-// Risk Categories (Top level categories)
-model RiskCategory {
-  id            String           @id @default(cuid())
-  name          String           @unique
-  description   String?
-  status        String           @default("Active") // Active, Inactive
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
-  risks         Risk[]
-  subCategories RiskSubCategory[]
-}
-
-// Risk Sub Categories
-model RiskSubCategory {
-  id          String        @id @default(cuid())
-  name        String
-  description String?
-  categoryId  String
-  category    RiskCategory  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  status      String        @default("Active")
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-
-  @@unique([name, categoryId])
-}
-
-// Threat Categories
-model ThreatCategory {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  threats     Threat[]
-}
-
-// Threats
-model Threat {
-  id            String          @id @default(cuid())
-  name          String          @unique
-  description   String?
-  categoryId    String?
-  category      ThreatCategory? @relation(fields: [categoryId], references: [id])
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-  riskThreats   RiskThreat[]
-}
-
-// Vulnerability Categories
-model VulnerabilityCategory {
-  id              String          @id @default(cuid())
-  name            String          @unique
-  description     String?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  vulnerabilities Vulnerability[]
-}
-
-// Vulnerabilities
-model Vulnerability {
-  id                  String                 @id @default(cuid())
-  name                String                 @unique
-  description         String?
-  categoryId          String?
-  category            VulnerabilityCategory? @relation(fields: [categoryId], references: [id])
-  createdAt           DateTime               @default(now())
-  updatedAt           DateTime               @updatedAt
-  riskVulnerabilities RiskVulnerability[]
-}
-
-// Vulnerability Ratings
-model VulnerabilityRating {
-  id          String   @id @default(cuid())
-  name        String   @unique // strong, medium, Weak
-  score       Int      // 10, 7, 5
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-// Likelihood Settings
-model Likelihood {
-  id          String   @id @default(cuid())
-  title       String   @unique // Rare, Moderate, High
-  score       Int      // 1, 5, 10
-  timeFrame   String?
-  probability String?  // Minimum, Medium, High
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-// Impact Categories (financial, Reputational, Regulatory, Safety, Operational)
-model ImpactCategory {
-  id           String         @id @default(cuid())
-  name         String         @unique
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  impactRatings ImpactRating[]
-}
-
-// Impact Ratings
-model ImpactRating {
-  id          String          @id @default(cuid())
-  name        String          @unique // High impact, Low, Insignificant, Minor
-  score       Int             // 20, 10, 5, 2
-  description String?
-  categoryId  String?
-  category    ImpactCategory? @relation(fields: [categoryId], references: [id])
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-}
-
-// Control Strength (for Risk Management)
-model ControlStrength {
-  id          String   @id @default(cuid())
-  name        String   @unique // effective, ineffective, partially effective, optimized
-  score       Int      // 100, 1, 20, 30
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-// Risk Methodology Configuration
-model RiskMethodology {
-  id                   String   @id @default(cuid())
-  includeLikelihood    Boolean  @default(true)
-  includeImpact        Boolean  @default(true)
-  includeAssetScore    Boolean  @default(false)
-  includeVulnerability Boolean  @default(true)
-  riskTolerance        Int      @default(10)
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
-}
-
-// Risk Ranges (for rating calculation)
-model RiskRange {
-  id          String   @id @default(cuid())
-  title       String   @unique // Low Risk, High, very high, Catastrophic
-  color       String   // hex color code
-  lowRange    Int      // minimum score
-  highRange   Int      // maximum score
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-// Risks
-model Risk {
-  id                    String              @id @default(cuid())
-  riskId                String              @unique // Auto-generated RIDxxxx
-  name                  String
-  description           String?
-  riskType              String              @default("Asset Risk") // Asset Risk, Process Risk
-  riskSources           String?
-  cause                 String?
-  // Category
-  categoryId            String?
-  category              RiskCategory?       @relation(fields: [categoryId], references: [id])
-  // Department & Owner
-  departmentId          String?
-  department            Department?         @relation(fields: [departmentId], references: [id])
-  ownerId               String?
-  owner                 User?               @relation("RiskOwner", fields: [ownerId], references: [id])
-  // Related Process (when riskType = "Process Risk")
-  relatedProcessId      String?
-  relatedProcess        Process?            @relation("RiskProcess", fields: [relatedProcessId], references: [id])
-  // Assessment scores
-  likelihoodScore       Float?
-  impactScore           Float?
-  vulnerabilityScore    Float?
-  inherentRiskRating    Float?              // Calculated: likelihood * impact * vulnerability
-  controlRating         Float?              // Control effectiveness
-  residualRiskRating    Float?              // After controls applied
-  // Risk rating (calculated from risk ranges)
-  riskRating            String              @default("Low Risk") // Low Risk, High, very high, Catastrophic
-  // Response Strategy
-  responseStrategy      String?             // Accept, Avoid, Transfer, Treat
-  // Status & workflow
-  status                String              @default("Open") // Open, In-Progress, Completed, Awaiting Approval, Closed
-  assessmentStatus      String              @default("Assessment Pending") // Assessment Pending, Assessed
-  assessmentDate        DateTime?
-  nextReviewDate        DateTime?
-  dueDate               DateTime?
-  // Budget for Risk Response
-  budgetAllocated       Float?
-  budgetUsed            Float?
-  // Timestamps
-  createdAt             DateTime            @default(now())
-  updatedAt             DateTime            @updatedAt
-  // Relations
-  riskCategories        RiskCategoryMapping[]
-  riskThreats           RiskThreat[]
-  riskVulnerabilities   RiskVulnerability[]
-  riskAssetGroups       RiskAssetGroup[]
-  riskControls          RiskControl[]
-  riskAssessments       RiskAssessment[]
-}
-
-// Risk to Category mapping (many-to-many for multi-select)
-model RiskCategoryMapping {
-  id         String        @id @default(cuid())
-  riskId     String
-  risk       Risk          @relation(fields: [riskId], references: [id], onDelete: Cascade)
-  categoryId String
-  createdAt  DateTime      @default(now())
-
-  @@unique([riskId, categoryId])
-}
-
-// Risk to Threat mapping (many-to-many)
-model RiskThreat {
-  id               String   @id @default(cuid())
-  riskId           String
-  risk             Risk     @relation(fields: [riskId], references: [id], onDelete: Cascade)
-  threatId         String
-  threat           Threat   @relation(fields: [threatId], references: [id], onDelete: Cascade)
-  likelihoodScore  Int?     // Rare=1, Moderate=5, High=10
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  threatImpacts    ThreatImpact[]
-
-  @@unique([riskId, threatId])
-}
-
-// Threat Impact ratings per category
-model ThreatImpact {
-  id              String     @id @default(cuid())
-  riskThreatId    String
-  riskThreat      RiskThreat @relation(fields: [riskThreatId], references: [id], onDelete: Cascade)
-  impactCategory  String     // financial, Reputational impact, Regulatory, Safety, Operational
-  impactRating    String?    // Low, Insignificant, Minor, High impact
-  impactScore     Int?
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
-
-  @@unique([riskThreatId, impactCategory])
-}
-
-// Risk to Vulnerability mapping (many-to-many)
-model RiskVulnerability {
-  id              String        @id @default(cuid())
-  riskId          String
-  risk            Risk          @relation(fields: [riskId], references: [id], onDelete: Cascade)
-  vulnerabilityId String
-  vulnerability   Vulnerability @relation(fields: [vulnerabilityId], references: [id], onDelete: Cascade)
-  rating          String?       // strong, medium, Weak
-  score           Int?          // 10, 7, 5
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-
-  @@unique([riskId, vulnerabilityId])
-}
-
-// Risk to Asset Group mapping (many-to-many, for Asset Risk type)
-model RiskAssetGroup {
-  id           String      @id @default(cuid())
-  riskId       String
-  risk         Risk        @relation(fields: [riskId], references: [id], onDelete: Cascade)
-  assetGroupId String
-  assetGroup   AssetGroup  @relation(fields: [assetGroupId], references: [id], onDelete: Cascade)
-  createdAt    DateTime    @default(now())
-
-  @@unique([riskId, assetGroupId])
-}
-
-// Risk to Control mapping (existing + planned controls)
-model RiskControl {
-  id          String   @id @default(cuid())
-  riskId      String
-  risk        Risk     @relation(fields: [riskId], references: [id], onDelete: Cascade)
-  controlId   String
-  control     Control  @relation(fields: [controlId], references: [id], onDelete: Cascade)
-  isPlanned   Boolean  @default(false) // true = planned control, false = existing control
-  effectiveness Float? // Control effectiveness percentage
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@unique([riskId, controlId])
-}
-
-// Risk Assessments (tracking assessment history)
-model RiskAssessment {
-  id                   String   @id @default(cuid())
-  riskId               String
-  risk                 Risk     @relation(fields: [riskId], references: [id], onDelete: Cascade)
-  assessmentNumber     Int      @default(1)
-  // Assessment step tracking
-  currentStep          Int      @default(1) // 1-6: Risk Context, Likelihood, Impact, Vulnerability, Risk Rating, Risk Summary
-  isCompleted          Boolean  @default(false)
-  // Calculated scores
-  likelihoodScore      Float?
-  impactScore          Float?
-  vulnerabilityScore   Float?
-  inherentRiskRating   Float?
-  controlRating        Float?
-  residualRiskRating   Float?
-  riskRating           String?  // Low Risk, High, very high, Catastrophic
-  // Status
-  status               String   @default("In-Progress") // In-Progress, Completed, Awaiting Approval, Approved
-  assessmentDate       DateTime @default(now())
-  approvedBy           String?
-  approvedDate         DateTime?
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
 }
 
 // ==================== INTERNAL AUDIT MODULE ====================

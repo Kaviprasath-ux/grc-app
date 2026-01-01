@@ -75,12 +75,12 @@ export const navigation: NavItem[] = [
     name: "Risk Management",
     icon: AlertTriangle,
     children: [
-      { name: "Risk Dashboard", href: "/risk-management/dashboard", icon: PieChart },
-      { name: "Risk Register", href: "/risk-management/register", icon: ClipboardList },
-      { name: "Risk Assessment", href: "/risk-management/assessment", icon: Search },
-      { name: "Risk Response Strategy", href: "/risk-management/response", icon: CheckSquare },
-      { name: "Risk Settings", href: "/risk-management/settings", icon: Settings2 },
-      { name: "Reports", href: "/risk-management/reports", icon: FileText },
+      { name: "Risk Dashboard", icon: PieChart },
+      { name: "Risk Register", icon: ClipboardList },
+      { name: "Risk Assessment", icon: Search },
+      { name: "Risk Response Strategy", icon: CheckSquare },
+      { name: "Risk Settings", icon: Settings2 },
+      { name: "Reports", icon: FileText },
     ],
   },
   {
