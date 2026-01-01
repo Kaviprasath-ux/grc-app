@@ -66,7 +66,8 @@ export function DonutChart({ title, data, centerLabel, className }: DonutChartPr
             </PieChart>
           </ResponsiveContainer>
           {centerLabel !== undefined && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              <span className="text-xs text-muted-foreground">Total</span>
               <span className="text-2xl font-bold text-grc-text">{centerLabel}</span>
             </div>
           )}

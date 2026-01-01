@@ -391,6 +391,222 @@ model Asset {
   updatedAt         DateTime              @updatedAt
 }
 
+// ==================== RISK MANAGEMENT MODULE ====================
+
+// Risk Categories
+model RiskCategory {
+  id          String   @id @default(cuid())
+  name        String   @unique // Strategic, Operational, Financial, Compliance, IT/Cyber, Reputational
+  description String?
+  color       String?  // Color code for UI display
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  risks       Risk[]
+}
+
+// Risk Types
+model RiskType {
+  id          String   @id @default(cuid())
+  name        String   @unique // Inherent, Residual, Target
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  risks       Risk[]
+}
+
+// Risk Threats
+model RiskThreat {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  risks       RiskThreatMapping[]
+}
+
+// Risk Vulnerabilities
+model RiskVulnerability {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  risks       RiskVulnerabilityMapping[]
+}
+
+// Risk Causes
+model RiskCause {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  risks       RiskCauseMapping[]
+}
+
+// Risk-Threat Mapping (many-to-many)
+model RiskThreatMapping {
+  id        String     @id @default(cuid())
+  riskId    String
+  risk      Risk       @relation(fields: [riskId], references: [id], onDelete: Cascade)
+  threatId  String
+  threat    RiskThreat @relation(fields: [threatId], references: [id], onDelete: Cascade)
+  createdAt DateTime   @default(now())
+
+  @@unique([riskId, threatId])
+}
+
+// Risk-Vulnerability Mapping (many-to-many)
+model RiskVulnerabilityMapping {
+  id              String            @id @default(cuid())
+  riskId          String
+  risk            Risk              @relation(fields: [riskId], references: [id], onDelete: Cascade)
+  vulnerabilityId String
+  vulnerability   RiskVulnerability @relation(fields: [vulnerabilityId], references: [id], onDelete: Cascade)
+  createdAt       DateTime          @default(now())
+
+  @@unique([riskId, vulnerabilityId])
+}
+
+// Risk-Cause Mapping (many-to-many)
+model RiskCauseMapping {
+  id        String    @id @default(cuid())
+  riskId    String
+  risk      Risk      @relation(fields: [riskId], references: [id], onDelete: Cascade)
+  causeId   String
+  cause     RiskCause @relation(fields: [causeId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+
+  @@unique([riskId, causeId])
+}
+
+// Risks
+model Risk {
+  id                  String        @id @default(cuid())
+  riskId              String        @unique
+  name                String
+  description         String?
+  riskSources         String?       // Sources of the risk
+  categoryId          String?
+  category            RiskCategory? @relation(fields: [categoryId], references: [id])
+  typeId              String?
+  type                RiskType?     @relation(fields: [typeId], references: [id])
+  departmentId        String?
+  department          Department?   @relation(fields: [departmentId], references: [id])
+  ownerId             String?
+  owner               User?         @relation("RiskOwner", fields: [ownerId], references: [id])
+  // Assessment scores
+  likelihood          Int           @default(1) // 1-5 scale
+  impact              Int           @default(1) // 1-5 scale
+  riskScore           Int           @default(1) // likelihood * impact
+  riskRating          String        @default("Low") // Catastrophic, Very High, High, Medium, Low
+  // Inherent, Residual, Target risk scores
+  inherentLikelihood  Int?
+  inherentImpact      Int?
+  inherentRiskScore   Int?
+  residualLikelihood  Int?
+  residualImpact      Int?
+  residualRiskScore   Int?
+  targetLikelihood    Int?
+  targetImpact        Int?
+  targetRiskScore     Int?
+  // Response
+  status              String        @default("Open") // Awaiting Approval, Pending Assessment, Open, In Progress, Closed
+  responseStrategy    String?       // Treat, Transfer, Avoid, Accept
+  treatmentPlan       String?
+  treatmentDueDate    DateTime?
+  treatmentStatus     String?       // Not Started, In Progress, Completed
+  // Timestamps
+  identifiedDate      DateTime      @default(now())
+  lastAssessmentDate  DateTime?
+  nextReviewDate      DateTime?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  // Relations
+  threats             RiskThreatMapping[]
+  vulnerabilities     RiskVulnerabilityMapping[]
+  causes              RiskCauseMapping[]
+  assessments         RiskAssessment[]
+  responses           RiskResponse[]
+  activityLogs        RiskActivityLog[]
+}
+
+// Risk Assessment Records
+model RiskAssessment {
+  id                 String   @id @default(cuid())
+  assessmentId       String   @unique
+  riskId             String
+  risk               Risk     @relation(fields: [riskId], references: [id], onDelete: Cascade)
+  assessmentType     String   @default("Periodic") // Initial, Periodic, Ad-hoc
+  assessorName       String?
+  // Assessment scores
+  likelihood         Int      @default(1)
+  likelihoodRationale String?
+  impact             Int      @default(1)
+  impactRationale    String?
+  riskScore          Int      @default(1)
+  riskRating         String   @default("Low")
+  // Identified items during assessment
+  threatsIdentified  String?  // JSON array of threat names
+  vulnerabilitiesIdentified String? // JSON array of vulnerability names
+  causesIdentified   String?  // JSON array of cause names
+  // Recommendations
+  recommendations    String?
+  notes              String?
+  // Status
+  status             String   @default("Draft") // Draft, Submitted, Approved, Rejected
+  assessmentDate     DateTime @default(now())
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+// Risk Response Records
+model RiskResponse {
+  id               String    @id @default(cuid())
+  responseId       String    @unique
+  riskId           String
+  risk             Risk      @relation(fields: [riskId], references: [id], onDelete: Cascade)
+  responseType     String    @default("Mitigate") // Mitigate, Transfer, Accept, Avoid
+  actionTitle      String
+  actionDescription String?
+  assignee         String?
+  dueDate          DateTime?
+  status           String    @default("Open") // Open, In Progress, Completed, Overdue
+  completionDate   DateTime?
+  effectivenessRating Int?   // 1-5 scale
+  notes            String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+// Risk Settings (configurable parameters)
+model RiskSetting {
+  id          String   @id @default(cuid())
+  category    String   // likelihood_scale, impact_scale, rating_matrix, appetite, frequency
+  key         String
+  value       String   // JSON value
+  label       String?
+  description String?
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([category, key])
+}
+
+// Risk Activity Log (for tracking all risk-related activities)
+model RiskActivityLog {
+  id          String   @id @default(cuid())
+  riskId      String
+  risk        Risk     @relation(fields: [riskId], references: [id], onDelete: Cascade)
+  activity    String   // Created, Updated, Deleted, Status Changed, Assessment Added, etc.
+  description String?  // Detailed description of what changed
+  actor       String   // User who performed the action
+  actorId     String?  // User ID if available
+  metadata    String?  // JSON string for additional data
+  createdAt   DateTime @default(now())
+}
+
 // ==================== INTERNAL AUDIT MODULE ====================
 
 // Audits

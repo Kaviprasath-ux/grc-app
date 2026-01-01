@@ -582,6 +582,278 @@ async function main() {
   }
   console.log("✅ Assets created");
 
+  // ==================== RISK MANAGEMENT MODULE ====================
+
+  // Create Risk Categories
+  const riskCategories = [
+    { name: "Strategic", description: "Risks affecting strategic objectives", color: "#3b82f6" },
+    { name: "Operational", description: "Risks in day-to-day operations", color: "#10b981" },
+    { name: "Financial", description: "Risks impacting financial performance", color: "#f59e0b" },
+    { name: "Compliance", description: "Regulatory and legal compliance risks", color: "#8b5cf6" },
+    { name: "IT/Cyber", description: "Technology and cybersecurity risks", color: "#ef4444" },
+    { name: "Reputational", description: "Risks to brand and reputation", color: "#ec4899" },
+  ];
+  const createdRiskCategories: { [key: string]: string } = {};
+
+  for (const cat of riskCategories) {
+    const category = await prisma.riskCategory.upsert({
+      where: { name: cat.name },
+      update: {},
+      create: cat,
+    });
+    createdRiskCategories[cat.name] = category.id;
+  }
+  console.log("✅ Risk Categories created");
+
+  // Create Risk Types
+  const riskTypes = ["Inherent", "Residual", "Target"];
+  const createdRiskTypes: { [key: string]: string } = {};
+
+  for (const name of riskTypes) {
+    const type = await prisma.riskType.upsert({
+      where: { name },
+      update: {},
+      create: { name, description: `${name} risk assessment type` },
+    });
+    createdRiskTypes[name] = type.id;
+  }
+  console.log("✅ Risk Types created");
+
+  // Create Risk Threats
+  const threats = [
+    { name: "Cyber Attack", description: "Malicious cyber intrusion or attack" },
+    { name: "Natural Disaster", description: "Earthquakes, floods, hurricanes, etc." },
+    { name: "Human Error", description: "Mistakes or negligence by employees" },
+    { name: "System Failure", description: "Hardware or software malfunction" },
+    { name: "Third-Party Failure", description: "Vendor or partner service disruption" },
+    { name: "Data Theft", description: "Unauthorized access to sensitive data" },
+    { name: "Malware", description: "Viruses, ransomware, and other malicious software" },
+    { name: "Phishing", description: "Social engineering attacks via email" },
+    { name: "Insider Threat", description: "Malicious actions by internal actors" },
+    { name: "Supply Chain Attack", description: "Compromise through supply chain" },
+  ];
+  const createdThreats: { [key: string]: string } = {};
+
+  for (const threat of threats) {
+    const created = await prisma.riskThreat.upsert({
+      where: { name: threat.name },
+      update: {},
+      create: threat,
+    });
+    createdThreats[threat.name] = created.id;
+  }
+  console.log("✅ Risk Threats created");
+
+  // Create Risk Vulnerabilities
+  const vulnerabilities = [
+    { name: "Weak Authentication", description: "Insufficient password policies or MFA" },
+    { name: "Unpatched Systems", description: "Systems without latest security patches" },
+    { name: "Misconfiguration", description: "Incorrectly configured systems or services" },
+    { name: "Lack of Encryption", description: "Data not encrypted at rest or in transit" },
+    { name: "Poor Access Controls", description: "Excessive or improper access rights" },
+    { name: "Inadequate Logging", description: "Insufficient audit trails and monitoring" },
+    { name: "Legacy Systems", description: "Outdated systems lacking security updates" },
+    { name: "Missing Backups", description: "Insufficient or untested backup procedures" },
+    { name: "Untrained Staff", description: "Employees lacking security awareness" },
+    { name: "Shadow IT", description: "Unauthorized technology usage" },
+  ];
+  const createdVulnerabilities: { [key: string]: string } = {};
+
+  for (const vuln of vulnerabilities) {
+    const created = await prisma.riskVulnerability.upsert({
+      where: { name: vuln.name },
+      update: {},
+      create: vuln,
+    });
+    createdVulnerabilities[vuln.name] = created.id;
+  }
+  console.log("✅ Risk Vulnerabilities created");
+
+  // Create Risk Causes
+  const causes = [
+    { name: "Budget Constraints", description: "Insufficient funding for security measures" },
+    { name: "Skills Gap", description: "Lack of qualified security personnel" },
+    { name: "Process Gaps", description: "Missing or ineffective processes" },
+    { name: "Technology Limitations", description: "Outdated or insufficient technology" },
+    { name: "Regulatory Changes", description: "New or changing regulatory requirements" },
+    { name: "Market Conditions", description: "Economic or market pressures" },
+    { name: "Organizational Changes", description: "Mergers, restructuring, or growth" },
+    { name: "Third-Party Dependencies", description: "Reliance on external parties" },
+  ];
+
+  for (const cause of causes) {
+    await prisma.riskCause.upsert({
+      where: { name: cause.name },
+      update: {},
+      create: cause,
+    });
+  }
+  console.log("✅ Risk Causes created");
+
+  // Create Risks with enhanced data
+  // Status: Awaiting Approval, Pending Assessment, Open, In Progress, Closed
+  // Strategy: Treat, Transfer, Avoid, Accept
+  const risks = [
+    { riskId: "RISK-0001", name: "Data Breach Risk", description: "Risk of unauthorized access to sensitive customer and business data", category: "IT/Cyber", department: "IT Operations", likelihood: 4, impact: 5, status: "Open", responseStrategy: "Treat" },
+    { riskId: "RISK-0002", name: "Regulatory Non-Compliance", description: "Failure to comply with GDPR, PCI-DSS, and other regulations", category: "Compliance", department: "Compliance", likelihood: 3, impact: 4, status: "In Progress", responseStrategy: "Treat" },
+    { riskId: "RISK-0003", name: "Vendor Dependency", description: "Over-reliance on critical third-party vendors", category: "Operational", department: "Procurement", likelihood: 3, impact: 3, status: "Pending Assessment", responseStrategy: "Transfer" },
+    { riskId: "RISK-0004", name: "Market Competition", description: "Increased competition affecting market share", category: "Strategic", department: "Revenue", likelihood: 4, impact: 3, status: "Open", responseStrategy: "Accept" },
+    { riskId: "RISK-0005", name: "Talent Retention", description: "Difficulty retaining key technical talent", category: "Operational", department: "Human Resources", likelihood: 3, impact: 3, status: "In Progress", responseStrategy: "Treat" },
+    { riskId: "RISK-0006", name: "System Failure", description: "Critical system downtime affecting operations", category: "IT/Cyber", department: "IT Operations", likelihood: 3, impact: 5, status: "In Progress", responseStrategy: "Treat" },
+    { riskId: "RISK-0007", name: "Financial Loss", description: "Unexpected financial losses from operations", category: "Financial", department: "Revenue", likelihood: 2, impact: 4, status: "Awaiting Approval", responseStrategy: null },
+    { riskId: "RISK-0008", name: "Reputation Damage", description: "Negative publicity affecting brand value", category: "Reputational", department: "Operations", likelihood: 2, impact: 5, status: "Pending Assessment", responseStrategy: null },
+    { riskId: "RISK-0009", name: "Supply Chain Disruption", description: "Interruption in supply chain operations", category: "Operational", department: "Procurement", likelihood: 3, impact: 3, status: "Open", responseStrategy: "Avoid" },
+    { riskId: "RISK-0010", name: "Insider Threat", description: "Malicious or negligent actions by employees", category: "IT/Cyber", department: "IT Operations", likelihood: 2, impact: 4, status: "Closed", responseStrategy: "Treat" },
+    { riskId: "RISK-0011", name: "Cloud Security", description: "Security vulnerabilities in cloud infrastructure", category: "IT/Cyber", department: "IT Operations", likelihood: 3, impact: 4, status: "In Progress", responseStrategy: "Treat" },
+    { riskId: "RISK-0012", name: "Business Continuity", description: "Inability to recover from major disruptions", category: "Operational", department: "Operations", likelihood: 2, impact: 5, status: "Awaiting Approval", responseStrategy: null },
+  ];
+
+  const createdRisks: { [key: string]: string } = {};
+  for (const risk of risks) {
+    const riskScore = risk.likelihood * risk.impact;
+    // Rating: Catastrophic, Very high, High, Low Risk (matching website)
+    let riskRating = "Low Risk";
+    if (riskScore >= 20) riskRating = "Catastrophic";
+    else if (riskScore >= 15) riskRating = "Very high";
+    else if (riskScore >= 10) riskRating = "High";
+
+    const created = await prisma.risk.upsert({
+      where: { riskId: risk.riskId },
+      update: {},
+      create: {
+        riskId: risk.riskId,
+        name: risk.name,
+        description: risk.description,
+        categoryId: createdRiskCategories[risk.category],
+        departmentId: createdDepts[risk.department],
+        ownerId: createdUsers["mike.wilson"],
+        likelihood: risk.likelihood,
+        impact: risk.impact,
+        riskScore,
+        riskRating,
+        status: risk.status,
+        responseStrategy: risk.responseStrategy,
+        inherentLikelihood: risk.likelihood + 1 > 5 ? 5 : risk.likelihood + 1,
+        inherentImpact: risk.impact,
+        inherentRiskScore: (risk.likelihood + 1 > 5 ? 5 : risk.likelihood + 1) * risk.impact,
+        residualLikelihood: risk.likelihood,
+        residualImpact: risk.impact,
+        residualRiskScore: riskScore,
+        treatmentPlan: risk.responseStrategy ? `Implement controls to ${risk.responseStrategy === "Treat" ? "treat" : risk.responseStrategy.toLowerCase()} the risk` : null,
+        treatmentDueDate: risk.responseStrategy ? new Date(Date.now() + 90 * 24 * 60 * 60 * 1000) : null,
+      },
+    });
+    createdRisks[risk.riskId] = created.id;
+  }
+  console.log("✅ Risks created");
+
+  // Create Risk-Threat mappings
+  const riskThreatMappings = [
+    { riskId: "RISK-0001", threats: ["Cyber Attack", "Data Theft", "Malware", "Phishing"] },
+    { riskId: "RISK-0006", threats: ["System Failure", "Natural Disaster"] },
+    { riskId: "RISK-0010", threats: ["Insider Threat", "Data Theft"] },
+    { riskId: "RISK-0011", threats: ["Cyber Attack", "Malware", "Misconfiguration"] },
+  ];
+
+  for (const mapping of riskThreatMappings) {
+    for (const threatName of mapping.threats) {
+      if (createdRisks[mapping.riskId] && createdThreats[threatName]) {
+        await prisma.riskThreatMapping.create({
+          data: {
+            riskId: createdRisks[mapping.riskId],
+            threatId: createdThreats[threatName],
+          },
+        });
+      }
+    }
+  }
+  console.log("✅ Risk-Threat mappings created");
+
+  // Create Risk-Vulnerability mappings
+  const riskVulnMappings = [
+    { riskId: "RISK-0001", vulns: ["Weak Authentication", "Poor Access Controls", "Lack of Encryption"] },
+    { riskId: "RISK-0006", vulns: ["Unpatched Systems", "Legacy Systems", "Missing Backups"] },
+    { riskId: "RISK-0010", vulns: ["Poor Access Controls", "Inadequate Logging", "Untrained Staff"] },
+    { riskId: "RISK-0011", vulns: ["Misconfiguration", "Unpatched Systems", "Shadow IT"] },
+  ];
+
+  for (const mapping of riskVulnMappings) {
+    for (const vulnName of mapping.vulns) {
+      if (createdRisks[mapping.riskId] && createdVulnerabilities[vulnName]) {
+        await prisma.riskVulnerabilityMapping.create({
+          data: {
+            riskId: createdRisks[mapping.riskId],
+            vulnerabilityId: createdVulnerabilities[vulnName],
+          },
+        });
+      }
+    }
+  }
+  console.log("✅ Risk-Vulnerability mappings created");
+
+  // Create Risk Assessments
+  const assessments = [
+    { assessmentId: "RA-0001", riskId: "RISK-0001", likelihood: 4, impact: 5, status: "Approved", date: "2025-01-15" },
+    { assessmentId: "RA-0002", riskId: "RISK-0006", likelihood: 3, impact: 5, status: "Approved", date: "2025-01-10" },
+    { assessmentId: "RA-0003", riskId: "RISK-0002", likelihood: 3, impact: 4, status: "Submitted", date: "2025-01-20" },
+  ];
+
+  for (const assessment of assessments) {
+    const riskScore = assessment.likelihood * assessment.impact;
+    let riskRating = "Low";
+    if (riskScore >= 20) riskRating = "Catastrophic";
+    else if (riskScore >= 15) riskRating = "Very High";
+    else if (riskScore >= 10) riskRating = "High";
+    else if (riskScore >= 5) riskRating = "Medium";
+
+    await prisma.riskAssessment.upsert({
+      where: { assessmentId: assessment.assessmentId },
+      update: {},
+      create: {
+        assessmentId: assessment.assessmentId,
+        riskId: createdRisks[assessment.riskId],
+        assessmentType: "Periodic",
+        assessorName: "Mike Wilson",
+        likelihood: assessment.likelihood,
+        impact: assessment.impact,
+        riskScore,
+        riskRating,
+        status: assessment.status,
+        assessmentDate: new Date(assessment.date),
+        recommendations: "Continue monitoring and implementing controls",
+      },
+    });
+  }
+  console.log("✅ Risk Assessments created");
+
+  // Create Risk Responses
+  // Response Type: Treat, Transfer, Avoid, Accept (matching website)
+  const responses = [
+    { responseId: "RR-0001", riskId: "RISK-0001", responseType: "Treat", actionTitle: "Implement Multi-Factor Authentication", status: "In Progress", dueDate: "2025-03-01" },
+    { responseId: "RR-0002", riskId: "RISK-0001", responseType: "Treat", actionTitle: "Deploy Data Loss Prevention", status: "Open", dueDate: "2025-04-01" },
+    { responseId: "RR-0003", riskId: "RISK-0006", responseType: "Treat", actionTitle: "Implement High Availability", status: "In Progress", dueDate: "2025-02-15" },
+    { responseId: "RR-0004", riskId: "RISK-0010", responseType: "Treat", actionTitle: "Enhanced Access Monitoring", status: "Completed", dueDate: "2025-01-15" },
+  ];
+
+  for (const response of responses) {
+    await prisma.riskResponse.upsert({
+      where: { responseId: response.responseId },
+      update: {},
+      create: {
+        responseId: response.responseId,
+        riskId: createdRisks[response.riskId],
+        responseType: response.responseType,
+        actionTitle: response.actionTitle,
+        actionDescription: `Action to ${response.responseType === "Treat" ? "treat" : response.responseType.toLowerCase()} the risk`,
+        assignee: "Mike Wilson",
+        status: response.status,
+        dueDate: new Date(response.dueDate),
+        completionDate: response.status === "Completed" ? new Date() : null,
+      },
+    });
+  }
+  console.log("✅ Risk Responses created");
+
   // ==================== INTERNAL AUDIT MODULE ====================
 
   // Create Audits
@@ -664,19 +936,288 @@ async function main() {
   }
   console.log("✅ CAPAs created");
 
-  // Create sample Audit Logs
-  const auditLogs = [
-    { changeType: "CREATE", entityType: "Control", entityId: "ctrl-1", userName: "admin", changes: '{"name": "New Control"}' },
-    { changeType: "UPDATE", entityType: "Risk", entityId: "risk-1", userName: "mike.wilson", changes: '{"status": {"old": "Open", "new": "Mitigate"}}' },
-    { changeType: "UPDATE", entityType: "User", entityId: "user-1", userName: "admin", changes: '{"isActive": {"old": true, "new": false}}' },
-    { changeType: "CREATE", entityType: "Asset", entityId: "asset-1", userName: "bts.admin", changes: '{"name": "New Server"}' },
-    { changeType: "DELETE", entityType: "Stakeholder", entityId: "stake-1", userName: "john.doe", changes: '{"name": "Removed Stakeholder"}' },
+  // Create comprehensive Audit Logs matching the website
+  console.log("Creating Audit Logs...");
+
+  // Helper function to generate reference numbers
+  const generateRefNumber = () => Math.floor(Math.random() * 90000000000000000 + 10000000000000000).toString();
+
+  // AuditManagement.EvidenceRequest - 19 attributes (most recent)
+  const evidenceRequestLog = await prisma.auditLog.create({
+    data: {
+      entityType: "AuditManagement.EvidenceRequest",
+      referenceNumber: "12103423998878574",
+      entityId: "er-001",
+      userName: "Deepika",
+      type: "Create",
+      attributeCount: 19,
+      createdAt: new Date("2025-12-30T05:17:00Z"),
+    },
+  });
+
+  const evidenceRequestChanges = [
+    { attributeName: "AIAnswer", moduleName: "Attribute", oldValue: null, newValue: null },
+    { attributeName: "AIResponse", moduleName: "Attribute", oldValue: null, newValue: null },
+    { attributeName: "Art_ID", moduleName: "Attribute", oldValue: null, newValue: "33" },
+    { attributeName: "ArtifactID", moduleName: "Attribute", oldValue: null, newValue: "ER33" },
+    { attributeName: "AuditManagement.EvidenceRequest_AuditPlan", moduleName: "Reference", oldValue: "no reference", newValue: "reference added" },
+    { attributeName: "AuditManagement.EvidenceRequest_GRCAccount", moduleName: "Reference", oldValue: "no reference", newValue: "reference unchanged" },
+    { attributeName: "AuditManagement.EvidenceRequest_Procedure", moduleName: "Reference set", oldValue: "0 element(s) in set", newValue: "0 new, 0 removed element(s) (total 0)" },
+    { attributeName: "AuditManagement.EvidenceRequest_UserAccount", moduleName: "Reference set", oldValue: "0 element(s) in set", newValue: "1 new, 0 removed element(s) (total 1)" },
+    { attributeName: "Comment", moduleName: "Attribute", oldValue: null, newValue: null },
+    { attributeName: "Description", moduleName: "Attribute", oldValue: null, newValue: "Tewst" },
+    { attributeName: "HasRequests", moduleName: "Attribute", oldValue: null, newValue: "false" },
+    { attributeName: "_ID", moduleName: "Attribute", oldValue: null, newValue: "0" },
+    { attributeName: "IsResponded", moduleName: "Attribute", oldValue: null, newValue: "false" },
+    { attributeName: "Justification", moduleName: "Attribute", oldValue: null, newValue: null },
+    { attributeName: "NoOfAttachments", moduleName: "Attribute", oldValue: null, newValue: "0" },
+    { attributeName: "NoOfSamples", moduleName: "Attribute", oldValue: null, newValue: "2" },
+    { attributeName: "RequestName", moduleName: "Attribute", oldValue: null, newValue: "ISSue" },
+    { attributeName: "RequestStatus", moduleName: "Attribute", oldValue: null, newValue: null },
+    { attributeName: "Title", moduleName: "Attribute", oldValue: null, newValue: null },
   ];
 
-  for (const log of auditLogs) {
-    await prisma.auditLog.create({ data: log });
+  for (const change of evidenceRequestChanges) {
+    await prisma.auditLogChange.create({
+      data: { auditLogId: evidenceRequestLog.id, ...change },
+    });
   }
-  console.log("✅ Audit Logs created");
+
+  // AuditManagement.AuditPlan - 1 attribute (same time)
+  const auditPlanLog1 = await prisma.auditLog.create({
+    data: {
+      entityType: "AuditManagement.AuditPlan",
+      referenceNumber: "76279718688780027",
+      entityId: "ap-001",
+      userName: "Deepika",
+      type: "Change",
+      attributeCount: 1,
+      createdAt: new Date("2025-12-30T05:17:00Z"),
+    },
+  });
+
+  await prisma.auditLogChange.create({
+    data: {
+      auditLogId: auditPlanLog1.id,
+      attributeName: "Status",
+      moduleName: "Attribute",
+      oldValue: "Draft",
+      newValue: "In Progress",
+    },
+  });
+
+  // MOF_Audit.AuditTasksAI - 6 attributes (4 entries)
+  const auditTasksRefNumbers = ["139330113471928924", "139330113471928714", "139330113471928654", "139330113471928465"];
+  for (let i = 0; i < 4; i++) {
+    const auditTasksLog = await prisma.auditLog.create({
+      data: {
+        entityType: "MOF_Audit.AuditTasksAI",
+        referenceNumber: auditTasksRefNumbers[i],
+        entityId: `at-00${i + 1}`,
+        userName: "anamika",
+        type: "Create",
+        attributeCount: 6,
+        createdAt: new Date("2025-12-29T13:41:00Z"),
+      },
+    });
+
+    const auditTasksChanges = [
+      { attributeName: "TaskName", moduleName: "Attribute", oldValue: null, newValue: `AI Task ${i + 1}` },
+      { attributeName: "TaskStatus", moduleName: "Attribute", oldValue: null, newValue: "Pending" },
+      { attributeName: "AIProcessed", moduleName: "Attribute", oldValue: null, newValue: "true" },
+      { attributeName: "ProcessingDate", moduleName: "Attribute", oldValue: null, newValue: "12/29/2025" },
+      { attributeName: "ResultScore", moduleName: "Attribute", oldValue: null, newValue: "85" },
+      { attributeName: "IsVerified", moduleName: "Attribute", oldValue: null, newValue: "false" },
+    ];
+
+    for (const change of auditTasksChanges) {
+      await prisma.auditLogChange.create({
+        data: { auditLogId: auditTasksLog.id, ...change },
+      });
+    }
+  }
+
+  // AuditManagement.AuditPlan - 95 attributes
+  const auditPlanLog2 = await prisma.auditLog.create({
+    data: {
+      entityType: "AuditManagement.AuditPlan",
+      referenceNumber: "76279718688946370",
+      entityId: "ap-002",
+      userName: "anamika",
+      type: "Create",
+      attributeCount: 95,
+      createdAt: new Date("2025-12-29T13:41:00Z"),
+    },
+  });
+
+  const auditPlanChanges = [
+    { attributeName: "AcknowledgementDueDate", moduleName: "Attribute", oldValue: null, newValue: null },
+    { attributeName: "AssetCIA", moduleName: "Attribute", oldValue: null, newValue: null },
+    { attributeName: "AssetName", moduleName: "Attribute", oldValue: null, newValue: null },
+    { attributeName: "AuditeeDelayedResponseEscalate", moduleName: "Attribute", oldValue: null, newValue: "false" },
+    { attributeName: "AuditeeResponseDate", moduleName: "Attribute", oldValue: null, newValue: null },
+    { attributeName: "AuditeeTeam", moduleName: "Attribute", oldValue: null, newValue: null },
+    { attributeName: "AuditID", moduleName: "Attribute", oldValue: null, newValue: "0029" },
+    { attributeName: "AuditItem", moduleName: "Attribute", oldValue: null, newValue: null },
+    { attributeName: "AuditManagement.Attachments_AuditPlan", moduleName: "Reference", oldValue: "no reference", newValue: "reference unchanged" },
+    { attributeName: "AuditManagement.AuditPlan_Approver", moduleName: "Reference", oldValue: "no reference", newValue: "reference unchanged" },
+    { attributeName: "AuditManagement.AuditPlan_Assignee", moduleName: "Reference", oldValue: "no reference", newValue: "reference added" },
+    { attributeName: "AuditManagement.AuditPlan_Department", moduleName: "Reference", oldValue: "no reference", newValue: "reference added" },
+    { attributeName: "AuditManagement.AuditPlan_Framework", moduleName: "Reference", oldValue: "no reference", newValue: "reference added" },
+    { attributeName: "AuditPlanStatus", moduleName: "Attribute", oldValue: null, newValue: "Draft" },
+    { attributeName: "AuditScope", moduleName: "Attribute", oldValue: null, newValue: "Full Audit" },
+    { attributeName: "AuditType", moduleName: "Attribute", oldValue: null, newValue: "Internal" },
+    { attributeName: "ComplianceScore", moduleName: "Attribute", oldValue: null, newValue: "0" },
+    { attributeName: "ControlCategory", moduleName: "Attribute", oldValue: null, newValue: null },
+    { attributeName: "ControlDomain", moduleName: "Attribute", oldValue: null, newValue: null },
+    { attributeName: "ControlOwner", moduleName: "Attribute", oldValue: null, newValue: null },
+    { attributeName: "CreatedBy", moduleName: "Attribute", oldValue: null, newValue: "anamika" },
+    { attributeName: "CreatedDate", moduleName: "Attribute", oldValue: null, newValue: "12/29/2025" },
+    { attributeName: "Description", moduleName: "Attribute", oldValue: null, newValue: "Annual IT Security Audit" },
+    { attributeName: "DueDate", moduleName: "Attribute", oldValue: null, newValue: "01/31/2026" },
+    { attributeName: "EndDate", moduleName: "Attribute", oldValue: null, newValue: null },
+    { attributeName: "EvidenceCount", moduleName: "Attribute", oldValue: null, newValue: "0" },
+    { attributeName: "FindingsCount", moduleName: "Attribute", oldValue: null, newValue: "0" },
+    { attributeName: "IsActive", moduleName: "Attribute", oldValue: null, newValue: "true" },
+    { attributeName: "IsApproved", moduleName: "Attribute", oldValue: null, newValue: "false" },
+    { attributeName: "IsCompleted", moduleName: "Attribute", oldValue: null, newValue: "false" },
+  ];
+
+  // Add more attributes to reach 95
+  for (let i = 30; i < 95; i++) {
+    auditPlanChanges.push({
+      attributeName: `Attribute_${i}`,
+      moduleName: "Attribute",
+      oldValue: null,
+      newValue: null,
+    });
+  }
+
+  for (const change of auditPlanChanges) {
+    await prisma.auditLogChange.create({
+      data: { auditLogId: auditPlanLog2.id, ...change },
+    });
+  }
+
+  // Risk.RiskAssessment - 1 attribute
+  const riskAssessmentLog = await prisma.auditLog.create({
+    data: {
+      entityType: "Risk.RiskAssessment",
+      referenceNumber: "115123265474812347",
+      entityId: "ra-001",
+      userName: "bts",
+      type: "Change",
+      attributeCount: 1,
+      createdAt: new Date("2025-12-29T13:32:00Z"),
+    },
+  });
+
+  await prisma.auditLogChange.create({
+    data: {
+      auditLogId: riskAssessmentLog.id,
+      attributeName: "DueDate",
+      moduleName: "Attribute",
+      oldValue: "12/24/2025 (UTC)",
+      newValue: "12/29/2025 (UTC)",
+    },
+  });
+
+  // Compliance.Evidence - 30 attributes (12 entries)
+  const evidenceRefNumbers = [
+    "112027040731400770", "112027040731400654", "112027040731400497", "112027040731400344",
+    "112027040731400254", "112027040731400155", "112027040731399991", "112027040731399881",
+    "112027040731399706", "112027040731399640", "112027040731399444", "112027040731399419"
+  ];
+  for (let i = 0; i < 12; i++) {
+    const evidenceLog = await prisma.auditLog.create({
+      data: {
+        entityType: "Compliance.Evidence",
+        referenceNumber: evidenceRefNumbers[i],
+        entityId: `ev-00${i + 1}`,
+        userName: "bts",
+        type: "Create",
+        attributeCount: 30,
+        createdAt: new Date("2025-12-29T12:28:00Z"),
+      },
+    });
+
+    const evidenceChanges = [
+      { attributeName: "EvidenceName", moduleName: "Attribute", oldValue: null, newValue: `Evidence Document ${i + 1}` },
+      { attributeName: "EvidenceType", moduleName: "Attribute", oldValue: null, newValue: "Document" },
+      { attributeName: "EvidenceStatus", moduleName: "Attribute", oldValue: null, newValue: "Pending" },
+      { attributeName: "UploadDate", moduleName: "Attribute", oldValue: null, newValue: "12/29/2025" },
+      { attributeName: "ReviewDate", moduleName: "Attribute", oldValue: null, newValue: null },
+      { attributeName: "Compliance.Evidence_Control", moduleName: "Reference", oldValue: "no reference", newValue: "reference added" },
+      { attributeName: "Compliance.Evidence_Framework", moduleName: "Reference", oldValue: "no reference", newValue: "reference added" },
+      { attributeName: "Compliance.Evidence_Department", moduleName: "Reference", oldValue: "no reference", newValue: "reference added" },
+      { attributeName: "Compliance.Evidence_Assignee", moduleName: "Reference", oldValue: "no reference", newValue: "reference added" },
+      { attributeName: "IsValid", moduleName: "Attribute", oldValue: null, newValue: "true" },
+      { attributeName: "ValidFrom", moduleName: "Attribute", oldValue: null, newValue: "12/29/2025" },
+      { attributeName: "ValidTo", moduleName: "Attribute", oldValue: null, newValue: "12/29/2026" },
+      { attributeName: "Description", moduleName: "Attribute", oldValue: null, newValue: `Description for evidence ${i + 1}` },
+      { attributeName: "AttachmentCount", moduleName: "Attribute", oldValue: null, newValue: "1" },
+      { attributeName: "CommentCount", moduleName: "Attribute", oldValue: null, newValue: "0" },
+    ];
+
+    // Add more to reach 30
+    for (let j = 15; j < 30; j++) {
+      evidenceChanges.push({
+        attributeName: `EvidenceField_${j}`,
+        moduleName: "Attribute",
+        oldValue: null,
+        newValue: null,
+      });
+    }
+
+    for (const change of evidenceChanges) {
+      await prisma.auditLogChange.create({
+        data: { auditLogId: evidenceLog.id, ...change },
+      });
+    }
+  }
+
+  // Add more varied audit log entries for comprehensive testing
+  const additionalLogs = [
+    { entityType: "Organization.Department", userName: "bts.admin", type: "Create", attributeCount: 5, date: "2025-12-28T10:00:00Z" },
+    { entityType: "Organization.User", userName: "bts.admin", type: "Create", attributeCount: 12, date: "2025-12-28T09:30:00Z" },
+    { entityType: "Risk.RiskRegister", userName: "mike.wilson", type: "Change", attributeCount: 8, date: "2025-12-27T15:00:00Z" },
+    { entityType: "Compliance.Control", userName: "john.doe", type: "Create", attributeCount: 15, date: "2025-12-27T14:00:00Z" },
+    { entityType: "Asset.AssetInventory", userName: "bts.admin", type: "Create", attributeCount: 10, date: "2025-12-26T11:00:00Z" },
+    { entityType: "AuditManagement.Finding", userName: "sarah.smith", type: "Create", attributeCount: 7, date: "2025-12-26T10:00:00Z" },
+    { entityType: "Compliance.Exception", userName: "john.doe", type: "Change", attributeCount: 6, date: "2025-12-25T16:00:00Z" },
+    { entityType: "Organization.Process", userName: "bts.admin", type: "Create", attributeCount: 9, date: "2025-12-25T14:00:00Z" },
+    { entityType: "Governance.Policy", userName: "john.doe", type: "Change", attributeCount: 11, date: "2025-12-24T12:00:00Z" },
+    { entityType: "Risk.RiskTreatment", userName: "mike.wilson", type: "Create", attributeCount: 4, date: "2025-12-24T10:00:00Z" },
+  ];
+
+  for (const log of additionalLogs) {
+    const auditLog = await prisma.auditLog.create({
+      data: {
+        entityType: log.entityType,
+        referenceNumber: generateRefNumber(),
+        entityId: `entity-${Math.random().toString(36).substr(2, 9)}`,
+        userName: log.userName,
+        type: log.type,
+        attributeCount: log.attributeCount,
+        createdAt: new Date(log.date),
+      },
+    });
+
+    // Add corresponding changes
+    for (let i = 0; i < log.attributeCount; i++) {
+      await prisma.auditLogChange.create({
+        data: {
+          auditLogId: auditLog.id,
+          attributeName: `Field_${i + 1}`,
+          moduleName: i % 3 === 0 ? "Reference" : "Attribute",
+          oldValue: i % 2 === 0 ? "Previous Value" : null,
+          newValue: `New Value ${i + 1}`,
+        },
+      });
+    }
+  }
+
+  console.log("✅ Audit Logs created with comprehensive data");
 
   console.log("🎉 Database seeded successfully with all modules!");
 }
