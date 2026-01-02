@@ -32,52 +32,59 @@ model Organization {
 
 // Departments
 model Department {
-  id           String        @id @default(cuid())
-  name         String        @unique
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  users        User[]
-  issues       Issue[]
-  stakeholders Stakeholder[]
-  controls     Control[]
-  processes    Process[]
-  policies     Policy[]
-  assets       Asset[]
-  audits       Audit[]
-  evidences    Evidence[]
-  exceptions   Exception[]
-  risks        Risk[]
+  id                    String                 @id @default(cuid())
+  name                  String                 @unique
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  users                 User[]
+  issues                Issue[]
+  stakeholders          Stakeholder[]
+  controls              Control[]
+  processes             Process[]
+  policies              Policy[]
+  assets                Asset[]
+  risks                 Risk[]
+  audits                Audit[]
+  evidences             Evidence[]
+  exceptions            Exception[]
+  requirementExceptions RequirementException[]
+  kpis                  KPI[]
 }
 
 // Users
 model User {
-  id           String      @id @default(cuid())
-  userName     String      @unique
-  email        String      @unique
-  password     String
-  firstName    String
-  lastName     String
-  fullName     String
-  designation  String?
-  function     String?
-  role         String      @default("User")
-  language     String      @default("English")
-  timezone     String      @default("UTC")
-  isActive     Boolean     @default(true)
-  isBlocked    Boolean     @default(false)
-  departmentId String?
-  department   Department? @relation(fields: [departmentId], references: [id])
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  id                  String      @id @default(cuid())
+  userName            String      @unique
+  email               String      @unique
+  password            String
+  firstName           String
+  lastName            String
+  fullName            String
+  designation         String?
+  function            String?
+  role                String      @default("User")
+  language            String      @default("English")
+  timezone            String      @default("UTC")
+  isActive            Boolean     @default(true)
+  isBlocked           Boolean     @default(false)
+  departmentId        String?
+  department          Department? @relation(fields: [departmentId], references: [id])
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
   // Relations
-  ownedControls    Control[]    @relation("ControlOwner")
-  assignedControls Control[]    @relation("ControlAssignee")
-  ownedProcesses   Process[]    @relation("ProcessOwner")
-  ownedAssets      Asset[]      @relation("AssetOwner")
-  custodianAssets  Asset[]      @relation("AssetCustodian")
-  assignedEvidences Evidence[]  @relation("EvidenceAssignee")
-  auditor          Audit[]      @relation("Auditor")
-  ownedRisks       Risk[]       @relation("RiskOwner")
+  ownedControls       Control[]   @relation("ControlOwner")
+  assignedControls    Control[]   @relation("ControlAssignee")
+  ownedRisks          Risk[]      @relation("RiskOwner")
+  ownedProcesses      Process[]   @relation("ProcessOwner")
+  ownedAssets         Asset[]     @relation("AssetOwner")
+  custodianAssets     Asset[]     @relation("AssetCustodian")
+  assignedEvidences   Evidence[]  @relation("EvidenceAssignee")
+  auditor             Audit[]     @relation("Auditor")
+  assignedPolicies    Policy[]    @relation("PolicyAssignee")
+  approvedPolicies    Policy[]    @relation("PolicyApprover")
+  requestedExceptions Exception[] @relation("ExceptionRequester")
+  approverExceptions  Exception[] @relation("ExceptionApprover")
+  uploadedArtifacts   Artifact[]  @relation("ArtifactUploader")
 }
 
 // Stakeholders
@@ -124,16 +131,103 @@ model Service {
 
 // Frameworks
 model Framework {
-  id          String    @id @default(cuid())
-  name        String    @unique
-  description String?
-  version     String?
-  status      String    @default("Subscribed") // Subscribed, Not Subscribed
-  logo        String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  controls    Control[]
-  evidences   Evidence[]
+  id                    String                @id @default(cuid())
+  name                  String                @unique
+  description           String?
+  version               String?
+  type                  String                @default("Framework") // Framework, Standard, Regulation
+  status                String                @default("Subscribed") // Subscribed, Not Subscribed
+  country               String?
+  industry              String?
+  isCustom              Boolean               @default(false)
+  logo                  String?
+  supportDocumentUrl    String?
+  compliancePercentage  Float                 @default(0)
+  policyPercentage      Float                 @default(0)
+  evidencePercentage    Float                 @default(0)
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  controls              Control[]
+  evidences             Evidence[]
+  requirements          Requirement[]
+  requirementCategories RequirementCategory[]
+}
+
+// Requirement Categories (Domains/Chapters in a framework)
+model RequirementCategory {
+  id           String        @id @default(cuid())
+  name         String
+  code         String?
+  description  String?
+  sortOrder    Int           @default(0)
+  frameworkId  String
+  framework    Framework     @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+  requirements Requirement[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@unique([frameworkId, name])
+}
+
+// Requirements (Framework Requirements with hierarchy)
+model Requirement {
+  id                   String                 @id @default(cuid())
+  code                 String
+  name                 String
+  description          String?
+  requirementType      String                 @default("Mandatory") // Mandatory, Additional
+  chapterType          String                 @default("Domain") // Domain, Process Domain, Technical Domain
+  sortOrder            Int                    @default(0)
+  level                Int                    @default(1) // Hierarchy level: 1=category, 2=requirement, 3=sub-requirement
+  parentId             String?
+  parent               Requirement?           @relation("RequirementHierarchy", fields: [parentId], references: [id])
+  children             Requirement[]          @relation("RequirementHierarchy")
+  frameworkId          String
+  framework            Framework              @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+  categoryId           String?
+  category             RequirementCategory?   @relation(fields: [categoryId], references: [id])
+  // SOA fields
+  applicability        String? // Yes, No
+  justification        String?
+  implementationStatus String? // Yes, No, Ongoing, N/A
+  controlCompliance    String? // Compliant, Non Compliant, Partial Compliant
+  // Relations
+  controls             RequirementControl[]
+  exceptions           RequirementException[]
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+
+  @@unique([frameworkId, code])
+}
+
+// Requirement-Control Many-to-Many Junction Table
+model RequirementControl {
+  id            String      @id @default(cuid())
+  requirementId String
+  requirement   Requirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  controlId     String
+  control       Control     @relation(fields: [controlId], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now())
+
+  @@unique([requirementId, controlId])
+}
+
+// Requirement Exceptions (for compliance exceptions from requirements)
+model RequirementException {
+  id            String      @id @default(cuid())
+  code          String      @unique
+  name          String
+  description   String?
+  category      String      @default("Compliance") // Policy, Control, Compliance, Risk
+  requirementId String
+  requirement   Requirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  departmentId  String?
+  department    Department? @relation(fields: [departmentId], references: [id])
+  requesterId   String?
+  status        String      @default("Pending") // Pending, Approved, Authorised, Submitted for Closure, Overdue, RiskAccepted, Closed
+  endDate       DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 }
 
 // Regulations (legacy - keeping for backwards compatibility)
@@ -148,6 +242,7 @@ model Regulation {
 // Control Domains
 model ControlDomain {
   id        String    @id @default(cuid())
+  code      String?
   name      String    @unique
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -156,27 +251,43 @@ model ControlDomain {
 
 // Controls
 model Control {
-  id                String         @id @default(cuid())
-  controlCode       String         @unique
-  name              String
-  description       String?
-  controlQuestion   String?
-  functionalGrouping String?       // Govern, Identify, Protect, Detect, Respond, Recover
-  status            String         @default("Non Compliant") // Non Compliant, Compliant, Not Applicable
-  domainId          String?
-  domain            ControlDomain? @relation(fields: [domainId], references: [id])
-  frameworkId       String?
-  framework         Framework?     @relation(fields: [frameworkId], references: [id])
-  departmentId      String?
-  department        Department?    @relation(fields: [departmentId], references: [id])
-  ownerId           String?
-  owner             User?          @relation("ControlOwner", fields: [ownerId], references: [id])
-  assigneeId        String?
-  assignee          User?          @relation("ControlAssignee", fields: [assigneeId], references: [id])
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
-  evidences         Evidence[]
-  exceptions        Exception[]
+  id                       String               @id @default(cuid())
+  controlCode              String               @unique
+  name                     String
+  description              String?
+  controlQuestion          String?
+  functionalGrouping       String? // Govern, Identify, Protect, Detect, Respond, Recover
+  status                   String               @default("Non Compliant") // Non Compliant, Compliant, Not Applicable, Partial Compliant
+  entities                 String               @default("Organization Wide") // Organization Wide
+  isControlList            Boolean              @default(false)
+  relativeControlWeighting Int?
+  scope                    String? // In-Scope, Not In-Scope
+  // CMM Maturity Level Descriptions
+  notPerformed             String? // CMM Level 0
+  performedInformally      String? // CMM Level 1
+  plannedAndTracked        String? // CMM Level 2
+  wellDefined              String? // CMM Level 3
+  quantitativelyControlled String? // CMM Level 4
+  continuouslyImproving    String? // CMM Level 5
+  // Relations
+  domainId                 String?
+  domain                   ControlDomain?       @relation(fields: [domainId], references: [id])
+  frameworkId              String?
+  framework                Framework?           @relation(fields: [frameworkId], references: [id])
+  departmentId             String?
+  department               Department?          @relation(fields: [departmentId], references: [id])
+  ownerId                  String?
+  owner                    User?                @relation("ControlOwner", fields: [ownerId], references: [id])
+  assigneeId               String?
+  assignee                 User?                @relation("ControlAssignee", fields: [assigneeId], references: [id])
+  createdAt                DateTime             @default(now())
+  updatedAt                DateTime             @updatedAt
+  evidences                Evidence[]
+  exceptions               Exception[]
+  requirements             RequirementControl[]
+  controlRisks             ControlRisk[]
+  policyControls           PolicyControl[]
+  evidenceControls         EvidenceControl[]      @relation("EvidenceControls")
 }
 
 // Processes
@@ -197,54 +308,273 @@ model Process {
 
 // Governance - Policies, Standards, Procedures
 model Policy {
-  id            String      @id @default(cuid())
-  name          String
-  version       String      @default("1.0")
-  documentType  String      @default("Policy") // Policy, Standard, Procedure
-  departmentId  String?
-  department    Department? @relation(fields: [departmentId], references: [id])
-  status        String      @default("Draft") // Not Uploaded, Draft, Approved, Needs Review, Published
-  effectiveDate DateTime?
-  reviewDate    DateTime?
-  content       String?
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  id                    String             @id @default(cuid())
+  code                  String             @unique
+  name                  String
+  version               String             @default("1.0")
+  documentType          String             @default("Policy") // Policy, Standard, Procedure
+  recurrence            String? // Weekly, Monthly, Quarterly, Yearly
+  departmentId          String?
+  department            Department?        @relation(fields: [departmentId], references: [id])
+  assigneeId            String?
+  assignee              User?              @relation("PolicyAssignee", fields: [assigneeId], references: [id])
+  approverId            String?
+  approver              User?              @relation("PolicyApprover", fields: [approverId], references: [id])
+  status                String             @default("Not Uploaded") // Not Uploaded, Draft, Approved, Needs Review, Published, Pending Approval
+  effectiveDate         DateTime?
+  reviewDate            DateTime?
+  content               String?
+  // AI Review Fields
+  aiReviewStatus        String?            @default("Pending") // Pending, In Progress, Completed
+  aiReviewScore         Float?             @default(0)
+  aiReviewJustification String?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  attachments           PolicyAttachment[]
+  policyControls        PolicyControl[]
+  policyExceptions      PolicyException[]
+  exceptions            Exception[]        @relation("PolicyExceptions")
 }
 
 // Evidence
 model Evidence {
-  id           String      @id @default(cuid())
-  name         String
-  description  String?
-  frameworkId  String?
-  framework    Framework?  @relation(fields: [frameworkId], references: [id])
-  controlId    String?
-  control      Control?    @relation(fields: [controlId], references: [id])
-  departmentId String?
-  department   Department? @relation(fields: [departmentId], references: [id])
-  assigneeId   String?
-  assignee     User?       @relation("EvidenceAssignee", fields: [assigneeId], references: [id])
-  dueDate      DateTime?
-  status       String      @default("Pending") // Pending, Submitted, Approved, Rejected, Overdue
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  id                    String               @id @default(cuid())
+  evidenceCode          String               @unique
+  name                  String
+  description           String?
+  domain                String? // Compliance, Change Management, Education, Risk Management, etc.
+  frameworkId           String?
+  framework             Framework?           @relation(fields: [frameworkId], references: [id])
+  controlId             String? // Legacy single control reference
+  control               Control?             @relation(fields: [controlId], references: [id])
+  departmentId          String?
+  department            Department?          @relation(fields: [departmentId], references: [id])
+  assigneeId            String?
+  assignee              User?                @relation("EvidenceAssignee", fields: [assigneeId], references: [id])
+  dueDate               DateTime?
+  reviewDate            DateTime?
+  recurrence            String? // Yearly, Half-yearly, Quarterly, Monthly
+  status                String               @default("Not Uploaded") // Not Uploaded, Draft, Validated, Published, Need Attention
+  publishedAt           DateTime?
+  // KPI fields
+  kpiRequired           Boolean              @default(false)
+  kpiObjective          String?
+  kpiDataSource         String?
+  kpiExpectedScore      Float?
+  kpiDescription        String?
+  kpiCalculationFormula String?
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+  attachments           EvidenceAttachment[]
+  kpis                  KPI[]
+  evidenceControls      EvidenceControl[]
+  linkedArtifacts       EvidenceArtifact[]
+}
+
+// Evidence-Control Many-to-Many Junction Table
+model EvidenceControl {
+  id         String   @id @default(cuid())
+  evidenceId String
+  evidence   Evidence @relation(fields: [evidenceId], references: [id], onDelete: Cascade)
+  controlId  String
+  control    Control  @relation("EvidenceControls", fields: [controlId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([evidenceId, controlId])
+}
+
+// Standalone Artifact for the Artifacts tab
+model Artifact {
+  id              String            @id @default(cuid())
+  artifactCode    String            @unique
+  name            String
+  fileName        String
+  fileType        String? // pdf, docx, xlsx, png, jpg, etc.
+  fileSize        Int?
+  filePath        String
+  uploadedBy      String?
+  uploadedById    String?
+  uploader        User?             @relation("ArtifactUploader", fields: [uploadedById], references: [id])
+  aiReviewStatus  String? // Pending, Reviewed
+  aiReviewScore   Float?
+  aiReviewNotes   String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  linkedEvidences EvidenceArtifact[]
+}
+
+// Evidence-Artifact Many-to-Many Junction Table
+model EvidenceArtifact {
+  id         String   @id @default(cuid())
+  evidenceId String
+  evidence   Evidence @relation(fields: [evidenceId], references: [id], onDelete: Cascade)
+  artifactId String
+  artifact   Artifact @relation(fields: [artifactId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([evidenceId, artifactId])
 }
 
 // Exceptions
 model Exception {
-  id           String      @id @default(cuid())
-  title        String
-  description  String?
-  exceptionType String     // Control, Compliance, Policy
-  departmentId String?
-  department   Department? @relation(fields: [departmentId], references: [id])
-  controlId    String?
-  control      Control?    @relation(fields: [controlId], references: [id])
-  status       String      @default("Pending") // Pending, Approved, Authorized, Closed, Overdue
-  startDate    DateTime?
-  endDate      DateTime?
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  id               String             @id @default(cuid())
+  exceptionCode    String             @unique
+  name             String
+  description      String? // Reason For Exception
+  category         String // Policy, Control, Compliance, Risk
+  departmentId     String?
+  department       Department?        @relation(fields: [departmentId], references: [id])
+  // Category-specific references
+  controlId        String?
+  control          Control?           @relation(fields: [controlId], references: [id])
+  policyId         String?
+  policy           Policy?            @relation("PolicyExceptions", fields: [policyId], references: [id])
+  riskId           String?
+  risk             Risk?              @relation("RiskExceptions", fields: [riskId], references: [id])
+  // Requester and Approver
+  requesterId      String?
+  requester        User?              @relation("ExceptionRequester", fields: [requesterId], references: [id])
+  approverId       String?
+  approver         User?              @relation("ExceptionApprover", fields: [approverId], references: [id])
+  // Approval details
+  approvedBy       String? // Name of person who approved
+  approvedDate     DateTime?
+  // Status and dates
+  status           String             @default("Pending") // Pending, Approved, Authorised, Submitted for Closure, Overdue, RiskAccepted, Closed
+  startDate        DateTime?
+  endDate          DateTime?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  // Relations
+  comments         ExceptionComment[]
+  policyExceptions PolicyException[]
+}
+
+// Exception Comments
+model ExceptionComment {
+  id          String    @id @default(cuid())
+  content     String
+  exceptionId String
+  exception   Exception @relation(fields: [exceptionId], references: [id], onDelete: Cascade)
+  userId      String?
+  userName    String? // Store username at time of comment
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// KPI (Key Performance Indicators)
+model KPI {
+  id                 String      @id @default(cuid())
+  code               String      @unique
+  objective          String? // KPI Objective
+  description        String? // KPI Description
+  dataSource         String? // KPI Data Source
+  calculationFormula String? // KPI Calculation Formula
+  expectedScore      Float? // Expected Score
+  actualScore        Float? // Current Actual Score
+  reviewDate         DateTime? // Next Review Date
+  status             String      @default("Scheduled") // Scheduled, Missed, Overdue, Achieved
+  departmentId       String?
+  department         Department? @relation(fields: [departmentId], references: [id])
+  evidenceId         String?
+  evidence           Evidence?   @relation(fields: [evidenceId], references: [id])
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+  // KPI Review History
+  reviews            KPIReview[]
+}
+
+// KPI Review History (tracks actual score submissions over time)
+model KPIReview {
+  id           String          @id @default(cuid())
+  reviewDate   DateTime
+  actualScore  Float?
+  status       String          @default("Scheduled") // Scheduled, Missed, Overdue, Achieved
+  documentPath String? // Path to uploaded document
+  documentName String? // Name of uploaded document
+  kpiId        String
+  kpi          KPI             @relation(fields: [kpiId], references: [id], onDelete: Cascade)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  actionPlans  KPIActionPlan[]
+}
+
+// KPI Action Plan (for remediation when KPI is missed)
+model KPIActionPlan {
+  id                  String    @id @default(cuid())
+  plannedAction       String // Required: The planned action to take
+  description         String? // Optional: Detailed description
+  percentageCompleted Float     @default(0) // Required: 0-100
+  startDate           DateTime? // Required: When the action starts
+  status              String    @default("In-Progress") // Open, In-Progress, Completed
+  kpiReviewId         String
+  kpiReview           KPIReview @relation(fields: [kpiReviewId], references: [id], onDelete: Cascade)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+}
+
+// Policy Attachments (Governance document files)
+model PolicyAttachment {
+  id         String   @id @default(cuid())
+  fileName   String
+  fileType   String? // pdf, docx, xlsx, etc.
+  fileSize   Int?
+  filePath   String
+  uploadedAt DateTime @default(now())
+  policyId   String
+  policy     Policy   @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// Evidence Attachments (Artifacts)
+model EvidenceAttachment {
+  id         String   @id @default(cuid())
+  fileName   String
+  fileType   String? // pdf, docx, xlsx, png, jpg, etc.
+  fileSize   Int?
+  filePath   String
+  uploadedAt DateTime @default(now())
+  evidenceId String
+  evidence   Evidence @relation(fields: [evidenceId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// Policy-Control Many-to-Many Junction Table
+model PolicyControl {
+  id        String   @id @default(cuid())
+  policyId  String
+  policy    Policy   @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  controlId String
+  control   Control  @relation(fields: [controlId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([policyId, controlId])
+}
+
+// Control-Risk Many-to-Many Junction Table
+model ControlRisk {
+  id        String   @id @default(cuid())
+  controlId String
+  control   Control  @relation(fields: [controlId], references: [id], onDelete: Cascade)
+  riskId    String
+  risk      Risk     @relation(fields: [riskId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([controlId, riskId])
+}
+
+// Policy-Exception Many-to-Many Junction Table
+model PolicyException {
+  id          String    @id @default(cuid())
+  policyId    String
+  policy      Policy    @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  exceptionId String
+  exception   Exception @relation(fields: [exceptionId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+
+  @@unique([policyId, exceptionId])
 }
 
 // ==================== ASSET MANAGEMENT MODULE ====================
@@ -531,6 +861,8 @@ model Risk {
   assessments         RiskAssessment[]
   responses           RiskResponse[]
   activityLogs        RiskActivityLog[]
+  controlRisks        ControlRisk[]
+  exceptions          Exception[]   @relation("RiskExceptions")
 }
 
 // Risk Assessment Records
@@ -617,7 +949,7 @@ model Audit {
   auditId      String         @unique
   name         String
   description  String?
-  auditType    String?        // Internal, External
+  auditType    String? // Internal, External
   departmentId String?
   department   Department?    @relation(fields: [departmentId], references: [id])
   auditorId    String?
@@ -660,15 +992,31 @@ model CAPA {
   updatedAt   DateTime      @updatedAt
 }
 
+// ==================== GOVERNANCE TEMPLATES ====================
+
+// Governance Templates (Policy, Standard, Procedure templates)
+model GovernanceTemplate {
+  id             String   @id @default(cuid())
+  name           String
+  governanceType String   @default("Policy") // Policy, Standard, Procedure
+  fileName       String
+  fileType       String? // pdf, docx, xlsx, etc.
+  fileSize       Int?
+  filePath       String
+  uploadedBy     String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
 // ==================== AUDIT LOGS ====================
 
 model AuditLog {
-  id          String   @id @default(cuid())
-  changeType  String // CREATE, UPDATE, DELETE
-  entityType  String // e.g., Control, User, Risk
-  entityId    String
-  userId      String?
-  userName    String?
-  changes     String? // JSON string of old/new values
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  changeType String // CREATE, UPDATE, DELETE
+  entityType String // e.g., Control, User, Risk
+  entityId   String
+  userId     String?
+  userName   String?
+  changes    String? // JSON string of old/new values
+  createdAt  DateTime @default(now())
 }

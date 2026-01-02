@@ -56,9 +56,11 @@ export const navigation: NavItem[] = [
       { name: "Control", href: "/compliance/control", icon: Link },
       { name: "Governance", href: "/compliance/governance", icon: FileCheck },
       { name: "Evidence", href: "/compliance/evidence", icon: ClipboardList },
-      { name: "Exception Management", href: "/compliance/exception", icon: AlertTriangle },
-      { name: "KPI", href: "/compliance/kpi", icon: BarChart3 },
+      { name: "Exception Management", href: "/compliance/exceptions", icon: AlertTriangle },
+      { name: "KPI", href: "/compliance/kpis", icon: BarChart3 },
+      { name: "Risk Compliance Matrix", href: "/compliance/risk-matrix", icon: AlertTriangle },
       { name: "Reports", href: "/compliance/reports", icon: FileText },
+      { name: "Master Data", href: "/compliance/master-data", icon: Settings2 },
     ],
   },
   {

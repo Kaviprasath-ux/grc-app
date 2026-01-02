@@ -141,32 +141,350 @@ async function main() {
 
   // ==================== COMPLIANCE MODULE ====================
 
-  // Create Frameworks
+  // Create Frameworks with comprehensive realistic data
   const frameworks = [
-    { name: "ISO 27001-2022", description: "Information Security Management System", version: "2022", status: "Subscribed" },
-    { name: "GDPR", description: "General Data Protection Regulation", version: "2018", status: "Subscribed" },
-    { name: "PCI DSS", description: "Payment Card Industry Data Security Standard", version: "4.0", status: "Subscribed" },
-    { name: "NIS Directive", description: "Network and Information Security Directive", version: "2.0", status: "Subscribed" },
-    { name: "EBA Outsourcing Guidelines", description: "European Banking Authority Outsourcing Guidelines", version: "2019", status: "Subscribed" },
-    { name: "ISO 27002:2022 (Annexure A)", description: "Code of practice for information security controls", version: "2022", status: "Subscribed" },
-    { name: "EU Directive", description: "European Union Regulatory Directive", version: "2023", status: "Subscribed" },
-    { name: "Labour Law (Darba likums)", description: "Latvian Labour Law", version: "2024", status: "Subscribed" },
-    { name: "Latvia AML Law", description: "Anti-Money Laundering Law", version: "2023", status: "Not Subscribed" },
-    { name: "Latvia construction law", description: "Construction Regulations", version: "2023", status: "Not Subscribed" },
-    { name: "Latvia cyber security law", description: "Cybersecurity Requirements", version: "2024", status: "Not Subscribed" },
-    { name: "Latvian Commercial & governance Law", description: "Commercial Law Compliance", version: "2023", status: "Not Subscribed" },
+    {
+      name: "ISO 27001:2022",
+      description: "ISO/IEC 27001:2022 is the international standard for information security management systems (ISMS). It provides a systematic approach to managing sensitive company information, ensuring it remains secure through risk management processes.",
+      version: "2022",
+      type: "Standard",
+      status: "Subscribed",
+      country: "International",
+      industry: "All Industries",
+      isCustom: false,
+      compliancePercentage: 78.5,
+      policyPercentage: 85.0,
+      evidencePercentage: 72.3,
+    },
+    {
+      name: "SOC 2 Type II",
+      description: "SOC 2 (Service Organization Control 2) is a compliance framework developed by the AICPA for service organizations. It focuses on five Trust Service Criteria: Security, Availability, Processing Integrity, Confidentiality, and Privacy.",
+      version: "2017",
+      type: "Framework",
+      status: "Subscribed",
+      country: "United States",
+      industry: "Technology & Services",
+      isCustom: false,
+      compliancePercentage: 82.0,
+      policyPercentage: 90.0,
+      evidencePercentage: 75.0,
+    },
+    {
+      name: "GDPR",
+      description: "The General Data Protection Regulation is a comprehensive data privacy regulation in EU law. It regulates the processing of personal data of individuals in the European Union and European Economic Area.",
+      version: "2018",
+      type: "Regulation",
+      status: "Subscribed",
+      country: "European Union",
+      industry: "All Industries",
+      isCustom: false,
+      compliancePercentage: 88.0,
+      policyPercentage: 95.0,
+      evidencePercentage: 80.0,
+    },
+    {
+      name: "PCI DSS v4.0",
+      description: "Payment Card Industry Data Security Standard is a set of security standards designed to ensure that all companies that accept, process, store, or transmit credit card information maintain a secure environment.",
+      version: "4.0",
+      type: "Standard",
+      status: "Subscribed",
+      country: "International",
+      industry: "Financial Services & Retail",
+      isCustom: false,
+      compliancePercentage: 65.0,
+      policyPercentage: 70.0,
+      evidencePercentage: 60.0,
+    },
+    {
+      name: "HIPAA",
+      description: "Health Insurance Portability and Accountability Act establishes national standards for the protection of sensitive patient health information. It applies to covered entities and their business associates.",
+      version: "2013",
+      type: "Regulation",
+      status: "Subscribed",
+      country: "United States",
+      industry: "Healthcare",
+      isCustom: false,
+      compliancePercentage: 72.0,
+      policyPercentage: 78.0,
+      evidencePercentage: 68.0,
+    },
+    {
+      name: "NIST CSF 2.0",
+      description: "NIST Cybersecurity Framework provides a policy framework of computer security guidance for how private sector organizations can assess and improve their ability to prevent, detect, and respond to cyber attacks.",
+      version: "2.0",
+      type: "Framework",
+      status: "Subscribed",
+      country: "United States",
+      industry: "All Industries",
+      isCustom: false,
+      compliancePercentage: 58.0,
+      policyPercentage: 65.0,
+      evidencePercentage: 52.0,
+    },
+    {
+      name: "ISO 27701:2019",
+      description: "ISO/IEC 27701 specifies requirements and provides guidance for establishing, implementing, maintaining and continually improving a Privacy Information Management System (PIMS) as an extension to ISO 27001.",
+      version: "2019",
+      type: "Standard",
+      status: "Subscribed",
+      country: "International",
+      industry: "All Industries",
+      isCustom: false,
+      compliancePercentage: 45.0,
+      policyPercentage: 55.0,
+      evidencePercentage: 40.0,
+    },
+    {
+      name: "NIS2 Directive",
+      description: "The Network and Information Security Directive 2 is an EU-wide legislation on cybersecurity. It provides legal measures to boost the overall level of cybersecurity in the EU.",
+      version: "2022",
+      type: "Regulation",
+      status: "Subscribed",
+      country: "European Union",
+      industry: "Critical Infrastructure",
+      isCustom: false,
+      compliancePercentage: 35.0,
+      policyPercentage: 40.0,
+      evidencePercentage: 30.0,
+    },
+    {
+      name: "CIS Controls v8",
+      description: "Center for Internet Security Controls are a prioritized set of actions that collectively form a defense-in-depth set of best practices that mitigate the most common attacks against systems and networks.",
+      version: "8.0",
+      type: "Framework",
+      status: "Not Subscribed",
+      country: "International",
+      industry: "All Industries",
+      isCustom: false,
+      compliancePercentage: 0,
+      policyPercentage: 0,
+      evidencePercentage: 0,
+    },
+    {
+      name: "COBIT 2019",
+      description: "Control Objectives for Information and Related Technologies is a framework for the governance and management of enterprise information and technology, aimed at the whole enterprise.",
+      version: "2019",
+      type: "Framework",
+      status: "Not Subscribed",
+      country: "International",
+      industry: "All Industries",
+      isCustom: false,
+      compliancePercentage: 0,
+      policyPercentage: 0,
+      evidencePercentage: 0,
+    },
+    {
+      name: "Qatar NIA",
+      description: "Qatar National Information Assurance Policy provides cybersecurity requirements and guidelines for critical national infrastructure and government entities in the State of Qatar.",
+      version: "2.0",
+      type: "Regulation",
+      status: "Subscribed",
+      country: "Qatar",
+      industry: "Government & Critical Infrastructure",
+      isCustom: false,
+      compliancePercentage: 55.0,
+      policyPercentage: 60.0,
+      evidencePercentage: 50.0,
+    },
+    {
+      name: "Custom Security Framework",
+      description: "Organization-specific security framework tailored to address unique business requirements, industry-specific threats, and regulatory obligations not covered by standard frameworks.",
+      version: "1.0",
+      type: "Framework",
+      status: "Subscribed",
+      country: "Qatar",
+      industry: "Technology",
+      isCustom: true,
+      compliancePercentage: 90.0,
+      policyPercentage: 92.0,
+      evidencePercentage: 88.0,
+    },
   ];
 
   const createdFrameworks: { [key: string]: string } = {};
   for (const framework of frameworks) {
     const created = await prisma.framework.upsert({
       where: { name: framework.name },
-      update: {},
+      update: {
+        description: framework.description,
+        version: framework.version,
+        type: framework.type,
+        status: framework.status,
+        country: framework.country,
+        industry: framework.industry,
+        isCustom: framework.isCustom,
+        compliancePercentage: framework.compliancePercentage,
+        policyPercentage: framework.policyPercentage,
+        evidencePercentage: framework.evidencePercentage,
+      },
       create: framework,
     });
     createdFrameworks[framework.name] = created.id;
   }
-  console.log("✅ Frameworks created");
+  console.log("✅ Frameworks created (12 comprehensive frameworks)");
+
+  // Create Requirement Categories (Domains/Chapters) for each framework
+  const requirementCategories = [
+    // ISO 27001:2022 Clauses
+    { framework: "ISO 27001:2022", code: "4", name: "Context of the Organization", description: "Understanding the organization and its context, needs and expectations of interested parties", sortOrder: 1 },
+    { framework: "ISO 27001:2022", code: "5", name: "Leadership", description: "Leadership and commitment, policy, organizational roles, responsibilities and authorities", sortOrder: 2 },
+    { framework: "ISO 27001:2022", code: "6", name: "Planning", description: "Actions to address risks and opportunities, information security objectives", sortOrder: 3 },
+    { framework: "ISO 27001:2022", code: "7", name: "Support", description: "Resources, competence, awareness, communication, documented information", sortOrder: 4 },
+    { framework: "ISO 27001:2022", code: "8", name: "Operation", description: "Operational planning and control, information security risk assessment and treatment", sortOrder: 5 },
+    { framework: "ISO 27001:2022", code: "9", name: "Performance Evaluation", description: "Monitoring, measurement, analysis, evaluation, internal audit, management review", sortOrder: 6 },
+    { framework: "ISO 27001:2022", code: "10", name: "Improvement", description: "Nonconformity and corrective action, continual improvement", sortOrder: 7 },
+    { framework: "ISO 27001:2022", code: "A.5", name: "Organizational Controls", description: "Policies, roles, responsibilities, segregation of duties, management responsibilities", sortOrder: 8 },
+    { framework: "ISO 27001:2022", code: "A.6", name: "People Controls", description: "Screening, terms of employment, awareness, disciplinary process", sortOrder: 9 },
+    { framework: "ISO 27001:2022", code: "A.7", name: "Physical Controls", description: "Physical security perimeters, entry controls, securing offices, equipment security", sortOrder: 10 },
+    { framework: "ISO 27001:2022", code: "A.8", name: "Technological Controls", description: "User endpoint devices, privileged access, information access, source code", sortOrder: 11 },
+
+    // SOC 2 Trust Service Criteria
+    { framework: "SOC 2 Type II", code: "CC", name: "Common Criteria", description: "Common criteria related to security that apply to all TSC", sortOrder: 1 },
+    { framework: "SOC 2 Type II", code: "A", name: "Availability", description: "The system is available for operation and use as committed or agreed", sortOrder: 2 },
+    { framework: "SOC 2 Type II", code: "PI", name: "Processing Integrity", description: "System processing is complete, valid, accurate, timely, and authorized", sortOrder: 3 },
+    { framework: "SOC 2 Type II", code: "C", name: "Confidentiality", description: "Information designated as confidential is protected as committed or agreed", sortOrder: 4 },
+    { framework: "SOC 2 Type II", code: "P", name: "Privacy", description: "Personal information is collected, used, retained, disclosed, and disposed of properly", sortOrder: 5 },
+
+    // GDPR Chapters
+    { framework: "GDPR", code: "II", name: "Principles", description: "Principles relating to processing of personal data", sortOrder: 1 },
+    { framework: "GDPR", code: "III", name: "Rights of Data Subject", description: "Transparency, access, rectification, erasure, portability", sortOrder: 2 },
+    { framework: "GDPR", code: "IV", name: "Controller and Processor", description: "Obligations of controllers and processors", sortOrder: 3 },
+    { framework: "GDPR", code: "V", name: "Transfers to Third Countries", description: "Transfers of personal data to third countries or international organisations", sortOrder: 4 },
+    { framework: "GDPR", code: "VI", name: "Supervisory Authorities", description: "Independent supervisory authorities", sortOrder: 5 },
+    { framework: "GDPR", code: "VIII", name: "Remedies and Penalties", description: "Remedies, liability and penalties", sortOrder: 6 },
+
+    // PCI DSS Requirements
+    { framework: "PCI DSS v4.0", code: "1", name: "Network Security Controls", description: "Install and maintain network security controls", sortOrder: 1 },
+    { framework: "PCI DSS v4.0", code: "2", name: "Secure Configurations", description: "Apply secure configurations to all system components", sortOrder: 2 },
+    { framework: "PCI DSS v4.0", code: "3", name: "Protect Account Data", description: "Protect stored account data", sortOrder: 3 },
+    { framework: "PCI DSS v4.0", code: "4", name: "Cryptography", description: "Protect cardholder data with strong cryptography during transmission", sortOrder: 4 },
+    { framework: "PCI DSS v4.0", code: "5", name: "Malware Protection", description: "Protect all systems and networks from malicious software", sortOrder: 5 },
+    { framework: "PCI DSS v4.0", code: "6", name: "Secure Development", description: "Develop and maintain secure systems and software", sortOrder: 6 },
+    { framework: "PCI DSS v4.0", code: "7", name: "Access Control", description: "Restrict access to system components and cardholder data", sortOrder: 7 },
+    { framework: "PCI DSS v4.0", code: "8", name: "User Identification", description: "Identify users and authenticate access", sortOrder: 8 },
+    { framework: "PCI DSS v4.0", code: "9", name: "Physical Access", description: "Restrict physical access to cardholder data", sortOrder: 9 },
+    { framework: "PCI DSS v4.0", code: "10", name: "Logging and Monitoring", description: "Log and monitor all access to system components", sortOrder: 10 },
+    { framework: "PCI DSS v4.0", code: "11", name: "Security Testing", description: "Test security of systems and networks regularly", sortOrder: 11 },
+    { framework: "PCI DSS v4.0", code: "12", name: "Information Security Policy", description: "Support information security with organizational policies", sortOrder: 12 },
+
+    // NIST CSF 2.0 Functions
+    { framework: "NIST CSF 2.0", code: "GV", name: "Govern", description: "Establish and monitor the organization's cybersecurity risk management strategy", sortOrder: 1 },
+    { framework: "NIST CSF 2.0", code: "ID", name: "Identify", description: "Understand the organization's current cybersecurity risks", sortOrder: 2 },
+    { framework: "NIST CSF 2.0", code: "PR", name: "Protect", description: "Use safeguards to prevent or reduce cybersecurity risk", sortOrder: 3 },
+    { framework: "NIST CSF 2.0", code: "DE", name: "Detect", description: "Find and analyze possible cybersecurity attacks and compromises", sortOrder: 4 },
+    { framework: "NIST CSF 2.0", code: "RS", name: "Respond", description: "Take action regarding a detected cybersecurity incident", sortOrder: 5 },
+    { framework: "NIST CSF 2.0", code: "RC", name: "Recover", description: "Restore assets and operations affected by a cybersecurity incident", sortOrder: 6 },
+
+    // HIPAA Domains
+    { framework: "HIPAA", code: "164.302", name: "Administrative Safeguards", description: "Administrative actions, policies, and procedures to manage the security program", sortOrder: 1 },
+    { framework: "HIPAA", code: "164.310", name: "Physical Safeguards", description: "Physical measures, policies, and procedures to protect systems and facilities", sortOrder: 2 },
+    { framework: "HIPAA", code: "164.312", name: "Technical Safeguards", description: "Technology and the policy and procedures for its use", sortOrder: 3 },
+    { framework: "HIPAA", code: "164.314", name: "Organizational Requirements", description: "Standards for business associate contracts and other arrangements", sortOrder: 4 },
+    { framework: "HIPAA", code: "164.316", name: "Policies and Procedures", description: "Documentation requirements for policies and procedures", sortOrder: 5 },
+  ];
+
+  const createdCategories: { [key: string]: string } = {};
+  for (const category of requirementCategories) {
+    const key = `${category.framework}-${category.code}`;
+    if (createdFrameworks[category.framework]) {
+      const created = await prisma.requirementCategory.upsert({
+        where: { id: key },
+        update: {},
+        create: {
+          id: key,
+          code: category.code,
+          name: category.name,
+          description: category.description,
+          sortOrder: category.sortOrder,
+          frameworkId: createdFrameworks[category.framework],
+        },
+      });
+      createdCategories[key] = created.id;
+    }
+  }
+  console.log("✅ Requirement Categories created (46 domains/chapters)");
+
+  // Create Requirements for each category
+  const requirements = [
+    // ISO 27001:2022 Requirements - Context
+    { category: "ISO 27001:2022-4", code: "4.1", name: "Understanding the organization and its context", description: "The organization shall determine external and internal issues relevant to its purpose", compliance: "Compliant", applicability: "Yes", implementation: "Yes" },
+    { category: "ISO 27001:2022-4", code: "4.2", name: "Understanding needs and expectations", description: "The organization shall determine interested parties and their requirements", compliance: "Compliant", applicability: "Yes", implementation: "Yes" },
+    { category: "ISO 27001:2022-4", code: "4.3", name: "Determining the scope of the ISMS", description: "The organization shall determine the boundaries and applicability of the ISMS", compliance: "Compliant", applicability: "Yes", implementation: "Yes" },
+    { category: "ISO 27001:2022-4", code: "4.4", name: "Information security management system", description: "The organization shall establish, implement, maintain and continually improve an ISMS", compliance: "Partial Compliant", applicability: "Yes", implementation: "Ongoing" },
+
+    // ISO 27001:2022 Requirements - Leadership
+    { category: "ISO 27001:2022-5", code: "5.1", name: "Leadership and commitment", description: "Top management shall demonstrate leadership and commitment to the ISMS", compliance: "Compliant", applicability: "Yes", implementation: "Yes" },
+    { category: "ISO 27001:2022-5", code: "5.2", name: "Policy", description: "Top management shall establish an information security policy", compliance: "Compliant", applicability: "Yes", implementation: "Yes" },
+    { category: "ISO 27001:2022-5", code: "5.3", name: "Organizational roles, responsibilities and authorities", description: "Top management shall ensure responsibilities and authorities are assigned", compliance: "Compliant", applicability: "Yes", implementation: "Yes" },
+
+    // ISO 27001:2022 Requirements - Planning
+    { category: "ISO 27001:2022-6", code: "6.1", name: "Actions to address risks and opportunities", description: "Plan actions to address risks and opportunities", compliance: "Partial Compliant", applicability: "Yes", implementation: "Ongoing" },
+    { category: "ISO 27001:2022-6", code: "6.2", name: "Information security objectives and planning", description: "Establish information security objectives at relevant functions and levels", compliance: "Compliant", applicability: "Yes", implementation: "Yes" },
+    { category: "ISO 27001:2022-6", code: "6.3", name: "Planning of changes", description: "Plan changes to the ISMS in a systematic manner", compliance: "Partial Compliant", applicability: "Yes", implementation: "Ongoing" },
+
+    // SOC 2 Requirements - Common Criteria
+    { category: "SOC 2 Type II-CC", code: "CC1.1", name: "COSO Principle 1", description: "The entity demonstrates a commitment to integrity and ethical values", compliance: "Compliant", applicability: "Yes", implementation: "Yes" },
+    { category: "SOC 2 Type II-CC", code: "CC1.2", name: "COSO Principle 2", description: "The board of directors demonstrates independence from management", compliance: "Compliant", applicability: "Yes", implementation: "Yes" },
+    { category: "SOC 2 Type II-CC", code: "CC2.1", name: "COSO Principle 13", description: "The entity obtains or generates and uses relevant, quality information", compliance: "Compliant", applicability: "Yes", implementation: "Yes" },
+    { category: "SOC 2 Type II-CC", code: "CC3.1", name: "COSO Principle 6", description: "The entity specifies objectives with sufficient clarity", compliance: "Partial Compliant", applicability: "Yes", implementation: "Ongoing" },
+    { category: "SOC 2 Type II-CC", code: "CC4.1", name: "COSO Principle 16", description: "The entity selects, develops, and performs ongoing evaluations", compliance: "Compliant", applicability: "Yes", implementation: "Yes" },
+    { category: "SOC 2 Type II-CC", code: "CC5.1", name: "COSO Principle 10", description: "The entity selects and develops control activities", compliance: "Compliant", applicability: "Yes", implementation: "Yes" },
+
+    // GDPR Requirements - Principles
+    { category: "GDPR-II", code: "Art.5", name: "Principles relating to processing", description: "Lawfulness, fairness, transparency, purpose limitation, data minimisation", compliance: "Compliant", applicability: "Yes", implementation: "Yes" },
+    { category: "GDPR-II", code: "Art.6", name: "Lawfulness of processing", description: "Processing shall be lawful only if at least one legal basis applies", compliance: "Compliant", applicability: "Yes", implementation: "Yes" },
+    { category: "GDPR-II", code: "Art.7", name: "Conditions for consent", description: "Controller must be able to demonstrate that consent was given", compliance: "Compliant", applicability: "Yes", implementation: "Yes" },
+
+    // GDPR Requirements - Rights of Data Subject
+    { category: "GDPR-III", code: "Art.12", name: "Transparent information", description: "Transparent information, communication and modalities for exercising rights", compliance: "Compliant", applicability: "Yes", implementation: "Yes" },
+    { category: "GDPR-III", code: "Art.13", name: "Information to be provided", description: "Information to be provided where personal data are collected", compliance: "Partial Compliant", applicability: "Yes", implementation: "Ongoing" },
+    { category: "GDPR-III", code: "Art.15", name: "Right of access", description: "The data subject shall have the right to obtain confirmation of processing", compliance: "Compliant", applicability: "Yes", implementation: "Yes" },
+    { category: "GDPR-III", code: "Art.17", name: "Right to erasure", description: "The data subject shall have the right to erasure of personal data", compliance: "Partial Compliant", applicability: "Yes", implementation: "Ongoing" },
+
+    // PCI DSS Requirements
+    { category: "PCI DSS v4.0-1", code: "1.1", name: "Network security controls defined", description: "Processes and mechanisms for installing and maintaining network security controls", compliance: "Compliant", applicability: "Yes", implementation: "Yes" },
+    { category: "PCI DSS v4.0-1", code: "1.2", name: "Network security controls configured", description: "Network security controls are configured and maintained", compliance: "Partial Compliant", applicability: "Yes", implementation: "Ongoing" },
+    { category: "PCI DSS v4.0-2", code: "2.1", name: "Secure configuration processes", description: "Processes and mechanisms for applying secure configurations", compliance: "Partial Compliant", applicability: "Yes", implementation: "Ongoing" },
+    { category: "PCI DSS v4.0-3", code: "3.1", name: "Stored account data protection", description: "Processes and mechanisms for protecting stored account data", compliance: "Non Compliant", applicability: "Yes", implementation: "No" },
+    { category: "PCI DSS v4.0-3", code: "3.2", name: "Sensitive authentication data", description: "Sensitive authentication data is not stored after authorization", compliance: "Compliant", applicability: "Yes", implementation: "Yes" },
+
+    // NIST CSF Requirements
+    { category: "NIST CSF 2.0-GV", code: "GV.OC-01", name: "Organizational Context", description: "The organizational mission is understood and informs cybersecurity risk management", compliance: "Partial Compliant", applicability: "Yes", implementation: "Ongoing" },
+    { category: "NIST CSF 2.0-GV", code: "GV.RM-01", name: "Risk Management Strategy", description: "Cybersecurity risk management objectives are established and communicated", compliance: "Partial Compliant", applicability: "Yes", implementation: "Ongoing" },
+    { category: "NIST CSF 2.0-ID", code: "ID.AM-01", name: "Asset Inventory", description: "Inventories of hardware managed by the organization are maintained", compliance: "Compliant", applicability: "Yes", implementation: "Yes" },
+    { category: "NIST CSF 2.0-ID", code: "ID.AM-02", name: "Software Inventory", description: "Inventories of software and services managed by the organization", compliance: "Partial Compliant", applicability: "Yes", implementation: "Ongoing" },
+    { category: "NIST CSF 2.0-PR", code: "PR.AA-01", name: "Access Control", description: "Identities and credentials for authorized users are managed", compliance: "Compliant", applicability: "Yes", implementation: "Yes" },
+    { category: "NIST CSF 2.0-DE", code: "DE.CM-01", name: "Continuous Monitoring", description: "Networks and network services are monitored", compliance: "Non Compliant", applicability: "Yes", implementation: "No" },
+
+    // HIPAA Requirements
+    { category: "HIPAA-164.302", code: "164.308(a)(1)", name: "Security Management Process", description: "Implement policies and procedures to prevent, detect, contain, and correct security violations", compliance: "Compliant", applicability: "Yes", implementation: "Yes" },
+    { category: "HIPAA-164.302", code: "164.308(a)(2)", name: "Assigned Security Responsibility", description: "Identify the security official responsible for the security program", compliance: "Compliant", applicability: "Yes", implementation: "Yes" },
+    { category: "HIPAA-164.302", code: "164.308(a)(3)", name: "Workforce Security", description: "Implement policies and procedures to ensure appropriate access", compliance: "Partial Compliant", applicability: "Yes", implementation: "Ongoing" },
+    { category: "HIPAA-164.310", code: "164.310(a)(1)", name: "Facility Access Controls", description: "Implement policies and procedures to limit physical access", compliance: "Compliant", applicability: "Yes", implementation: "Yes" },
+    { category: "HIPAA-164.312", code: "164.312(a)(1)", name: "Access Control", description: "Implement technical policies and procedures for electronic information systems", compliance: "Partial Compliant", applicability: "Yes", implementation: "Ongoing" },
+  ];
+
+  for (const req of requirements) {
+    const categoryId = createdCategories[req.category];
+    if (categoryId) {
+      await prisma.requirement.upsert({
+        where: { id: `${req.category}-${req.code}` },
+        update: {},
+        create: {
+          id: `${req.category}-${req.code}`,
+          code: req.code,
+          name: req.name,
+          description: req.description,
+          controlCompliance: req.compliance,
+          applicability: req.applicability,
+          implementationStatus: req.implementation,
+          categoryId: categoryId,
+          frameworkId: createdFrameworks[req.category.split("-")[0]],
+        },
+      });
+    }
+  }
+  console.log("✅ Requirements created (40 sample requirements)");
 
   // Keep Regulations for backwards compatibility
   for (const framework of frameworks.slice(0, 5)) {
@@ -223,39 +541,125 @@ async function main() {
   }
   console.log("✅ Control Domains created");
 
-  // Create Controls (sample set - in real app would have 891)
+  // Create Controls with realistic names and distribute across frameworks
   const functionalGroupings = ["Govern", "Identify", "Protect", "Detect", "Respond", "Recover"];
-  const controlStatuses = ["Non Compliant", "Compliant", "Not Applicable"];
+  const controlStatuses = ["Non Compliant", "Compliant", "Not Applicable", "Partial Compliant"];
 
-  const sampleControls = [];
+  // Realistic control definitions mapped to domains and frameworks
+  const controlDefinitions = [
+    // ISO 27001 Controls - Organizational
+    { domain: "Compliance", framework: "ISO 27001:2022", name: "Information Security Policy", description: "Policies for information security shall be defined, approved by management, published and communicated", question: "Is there a documented information security policy approved by management?", functional: "Govern" },
+    { domain: "Compliance", framework: "ISO 27001:2022", name: "Review of Information Security Policies", description: "Information security policies shall be reviewed at planned intervals", question: "Are information security policies reviewed regularly?", functional: "Govern" },
+    { domain: "Compliance", framework: "ISO 27001:2022", name: "Segregation of Duties", description: "Conflicting duties and areas of responsibility shall be segregated", question: "Are conflicting duties properly segregated?", functional: "Protect" },
+
+    // Cybersecurity Controls
+    { domain: "Cybersecurity & Data Protection Governance", framework: "ISO 27001:2022", name: "Threat Intelligence", description: "Information about security threats shall be collected and analyzed", question: "Is threat intelligence collected and analyzed?", functional: "Identify" },
+    { domain: "Cybersecurity & Data Protection Governance", framework: "NIST CSF 2.0", name: "Security Monitoring", description: "Continuous monitoring of security events and alerts", question: "Are security events monitored continuously?", functional: "Detect" },
+    { domain: "Cybersecurity & Data Protection Governance", framework: "SOC 2 Type II", name: "Data Protection Controls", description: "Technical and organizational measures to protect data", question: "Are data protection controls implemented?", functional: "Protect" },
+
+    // Risk Management Controls
+    { domain: "Risk Management", framework: "ISO 27001:2022", name: "Risk Assessment Process", description: "A risk assessment process shall be defined and applied", question: "Is there a defined risk assessment process?", functional: "Identify" },
+    { domain: "Risk Management", framework: "NIST CSF 2.0", name: "Risk Treatment Plan", description: "Risk treatment options shall be selected and a risk treatment plan formulated", question: "Is there a risk treatment plan?", functional: "Govern" },
+    { domain: "Risk Management", framework: "ISO 27001:2022", name: "Risk Acceptance Criteria", description: "Risk acceptance criteria shall be defined", question: "Are risk acceptance criteria defined?", functional: "Govern" },
+
+    // Human Resources Security
+    { domain: "Human Resources Security", framework: "ISO 27001:2022", name: "Background Verification", description: "Background verification checks on candidates shall be carried out", question: "Are background checks performed on new hires?", functional: "Protect" },
+    { domain: "Human Resources Security", framework: "HIPAA", name: "Security Awareness Training", description: "All employees shall receive appropriate awareness education and training", question: "Do all employees receive security awareness training?", functional: "Protect" },
+    { domain: "Human Resources Security", framework: "SOC 2 Type II", name: "Disciplinary Process", description: "A formal disciplinary process shall be in place for security violations", question: "Is there a disciplinary process for security violations?", functional: "Respond" },
+
+    // Asset Management
+    { domain: "Asset Management", framework: "ISO 27001:2022", name: "Asset Inventory", description: "Assets associated with information shall be identified and an inventory maintained", question: "Is there a complete asset inventory?", functional: "Identify" },
+    { domain: "Asset Management", framework: "NIST CSF 2.0", name: "Asset Classification", description: "Information shall be classified according to its sensitivity", question: "Is information properly classified?", functional: "Identify" },
+    { domain: "Asset Management", framework: "PCI DSS v4.0", name: "Media Handling", description: "Procedures for handling removable media shall be implemented", question: "Are media handling procedures in place?", functional: "Protect" },
+
+    // Incident Response
+    { domain: "Incident Response", framework: "ISO 27001:2022", name: "Incident Response Procedure", description: "Procedures for responding to security incidents shall be documented", question: "Are incident response procedures documented?", functional: "Respond" },
+    { domain: "Incident Response", framework: "NIST CSF 2.0", name: "Incident Communication", description: "Security incidents shall be communicated appropriately", question: "Is there an incident communication process?", functional: "Respond" },
+    { domain: "Incident Response", framework: "SOC 2 Type II", name: "Incident Learning", description: "Lessons learned from incidents shall be used to improve controls", question: "Are lessons learned from incidents captured?", functional: "Recover" },
+
+    // Network Security
+    { domain: "Network Security", framework: "PCI DSS v4.0", name: "Firewall Configuration", description: "Network firewalls shall be configured according to security requirements", question: "Are firewalls properly configured?", functional: "Protect" },
+    { domain: "Network Security", framework: "ISO 27001:2022", name: "Network Segmentation", description: "Networks shall be segmented appropriately", question: "Is network segmentation implemented?", functional: "Protect" },
+    { domain: "Network Security", framework: "NIST CSF 2.0", name: "Intrusion Detection", description: "Intrusion detection systems shall be deployed", question: "Are intrusion detection systems in place?", functional: "Detect" },
+
+    // Access Control
+    { domain: "Identification & Authentication", framework: "ISO 27001:2022", name: "Access Control Policy", description: "An access control policy shall be established based on business requirements", question: "Is there an access control policy?", functional: "Protect" },
+    { domain: "Identification & Authentication", framework: "PCI DSS v4.0", name: "Unique User IDs", description: "Each user shall have a unique identifier", question: "Do all users have unique IDs?", functional: "Protect" },
+    { domain: "Identification & Authentication", framework: "HIPAA", name: "Multi-Factor Authentication", description: "MFA shall be required for privileged access", question: "Is MFA implemented for privileged access?", functional: "Protect" },
+
+    // Data Privacy
+    { domain: "Data Privacy", framework: "GDPR", name: "Consent Management", description: "Consent shall be obtained and documented for personal data processing", question: "Is consent properly obtained and documented?", functional: "Govern" },
+    { domain: "Data Privacy", framework: "GDPR", name: "Data Subject Rights", description: "Procedures shall be in place to handle data subject requests", question: "Can data subject rights be fulfilled?", functional: "Protect" },
+    { domain: "Data Privacy", framework: "GDPR", name: "Privacy Impact Assessment", description: "Privacy impact assessments shall be conducted for high-risk processing", question: "Are PIAs conducted for high-risk processing?", functional: "Identify" },
+
+    // Business Continuity
+    { domain: "Business Continuity & Disaster Recovery", framework: "ISO 27001:2022", name: "Business Continuity Plan", description: "Business continuity plans shall be documented and tested", question: "Is there a documented BCP?", functional: "Recover" },
+    { domain: "Business Continuity & Disaster Recovery", framework: "SOC 2 Type II", name: "Disaster Recovery Testing", description: "Disaster recovery procedures shall be tested regularly", question: "Is DR testing performed regularly?", functional: "Recover" },
+    { domain: "Business Continuity & Disaster Recovery", framework: "NIST CSF 2.0", name: "Recovery Time Objectives", description: "Recovery time objectives shall be defined and achievable", question: "Are RTOs defined and achievable?", functional: "Recover" },
+
+    // Cryptography
+    { domain: "Cryptographic Protections", framework: "ISO 27001:2022", name: "Encryption Policy", description: "A policy on the use of cryptographic controls shall be developed", question: "Is there an encryption policy?", functional: "Protect" },
+    { domain: "Cryptographic Protections", framework: "PCI DSS v4.0", name: "Key Management", description: "Cryptographic keys shall be properly managed throughout their lifecycle", question: "Is key management properly implemented?", functional: "Protect" },
+    { domain: "Cryptographic Protections", framework: "HIPAA", name: "Data Encryption at Rest", description: "Sensitive data shall be encrypted at rest", question: "Is data encrypted at rest?", functional: "Protect" },
+
+    // Third Party Management
+    { domain: "Third-Party Management", framework: "ISO 27001:2022", name: "Supplier Security Policy", description: "Security requirements for suppliers shall be defined", question: "Are supplier security requirements defined?", functional: "Govern" },
+    { domain: "Third-Party Management", framework: "SOC 2 Type II", name: "Vendor Assessment", description: "Vendors shall be assessed for security compliance", question: "Are vendors assessed for security?", functional: "Identify" },
+    { domain: "Third-Party Management", framework: "GDPR", name: "Data Processing Agreements", description: "Data processing agreements shall be in place with processors", question: "Are DPAs in place with all processors?", functional: "Govern" },
+
+    // Physical Security
+    { domain: "Physical & Environmental Security", framework: "ISO 27001:2022", name: "Physical Entry Controls", description: "Secure areas shall be protected by entry controls", question: "Are physical entry controls in place?", functional: "Protect" },
+    { domain: "Physical & Environmental Security", framework: "PCI DSS v4.0", name: "Visitor Management", description: "Visitors shall be identified and escorted", question: "Is visitor access controlled?", functional: "Protect" },
+    { domain: "Physical & Environmental Security", framework: "ISO 27001:2022", name: "Equipment Security", description: "Equipment shall be protected from physical and environmental threats", question: "Is equipment physically secured?", functional: "Protect" },
+
+    // Vulnerability Management
+    { domain: "Vulnerability & Patch Management", framework: "ISO 27001:2022", name: "Vulnerability Scanning", description: "Technical vulnerabilities shall be identified through regular scanning", question: "Is vulnerability scanning performed regularly?", functional: "Detect" },
+    { domain: "Vulnerability & Patch Management", framework: "PCI DSS v4.0", name: "Patch Management", description: "Security patches shall be applied in a timely manner", question: "Are patches applied timely?", functional: "Protect" },
+    { domain: "Vulnerability & Patch Management", framework: "NIST CSF 2.0", name: "Penetration Testing", description: "Penetration tests shall be conducted periodically", question: "Is penetration testing performed?", functional: "Detect" },
+
+    // Change Management
+    { domain: "Change Management", framework: "ISO 27001:2022", name: "Change Control Process", description: "Changes shall be controlled through a formal change management process", question: "Is there a change control process?", functional: "Protect" },
+    { domain: "Change Management", framework: "SOC 2 Type II", name: "Change Authorization", description: "Changes shall be authorized before implementation", question: "Are changes properly authorized?", functional: "Protect" },
+    { domain: "Change Management", framework: "PCI DSS v4.0", name: "Change Testing", description: "Changes shall be tested before deployment to production", question: "Are changes tested before deployment?", functional: "Protect" },
+
+    // Continuous Monitoring
+    { domain: "Continuous Monitoring", framework: "NIST CSF 2.0", name: "Log Management", description: "Security logs shall be collected and analyzed", question: "Are security logs collected and analyzed?", functional: "Detect" },
+    { domain: "Continuous Monitoring", framework: "PCI DSS v4.0", name: "File Integrity Monitoring", description: "Critical files shall be monitored for unauthorized changes", question: "Is FIM implemented for critical files?", functional: "Detect" },
+    { domain: "Continuous Monitoring", framework: "SOC 2 Type II", name: "Security Metrics", description: "Security metrics shall be collected and reported", question: "Are security metrics tracked?", functional: "Detect" },
+
+    // Cloud Security
+    { domain: "Cloud Security", framework: "ISO 27001:2022", name: "Cloud Security Architecture", description: "Security architecture for cloud services shall be defined", question: "Is cloud security architecture documented?", functional: "Protect" },
+    { domain: "Cloud Security", framework: "SOC 2 Type II", name: "Cloud Access Control", description: "Access to cloud resources shall be controlled", question: "Is cloud access properly controlled?", functional: "Protect" },
+    { domain: "Cloud Security", framework: "NIST CSF 2.0", name: "Cloud Data Protection", description: "Data in cloud environments shall be protected", question: "Is cloud data properly protected?", functional: "Protect" },
+  ];
+
   let controlIndex = 1;
+  for (const ctrl of controlDefinitions) {
+    const frameworkId = createdFrameworks[ctrl.framework];
+    const domainId = createdDomains[ctrl.domain];
 
-  for (const domain of Object.keys(createdDomains).slice(0, 10)) {
-    for (let i = 0; i < 5; i++) {
-      sampleControls.push({
-        controlCode: `CTRL-${String(controlIndex).padStart(4, "0")}`,
-        name: `${domain} Control ${i + 1}`,
-        description: `Control for ensuring ${domain.toLowerCase()} compliance`,
-        controlQuestion: `Is ${domain.toLowerCase()} properly implemented?`,
-        functionalGrouping: functionalGroupings[controlIndex % 6],
-        status: controlStatuses[controlIndex % 3],
-        domainId: createdDomains[domain],
-        frameworkId: createdFrameworks["ISO 27001-2022"],
-        departmentId: createdDepts[departments[controlIndex % departments.length]],
-        ownerId: createdUsers["john.doe"],
+    if (frameworkId && domainId) {
+      await prisma.control.upsert({
+        where: { controlCode: `CTRL-${String(controlIndex).padStart(4, "0")}` },
+        update: {},
+        create: {
+          controlCode: `CTRL-${String(controlIndex).padStart(4, "0")}`,
+          name: ctrl.name,
+          description: ctrl.description,
+          controlQuestion: ctrl.question,
+          functionalGrouping: ctrl.functional,
+          status: controlStatuses[controlIndex % 4],
+          domainId: domainId,
+          frameworkId: frameworkId,
+          departmentId: createdDepts[departments[controlIndex % departments.length]],
+          ownerId: createdUsers["john.doe"],
+          scope: controlIndex % 3 === 0 ? "Not In-Scope" : "In-Scope",
+        },
       });
       controlIndex++;
     }
   }
-
-  for (const control of sampleControls) {
-    await prisma.control.upsert({
-      where: { controlCode: control.controlCode },
-      update: {},
-      create: control,
-    });
-  }
-  console.log("✅ Controls created (50 sample controls)");
+  console.log(`✅ Controls created (${controlIndex - 1} realistic controls across multiple frameworks)`);
 
   // Create Processes
   const processes = [
@@ -296,9 +700,14 @@ async function main() {
     { name: "Business Continuity Plan", documentType: "Policy", department: "Operations", status: "Published" },
   ];
 
+  let policyIdx = 1;
   for (const policy of policies) {
-    await prisma.policy.create({
-      data: {
+    const code = `POL-${String(policyIdx++).padStart(3, "0")}`;
+    await prisma.policy.upsert({
+      where: { code },
+      update: {},
+      create: {
+        code,
         name: policy.name,
         documentType: policy.documentType,
         departmentId: createdDepts[policy.department],
@@ -309,46 +718,61 @@ async function main() {
   }
   console.log("✅ Policies created");
 
-  // Create Evidence Requests
+  // Create Evidence Requests linked to multiple frameworks
   const evidences = [
-    { name: "Access Control Logs", framework: "ISO 27001-2022", department: "IT Operations", status: "Pending", dueDate: "2025-01-15" },
-    { name: "Security Training Records", framework: "ISO 27001-2022", department: "Human Resources", status: "Submitted", dueDate: "2025-01-10" },
-    { name: "Firewall Configuration", framework: "PCI DSS", department: "IT Operations", status: "Approved", dueDate: "2025-01-05" },
-    { name: "Data Processing Agreement", framework: "GDPR", department: "Compliance", status: "Pending", dueDate: "2025-01-20" },
-    { name: "Vulnerability Scan Report", framework: "ISO 27001-2022", department: "IT Operations", status: "Overdue", dueDate: "2024-12-15" },
-    { name: "Backup Verification", framework: "ISO 27001-2022", department: "IT Operations", status: "Pending", dueDate: "2025-02-01" },
-    { name: "Risk Assessment Report", framework: "ISO 27001-2022", department: "Risk Management", status: "Submitted", dueDate: "2025-01-25" },
-    { name: "Incident Response Test", framework: "NIS Directive", department: "IT Operations", status: "Pending", dueDate: "2025-02-15" },
+    { name: "Access Control Logs", framework: "ISO 27001:2022", department: "IT Operations", status: "Pending", dueDate: "2025-01-15", description: "Monthly access control logs showing user authentication and authorization events" },
+    { name: "Security Training Records", framework: "ISO 27001:2022", department: "Human Resources", status: "Submitted", dueDate: "2025-01-10", description: "Employee security awareness training completion certificates and attendance records" },
+    { name: "Firewall Configuration", framework: "PCI DSS v4.0", department: "IT Operations", status: "Approved", dueDate: "2025-01-05", description: "Current firewall ruleset configuration and change history documentation" },
+    { name: "Data Processing Agreement", framework: "GDPR", department: "Compliance", status: "Pending", dueDate: "2025-01-20", description: "Signed data processing agreements with all third-party processors" },
+    { name: "Vulnerability Scan Report", framework: "ISO 27001:2022", department: "IT Operations", status: "Overdue", dueDate: "2024-12-15", description: "Quarterly vulnerability scan results with remediation status" },
+    { name: "Backup Verification", framework: "ISO 27001:2022", department: "IT Operations", status: "Pending", dueDate: "2025-02-01", description: "Backup restoration test results and verification logs" },
+    { name: "Risk Assessment Report", framework: "NIST CSF 2.0", department: "Risk Management", status: "Submitted", dueDate: "2025-01-25", description: "Annual information security risk assessment with treatment plans" },
+    { name: "Incident Response Test", framework: "NIS2 Directive", department: "IT Operations", status: "Pending", dueDate: "2025-02-15", description: "Results from tabletop exercise or incident response drill" },
+    { name: "SOC 2 Audit Report", framework: "SOC 2 Type II", department: "Compliance", status: "Approved", dueDate: "2025-01-30", description: "Type II SOC 2 audit report from external auditor" },
+    { name: "Privacy Impact Assessment", framework: "GDPR", department: "Compliance", status: "Submitted", dueDate: "2025-02-10", description: "DPIA for new customer data processing activities" },
+    { name: "Penetration Test Report", framework: "PCI DSS v4.0", department: "IT Operations", status: "Pending", dueDate: "2025-03-01", description: "External and internal penetration test findings and remediation" },
+    { name: "Business Continuity Plan", framework: "ISO 27001:2022", department: "Operations", status: "Approved", dueDate: "2025-01-20", description: "Updated BCP documentation with recovery procedures" },
+    { name: "Encryption Key Inventory", framework: "PCI DSS v4.0", department: "IT Operations", status: "Pending", dueDate: "2025-02-20", description: "Inventory of cryptographic keys with rotation schedule" },
+    { name: "HIPAA Training Certificates", framework: "HIPAA", department: "Human Resources", status: "Submitted", dueDate: "2025-01-15", description: "HIPAA privacy and security training completion records" },
+    { name: "Vendor Security Assessments", framework: "SOC 2 Type II", department: "Procurement", status: "Pending", dueDate: "2025-02-28", description: "Security questionnaires and assessments for critical vendors" },
   ];
 
+  let evidenceIdx = 1;
   for (const evidence of evidences) {
-    await prisma.evidence.create({
-      data: {
-        name: evidence.name,
-        frameworkId: createdFrameworks[evidence.framework],
-        departmentId: createdDepts[evidence.department],
-        assigneeId: createdUsers["john.doe"],
-        status: evidence.status,
-        dueDate: new Date(evidence.dueDate),
-      },
-    });
+    const frameworkId = createdFrameworks[evidence.framework];
+    if (frameworkId) {
+      await prisma.evidence.create({
+        data: {
+          evidenceCode: `EVD-${String(evidenceIdx++).padStart(3, "0")}`,
+          name: evidence.name,
+          description: evidence.description,
+          frameworkId: frameworkId,
+          departmentId: createdDepts[evidence.department],
+          assigneeId: createdUsers["john.doe"],
+          status: evidence.status,
+          dueDate: new Date(evidence.dueDate),
+        },
+      });
+    }
   }
-  console.log("✅ Evidence requests created");
+  console.log("✅ Evidence requests created (15 evidence items)");
 
   // Create Exceptions
   const exceptions = [
-    { title: "Legacy System Exception", exceptionType: "Control", department: "IT Operations", status: "Approved", startDate: "2025-01-01", endDate: "2025-06-30" },
-    { title: "Vendor Compliance Gap", exceptionType: "Compliance", department: "Procurement", status: "Pending", startDate: "2025-01-15", endDate: "2025-03-15" },
-    { title: "Password Policy Exception", exceptionType: "Policy", department: "IT Operations", status: "Authorized", startDate: "2025-02-01", endDate: "2025-04-01" },
-    { title: "Data Retention Exception", exceptionType: "Policy", department: "Compliance", status: "Pending", startDate: "2025-01-10", endDate: "2025-07-10" },
-    { title: "Access Control Override", exceptionType: "Control", department: "IT Operations", status: "Closed", startDate: "2024-10-01", endDate: "2024-12-31" },
+    { name: "Legacy System Exception", category: "Control", department: "IT Operations", status: "Approved", startDate: "2025-01-01", endDate: "2025-06-30" },
+    { name: "Vendor Compliance Gap", category: "Compliance", department: "Procurement", status: "Pending", startDate: "2025-01-15", endDate: "2025-03-15" },
+    { name: "Password Policy Exception", category: "Policy", department: "IT Operations", status: "Authorised", startDate: "2025-02-01", endDate: "2025-04-01" },
+    { name: "Data Retention Exception", category: "Policy", department: "Compliance", status: "Pending", startDate: "2025-01-10", endDate: "2025-07-10" },
+    { name: "Access Control Override", category: "Control", department: "IT Operations", status: "Closed", startDate: "2024-10-01", endDate: "2024-12-31" },
   ];
 
+  let exceptionIdx = 1;
   for (const exception of exceptions) {
     await prisma.exception.create({
       data: {
-        title: exception.title,
-        exceptionType: exception.exceptionType,
+        exceptionCode: `EXC-${String(exceptionIdx++).padStart(3, "0")}`,
+        name: exception.name,
+        category: exception.category,
         departmentId: createdDepts[exception.department],
         status: exception.status,
         startDate: new Date(exception.startDate),
@@ -357,6 +781,126 @@ async function main() {
     });
   }
   console.log("✅ Exceptions created");
+
+  // Create KPIs for KPI Dashboard
+  const kpis = [
+    { code: "KPI-001", objective: "Security Training Completion Rate", description: "Percentage of employees completing mandatory security awareness training", dataSource: "LMS Training Platform", calculationFormula: "(Completed Trainings / Total Employees) × 100", expectedScore: 95, actualScore: 87, department: "Human Resources", status: "Achieved", reviewDate: "2025-02-15" },
+    { code: "KPI-002", objective: "Vulnerability Remediation Time", description: "Average time to remediate critical vulnerabilities in days", dataSource: "Vulnerability Scanner Reports", calculationFormula: "Sum of Remediation Days / Total Vulnerabilities", expectedScore: 7, actualScore: 12, department: "IT Operations", status: "Missed", reviewDate: "2025-01-30" },
+    { code: "KPI-003", objective: "Incident Response Time", description: "Average time to respond to security incidents in hours", dataSource: "SIEM / Ticketing System", calculationFormula: "Average(First Response Time - Incident Report Time)", expectedScore: 4, actualScore: 3.5, department: "IT Operations", status: "Achieved", reviewDate: "2025-02-01" },
+    { code: "KPI-004", objective: "Policy Compliance Rate", description: "Percentage of departments compliant with security policies", dataSource: "Policy Management System", calculationFormula: "(Compliant Departments / Total Departments) × 100", expectedScore: 100, actualScore: 85, department: "Compliance", status: "Overdue", reviewDate: "2025-01-15" },
+    { code: "KPI-005", objective: "Access Review Completion", description: "Percentage of user access reviews completed on time", dataSource: "IAM System", calculationFormula: "(Completed Reviews / Scheduled Reviews) × 100", expectedScore: 100, actualScore: 92, department: "IT Operations", status: "Achieved", reviewDate: "2025-02-28" },
+    { code: "KPI-006", objective: "Backup Success Rate", description: "Percentage of successful backup operations", dataSource: "Backup Management Console", calculationFormula: "(Successful Backups / Total Backup Jobs) × 100", expectedScore: 99.9, actualScore: 99.5, department: "IT Operations", status: "Achieved", reviewDate: "2025-02-10" },
+    { code: "KPI-007", objective: "Risk Assessment Coverage", description: "Percentage of critical assets with completed risk assessments", dataSource: "GRC Platform - Risk Module", calculationFormula: "(Assessed Critical Assets / Total Critical Assets) × 100", expectedScore: 100, actualScore: 78, department: "Risk Management", status: "Missed", reviewDate: "2025-01-20" },
+    { code: "KPI-008", objective: "Vendor Security Assessment", description: "Percentage of critical vendors with security assessments", dataSource: "Vendor Management System", calculationFormula: "(Assessed Vendors / Total Critical Vendors) × 100", expectedScore: 100, actualScore: null, department: "Procurement", status: "Scheduled", reviewDate: "2025-03-15" },
+    { code: "KPI-009", objective: "Data Classification Compliance", description: "Percentage of data assets properly classified", dataSource: "Data Discovery Tool", calculationFormula: "(Classified Assets / Total Data Assets) × 100", expectedScore: 95, actualScore: 72, department: "Compliance", status: "Overdue", reviewDate: "2025-01-10" },
+    { code: "KPI-010", objective: "Penetration Test Findings Closure", description: "Percentage of critical pen test findings remediated", dataSource: "Penetration Test Reports", calculationFormula: "(Closed Findings / Total Critical Findings) × 100", expectedScore: 100, actualScore: 88, department: "IT Operations", status: "Missed", reviewDate: "2025-02-05" },
+    { code: "KPI-011", objective: "System Uptime", description: "Percentage of system availability for critical systems", dataSource: "Infrastructure Monitoring Tool", calculationFormula: "((Total Time - Downtime) / Total Time) × 100", expectedScore: 99.9, actualScore: 99.95, department: "IT Operations", status: "Achieved", reviewDate: "2025-02-20" },
+    { code: "KPI-012", objective: "Audit Finding Resolution", description: "Percentage of audit findings resolved within SLA", dataSource: "Audit Management System", calculationFormula: "(On-Time Resolutions / Total Findings) × 100", expectedScore: 100, actualScore: null, department: "Internal Audit", status: "Scheduled", reviewDate: "2025-03-01" },
+    { code: "KPI-013", objective: "Password Policy Compliance", description: "Percentage of users compliant with password policy", dataSource: "Active Directory / IAM", calculationFormula: "(Compliant Users / Total Users) × 100", expectedScore: 100, actualScore: 94, department: "IT Operations", status: "Achieved", reviewDate: "2025-01-25" },
+    { code: "KPI-014", objective: "Change Success Rate", description: "Percentage of changes implemented without incidents", dataSource: "Change Management System", calculationFormula: "(Successful Changes / Total Changes) × 100", expectedScore: 98, actualScore: 96, department: "IT Operations", status: "Achieved", reviewDate: "2025-02-12" },
+    { code: "KPI-015", objective: "BCP/DR Test Completion", description: "Percentage of business continuity tests completed on schedule", dataSource: "BCP Management Tool", calculationFormula: "(Completed Tests / Scheduled Tests) × 100", expectedScore: 100, actualScore: 67, department: "Operations", status: "Overdue", reviewDate: "2025-01-05" },
+    { code: "KPI-016", objective: "Third-Party Risk Reviews", description: "Number of third-party risk assessments completed quarterly", dataSource: "Third-Party Risk Platform", calculationFormula: "Count of Completed Assessments", expectedScore: 25, actualScore: null, department: "Procurement", status: "Scheduled", reviewDate: "2025-03-31" },
+    { code: "KPI-017", objective: "Security Awareness Score", description: "Average phishing simulation success rate", dataSource: "Phishing Simulation Platform", calculationFormula: "(Users Who Didn't Click / Total Users) × 100", expectedScore: 90, actualScore: 82, department: "Human Resources", status: "Missed", reviewDate: "2025-02-08" },
+    { code: "KPI-018", objective: "Encryption Coverage", description: "Percentage of sensitive data encrypted at rest", dataSource: "Data Loss Prevention System", calculationFormula: "(Encrypted Data Volume / Total Sensitive Data) × 100", expectedScore: 100, actualScore: 98, department: "IT Operations", status: "Achieved", reviewDate: "2025-01-28" },
+  ];
+
+  for (const kpi of kpis) {
+    await prisma.kPI.upsert({
+      where: { code: kpi.code },
+      update: {},
+      create: {
+        code: kpi.code,
+        objective: kpi.objective,
+        description: kpi.description,
+        dataSource: kpi.dataSource,
+        calculationFormula: kpi.calculationFormula,
+        expectedScore: kpi.expectedScore,
+        actualScore: kpi.actualScore,
+        status: kpi.status,
+        reviewDate: new Date(kpi.reviewDate),
+        departmentId: createdDepts[kpi.department],
+      },
+    });
+  }
+  console.log("✅ KPIs created (18 KPI items)");
+
+  // Create KPI Reviews and Action Plans
+  const allKPIs = await prisma.kPI.findMany();
+
+  for (const kpi of allKPIs) {
+    // Add reviews for each KPI based on status
+    const reviewsData = [];
+
+    if (kpi.status === "Achieved") {
+      reviewsData.push(
+        { reviewDate: "2025-01-15", actualScore: kpi.actualScore, status: "Achieved", documentName: "Q1_Report.pdf", documentPath: "/documents/Q1_Report.pdf" },
+        { reviewDate: "2024-12-15", actualScore: (kpi.actualScore || 0) * 0.95, status: "Achieved", documentName: null, documentPath: null },
+        { reviewDate: "2024-11-15", actualScore: (kpi.actualScore || 0) * 0.92, status: "Achieved", documentName: "Nov_Evidence.xlsx", documentPath: "/documents/Nov_Evidence.xlsx" },
+      );
+    } else if (kpi.status === "Missed") {
+      reviewsData.push(
+        { reviewDate: "2025-01-15", actualScore: kpi.actualScore, status: "Missed", documentName: null, documentPath: null },
+        { reviewDate: "2024-12-15", actualScore: (kpi.expectedScore || 0) * 0.85, status: "Missed", documentName: "Dec_Report.pdf", documentPath: "/documents/Dec_Report.pdf" },
+        { reviewDate: "2024-11-15", actualScore: (kpi.expectedScore || 0) * 0.9, status: "Achieved", documentName: null, documentPath: null },
+      );
+    } else if (kpi.status === "Overdue") {
+      reviewsData.push(
+        { reviewDate: "2025-01-05", actualScore: kpi.actualScore, status: "Overdue", documentName: null, documentPath: null },
+        { reviewDate: "2024-12-05", actualScore: (kpi.expectedScore || 0) * 0.75, status: "Missed", documentName: "Overdue_Notice.pdf", documentPath: "/documents/Overdue_Notice.pdf" },
+      );
+    } else if (kpi.status === "Scheduled") {
+      reviewsData.push(
+        { reviewDate: "2025-02-15", actualScore: null, status: "Scheduled", documentName: null, documentPath: null },
+        { reviewDate: "2024-11-15", actualScore: (kpi.expectedScore || 0) * 0.88, status: "Achieved", documentName: "Previous_Review.pdf", documentPath: "/documents/Previous_Review.pdf" },
+      );
+    }
+
+    for (const reviewData of reviewsData) {
+      const review = await prisma.kPIReview.create({
+        data: {
+          kpiId: kpi.id,
+          reviewDate: new Date(reviewData.reviewDate),
+          actualScore: reviewData.actualScore,
+          status: reviewData.status,
+          documentName: reviewData.documentName,
+          documentPath: reviewData.documentPath,
+        },
+      });
+
+      // Add action plans for Missed reviews
+      if (reviewData.status === "Missed") {
+        await prisma.kPIActionPlan.createMany({
+          data: [
+            {
+              kpiReviewId: review.id,
+              plannedAction: "Conduct root cause analysis",
+              description: "Investigate the underlying reasons for missing the KPI target",
+              percentageCompleted: 75,
+              startDate: new Date("2025-01-20"),
+              status: "In-Progress",
+            },
+            {
+              kpiReviewId: review.id,
+              plannedAction: "Implement corrective measures",
+              description: "Deploy fixes and improvements based on root cause analysis",
+              percentageCompleted: 30,
+              startDate: new Date("2025-02-01"),
+              status: "In-Progress",
+            },
+            {
+              kpiReviewId: review.id,
+              plannedAction: "Schedule follow-up review",
+              description: "Plan a review meeting to assess progress",
+              percentageCompleted: 0,
+              startDate: new Date("2025-02-15"),
+              status: "Open",
+            },
+          ],
+        });
+      }
+    }
+  }
+  console.log("✅ KPI Reviews and Action Plans created");
 
   // ==================== ASSET MANAGEMENT MODULE ====================
 
@@ -1218,6 +1762,182 @@ async function main() {
   }
 
   console.log("✅ Audit Logs created with comprehensive data");
+
+  // ==================== LINK CONTROLS TO RISKS ====================
+
+  // Fetch all controls and risks to link them
+  const allControls = await prisma.control.findMany({ take: 20 });
+  const allRisks = await prisma.risk.findMany();
+
+  // Create Control-Risk linkages for better Risk Compliance Matrix visualization
+  const controlRiskLinks = [
+    // RSK-001: Data Breach Risk - link to security-related controls
+    { riskId: "RSK-001", controlIndices: [0, 1, 4, 5, 18, 19] },
+    // RSK-002: Regulatory Non-Compliance - link to compliance controls
+    { riskId: "RSK-002", controlIndices: [0, 1, 2, 6, 7] },
+    // RSK-003: Vendor Dependency - link to third-party controls
+    { riskId: "RSK-003", controlIndices: [14, 15] },
+    // RSK-004: Market Competition - link to strategic controls
+    { riskId: "RSK-004", controlIndices: [6, 7] },
+    // RSK-005: Talent Retention - link to HR controls
+    { riskId: "RSK-005", controlIndices: [9, 10, 11] },
+    // RSK-006: System Failure - link to IT controls
+    { riskId: "RSK-006", controlIndices: [12, 13, 16, 17] },
+    // RSK-007: Financial Loss - link to financial controls
+    { riskId: "RSK-007", controlIndices: [6, 7, 8] },
+    // RSK-008: Reputation Damage - link to communication controls
+    { riskId: "RSK-008", controlIndices: [3, 4, 15, 16] },
+    // RSK-009: Supply Chain Disruption - link to vendor controls
+    { riskId: "RSK-009", controlIndices: [14, 15] },
+    // RSK-010: Insider Threat - link to access controls
+    { riskId: "RSK-010", controlIndices: [9, 10, 11, 18, 19] },
+  ];
+
+  for (const link of controlRiskLinks) {
+    const risk = allRisks.find(r => r.riskId === link.riskId);
+    if (risk) {
+      for (const idx of link.controlIndices) {
+        if (allControls[idx]) {
+          await prisma.controlRisk.upsert({
+            where: {
+              controlId_riskId: {
+                controlId: allControls[idx].id,
+                riskId: risk.id,
+              },
+            },
+            update: {},
+            create: {
+              controlId: allControls[idx].id,
+              riskId: risk.id,
+            },
+          });
+        }
+      }
+    }
+  }
+  console.log("✅ Control-Risk links created for Risk Compliance Matrix");
+
+  // ==================== ARTIFACTS ====================
+
+  // Create Artifacts for Evidence Management
+  const artifacts = [
+    {
+      artifactCode: "ART-001",
+      name: "Access Control Logs Q4 2024",
+      fileName: "access_control_logs_q4_2024.pdf",
+      fileType: "pdf",
+      fileSize: 2048576,
+      filePath: "/uploads/artifacts/access_control_logs_q4_2024.pdf",
+      uploadedBy: "john.doe",
+      aiReviewStatus: "Reviewed",
+      aiReviewScore: 92.5,
+      aiReviewNotes: "Document meets all compliance requirements. Well-structured access logs with proper timestamps and user identifiers."
+    },
+    {
+      artifactCode: "ART-002",
+      name: "Security Training Completion Report",
+      fileName: "security_training_report_2024.xlsx",
+      fileType: "xlsx",
+      fileSize: 524288,
+      filePath: "/uploads/artifacts/security_training_report_2024.xlsx",
+      uploadedBy: "emily.brown",
+      aiReviewStatus: "Reviewed",
+      aiReviewScore: 88.0,
+      aiReviewNotes: "Training records are comprehensive. Minor recommendation: Include refresher training dates."
+    },
+    {
+      artifactCode: "ART-003",
+      name: "Firewall Configuration Export",
+      fileName: "firewall_config_jan2025.txt",
+      fileType: "txt",
+      fileSize: 102400,
+      filePath: "/uploads/artifacts/firewall_config_jan2025.txt",
+      uploadedBy: "david.jones",
+      aiReviewStatus: "Pending",
+      aiReviewScore: null,
+      aiReviewNotes: null
+    },
+    {
+      artifactCode: "ART-004",
+      name: "Vulnerability Scan Report",
+      fileName: "vulnerability_scan_dec2024.pdf",
+      fileType: "pdf",
+      fileSize: 4194304,
+      filePath: "/uploads/artifacts/vulnerability_scan_dec2024.pdf",
+      uploadedBy: "mike.wilson",
+      aiReviewStatus: "Reviewed",
+      aiReviewScore: 75.5,
+      aiReviewNotes: "Report shows 3 critical vulnerabilities pending remediation. Recommend prioritizing patch deployment."
+    },
+    {
+      artifactCode: "ART-005",
+      name: "Data Processing Agreement - Vendor A",
+      fileName: "dpa_vendor_a_2025.docx",
+      fileType: "docx",
+      fileSize: 358400,
+      filePath: "/uploads/artifacts/dpa_vendor_a_2025.docx",
+      uploadedBy: "john.doe",
+      aiReviewStatus: "Reviewed",
+      aiReviewScore: 95.0,
+      aiReviewNotes: "Agreement meets GDPR requirements. All mandatory clauses present."
+    },
+    {
+      artifactCode: "ART-006",
+      name: "Backup Verification Log",
+      fileName: "backup_verification_jan2025.csv",
+      fileType: "csv",
+      fileSize: 81920,
+      filePath: "/uploads/artifacts/backup_verification_jan2025.csv",
+      uploadedBy: "david.jones",
+      aiReviewStatus: "Pending",
+      aiReviewScore: null,
+      aiReviewNotes: null
+    },
+    {
+      artifactCode: "ART-007",
+      name: "Risk Assessment Summary",
+      fileName: "risk_assessment_q4_2024.pdf",
+      fileType: "pdf",
+      fileSize: 1536000,
+      filePath: "/uploads/artifacts/risk_assessment_q4_2024.pdf",
+      uploadedBy: "mike.wilson",
+      aiReviewStatus: "Reviewed",
+      aiReviewScore: 89.0,
+      aiReviewNotes: "Comprehensive risk assessment covering all critical assets. Treatment plans well documented."
+    },
+    {
+      artifactCode: "ART-008",
+      name: "Incident Response Drill Report",
+      fileName: "ir_drill_report_dec2024.pdf",
+      fileType: "pdf",
+      fileSize: 2097152,
+      filePath: "/uploads/artifacts/ir_drill_report_dec2024.pdf",
+      uploadedBy: "sarah.smith",
+      aiReviewStatus: "Reviewed",
+      aiReviewScore: 82.0,
+      aiReviewNotes: "Drill completed successfully. Response time within acceptable limits. Some communication gaps noted."
+    },
+  ];
+
+  for (const artifact of artifacts) {
+    await prisma.artifact.upsert({
+      where: { artifactCode: artifact.artifactCode },
+      update: {},
+      create: {
+        artifactCode: artifact.artifactCode,
+        name: artifact.name,
+        fileName: artifact.fileName,
+        fileType: artifact.fileType,
+        fileSize: artifact.fileSize,
+        filePath: artifact.filePath,
+        uploadedById: createdUsers[artifact.uploadedBy],
+        aiReviewStatus: artifact.aiReviewStatus,
+        aiReviewScore: artifact.aiReviewScore,
+        aiReviewNotes: artifact.aiReviewNotes,
+      },
+    });
+  }
+  console.log("✅ Artifacts created");
 
   console.log("🎉 Database seeded successfully with all modules!");
 }

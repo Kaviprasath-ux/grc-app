@@ -21,9 +21,12 @@ interface HeaderProps {
 }
 
 export function Header({ onMenuClick }: HeaderProps) {
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const [currentTime, setCurrentTime] = useState<Date | null>(null);
 
   useEffect(() => {
+    // Set initial time on client mount to avoid hydration mismatch
+    setCurrentTime(new Date());
+
     const timer = setInterval(() => {
       setCurrentTime(new Date());
     }, 1000);
@@ -59,12 +62,12 @@ export function Header({ onMenuClick }: HeaderProps) {
           <div className="flex items-center gap-2 text-gray-500">
             <Calendar className="h-4 w-4" />
             <span>Date :</span>
-            <span className="text-gray-700">{format(currentTime, "dd/MM/yyyy")}</span>
+            <span className="text-gray-700">{currentTime ? format(currentTime, "dd/MM/yyyy") : "--/--/----"}</span>
           </div>
           <div className="flex items-center gap-2 text-gray-500">
             <Clock className="h-4 w-4" />
             <span>Time :</span>
-            <span className="text-gray-700">{format(currentTime, "h:mm a")}</span>
+            <span className="text-gray-700">{currentTime ? format(currentTime, "h:mm a") : "--:-- --"}</span>
           </div>
         </div>
       </div>

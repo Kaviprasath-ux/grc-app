@@ -11,13 +11,14 @@ interface DonutChartData {
 }
 
 interface DonutChartProps {
-  title: string;
+  title?: string;
   data: DonutChartData[];
   centerLabel?: string | number;
+  centerSubLabel?: string;
   className?: string;
 }
 
-export function DonutChart({ title, data, centerLabel, className }: DonutChartProps) {
+export function DonutChart({ title, data, centerLabel, centerSubLabel, className }: DonutChartProps) {
   const total = data.reduce((sum, item) => sum + item.value, 0);
 
   return (
@@ -65,10 +66,14 @@ export function DonutChart({ title, data, centerLabel, className }: DonutChartPr
               />
             </PieChart>
           </ResponsiveContainer>
-          {centerLabel !== undefined && (
+          {(centerLabel !== undefined || centerSubLabel) && (
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <span className="text-xs text-muted-foreground">Total</span>
-              <span className="text-2xl font-bold text-grc-text">{centerLabel}</span>
+              {centerLabel !== undefined && (
+                <span className="text-2xl font-bold text-grc-text">{centerLabel}</span>
+              )}
+              {centerSubLabel && (
+                <span className="text-xs text-muted-foreground">{centerSubLabel}</span>
+              )}
             </div>
           )}
         </div>
