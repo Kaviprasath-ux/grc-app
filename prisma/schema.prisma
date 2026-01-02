@@ -46,6 +46,7 @@ model Department {
   audits       Audit[]
   evidences    Evidence[]
   exceptions   Exception[]
+  risks        Risk[]
 }
 
 // Users
@@ -76,6 +77,7 @@ model User {
   custodianAssets  Asset[]      @relation("AssetCustodian")
   assignedEvidences Evidence[]  @relation("EvidenceAssignee")
   auditor          Audit[]      @relation("Auditor")
+  ownedRisks       Risk[]       @relation("RiskOwner")
 }
 
 // Stakeholders
