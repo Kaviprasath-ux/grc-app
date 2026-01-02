@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { DonutChart } from "@/components/charts";
+import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import {
   Collapsible,
   CollapsibleContent,
@@ -52,7 +52,7 @@ interface PlannedControl {
   id: string;
   controlId: string;
   name: string;
-  description: string;
+  description: string | null;
   domain?: string;
   functionalGrouping?: string;
 }
@@ -249,28 +249,51 @@ export default function RiskViewPage() {
             <CardTitle className="text-base text-primary font-semibold">Risk Treatment</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col items-center justify-center h-48">
-              <div className="w-40 h-40">
-                <DonutChart
-                  data={[
-                    { name: "Completed", value: 0, color: "#6B7280" },
-                    { name: "Total", value: 100, color: "#E5E7EB" },
-                  ]}
-                  centerLabel="100%"
-                  showLegend={false}
-                />
-              </div>
-              <div className="flex items-center gap-6 mt-4 text-xs">
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 bg-gray-500"></div>
-                  <span>Completed</span>
+            <Card className="border shadow-sm">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Task Progress</CardTitle>
+              </CardHeader>
+              <CardContent className="pb-4">
+                <div className="flex items-center gap-4">
+                  <div className="relative w-32 h-32">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={[
+                            { name: "Completed", value: 0 },
+                            { name: "Remaining", value: 100 },
+                          ]}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={35}
+                          outerRadius={50}
+                          dataKey="value"
+                          startAngle={90}
+                          endAngle={-270}
+                        >
+                          <Cell fill="#3B82F6" />
+                          <Cell fill="#E5E7EB" />
+                        </Pie>
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <span className="text-xs text-muted-foreground">Total</span>
+                      <span className="text-lg font-bold">100%</span>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-2 text-xs">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-blue-500 rounded-sm"></div>
+                      <span>Completed</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-gray-200 rounded-sm"></div>
+                      <span>Total</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 bg-gray-200"></div>
-                  <span>Total</span>
-                </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           </CardContent>
         </Card>
 

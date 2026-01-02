@@ -88,6 +88,7 @@ export async function PUT(
       targetLikelihood,
       targetImpact,
       status,
+      assessmentStatus,
       responseStrategy,
       treatmentPlan,
       treatmentDueDate,
@@ -96,6 +97,8 @@ export async function PUT(
       threats,
       vulnerabilities,
       causes,
+      riskRating,
+      lastAssessmentDate,
     } = body;
 
     // Check if risk exists
@@ -108,7 +111,7 @@ export async function PUT(
     const newLikelihood = likelihood ?? existingRisk.likelihood;
     const newImpact = impact ?? existingRisk.impact;
     const riskScore = newLikelihood * newImpact;
-    const riskRating = calculateRiskRating(riskScore);
+    const calculatedRiskRating = calculateRiskRating(riskScore);
 
     // Build update data
     const updateData: Record<string, unknown> = {
@@ -121,8 +124,9 @@ export async function PUT(
       likelihood: newLikelihood,
       impact: newImpact,
       riskScore,
-      riskRating,
+      riskRating: riskRating || calculatedRiskRating,
       status,
+      assessmentStatus,
       responseStrategy,
       treatmentPlan,
       treatmentStatus,
@@ -134,6 +138,9 @@ export async function PUT(
     }
     if (nextReviewDate !== undefined) {
       updateData.nextReviewDate = nextReviewDate ? new Date(nextReviewDate) : null;
+    }
+    if (lastAssessmentDate !== undefined) {
+      updateData.lastAssessmentDate = lastAssessmentDate ? new Date(lastAssessmentDate) : null;
     }
 
     // Handle inherent scores
@@ -275,6 +282,11 @@ export async function PATCH(
 
     if (body.status !== undefined) {
       updateData.status = body.status;
+      // Also update assessmentStatus to keep them in sync
+      updateData.assessmentStatus = body.status;
+    }
+    if (body.assessmentStatus !== undefined) {
+      updateData.assessmentStatus = body.assessmentStatus;
     }
     if (body.responseStrategy !== undefined) {
       updateData.responseStrategy = body.responseStrategy;

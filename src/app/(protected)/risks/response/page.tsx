@@ -13,6 +13,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
 
@@ -78,9 +87,14 @@ export default function RiskResponsePage() {
   const [risks, setRisks] = useState<Risk[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Filters
+  // Filters - Default to first option (no "all" option per source system)
   const [strategyFilter, setStrategyFilter] = useState("Treat");
   const [progressFilter, setProgressFilter] = useState("Completed");
+
+  // Dialog states
+  const [successDialogOpen, setSuccessDialogOpen] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   useEffect(() => {
     fetchRisks();
@@ -108,64 +122,215 @@ export default function RiskResponsePage() {
     router.push(`/risks/response/${risk.id}`);
   };
 
-  const getActionButton = (risk: Risk) => {
-    const status = risk.assessmentStatus || risk.status;
-    if (status === "Awaiting Approval") {
-      return (
-        <Button
-          size="sm"
-          className="bg-primary hover:bg-primary/90"
-          onClick={() => openDetail(risk)}
-        >
-          View
-        </Button>
-      );
+  // Handle Submit for Approval action
+  const handleSubmitForApproval = async (risk: Risk, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setActionLoading(risk.id);
+    try {
+      const response = await fetch(`/api/risks/${risk.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "Awaiting Approval" }),
+      });
+      if (response.ok) {
+        setSuccessMessage("Risk Submit for Approval Successfully !");
+        setSuccessDialogOpen(true);
+        // Update local state
+        setRisks(prev => prev.map(r =>
+          r.id === risk.id ? { ...r, status: "Awaiting Approval", assessmentStatus: "Awaiting Approval" } : r
+        ));
+      }
+    } catch (error) {
+      console.error("Failed to submit for approval:", error);
+    } finally {
+      setActionLoading(null);
     }
-    return (
-      <Button
-        size="sm"
-        className="bg-primary hover:bg-primary/90"
-        onClick={() => openDetail(risk)}
-      >
-        Resume
-      </Button>
-    );
   };
 
-  // Filter risks based on strategy
-  const filteredByStrategy = strategyFilter === "all"
-    ? risks
-    : risks.filter((risk) => risk.responseStrategy === strategyFilter);
+  // Handle Approve action
+  const handleApprove = async (risk: Risk, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setActionLoading(risk.id);
+    try {
+      const response = await fetch(`/api/risks/${risk.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "Completed" }),
+      });
+      if (response.ok) {
+        setSuccessMessage("Risk Approved Successfully !");
+        setSuccessDialogOpen(true);
+        // Update local state
+        setRisks(prev => prev.map(r =>
+          r.id === risk.id ? { ...r, status: "Completed", assessmentStatus: "Completed" } : r
+        ));
+      }
+    } catch (error) {
+      console.error("Failed to approve:", error);
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
-  // Filter risks based on progress
-  const filteredByProgress = progressFilter === "all"
-    ? risks
-    : risks.filter((risk) =>
-        (progressFilter === "Completed" && risk.assessmentStatus === "Completed") ||
-        (progressFilter === "In-Progress" && risk.assessmentStatus === "In-Progress")
-      );
+  // Normalize status to handle variations (e.g., "In Progress" vs "In-Progress")
+  const normalizeStatus = (status: string): string => {
+    const normalized = status.toLowerCase().replace(/\s+/g, '-');
+    if (normalized === 'in-progress') return 'In-Progress';
+    if (normalized === 'awaiting-approval') return 'Awaiting Approval';
+    if (normalized === 'completed' || normalized === 'closed') return 'Completed';
+    if (normalized === 'open') return 'Open';
+    return status;
+  };
 
-  // Calculate stats for strategy card (based on strategy filter)
-  const strategyTotal = filteredByStrategy.length;
-  const strategyClosed = filteredByStrategy.filter(r => r.status === "Closed" || r.assessmentStatus === "Completed").length;
+  // Get action buttons based on risk status - matching source system exactly
+  const getActionButtons = (risk: Risk) => {
+    const rawStatus = risk.assessmentStatus || risk.status || "Open";
+    const status = normalizeStatus(rawStatus);
+    const isLoading = actionLoading === risk.id;
 
-  // Calculate stats for progress card (based on progress filter)
-  const progressTotal = filteredByProgress.length;
-  const progressCompleted = filteredByProgress.filter(r => r.assessmentStatus === "Completed").length;
+    switch (status) {
+      case "Open":
+        // Open status: "Submit for Approval" + "View" buttons
+        return (
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              className="bg-primary hover:bg-primary/90"
+              onClick={(e) => handleSubmitForApproval(risk, e)}
+              disabled={isLoading}
+            >
+              {isLoading ? "..." : "Submit for Approval"}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-primary text-primary hover:bg-primary/10"
+              onClick={() => openDetail(risk)}
+            >
+              View
+            </Button>
+          </div>
+        );
+      case "Awaiting Approval":
+        // Awaiting Approval status: "Approve" + "View" buttons
+        return (
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              className="bg-primary hover:bg-primary/90"
+              onClick={(e) => handleApprove(risk, e)}
+              disabled={isLoading}
+            >
+              {isLoading ? "..." : "Approve"}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-primary text-primary hover:bg-primary/10"
+              onClick={() => openDetail(risk)}
+            >
+              View
+            </Button>
+          </div>
+        );
+      case "In-Progress":
+        // In-Progress status: "Resume" button only
+        return (
+          <Button
+            size="sm"
+            className="bg-primary hover:bg-primary/90"
+            onClick={() => openDetail(risk)}
+          >
+            Resume
+          </Button>
+        );
+      case "Completed":
+        // Completed status: "View" button only
+        return (
+          <Button
+            size="sm"
+            className="bg-primary hover:bg-primary/90"
+            onClick={() => openDetail(risk)}
+          >
+            View
+          </Button>
+        );
+      default:
+        // Default fallback - treat as Open
+        return (
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              className="bg-primary hover:bg-primary/90"
+              onClick={(e) => handleSubmitForApproval(risk, e)}
+              disabled={isLoading}
+            >
+              {isLoading ? "..." : "Submit for Approval"}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-primary text-primary hover:bg-primary/10"
+              onClick={() => openDetail(risk)}
+            >
+              View
+            </Button>
+          </div>
+        );
+    }
+  };
 
-  // Display all filtered risks (combine both filters for list)
-  const displayRisks = risks.filter((risk) => {
-    const matchesStrategy = strategyFilter === "all" || risk.responseStrategy === strategyFilter;
-    return matchesStrategy;
+  // Filter risks based on strategy (no "all" option per source system)
+  const filteredByStrategy = risks.filter((risk) => risk.responseStrategy === strategyFilter);
+
+  // Get normalized status for a risk
+  const getRiskStatus = (risk: Risk) => {
+    const rawStatus = risk.assessmentStatus || risk.status || "Open";
+    return normalizeStatus(rawStatus);
+  };
+
+  // Filter risks based on progress status (no "all" option per source system)
+  const filteredByProgress = filteredByStrategy.filter((risk) => {
+    const status = getRiskStatus(risk);
+    return status === progressFilter;
   });
 
-  const clearStrategyFilter = () => setStrategyFilter("all");
-  const clearProgressFilter = () => setProgressFilter("all");
+  // Calculate stats for strategy card
+  // Background bar = total risks with selected strategy
+  // Foreground bar = closed/completed risks with selected strategy
+  const strategyTotal = filteredByStrategy.length;
+  const strategyClosed = filteredByStrategy.filter(r => {
+    const status = getRiskStatus(r);
+    return status === "Completed" || r.status === "Closed";
+  }).length;
+
+  // Calculate stats for progress card
+  // Background bar = total risks with selected strategy
+  // Foreground bar = risks with selected status
+  const progressTotal = strategyTotal; // Total from selected strategy
+  const progressCount = filteredByProgress.length; // Risks matching selected status
+
+  // Get progress label based on filter selection
+  const getProgressLabel = () => {
+    switch (progressFilter) {
+      case "Open": return "Open";
+      case "In-Progress": return "InProgress";
+      case "Completed": return "Completed";
+      case "Awaiting Approval": return "Awaiting Approval";
+      default: return progressFilter;
+    }
+  };
+
+  // Display risks filtered by strategy only (list shows all statuses for selected strategy)
+  const displayRisks = filteredByStrategy;
+
+  const clearStrategyFilter = () => setStrategyFilter("Treat");
+  const clearProgressFilter = () => setProgressFilter("Completed");
 
   if (loading) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Risk Response Strategy" breadcrumb="Risk Management" />
+        <PageHeader title="Risk Response Strategy" description="Risk Management" />
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
@@ -175,7 +340,7 @@ export default function RiskResponsePage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Risk Response Strategy" breadcrumb="Risk Management" />
+      <PageHeader title="Risk Response Strategy" description="Risk Management" />
 
       {/* Summary Cards with Progress Bars */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -187,26 +352,23 @@ export default function RiskResponsePage() {
               <div className="flex items-center border rounded">
                 <Select value={strategyFilter} onValueChange={setStrategyFilter}>
                   <SelectTrigger className="w-32 h-8 border-0">
-                    <SelectValue placeholder="Filter" />
+                    <SelectValue placeholder="Strategy" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="Treat">Treat</SelectItem>
                     <SelectItem value="Transfer">Transfer</SelectItem>
                     <SelectItem value="Avoid">Avoid</SelectItem>
                     <SelectItem value="Accept">Accept</SelectItem>
+                    <SelectItem value="Treat">Treat</SelectItem>
                   </SelectContent>
                 </Select>
-                {strategyFilter !== "all" && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 px-2 border-l"
-                    onClick={clearStrategyFilter}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 px-2 border-l"
+                  onClick={clearStrategyFilter}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
             </div>
             <ProgressBar
@@ -224,31 +386,30 @@ export default function RiskResponsePage() {
               <span className="font-medium">Risk Response Progress</span>
               <div className="flex items-center border rounded">
                 <Select value={progressFilter} onValueChange={setProgressFilter}>
-                  <SelectTrigger className="w-32 h-8 border-0">
-                    <SelectValue placeholder="Filter" />
+                  <SelectTrigger className="w-40 h-8 border-0">
+                    <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="Completed">Completed</SelectItem>
+                    <SelectItem value="Open">Open</SelectItem>
                     <SelectItem value="In-Progress">In-Progress</SelectItem>
+                    <SelectItem value="Completed">Completed</SelectItem>
+                    <SelectItem value="Awaiting Approval">Awaiting Approval</SelectItem>
                   </SelectContent>
                 </Select>
-                {progressFilter !== "all" && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 px-2 border-l"
-                    onClick={clearProgressFilter}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 px-2 border-l"
+                  onClick={clearProgressFilter}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
             </div>
             <ProgressBar
               total={progressTotal}
-              completed={progressCompleted}
-              label="Completed"
+              completed={progressCount}
+              label={getProgressLabel()}
             />
           </CardContent>
         </Card>
@@ -274,7 +435,7 @@ export default function RiskResponsePage() {
                       <span className="font-medium">{risk.name}</span>
                     </div>
                   </div>
-                  {getActionButton(risk)}
+                  {getActionButtons(risk)}
                 </div>
                 <div className="grid grid-cols-4 gap-4 mt-3 text-sm">
                   <div>
@@ -313,6 +474,23 @@ export default function RiskResponsePage() {
           ))
         )}
       </div>
+
+      {/* Success Dialog */}
+      <AlertDialog open={successDialogOpen} onOpenChange={setSuccessDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Information</AlertDialogTitle>
+            <AlertDialogDescription>
+              {successMessage}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setSuccessDialogOpen(false)}>
+              OK
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
