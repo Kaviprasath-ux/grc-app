@@ -22,7 +22,6 @@ import {
   Play,
   Search,
   CheckSquare,
-  ScrollText,
   LogOut,
   type LucideIcon,
 } from "lucide-react";
@@ -89,18 +88,9 @@ export const navigation: NavItem[] = [
     name: "Internal Audit",
     icon: ClipboardCheck,
     children: [
-      { name: "Audit Dashboard", href: "/audit/dashboard", icon: PieChart },
-      { name: "Audit Calendar", href: "/audit/calendar", icon: Calendar },
-      { name: "Audit Execution", href: "/audit/execution", icon: Play },
-      { name: "Audit Findings", href: "/audit/findings", icon: Search },
-      { name: "CAPA", href: "/audit/capa", icon: CheckSquare },
-      { name: "Reports", href: "/audit/reports", icon: FileText },
+      { name: "RiskRegister", href: "/internal-audit/risk-register", icon: ClipboardList },
+      { name: "Settings", href: "/internal-audit/settings", icon: Settings2 },
     ],
-  },
-  {
-    name: "Audit Logs",
-    href: "/audit-logs",
-    icon: ScrollText,
   },
   {
     name: "Log Out",

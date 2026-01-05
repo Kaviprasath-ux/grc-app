@@ -34,6 +34,8 @@ model Organization {
 model Department {
   id                    String                 @id @default(cuid())
   name                  String                 @unique
+  description           String?
+  headId                String?
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
   users                 User[]
@@ -49,6 +51,7 @@ model Department {
   exceptions            Exception[]
   requirementExceptions RequirementException[]
   kpis                  KPI[]
+  internalAuditRisks    InternalAuditRisk[]    @relation("InternalAuditDepartment")
 }
 
 // Users
@@ -292,18 +295,29 @@ model Control {
 
 // Processes
 model Process {
-  id           String      @id @default(cuid())
-  processCode  String      @unique
-  name         String
-  description  String?
-  processType  String      @default("Primary") // Primary, Management, Supporting
-  departmentId String?
-  department   Department? @relation(fields: [departmentId], references: [id])
-  ownerId      String?
-  owner        User?       @relation("ProcessOwner", fields: [ownerId], references: [id])
-  status       String      @default("Active")
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  id                     String      @id @default(cuid())
+  processCode            String      @unique
+  name                   String
+  description            String?
+  processType            String      @default("Primary") // Primary, Management, Supporting
+  departmentId           String?
+  department             Department? @relation(fields: [departmentId], references: [id])
+  ownerId                String?
+  owner                  User?       @relation("ProcessOwner", fields: [ownerId], references: [id])
+  status                 String      @default("Active")
+  // Audit Library fields
+  processFrequency       String?     // Annually, As needed, Bi-annually, Daily, monthly, Monthly, Quarterly, Weekly
+  natureOfImplementation String?     // Manual, Automated, Manual + Automated
+  riskRating             String?     // Low, Medium, High, Not Assessed
+  assetDependency        Boolean     @default(false)
+  externalDependency     Boolean     @default(false)
+  location               String?     // JSON array of locations
+  kpiMeasurementRequired Boolean     @default(false)
+  piiCapture             Boolean     @default(false)
+  operationalComplexity  String?     // Low, Medium, High
+  lastAuditDate          DateTime?
+  createdAt              DateTime    @default(now())
+  updatedAt              DateTime    @updatedAt
 }
 
 // Governance - Policies, Standards, Procedures
@@ -943,7 +957,7 @@ model RiskActivityLog {
 
 // ==================== INTERNAL AUDIT MODULE ====================
 
-// Audits
+// Legacy Audits (keeping for backwards compatibility)
 model Audit {
   id           String         @id @default(cuid())
   auditId      String         @unique
@@ -990,6 +1004,141 @@ model CAPA {
   dueDate     DateTime?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
+}
+
+// ==================== INTERNAL AUDIT SETTINGS ====================
+
+// Audit Category (e.g., Financial Audit, Operational Audit, Compliance Audit)
+model AuditCategory {
+  id                  String              @id @default(cuid())
+  name                String              @unique
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  internalAuditRisks  InternalAuditRisk[]
+}
+
+// Nature of Controls (e.g., Preventive, Detective, Corrective)
+model AuditNatureOfControl {
+  id        String   @id @default(cuid())
+  label     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Risk Factors for Internal Audit (e.g., Financial, Reputational, Regulatory)
+model AuditRiskFactor {
+  id        String   @id @default(cuid())
+  label     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Probability ratings (e.g., Very Low=1, Low=2, Medium=3, High=4, Very High=5)
+model AuditProbability {
+  id        String   @id @default(cuid())
+  label     String   @unique
+  value     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Impact ratings (e.g., Very Low Probability=1, Low Probability=2, etc.)
+model AuditImpact {
+  id        String   @id @default(cuid())
+  label     String   @unique
+  value     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Scoring Range Configuration (e.g., High: 250+, Medium: 100-249, Low: 50-99)
+model AuditScoringRange {
+  id              String   @id @default(cuid())
+  label           String
+  lowValue        Int      @default(0)
+  highValue       Int?
+  calculationType String   @default("High of all") // High of all, Addition of all, Product of all
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([label, calculationType])
+}
+
+// Audit Scoring Configuration (stores the calculation type settings)
+model AuditScoringConfig {
+  id                        String   @id @default(cuid())
+  probabilityImpactCalcType String   @default("Product of all") // High of all, Addition of all, Product of all
+  riskRatingCalcType        String   @default("High of all") // High of all, Addition of all, Product of all
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+}
+
+// Periodicity (e.g., Annual=12, Semiannual=6, Monthly=1)
+model AuditPeriodicity {
+  id        String   @id @default(cuid())
+  interval  String   @unique
+  months    Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Escalation Configuration (reminder days for various events)
+model AuditEscalationConfig {
+  id                  String   @id @default(cuid())
+  responseSubmission  Int      @default(5)
+  acknowledgement     Int      @default(1)
+  clarification       Int      @default(2)
+  issueResolution     Int      @default(3)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+// Audit Type (e.g., Consult, Assurance, Follow-up)
+model AuditType {
+  id                  String              @id @default(cuid())
+  name                String              @unique
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  internalAuditRisks  InternalAuditRisk[]
+}
+
+// ==================== INTERNAL AUDIT RISK REGISTER ====================
+
+// Internal Audit Risk (separate from general Risk for the Internal Audit module)
+model InternalAuditRisk {
+  id                   String         @id @default(cuid())
+  riskId               String         @unique // Auto-generated RID001, RID002, etc.
+  riskName             String
+  departmentId         String?
+  department           Department?    @relation("InternalAuditDepartment", fields: [departmentId], references: [id])
+  sectionProcess       String?
+  subProcess           String?
+  activity             String?
+  categoryId           String?
+  category             AuditCategory? @relation(fields: [categoryId], references: [id])
+  auditTypeId          String?
+  auditType            AuditType?     @relation(fields: [auditTypeId], references: [id])
+  riskDescription      String?
+  // Inherent Risk Scoring
+  inherentLikelihood   Int?
+  inherentImpact       Int?
+  inherentScore        Int?           // Calculated: likelihood * impact or based on config
+  // Controls
+  controlDescription   String?
+  controlEffectiveness String?        // Effective, Partially Effective, Ineffective
+  // Residual Risk Scoring
+  residualLikelihood   Int?
+  residualImpact       Int?
+  residualScore        Int?           // Calculated
+  riskLevel            String?        // Low, Medium, High, Extreme - based on scoring ranges
+  // Audit Information
+  creationDate         DateTime       @default(now())
+  auditComment         String?
+  status               String         @default("Open") // Open, Closed, Under Review
+  evidenceFilePath     String?
+  evidenceFileName     String?
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
 }
 
 // ==================== GOVERNANCE TEMPLATES ====================

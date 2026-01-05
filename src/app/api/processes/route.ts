@@ -25,18 +25,48 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { processCode, name, description, processType, departmentId, ownerId, status } = body;
+    const {
+      processCode,
+      name,
+      description,
+      processType,
+      departmentId,
+      ownerId,
+      status,
+      processFrequency,
+      natureOfImplementation,
+      riskRating,
+      assetDependency,
+      externalDependency,
+      location,
+      kpiMeasurementRequired,
+      piiCapture,
+      operationalComplexity,
+      lastAuditDate,
+    } = body;
 
-    if (!processCode || !name) {
+    if (!name) {
       return NextResponse.json(
-        { error: "Process code and name are required" },
+        { error: "Process name is required" },
         { status: 400 }
       );
     }
 
+    // Generate process code if not provided
+    let finalProcessCode = processCode;
+    if (!finalProcessCode) {
+      const lastProcess = await prisma.process.findFirst({
+        orderBy: { processCode: "desc" },
+      });
+      const lastNum = lastProcess
+        ? parseInt(lastProcess.processCode.replace("PRO", "")) || 0
+        : 0;
+      finalProcessCode = `PRO${lastNum + 1}`;
+    }
+
     // Check if process code already exists
     const existingProcess = await prisma.process.findUnique({
-      where: { processCode },
+      where: { processCode: finalProcessCode },
     });
 
     if (existingProcess) {
@@ -48,13 +78,23 @@ export async function POST(request: NextRequest) {
 
     const process = await prisma.process.create({
       data: {
-        processCode,
+        processCode: finalProcessCode,
         name,
         description,
         processType: processType || "Primary",
-        departmentId,
-        ownerId,
+        departmentId: departmentId || null,
+        ownerId: ownerId || null,
         status: status || "Active",
+        processFrequency,
+        natureOfImplementation,
+        riskRating,
+        assetDependency: assetDependency || false,
+        externalDependency: externalDependency || false,
+        location,
+        kpiMeasurementRequired: kpiMeasurementRequired || false,
+        piiCapture: piiCapture || false,
+        operationalComplexity,
+        lastAuditDate: lastAuditDate ? new Date(lastAuditDate) : null,
       },
       include: {
         department: true,

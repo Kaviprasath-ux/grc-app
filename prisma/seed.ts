@@ -1939,6 +1939,510 @@ async function main() {
   }
   console.log("✅ Artifacts created");
 
+  // ==================== INTERNAL AUDIT SETTINGS ====================
+
+  // Audit Categories
+  const auditCategories = [
+    "Financial Audit",
+    "Operational Audit",
+    "Compliance Audit",
+    "IT Audit",
+    "Performance Audit",
+    "Management Audit",
+    "Special Investigation",
+  ];
+
+  for (const name of auditCategories) {
+    await prisma.auditCategory.upsert({
+      where: { name },
+      update: {},
+      create: { name },
+    });
+  }
+  console.log("✅ Audit Categories created");
+
+  // Nature of Controls
+  const natureOfControls = [
+    "Preventive",
+    "Detective",
+    "Corrective",
+    "Directive",
+    "Compensating",
+  ];
+
+  for (const label of natureOfControls) {
+    await prisma.auditNatureOfControl.upsert({
+      where: { label },
+      update: {},
+      create: { label },
+    });
+  }
+  console.log("✅ Nature of Controls created");
+
+  // Risk Factors
+  const riskFactors = [
+    "Financial Impact",
+    "Regulatory Compliance",
+    "Operational Efficiency",
+    "Reputational Risk",
+    "Strategic Alignment",
+    "Data Security",
+    "Business Continuity",
+  ];
+
+  for (const label of riskFactors) {
+    await prisma.auditRiskFactor.upsert({
+      where: { label },
+      update: {},
+      create: { label },
+    });
+  }
+  console.log("✅ Risk Factors created");
+
+  // Probability Ratings
+  const probabilities = [
+    { label: "Very Low", value: 1 },
+    { label: "Low", value: 2 },
+    { label: "Medium", value: 3 },
+    { label: "High", value: 4 },
+    { label: "Very High", value: 5 },
+  ];
+
+  for (const prob of probabilities) {
+    await prisma.auditProbability.upsert({
+      where: { label: prob.label },
+      update: { value: prob.value },
+      create: prob,
+    });
+  }
+  console.log("✅ Probability Ratings created");
+
+  // Impact Ratings
+  const impacts = [
+    { label: "Insignificant", value: 1 },
+    { label: "Minor", value: 2 },
+    { label: "Moderate", value: 3 },
+    { label: "Major", value: 4 },
+    { label: "Catastrophic", value: 5 },
+  ];
+
+  for (const impact of impacts) {
+    await prisma.auditImpact.upsert({
+      where: { label: impact.label },
+      update: { value: impact.value },
+      create: impact,
+    });
+  }
+  console.log("✅ Impact Ratings created");
+
+  // Scoring Ranges
+  const scoringRanges = [
+    { label: "Low", lowValue: 1, highValue: 6, calculationType: "Product of all" },
+    { label: "Medium", lowValue: 7, highValue: 14, calculationType: "Product of all" },
+    { label: "High", lowValue: 15, highValue: 20, calculationType: "Product of all" },
+    { label: "Extreme", lowValue: 21, highValue: 25, calculationType: "Product of all" },
+  ];
+
+  for (const range of scoringRanges) {
+    await prisma.auditScoringRange.upsert({
+      where: { label_calculationType: { label: range.label, calculationType: range.calculationType } },
+      update: { lowValue: range.lowValue, highValue: range.highValue },
+      create: range,
+    });
+  }
+  console.log("✅ Scoring Ranges created");
+
+  // Scoring Configuration
+  await prisma.auditScoringConfig.upsert({
+    where: { id: "scoring-config-1" },
+    update: {},
+    create: {
+      id: "scoring-config-1",
+      probabilityImpactCalcType: "Product of all",
+      riskRatingCalcType: "High of all",
+    },
+  });
+  console.log("✅ Scoring Configuration created");
+
+  // Periodicity
+  const periodicities = [
+    { interval: "Annual", months: 12 },
+    { interval: "Semiannual", months: 6 },
+    { interval: "Quarterly", months: 3 },
+    { interval: "Monthly", months: 1 },
+    { interval: "Weekly", months: 0 },
+    { interval: "Ad-hoc", months: 0 },
+  ];
+
+  for (const period of periodicities) {
+    await prisma.auditPeriodicity.upsert({
+      where: { interval: period.interval },
+      update: { months: period.months },
+      create: period,
+    });
+  }
+  console.log("✅ Periodicity created");
+
+  // Escalation Configuration
+  await prisma.auditEscalationConfig.upsert({
+    where: { id: "escalation-config-1" },
+    update: {},
+    create: {
+      id: "escalation-config-1",
+      responseSubmission: 5,
+      acknowledgement: 1,
+      clarification: 2,
+      issueResolution: 3,
+    },
+  });
+  console.log("✅ Escalation Configuration created");
+
+  // Audit Types
+  const auditTypes = [
+    "Assurance",
+    "Consulting",
+    "Follow-up",
+    "Special Investigation",
+    "Compliance Review",
+  ];
+
+  for (const name of auditTypes) {
+    await prisma.auditType.upsert({
+      where: { name },
+      update: {},
+      create: { name },
+    });
+  }
+  console.log("✅ Audit Types created");
+
+  // Processes for Audit Library
+  const auditProcesses = [
+    {
+      processCode: "PRO1",
+      name: "Accounts Payable Processing",
+      description: "End-to-end accounts payable process including invoice receipt, verification, approval, and payment",
+      processType: "Primary",
+      department: "Revenue",
+      owner: "james.anderson",
+      processFrequency: "Daily",
+      natureOfImplementation: "Manual + Automated",
+      riskRating: "Medium",
+      assetDependency: true,
+      externalDependency: true,
+      kpiMeasurementRequired: true,
+      piiCapture: false,
+      operationalComplexity: "Medium",
+    },
+    {
+      processCode: "PRO2",
+      name: "Employee Onboarding",
+      description: "Complete employee onboarding process from offer acceptance to first day",
+      processType: "Supporting",
+      department: "Human Resources",
+      owner: "emily.brown",
+      processFrequency: "As needed",
+      natureOfImplementation: "Manual",
+      riskRating: "Low",
+      assetDependency: false,
+      externalDependency: false,
+      kpiMeasurementRequired: true,
+      piiCapture: true,
+      operationalComplexity: "Low",
+    },
+    {
+      processCode: "PRO3",
+      name: "IT Change Management",
+      description: "Process for requesting, reviewing, approving, and implementing IT changes",
+      processType: "Management",
+      department: "IT Operations",
+      owner: "bts.admin",
+      processFrequency: "Weekly",
+      natureOfImplementation: "Automated",
+      riskRating: "High",
+      assetDependency: true,
+      externalDependency: false,
+      kpiMeasurementRequired: true,
+      piiCapture: false,
+      operationalComplexity: "High",
+    },
+    {
+      processCode: "PRO4",
+      name: "Vendor Risk Assessment",
+      description: "Assessment of third-party vendors for security, compliance, and operational risks",
+      processType: "Primary",
+      department: "Risk Management",
+      owner: "mike.wilson",
+      processFrequency: "Quarterly",
+      natureOfImplementation: "Manual",
+      riskRating: "High",
+      assetDependency: false,
+      externalDependency: true,
+      kpiMeasurementRequired: true,
+      piiCapture: false,
+      operationalComplexity: "Medium",
+    },
+    {
+      processCode: "PRO5",
+      name: "Incident Response",
+      description: "Process for identifying, containing, eradicating, and recovering from security incidents",
+      processType: "Primary",
+      department: "IT Support",
+      owner: "david.jones",
+      processFrequency: "As needed",
+      natureOfImplementation: "Manual + Automated",
+      riskRating: "High",
+      assetDependency: true,
+      externalDependency: false,
+      kpiMeasurementRequired: true,
+      piiCapture: true,
+      operationalComplexity: "High",
+    },
+    {
+      processCode: "PRO6",
+      name: "Compliance Monitoring",
+      description: "Continuous monitoring of regulatory compliance requirements and controls",
+      processType: "Primary",
+      department: "Compliance",
+      owner: "john.doe",
+      processFrequency: "Monthly",
+      natureOfImplementation: "Automated",
+      riskRating: "Medium",
+      assetDependency: false,
+      externalDependency: false,
+      kpiMeasurementRequired: true,
+      piiCapture: false,
+      operationalComplexity: "Medium",
+    },
+    {
+      processCode: "PRO7",
+      name: "Software Development Lifecycle",
+      description: "End-to-end software development process from requirements to deployment",
+      processType: "Primary",
+      department: "Product Development",
+      owner: "lisa.taylor",
+      processFrequency: "Bi-annually",
+      natureOfImplementation: "Manual + Automated",
+      riskRating: "Medium",
+      assetDependency: true,
+      externalDependency: true,
+      kpiMeasurementRequired: true,
+      piiCapture: false,
+      operationalComplexity: "High",
+    },
+    {
+      processCode: "PRO8",
+      name: "Internal Audit Execution",
+      description: "Planning, execution, and reporting of internal audit engagements",
+      processType: "Management",
+      department: "Internal Audit",
+      owner: "sarah.smith",
+      processFrequency: "Annually",
+      natureOfImplementation: "Manual",
+      riskRating: null,
+      assetDependency: false,
+      externalDependency: false,
+      kpiMeasurementRequired: true,
+      piiCapture: false,
+      operationalComplexity: "Medium",
+    },
+    {
+      processCode: "PRO9",
+      name: "Backup and Recovery",
+      description: "Data backup and disaster recovery process for critical systems",
+      processType: "Supporting",
+      department: "IT Operations",
+      owner: "bts.admin",
+      processFrequency: "Daily",
+      natureOfImplementation: "Automated",
+      riskRating: "Low",
+      assetDependency: true,
+      externalDependency: false,
+      kpiMeasurementRequired: true,
+      piiCapture: true,
+      operationalComplexity: "Low",
+    },
+    {
+      processCode: "PRO10",
+      name: "Quality Assurance Testing",
+      description: "Testing process for software quality assurance",
+      processType: "Primary",
+      department: "Quality Assurance",
+      owner: "lisa.taylor",
+      processFrequency: "Weekly",
+      natureOfImplementation: "Manual + Automated",
+      riskRating: null,
+      assetDependency: true,
+      externalDependency: false,
+      kpiMeasurementRequired: true,
+      piiCapture: false,
+      operationalComplexity: "Medium",
+    },
+  ];
+
+  for (const proc of auditProcesses) {
+    await prisma.process.upsert({
+      where: { processCode: proc.processCode },
+      update: {
+        processFrequency: proc.processFrequency,
+        natureOfImplementation: proc.natureOfImplementation,
+        riskRating: proc.riskRating,
+        assetDependency: proc.assetDependency,
+        externalDependency: proc.externalDependency,
+        kpiMeasurementRequired: proc.kpiMeasurementRequired,
+        piiCapture: proc.piiCapture,
+        operationalComplexity: proc.operationalComplexity,
+      },
+      create: {
+        processCode: proc.processCode,
+        name: proc.name,
+        description: proc.description,
+        processType: proc.processType,
+        departmentId: createdDepts[proc.department],
+        ownerId: createdUsers[proc.owner],
+        processFrequency: proc.processFrequency,
+        natureOfImplementation: proc.natureOfImplementation,
+        riskRating: proc.riskRating,
+        assetDependency: proc.assetDependency,
+        externalDependency: proc.externalDependency,
+        kpiMeasurementRequired: proc.kpiMeasurementRequired,
+        piiCapture: proc.piiCapture,
+        operationalComplexity: proc.operationalComplexity,
+        lastAuditDate: proc.riskRating ? new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000) : null,
+      },
+    });
+  }
+  console.log("✅ Audit Processes created");
+
+  // Internal Audit Risk Register entries
+  const fetchedAuditCategories = await prisma.auditCategory.findMany();
+  const fetchedAuditTypes = await prisma.auditType.findMany();
+
+  const internalAuditRisks = [
+    {
+      riskId: "RID001",
+      riskName: "Inadequate Financial Controls",
+      department: "Revenue",
+      sectionProcess: "Financial Reporting",
+      subProcess: "Month-end Close",
+      activity: "Journal Entry Review",
+      category: "Financial Audit",
+      auditType: "Assurance",
+      riskDescription: "Risk of material misstatement due to inadequate review of journal entries",
+      inherentLikelihood: 3,
+      inherentImpact: 4,
+      controlDescription: "Dual approval required for journal entries above $10,000",
+      controlEffectiveness: "Effective",
+      residualLikelihood: 2,
+      residualImpact: 3,
+      status: "Open",
+    },
+    {
+      riskId: "RID002",
+      riskName: "Access Control Weakness",
+      department: "IT Operations",
+      sectionProcess: "Identity Management",
+      subProcess: "User Provisioning",
+      activity: "Access Request Approval",
+      category: "IT Audit",
+      auditType: "Assurance",
+      riskDescription: "Unauthorized access to critical systems due to weak access controls",
+      inherentLikelihood: 4,
+      inherentImpact: 5,
+      controlDescription: "Role-based access control with quarterly access reviews",
+      controlEffectiveness: "Partially Effective",
+      residualLikelihood: 3,
+      residualImpact: 4,
+      status: "Under Review",
+    },
+    {
+      riskId: "RID003",
+      riskName: "Regulatory Non-Compliance",
+      department: "Compliance",
+      sectionProcess: "Regulatory Monitoring",
+      subProcess: "Compliance Tracking",
+      activity: "Regulatory Updates",
+      category: "Compliance Audit",
+      auditType: "Compliance Review",
+      riskDescription: "Risk of regulatory fines due to failure to comply with new regulations",
+      inherentLikelihood: 2,
+      inherentImpact: 5,
+      controlDescription: "Automated regulatory feed with compliance mapping",
+      controlEffectiveness: "Effective",
+      residualLikelihood: 1,
+      residualImpact: 4,
+      status: "Closed",
+    },
+    {
+      riskId: "RID004",
+      riskName: "Vendor Performance Issues",
+      department: "Procurement",
+      sectionProcess: "Vendor Management",
+      subProcess: "Performance Monitoring",
+      activity: "SLA Review",
+      category: "Operational Audit",
+      auditType: "Consulting",
+      riskDescription: "Service disruption due to vendor underperformance",
+      inherentLikelihood: 3,
+      inherentImpact: 3,
+      controlDescription: "Monthly vendor scorecards with escalation procedures",
+      controlEffectiveness: "Effective",
+      residualLikelihood: 2,
+      residualImpact: 2,
+      status: "Open",
+    },
+    {
+      riskId: "RID005",
+      riskName: "Data Breach Risk",
+      department: "IT Support",
+      sectionProcess: "Data Protection",
+      subProcess: "Data Classification",
+      activity: "Sensitive Data Handling",
+      category: "IT Audit",
+      auditType: "Special Investigation",
+      riskDescription: "Exposure of sensitive customer data due to inadequate protection",
+      inherentLikelihood: 3,
+      inherentImpact: 5,
+      controlDescription: "Data encryption at rest and in transit, DLP tools deployed",
+      controlEffectiveness: "Partially Effective",
+      residualLikelihood: 2,
+      residualImpact: 4,
+      status: "Under Review",
+    },
+  ];
+
+  for (const risk of internalAuditRisks) {
+    const category = fetchedAuditCategories.find(c => c.name === risk.category);
+    const auditType = fetchedAuditTypes.find(t => t.name === risk.auditType);
+
+    await prisma.internalAuditRisk.upsert({
+      where: { riskId: risk.riskId },
+      update: {},
+      create: {
+        riskId: risk.riskId,
+        riskName: risk.riskName,
+        departmentId: createdDepts[risk.department],
+        sectionProcess: risk.sectionProcess,
+        subProcess: risk.subProcess,
+        activity: risk.activity,
+        categoryId: category?.id,
+        auditTypeId: auditType?.id,
+        riskDescription: risk.riskDescription,
+        inherentLikelihood: risk.inherentLikelihood,
+        inherentImpact: risk.inherentImpact,
+        inherentScore: risk.inherentLikelihood * risk.inherentImpact,
+        controlDescription: risk.controlDescription,
+        controlEffectiveness: risk.controlEffectiveness,
+        residualLikelihood: risk.residualLikelihood,
+        residualImpact: risk.residualImpact,
+        residualScore: risk.residualLikelihood * risk.residualImpact,
+        riskLevel: risk.residualLikelihood * risk.residualImpact > 14 ? "High" :
+                   risk.residualLikelihood * risk.residualImpact > 6 ? "Medium" : "Low",
+        status: risk.status,
+      },
+    });
+  }
+  console.log("✅ Internal Audit Risks created");
+
   console.log("🎉 Database seeded successfully with all modules!");
 }
 
