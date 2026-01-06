@@ -22,11 +22,13 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const {
+      userId,
       userName,
       email,
       password,
       firstName,
       lastName,
+      fullName,
       designation,
       function: userFunction,
       role,
@@ -37,21 +39,22 @@ export async function POST(request: NextRequest) {
       departmentId,
     } = body;
 
-    if (!userName || !email || !password || !firstName || !lastName) {
+    if (!userId || !userName || !email || !password || !firstName || !lastName || !fullName) {
       return NextResponse.json(
-        { error: "userName, email, password, firstName, and lastName are required" },
+        { error: "userId, userName, email, password, firstName, lastName, and fullName are required" },
         { status: 400 }
       );
     }
 
     const user = await prisma.user.create({
       data: {
+        userId,
         userName,
         email,
         password, // In production, hash this password!
         firstName,
         lastName,
-        fullName: `${firstName} ${lastName}`,
+        fullName,
         designation,
         function: userFunction,
         role: role || "User",

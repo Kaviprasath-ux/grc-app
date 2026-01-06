@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Plus, MoreVertical } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Plus, MoreVertical, Pencil, Trash2, Search, Upload, Download } from "lucide-react";
 import { PageHeader, DataGrid, FilterBar } from "@/components/shared";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   DropdownMenu,
@@ -77,15 +78,24 @@ export default function UsersPage() {
   const [roleFilter, setRoleFilter] = useState("all");
   const [departmentFilter, setDepartmentFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
+  const [departmentSearchTerm, setDepartmentSearchTerm] = useState("");
+
+  // Import/Export states
+  const [showImportDialog, setShowImportDialog] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form state
   const [userForm, setUserForm] = useState({
+    userId: "",
     userName: "",
     email: "",
     password: "",
     confirmPassword: "",
     firstName: "",
     lastName: "",
+    fullName: "",
     designation: "",
     function: "",
     role: "User",
@@ -119,7 +129,7 @@ export default function UsersPage() {
 
   // User CRUD
   const handleAddUser = async () => {
-    if (!userForm.userName || !userForm.email || !userForm.password || !userForm.firstName || !userForm.lastName) {
+    if (!userForm.userId || !userForm.userName || !userForm.email || !userForm.password || !userForm.firstName || !userForm.lastName || !userForm.fullName) {
       alert("Please fill in all required fields");
       return;
     }
@@ -133,11 +143,13 @@ export default function UsersPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          userId: userForm.userId,
           userName: userForm.userName,
           email: userForm.email,
           password: userForm.password,
           firstName: userForm.firstName,
           lastName: userForm.lastName,
+          fullName: userForm.fullName,
           designation: userForm.designation,
           function: userForm.function,
           role: userForm.role,
@@ -214,12 +226,14 @@ export default function UsersPage() {
 
   const resetForm = () => {
     setUserForm({
+      userId: "",
       userName: "",
       email: "",
       password: "",
       confirmPassword: "",
       firstName: "",
       lastName: "",
+      fullName: "",
       designation: "",
       function: "",
       role: "User",
@@ -231,11 +245,149 @@ export default function UsersPage() {
     });
   };
 
+  // Export users to CSV
+  const handleExport = () => {
+    const csv = [
+      ["User ID", "Username", "Email", "First Name", "Last Name", "Full Name", "Designation", "Function", "Role", "Department", "Language", "Timezone", "Active", "Blocked"],
+      ...users.map((u) => [
+        u.id?.slice(0, 8) || "",
+        u.userName,
+        u.email,
+        u.firstName,
+        u.lastName,
+        u.fullName,
+        u.designation || "",
+        u.function || "",
+        u.role,
+        u.department?.name || "",
+        u.language,
+        u.timezone,
+        u.isActive ? "Yes" : "No",
+        u.isBlocked ? "Yes" : "No",
+      ]),
+    ]
+      .map((row) => row.map((cell) => `"${cell}"`).join(","))
+      .join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `users_export_${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  // Download template for import
+  const handleDownloadTemplate = () => {
+    const templateCsv = [
+      ["Username", "Email", "Password", "First Name", "Last Name", "Full Name", "Designation", "Function", "Role", "Department", "Language", "Timezone"],
+      ["john.doe", "john.doe@example.com", "Password123", "John", "Doe", "John Doe", "Manager", "Business", "User", "IT Operations", "English", "UTC"],
+    ]
+      .map((row) => row.map((cell) => `"${cell}"`).join(","))
+      .join("\n");
+
+    const blob = new Blob([templateCsv], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "users_template.csv";
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  // Handle file selection
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImportFile(file);
+    }
+  };
+
+  // Import users from CSV
+  const handleImport = async () => {
+    if (!importFile) return;
+
+    setImporting(true);
+    try {
+      const text = await importFile.text();
+      const lines = text.split("\n").filter((line) => line.trim());
+
+      // Skip header row
+      const dataLines = lines.slice(1);
+
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const line of dataLines) {
+        // Parse CSV line (handle quoted values)
+        const matches = line.match(/("([^"]*)"|[^,]+)/g) || [];
+        const values = matches.map((v) => v.replace(/^"|"$/g, "").trim());
+
+        if (values.length >= 6) {
+          const [userName, email, password, firstName, lastName, fullName, designation, func, role, departmentName, language, timezone] = values;
+
+          // Find department by name
+          const department = departments.find((d) => d.name.toLowerCase() === departmentName?.toLowerCase());
+
+          try {
+            const response = await fetch("/api/users", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                userId: `USR-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                userName,
+                email,
+                password: password || "DefaultPass123",
+                firstName,
+                lastName,
+                fullName,
+                designation: designation || null,
+                function: func || null,
+                role: role || "User",
+                departmentId: department?.id || null,
+                language: language || "English",
+                timezone: timezone || "UTC",
+                isActive: true,
+                isBlocked: false,
+              }),
+            });
+
+            if (response.ok) {
+              successCount++;
+            } else {
+              errorCount++;
+            }
+          } catch {
+            errorCount++;
+          }
+        }
+      }
+
+      alert(`Import completed: ${successCount} users imported, ${errorCount} errors`);
+      setShowImportDialog(false);
+      setImportFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+      fetchData();
+    } catch (error) {
+      console.error("Error importing users:", error);
+      alert("Failed to import users. Please check the file format.");
+    } finally {
+      setImporting(false);
+    }
+  };
+
   // Group users by department for Account Overview
-  const usersByDepartment = departments.map((dept) => ({
-    ...dept,
-    users: users.filter((user) => user.department?.name === dept.name),
-  }));
+  const usersByDepartment = departments
+    .filter((dept) =>
+      dept.name.toLowerCase().includes(departmentSearchTerm.toLowerCase())
+    )
+    .map((dept) => ({
+      ...dept,
+      users: users.filter((user) => user.department?.name === dept.name),
+    }));
 
   // User columns for User Management grid
   const userColumns: ColumnDef<User>[] = [
@@ -352,56 +504,105 @@ export default function UsersPage() {
 
         {/* Account Overview Tab */}
         <TabsContent value="account-overview" className="space-y-4">
-          <div className="mb-4">
-            <Input
-              placeholder="Search user..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-sm"
-            />
+          {/* Header with search and action buttons */}
+          <div className="flex items-center justify-between gap-4">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by Department Name"
+                value={departmentSearchTerm}
+                onChange={(e) => setDepartmentSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={handleExport}>
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)}>
+                <Upload className="h-4 w-4 mr-2" />
+                Import
+              </Button>
+              <Button size="sm" onClick={() => setIsAddUserOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add New
+              </Button>
+            </div>
           </div>
-          <Accordion type="multiple" className="w-full">
+
+          {/* Department Accordions */}
+          <Accordion type="multiple" className="w-full space-y-2">
             {usersByDepartment.map((dept) => (
-              <AccordionItem key={dept.id} value={dept.id}>
-                <AccordionTrigger className="hover:no-underline">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">{dept.name}</span>
-                    <Badge variant="secondary" className="ml-2">
-                      {dept.users.length}
-                    </Badge>
-                  </div>
+              <AccordionItem
+                key={dept.id}
+                value={dept.id}
+                className="border rounded-lg px-4"
+              >
+                <AccordionTrigger className="hover:no-underline py-4">
+                  <span className="font-semibold text-foreground">
+                    {dept.name} - {dept.users.length}
+                  </span>
                 </AccordionTrigger>
                 <AccordionContent>
-                  <div className="pl-4 space-y-2">
-                    {dept.users.length > 0 ? (
-                      dept.users
-                        .filter(
-                          (user) =>
-                            user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            user.userName.toLowerCase().includes(searchTerm.toLowerCase())
-                        )
-                        .map((user) => (
-                          <div
-                            key={user.id}
-                            className="flex items-center justify-between p-2 rounded-md hover:bg-muted"
-                          >
-                            <div>
-                              <p className="font-medium">{user.fullName}</p>
-                              <p className="text-sm text-muted-foreground">
-                                {user.designation} • {user.email}
-                              </p>
-                            </div>
-                            <Badge variant={user.isActive ? "default" : "secondary"}>
-                              {user.isActive ? "Active" : "Inactive"}
-                            </Badge>
-                          </div>
-                        ))
-                    ) : (
-                      <p className="text-muted-foreground text-sm py-2">
-                        No users in this department
-                      </p>
-                    )}
-                  </div>
+                  {dept.users.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b bg-muted/50">
+                            <th className="text-left p-3 font-medium">Full Name</th>
+                            <th className="text-left p-3 font-medium">Designation Name</th>
+                            <th className="text-left p-3 font-medium">Reporting Manager</th>
+                            <th className="text-left p-3 font-medium">Email ID</th>
+                            <th className="text-left p-3 font-medium">Last Login</th>
+                            <th className="text-center p-3 font-medium">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {dept.users.map((user) => (
+                            <tr key={user.id} className="border-b hover:bg-muted/30">
+                              <td className="p-3">{user.fullName}</td>
+                              <td className="p-3">{user.designation || "-"}</td>
+                              <td className="p-3">-</td>
+                              <td className="p-3">{user.email}</td>
+                              <td className="p-3">-</td>
+                              <td className="p-3">
+                                <div className="flex items-center justify-center gap-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-muted-foreground hover:text-primary"
+                                    onClick={() => {
+                                      setEditingUser(user);
+                                      setIsEditUserOpen(true);
+                                    }}
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                    onClick={() => handleDeleteUser(user.id)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      {/* Pagination */}
+                      <div className="flex items-center justify-end py-3 text-sm text-muted-foreground">
+                        <span>1 to {dept.users.length} of {dept.users.length}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground text-sm py-4 text-center">
+                      No users in this department
+                    </p>
+                  )}
                 </AccordionContent>
               </AccordionItem>
             ))}
@@ -454,6 +655,15 @@ export default function UsersPage() {
           <div className="space-y-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
+                <Label htmlFor="userId">User ID *</Label>
+                <Input
+                  id="userId"
+                  value={userForm.userId}
+                  onChange={(e) => setUserForm({ ...userForm, userId: e.target.value })}
+                  placeholder="Enter user ID"
+                />
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="userName">Username *</Label>
                 <Input
                   id="userName"
@@ -490,6 +700,15 @@ export default function UsersPage() {
                   placeholder="Enter last name"
                 />
               </div>
+              <div className="space-y-2 col-span-2">
+                <Label htmlFor="fullName">Full Name *</Label>
+                <Input
+                  id="fullName"
+                  value={userForm.fullName}
+                  onChange={(e) => setUserForm({ ...userForm, fullName: e.target.value })}
+                  placeholder="Enter full name"
+                />
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="function">Function</Label>
                 <Select
@@ -500,10 +719,9 @@ export default function UsersPage() {
                     <SelectValue placeholder="Select function" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="manager">Manager</SelectItem>
-                    <SelectItem value="executive">Executive</SelectItem>
-                    <SelectItem value="analyst">Analyst</SelectItem>
-                    <SelectItem value="specialist">Specialist</SelectItem>
+                    <SelectItem value="Security">Security</SelectItem>
+                    <SelectItem value="Audit">Audit</SelectItem>
+                    <SelectItem value="Business">Business</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -645,119 +863,357 @@ export default function UsersPage() {
 
       {/* Edit User Dialog */}
       <Dialog open={isEditUserOpen} onOpenChange={setIsEditUserOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Edit User</DialogTitle>
+            <DialogTitle>Edit Account</DialogTitle>
           </DialogHeader>
           {editingUser && (
             <div className="space-y-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="editUserName">Username</Label>
-                  <Input
-                    id="editUserName"
-                    value={editingUser.userName}
-                    onChange={(e) =>
-                      setEditingUser({ ...editingUser, userName: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="editEmail">Email</Label>
-                  <Input
-                    id="editEmail"
-                    type="email"
-                    value={editingUser.email}
-                    onChange={(e) =>
-                      setEditingUser({ ...editingUser, email: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="editFirstName">First Name</Label>
-                  <Input
-                    id="editFirstName"
-                    value={editingUser.firstName}
-                    onChange={(e) =>
-                      setEditingUser({ ...editingUser, firstName: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="editLastName">Last Name</Label>
-                  <Input
-                    id="editLastName"
-                    value={editingUser.lastName}
-                    onChange={(e) =>
-                      setEditingUser({ ...editingUser, lastName: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="editDesignation">Designation</Label>
-                  <Input
-                    id="editDesignation"
-                    value={editingUser.designation || ""}
-                    onChange={(e) =>
-                      setEditingUser({ ...editingUser, designation: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="editRole">Role</Label>
-                  <Select
-                    value={editingUser.role}
-                    onValueChange={(value) =>
-                      setEditingUser({ ...editingUser, role: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {userRoles.map((role) => (
-                        <SelectItem key={role} value={role}>
-                          {role}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              {/* User ID - Read Only */}
+              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                <Label className="text-right">User ID</Label>
+                <span className="text-sm text-muted-foreground">{editingUser.id?.slice(0, 8) || "-"}</span>
+              </div>
+
+              {/* First Name */}
+              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                <Label htmlFor="editFirstName" className="text-right">First name</Label>
+                <Input
+                  id="editFirstName"
+                  value={editingUser.firstName}
+                  onChange={(e) =>
+                    setEditingUser({ ...editingUser, firstName: e.target.value })
+                  }
+                />
+              </div>
+
+              {/* Last Name */}
+              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                <Label htmlFor="editLastName" className="text-right">Last name</Label>
+                <Input
+                  id="editLastName"
+                  value={editingUser.lastName}
+                  onChange={(e) =>
+                    setEditingUser({ ...editingUser, lastName: e.target.value })
+                  }
+                />
+              </div>
+
+              {/* Full Name */}
+              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                <Label htmlFor="editFullName" className="text-right">Full name</Label>
+                <Input
+                  id="editFullName"
+                  value={editingUser.fullName}
+                  onChange={(e) =>
+                    setEditingUser({ ...editingUser, fullName: e.target.value })
+                  }
+                />
+              </div>
+
+              {/* Email */}
+              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                <Label htmlFor="editEmail" className="text-right">Email</Label>
+                <Input
+                  id="editEmail"
+                  type="email"
+                  value={editingUser.email}
+                  onChange={(e) =>
+                    setEditingUser({ ...editingUser, email: e.target.value })
+                  }
+                />
+              </div>
+
+              {/* Is Local User */}
+              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                <Label className="text-right">Is local user</Label>
+                <div className="flex gap-4">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      id="localUserYes"
+                      name="isLocalUser"
+                      checked={true}
+                      className="h-4 w-4"
+                      readOnly
+                    />
+                    <Label htmlFor="localUserYes" className="font-normal">Yes</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      id="localUserNo"
+                      name="isLocalUser"
+                      checked={false}
+                      className="h-4 w-4"
+                      readOnly
+                    />
+                    <Label htmlFor="localUserNo" className="font-normal">No</Label>
+                  </div>
                 </div>
               </div>
-              <div className="flex gap-6">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="editBlocked"
-                    checked={editingUser.isBlocked}
-                    onCheckedChange={(checked) =>
-                      setEditingUser({ ...editingUser, isBlocked: checked as boolean })
-                    }
-                  />
-                  <Label htmlFor="editBlocked" className="font-normal">
-                    Blocked
-                  </Label>
+
+              {/* Name (Username) */}
+              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                <Label htmlFor="editUserName" className="text-right">Name</Label>
+                <Input
+                  id="editUserName"
+                  value={editingUser.userName}
+                  onChange={(e) =>
+                    setEditingUser({ ...editingUser, userName: e.target.value })
+                  }
+                />
+              </div>
+
+              {/* Function */}
+              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                <Label htmlFor="editFunction" className="text-right">Function</Label>
+                <Select
+                  value={editingUser.function || ""}
+                  onValueChange={(value) =>
+                    setEditingUser({ ...editingUser, function: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select function" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Business">Business</SelectItem>
+                    <SelectItem value="Security">Security</SelectItem>
+                    <SelectItem value="Audit">Audit</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* User Role */}
+              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                <Label htmlFor="editRole" className="text-right">User Role</Label>
+                <Select
+                  value={editingUser.role}
+                  onValueChange={(value) =>
+                    setEditingUser({ ...editingUser, role: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {userRoles.map((role) => (
+                      <SelectItem key={role} value={role}>
+                        {role}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Department */}
+              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                <Label htmlFor="editDepartment" className="text-right">Department</Label>
+                <Select
+                  value={editingUser.departmentId || ""}
+                  onValueChange={(value) =>
+                    setEditingUser({ ...editingUser, departmentId: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {departments.map((dept) => (
+                      <SelectItem key={dept.id} value={dept.id}>
+                        {dept.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Designation */}
+              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                <Label htmlFor="editDesignation" className="text-right">Designation</Label>
+                <Select
+                  value={editingUser.designation || ""}
+                  onValueChange={(value) =>
+                    setEditingUser({ ...editingUser, designation: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Designation" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Analyst">Analyst</SelectItem>
+                    <SelectItem value="Developer">Developer</SelectItem>
+                    <SelectItem value="Financial Analyst">Financial Analyst</SelectItem>
+                    <SelectItem value="HR Manager">HR Manager</SelectItem>
+                    <SelectItem value="Manager">Manager</SelectItem>
+                    <SelectItem value="Marketing Specialist">Marketing Specialist</SelectItem>
+                    <SelectItem value="Operations Executive">Operations Executive</SelectItem>
+                    <SelectItem value="Senior Manager">Senior Manager</SelectItem>
+                    <SelectItem value="Software Engineer">Software Engineer</SelectItem>
+                    <SelectItem value="Team Lead">Team Lead</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Language */}
+              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                <Label htmlFor="editLanguage" className="text-right">Language</Label>
+                <Select
+                  value={editingUser.language || "English"}
+                  onValueChange={(value) =>
+                    setEditingUser({ ...editingUser, language: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select language" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="English">English</SelectItem>
+                    <SelectItem value="Arabic">Arabic</SelectItem>
+                    <SelectItem value="Hindi">Hindi</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Blocked */}
+              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                <Label className="text-right">Blocked</Label>
+                <div className="flex gap-4">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      id="blockedYes"
+                      name="isBlocked"
+                      checked={editingUser.isBlocked}
+                      onChange={() => setEditingUser({ ...editingUser, isBlocked: true })}
+                      className="h-4 w-4"
+                    />
+                    <Label htmlFor="blockedYes" className="font-normal">Yes</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      id="blockedNo"
+                      name="isBlocked"
+                      checked={!editingUser.isBlocked}
+                      onChange={() => setEditingUser({ ...editingUser, isBlocked: false })}
+                      className="h-4 w-4"
+                    />
+                    <Label htmlFor="blockedNo" className="font-normal">No</Label>
+                  </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="editActive"
-                    checked={editingUser.isActive}
-                    onCheckedChange={(checked) =>
-                      setEditingUser({ ...editingUser, isActive: checked as boolean })
-                    }
-                  />
-                  <Label htmlFor="editActive" className="font-normal">
-                    Active
-                  </Label>
+              </div>
+
+              {/* Active */}
+              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                <Label className="text-right">Active</Label>
+                <div className="flex gap-4">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      id="activeYes"
+                      name="isActive"
+                      checked={editingUser.isActive}
+                      onChange={() => setEditingUser({ ...editingUser, isActive: true })}
+                      className="h-4 w-4"
+                    />
+                    <Label htmlFor="activeYes" className="font-normal">Yes</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      id="activeNo"
+                      name="isActive"
+                      checked={!editingUser.isActive}
+                      onChange={() => setEditingUser({ ...editingUser, isActive: false })}
+                      className="h-4 w-4"
+                    />
+                    <Label htmlFor="activeNo" className="font-normal">No</Label>
+                  </div>
                 </div>
+              </div>
+
+              {/* Change Password Button */}
+              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                <div></div>
+                <Button variant="default" className="w-fit">
+                  Change password
+                </Button>
               </div>
             </div>
           )}
           <DialogFooter>
+            <Button onClick={handleEditUser}>Save</Button>
             <Button variant="outline" onClick={() => setIsEditUserOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleEditUser}>Save Changes</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Import Users Dialog */}
+      <Dialog open={showImportDialog} onOpenChange={(open) => {
+        setShowImportDialog(open);
+        if (!open) {
+          setImportFile(null);
+          if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+          }
+        }
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Import Users</DialogTitle>
+            <DialogDescription>
+              Import users from a CSV file. The file should have columns: Username, Email, Password, First Name, Last Name, Full Name, Designation, Function, Role, Department, Language, Timezone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label>File</Label>
+              <div className="flex gap-2 mt-1">
+                <Input
+                  type="file"
+                  accept=".csv"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  className="flex-1"
+                />
+              </div>
+              {importFile && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  Selected: {importFile.name}
+                </p>
+              )}
+            </div>
+            <div className="flex justify-between gap-2 pt-4">
+              <Button variant="outline" onClick={handleDownloadTemplate}>
+                <Download className="h-4 w-4 mr-2" />
+                Download Template
+              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowImportDialog(false);
+                    setImportFile(null);
+                    if (fileInputRef.current) {
+                      fileInputRef.current.value = "";
+                    }
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleImport}
+                  disabled={!importFile || importing}
+                >
+                  {importing ? "Importing..." : "Import"}
+                </Button>
+              </div>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

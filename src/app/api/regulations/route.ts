@@ -18,7 +18,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, status } = body;
+    const { name, version, sa1Date, sa2Date, scope, exclusionJustification, document, certificate, status } = body;
 
     if (!name) {
       return NextResponse.json({ error: "Name is required" }, { status: 400 });
@@ -27,6 +27,13 @@ export async function POST(request: NextRequest) {
     const regulation = await prisma.regulation.create({
       data: {
         name,
+        version,
+        sa1Date,
+        sa2Date,
+        scope,
+        exclusionJustification,
+        document,
+        certificate,
         status: status || "Subscribed",
       },
     });

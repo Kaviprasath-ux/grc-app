@@ -9,11 +9,21 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { name, status } = body;
+    const { name, version, sa1Date, sa2Date, scope, exclusionJustification, document, certificate, status } = body;
 
     const regulation = await prisma.regulation.update({
       where: { id },
-      data: { name, status },
+      data: {
+        name,
+        version,
+        sa1Date,
+        sa2Date,
+        scope,
+        exclusionJustification,
+        document,
+        certificate,
+        status,
+      },
     });
 
     return NextResponse.json(regulation);

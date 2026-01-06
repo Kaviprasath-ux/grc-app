@@ -19,7 +19,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { title, description, domain, category, status, dueDate, departmentId } = body;
+    const { title, description, domain, category, issueType, status, dueDate, departmentId } = body;
 
     if (!title || !domain || !category) {
       return NextResponse.json(
@@ -34,6 +34,7 @@ export async function POST(request: NextRequest) {
         description,
         domain,
         category,
+        issueType,
         status: status || "Open",
         dueDate: dueDate ? new Date(dueDate) : null,
         departmentId,

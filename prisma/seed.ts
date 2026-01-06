@@ -54,14 +54,14 @@ async function main() {
 
   // Create Users
   const users = [
-    { userName: "bts.admin", email: "admin@baarez.com", firstName: "BTS", lastName: "Admin", department: "IT Operations", designation: "System Administrator", role: "Administrator" },
-    { userName: "john.doe", email: "john.doe@baarez.com", firstName: "John", lastName: "Doe", department: "Compliance", designation: "Compliance Manager", role: "GRC Admin" },
-    { userName: "sarah.smith", email: "sarah.smith@baarez.com", firstName: "Sarah", lastName: "Smith", department: "Internal Audit", designation: "Lead Auditor", role: "Auditor" },
-    { userName: "mike.wilson", email: "mike.wilson@baarez.com", firstName: "Mike", lastName: "Wilson", department: "Risk Management", designation: "Risk Analyst", role: "Risk Manager" },
-    { userName: "emily.brown", email: "emily.brown@baarez.com", firstName: "Emily", lastName: "Brown", department: "Human Resources", designation: "HR Manager", role: "User" },
-    { userName: "david.jones", email: "david.jones@baarez.com", firstName: "David", lastName: "Jones", department: "IT Support", designation: "Support Specialist", role: "User" },
-    { userName: "lisa.taylor", email: "lisa.taylor@baarez.com", firstName: "Lisa", lastName: "Taylor", department: "Product Development", designation: "Product Manager", role: "User" },
-    { userName: "james.anderson", email: "james.anderson@baarez.com", firstName: "James", lastName: "Anderson", department: "Revenue", designation: "Sales Director", role: "User" },
+    { userId: "USR-001", userName: "bts.admin", email: "admin@baarez.com", firstName: "BTS", lastName: "Admin", department: "IT Operations", designation: "System Administrator", role: "Administrator", function: "Security" },
+    { userId: "USR-002", userName: "john.doe", email: "john.doe@baarez.com", firstName: "John", lastName: "Doe", department: "Compliance", designation: "Compliance Manager", role: "GRC Admin", function: "Audit" },
+    { userId: "USR-003", userName: "sarah.smith", email: "sarah.smith@baarez.com", firstName: "Sarah", lastName: "Smith", department: "Internal Audit", designation: "Lead Auditor", role: "Auditor", function: "Audit" },
+    { userId: "USR-004", userName: "mike.wilson", email: "mike.wilson@baarez.com", firstName: "Mike", lastName: "Wilson", department: "Risk Management", designation: "Risk Analyst", role: "Risk Manager", function: "Security" },
+    { userId: "USR-005", userName: "emily.brown", email: "emily.brown@baarez.com", firstName: "Emily", lastName: "Brown", department: "Human Resources", designation: "HR Manager", role: "User", function: "Business" },
+    { userId: "USR-006", userName: "david.jones", email: "david.jones@baarez.com", firstName: "David", lastName: "Jones", department: "IT Support", designation: "Support Specialist", role: "User", function: "Security" },
+    { userId: "USR-007", userName: "lisa.taylor", email: "lisa.taylor@baarez.com", firstName: "Lisa", lastName: "Taylor", department: "Product Development", designation: "Product Manager", role: "User", function: "Business" },
+    { userId: "USR-008", userName: "james.anderson", email: "james.anderson@baarez.com", firstName: "James", lastName: "Anderson", department: "Revenue", designation: "Sales Director", role: "User", function: "Business" },
   ];
 
   const createdUsers: { [key: string]: string } = {};
@@ -70,6 +70,7 @@ async function main() {
       where: { userName: user.userName },
       update: {},
       create: {
+        userId: user.userId,
         userName: user.userName,
         email: user.email,
         password: "password123",
@@ -78,6 +79,7 @@ async function main() {
         fullName: `${user.firstName} ${user.lastName}`,
         designation: user.designation,
         role: user.role,
+        function: user.function,
         departmentId: createdDepts[user.department],
       },
     });
@@ -519,15 +521,98 @@ async function main() {
   }
   console.log("✅ Requirements created (70+ comprehensive requirements)");
 
-  // Keep Regulations for backwards compatibility
-  for (const framework of frameworks.slice(0, 5)) {
+  // Create Regulations with comprehensive data
+  const regulations = [
+    {
+      name: "ISO 27001:2022",
+      version: "2022",
+      scope: "Information Security Management System",
+      status: "Subscribed",
+      sa1Date: "2024-01-15",
+      sa2Date: "2024-07-15",
+    },
+    {
+      name: "GDPR",
+      version: "2018",
+      scope: "Data Protection and Privacy",
+      status: "Subscribed",
+      sa1Date: "2024-02-01",
+      sa2Date: "2024-08-01",
+    },
+    {
+      name: "SOC 2 Type II",
+      version: "2017",
+      scope: "Security, Availability, Processing Integrity",
+      status: "Subscribed",
+      sa1Date: "2024-03-10",
+      sa2Date: "2024-09-10",
+    },
+    {
+      name: "PCI DSS",
+      version: "4.0",
+      scope: "Payment Card Industry Data Security",
+      status: "Subscribed",
+      sa1Date: "2024-04-01",
+      sa2Date: "2024-10-01",
+    },
+    {
+      name: "HIPAA",
+      version: "2013",
+      scope: "Healthcare Information Privacy and Security",
+      status: "Subscribed",
+      sa1Date: "2024-05-15",
+      sa2Date: "2024-11-15",
+    },
+    {
+      name: "NIST CSF",
+      version: "2.0",
+      scope: "Cybersecurity Framework",
+      status: "Subscribed",
+      sa1Date: "2024-06-01",
+      sa2Date: "2024-12-01",
+    },
+    {
+      name: "CCPA",
+      version: "2020",
+      scope: "California Consumer Privacy Act",
+      status: "Not Subscribed",
+    },
+    {
+      name: "SOX",
+      version: "2002",
+      scope: "Financial Reporting and Internal Controls",
+      status: "Not Subscribed",
+    },
+    {
+      name: "FISMA",
+      version: "2014",
+      scope: "Federal Information Security Management",
+      status: "Not Subscribed",
+    },
+    {
+      name: "COBIT",
+      version: "2019",
+      scope: "IT Governance and Management",
+      status: "Subscribed",
+      sa1Date: "2024-07-01",
+      sa2Date: "2025-01-01",
+    },
+  ];
+
+  for (const reg of regulations) {
     await prisma.regulation.upsert({
-      where: { name: framework.name },
-      update: {},
-      create: { name: framework.name, status: framework.status },
+      where: { name: reg.name },
+      update: {
+        version: reg.version,
+        scope: reg.scope,
+        status: reg.status,
+        sa1Date: reg.sa1Date,
+        sa2Date: reg.sa2Date,
+      },
+      create: reg,
     });
   }
-  console.log("✅ Regulations created");
+  console.log("✅ Regulations created (10 comprehensive regulations)");
 
   // Create Control Domains
   const controlDomains = [
@@ -1512,289 +1597,6 @@ async function main() {
     });
   }
   console.log("✅ CAPAs created");
-
-  // Create comprehensive Audit Logs matching the website
-  console.log("Creating Audit Logs...");
-
-  // Helper function to generate reference numbers
-  const generateRefNumber = () => Math.floor(Math.random() * 90000000000000000 + 10000000000000000).toString();
-
-  // AuditManagement.EvidenceRequest - 19 attributes (most recent)
-  const evidenceRequestLog = await prisma.auditLog.create({
-    data: {
-      entityType: "AuditManagement.EvidenceRequest",
-      referenceNumber: "12103423998878574",
-      entityId: "er-001",
-      userName: "Deepika",
-      type: "Create",
-      attributeCount: 19,
-      createdAt: new Date("2025-12-30T05:17:00Z"),
-    },
-  });
-
-  const evidenceRequestChanges = [
-    { attributeName: "AIAnswer", moduleName: "Attribute", oldValue: null, newValue: null },
-    { attributeName: "AIResponse", moduleName: "Attribute", oldValue: null, newValue: null },
-    { attributeName: "Art_ID", moduleName: "Attribute", oldValue: null, newValue: "33" },
-    { attributeName: "ArtifactID", moduleName: "Attribute", oldValue: null, newValue: "ER33" },
-    { attributeName: "AuditManagement.EvidenceRequest_AuditPlan", moduleName: "Reference", oldValue: "no reference", newValue: "reference added" },
-    { attributeName: "AuditManagement.EvidenceRequest_GRCAccount", moduleName: "Reference", oldValue: "no reference", newValue: "reference unchanged" },
-    { attributeName: "AuditManagement.EvidenceRequest_Procedure", moduleName: "Reference set", oldValue: "0 element(s) in set", newValue: "0 new, 0 removed element(s) (total 0)" },
-    { attributeName: "AuditManagement.EvidenceRequest_UserAccount", moduleName: "Reference set", oldValue: "0 element(s) in set", newValue: "1 new, 0 removed element(s) (total 1)" },
-    { attributeName: "Comment", moduleName: "Attribute", oldValue: null, newValue: null },
-    { attributeName: "Description", moduleName: "Attribute", oldValue: null, newValue: "Tewst" },
-    { attributeName: "HasRequests", moduleName: "Attribute", oldValue: null, newValue: "false" },
-    { attributeName: "_ID", moduleName: "Attribute", oldValue: null, newValue: "0" },
-    { attributeName: "IsResponded", moduleName: "Attribute", oldValue: null, newValue: "false" },
-    { attributeName: "Justification", moduleName: "Attribute", oldValue: null, newValue: null },
-    { attributeName: "NoOfAttachments", moduleName: "Attribute", oldValue: null, newValue: "0" },
-    { attributeName: "NoOfSamples", moduleName: "Attribute", oldValue: null, newValue: "2" },
-    { attributeName: "RequestName", moduleName: "Attribute", oldValue: null, newValue: "ISSue" },
-    { attributeName: "RequestStatus", moduleName: "Attribute", oldValue: null, newValue: null },
-    { attributeName: "Title", moduleName: "Attribute", oldValue: null, newValue: null },
-  ];
-
-  for (const change of evidenceRequestChanges) {
-    await prisma.auditLogChange.create({
-      data: { auditLogId: evidenceRequestLog.id, ...change },
-    });
-  }
-
-  // AuditManagement.AuditPlan - 1 attribute (same time)
-  const auditPlanLog1 = await prisma.auditLog.create({
-    data: {
-      entityType: "AuditManagement.AuditPlan",
-      referenceNumber: "76279718688780027",
-      entityId: "ap-001",
-      userName: "Deepika",
-      type: "Change",
-      attributeCount: 1,
-      createdAt: new Date("2025-12-30T05:17:00Z"),
-    },
-  });
-
-  await prisma.auditLogChange.create({
-    data: {
-      auditLogId: auditPlanLog1.id,
-      attributeName: "Status",
-      moduleName: "Attribute",
-      oldValue: "Draft",
-      newValue: "In Progress",
-    },
-  });
-
-  // MOF_Audit.AuditTasksAI - 6 attributes (4 entries)
-  const auditTasksRefNumbers = ["139330113471928924", "139330113471928714", "139330113471928654", "139330113471928465"];
-  for (let i = 0; i < 4; i++) {
-    const auditTasksLog = await prisma.auditLog.create({
-      data: {
-        entityType: "MOF_Audit.AuditTasksAI",
-        referenceNumber: auditTasksRefNumbers[i],
-        entityId: `at-00${i + 1}`,
-        userName: "anamika",
-        type: "Create",
-        attributeCount: 6,
-        createdAt: new Date("2025-12-29T13:41:00Z"),
-      },
-    });
-
-    const auditTasksChanges = [
-      { attributeName: "TaskName", moduleName: "Attribute", oldValue: null, newValue: `AI Task ${i + 1}` },
-      { attributeName: "TaskStatus", moduleName: "Attribute", oldValue: null, newValue: "Pending" },
-      { attributeName: "AIProcessed", moduleName: "Attribute", oldValue: null, newValue: "true" },
-      { attributeName: "ProcessingDate", moduleName: "Attribute", oldValue: null, newValue: "12/29/2025" },
-      { attributeName: "ResultScore", moduleName: "Attribute", oldValue: null, newValue: "85" },
-      { attributeName: "IsVerified", moduleName: "Attribute", oldValue: null, newValue: "false" },
-    ];
-
-    for (const change of auditTasksChanges) {
-      await prisma.auditLogChange.create({
-        data: { auditLogId: auditTasksLog.id, ...change },
-      });
-    }
-  }
-
-  // AuditManagement.AuditPlan - 95 attributes
-  const auditPlanLog2 = await prisma.auditLog.create({
-    data: {
-      entityType: "AuditManagement.AuditPlan",
-      referenceNumber: "76279718688946370",
-      entityId: "ap-002",
-      userName: "anamika",
-      type: "Create",
-      attributeCount: 95,
-      createdAt: new Date("2025-12-29T13:41:00Z"),
-    },
-  });
-
-  const auditPlanChanges = [
-    { attributeName: "AcknowledgementDueDate", moduleName: "Attribute", oldValue: null, newValue: null },
-    { attributeName: "AssetCIA", moduleName: "Attribute", oldValue: null, newValue: null },
-    { attributeName: "AssetName", moduleName: "Attribute", oldValue: null, newValue: null },
-    { attributeName: "AuditeeDelayedResponseEscalate", moduleName: "Attribute", oldValue: null, newValue: "false" },
-    { attributeName: "AuditeeResponseDate", moduleName: "Attribute", oldValue: null, newValue: null },
-    { attributeName: "AuditeeTeam", moduleName: "Attribute", oldValue: null, newValue: null },
-    { attributeName: "AuditID", moduleName: "Attribute", oldValue: null, newValue: "0029" },
-    { attributeName: "AuditItem", moduleName: "Attribute", oldValue: null, newValue: null },
-    { attributeName: "AuditManagement.Attachments_AuditPlan", moduleName: "Reference", oldValue: "no reference", newValue: "reference unchanged" },
-    { attributeName: "AuditManagement.AuditPlan_Approver", moduleName: "Reference", oldValue: "no reference", newValue: "reference unchanged" },
-    { attributeName: "AuditManagement.AuditPlan_Assignee", moduleName: "Reference", oldValue: "no reference", newValue: "reference added" },
-    { attributeName: "AuditManagement.AuditPlan_Department", moduleName: "Reference", oldValue: "no reference", newValue: "reference added" },
-    { attributeName: "AuditManagement.AuditPlan_Framework", moduleName: "Reference", oldValue: "no reference", newValue: "reference added" },
-    { attributeName: "AuditPlanStatus", moduleName: "Attribute", oldValue: null, newValue: "Draft" },
-    { attributeName: "AuditScope", moduleName: "Attribute", oldValue: null, newValue: "Full Audit" },
-    { attributeName: "AuditType", moduleName: "Attribute", oldValue: null, newValue: "Internal" },
-    { attributeName: "ComplianceScore", moduleName: "Attribute", oldValue: null, newValue: "0" },
-    { attributeName: "ControlCategory", moduleName: "Attribute", oldValue: null, newValue: null },
-    { attributeName: "ControlDomain", moduleName: "Attribute", oldValue: null, newValue: null },
-    { attributeName: "ControlOwner", moduleName: "Attribute", oldValue: null, newValue: null },
-    { attributeName: "CreatedBy", moduleName: "Attribute", oldValue: null, newValue: "anamika" },
-    { attributeName: "CreatedDate", moduleName: "Attribute", oldValue: null, newValue: "12/29/2025" },
-    { attributeName: "Description", moduleName: "Attribute", oldValue: null, newValue: "Annual IT Security Audit" },
-    { attributeName: "DueDate", moduleName: "Attribute", oldValue: null, newValue: "01/31/2026" },
-    { attributeName: "EndDate", moduleName: "Attribute", oldValue: null, newValue: null },
-    { attributeName: "EvidenceCount", moduleName: "Attribute", oldValue: null, newValue: "0" },
-    { attributeName: "FindingsCount", moduleName: "Attribute", oldValue: null, newValue: "0" },
-    { attributeName: "IsActive", moduleName: "Attribute", oldValue: null, newValue: "true" },
-    { attributeName: "IsApproved", moduleName: "Attribute", oldValue: null, newValue: "false" },
-    { attributeName: "IsCompleted", moduleName: "Attribute", oldValue: null, newValue: "false" },
-  ];
-
-  // Add more attributes to reach 95
-  for (let i = 30; i < 95; i++) {
-    auditPlanChanges.push({
-      attributeName: `Attribute_${i}`,
-      moduleName: "Attribute",
-      oldValue: null,
-      newValue: null,
-    });
-  }
-
-  for (const change of auditPlanChanges) {
-    await prisma.auditLogChange.create({
-      data: { auditLogId: auditPlanLog2.id, ...change },
-    });
-  }
-
-  // Risk.RiskAssessment - 1 attribute
-  const riskAssessmentLog = await prisma.auditLog.create({
-    data: {
-      entityType: "Risk.RiskAssessment",
-      referenceNumber: "115123265474812347",
-      entityId: "ra-001",
-      userName: "bts",
-      type: "Change",
-      attributeCount: 1,
-      createdAt: new Date("2025-12-29T13:32:00Z"),
-    },
-  });
-
-  await prisma.auditLogChange.create({
-    data: {
-      auditLogId: riskAssessmentLog.id,
-      attributeName: "DueDate",
-      moduleName: "Attribute",
-      oldValue: "12/24/2025 (UTC)",
-      newValue: "12/29/2025 (UTC)",
-    },
-  });
-
-  // Compliance.Evidence - 30 attributes (12 entries)
-  const evidenceRefNumbers = [
-    "112027040731400770", "112027040731400654", "112027040731400497", "112027040731400344",
-    "112027040731400254", "112027040731400155", "112027040731399991", "112027040731399881",
-    "112027040731399706", "112027040731399640", "112027040731399444", "112027040731399419"
-  ];
-  for (let i = 0; i < 12; i++) {
-    const evidenceLog = await prisma.auditLog.create({
-      data: {
-        entityType: "Compliance.Evidence",
-        referenceNumber: evidenceRefNumbers[i],
-        entityId: `ev-00${i + 1}`,
-        userName: "bts",
-        type: "Create",
-        attributeCount: 30,
-        createdAt: new Date("2025-12-29T12:28:00Z"),
-      },
-    });
-
-    const evidenceChanges = [
-      { attributeName: "EvidenceName", moduleName: "Attribute", oldValue: null, newValue: `Evidence Document ${i + 1}` },
-      { attributeName: "EvidenceType", moduleName: "Attribute", oldValue: null, newValue: "Document" },
-      { attributeName: "EvidenceStatus", moduleName: "Attribute", oldValue: null, newValue: "Pending" },
-      { attributeName: "UploadDate", moduleName: "Attribute", oldValue: null, newValue: "12/29/2025" },
-      { attributeName: "ReviewDate", moduleName: "Attribute", oldValue: null, newValue: null },
-      { attributeName: "Compliance.Evidence_Control", moduleName: "Reference", oldValue: "no reference", newValue: "reference added" },
-      { attributeName: "Compliance.Evidence_Framework", moduleName: "Reference", oldValue: "no reference", newValue: "reference added" },
-      { attributeName: "Compliance.Evidence_Department", moduleName: "Reference", oldValue: "no reference", newValue: "reference added" },
-      { attributeName: "Compliance.Evidence_Assignee", moduleName: "Reference", oldValue: "no reference", newValue: "reference added" },
-      { attributeName: "IsValid", moduleName: "Attribute", oldValue: null, newValue: "true" },
-      { attributeName: "ValidFrom", moduleName: "Attribute", oldValue: null, newValue: "12/29/2025" },
-      { attributeName: "ValidTo", moduleName: "Attribute", oldValue: null, newValue: "12/29/2026" },
-      { attributeName: "Description", moduleName: "Attribute", oldValue: null, newValue: `Description for evidence ${i + 1}` },
-      { attributeName: "AttachmentCount", moduleName: "Attribute", oldValue: null, newValue: "1" },
-      { attributeName: "CommentCount", moduleName: "Attribute", oldValue: null, newValue: "0" },
-    ];
-
-    // Add more to reach 30
-    for (let j = 15; j < 30; j++) {
-      evidenceChanges.push({
-        attributeName: `EvidenceField_${j}`,
-        moduleName: "Attribute",
-        oldValue: null,
-        newValue: null,
-      });
-    }
-
-    for (const change of evidenceChanges) {
-      await prisma.auditLogChange.create({
-        data: { auditLogId: evidenceLog.id, ...change },
-      });
-    }
-  }
-
-  // Add more varied audit log entries for comprehensive testing
-  const additionalLogs = [
-    { entityType: "Organization.Department", userName: "bts.admin", type: "Create", attributeCount: 5, date: "2025-12-28T10:00:00Z" },
-    { entityType: "Organization.User", userName: "bts.admin", type: "Create", attributeCount: 12, date: "2025-12-28T09:30:00Z" },
-    { entityType: "Risk.RiskRegister", userName: "mike.wilson", type: "Change", attributeCount: 8, date: "2025-12-27T15:00:00Z" },
-    { entityType: "Compliance.Control", userName: "john.doe", type: "Create", attributeCount: 15, date: "2025-12-27T14:00:00Z" },
-    { entityType: "Asset.AssetInventory", userName: "bts.admin", type: "Create", attributeCount: 10, date: "2025-12-26T11:00:00Z" },
-    { entityType: "AuditManagement.Finding", userName: "sarah.smith", type: "Create", attributeCount: 7, date: "2025-12-26T10:00:00Z" },
-    { entityType: "Compliance.Exception", userName: "john.doe", type: "Change", attributeCount: 6, date: "2025-12-25T16:00:00Z" },
-    { entityType: "Organization.Process", userName: "bts.admin", type: "Create", attributeCount: 9, date: "2025-12-25T14:00:00Z" },
-    { entityType: "Governance.Policy", userName: "john.doe", type: "Change", attributeCount: 11, date: "2025-12-24T12:00:00Z" },
-    { entityType: "Risk.RiskTreatment", userName: "mike.wilson", type: "Create", attributeCount: 4, date: "2025-12-24T10:00:00Z" },
-  ];
-
-  for (const log of additionalLogs) {
-    const auditLog = await prisma.auditLog.create({
-      data: {
-        entityType: log.entityType,
-        referenceNumber: generateRefNumber(),
-        entityId: `entity-${Math.random().toString(36).substr(2, 9)}`,
-        userName: log.userName,
-        type: log.type,
-        attributeCount: log.attributeCount,
-        createdAt: new Date(log.date),
-      },
-    });
-
-    // Add corresponding changes
-    for (let i = 0; i < log.attributeCount; i++) {
-      await prisma.auditLogChange.create({
-        data: {
-          auditLogId: auditLog.id,
-          attributeName: `Field_${i + 1}`,
-          moduleName: i % 3 === 0 ? "Reference" : "Attribute",
-          oldValue: i % 2 === 0 ? "Previous Value" : null,
-          newValue: `New Value ${i + 1}`,
-        },
-      });
-    }
-  }
-
-  console.log("✅ Audit Logs created with comprehensive data");
 
   // ==================== LINK CONTROLS TO RISKS ====================
 

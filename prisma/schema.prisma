@@ -107,6 +107,7 @@ model Department {
 // Users
 model User {
   id                  String      @id @default(cuid())
+  userId              String      @unique
   userName            String      @unique
   email               String      @unique
   password            String
@@ -162,6 +163,7 @@ model Issue {
   description  String?
   domain       String // Internal, External, IT, GRC
   category     String // Finance, Human Resources, Data breach, etc.
+  issueType    String? // Financial, Operational, Compliance, Security, etc.
   status       String      @default("Open") // Open, In Progress, Pending, Resolved, Closed
   dueDate      DateTime?
   departmentId String?
@@ -287,11 +289,18 @@ model RequirementException {
 
 // Regulations (legacy - keeping for backwards compatibility)
 model Regulation {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  status    String   @default("Subscribed") // Subscribed, Not Subscribed
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                     String   @id @default(cuid())
+  name                   String   @unique
+  version                String?
+  sa1Date                String?
+  sa2Date                String?
+  scope                  String?
+  exclusionJustification String?
+  document               String?
+  certificate            String?
+  status                 String   @default("Subscribed") // Subscribed, Not Subscribed
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
 }
 
 // Control Domains
