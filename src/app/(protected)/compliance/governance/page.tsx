@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -19,6 +18,16 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -34,15 +43,13 @@ import { Badge } from "@/components/ui/badge";
 import {
   Plus,
   Search,
-  FileText,
-  ClipboardList,
-  BookOpen,
-  Shield,
+  Upload,
+  Trash2,
+  Pencil,
   ChevronLeft,
   ChevronRight,
-  Download,
-  LayoutDashboard,
-  Lock,
+  ChevronsLeft,
+  ChevronsRight,
 } from "lucide-react";
 
 interface Policy {
@@ -93,7 +100,6 @@ interface Domain {
   name: string;
 }
 
-const STATUS_OPTIONS = ["Not Uploaded", "Draft", "Approved", "Needs Review", "Published", "Pending Approval"];
 const DOCUMENT_TYPES = ["Policy", "Standard", "Procedure"];
 const RECURRENCE_OPTIONS = ["Weekly", "Monthly", "Quarterly", "Yearly"];
 
@@ -101,15 +107,14 @@ export default function GovernancePage() {
   const router = useRouter();
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<string>("Dashboard");
   const [activeDocType, setActiveDocType] = useState<string>("Policy");
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+  const itemsPerPage = 20;
 
   // Filters
-  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [frameworkFilter, setFrameworkFilter] = useState<string>("all");
 
   // Filter options
@@ -118,16 +123,6 @@ export default function GovernancePage() {
   const [frameworks, setFrameworks] = useState<Framework[]>([]);
   const [controls, setControls] = useState<Control[]>([]);
   const [domains, setDomains] = useState<Domain[]>([]);
-
-  // Status counts for all document types
-  const [statusCounts, setStatusCounts] = useState({
-    total: 0,
-    notUploaded: 0,
-    draft: 0,
-    approved: 0,
-    published: 0,
-    needsReview: 0,
-  });
 
   // Create dialog
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -146,17 +141,23 @@ export default function GovernancePage() {
   const [controlDomainFilter, setControlDomainFilter] = useState<string>("all");
   const [controlStatusFilter, setControlStatusFilter] = useState<string>("all");
 
+  // Delete dialogs
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleteAllDialogOpen, setIsDeleteAllDialogOpen] = useState(false);
+  const [policyToDelete, setPolicyToDelete] = useState<Policy | null>(null);
+
+  // Import dialog
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
   useEffect(() => {
     fetchFilterOptions();
   }, []);
 
   useEffect(() => {
-    if (activeTab !== "Dashboard" && activeTab !== "Information Security Vault") {
-      fetchPolicies();
-    } else {
-      fetchAllStatusCounts();
-    }
-  }, [activeTab, activeDocType, currentPage, statusFilter, frameworkFilter]);
+    fetchPolicies();
+  }, [activeDocType, currentPage, frameworkFilter]);
 
   const fetchFilterOptions = async () => {
     try {
@@ -186,38 +187,13 @@ export default function GovernancePage() {
     }
   };
 
-  const fetchAllStatusCounts = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch("/api/policies?limit=1000");
-      if (response.ok) {
-        const data = await response.json();
-        const allPolicies = data.data || [];
-        const counts = {
-          total: allPolicies.length,
-          notUploaded: allPolicies.filter((p: Policy) => p.status === "Not Uploaded").length,
-          draft: allPolicies.filter((p: Policy) => p.status === "Draft").length,
-          approved: allPolicies.filter((p: Policy) => p.status === "Approved").length,
-          published: allPolicies.filter((p: Policy) => p.status === "Published").length,
-          needsReview: allPolicies.filter((p: Policy) => p.status === "Needs Review").length,
-        };
-        setStatusCounts(counts);
-      }
-    } catch (error) {
-      console.error("Error fetching status counts:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const fetchPolicies = useCallback(async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams();
       params.set("page", currentPage.toString());
-      params.set("limit", "20");
+      params.set("limit", itemsPerPage.toString());
       params.set("documentType", activeDocType);
-      if (statusFilter && statusFilter !== "all") params.set("status", statusFilter);
       if (frameworkFilter && frameworkFilter !== "all") params.set("frameworkId", frameworkFilter);
       if (search) params.set("search", search);
 
@@ -227,59 +203,17 @@ export default function GovernancePage() {
         setPolicies(data.data || []);
         setTotal(data.pagination?.total || 0);
         setTotalPages(data.pagination?.totalPages || 1);
-
-        // Calculate status counts for current document type
-        const counts = {
-          total: data.pagination?.total || 0,
-          notUploaded: 0,
-          draft: 0,
-          approved: 0,
-          published: 0,
-          needsReview: 0,
-        };
-        (data.data || []).forEach((p: Policy) => {
-          if (p.status === "Not Uploaded") counts.notUploaded++;
-          else if (p.status === "Draft") counts.draft++;
-          else if (p.status === "Approved") counts.approved++;
-          else if (p.status === "Published") counts.published++;
-          else if (p.status === "Needs Review") counts.needsReview++;
-        });
-        setStatusCounts(counts);
       }
     } catch (error) {
       console.error("Error fetching policies:", error);
     } finally {
       setLoading(false);
     }
-  }, [activeDocType, currentPage, statusFilter, frameworkFilter, search]);
+  }, [activeDocType, currentPage, frameworkFilter, search]);
 
   const handleSearch = () => {
     setCurrentPage(1);
     fetchPolicies();
-  };
-
-  const handleExport = async () => {
-    try {
-      const params = new URLSearchParams();
-      params.set("documentType", activeDocType);
-      if (statusFilter && statusFilter !== "all") params.set("status", statusFilter);
-      if (frameworkFilter && frameworkFilter !== "all") params.set("frameworkId", frameworkFilter);
-
-      const response = await fetch(`/api/policies/export?${params.toString()}`);
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `${activeDocType.toLowerCase()}s-export.csv`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-      }
-    } catch (error) {
-      console.error("Error exporting:", error);
-    }
   };
 
   const handleCreatePolicy = async () => {
@@ -306,7 +240,7 @@ export default function GovernancePage() {
     setCreateStep(1);
     setNewPolicy({
       name: "",
-      documentType: "Policy",
+      documentType: activeDocType,
       recurrence: "",
       departmentId: "",
       assigneeId: "",
@@ -315,6 +249,78 @@ export default function GovernancePage() {
     setControlSearch("");
     setControlDomainFilter("all");
     setControlStatusFilter("all");
+  };
+
+  const handleDeletePolicy = async () => {
+    if (!policyToDelete) return;
+    try {
+      const response = await fetch(`/api/policies/${policyToDelete.id}`, {
+        method: "DELETE",
+      });
+      if (response.ok) {
+        fetchPolicies();
+      }
+    } catch (error) {
+      console.error("Error deleting policy:", error);
+    } finally {
+      setIsDeleteDialogOpen(false);
+      setPolicyToDelete(null);
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    try {
+      const response = await fetch(`/api/policies/delete-all?documentType=${activeDocType}`, {
+        method: "DELETE",
+      });
+      if (response.ok) {
+        fetchPolicies();
+      }
+    } catch (error) {
+      console.error("Error deleting all policies:", error);
+    } finally {
+      setIsDeleteAllDialogOpen(false);
+    }
+  };
+
+  const handleImport = async () => {
+    if (!importFile) return;
+    try {
+      const formData = new FormData();
+      formData.append("file", importFile);
+      formData.append("documentType", activeDocType);
+
+      const response = await fetch("/api/policies/import", {
+        method: "POST",
+        body: formData,
+      });
+      if (response.ok) {
+        fetchPolicies();
+        setIsImportDialogOpen(false);
+        setImportFile(null);
+      }
+    } catch (error) {
+      console.error("Error importing:", error);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      setImportFile(files[0]);
+    }
   };
 
   const getStatusBadgeColor = (status: string) => {
@@ -326,17 +332,6 @@ export default function GovernancePage() {
       case "Not Uploaded": return "bg-gray-100 text-gray-800";
       case "Pending Approval": return "bg-purple-100 text-purple-800";
       default: return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const getTabIcon = (type: string) => {
-    switch (type) {
-      case "Dashboard": return <LayoutDashboard className="h-4 w-4 mr-2" />;
-      case "Policy": return <FileText className="h-4 w-4 mr-2" />;
-      case "Standard": return <BookOpen className="h-4 w-4 mr-2" />;
-      case "Procedure": return <ClipboardList className="h-4 w-4 mr-2" />;
-      case "Information Security Vault": return <Lock className="h-4 w-4 mr-2" />;
-      default: return <Shield className="h-4 w-4 mr-2" />;
     }
   };
 
@@ -356,360 +351,202 @@ export default function GovernancePage() {
     : users;
 
   const handleTabChange = (tab: string) => {
-    setActiveTab(tab);
-    if (tab === "Policy" || tab === "Standard" || tab === "Procedure") {
-      setActiveDocType(tab);
-    }
+    setActiveDocType(tab);
     setCurrentPage(1);
-    setStatusFilter("all");
+    setSearch("");
+    setFrameworkFilter("all");
   };
 
   const canProceedStep1 = newPolicy.name && newPolicy.departmentId && newPolicy.documentType && newPolicy.recurrence && newPolicy.assigneeId;
+
+  // Pagination helpers
+  const startItem = total > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0;
+  const endItem = Math.min(currentPage * itemsPerPage, total);
 
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Governance</h1>
-        </div>
+        <h1 className="text-2xl font-bold">Governance</h1>
         <div className="flex gap-2">
-          {activeTab !== "Dashboard" && activeTab !== "Information Security Vault" && (
-            <>
-              <Button variant="outline" onClick={handleExport}>
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </Button>
-              <Button onClick={() => {
-                setNewPolicy({ ...newPolicy, documentType: activeDocType });
-                setIsCreateDialogOpen(true);
-              }}>
-                <Plus className="h-4 w-4 mr-2" />
-                New {activeDocType}
-              </Button>
-            </>
-          )}
+          <Button onClick={() => {
+            setNewPolicy({ ...newPolicy, documentType: activeDocType });
+            setIsCreateDialogOpen(true);
+          }}>
+            <Plus className="h-4 w-4 mr-2" />
+            New Governance
+          </Button>
+          <Button variant="outline" onClick={() => setIsImportDialogOpen(true)}>
+            <Upload className="h-4 w-4 mr-2" />
+            Import
+          </Button>
+          <Button variant="outline" onClick={() => setIsDeleteAllDialogOpen(true)}>
+            <Trash2 className="h-4 w-4 mr-2" />
+            Delete All
+          </Button>
         </div>
-      </div>
-
-      {/* Integrated Framework Filter - Above tabs */}
-      {activeTab !== "Dashboard" && activeTab !== "Information Security Vault" && (
-        <div className="flex items-center gap-4">
-          <Label className="text-sm font-medium">Integrated Framework:</Label>
-          <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
-            <SelectTrigger className="w-[250px]">
-              <SelectValue placeholder="All Frameworks" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Frameworks</SelectItem>
-              {frameworks.map((f) => (
-                <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
-
-      {/* Status Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-        <Card className="cursor-pointer hover:shadow-md" onClick={() => setStatusFilter("all")}>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold">{statusCounts.total}</div>
-            <div className="text-sm text-muted-foreground">Total</div>
-          </CardContent>
-        </Card>
-        <Card className="cursor-pointer hover:shadow-md border-l-4 border-l-gray-500" onClick={() => setStatusFilter("Not Uploaded")}>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-gray-600">{statusCounts.notUploaded}</div>
-            <div className="text-sm text-muted-foreground">Not Uploaded</div>
-          </CardContent>
-        </Card>
-        <Card className="cursor-pointer hover:shadow-md border-l-4 border-l-yellow-500" onClick={() => setStatusFilter("Draft")}>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-yellow-600">{statusCounts.draft}</div>
-            <div className="text-sm text-muted-foreground">Draft</div>
-          </CardContent>
-        </Card>
-        <Card className="cursor-pointer hover:shadow-md border-l-4 border-l-blue-500" onClick={() => setStatusFilter("Approved")}>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-blue-600">{statusCounts.approved}</div>
-            <div className="text-sm text-muted-foreground">Approved</div>
-          </CardContent>
-        </Card>
-        <Card className="cursor-pointer hover:shadow-md border-l-4 border-l-green-500" onClick={() => setStatusFilter("Published")}>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-green-600">{statusCounts.published}</div>
-            <div className="text-sm text-muted-foreground">Published</div>
-          </CardContent>
-        </Card>
-        <Card className="cursor-pointer hover:shadow-md border-l-4 border-l-orange-500" onClick={() => setStatusFilter("Needs Review")}>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-orange-600">{statusCounts.needsReview}</div>
-            <div className="text-sm text-muted-foreground">Needs Review</div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={handleTabChange}>
+      <Tabs value={activeDocType} onValueChange={handleTabChange}>
         <TabsList>
-          <TabsTrigger value="Dashboard">
-            {getTabIcon("Dashboard")}
-            Dashboard
-          </TabsTrigger>
-          <TabsTrigger value="Policy">
-            {getTabIcon("Policy")}
-            Policy
-          </TabsTrigger>
-          <TabsTrigger value="Standard">
-            {getTabIcon("Standard")}
-            Standards
-          </TabsTrigger>
-          <TabsTrigger value="Procedure">
-            {getTabIcon("Procedure")}
-            Procedures
-          </TabsTrigger>
-          <TabsTrigger value="Information Security Vault">
-            {getTabIcon("Information Security Vault")}
-            Information Security Vault
-          </TabsTrigger>
+          <TabsTrigger value="Policy">Policy</TabsTrigger>
+          <TabsTrigger value="Standard">Standards</TabsTrigger>
+          <TabsTrigger value="Procedure">Procedures</TabsTrigger>
         </TabsList>
 
-        {/* Dashboard Tab Content */}
-        <TabsContent value="Dashboard" className="mt-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Status Distribution Card */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Status Distribution</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-gray-500" />
-                      <span>Not Uploaded</span>
-                    </div>
-                    <span className="font-bold">{statusCounts.notUploaded}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-yellow-500" />
-                      <span>Draft</span>
-                    </div>
-                    <span className="font-bold">{statusCounts.draft}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-blue-500" />
-                      <span>Approved</span>
-                    </div>
-                    <span className="font-bold">{statusCounts.approved}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-green-500" />
-                      <span>Published</span>
-                    </div>
-                    <span className="font-bold">{statusCounts.published}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-orange-500" />
-                      <span>Needs Review</span>
-                    </div>
-                    <span className="font-bold">{statusCounts.needsReview}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Document Types Card */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Document Types</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div
-                    className="flex items-center justify-between p-3 rounded-lg hover:bg-muted cursor-pointer"
-                    onClick={() => handleTabChange("Policy")}
-                  >
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-5 w-5 text-blue-600" />
-                      <span>Policies</span>
-                    </div>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                  <div
-                    className="flex items-center justify-between p-3 rounded-lg hover:bg-muted cursor-pointer"
-                    onClick={() => handleTabChange("Standard")}
-                  >
-                    <div className="flex items-center gap-2">
-                      <BookOpen className="h-5 w-5 text-green-600" />
-                      <span>Standards</span>
-                    </div>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                  <div
-                    className="flex items-center justify-between p-3 rounded-lg hover:bg-muted cursor-pointer"
-                    onClick={() => handleTabChange("Procedure")}
-                  >
-                    <div className="flex items-center gap-2">
-                      <ClipboardList className="h-5 w-5 text-purple-600" />
-                      <span>Procedures</span>
-                    </div>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* Policy/Standard/Procedure Tab Content */}
+        {/* Tab Content - Same structure for all tabs */}
         {["Policy", "Standard", "Procedure"].map((docType) => (
-          <TabsContent key={docType} value={docType} className="mt-4">
-            {/* Filters */}
-            <Card className="mb-4">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-4">
-                  <div className="flex-1">
-                    <Input
-                      placeholder="Search By Code, Name, Department, Assignee, Approver"
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                    />
-                  </div>
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Statuses</SelectItem>
-                      {STATUS_OPTIONS.map((s) => (
-                        <SelectItem key={s} value={s}>{s}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button variant="outline" size="icon" onClick={handleSearch}>
-                    <Search className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+          <TabsContent key={docType} value={docType} className="mt-4 space-y-4">
+            {/* Search and Filter Row */}
+            <div className="flex items-center gap-4">
+              <div className="flex-1 relative">
+                <Input
+                  placeholder={` Search By ${docType} Name , ${docType} Code`}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                  className="pr-10"
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full"
+                  onClick={handleSearch}
+                >
+                  <Search className="h-4 w-4" />
+                </Button>
+              </div>
+              <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
+                <SelectTrigger className="w-[250px]">
+                  <SelectValue placeholder="Integrated Framework" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Integrated Framework</SelectItem>
+                  {frameworks.map((f) => (
+                    <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
             {/* Table */}
-            <Card>
-              <CardContent className="p-4">
-                {loading ? (
-                  <div className="text-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-                  </div>
-                ) : (
-                  <>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Code</TableHead>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Assignee</TableHead>
-                          <TableHead>Approver</TableHead>
-                          <TableHead>Department Name</TableHead>
-                          <TableHead>Action</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {policies.map((policy) => (
-                          <TableRow
-                            key={policy.id}
-                            className="cursor-pointer hover:bg-muted/50"
-                            onClick={() => router.push(`/compliance/governance/${policy.id}`)}
-                          >
-                            <TableCell className="font-medium">{policy.code}</TableCell>
-                            <TableCell>{policy.name}</TableCell>
-                            <TableCell>
-                              <Badge className={getStatusBadgeColor(policy.status)}>
-                                {policy.status}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>{policy.assignee?.fullName || "-"}</TableCell>
-                            <TableCell>{policy.approver?.fullName || "-"}</TableCell>
-                            <TableCell>{policy.department?.name || "-"}</TableCell>
-                            <TableCell>
+            {loading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+              </div>
+            ) : (
+              <>
+                <div className="border rounded-lg">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Code</TableHead>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Assignee</TableHead>
+                        <TableHead>Approver</TableHead>
+                        <TableHead>Department Name</TableHead>
+                        <TableHead>Action</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {policies.map((policy) => (
+                        <TableRow
+                          key={policy.id}
+                          className="cursor-pointer hover:bg-muted/50"
+                          onDoubleClick={() => router.push(`/compliance/governance/${policy.id}`)}
+                        >
+                          <TableCell className="font-medium">{policy.code}</TableCell>
+                          <TableCell>{policy.name}</TableCell>
+                          <TableCell>
+                            <Badge className={getStatusBadgeColor(policy.status)}>
+                              {policy.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{policy.assignee?.fullName || ""}</TableCell>
+                          <TableCell>{policy.approver?.fullName || ""}</TableCell>
+                          <TableCell>{policy.department?.name || ""}</TableCell>
+                          <TableCell>
+                            <div className="flex gap-1">
                               <Button
                                 variant="ghost"
-                                size="sm"
+                                size="icon"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   router.push(`/compliance/governance/${policy.id}`);
                                 }}
                               >
-                                View
+                                <Pencil className="h-4 w-4" />
                               </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                        {policies.length === 0 && (
-                          <TableRow>
-                            <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                              No {docType.toLowerCase()}s found
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setPolicyToDelete(policy);
+                                  setIsDeleteDialogOpen(true);
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {policies.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                            No {docType.toLowerCase()}s found
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
 
-                    {/* Pagination */}
-                    <div className="flex items-center justify-between mt-4">
-                      <div className="text-sm text-muted-foreground">
-                        Showing {policies.length > 0 ? (currentPage - 1) * 20 + 1 : 0} to {Math.min(currentPage * 20, total)} of {total}
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={currentPage === 1}
-                          onClick={() => setCurrentPage((p) => p - 1)}
-                        >
-                          <ChevronLeft className="h-4 w-4" />
-                          Previous
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={currentPage >= totalPages}
-                          onClick={() => setCurrentPage((p) => p + 1)}
-                        >
-                          Next
-                          <ChevronRight className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
+                {/* Pagination */}
+                <div className="flex items-center justify-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(1)}
+                  >
+                    <ChevronsLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((p) => p - 1)}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <span className="text-sm text-muted-foreground px-4">
+                    Currently showing {startItem} to {endItem} of {total}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    disabled={currentPage >= totalPages}
+                    onClick={() => setCurrentPage((p) => p + 1)}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    disabled={currentPage >= totalPages}
+                    onClick={() => setCurrentPage(totalPages)}
+                  >
+                    <ChevronsRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </>
+            )}
           </TabsContent>
         ))}
-
-        {/* Information Security Vault Tab Content */}
-        <TabsContent value="Information Security Vault" className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Information Security Vault</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-12 text-muted-foreground">
-                <Lock className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                <p className="text-lg">Secure Document Storage</p>
-                <p className="text-sm mt-2">Store and manage sensitive security documents</p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
 
       {/* Create Dialog - 3 Steps */}
@@ -749,12 +586,12 @@ export default function GovernancePage() {
             {createStep === 1 && (
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="name">Policy Name *</Label>
+                  <Label htmlFor="name">Governance Name *</Label>
                   <Input
                     id="name"
                     value={newPolicy.name}
                     onChange={(e) => setNewPolicy({ ...newPolicy, name: e.target.value })}
-                    placeholder="Enter policy name"
+                    placeholder="Enter governance name"
                   />
                 </div>
                 <div>
@@ -910,7 +747,7 @@ export default function GovernancePage() {
 
                 <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
                   <div>
-                    <Label className="text-muted-foreground text-sm">Policy Name</Label>
+                    <Label className="text-muted-foreground text-sm">Governance Name</Label>
                     <p className="font-medium">{newPolicy.name}</p>
                   </div>
                   <div>
@@ -976,6 +813,103 @@ export default function GovernancePage() {
               disabled={createStep === 1 && !canProceedStep1}
             >
               {createStep === 3 ? `Create ${newPolicy.documentType}` : "Next"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Single Policy Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {policyToDelete?.documentType || "Policy"}</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete &quot;{policyToDelete?.name}&quot;? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPolicyToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeletePolicy} className="bg-red-600 hover:bg-red-700">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete All Dialog */}
+      <AlertDialog open={isDeleteAllDialogOpen} onOpenChange={setIsDeleteAllDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete All {activeDocType}s</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete all {activeDocType.toLowerCase()}s? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteAll} className="bg-red-600 hover:bg-red-700">
+              Delete All
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Import Dialog */}
+      <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Import {activeDocType}s</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <div
+              className={`border-2 border-dashed rounded-lg p-8 text-center ${
+                isDragging ? "border-primary bg-primary/5" : "border-muted-foreground/25"
+              }`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
+              {importFile ? (
+                <div className="space-y-2">
+                  <p className="font-medium">{importFile.name}</p>
+                  <Button variant="outline" size="sm" onClick={() => setImportFile(null)}>
+                    Remove
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Upload className="h-10 w-10 mx-auto text-muted-foreground" />
+                  <p className="text-muted-foreground">
+                    Drag and drop a file here, or click to browse
+                  </p>
+                  <input
+                    type="file"
+                    accept=".csv,.xlsx,.xls"
+                    className="hidden"
+                    id="import-file"
+                    onChange={(e) => {
+                      const files = e.target.files;
+                      if (files && files.length > 0) {
+                        setImportFile(files[0]);
+                      }
+                    }}
+                  />
+                  <Button variant="outline" onClick={() => document.getElementById("import-file")?.click()}>
+                    Browse Files
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setIsImportDialogOpen(false);
+              setImportFile(null);
+            }}>
+              Cancel
+            </Button>
+            <Button onClick={handleImport} disabled={!importFile}>
+              Import
             </Button>
           </DialogFooter>
         </DialogContent>

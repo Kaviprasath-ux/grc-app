@@ -15,7 +15,18 @@ export type Scope = typeof SCOPES[number];
 // ==================== RESOURCES ====================
 // Resources map to routes/features in the application
 export const RESOURCES = {
-  // Organization Module
+  // GRC Administrator Module (System-level management)
+  'grc.customer-accounts': '/grc/customer-accounts',
+  'grc.customers': '/grc/customers',
+  'grc.configuration': '/grc/configuration',
+  'grc.configuration.reflection': '/grc/configuration/reflection',
+  'grc.configuration.excel-import': '/grc/configuration/excel-import',
+  'grc.configuration.excel-export': '/grc/configuration/excel-export',
+  'grc.configuration.email': '/grc/configuration/email',
+  'grc.configuration.pdf-report': '/grc/configuration/pdf-report',
+  'grc.configuration.sso': '/grc/configuration/sso',
+
+  // Organization Module (CustomerAdministrator territory)
   'organization.dashboard': '/organization',
   'organization.profile': '/organization/profile',
   'organization.context': '/organization/context',
@@ -31,9 +42,10 @@ export const RESOURCES = {
   // Compliance Module
   'compliance.dashboard': '/compliance',
   'compliance.framework': '/compliance/framework',
-  'compliance.controls': '/compliance/controls',
+  'compliance.controls': '/compliance/control',
   'compliance.governance': '/compliance/governance',
   'compliance.evidence': '/compliance/evidence',
+  'compliance.domain': '/compliance/domain',
   'compliance.artifacts': '/compliance/artifacts',
   'compliance.exceptions': '/compliance/exceptions',
   'compliance.kpi': '/compliance/kpi',
@@ -127,9 +139,20 @@ interface RolePermissionDef {
 }
 
 export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
-  // GRC Administrator - Full access to everything
+  // GRC Administrator - System-level management only
+  // Has access to: Customer Accounts, Customers, Compliance (Framework, Controls, Governance, Evidence, Domain), Configuration
+  // Does NOT have access to: Organization, Asset Management, Risk Management, Internal Audit
   GRCAdministrator: [
-    { resource: '*', actions: ['*'], scope: 'all' },
+    // GRC-specific pages
+    { resource: 'grc.customer-accounts', actions: ['*'], scope: 'all' },
+    { resource: 'grc.customers', actions: ['*'], scope: 'all' },
+    // Compliance module - specific resources only
+    { resource: 'compliance.framework', actions: ['*'], scope: 'all' },
+    { resource: 'compliance.controls', actions: ['*'], scope: 'all' },
+    { resource: 'compliance.governance', actions: ['*'], scope: 'all' },
+    { resource: 'compliance.evidence', actions: ['*'], scope: 'all' },
+    { resource: 'compliance.domain', actions: ['*'], scope: 'all' },
+    { resource: 'compliance.settings', actions: ['*'], scope: 'all' },
   ],
 
   // Customer Administrator - Full access to organization, view access to other modules
@@ -275,28 +298,34 @@ export function getResourceFromPath(path: string): string | null {
   // Remove trailing slash
   const normalizedPath = path.replace(/\/$/, '');
 
-  // Direct match
+  // Direct match first
   for (const [resource, resourcePath] of Object.entries(RESOURCES)) {
     if (normalizedPath === resourcePath) {
       return resource;
     }
   }
 
-  // Check for dynamic routes (e.g., /organization/process/[id])
+  // For dynamic routes (e.g., /compliance/framework/[id]),
+  // find the LONGEST matching resource path (most specific match)
+  let bestMatch: { resource: string; length: number } | null = null;
+
   for (const [resource, resourcePath] of Object.entries(RESOURCES)) {
     const pathParts = normalizedPath.split('/');
     const resourceParts = resourcePath.split('/');
 
-    // If resource path is shorter, check if it's a parent
+    // If resource path is shorter, check if it's a parent path
     if (resourceParts.length < pathParts.length) {
       const basePath = pathParts.slice(0, resourceParts.length).join('/');
       if (basePath === resourcePath) {
-        return resource;
+        // Keep track of the longest (most specific) match
+        if (!bestMatch || resourceParts.length > bestMatch.length) {
+          bestMatch = { resource, length: resourceParts.length };
+        }
       }
     }
   }
 
-  return null;
+  return bestMatch?.resource || null;
 }
 
 // ==================== PERMISSION CHECKING HELPERS ====================
@@ -423,7 +452,7 @@ export function getPermissionScope(
 
     // 'all' is most permissive, then 'department', then 'own'
     if (perm.scope === 'all') return 'all';
-    if (perm.scope === 'department' && scope !== 'all') scope = 'department';
+    if (perm.scope === 'department' && scope !== 'department') scope = 'department';
     if (perm.scope === 'own' && !scope) scope = 'own';
   }
 

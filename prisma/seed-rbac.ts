@@ -8,6 +8,7 @@ const prisma = new PrismaClient();
  * This script creates:
  * 1. All 11 roles with descriptions
  * 2. Assigns roles to existing users
+ * 3. Bootstraps the GRCAdministrator superadmin account
  */
 async function main() {
   console.log("🔐 Seeding RBAC data...");
@@ -264,6 +265,66 @@ async function main() {
 
   console.log("✅ Test users created");
 
+  // ==================== BOOTSTRAP GRC ADMINISTRATOR ====================
+  console.log("\n🔐 Bootstrapping GRC Administrator superadmin account...");
+
+  const SUPERADMIN_CONFIG = {
+    userName: 'superadmin',
+    password: 'Baarez@2025',
+    email: 'superadmin@baarez.com',
+    firstName: 'Super',
+    lastName: 'Admin',
+    fullName: 'Super Admin',
+    role: 'GRCAdministrator',
+  };
+
+  // Get GRCAdministrator role
+  const grcAdminRole = await prisma.role.findUnique({
+    where: { name: 'GRCAdministrator' },
+  });
+
+  if (grcAdminRole) {
+    // Check if superadmin already exists
+    const existingSuperadmin = await prisma.user.findUnique({
+      where: { userName: SUPERADMIN_CONFIG.userName },
+    });
+
+    let superadminUser;
+    if (existingSuperadmin) {
+      console.log("  ✓ Superadmin user already exists (not overriding)");
+      superadminUser = existingSuperadmin;
+    } else {
+      superadminUser = await prisma.user.create({
+        data: {
+          userName: SUPERADMIN_CONFIG.userName,
+          password: SUPERADMIN_CONFIG.password,
+          email: SUPERADMIN_CONFIG.email,
+          firstName: SUPERADMIN_CONFIG.firstName,
+          lastName: SUPERADMIN_CONFIG.lastName,
+          fullName: SUPERADMIN_CONFIG.fullName,
+          role: SUPERADMIN_CONFIG.role,
+        },
+      });
+      console.log("  ✓ Superadmin user created");
+    }
+
+    // Ensure the user has the GRCAdministrator role
+    await prisma.userRole.upsert({
+      where: {
+        userId_roleId: {
+          userId: superadminUser.id,
+          roleId: grcAdminRole.id,
+        },
+      },
+      update: {},
+      create: {
+        userId: superadminUser.id,
+        roleId: grcAdminRole.id,
+      },
+    });
+    console.log("  ✓ GRCAdministrator role assigned to superadmin");
+  }
+
   console.log("\n🎉 RBAC seeding complete!");
   console.log("\nTest accounts (password: test123):");
   console.log("  - test.grcadmin (GRCAdministrator - full access)");
@@ -275,6 +336,8 @@ async function main() {
   console.log("  - test.contributor (Contributor - create & edit)");
   console.log("  - test.deptreviewer (DepartmentReviewer - dept scope)");
   console.log("  - test.deptcontrib (DepartmentContributor - dept scope)");
+  console.log("\nSuperadmin account:");
+  console.log("  - superadmin / Baarez@2025 (GRCAdministrator)");
 }
 
 main()

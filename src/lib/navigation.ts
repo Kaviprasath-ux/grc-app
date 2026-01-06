@@ -21,6 +21,13 @@ import {
   Search,
   CheckSquare,
   LogOut,
+  UserPlus,
+  Globe,
+  Mail,
+  FileSpreadsheet,
+  Download,
+  Upload,
+  Key,
   type LucideIcon,
 } from "lucide-react";
 import { UserPermission, hasPermission, Action } from "@/lib/permissions";
@@ -44,6 +51,23 @@ export interface NavItem {
 }
 
 export const navigation: NavItem[] = [
+  // ==================== GRC Administrator Section ====================
+  // These items are only visible to GRCAdministrator role
+  {
+    name: "Customer Accounts",
+    href: "/grc/customer-accounts",
+    icon: UserPlus,
+    permission: "grc.customer-accounts:view",
+  },
+  {
+    name: "Customer",
+    href: "/grc/customers",
+    icon: Users,
+    permission: "grc.customers:view",
+  },
+  // ==================== End GRC Administrator Section ====================
+
+  // ==================== Organization Section (CustomerAdministrator) ====================
   {
     name: "Organization",
     icon: Building2,
@@ -58,15 +82,19 @@ export const navigation: NavItem[] = [
       { name: "Reports", href: "/organization/reports", icon: FileText, permission: "organization.dashboard:view" },
     ],
   },
+  // ==================== End Organization Section ====================
+
+  // ==================== Compliance Section ====================
   {
     name: "Compliance",
     icon: Shield,
-    permission: "compliance.dashboard:view",
     children: [
-      { name: "Framework", href: "/compliance/framework", icon: Layers, permission: "compliance.framework:view" },
-      { name: "Control", href: "/compliance/control", icon: Link, permission: "compliance.controls:view" },
+      { name: "Frameworks", href: "/compliance/framework", icon: Layers, permission: "compliance.framework:view" },
+      { name: "Controls", href: "/compliance/control", icon: Link, permission: "compliance.controls:view" },
       { name: "Governance", href: "/compliance/governance", icon: FileCheck, permission: "compliance.governance:view" },
       { name: "Evidence", href: "/compliance/evidence", icon: ClipboardList, permission: "compliance.evidence:view" },
+      { name: "Domain", href: "/compliance/domain", icon: Globe, permission: "compliance.domain:view" },
+      // Below items are for CustomerAdministrator and other roles, not GRCAdministrator
       { name: "Exception Management", href: "/compliance/exceptions", icon: AlertTriangle, permission: "compliance.exceptions:view" },
       { name: "KPI", href: "/compliance/kpis", icon: BarChart3, permission: "compliance.kpi:view" },
       { name: "Risk Compliance Matrix", href: "/compliance/risk-matrix", icon: AlertTriangle, permission: "compliance.dashboard:view" },
@@ -74,6 +102,11 @@ export const navigation: NavItem[] = [
       { name: "Master Data", href: "/compliance/master-data", icon: Settings2, permission: "compliance.settings:view" },
     ],
   },
+  // ==================== End Compliance Section ====================
+
+  // Configuration Section removed from GRCAdministrator navigation per user request
+
+  // ==================== Asset Management Section ====================
   {
     name: "Asset Management",
     icon: Package,
@@ -85,6 +118,9 @@ export const navigation: NavItem[] = [
       { name: "Reports", href: "/assets/reports", icon: FileText, permission: "asset.reports:view" },
     ],
   },
+  // ==================== End Asset Management Section ====================
+
+  // ==================== Risk Management Section ====================
   {
     name: "Risk Management",
     icon: AlertTriangle,
@@ -98,6 +134,9 @@ export const navigation: NavItem[] = [
       { name: "Reports", href: "/risks/reports", icon: FileText, permission: "risk.reports:view" },
     ],
   },
+  // ==================== End Risk Management Section ====================
+
+  // ==================== Internal Audit Section ====================
   {
     name: "Internal Audit",
     icon: ClipboardCheck,
@@ -107,6 +146,8 @@ export const navigation: NavItem[] = [
       { name: "Settings", href: "/internal-audit/settings", icon: Settings2, permission: "audit.settings:view" },
     ],
   },
+  // ==================== End Internal Audit Section ====================
+
   {
     name: "Log Out",
     href: "/login",

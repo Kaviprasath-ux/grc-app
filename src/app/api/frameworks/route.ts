@@ -36,6 +36,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const {
+      code,
       name,
       description,
       version,
@@ -57,6 +58,7 @@ export async function POST(request: NextRequest) {
 
     const framework = await prisma.framework.create({
       data: {
+        code,
         name,
         description,
         version,

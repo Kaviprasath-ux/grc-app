@@ -339,7 +339,6 @@ export default function RiskAssessmentPage() {
     <div className="space-y-6">
       <PageHeader
         title="Risk Assessment"
-        breadcrumb="Risk Management"
       />
 
       {/* Filters */}

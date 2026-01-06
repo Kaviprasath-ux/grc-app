@@ -62,11 +62,14 @@ export async function PUT(
     const { id } = await params;
     const body = await request.json();
     const {
+      code,
       name,
       description,
       version,
       type,
       status,
+      country,
+      industry,
       logo,
       compliancePercentage,
       policyPercentage,
@@ -76,11 +79,14 @@ export async function PUT(
     const framework = await prisma.framework.update({
       where: { id },
       data: {
+        code,
         name,
         description,
         version,
         type,
         status,
+        country,
+        industry,
         logo,
         compliancePercentage,
         policyPercentage,

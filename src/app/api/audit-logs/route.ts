@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
         skip: offset,
         include: {
           _count: {
-            select: { changes: true },
+            select: { auditLogChanges: true },
           },
         },
       }),
