@@ -11,6 +11,56 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ==================== ROLE-BASED ACCESS CONTROL (RBAC) ====================
+
+// Roles (GRCAdministrator, CustomerAdministrator, AuditHead, etc.)
+model Role {
+  id          String           @id @default(cuid())
+  name        String           @unique
+  description String?
+  isSystem    Boolean          @default(false) // System roles cannot be deleted
+  permissions RolePermission[]
+  users       UserRole[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+// Permissions (resource + action + scope)
+model Permission {
+  id        String           @id @default(cuid())
+  resource  String           // e.g., "organization.process", "risk.register", "audit.dashboard"
+  action    String           // e.g., "view", "create", "edit", "delete", "approve"
+  scope     String           @default("all") // "all", "department", "own"
+  roles     RolePermission[]
+  createdAt DateTime         @default(now())
+
+  @@unique([resource, action, scope])
+}
+
+// Role-Permission Junction Table
+model RolePermission {
+  id           String     @id @default(cuid())
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+
+  @@unique([roleId, permissionId])
+}
+
+// User-Role Junction Table (users can have multiple roles)
+model UserRole {
+  id        String   @id @default(cuid())
+  userId    String
+  roleId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, roleId])
+}
+
 // ==================== ORGANIZATION MODULE ====================
 
 // Organization Profile
@@ -88,6 +138,8 @@ model User {
   requestedExceptions Exception[] @relation("ExceptionRequester")
   approverExceptions  Exception[] @relation("ExceptionApprover")
   uploadedArtifacts   Artifact[]  @relation("ArtifactUploader")
+  // RBAC relations
+  userRoles           UserRole[]
 }
 
 // Stakeholders
@@ -295,29 +347,142 @@ model Control {
 
 // Processes
 model Process {
-  id                     String      @id @default(cuid())
-  processCode            String      @unique
+  id                     String       @id @default(cuid())
+  processCode            String       @unique
   name                   String
   description            String?
-  processType            String      @default("Primary") // Primary, Management, Supporting
+  processType            String       @default("Primary") // Primary, Management, Supporting
   departmentId           String?
-  department             Department? @relation(fields: [departmentId], references: [id])
+  department             Department?  @relation(fields: [departmentId], references: [id])
   ownerId                String?
-  owner                  User?       @relation("ProcessOwner", fields: [ownerId], references: [id])
-  status                 String      @default("Active")
+  owner                  User?        @relation("ProcessOwner", fields: [ownerId], references: [id])
+  status                 String       @default("Active")
   // Audit Library fields
-  processFrequency       String?     // Annually, As needed, Bi-annually, Daily, monthly, Monthly, Quarterly, Weekly
-  natureOfImplementation String?     // Manual, Automated, Manual + Automated
-  riskRating             String?     // Low, Medium, High, Not Assessed
-  assetDependency        Boolean     @default(false)
-  externalDependency     Boolean     @default(false)
-  location               String?     // JSON array of locations
-  kpiMeasurementRequired Boolean     @default(false)
-  piiCapture             Boolean     @default(false)
-  operationalComplexity  String?     // Low, Medium, High
+  processFrequency       String?      // Annually, As needed, Bi-annually, Daily, monthly, Monthly, Quarterly, Weekly
+  natureOfImplementation String?      // Manual, Automated, Manual + Automated
+  riskRating             String?      // Low, Medium, High, Not Assessed
+  assetDependency        Boolean      @default(false)
+  externalDependency     Boolean      @default(false)
+  location               String?      // JSON array of locations
+  kpiMeasurementRequired Boolean      @default(false)
+  piiCapture             Boolean      @default(false)
+  operationalComplexity  String?      // Low, Medium, High
   lastAuditDate          DateTime?
-  createdAt              DateTime    @default(now())
-  updatedAt              DateTime    @updatedAt
+  // RACI fields
+  responsibleId          String?
+  accountableId          String?
+  consultedId            String?
+  informedId             String?
+  createdAt              DateTime     @default(now())
+  updatedAt              DateTime     @updatedAt
+  // BIA Relation
+  biaAssessment          ProcessBIA?
+}
+
+// ==================== BUSINESS IMPACT ANALYSIS (BIA) ====================
+
+// BIA Impact Categories (Financial, Reputational, Regulatory, Safety, Operational)
+model BIACategory {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// BIA Rating Methodology (defines the rating levels and their scores)
+model BIARating {
+  id          String   @id @default(cuid())
+  label       String   @unique // High, Medium, Low
+  score       Int      @default(0) // Score value for calculations
+  description String?  // Description of what this rating means
+  color       String?  // Color code for UI display
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// BIA Scoring Configuration (High of All, Addition of All, Product of All)
+model BIAScoringConfig {
+  id              String   @id @default(cuid())
+  calculationType String   @default("High of all") // High of all, Addition of all, Product of all
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// BIA Scoring Ranges (defines criticality levels based on scores)
+model BIAScoringRange {
+  id              String   @id @default(cuid())
+  label           String   // Critical, High, Medium, Low
+  lowValue        Int      @default(0)
+  highValue       Int?
+  color           String?  // Color code for UI display
+  calculationType String   @default("High of all") // Links to the scoring config
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([label, calculationType])
+}
+
+// BCP Labels (Business Continuity Planning labels for RTO/RPO)
+model BCPLabel {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  type        String   // RTO, RPO
+  hours       Int      @default(0) // Value in hours
+  description String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Process BIA Assessment (stores the BIA assessment for each process)
+model ProcessBIA {
+  id                 String              @id @default(cuid())
+  processId          String              @unique
+  process            Process             @relation(fields: [processId], references: [id], onDelete: Cascade)
+  // BIA Status
+  status             String              @default("Open") // Open, Pending Approval, Approved, Rejected
+  // Calculated values
+  impactRating       Int?                // Calculated based on scoring config
+  processCriticality String?             // Critical, High, Medium, Low (derived from scoring ranges)
+  // Recovery objectives
+  rtoHours           Int                 @default(0) // Recovery Time Objective in hours
+  rpoHours           Int                 @default(0) // Recovery Point Objective in hours
+  rtoLabel           String?             // Label for RTO
+  rpoLabel           String?             // Label for RPO
+  // Approver
+  approverId         String?
+  approverName       String?
+  approvedAt         DateTime?
+  // Comments
+  comments           String?
+  rejectionReason    String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  // Category ratings
+  categoryRatings    ProcessBIARating[]
+}
+
+// Process BIA Category Ratings (individual category ratings for a process)
+model ProcessBIARating {
+  id            String     @id @default(cuid())
+  processBIAId  String
+  processBIA    ProcessBIA @relation(fields: [processBIAId], references: [id], onDelete: Cascade)
+  categoryName  String     // Financial, Reputational, Regulatory, Safety, Operational
+  rating        String?    // High, Medium, Low
+  ratingScore   Int?       // Score value
+  description   String?    // Impact description
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@unique([processBIAId, categoryName])
 }
 
 // Governance - Policies, Standards, Procedures

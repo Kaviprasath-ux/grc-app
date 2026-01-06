@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSession, signOut } from "next-auth/react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { navigation, type NavItem } from "@/lib/navigation";
+import { navigation, filterNavigationByPermissions, type NavItem } from "@/lib/navigation";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface NavItemProps {
@@ -64,6 +65,23 @@ function NavItemComponent({ item, depth = 0 }: NavItemProps) {
     );
   }
 
+  // Handle Log Out specially
+  if (item.name === "Log Out") {
+    return (
+      <button
+        onClick={() => signOut({ callbackUrl: "/login" })}
+        className={cn(
+          "w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors",
+          "text-white/80 hover:text-white hover:bg-white/10",
+          depth === 0 && "text-[15px]"
+        )}
+      >
+        {Icon && <Icon className="h-4 w-4 shrink-0" />}
+        <span>{item.name}</span>
+      </button>
+    );
+  }
+
   return (
     <Link
       href={item.href || "#"}
@@ -82,6 +100,24 @@ function NavItemComponent({ item, depth = 0 }: NavItemProps) {
 }
 
 export function Sidebar() {
+  const { data: session, status } = useSession();
+
+  // Filter navigation based on user permissions
+  const filteredNavigation = useMemo(() => {
+    if (status === "loading") {
+      // While loading, show nothing to prevent flash of full nav
+      return [];
+    }
+
+    if (!session?.user?.permissions) {
+      // If no permissions (not logged in or old session), show full nav
+      // The middleware will handle redirecting unauthorized users
+      return navigation;
+    }
+
+    return filterNavigationByPermissions(navigation, session.user.permissions);
+  }, [session?.user?.permissions, status]);
+
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-[205px] bg-[#0f2744]">
       {/* Decorative background pattern */}
@@ -105,10 +141,35 @@ export function Sidebar() {
         </Link>
       </div>
 
+      {/* User role badge */}
+      {session?.user?.roles && session.user.roles.length > 0 && (
+        <div className="relative px-4 py-2 border-b border-white/10">
+          <div className="text-xs text-white/60">Logged in as</div>
+          <div className="text-sm text-white font-medium truncate">
+            {session.user.name}
+          </div>
+          <div className="flex flex-wrap gap-1 mt-1">
+            {session.user.roles.slice(0, 2).map((role) => (
+              <span
+                key={role}
+                className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-blue-500/20 text-blue-300"
+              >
+                {role.replace(/([A-Z])/g, ' $1').trim()}
+              </span>
+            ))}
+            {session.user.roles.length > 2 && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-white/10 text-white/60">
+                +{session.user.roles.length - 2} more
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Navigation */}
-      <ScrollArea className="relative h-[calc(100vh-4rem)]">
+      <ScrollArea className="relative h-[calc(100vh-4rem-60px)]">
         <nav className="py-2">
-          {navigation.map((item) => (
+          {filteredNavigation.map((item) => (
             <NavItemComponent key={item.name} item={item} />
           ))}
         </nav>
