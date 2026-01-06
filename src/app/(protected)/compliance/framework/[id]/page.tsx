@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
+import { useEffect, useState, use, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,6 +38,7 @@ import {
   ArrowLeft,
   Plus,
   Download,
+  Upload,
   Edit2,
   Link2,
   AlertTriangle,
@@ -106,6 +107,651 @@ interface ControlDomain {
   name: string;
 }
 
+// Dummy requirements data for demonstration
+const dummyRequirements: Requirement[] = [
+  // Category 1: Context of the Organization
+  {
+    id: "cat-1",
+    code: "4",
+    name: "Context of the Organization",
+    description: "Understanding the organization and its context",
+    requirementType: "Mandatory",
+    chapterType: "Domain",
+    level: 0,
+    children: [
+      {
+        id: "req-4.1",
+        code: "4.1",
+        name: "Understanding the organization and its context",
+        description: "The organization shall determine external and internal issues that are relevant to its purpose and that affect its ability to achieve the intended outcome(s) of its information security management system.",
+        requirementType: "Mandatory",
+        chapterType: "Domain",
+        level: 1,
+        parentId: "cat-1",
+        applicability: "Yes",
+        implementationStatus: "Yes",
+        controlCompliance: "Compliant",
+        controls: [
+          {
+            id: "rc-1",
+            controlId: "ctrl-1",
+            control: {
+              id: "ctrl-1",
+              controlCode: "GOV-01",
+              name: "Information Security Policy",
+              status: "Compliant",
+              domain: { id: "d1", name: "Governance" },
+              functionalGrouping: "Govern",
+            },
+          },
+        ],
+      },
+      {
+        id: "req-4.2",
+        code: "4.2",
+        name: "Understanding the needs and expectations of interested parties",
+        description: "The organization shall determine interested parties that are relevant to the information security management system and their requirements relevant to information security.",
+        requirementType: "Mandatory",
+        chapterType: "Domain",
+        level: 1,
+        parentId: "cat-1",
+        applicability: "Yes",
+        implementationStatus: "Ongoing",
+        controlCompliance: "Partial Compliant",
+        controls: [],
+      },
+      {
+        id: "req-4.3",
+        code: "4.3",
+        name: "Determining the scope of the ISMS",
+        description: "The organization shall determine the boundaries and applicability of the information security management system to establish its scope.",
+        requirementType: "Mandatory",
+        chapterType: "Domain",
+        level: 1,
+        parentId: "cat-1",
+        applicability: "Yes",
+        implementationStatus: "Yes",
+        controlCompliance: "Compliant",
+        controls: [
+          {
+            id: "rc-2",
+            controlId: "ctrl-2",
+            control: {
+              id: "ctrl-2",
+              controlCode: "GOV-02",
+              name: "ISMS Scope Definition",
+              status: "Compliant",
+              domain: { id: "d1", name: "Governance" },
+              functionalGrouping: "Govern",
+            },
+          },
+        ],
+      },
+      {
+        id: "req-4.4",
+        code: "4.4",
+        name: "Information security management system",
+        description: "The organization shall establish, implement, maintain and continually improve an information security management system.",
+        requirementType: "Mandatory",
+        chapterType: "Domain",
+        level: 1,
+        parentId: "cat-1",
+        applicability: "Yes",
+        implementationStatus: "Ongoing",
+        controlCompliance: "Partial Compliant",
+        controls: [],
+      },
+    ],
+  },
+  // Category 2: Leadership
+  {
+    id: "cat-2",
+    code: "5",
+    name: "Leadership",
+    description: "Leadership and commitment requirements",
+    requirementType: "Mandatory",
+    chapterType: "Domain",
+    level: 0,
+    children: [
+      {
+        id: "req-5.1",
+        code: "5.1",
+        name: "Leadership and commitment",
+        description: "Top management shall demonstrate leadership and commitment with respect to the information security management system.",
+        requirementType: "Mandatory",
+        chapterType: "Domain",
+        level: 1,
+        parentId: "cat-2",
+        applicability: "Yes",
+        implementationStatus: "Yes",
+        controlCompliance: "Compliant",
+        controls: [
+          {
+            id: "rc-3",
+            controlId: "ctrl-3",
+            control: {
+              id: "ctrl-3",
+              controlCode: "GOV-03",
+              name: "Management Commitment",
+              status: "Compliant",
+              domain: { id: "d1", name: "Governance" },
+              functionalGrouping: "Govern",
+            },
+          },
+        ],
+      },
+      {
+        id: "req-5.2",
+        code: "5.2",
+        name: "Policy",
+        description: "Top management shall establish an information security policy that is appropriate to the purpose of the organization.",
+        requirementType: "Mandatory",
+        chapterType: "Domain",
+        level: 1,
+        parentId: "cat-2",
+        applicability: "Yes",
+        implementationStatus: "Yes",
+        controlCompliance: "Compliant",
+        controls: [
+          {
+            id: "rc-4",
+            controlId: "ctrl-4",
+            control: {
+              id: "ctrl-4",
+              controlCode: "GOV-04",
+              name: "Security Policy Documentation",
+              status: "Compliant",
+              domain: { id: "d1", name: "Governance" },
+              functionalGrouping: "Govern",
+            },
+          },
+        ],
+      },
+      {
+        id: "req-5.3",
+        code: "5.3",
+        name: "Organizational roles, responsibilities and authorities",
+        description: "Top management shall ensure that the responsibilities and authorities for roles relevant to information security are assigned and communicated.",
+        requirementType: "Mandatory",
+        chapterType: "Domain",
+        level: 1,
+        parentId: "cat-2",
+        applicability: "Yes",
+        implementationStatus: "No",
+        controlCompliance: "Non Compliant",
+        controls: [],
+      },
+    ],
+  },
+  // Category 3: Planning
+  {
+    id: "cat-3",
+    code: "6",
+    name: "Planning",
+    description: "Planning for the ISMS",
+    requirementType: "Mandatory",
+    chapterType: "Domain",
+    level: 0,
+    children: [
+      {
+        id: "req-6.1",
+        code: "6.1",
+        name: "Actions to address risks and opportunities",
+        description: "When planning for the information security management system, the organization shall consider the issues and requirements and determine the risks and opportunities.",
+        requirementType: "Mandatory",
+        chapterType: "Domain",
+        level: 1,
+        parentId: "cat-3",
+        applicability: "Yes",
+        implementationStatus: "Ongoing",
+        controlCompliance: "Partial Compliant",
+        controls: [
+          {
+            id: "rc-5",
+            controlId: "ctrl-5",
+            control: {
+              id: "ctrl-5",
+              controlCode: "RSK-01",
+              name: "Risk Assessment Process",
+              status: "Partial Compliant",
+              domain: { id: "d2", name: "Risk Management" },
+              functionalGrouping: "Identify",
+            },
+          },
+          {
+            id: "rc-6",
+            controlId: "ctrl-6",
+            control: {
+              id: "ctrl-6",
+              controlCode: "RSK-02",
+              name: "Risk Treatment Plan",
+              status: "Partial Compliant",
+              domain: { id: "d2", name: "Risk Management" },
+              functionalGrouping: "Identify",
+            },
+          },
+        ],
+      },
+      {
+        id: "req-6.2",
+        code: "6.2",
+        name: "Information security objectives and planning to achieve them",
+        description: "The organization shall establish information security objectives at relevant functions and levels.",
+        requirementType: "Mandatory",
+        chapterType: "Domain",
+        level: 1,
+        parentId: "cat-3",
+        applicability: "Yes",
+        implementationStatus: "Yes",
+        controlCompliance: "Compliant",
+        controls: [
+          {
+            id: "rc-7",
+            controlId: "ctrl-7",
+            control: {
+              id: "ctrl-7",
+              controlCode: "GOV-05",
+              name: "Security Objectives",
+              status: "Compliant",
+              domain: { id: "d1", name: "Governance" },
+              functionalGrouping: "Govern",
+            },
+          },
+        ],
+      },
+      {
+        id: "req-6.3",
+        code: "6.3",
+        name: "Planning of changes",
+        description: "When the organization determines the need for changes to the information security management system, the changes shall be carried out in a planned manner.",
+        requirementType: "Mandatory",
+        chapterType: "Domain",
+        level: 1,
+        parentId: "cat-3",
+        applicability: "Yes",
+        implementationStatus: "No",
+        controlCompliance: "Non Compliant",
+        controls: [],
+      },
+    ],
+  },
+  // Category 4: Support
+  {
+    id: "cat-4",
+    code: "7",
+    name: "Support",
+    description: "Support requirements for the ISMS",
+    requirementType: "Mandatory",
+    chapterType: "Domain",
+    level: 0,
+    children: [
+      {
+        id: "req-7.1",
+        code: "7.1",
+        name: "Resources",
+        description: "The organization shall determine and provide the resources needed for the establishment, implementation, maintenance and continual improvement of the ISMS.",
+        requirementType: "Mandatory",
+        chapterType: "Domain",
+        level: 1,
+        parentId: "cat-4",
+        applicability: "Yes",
+        implementationStatus: "Yes",
+        controlCompliance: "Compliant",
+        controls: [],
+      },
+      {
+        id: "req-7.2",
+        code: "7.2",
+        name: "Competence",
+        description: "The organization shall determine the necessary competence of person(s) doing work under its control that affects its information security performance.",
+        requirementType: "Mandatory",
+        chapterType: "Domain",
+        level: 1,
+        parentId: "cat-4",
+        applicability: "Yes",
+        implementationStatus: "Ongoing",
+        controlCompliance: "Partial Compliant",
+        controls: [
+          {
+            id: "rc-8",
+            controlId: "ctrl-8",
+            control: {
+              id: "ctrl-8",
+              controlCode: "HRS-01",
+              name: "Security Competence Training",
+              status: "Partial Compliant",
+              domain: { id: "d3", name: "Human Resources" },
+              functionalGrouping: "Protect",
+            },
+          },
+        ],
+      },
+      {
+        id: "req-7.3",
+        code: "7.3",
+        name: "Awareness",
+        description: "Persons doing work under the organization's control shall be aware of the information security policy and their contribution to the effectiveness of the ISMS.",
+        requirementType: "Mandatory",
+        chapterType: "Domain",
+        level: 1,
+        parentId: "cat-4",
+        applicability: "Yes",
+        implementationStatus: "Yes",
+        controlCompliance: "Compliant",
+        controls: [
+          {
+            id: "rc-9",
+            controlId: "ctrl-9",
+            control: {
+              id: "ctrl-9",
+              controlCode: "SAT-01",
+              name: "Security Awareness Program",
+              status: "Compliant",
+              domain: { id: "d4", name: "Security Awareness" },
+              functionalGrouping: "Protect",
+            },
+          },
+        ],
+      },
+      {
+        id: "req-7.4",
+        code: "7.4",
+        name: "Communication",
+        description: "The organization shall determine the need for internal and external communications relevant to the information security management system.",
+        requirementType: "Mandatory",
+        chapterType: "Domain",
+        level: 1,
+        parentId: "cat-4",
+        applicability: "Yes",
+        implementationStatus: "No",
+        controlCompliance: "Non Compliant",
+        controls: [],
+      },
+      {
+        id: "req-7.5",
+        code: "7.5",
+        name: "Documented information",
+        description: "The organization's information security management system shall include documented information required by this document and determined by the organization as being necessary.",
+        requirementType: "Mandatory",
+        chapterType: "Domain",
+        level: 1,
+        parentId: "cat-4",
+        applicability: "Yes",
+        implementationStatus: "Ongoing",
+        controlCompliance: "Partial Compliant",
+        controls: [
+          {
+            id: "rc-10",
+            controlId: "ctrl-10",
+            control: {
+              id: "ctrl-10",
+              controlCode: "GOV-06",
+              name: "Document Control",
+              status: "Partial Compliant",
+              domain: { id: "d1", name: "Governance" },
+              functionalGrouping: "Govern",
+            },
+          },
+        ],
+      },
+    ],
+  },
+  // Category 5: Operation
+  {
+    id: "cat-5",
+    code: "8",
+    name: "Operation",
+    description: "Operational planning and control",
+    requirementType: "Mandatory",
+    chapterType: "Domain",
+    level: 0,
+    children: [
+      {
+        id: "req-8.1",
+        code: "8.1",
+        name: "Operational planning and control",
+        description: "The organization shall plan, implement and control the processes needed to meet information security requirements.",
+        requirementType: "Mandatory",
+        chapterType: "Domain",
+        level: 1,
+        parentId: "cat-5",
+        applicability: "Yes",
+        implementationStatus: "Yes",
+        controlCompliance: "Compliant",
+        controls: [
+          {
+            id: "rc-11",
+            controlId: "ctrl-11",
+            control: {
+              id: "ctrl-11",
+              controlCode: "OPS-01",
+              name: "Operational Procedures",
+              status: "Compliant",
+              domain: { id: "d5", name: "Operations" },
+              functionalGrouping: "Protect",
+            },
+          },
+        ],
+      },
+      {
+        id: "req-8.2",
+        code: "8.2",
+        name: "Information security risk assessment",
+        description: "The organization shall perform information security risk assessments at planned intervals or when significant changes are proposed or occur.",
+        requirementType: "Mandatory",
+        chapterType: "Domain",
+        level: 1,
+        parentId: "cat-5",
+        applicability: "Yes",
+        implementationStatus: "Ongoing",
+        controlCompliance: "Partial Compliant",
+        controls: [
+          {
+            id: "rc-12",
+            controlId: "ctrl-12",
+            control: {
+              id: "ctrl-12",
+              controlCode: "RSK-03",
+              name: "Periodic Risk Assessment",
+              status: "Partial Compliant",
+              domain: { id: "d2", name: "Risk Management" },
+              functionalGrouping: "Identify",
+            },
+          },
+        ],
+      },
+      {
+        id: "req-8.3",
+        code: "8.3",
+        name: "Information security risk treatment",
+        description: "The organization shall implement the information security risk treatment plan.",
+        requirementType: "Mandatory",
+        chapterType: "Domain",
+        level: 1,
+        parentId: "cat-5",
+        applicability: "Yes",
+        implementationStatus: "Ongoing",
+        controlCompliance: "Partial Compliant",
+        controls: [
+          {
+            id: "rc-13",
+            controlId: "ctrl-13",
+            control: {
+              id: "ctrl-13",
+              controlCode: "RSK-04",
+              name: "Risk Treatment Implementation",
+              status: "Partial Compliant",
+              domain: { id: "d2", name: "Risk Management" },
+              functionalGrouping: "Identify",
+            },
+          },
+        ],
+      },
+    ],
+  },
+  // Category 6: Performance Evaluation
+  {
+    id: "cat-6",
+    code: "9",
+    name: "Performance Evaluation",
+    description: "Monitoring, measurement, analysis and evaluation",
+    requirementType: "Mandatory",
+    chapterType: "Domain",
+    level: 0,
+    children: [
+      {
+        id: "req-9.1",
+        code: "9.1",
+        name: "Monitoring, measurement, analysis and evaluation",
+        description: "The organization shall determine what needs to be monitored and measured, including information security processes and controls.",
+        requirementType: "Mandatory",
+        chapterType: "Domain",
+        level: 1,
+        parentId: "cat-6",
+        applicability: "Yes",
+        implementationStatus: "Ongoing",
+        controlCompliance: "Partial Compliant",
+        controls: [
+          {
+            id: "rc-14",
+            controlId: "ctrl-14",
+            control: {
+              id: "ctrl-14",
+              controlCode: "MON-01",
+              name: "Security Monitoring",
+              status: "Partial Compliant",
+              domain: { id: "d6", name: "Monitoring" },
+              functionalGrouping: "Detect",
+            },
+          },
+        ],
+      },
+      {
+        id: "req-9.2",
+        code: "9.2",
+        name: "Internal audit",
+        description: "The organization shall conduct internal audits at planned intervals to provide information on whether the ISMS conforms to requirements.",
+        requirementType: "Mandatory",
+        chapterType: "Domain",
+        level: 1,
+        parentId: "cat-6",
+        applicability: "Yes",
+        implementationStatus: "Yes",
+        controlCompliance: "Compliant",
+        controls: [
+          {
+            id: "rc-15",
+            controlId: "ctrl-15",
+            control: {
+              id: "ctrl-15",
+              controlCode: "AUD-01",
+              name: "Internal Audit Program",
+              status: "Compliant",
+              domain: { id: "d7", name: "Audit" },
+              functionalGrouping: "Detect",
+            },
+          },
+        ],
+      },
+      {
+        id: "req-9.3",
+        code: "9.3",
+        name: "Management review",
+        description: "Top management shall review the organization's information security management system at planned intervals.",
+        requirementType: "Mandatory",
+        chapterType: "Domain",
+        level: 1,
+        parentId: "cat-6",
+        applicability: "Yes",
+        implementationStatus: "Yes",
+        controlCompliance: "Compliant",
+        controls: [
+          {
+            id: "rc-16",
+            controlId: "ctrl-16",
+            control: {
+              id: "ctrl-16",
+              controlCode: "GOV-07",
+              name: "Management Review Process",
+              status: "Compliant",
+              domain: { id: "d1", name: "Governance" },
+              functionalGrouping: "Govern",
+            },
+          },
+        ],
+      },
+    ],
+  },
+  // Category 7: Improvement
+  {
+    id: "cat-7",
+    code: "10",
+    name: "Improvement",
+    description: "Continual improvement",
+    requirementType: "Mandatory",
+    chapterType: "Domain",
+    level: 0,
+    children: [
+      {
+        id: "req-10.1",
+        code: "10.1",
+        name: "Continual improvement",
+        description: "The organization shall continually improve the suitability, adequacy and effectiveness of the information security management system.",
+        requirementType: "Mandatory",
+        chapterType: "Domain",
+        level: 1,
+        parentId: "cat-7",
+        applicability: "Yes",
+        implementationStatus: "Ongoing",
+        controlCompliance: "Partial Compliant",
+        controls: [],
+      },
+      {
+        id: "req-10.2",
+        code: "10.2",
+        name: "Nonconformity and corrective action",
+        description: "When a nonconformity occurs, the organization shall react to the nonconformity and take action to control and correct it.",
+        requirementType: "Mandatory",
+        chapterType: "Domain",
+        level: 1,
+        parentId: "cat-7",
+        applicability: "Yes",
+        implementationStatus: "Yes",
+        controlCompliance: "Compliant",
+        controls: [
+          {
+            id: "rc-17",
+            controlId: "ctrl-17",
+            control: {
+              id: "ctrl-17",
+              controlCode: "INC-01",
+              name: "Corrective Action Process",
+              status: "Compliant",
+              domain: { id: "d8", name: "Incident Management" },
+              functionalGrouping: "Respond",
+            },
+          },
+        ],
+      },
+    ],
+  },
+];
+
+// Flatten requirements for SOA tab
+const flattenRequirements = (requirements: Requirement[]): Requirement[] => {
+  const flat: Requirement[] = [];
+  const flatten = (reqs: Requirement[]) => {
+    for (const req of reqs) {
+      flat.push(req);
+      if (req.children && req.children.length > 0) {
+        flatten(req.children);
+      }
+    }
+  };
+  flatten(requirements);
+  return flat;
+};
+
 export default function FrameworkDetailPage({
   params,
 }: {
@@ -120,9 +766,30 @@ export default function FrameworkDetailPage({
 
   // Dialogs
   const [isAddRequirementOpen, setIsAddRequirementOpen] = useState(false);
+  const [isUpdateRequirementOpen, setIsUpdateRequirementOpen] = useState(false);
   const [isLinkControlsOpen, setIsLinkControlsOpen] = useState(false);
   const [isAddExceptionOpen, setIsAddExceptionOpen] = useState(false);
   const [selectedRequirement, setSelectedRequirement] = useState<Requirement | null>(null);
+
+  // Update Requirement form
+  const [updateRequirement, setUpdateRequirement] = useState({
+    id: "",
+    name: "",
+    code: "",
+    description: "",
+    requirementType: "Mandatory",
+    chapterType: "Domain",
+    applicability: "",
+    implementationStatus: "",
+    controlCompliance: "",
+  });
+
+  // Import Requirements
+  const [isImportOpen, setIsImportOpen] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importName, setImportName] = useState("");
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // New Requirement form
   const [newRequirement, setNewRequirement] = useState({
@@ -202,8 +869,49 @@ export default function FrameworkDetailPage({
     }
   };
 
-  // Build requirement hierarchy
+  // Build requirement hierarchy by grouping requirements by category
   const buildHierarchy = (requirements: Requirement[]): Requirement[] => {
+    // If framework has requirement categories, group requirements by category
+    if (framework?.requirementCategories && framework.requirementCategories.length > 0) {
+      const categoryMap = new Map<string, Requirement>();
+
+      // Create category entries
+      framework.requirementCategories.forEach((cat) => {
+        categoryMap.set(cat.id, {
+          id: cat.id,
+          code: cat.code || "",
+          name: cat.name,
+          description: "",
+          requirementType: "Mandatory",
+          chapterType: "Domain",
+          level: 0,
+          children: [],
+        });
+      });
+
+      // Add requirements to their categories
+      requirements.forEach((req) => {
+        if (req.categoryId && categoryMap.has(req.categoryId)) {
+          const category = categoryMap.get(req.categoryId)!;
+          category.children!.push({
+            ...req,
+            level: 1,
+            parentId: req.categoryId,
+          });
+        }
+      });
+
+      // Return only categories that have children, sorted by sortOrder
+      return Array.from(categoryMap.values())
+        .filter((cat) => cat.children && cat.children.length > 0)
+        .sort((a, b) => {
+          const catA = framework.requirementCategories.find((c) => c.id === a.id);
+          const catB = framework.requirementCategories.find((c) => c.id === b.id);
+          return (catA?.sortOrder || 0) - (catB?.sortOrder || 0);
+        });
+    }
+
+    // Fallback: build hierarchy based on parentId
     const map = new Map<string, Requirement>();
     const roots: Requirement[] = [];
 
@@ -271,6 +979,164 @@ export default function FrameworkDetailPage({
       }
     } catch (error) {
       console.error("Error adding requirement:", error);
+    }
+  };
+
+  const handleOpenUpdateRequirement = (requirement: Requirement) => {
+    setUpdateRequirement({
+      id: requirement.id,
+      name: requirement.name,
+      code: requirement.code,
+      description: requirement.description || "",
+      requirementType: requirement.requirementType || "Mandatory",
+      chapterType: requirement.chapterType || "Domain",
+      applicability: requirement.applicability || "",
+      implementationStatus: requirement.implementationStatus || "",
+      controlCompliance: requirement.controlCompliance || "",
+    });
+    setIsUpdateRequirementOpen(true);
+  };
+
+  const handleUpdateRequirement = async () => {
+    try {
+      const response = await fetch(`/api/requirements/${updateRequirement.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: updateRequirement.name,
+          code: updateRequirement.code,
+          description: updateRequirement.description,
+          requirementType: updateRequirement.requirementType,
+          chapterType: updateRequirement.chapterType,
+          applicability: updateRequirement.applicability,
+          implementationStatus: updateRequirement.implementationStatus,
+          controlCompliance: updateRequirement.controlCompliance,
+        }),
+      });
+
+      if (response.ok) {
+        setIsUpdateRequirementOpen(false);
+        setUpdateRequirement({
+          id: "",
+          name: "",
+          code: "",
+          description: "",
+          requirementType: "Mandatory",
+          chapterType: "Domain",
+          applicability: "",
+          implementationStatus: "",
+          controlCompliance: "",
+        });
+        fetchFramework();
+      }
+    } catch (error) {
+      console.error("Error updating requirement:", error);
+    }
+  };
+
+  const handleExportRequirements = () => {
+    if (!framework) return;
+
+    const requirements = framework.requirements || [];
+
+    // Create CSV content
+    const headers = [
+      "Code",
+      "Name",
+      "Description",
+      "Category",
+      "Applicability",
+      "Implementation Status",
+      "Control Compliance",
+      "Linked Controls",
+    ];
+
+    const rows = requirements.map((req) => {
+      const linkedControls = req.controls
+        ?.map((rc) => rc.control?.controlCode || rc.control?.name)
+        .join("; ") || "";
+
+      return [
+        req.code,
+        req.name,
+        req.description?.replace(/"/g, '""') || "",
+        req.category?.name || "",
+        req.applicability || "",
+        req.implementationStatus || "",
+        req.controlCompliance || "",
+        linkedControls,
+      ];
+    });
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(",")),
+    ].join("\n");
+
+    // Download the file
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute(
+      "download",
+      `${framework.name}-requirements-${new Date().toISOString().split("T")[0]}.csv`
+    );
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleDownloadTemplate = () => {
+    const template = "Code,Name,Description,Requirement Type,Chapter Type,Applicability,Implementation Status\n" +
+      "4.1,Understanding the organization,The organization shall determine...,Mandatory,Domain,Yes,Yes\n";
+    const blob = new Blob([template], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "requirements-template.csv";
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setImportFile(e.target.files[0]);
+    }
+  };
+
+  const handleImportRequirements = async () => {
+    if (!importFile || !framework) return;
+
+    setImporting(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", importFile);
+      formData.append("frameworkId", framework.id);
+
+      const response = await fetch("/api/requirements/import", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (response.ok) {
+        setIsImportOpen(false);
+        setImportFile(null);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
+        fetchFramework();
+      } else {
+        const error = await response.json();
+        console.error("Import error:", error);
+        alert("Failed to import requirements. Please check the file format.");
+      }
+    } catch (error) {
+      console.error("Error importing requirements:", error);
+      alert("Failed to import requirements. Please try again.");
+    } finally {
+      setImporting(false);
     }
   };
 
@@ -397,11 +1263,20 @@ export default function FrameworkDetailPage({
     return <div className="text-center py-12">Framework not found</div>;
   }
 
-  const requirementHierarchy = buildHierarchy(framework.requirements || []);
+  // Use dummy data if no requirements from API
+  const hasApiRequirements = framework.requirements && framework.requirements.length > 0;
+  const requirementsToUse = hasApiRequirements ? framework.requirements : [];
+
+  // For display, use dummy data as hierarchy (already structured with children)
+  const requirementHierarchy = hasApiRequirements
+    ? buildHierarchy(requirementsToUse)
+    : dummyRequirements;
   const filteredHierarchy = filterRequirements(requirementHierarchy);
 
-  // SOA data
-  const flatRequirements = framework.requirements || [];
+  // SOA data - use flattened dummy data if no API requirements
+  const flatRequirements = hasApiRequirements
+    ? requirementsToUse
+    : flattenRequirements(dummyRequirements);
   const soaTotalPages = Math.ceil(flatRequirements.length / SOA_PAGE_SIZE);
   const soaStartIndex = soaPage * SOA_PAGE_SIZE;
   const soaEndIndex = Math.min(soaStartIndex + SOA_PAGE_SIZE, flatRequirements.length);
@@ -411,11 +1286,17 @@ export default function FrameworkDetailPage({
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button variant="ghost" onClick={() => router.push("/compliance/framework")}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => router.push("/compliance/framework")}
+        >
+          <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-2xl font-semibold">Total Requirements</h1>
+        <div>
+          <h1 className="text-2xl font-bold">Total Requirements</h1>
+          <p className="text-gray-600">Manage framework requirements and controls</p>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -431,11 +1312,17 @@ export default function FrameworkDetailPage({
           {/* Actions */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Button variant="outline">
+              <Button variant="outline" onClick={handleExportRequirements}>
                 <Download className="h-4 w-4 mr-2" />
                 Export
               </Button>
-              <Button variant="outline">Update Requirement</Button>
+              <Button
+                variant="outline"
+                onClick={() => setIsImportOpen(true)}
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Import
+              </Button>
               <Button onClick={() => setIsAddRequirementOpen(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 New Requirements
@@ -482,7 +1369,11 @@ export default function FrameworkDetailPage({
                               <p className="text-sm flex-1">
                                 {requirement.description || "No description"}
                               </p>
-                              <Button variant="ghost" size="icon">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleOpenUpdateRequirement(requirement)}
+                              >
                                 <Edit2 className="h-4 w-4" />
                               </Button>
                             </div>
@@ -1061,6 +1952,240 @@ export default function FrameworkDetailPage({
                 Cancel
               </Button>
               <Button onClick={handleAddException}>Save</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Import Requirements Dialog */}
+      <Dialog open={isImportOpen} onOpenChange={setIsImportOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Template document</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6 py-4">
+            {/* Name Field */}
+            <div className="grid grid-cols-[80px_1fr] items-center gap-4">
+              <Label className="text-right font-medium">Name</Label>
+              <Input
+                value={importName}
+                onChange={(e) => setImportName(e.target.value)}
+                placeholder="Enter name"
+              />
+            </div>
+
+            {/* File Field */}
+            <div className="grid grid-cols-[80px_1fr] items-center gap-4">
+              <Label className="text-right font-medium">File</Label>
+              <div className="flex gap-2">
+                <Input
+                  value={importFile?.name || ""}
+                  readOnly
+                  placeholder="..."
+                  className="flex-1 bg-muted/30"
+                />
+                <input
+                  type="file"
+                  accept=".csv"
+                  ref={fileInputRef}
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+                <Button
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="text-primary border-primary hover:bg-primary/10"
+                >
+                  Browse...
+                </Button>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex justify-center gap-3 pt-4">
+              <Button
+                variant="default"
+                onClick={handleDownloadTemplate}
+                className="bg-primary hover:bg-primary/90"
+              >
+                Download Template
+              </Button>
+              <Button
+                variant="default"
+                onClick={handleImportRequirements}
+                disabled={!importFile || importing}
+                className="bg-primary hover:bg-primary/90"
+              >
+                {importing ? "Importing..." : "Import"}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsImportOpen(false);
+                  setImportFile(null);
+                  setImportName("");
+                  if (fileInputRef.current) {
+                    fileInputRef.current.value = "";
+                  }
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Update Requirement Dialog */}
+      <Dialog open={isUpdateRequirementOpen} onOpenChange={setIsUpdateRequirementOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Update Requirement</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Requirement Code</Label>
+                <Input
+                  value={updateRequirement.code}
+                  onChange={(e) =>
+                    setUpdateRequirement({ ...updateRequirement, code: e.target.value })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Requirement Name</Label>
+                <Input
+                  value={updateRequirement.name}
+                  onChange={(e) =>
+                    setUpdateRequirement({ ...updateRequirement, name: e.target.value })
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <Textarea
+                value={updateRequirement.description}
+                onChange={(e) =>
+                  setUpdateRequirement({
+                    ...updateRequirement,
+                    description: e.target.value,
+                  })
+                }
+                rows={3}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Requirement Type</Label>
+                <Select
+                  value={updateRequirement.requirementType}
+                  onValueChange={(value) =>
+                    setUpdateRequirement({ ...updateRequirement, requirementType: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Mandatory">Mandatory</SelectItem>
+                    <SelectItem value="Additional">Additional</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Chapter Type</Label>
+                <Select
+                  value={updateRequirement.chapterType}
+                  onValueChange={(value) =>
+                    setUpdateRequirement({ ...updateRequirement, chapterType: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Domain">Domain</SelectItem>
+                    <SelectItem value="Process Domain">Process Domain</SelectItem>
+                    <SelectItem value="Technical Domain">Technical Domain</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>Applicability</Label>
+                <Select
+                  value={updateRequirement.applicability}
+                  onValueChange={(value) =>
+                    setUpdateRequirement({ ...updateRequirement, applicability: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Yes">Yes</SelectItem>
+                    <SelectItem value="No">No</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Implementation</Label>
+                <Select
+                  value={updateRequirement.implementationStatus}
+                  onValueChange={(value) =>
+                    setUpdateRequirement({ ...updateRequirement, implementationStatus: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Yes">Yes</SelectItem>
+                    <SelectItem value="No">No</SelectItem>
+                    <SelectItem value="Ongoing">Ongoing</SelectItem>
+                    <SelectItem value="N/A">N/A</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Compliance</Label>
+                <Select
+                  value={updateRequirement.controlCompliance}
+                  onValueChange={(value) =>
+                    setUpdateRequirement({ ...updateRequirement, controlCompliance: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Compliant">Compliant</SelectItem>
+                    <SelectItem value="Non Compliant">Non Compliant</SelectItem>
+                    <SelectItem value="Partial Compliant">Partial Compliant</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setIsUpdateRequirementOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleUpdateRequirement}
+                disabled={!updateRequirement.name || !updateRequirement.code}
+              >
+                Update
+              </Button>
             </div>
           </div>
         </DialogContent>

@@ -68,6 +68,7 @@ export async function PUT(
       applicability,
       justification,
       implementationStatus,
+      controlCompliance,
     } = body;
 
     const requirement = await prisma.requirement.update({
@@ -85,6 +86,7 @@ export async function PUT(
         applicability,
         justification,
         implementationStatus,
+        ...(controlCompliance && { controlCompliance }),
       },
       include: {
         framework: true,
@@ -93,8 +95,10 @@ export async function PUT(
       },
     });
 
-    // Update control compliance based on linked controls
-    await updateRequirementCompliance(id);
+    // Only update control compliance based on linked controls if not explicitly set
+    if (!controlCompliance) {
+      await updateRequirementCompliance(id);
+    }
 
     return NextResponse.json(requirement);
   } catch (error: unknown) {
