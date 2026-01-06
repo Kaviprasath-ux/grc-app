@@ -42,7 +42,7 @@ export function StackedBarChart({
       </CardHeader>
       <CardContent>
         <div className="h-[250px]">
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
             <BarChart
               layout={isVertical ? "vertical" : "horizontal"}
               data={data}

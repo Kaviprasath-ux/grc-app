@@ -256,7 +256,7 @@ export default function RiskViewPage() {
               <CardContent className="pb-4">
                 <div className="flex items-center gap-4">
                   <div className="relative w-32 h-32">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                       <PieChart>
                         <Pie
                           data={[
