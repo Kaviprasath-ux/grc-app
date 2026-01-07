@@ -130,7 +130,7 @@ export function Sidebar() {
 
       {/* Logo area */}
       <div className="relative flex h-16 items-center justify-center border-b border-white/10 px-4">
-        <Link href="/dashboard" className="flex items-center gap-2">
+        <Link href={session?.user?.roles?.includes("GRCAdministrator") ? "/grc" : "/dashboard"} className="flex items-center gap-2">
           <div className="flex h-10 w-10 items-center justify-center">
             <svg viewBox="0 0 40 40" className="h-10 w-10">
               <circle cx="20" cy="20" r="18" fill="#1e40af" />

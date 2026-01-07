@@ -40,11 +40,20 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { code, name } = body;
+    const { name } = body;
 
+    // Validate name is provided
+    if (!name || !name.trim()) {
+      return NextResponse.json(
+        { error: "Domain name is required" },
+        { status: 400 }
+      );
+    }
+
+    // Only update name - code is auto-generated and cannot be changed
     const domain = await prisma.controlDomain.update({
       where: { id },
-      data: { code, name },
+      data: { name: name.trim() },
     });
 
     return NextResponse.json(domain);
@@ -54,6 +63,12 @@ export async function PUT(
       return NextResponse.json(
         { error: "Control domain not found" },
         { status: 404 }
+      );
+    }
+    if ((error as { code?: string }).code === "P2002") {
+      return NextResponse.json(
+        { error: "A domain with this name already exists" },
+        { status: 409 }
       );
     }
     return NextResponse.json(
