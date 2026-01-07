@@ -52,7 +52,7 @@ async function main() {
     },
     {
       name: "Reviewer",
-      description: "Reviews and approves across modules",
+      description: "Reviews compliance, risk, and asset content (no admin access, no settings, no audit)",
       isSystem: true,
     },
     {
@@ -226,18 +226,20 @@ async function main() {
     where: { name: "IT Operations" },
   });
 
-  for (const testUser of testUsers) {
+  for (let i = 0; i < testUsers.length; i++) {
+    const testUser = testUsers[i];
     const user = await prisma.user.upsert({
       where: { userName: testUser.userName },
       update: {},
       create: {
+        userId: `TEST-${String(i + 1).padStart(3, '0')}`,
         userName: testUser.userName,
         email: testUser.email,
         firstName: testUser.firstName,
         lastName: testUser.lastName,
         fullName: `${testUser.firstName} ${testUser.lastName}`,
         password: testUser.password,
-        departmentId: itDept?.id,
+        ...(itDept?.id ? { departmentId: itDept.id } : {}),
       },
     });
 
@@ -332,7 +334,7 @@ async function main() {
   console.log("  - test.audithead (AuditHead - audit module admin)");
   console.log("  - test.auditor (Auditor - conduct audits)");
   console.log("  - test.auditee (Auditee - respond to audits)");
-  console.log("  - test.reviewer (Reviewer - review & approve)");
+  console.log("  - test.reviewer (Reviewer - view compliance/risk/asset, no admin)");
   console.log("  - test.contributor (Contributor - create & edit)");
   console.log("  - test.deptreviewer (DepartmentReviewer - dept scope)");
   console.log("  - test.deptcontrib (DepartmentContributor - dept scope)");

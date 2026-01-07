@@ -112,7 +112,7 @@ export const ROLES = {
   },
   Reviewer: {
     name: 'Reviewer',
-    description: 'Reviews and approves across modules',
+    description: 'Reviews and approves compliance, risk, and asset content (no admin access)',
   },
   Contributor: {
     name: 'Contributor',
@@ -223,22 +223,36 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'organization.process', actions: ['view'], scope: 'department' },
   ],
 
-  // Reviewer - Reviews and approves across modules
+  // Reviewer - View access to compliance, risk, asset (no admin, settings, or audit access)
+  // Excluded: organization.profile, organization.users, organization.settings,
+  //           compliance.settings (Master Data), asset.settings, risk.settings, audit.* (entire module)
   Reviewer: [
+    // Organization - only dashboard, context, and process (NO profile, users, settings)
     { resource: 'organization.dashboard', actions: ['view'], scope: 'all' },
-    { resource: 'organization.process', actions: ['view', 'approve'], scope: 'all' },
+    { resource: 'organization.context', actions: ['view'], scope: 'all' },
+    { resource: 'organization.process', actions: ['view'], scope: 'all' },
+    // Compliance - view only (NO settings/Master Data)
     { resource: 'compliance.dashboard', actions: ['view'], scope: 'all' },
-    { resource: 'compliance.framework', actions: ['view', 'approve'], scope: 'all' },
-    { resource: 'compliance.controls', actions: ['view', 'approve'], scope: 'all' },
-    { resource: 'compliance.governance', actions: ['view', 'approve'], scope: 'all' },
-    { resource: 'compliance.evidence', actions: ['view', 'approve'], scope: 'all' },
-    { resource: 'compliance.exceptions', actions: ['view', 'approve'], scope: 'all' },
-    { resource: 'risk.dashboard', actions: ['view'], scope: 'all' },
-    { resource: 'risk.register', actions: ['view', 'approve'], scope: 'all' },
-    { resource: 'risk.assessment', actions: ['view', 'approve'], scope: 'all' },
-    { resource: 'risk.response', actions: ['view', 'approve'], scope: 'all' },
+    { resource: 'compliance.framework', actions: ['view'], scope: 'all' },
+    { resource: 'compliance.controls', actions: ['view'], scope: 'all' },
+    { resource: 'compliance.governance', actions: ['view'], scope: 'all' },
+    { resource: 'compliance.evidence', actions: ['view'], scope: 'all' },
+    { resource: 'compliance.artifacts', actions: ['view'], scope: 'all' },
+    { resource: 'compliance.exceptions', actions: ['view'], scope: 'all' },
+    { resource: 'compliance.kpi', actions: ['view'], scope: 'all' },
+    // compliance.settings (Master Data) - EXCLUDED
+    // Asset Management - view only (NO settings)
     { resource: 'asset.dashboard', actions: ['view'], scope: 'all' },
-    { resource: 'asset.inventory', actions: ['view', 'approve'], scope: 'all' },
+    { resource: 'asset.inventory', actions: ['view'], scope: 'all' },
+    { resource: 'asset.classification', actions: ['view'], scope: 'all' },
+    { resource: 'asset.reports', actions: ['view'], scope: 'all' },
+    // Risk Management - view only (NO settings)
+    { resource: 'risk.dashboard', actions: ['view'], scope: 'all' },
+    { resource: 'risk.register', actions: ['view'], scope: 'all' },
+    { resource: 'risk.assessment', actions: ['view'], scope: 'all' },
+    { resource: 'risk.response', actions: ['view'], scope: 'all' },
+    { resource: 'risk.reports', actions: ['view'], scope: 'all' },
+    // Internal Audit - NO ACCESS (entire module excluded)
   ],
 
   // Contributor - Creates and edits across modules

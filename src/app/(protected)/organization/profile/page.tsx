@@ -24,10 +24,33 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ColumnDef } from "@tanstack/react-table";
+import { EditProfileWizard } from "@/components/profile/edit-profile-wizard";
+
+interface Branch {
+  id?: string;
+  location: string;
+  address: string;
+}
+
+interface DataCenter {
+  id?: string;
+  locationType: string;
+  address?: string;
+  vendor?: string;
+}
+
+interface CloudProvider {
+  id?: string;
+  name: string;
+  serviceType: string;
+}
 
 interface Organization {
   id: string;
   name: string;
+  email: string;
+  phone: string;
+  logo: string;
   establishedDate: string;
   employeeCount: number;
   branchCount: number;
@@ -37,6 +60,16 @@ interface Organization {
   description: string;
   vision: string;
   mission: string;
+  value: string;
+  ceoMessage: string;
+  facebook: string;
+  youtube: string;
+  twitter: string;
+  linkedin: string;
+  brochure: string;
+  branches: Branch[];
+  dataCenters: DataCenter[];
+  cloudProviders: CloudProvider[];
 }
 
 interface Department {
@@ -82,8 +115,7 @@ export default function ProfilePage() {
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
   const [isAddItemOpen, setIsAddItemOpen] = useState(false);
-  const [isEditOrganizationOpen, setIsEditOrganizationOpen] = useState(false);
-  const [editingOrganization, setEditingOrganization] = useState<Organization | null>(null);
+  const [isEditProfileWizardOpen, setIsEditProfileWizardOpen] = useState(false);
   const [isEditDepartmentOpen, setIsEditDepartmentOpen] = useState(false);
   const [editingDepartment, setEditingDepartment] = useState<Department | null>(null);
 
@@ -142,7 +174,10 @@ export default function ProfilePage() {
         fetch("/api/regulations"),
       ]);
 
-      if (orgRes.ok) setOrganization(await orgRes.json());
+      if (orgRes.ok) {
+        const orgData = await orgRes.json();
+        setOrganization(orgData); // Will be null if no profile exists
+      }
       if (deptRes.ok) setDepartments(await deptRes.json());
       if (servRes.ok) setServices(await servRes.json());
       if (regRes.ok) setRegulations(await regRes.json());
@@ -396,32 +431,27 @@ export default function ProfilePage() {
     setIsAddItemOpen(false);
   };
 
-  // Edit organization
-  const handleEditOrganization = async () => {
-    if (!editingOrganization) return;
+  // Edit organization via wizard
+  const handleSaveOrganization = async (data: Organization) => {
     try {
       const res = await fetch(`/api/organization`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editingOrganization),
+        body: JSON.stringify(data),
       });
       if (res.ok) {
         const updated = await res.json();
         setOrganization(updated);
-        setIsEditOrganizationOpen(false);
-        setEditingOrganization(null);
       }
     } catch (error) {
       console.error("Error updating organization:", error);
+      throw error;
     }
   };
 
-  // Open edit organization dialog
+  // Open edit organization wizard
   const openEditOrganization = () => {
-    if (organization) {
-      setEditingOrganization({ ...organization });
-      setIsEditOrganizationOpen(true);
-    }
+    setIsEditProfileWizardOpen(true);
   };
 
   // Department columns
@@ -531,63 +561,78 @@ export default function ProfilePage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Organization Information</CardTitle>
-              <Button variant="outline" size="sm" onClick={openEditOrganization}>
-                <Pencil className="h-4 w-4 mr-2" />
-                Edit
-              </Button>
+              {organization ? (
+                <Button variant="outline" size="sm" onClick={openEditOrganization}>
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Edit
+                </Button>
+              ) : (
+                <Button size="sm" onClick={openEditOrganization}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  New Profile
+                </Button>
+              )}
             </CardHeader>
             <CardContent>
-              {organization && (
+              {organization ? (
                 <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-4">
-                      <div>
-                        <Label className="text-muted-foreground">Organization Name</Label>
-                        <p className="font-medium">{organization.name}</p>
-                      </div>
-                      <div>
-                        <Label className="text-muted-foreground">Established Date</Label>
-                        <p className="font-medium">{organization.establishedDate}</p>
-                      </div>
-                      <div>
-                        <Label className="text-muted-foreground">Employee Count</Label>
-                        <p className="font-medium">{organization.employeeCount}</p>
-                      </div>
-                      <div>
-                        <Label className="text-muted-foreground">Branch Count</Label>
-                        <p className="font-medium">{organization.branchCount}</p>
-                      </div>
-                      <div>
-                        <Label className="text-muted-foreground">Website</Label>
-                        <p className="font-medium text-grc-link">{organization.website}</p>
-                      </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div>
+                      <Label className="text-muted-foreground">Established Date</Label>
+                      <p className="font-medium">{organization.establishedDate || "-"}</p>
                     </div>
-                    <div className="space-y-4">
-                      <div>
-                        <Label className="text-muted-foreground">Head Office Location</Label>
-                        <p className="font-medium">{organization.headOfficeLocation}</p>
-                      </div>
-                      <div>
-                        <Label className="text-muted-foreground">Head Office Address</Label>
-                        <p className="font-medium">{organization.headOfficeAddress}</p>
-                      </div>
+                    <div>
+                      <Label className="text-muted-foreground">Employee Count</Label>
+                      <p className="font-medium">{organization.employeeCount}</p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">Branch Count</Label>
+                      <p className="font-medium">{organization.branchCount}</p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">Head Office Location</Label>
+                      <p className="font-medium">{organization.headOfficeLocation || "-"}</p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">Head Office Address</Label>
+                      <p className="font-medium">{organization.headOfficeAddress || "-"}</p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">Website</Label>
+                      <p className="font-medium text-grc-link">{organization.website || "-"}</p>
                     </div>
                   </div>
-                  <div className="mt-6 space-y-4">
+                  <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <Label className="text-muted-foreground">Description</Label>
-                      <p className="font-medium">{organization.description}</p>
+                      <Label className="text-muted-foreground font-semibold">{organization.name}</Label>
+                      <p className="text-sm mt-1">{organization.description || "-"}</p>
                     </div>
-                    <div>
-                      <Label className="text-muted-foreground">Vision</Label>
-                      <p className="font-medium">{organization.vision}</p>
-                    </div>
-                    <div>
-                      <Label className="text-muted-foreground">Mission</Label>
-                      <p className="font-medium">{organization.mission}</p>
+                    <div className="space-y-4">
+                      <div>
+                        <Label className="text-muted-foreground">Vision</Label>
+                        <p className="text-sm">{organization.vision || "-"}</p>
+                      </div>
+                      <div>
+                        <Label className="text-muted-foreground">Mission</Label>
+                        <p className="text-sm">{organization.mission || "-"}</p>
+                      </div>
                     </div>
                   </div>
                 </>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="rounded-full bg-muted p-6 mb-4">
+                    <Plus className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <h3 className="text-lg font-medium mb-2">No Profile Added</h3>
+                  <p className="text-muted-foreground mb-4 max-w-md">
+                    Create your organization profile to display company information, vision, mission, and more.
+                  </p>
+                  <Button onClick={openEditOrganization}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Profile
+                  </Button>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -1383,141 +1428,13 @@ export default function ProfilePage() {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Organization Dialog */}
-      <Dialog open={isEditOrganizationOpen} onOpenChange={setIsEditOrganizationOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit Organization</DialogTitle>
-          </DialogHeader>
-          {editingOrganization && (
-            <div className="space-y-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="editOrgName">Organization Name</Label>
-                  <Input
-                    id="editOrgName"
-                    value={editingOrganization.name}
-                    onChange={(e) =>
-                      setEditingOrganization({ ...editingOrganization, name: e.target.value })
-                    }
-                    className="mt-2"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="editEstablishedDate">Established Date</Label>
-                  <Input
-                    id="editEstablishedDate"
-                    value={editingOrganization.establishedDate}
-                    onChange={(e) =>
-                      setEditingOrganization({ ...editingOrganization, establishedDate: e.target.value })
-                    }
-                    className="mt-2"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="editEmployeeCount">Employee Count</Label>
-                  <Input
-                    id="editEmployeeCount"
-                    type="number"
-                    value={editingOrganization.employeeCount}
-                    onChange={(e) =>
-                      setEditingOrganization({ ...editingOrganization, employeeCount: parseInt(e.target.value) || 0 })
-                    }
-                    className="mt-2"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="editBranchCount">Branch Count</Label>
-                  <Input
-                    id="editBranchCount"
-                    type="number"
-                    value={editingOrganization.branchCount}
-                    onChange={(e) =>
-                      setEditingOrganization({ ...editingOrganization, branchCount: parseInt(e.target.value) || 0 })
-                    }
-                    className="mt-2"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="editHeadOfficeLocation">Head Office Location</Label>
-                  <Input
-                    id="editHeadOfficeLocation"
-                    value={editingOrganization.headOfficeLocation}
-                    onChange={(e) =>
-                      setEditingOrganization({ ...editingOrganization, headOfficeLocation: e.target.value })
-                    }
-                    className="mt-2"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="editWebsite">Website</Label>
-                  <Input
-                    id="editWebsite"
-                    value={editingOrganization.website}
-                    onChange={(e) =>
-                      setEditingOrganization({ ...editingOrganization, website: e.target.value })
-                    }
-                    className="mt-2"
-                  />
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="editHeadOfficeAddress">Head Office Address</Label>
-                <Input
-                  id="editHeadOfficeAddress"
-                  value={editingOrganization.headOfficeAddress}
-                  onChange={(e) =>
-                    setEditingOrganization({ ...editingOrganization, headOfficeAddress: e.target.value })
-                  }
-                  className="mt-2"
-                />
-              </div>
-              <div>
-                <Label htmlFor="editDescription">Description</Label>
-                <Textarea
-                  id="editDescription"
-                  value={editingOrganization.description}
-                  onChange={(e) =>
-                    setEditingOrganization({ ...editingOrganization, description: e.target.value })
-                  }
-                  className="mt-2"
-                  rows={3}
-                />
-              </div>
-              <div>
-                <Label htmlFor="editVision">Vision</Label>
-                <Textarea
-                  id="editVision"
-                  value={editingOrganization.vision}
-                  onChange={(e) =>
-                    setEditingOrganization({ ...editingOrganization, vision: e.target.value })
-                  }
-                  className="mt-2"
-                  rows={2}
-                />
-              </div>
-              <div>
-                <Label htmlFor="editMission">Mission</Label>
-                <Textarea
-                  id="editMission"
-                  value={editingOrganization.mission}
-                  onChange={(e) =>
-                    setEditingOrganization({ ...editingOrganization, mission: e.target.value })
-                  }
-                  className="mt-2"
-                  rows={2}
-                />
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditOrganizationOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleEditOrganization}>Save</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Edit Profile Wizard */}
+      <EditProfileWizard
+        open={isEditProfileWizardOpen}
+        onOpenChange={setIsEditProfileWizardOpen}
+        organization={organization}
+        onSave={handleSaveOrganization}
+      />
     </div>
   );
 }

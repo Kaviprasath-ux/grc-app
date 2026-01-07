@@ -65,19 +65,66 @@ model UserRole {
 
 // Organization Profile
 model Organization {
-  id                 String   @id @default(cuid())
+  id                 String           @id @default(cuid())
   name               String
+  email              String?
+  phone              String?
+  logo               String?
   establishedDate    String?
-  employeeCount      Int      @default(0)
-  branchCount        Int      @default(0)
+  employeeCount      Int              @default(0)
+  branchCount        Int              @default(0)
   headOfficeLocation String?
   headOfficeAddress  String?
   website            String?
   description        String?
   vision             String?
   mission            String?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  value              String?
+  ceoMessage         String?
+  facebook           String?
+  youtube            String?
+  twitter            String?
+  linkedin           String?
+  brochure           String?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  branches           Branch[]
+  dataCenters        DataCenter[]
+  cloudProviders     CloudProvider[]
+}
+
+// Branch Office
+model Branch {
+  id             String       @id @default(cuid())
+  location       String
+  address        String
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+// Data Center
+model DataCenter {
+  id             String       @id @default(cuid())
+  locationType   String       // On-Prem or Outsourced
+  address        String?      // For On-Prem
+  vendor         String?      // For Outsourced
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+// Cloud Provider
+model CloudProvider {
+  id             String       @id @default(cuid())
+  name           String
+  serviceType    String       // Iaas, Paas, Saas
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 }
 
 // Departments

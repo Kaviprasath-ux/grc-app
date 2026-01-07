@@ -101,12 +101,18 @@ function NavItemComponent({ item, depth = 0 }: NavItemProps) {
 
 export function Sidebar() {
   const { data: session, status } = useSession();
+  const [mounted, setMounted] = useState(false);
+
+  // Ensure consistent rendering between server and client
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Filter navigation based on user permissions
   const filteredNavigation = useMemo(() => {
-    if (status === "loading") {
-      // While loading, show nothing to prevent flash of full nav
-      return [];
+    if (!mounted || status === "loading") {
+      // Show full nav during SSR and initial mount for consistent hydration
+      return navigation;
     }
 
     if (!session?.user?.permissions) {
@@ -116,7 +122,10 @@ export function Sidebar() {
     }
 
     return filterNavigationByPermissions(navigation, session.user.permissions);
-  }, [session?.user?.permissions, status]);
+  }, [session?.user?.permissions, status, mounted]);
+
+  // Determine if user info should be shown (only after mount to avoid hydration mismatch)
+  const showUserInfo = mounted && session?.user?.roles && session.user.roles.length > 0;
 
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-[205px] bg-[#0f2744]">
@@ -141,8 +150,8 @@ export function Sidebar() {
         </Link>
       </div>
 
-      {/* User role badge */}
-      {session?.user?.roles && session.user.roles.length > 0 && (
+      {/* User role badge - only show after mount to avoid hydration mismatch */}
+      {showUserInfo && (
         <div className="relative px-4 py-2 border-b border-white/10">
           <div className="text-xs text-white/60">Logged in as</div>
           <div className="text-sm text-white font-medium truncate">
@@ -166,8 +175,11 @@ export function Sidebar() {
         </div>
       )}
 
-      {/* Navigation */}
-      <ScrollArea className="relative h-[calc(100vh-4rem-60px)]">
+      {/* Navigation - use consistent height to avoid hydration mismatch */}
+      <ScrollArea className={cn(
+        "relative",
+        showUserInfo ? "h-[calc(100vh-4rem-60px)]" : "h-[calc(100vh-4rem)]"
+      )}>
         <nav className="py-2">
           {filteredNavigation.map((item) => (
             <NavItemComponent key={item.name} item={item} />
