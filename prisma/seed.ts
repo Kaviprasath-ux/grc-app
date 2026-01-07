@@ -7,24 +7,101 @@ async function main() {
 
   // ==================== ORGANIZATION MODULE ====================
 
-  // Create Organization
-  await prisma.organization.upsert({
+  // Create Organization with complete profile data
+  const organization = await prisma.organization.upsert({
     where: { id: "org-1" },
-    update: {},
+    update: {
+      email: "info@baarez.com",
+      phone: "+974 4444 1234",
+      logo: "/uploads/baarez-logo.png",
+      value: "We believe in integrity, innovation, and excellence. Our core values drive us to deliver the highest quality solutions while maintaining ethical business practices and fostering continuous improvement.",
+      ceoMessage: "Welcome to Baarez Technology Solutions. Our commitment to excellence in GRC solutions has made us a trusted partner for organizations worldwide. We continue to innovate and expand our offerings to meet the evolving needs of our clients in an increasingly complex regulatory landscape.",
+      facebook: "https://facebook.com/baareztechnology",
+      youtube: "https://youtube.com/@baareztechnology",
+      twitter: "https://twitter.com/baareztechnology",
+      linkedin: "https://linkedin.com/company/baarez-technology-solutions",
+      brochure: "/uploads/baarez-brochure.pdf",
+    },
     create: {
       id: "org-1",
       name: "Baarez Technology Solutions",
+      email: "info@baarez.com",
+      phone: "+974 4444 1234",
+      logo: "/uploads/baarez-logo.png",
       establishedDate: "09/08/2017",
       employeeCount: 80,
       branchCount: 2,
-      headOfficeLocation: "Doha, Qatar-1",
+      headOfficeLocation: "Doha, Qatar",
       headOfficeAddress: "Office No.15, 2nd Floor, Building no. 226, Street No 230, C-Ring Road",
-      website: "www.baarez.com",
-      description: "Founded in 2017, Baarez Technology Solutions is a leading technology company specializing in GRC solutions and digital transformation services.",
-      vision: "To become the preferred Technology partner for organizations seeking innovative GRC solutions.",
-      mission: "At Baarez Technology Solutions, we are committed to delivering cutting-edge technology solutions that help organizations manage their governance, risk, and compliance needs effectively.",
+      website: "https://www.baarez.com",
+      description: "Founded in 2017, Baarez Technology Solutions is a leading technology company specializing in GRC solutions and digital transformation services. We help organizations navigate complex regulatory requirements and build robust governance frameworks.",
+      vision: "To become the preferred Technology partner for organizations seeking innovative GRC solutions that drive sustainable growth and ensure regulatory compliance.",
+      mission: "At Baarez Technology Solutions, we are committed to delivering cutting-edge technology solutions that help organizations manage their governance, risk, and compliance needs effectively while fostering a culture of continuous improvement.",
+      value: "We believe in integrity, innovation, and excellence. Our core values drive us to deliver the highest quality solutions while maintaining ethical business practices and fostering continuous improvement.",
+      ceoMessage: "Welcome to Baarez Technology Solutions. Our commitment to excellence in GRC solutions has made us a trusted partner for organizations worldwide. We continue to innovate and expand our offerings to meet the evolving needs of our clients in an increasingly complex regulatory landscape.",
+      facebook: "https://facebook.com/baareztechnology",
+      youtube: "https://youtube.com/@baareztechnology",
+      twitter: "https://twitter.com/baareztechnology",
+      linkedin: "https://linkedin.com/company/baarez-technology-solutions",
+      brochure: "/uploads/baarez-brochure.pdf",
     },
   });
+
+  // Create Branch Offices
+  await prisma.branch.deleteMany({ where: { organizationId: organization.id } });
+  const branches = [
+    { location: "Dubai, UAE", address: "Dubai Internet City, Building 1, Office 301, Sheikh Zayed Road" },
+    { location: "Riyadh, Saudi Arabia", address: "King Fahd Road, Al Olaya District, Tower 5, Floor 12" },
+    { location: "Mumbai, India", address: "Bandra Kurla Complex, One BKC, Tower A, 15th Floor" },
+  ];
+  for (const branch of branches) {
+    await prisma.branch.create({
+      data: {
+        location: branch.location,
+        address: branch.address,
+        organizationId: organization.id,
+      },
+    });
+  }
+  console.log("✅ Branch offices created");
+
+  // Create Data Centers
+  await prisma.dataCenter.deleteMany({ where: { organizationId: organization.id } });
+  const dataCenters = [
+    { locationType: "On-Prem", address: "Doha Primary Data Center, West Bay, Building 45" },
+    { locationType: "Outsourced", vendor: "Microsoft Azure (Qatar Region)" },
+    { locationType: "Outsourced", vendor: "Amazon Web Services (Bahrain Region)" },
+  ];
+  for (const dc of dataCenters) {
+    await prisma.dataCenter.create({
+      data: {
+        locationType: dc.locationType,
+        address: dc.address || null,
+        vendor: dc.vendor || null,
+        organizationId: organization.id,
+      },
+    });
+  }
+  console.log("✅ Data centers created");
+
+  // Create Cloud Providers
+  await prisma.cloudProvider.deleteMany({ where: { organizationId: organization.id } });
+  const cloudProviders = [
+    { name: "Microsoft Azure", serviceType: "IaaS" },
+    { name: "Amazon Web Services", serviceType: "PaaS" },
+    { name: "Google Cloud Platform", serviceType: "SaaS" },
+    { name: "Salesforce", serviceType: "SaaS" },
+  ];
+  for (const cp of cloudProviders) {
+    await prisma.cloudProvider.create({
+      data: {
+        name: cp.name,
+        serviceType: cp.serviceType,
+        organizationId: organization.id,
+      },
+    });
+  }
+  console.log("✅ Cloud providers created");
 
   // Create Departments
   const departments = [
