@@ -43,6 +43,10 @@ export async function POST(request: NextRequest) {
       piiCapture,
       operationalComplexity,
       lastAuditDate,
+      responsibleId,
+      accountableId,
+      consultedId,
+      informedId,
     } = body;
 
     if (!name) {
@@ -70,8 +74,9 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingProcess) {
+      console.log(`Process code ${finalProcessCode} already exists`);
       return NextResponse.json(
-        { error: "Process code already exists" },
+        { error: `Process code ${finalProcessCode} already exists` },
         { status: 400 }
       );
     }
@@ -95,6 +100,10 @@ export async function POST(request: NextRequest) {
         piiCapture: piiCapture || false,
         operationalComplexity,
         lastAuditDate: lastAuditDate ? new Date(lastAuditDate) : null,
+        responsibleId: responsibleId || null,
+        accountableId: accountableId || null,
+        consultedId: consultedId || null,
+        informedId: informedId || null,
       },
       include: {
         department: true,
@@ -103,10 +112,10 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json(process, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error creating process:", error);
     return NextResponse.json(
-      { error: "Failed to create process" },
+      { error: error.message || "Failed to create process" },
       { status: 500 }
     );
   }

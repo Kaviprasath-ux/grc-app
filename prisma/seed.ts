@@ -139,6 +139,13 @@ async function main() {
     { userId: "USR-006", userName: "david.jones", email: "david.jones@baarez.com", firstName: "David", lastName: "Jones", department: "IT Support", designation: "Support Specialist", role: "User", function: "Security" },
     { userId: "USR-007", userName: "lisa.taylor", email: "lisa.taylor@baarez.com", firstName: "Lisa", lastName: "Taylor", department: "Product Development", designation: "Product Manager", role: "User", function: "Business" },
     { userId: "USR-008", userName: "james.anderson", email: "james.anderson@baarez.com", firstName: "James", lastName: "Anderson", department: "Revenue", designation: "Sales Director", role: "User", function: "Business" },
+    { userId: "USR-009", userName: "deepika.kumar", email: "deepika.kumar@baarez.com", firstName: "Deepika", lastName: "K", department: "Internal Audit", designation: "Senior Auditor", role: "Auditor", function: "Audit" },
+    { userId: "USR-010", userName: "anamika.sharma", email: "anamika.sharma@baarez.com", firstName: "Anamika", lastName: "Sharma", department: "Internal Audit", designation: "Auditor", role: "Auditor", function: "Audit" },
+    { userId: "USR-011", userName: "abhishek.reddy", email: "abhishek.reddy@baarez.com", firstName: "Abhishek", lastName: "Reddy", department: "Internal Audit", designation: "Audit Head", role: "Auditor", function: "Audit" },
+    { userId: "USR-012", userName: "kudiarasan.tdev", email: "kudiarasan.t@baarez.com", firstName: "Kudiarasan", lastName: "T", department: "Internal Audit", designation: "Lead Auditor", role: "Auditor", function: "Audit" },
+    { userId: "USR-013", userName: "prakash.loganathan", email: "prakash.l@baarez.com", firstName: "Prakash", lastName: "L", department: "Internal Audit", designation: "IT Auditor", role: "Auditor", function: "Audit" },
+    { userId: "USR-014", userName: "navita.singh", email: "navita.singh@baarez.com", firstName: "Navita", lastName: "S", department: "Internal Audit", designation: "Auditor", role: "Auditor", function: "Audit" },
+    { userId: "USR-015", userName: "avinash.kumar", email: "avinash.kumar@baarez.com", firstName: "Avinash", lastName: "Kumar", department: "Internal Audit", designation: "Junior Auditor", role: "Auditor", function: "Audit" },
   ];
 
   const createdUsers: { [key: string]: string } = {};
@@ -150,7 +157,7 @@ async function main() {
         userId: user.userId,
         userName: user.userName,
         email: user.email,
-        password: "password123",
+        password: "1",
         firstName: user.firstName,
         lastName: user.lastName,
         fullName: `${user.firstName} ${user.lastName}`,
@@ -163,6 +170,63 @@ async function main() {
     createdUsers[user.userName] = created.id;
   }
   console.log("✅ Users created");
+
+  // Create RBAC Roles
+  const roleDefinitions = [
+    { name: "GRCAdministrator", description: "Full system access, all modules, all data", isSystem: true },
+    { name: "CustomerAdministrator", description: "Organization-level admin, manages users and settings", isSystem: true },
+    { name: "AuditHead", description: "Full access to Internal Audit module, all audit data", isSystem: true },
+    { name: "AuditManager", description: "Manages audits, assigns auditors, reviews findings", isSystem: true },
+    { name: "AuditUser", description: "Basic audit module access", isSystem: true },
+    { name: "Auditor", description: "Conducts audits, creates findings", isSystem: true },
+    { name: "Auditee", description: "Receives audit requests, responds to findings", isSystem: true },
+    { name: "Reviewer", description: "Reviews and approves compliance, risk, and asset content", isSystem: true },
+    { name: "Contributor", description: "Creates and edits content across modules", isSystem: true },
+    { name: "DepartmentReviewer", description: "Reviews content within own department", isSystem: true },
+    { name: "DepartmentContributor", description: "Creates/edits content within own department", isSystem: true },
+  ];
+
+  const createdRoles: { [key: string]: string } = {};
+  for (const roleDef of roleDefinitions) {
+    const role = await prisma.role.upsert({
+      where: { name: roleDef.name },
+      update: {},
+      create: roleDef,
+    });
+    createdRoles[roleDef.name] = role.id;
+  }
+  console.log("✅ RBAC Roles created");
+
+  // Assign roles to users based on their role field
+  const roleMapping: { [key: string]: string } = {
+    "Administrator": "CustomerAdministrator",
+    "GRC Admin": "GRCAdministrator",
+    "Auditor": "Auditor",
+    "Risk Manager": "Contributor",
+    "User": "Contributor",
+  };
+
+  for (const user of users) {
+    const rbacRoleName = roleMapping[user.role] || "Contributor";
+    const roleId = createdRoles[rbacRoleName];
+
+    if (roleId) {
+      await prisma.userRole.upsert({
+        where: {
+          userId_roleId: {
+            userId: createdUsers[user.userName],
+            roleId: roleId,
+          },
+        },
+        update: {},
+        create: {
+          userId: createdUsers[user.userName],
+          roleId: roleId,
+        },
+      });
+    }
+  }
+  console.log("✅ User roles assigned");
 
   // Create Stakeholders
   const stakeholders = [
@@ -2354,6 +2418,453 @@ async function main() {
     });
   }
   console.log("✅ Internal Audit Risks created");
+
+  // ==================== AUDITABLE ENTITIES (AUDIT UNIVERSE) ====================
+
+  const auditableEntities = [
+    {
+      entityCode: "AE-001",
+      name: "Financial Reporting Process",
+      departmentId: createdDepts["Revenue"],
+      description: "End-to-end financial reporting and reconciliation process",
+      riskRating: "High",
+      lastAuditDate: new Date("2024-10-15"),
+      nextAuditDate: new Date("2025-10-15"),
+      status: "Active",
+    },
+    {
+      entityCode: "AE-002",
+      name: "IT Infrastructure Security",
+      departmentId: createdDepts["IT Operations"],
+      description: "Network security, server management, and access controls",
+      riskRating: "High",
+      lastAuditDate: new Date("2024-12-01"),
+      nextAuditDate: new Date("2025-06-01"),
+      status: "Active",
+    },
+    {
+      entityCode: "AE-003",
+      name: "Payroll Processing",
+      departmentId: createdDepts["Human Resources"],
+      description: "Employee payroll calculation, verification, and disbursement",
+      riskRating: "Medium",
+      lastAuditDate: new Date("2024-09-01"),
+      nextAuditDate: new Date("2025-09-01"),
+      status: "Active",
+    },
+    {
+      entityCode: "AE-004",
+      name: "Vendor Management System",
+      departmentId: createdDepts["Procurement"],
+      description: "Third-party vendor onboarding, monitoring, and payment",
+      riskRating: "High",
+      lastAuditDate: new Date("2024-11-15"),
+      nextAuditDate: new Date("2025-05-15"),
+      status: "Active",
+    },
+    {
+      entityCode: "AE-005",
+      name: "Regulatory Compliance Monitoring",
+      departmentId: createdDepts["Compliance"],
+      description: "Tracking and ensuring compliance with applicable regulations",
+      riskRating: "High",
+      lastAuditDate: new Date("2024-08-01"),
+      nextAuditDate: new Date("2025-02-01"),
+      status: "Active",
+    },
+    {
+      entityCode: "AE-006",
+      name: "Customer Data Management",
+      departmentId: createdDepts["IT Support"],
+      description: "Customer database management and privacy controls",
+      riskRating: "Extreme",
+      lastAuditDate: new Date("2025-01-15"),
+      nextAuditDate: new Date("2025-04-15"),
+      status: "Active",
+    },
+    {
+      entityCode: "AE-007",
+      name: "Product Development Lifecycle",
+      departmentId: createdDepts["Product Development"],
+      description: "Software development, testing, and deployment process",
+      riskRating: "Medium",
+      lastAuditDate: new Date("2024-07-01"),
+      nextAuditDate: new Date("2025-07-01"),
+      status: "Active",
+    },
+    {
+      entityCode: "AE-008",
+      name: "Business Continuity Planning",
+      departmentId: createdDepts["Operations"],
+      description: "Disaster recovery and business continuity procedures",
+      riskRating: "High",
+      lastAuditDate: new Date("2024-06-15"),
+      nextAuditDate: new Date("2025-06-15"),
+      status: "Active",
+    },
+  ];
+
+  const createdAuditableEntities: { [key: string]: string } = {};
+  for (const entity of auditableEntities) {
+    const created = await prisma.auditableEntity.upsert({
+      where: { entityCode: entity.entityCode },
+      update: {},
+      create: entity,
+    });
+    createdAuditableEntities[entity.entityCode] = created.id;
+  }
+  console.log("✅ Auditable Entities created");
+
+  // ==================== AUDIT ENGAGEMENTS (AUDIT PLANNING) ====================
+
+  const auditEngagements = [
+    {
+      auditId: "AUD-2025-001",
+      engagementTitle: "Q1 2025 IT Security Audit",
+      description: "Assess the effectiveness of IT security controls and identify vulnerabilities. Scope: Network security, access management, patch management, incident response",
+      departmentId: createdDepts["IT Operations"],
+      auditableEntityId: createdAuditableEntities["AE-002"],
+      assignedAuditorId: createdUsers["sarah.smith"],
+      plannedStartDate: new Date("2025-03-01"),
+      plannedEndDate: new Date("2025-03-31"),
+      actualStartDate: new Date("2025-03-01"),
+      status: "In Progress",
+      priority: "High",
+      year: 2025,
+      quarter: "Q1",
+    },
+    {
+      auditId: "AUD-2025-002",
+      engagementTitle: "Financial Reporting Compliance Audit",
+      description: "Verify accuracy and compliance of financial reporting processes. Scope: Monthly reconciliations, journal entries, financial statement preparation",
+      departmentId: createdDepts["Revenue"],
+      auditableEntityId: createdAuditableEntities["AE-001"],
+      assignedAuditorId: createdUsers["sarah.smith"],
+      plannedStartDate: new Date("2025-04-15"),
+      plannedEndDate: new Date("2025-05-15"),
+      status: "Planned",
+      priority: "High",
+      year: 2025,
+      quarter: "Q2",
+    },
+    {
+      auditId: "AUD-2025-003",
+      engagementTitle: "Vendor Management Review",
+      description: "Evaluate vendor onboarding, monitoring, and risk assessment processes. Scope: Vendor contracts, performance monitoring, payment processing",
+      departmentId: createdDepts["Procurement"],
+      auditableEntityId: createdAuditableEntities["AE-004"],
+      assignedAuditorId: createdUsers["sarah.smith"],
+      plannedStartDate: new Date("2025-06-01"),
+      plannedEndDate: new Date("2025-06-30"),
+      status: "Planned",
+      priority: "Medium",
+      year: 2025,
+      quarter: "Q2",
+    },
+    {
+      auditId: "AUD-2025-004",
+      engagementTitle: "Data Privacy Compliance Assessment",
+      description: "Assess compliance with data privacy regulations (GDPR, PDPA). Scope: Data collection, storage, processing, deletion, and consent management",
+      departmentId: createdDepts["IT Support"],
+      auditableEntityId: createdAuditableEntities["AE-006"],
+      assignedAuditorId: createdUsers["sarah.smith"],
+      plannedStartDate: new Date("2025-02-15"),
+      plannedEndDate: new Date("2025-03-15"),
+      actualStartDate: new Date("2025-02-15"),
+      actualEndDate: new Date("2025-03-10"),
+      status: "Completed",
+      priority: "High",
+      year: 2025,
+      quarter: "Q1",
+    },
+    {
+      auditId: "AUD-2025-005",
+      engagementTitle: "Payroll Processing Audit",
+      description: "Review payroll calculation accuracy and compliance with labor laws. Scope: Time tracking, salary calculations, deductions, tax compliance",
+      departmentId: createdDepts["Human Resources"],
+      auditableEntityId: createdAuditableEntities["AE-003"],
+      assignedAuditorId: createdUsers["john.doe"],
+      plannedStartDate: new Date("2025-07-01"),
+      plannedEndDate: new Date("2025-07-31"),
+      status: "Planned",
+      priority: "Medium",
+      year: 2025,
+      quarter: "Q3",
+    },
+    {
+      auditId: "AUD-2024-012",
+      engagementTitle: "Q4 2024 Regulatory Compliance Review",
+      description: "Verify adherence to industry regulations and standards. Scope: SOC 2, ISO 27001, industry-specific regulations",
+      departmentId: createdDepts["Compliance"],
+      auditableEntityId: createdAuditableEntities["AE-005"],
+      assignedAuditorId: createdUsers["john.doe"],
+      plannedStartDate: new Date("2024-12-01"),
+      plannedEndDate: new Date("2024-12-31"),
+      actualStartDate: new Date("2024-12-01"),
+      actualEndDate: new Date("2024-12-28"),
+      status: "Completed",
+      priority: "High",
+      year: 2024,
+      quarter: "Q4",
+    },
+  ];
+
+  const createdEngagements: { [key: string]: string } = {};
+  for (const engagement of auditEngagements) {
+    const created = await prisma.auditEngagement.upsert({
+      where: { auditId: engagement.auditId },
+      update: {},
+      create: engagement,
+    });
+    createdEngagements[engagement.auditId] = created.id;
+  }
+  console.log("✅ Audit Engagements created");
+
+  // ==================== INTERNAL AUDIT FINDINGS ====================
+
+  const internalAuditFindings = [
+    {
+      findingId: "FND-2025-001",
+      engagementId: createdEngagements["AUD-2025-004"],
+      departmentId: createdDepts["IT Support"],
+      finding: "Inadequate Data Retention Policy",
+      description: "Customer data is being retained beyond the necessary period without documented justification",
+      severity: "High",
+      identifiedDate: new Date("2025-02-20"),
+      targetDate: new Date("2025-04-30"),
+      status: "Open",
+    },
+    {
+      findingId: "FND-2025-002",
+      engagementId: createdEngagements["AUD-2025-004"],
+      departmentId: createdDepts["IT Support"],
+      finding: "Missing Consent Records",
+      description: "Some customer consent records for data processing are incomplete or missing",
+      severity: "Medium",
+      identifiedDate: new Date("2025-02-25"),
+      targetDate: new Date("2025-05-15"),
+      status: "In Progress",
+    },
+    {
+      findingId: "FND-2025-003",
+      engagementId: createdEngagements["AUD-2025-001"],
+      departmentId: createdDepts["IT Operations"],
+      finding: "Weak Password Policy Enforcement",
+      description: "Current password policy does not enforce complexity requirements consistently",
+      severity: "High",
+      identifiedDate: new Date("2025-03-05"),
+      targetDate: new Date("2025-04-15"),
+      status: "Open",
+    },
+    {
+      findingId: "FND-2025-004",
+      engagementId: createdEngagements["AUD-2025-001"],
+      departmentId: createdDepts["IT Operations"],
+      finding: "Outdated Antivirus Software",
+      description: "Several workstations running outdated antivirus definitions",
+      severity: "Medium",
+      identifiedDate: new Date("2025-03-10"),
+      targetDate: new Date("2025-04-01"),
+      status: "Open",
+    },
+    {
+      findingId: "FND-2024-015",
+      engagementId: createdEngagements["AUD-2024-012"],
+      departmentId: createdDepts["Compliance"],
+      finding: "Incomplete SOC 2 Documentation",
+      description: "Some control evidence for SOC 2 Type II audit is incomplete",
+      severity: "High",
+      identifiedDate: new Date("2024-12-10"),
+      targetDate: new Date("2025-01-15"),
+      closedDate: new Date("2025-01-15"),
+      status: "Closed",
+    },
+  ];
+
+  const createdInternalFindings: { [key: string]: string } = {};
+  for (const finding of internalAuditFindings) {
+    const created = await prisma.internalAuditFinding.upsert({
+      where: { findingId: finding.findingId },
+      update: {},
+      create: finding,
+    });
+    createdInternalFindings[finding.findingId] = created.id;
+  }
+  console.log("✅ Internal Audit Findings created");
+
+  // ==================== INTERNAL AUDIT CAPA ====================
+
+  const internalAuditCapas = [
+    {
+      capaId: "CAPA-2025-001",
+      findingId: createdInternalFindings["FND-2025-001"],
+      title: "Implement Automated Data Retention Policy",
+      description: "Deploy automated data retention and deletion mechanism based on data classification",
+      actionType: "Corrective",
+      responsiblePerson: "David Jones",
+      targetDate: new Date("2025-04-30"),
+      status: "In Progress",
+    },
+    {
+      capaId: "CAPA-2025-002",
+      findingId: createdInternalFindings["FND-2025-002"],
+      title: "Update Consent Management System",
+      description: "Enhance consent management system to capture and store all required consent records",
+      actionType: "Corrective",
+      responsiblePerson: "David Jones",
+      targetDate: new Date("2025-05-15"),
+      status: "In Progress",
+    },
+    {
+      capaId: "CAPA-2025-003",
+      findingId: createdInternalFindings["FND-2025-003"],
+      title: "Enforce Strong Password Policy",
+      description: "Update Active Directory Group Policy to enforce 14-character passwords with complexity",
+      actionType: "Corrective",
+      responsiblePerson: "BTS Admin",
+      targetDate: new Date("2025-04-15"),
+      status: "Open",
+    },
+    {
+      capaId: "CAPA-2025-004",
+      findingId: createdInternalFindings["FND-2025-004"],
+      title: "Update Antivirus Definitions",
+      description: "Deploy automated antivirus update mechanism across all workstations",
+      actionType: "Corrective",
+      responsiblePerson: "David Jones",
+      targetDate: new Date("2025-04-01"),
+      status: "In Progress",
+    },
+    {
+      capaId: "CAPA-2024-025",
+      findingId: createdInternalFindings["FND-2024-015"],
+      title: "Complete SOC 2 Control Evidence",
+      description: "Gather and document all missing control evidence for SOC 2 audit",
+      actionType: "Corrective",
+      responsiblePerson: "John Doe",
+      targetDate: new Date("2025-01-15"),
+      completedDate: new Date("2025-01-15"),
+      status: "Closed",
+    },
+  ];
+
+  for (const capa of internalAuditCapas) {
+    await prisma.internalAuditCAPA.upsert({
+      where: { capaId: capa.capaId },
+      update: {},
+      create: capa,
+    });
+  }
+  console.log("✅ Internal Audit CAPAs created");
+
+  // ==================== AUDIT DOCUMENTS ====================
+
+  const internalAuditDocuments = [
+    {
+      documentCode: "DOC-2025-001",
+      name: "IT Security Audit Plan 2025",
+      description: "Comprehensive audit plan for IT security assessment",
+      category: "Policy",
+      fileName: "it_security_audit_plan_2025.pdf",
+      fileType: "pdf",
+      filePath: "/uploads/audit-docs/it_security_audit_plan_2025.pdf",
+      fileSize: 1024000,
+      uploadedBy: "Sarah Smith",
+    },
+    {
+      documentCode: "DOC-2025-002",
+      name: "Data Privacy Audit Report",
+      description: "Final audit report for data privacy compliance assessment",
+      category: "Previous Report",
+      fileName: "data_privacy_audit_report_2025.pdf",
+      fileType: "pdf",
+      filePath: "/uploads/audit-docs/data_privacy_audit_report_2025.pdf",
+      fileSize: 2048000,
+      uploadedBy: "Sarah Smith",
+    },
+    {
+      documentCode: "DOC-2025-003",
+      name: "Vendor Management Checklist",
+      description: "Audit checklist for vendor management review",
+      category: "Policy",
+      fileName: "vendor_management_checklist.xlsx",
+      fileType: "xlsx",
+      filePath: "/uploads/audit-docs/vendor_management_checklist.xlsx",
+      fileSize: 256000,
+      uploadedBy: "Sarah Smith",
+    },
+    {
+      documentCode: "DOC-2025-004",
+      name: "Annual Internal Audit Plan 2025",
+      description: "Risk-based annual audit plan covering all critical processes",
+      category: "Policy",
+      fileName: "annual_audit_plan_2025.pdf",
+      fileType: "pdf",
+      filePath: "/uploads/audit-docs/annual_audit_plan_2025.pdf",
+      fileSize: 3072000,
+      uploadedBy: "Sarah Smith",
+    },
+    {
+      documentCode: "DOC-2024-050",
+      name: "Q4 2024 Compliance Audit Report",
+      description: "Quarterly compliance audit findings and recommendations",
+      category: "Previous Report",
+      fileName: "q4_2024_compliance_report.pdf",
+      fileType: "pdf",
+      filePath: "/uploads/audit-docs/q4_2024_compliance_report.pdf",
+      fileSize: 1536000,
+      uploadedBy: "John Doe",
+    },
+  ];
+
+  for (const doc of internalAuditDocuments) {
+    await prisma.internalAuditDocument.upsert({
+      where: { documentCode: doc.documentCode },
+      update: {},
+      create: doc,
+    });
+  }
+  console.log("✅ Internal Audit Documents created");
+
+  // ==================== AUDIT REPORTS ====================
+
+  const auditReports = [
+    {
+      reportCode: "RPT-2025-001",
+      engagementId: createdEngagements["AUD-2025-004"],
+      title: "Data Privacy Compliance Audit - Final Report",
+      executiveSummary: "The audit identified 2 significant findings related to data retention and consent management. While overall data privacy controls are adequate, improvements are recommended in documentation and automated processes.",
+      scope: "Data collection, storage, processing, deletion, and consent management across all systems handling customer data",
+      objectives: "Assess compliance with GDPR and PDPA data privacy regulations",
+      methodology: "Interviews with data protection officers, review of data processing records, technical testing of data retention mechanisms, examination of consent management processes",
+      observations: "2 findings identified: inadequate data retention policy implementation and missing consent records in legacy systems",
+      recommendations: "Implement automated data retention mechanism, update consent management system, conduct staff training on data privacy requirements",
+      status: "Published",
+      publishedAt: new Date("2025-03-15"),
+    },
+    {
+      reportCode: "RPT-2024-012",
+      engagementId: createdEngagements["AUD-2024-012"],
+      title: "Q4 2024 Regulatory Compliance Review",
+      executiveSummary: "The organization demonstrates strong compliance posture. One high-priority finding related to SOC 2 documentation has been identified and addressed. Overall compliance framework is robust.",
+      scope: "SOC 2 Type II controls, ISO 27001 certification evidence, industry-specific regulatory requirements",
+      objectives: "Verify adherence to applicable industry regulations and standards",
+      methodology: "Document review, control testing, interviews with compliance team, evidence sampling",
+      observations: "Strong overall compliance framework. Minor documentation gaps identified in SOC 2 evidence collection",
+      recommendations: "Complete documentation for SOC 2 control evidence, maintain regular evidence collection schedule",
+      status: "Published",
+      publishedAt: new Date("2025-01-05"),
+    },
+  ];
+
+  for (const report of auditReports) {
+    await prisma.auditReport.upsert({
+      where: { reportCode: report.reportCode },
+      update: {},
+      create: report,
+    });
+  }
+  console.log("✅ Audit Reports created");
 
   console.log("🎉 Database seeded successfully with all modules!");
 }

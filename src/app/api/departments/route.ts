@@ -26,7 +26,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name } = body;
+    const { name, description, headId } = body;
 
     if (!name) {
       return NextResponse.json(
@@ -36,7 +36,11 @@ export async function POST(request: NextRequest) {
     }
 
     const department = await prisma.department.create({
-      data: { name },
+      data: {
+        name,
+        description: description || null,
+        headId: headId || null,
+      },
     });
 
     return NextResponse.json(department, { status: 201 });

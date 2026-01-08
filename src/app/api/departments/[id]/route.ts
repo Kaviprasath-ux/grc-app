@@ -42,11 +42,15 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { name } = body;
+    const { name, description, headId } = body;
 
     const department = await prisma.department.update({
       where: { id },
-      data: { name },
+      data: {
+        name,
+        description: description || null,
+        headId: headId || null,
+      },
     });
 
     return NextResponse.json(department);

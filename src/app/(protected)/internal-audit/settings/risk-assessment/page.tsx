@@ -312,41 +312,35 @@ export default function RiskAssessmentConfigPage() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => router.back()}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-          <div>
-            <p className="text-sm text-muted-foreground">Internal Audit</p>
-            <h1 className="text-2xl font-semibold">Audit Settings</h1>
-          </div>
-        </div>
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        </div>
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" onClick={() => router.push("/internal-audit/settings")}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
-        </Button>
-        <div>
-          <p className="text-sm text-muted-foreground">Internal Audit</p>
-          <h1 className="text-2xl font-semibold">Audit Settings</h1>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.push("/internal-audit/settings")}
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold">Risk Assessment</h1>
+            <p className="text-gray-600">Configure risk assessment methodology</p>
+          </div>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="bg-card rounded-lg border p-6">
-        <h2 className="text-xl font-semibold mb-6">Risk Assessment Configuration</h2>
+      {/* Content Card */}
+      <div className="bg-card rounded-lg border">
+        <div className="p-6">
+          <h2 className="text-xl font-semibold mb-6">Risk Assessment Configuration</h2>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Factors Section */}
@@ -605,6 +599,7 @@ export default function RiskAssessmentConfigPage() {
               </div>
             </div>
           </div>
+        </div>
         </div>
       </div>
 

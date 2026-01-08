@@ -28,6 +28,13 @@ import {
   Download,
   Upload,
   Key,
+  Network,
+  Brain,
+  Calendar,
+  Clipboard,
+  FileOutput,
+  FolderOpen,
+  CircleDot,
   type LucideIcon,
 } from "lucide-react";
 import { UserPermission, hasPermission, Action } from "@/lib/permissions";
@@ -142,8 +149,17 @@ export const navigation: NavItem[] = [
     icon: ClipboardCheck,
     permission: "audit.dashboard:view",
     children: [
+      { name: "Dashboard", href: "/internal-audit/dashboard", icon: LayoutDashboard, permission: "audit.dashboard:view" },
+      { name: "Audit Universe", href: "/internal-audit/audit-universe", icon: Network, permission: "audit.auditables:view" },
+      { name: "Risk Identification", href: "/internal-audit/risk-identification", icon: Brain, permission: "audit.risk-identification:view" },
       { name: "RiskRegister", href: "/internal-audit/risk-register", icon: ClipboardList, permission: "audit.auditables:view" },
+      { name: "Audit Planning", href: "/internal-audit/audit-planning", icon: Calendar, permission: "audit.planning:view" },
+      { name: "FieldWork", href: "/internal-audit/fieldwork", icon: Clipboard, permission: "audit.fieldwork:view" },
+      { name: "Report", href: "/internal-audit/report", icon: FileOutput, permission: "audit.reports:view" },
+      { name: "CAPA Tracking", href: "/internal-audit/capa-tracking", icon: CheckSquare, permission: "audit.capa:view" },
+      { name: "Document Library", href: "/internal-audit/document-library", icon: FolderOpen, permission: "audit.documents:view" },
       { name: "Settings", href: "/internal-audit/settings", icon: Settings2, permission: "audit.settings:view" },
+      { name: "Risk Universe", href: "/internal-audit/risk-universe", icon: CircleDot, permission: "audit.risk-universe:view" },
     ],
   },
   // ==================== End Internal Audit Section ====================

@@ -58,6 +58,10 @@ export async function PUT(
       piiCapture,
       operationalComplexity,
       lastAuditDate,
+      responsibleId,
+      accountableId,
+      consultedId,
+      informedId,
     } = body;
 
     const process = await prisma.process.update({
@@ -79,6 +83,10 @@ export async function PUT(
         piiCapture,
         operationalComplexity,
         lastAuditDate: lastAuditDate ? new Date(lastAuditDate) : null,
+        responsibleId: responsibleId || null,
+        accountableId: accountableId || null,
+        consultedId: consultedId || null,
+        informedId: informedId || null,
       },
       include: {
         department: true,

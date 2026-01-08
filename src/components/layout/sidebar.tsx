@@ -101,31 +101,19 @@ function NavItemComponent({ item, depth = 0 }: NavItemProps) {
 
 export function Sidebar() {
   const { data: session, status } = useSession();
-  const [mounted, setMounted] = useState(false);
-
-  // Ensure consistent rendering between server and client
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // Filter navigation based on user permissions
   const filteredNavigation = useMemo(() => {
-    if (!mounted || status === "loading") {
-      // Show full nav during SSR and initial mount for consistent hydration
-      return navigation;
-    }
-
     if (!session?.user?.permissions) {
-      // If no permissions (not logged in or old session), show full nav
-      // The middleware will handle redirecting unauthorized users
-      return navigation;
+      // Return empty array if no permissions to avoid showing wrong menu
+      return [];
     }
 
     return filterNavigationByPermissions(navigation, session.user.permissions);
-  }, [session?.user?.permissions, status, mounted]);
+  }, [session?.user?.permissions]);
 
-  // Determine if user info should be shown (only after mount to avoid hydration mismatch)
-  const showUserInfo = mounted && session?.user?.roles && session.user.roles.length > 0;
+  // Determine if user info should be shown
+  const showUserInfo = session?.user?.roles && session.user.roles.length > 0;
 
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-[205px] bg-[#0f2744]">
@@ -181,9 +169,15 @@ export function Sidebar() {
         showUserInfo ? "h-[calc(100vh-4rem-60px)]" : "h-[calc(100vh-4rem)]"
       )}>
         <nav className="py-2">
-          {filteredNavigation.map((item) => (
-            <NavItemComponent key={item.name} item={item} />
-          ))}
+          {status === "loading" ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+            </div>
+          ) : (
+            filteredNavigation.map((item) => (
+              <NavItemComponent key={item.name} item={item} />
+            ))
+          )}
         </nav>
       </ScrollArea>
     </aside>

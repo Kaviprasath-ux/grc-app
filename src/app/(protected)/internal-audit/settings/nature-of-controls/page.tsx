@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Plus, Pencil, Trash2, ArrowUpDown } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, ArrowUpDown, Search } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -44,6 +44,7 @@ export default function NatureOfControlsPage() {
   const [items, setItems] = useState<NatureOfControl[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Dialog states
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -148,51 +149,60 @@ export default function NatureOfControlsPage() {
     }
   };
 
+  const filteredItems = items.filter((item) =>
+    item.label.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => router.back()}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-          <div>
-            <p className="text-sm text-muted-foreground">Internal Audit</p>
-            <h1 className="text-2xl font-semibold">Audit Settings</h1>
-          </div>
-        </div>
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        </div>
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" onClick={() => router.push("/internal-audit/settings")}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
-        </Button>
-        <div>
-          <p className="text-sm text-muted-foreground">Internal Audit</p>
-          <h1 className="text-2xl font-semibold">Audit Settings</h1>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.push("/internal-audit/settings")}
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold">Nature Of Controls</h1>
+            <p className="text-gray-600">Define control types and characteristics</p>
+          </div>
         </div>
-      </div>
-
-      {/* Content */}
-      <div className="bg-card rounded-lg border p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold">Nature Of Controls</h2>
+        <div className="flex gap-2">
           <Button onClick={openAddDialog}>
             <Plus className="h-4 w-4 mr-2" />
             New Nature of Controls
           </Button>
         </div>
+      </div>
 
-        <Table>
+      {/* Content Card */}
+      <div className="bg-card rounded-lg border">
+        <div className="p-6">
+          {/* Search Bar */}
+          <div className="mb-6">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search nature of controls..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+
+          <Table>
           <TableHeader>
             <TableRow>
               <TableHead>
@@ -205,42 +215,42 @@ export default function NatureOfControlsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {items.map((item) => (
-              <TableRow key={item.id}>
-                <TableCell>{item.label}</TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => openEditDialog(item)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => openDeleteDialog(item)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-            {items.length === 0 && (
+            {filteredItems.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={2} className="text-center py-8 text-muted-foreground">
-                  No items found. Add your first nature of control.
+                <TableCell colSpan={2} className="text-center py-8">
+                  <p className="text-gray-500">No nature of controls found</p>
                 </TableCell>
               </TableRow>
+            ) : (
+              filteredItems.map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell className="font-medium">{item.label}</TableCell>
+                  <TableCell>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => openEditDialog(item)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => openDeleteDialog(item)}
+                      >
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
             )}
           </TableBody>
         </Table>
-
-        {/* Pagination info */}
-        <div className="flex items-center justify-end mt-4 text-sm text-muted-foreground">
-          Currently showing 1 to {items.length} of {items.length}
+        <div className="mt-4 text-sm text-gray-500">
+          Showing {filteredItems.length} of {items.length} nature of controls
+        </div>
         </div>
       </div>
 

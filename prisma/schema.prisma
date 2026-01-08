@@ -149,6 +149,9 @@ model Department {
   requirementExceptions RequirementException[]
   kpis                  KPI[]
   internalAuditRisks    InternalAuditRisk[]    @relation("InternalAuditDepartment")
+  auditableEntities     AuditableEntity[]
+  auditEngagements      AuditEngagement[]
+  internalAuditFindings InternalAuditFinding[]
 }
 
 // Users
@@ -188,6 +191,13 @@ model User {
   uploadedArtifacts   Artifact[]  @relation("ArtifactUploader")
   // RBAC relations
   userRoles           UserRole[]
+  // Internal Audit relations
+  assignedEngagements AuditEngagement[]   @relation("EngagementAuditor")
+  // Process RACI relations
+  responsibleProcesses Process[]          @relation("ProcessResponsible")
+  accountableProcesses Process[]          @relation("ProcessAccountable")
+  consultedProcesses   Process[]          @relation("ProcessConsulted")
+  informedProcesses    Process[]          @relation("ProcessInformed")
 }
 
 // Stakeholders
@@ -426,9 +436,13 @@ model Process {
   lastAuditDate          DateTime?
   // RACI fields
   responsibleId          String?
+  responsible            User?        @relation("ProcessResponsible", fields: [responsibleId], references: [id])
   accountableId          String?
+  accountable            User?        @relation("ProcessAccountable", fields: [accountableId], references: [id])
   consultedId            String?
+  consulted              User?        @relation("ProcessConsulted", fields: [consultedId], references: [id])
   informedId             String?
+  informed               User?        @relation("ProcessInformed", fields: [informedId], references: [id])
   createdAt              DateTime     @default(now())
   updatedAt              DateTime     @updatedAt
   // BIA Relation
@@ -1321,6 +1335,7 @@ model AuditType {
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
   internalAuditRisks  InternalAuditRisk[]
+  engagements         AuditEngagement[]   @relation("EngagementAuditType")
 }
 
 // ==================== INTERNAL AUDIT RISK REGISTER ====================
@@ -1360,6 +1375,211 @@ model InternalAuditRisk {
   evidenceFileName     String?
   createdAt            DateTime       @default(now())
   updatedAt            DateTime       @updatedAt
+}
+
+// ==================== INTERNAL AUDIT - AUDIT UNIVERSE ====================
+
+// Auditable Entity (items within departments that can be audited)
+model AuditableEntity {
+  id              String            @id @default(cuid())
+  entityCode      String            @unique
+  name            String
+  description     String?
+  departmentId    String
+  department      Department        @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  plannedHours    Float             @default(0)
+  actualHours     Float             @default(0)
+  lastAuditDate   DateTime?
+  nextAuditDate   DateTime?
+  riskRating      String?           // Low, Medium, High
+  status          String            @default("Active") // Active, Inactive
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  engagements     AuditEngagement[]
+}
+
+// ==================== INTERNAL AUDIT - AUDIT PLANNING ====================
+
+// Audit Engagement (Annual Audit Plan items)
+model AuditEngagement {
+  id                String           @id @default(cuid())
+  auditId           String           @unique // Auto-generated AUD001, AUD002
+  engagementTitle   String
+  description       String?
+  departmentId      String?
+  department        Department?      @relation(fields: [departmentId], references: [id])
+  auditableEntityId String?
+  auditableEntity   AuditableEntity? @relation(fields: [auditableEntityId], references: [id])
+  auditTypeId       String?
+  auditType         AuditType?       @relation("EngagementAuditType", fields: [auditTypeId], references: [id])
+  assignedAuditorId String?
+  assignedAuditor   User?            @relation("EngagementAuditor", fields: [assignedAuditorId], references: [id])
+  // Planning dates
+  plannedStartDate  DateTime?
+  plannedEndDate    DateTime?
+  actualStartDate   DateTime?
+  actualEndDate     DateTime?
+  // Hours
+  plannedHours      Float            @default(0)
+  actualHours       Float            @default(0)
+  // Status
+  status            String           @default("Planned") // Planned, In Progress, Completed, Cancelled
+  priority          String           @default("Medium") // Low, Medium, High
+  year              Int              @default(2026)
+  quarter           String?          // Q1, Q2, Q3, Q4
+  // Timestamps
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  // Relations
+  fieldwork         AuditFieldwork?
+  report            AuditReport?
+  findings          InternalAuditFinding[]
+}
+
+// ==================== INTERNAL AUDIT - FIELDWORK ====================
+
+// Audit Fieldwork (execution of audit engagement)
+model AuditFieldwork {
+  id              String          @id @default(cuid())
+  engagementId    String          @unique
+  engagement      AuditEngagement @relation(fields: [engagementId], references: [id], onDelete: Cascade)
+  // Execution details
+  startDate       DateTime?
+  targetDate      DateTime?
+  completionDate  DateTime?
+  // Status
+  status          String          @default("Not Started") // Not Started, In Progress, Review, Completed
+  // Work details
+  scope           String?
+  objectives      String?
+  methodology     String?
+  observations    String?
+  // Hours tracking
+  hoursSpent      Float           @default(0)
+  // Timestamps
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  workpapers      AuditWorkpaper[]
+}
+
+// Audit Workpapers (supporting documents for fieldwork)
+model AuditWorkpaper {
+  id           String         @id @default(cuid())
+  fieldworkId  String
+  fieldwork    AuditFieldwork @relation(fields: [fieldworkId], references: [id], onDelete: Cascade)
+  fileName     String
+  fileType     String?
+  fileSize     Int?
+  filePath     String
+  description  String?
+  uploadedBy   String?
+  uploadedAt   DateTime       @default(now())
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+}
+
+// ==================== INTERNAL AUDIT - REPORTS ====================
+
+// Audit Report
+model AuditReport {
+  id                  String          @id @default(cuid())
+  reportCode          String          @unique // Auto-generated RPT001, RPT002
+  engagementId        String          @unique
+  engagement          AuditEngagement @relation(fields: [engagementId], references: [id], onDelete: Cascade)
+  // Report content
+  title               String
+  executiveSummary    String?
+  scope               String?
+  objectives          String?
+  methodology         String?
+  observations        String?
+  recommendations     String?
+  managementResponse  String?
+  conclusion          String?
+  // Status
+  status              String          @default("Draft") // Draft, Review, Final, Published
+  draftGeneratedAt    DateTime?
+  reviewedAt          DateTime?
+  publishedAt         DateTime?
+  reviewedBy          String?
+  // Attachment
+  reportFilePath      String?
+  reportFileName      String?
+  // Timestamps
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+}
+
+// ==================== INTERNAL AUDIT - FINDINGS & CAPA ====================
+
+// Internal Audit Finding (linked to engagement, separate from general AuditFinding)
+model InternalAuditFinding {
+  id                 String                @id @default(cuid())
+  findingId          String                @unique // Auto-generated FND001, FND002
+  engagementId       String
+  engagement         AuditEngagement       @relation(fields: [engagementId], references: [id], onDelete: Cascade)
+  // Finding details
+  finding            String
+  description        String?
+  severity           String                @default("Medium") // Low, Medium, High
+  departmentId       String?
+  department         Department?           @relation(fields: [departmentId], references: [id])
+  responsiblePerson  String?
+  responsiblePersonId String?
+  // Dates
+  identifiedDate     DateTime              @default(now())
+  targetDate         DateTime?
+  closedDate         DateTime?
+  // Status
+  status             String                @default("Open") // Open, In Progress, Closed, Overdue
+  // Timestamps
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  // Relations
+  capas              InternalAuditCAPA[]
+}
+
+// Internal Audit CAPA (Corrective and Preventive Actions for internal audit findings)
+model InternalAuditCAPA {
+  id              String                @id @default(cuid())
+  capaId          String                @unique // Auto-generated CAPA001, CAPA002
+  findingId       String
+  finding         InternalAuditFinding  @relation(fields: [findingId], references: [id], onDelete: Cascade)
+  // CAPA details
+  title           String
+  description     String?
+  actionType      String                @default("Corrective") // Corrective, Preventive
+  responsiblePerson String?
+  // Dates
+  targetDate      DateTime?
+  completedDate   DateTime?
+  // Status
+  status          String                @default("Open") // Open, In Progress, Closed, Overdue
+  // Evidence
+  evidenceFilePath String?
+  evidenceFileName String?
+  // Timestamps
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+}
+
+// ==================== INTERNAL AUDIT - DOCUMENT LIBRARY ====================
+
+// Internal Audit Document (for document library)
+model InternalAuditDocument {
+  id           String   @id @default(cuid())
+  documentCode String   @unique
+  name         String
+  description  String?
+  category     String   @default("Policy") // Policy, Regulation, Previous Report
+  fileName     String
+  fileType     String?
+  fileSize     Int?
+  filePath     String
+  uploadedBy   String?
+  uploadedAt   DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 // ==================== GOVERNANCE TEMPLATES ====================

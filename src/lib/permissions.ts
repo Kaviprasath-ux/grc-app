@@ -67,15 +67,17 @@ export const RESOURCES = {
   'risk.reports': '/risk-management/reports',
 
   // Internal Audit Module
-  'audit.dashboard': '/internal-audit',
-  'audit.auditables': '/internal-audit/auditables',
-  'audit.planning': '/internal-audit/planning',
-  'audit.execution': '/internal-audit/execution',
-  'audit.reporting': '/internal-audit/reporting',
-  'audit.followup': '/internal-audit/followup',
+  'audit.dashboard': '/internal-audit/dashboard',
+  'audit.auditables': '/internal-audit/audit-universe',
+  'audit.risk-identification': '/internal-audit/risk-identification',
+  'audit.risk-register': '/internal-audit/risk-register',
+  'audit.planning': '/internal-audit/audit-planning',
+  'audit.fieldwork': '/internal-audit/fieldwork',
+  'audit.reports': '/internal-audit/report',
+  'audit.capa': '/internal-audit/capa-tracking',
+  'audit.documents': '/internal-audit/document-library',
   'audit.settings': '/internal-audit/settings',
-  'audit.settings.audit-universe': '/internal-audit/settings/audit-universe',
-  'audit.settings.risk-assessment': '/internal-audit/settings/risk-assessment',
+  'audit.risk-universe': '/internal-audit/risk-universe',
 } as const;
 
 export type Resource = keyof typeof RESOURCES;
@@ -164,16 +166,9 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'audit.*', actions: ['view'], scope: 'all' },
   ],
 
-  // Audit Head - Full access to audit module
+  // Audit Head - Full access to Internal Audit module ONLY
   AuditHead: [
     { resource: 'audit.*', actions: ['*'], scope: 'all' },
-    { resource: 'organization.dashboard', actions: ['view'], scope: 'all' },
-    { resource: 'organization.process', actions: ['view'], scope: 'all' },
-    { resource: 'organization.users', actions: ['view'], scope: 'all' },
-    { resource: 'compliance.dashboard', actions: ['view'], scope: 'all' },
-    { resource: 'compliance.controls', actions: ['view'], scope: 'all' },
-    { resource: 'risk.dashboard', actions: ['view'], scope: 'all' },
-    { resource: 'risk.register', actions: ['view'], scope: 'all' },
   ],
 
   // Audit Manager - Manage audits, limited settings access

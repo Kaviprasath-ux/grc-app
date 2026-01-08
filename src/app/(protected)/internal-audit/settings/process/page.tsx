@@ -47,6 +47,8 @@ interface Process {
   processCode: string;
   name: string;
   description: string | null;
+  processType: string | null;
+  status: string | null;
   departmentId: string | null;
   department: { id: string; name: string } | null;
   ownerId: string | null;
@@ -61,6 +63,10 @@ interface Process {
   piiCapture: boolean;
   operationalComplexity: string | null;
   lastAuditDate: string | null;
+  responsibleId: string | null;
+  accountableId: string | null;
+  consultedId: string | null;
+  informedId: string | null;
 }
 
 interface Department {
@@ -86,6 +92,8 @@ const PROCESS_FREQUENCIES = [
 const NATURE_OF_IMPLEMENTATIONS = ["Manual", "Automated", "Manual + Automated"];
 const OPERATIONAL_COMPLEXITIES = ["Low", "Medium", "High"];
 const RISK_RATINGS = ["Low", "Medium", "High"];
+const PROCESS_TYPES = ["Primary", "Management", "Supporting"];
+const STATUSES = ["Active", "Inactive"];
 
 export default function ProcessPage() {
   const router = useRouter();
@@ -106,11 +114,19 @@ export default function ProcessPage() {
   // Dialog states
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editItem, setEditItem] = useState<Process | null>(null);
+  const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
+    processType: "Primary",
+    status: "Active",
     departmentId: "",
     ownerId: "",
+    location: "",
+    responsibleId: "",
+    accountableId: "",
+    consultedId: "",
+    informedId: "",
     processFrequency: "",
     natureOfImplementation: "",
     assetDependency: false,
@@ -122,6 +138,9 @@ export default function ProcessPage() {
   });
   const [saving, setSaving] = useState(false);
   const [nextProcessId, setNextProcessId] = useState("");
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+
+  const TOTAL_STEPS = 3;
 
   // Delete dialog
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -242,11 +261,19 @@ export default function ProcessPage() {
 
   const openAddDialog = () => {
     setEditItem(null);
+    setCurrentStep(1);
     setFormData({
       name: "",
       description: "",
+      processType: "Primary",
+      status: "Active",
       departmentId: "",
       ownerId: "",
+      location: "",
+      responsibleId: "",
+      accountableId: "",
+      consultedId: "",
+      informedId: "",
       processFrequency: "",
       natureOfImplementation: "",
       assetDependency: false,
@@ -256,16 +283,36 @@ export default function ProcessPage() {
       operationalComplexity: "",
       lastAuditDate: "",
     });
+    setUploadedFiles([]);
+
+    // Recalculate next process ID to ensure it's current
+    const maxId = processes.reduce((max: number, p: Process) => {
+      const match = p.processCode?.match(/PRO(\d+)/);
+      if (match) {
+        return Math.max(max, parseInt(match[1]));
+      }
+      return max;
+    }, 0);
+    setNextProcessId(`PRO${maxId + 1}`);
+
     setDialogOpen(true);
   };
 
   const openEditDialog = (process: Process) => {
     setEditItem(process);
+    setCurrentStep(1);
     setFormData({
       name: process.name || "",
       description: process.description || "",
+      processType: process.processType || "Primary",
+      status: process.status || "Active",
       departmentId: process.departmentId || "",
       ownerId: process.ownerId || "",
+      location: process.location || "",
+      responsibleId: process.responsibleId || "",
+      accountableId: process.accountableId || "",
+      consultedId: process.consultedId || "",
+      informedId: process.informedId || "",
       processFrequency: process.processFrequency || "",
       natureOfImplementation: process.natureOfImplementation || "",
       assetDependency: process.assetDependency || false,
@@ -280,8 +327,28 @@ export default function ProcessPage() {
     setDialogOpen(true);
   };
 
+  const handleNext = () => {
+    if (currentStep < TOTAL_STEPS) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  const handleCloseDialog = () => {
+    setDialogOpen(false);
+    setCurrentStep(1);
+  };
+
   const handleSave = async () => {
-    if (!formData.name.trim()) return;
+    if (!formData.name.trim()) {
+      alert("Please enter a process name");
+      return;
+    }
 
     setSaving(true);
     try {
@@ -290,10 +357,18 @@ export default function ProcessPage() {
 
       const body = {
         ...formData,
+        // Include processCode only when creating new process
+        ...(editItem ? {} : { processCode: nextProcessId }),
         departmentId: formData.departmentId || null,
         ownerId: formData.ownerId || null,
         lastAuditDate: formData.lastAuditDate || null,
+        responsibleId: formData.responsibleId || null,
+        accountableId: formData.accountableId || null,
+        consultedId: formData.consultedId || null,
+        informedId: formData.informedId || null,
       };
+
+      console.log("Saving process:", body);
 
       const response = await fetch(url, {
         method,
@@ -302,13 +377,30 @@ export default function ProcessPage() {
       });
 
       if (response.ok) {
+        alert("Process saved successfully!");
         setDialogOpen(false);
+        setCurrentStep(1);
+        setUploadedFiles([]);
         fetchData();
+      } else {
+        const errorData = await response.json();
+        console.error("Error response:", errorData);
+        alert(`Failed to save process: ${errorData.error || "Unknown error"}`);
       }
     } catch (error) {
       console.error("Failed to save:", error);
+      alert("An error occurred while saving the process");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const getStepTitle = () => {
+    switch (currentStep) {
+      case 1: return "Basic Information";
+      case 2: return "Add Documents";
+      case 3: return "RACI Assignment";
+      default: return "";
     }
   };
 
@@ -336,43 +428,150 @@ export default function ProcessPage() {
     }
   };
 
+  const handleExport = () => {
+    const headers = [
+      "Process Code",
+      "Name",
+      "Description",
+      "Process Type",
+      "Status",
+      "Department",
+      "Owner",
+      "Process Frequency",
+      "Nature of Implementation",
+      "Asset Dependency",
+      "External Dependency",
+      "KPI Measurement Required",
+      "PII Capture",
+      "Operational Complexity",
+      "Last Audit Date",
+    ];
+
+    const csvContent = [
+      headers.join(","),
+      ...processes.map((process) =>
+        [
+          process.processCode,
+          `"${process.name}"`,
+          `"${process.description || ""}"`,
+          process.processType || "",
+          process.status || "",
+          `"${process.department?.name || ""}"`,
+          `"${process.owner?.fullName || ""}"`,
+          process.processFrequency || "",
+          process.natureOfImplementation || "",
+          process.assetDependency ? "Yes" : "No",
+          process.externalDependency ? "Yes" : "No",
+          process.kpiMeasurementRequired ? "Yes" : "No",
+          process.piiCapture ? "Yes" : "No",
+          process.operationalComplexity || "",
+          process.lastAuditDate
+            ? new Date(process.lastAuditDate).toLocaleDateString()
+            : "",
+        ].join(",")
+      ),
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `processes-export-${new Date().toISOString().split("T")[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const csv = event.target?.result as string;
+      const lines = csv.split("\n");
+      const headers = lines[0].split(",");
+
+      for (let i = 1; i < lines.length; i++) {
+        if (!lines[i].trim()) continue;
+
+        const values = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+        const processData: any = {};
+
+        headers.forEach((header, index) => {
+          const value = values[index]?.replace(/^"|"$/g, "").trim();
+          if (header.includes("Name")) processData.name = value;
+          if (header.includes("Description")) processData.description = value;
+          if (header.includes("Process Type")) processData.processType = value;
+          if (header.includes("Status")) processData.status = value;
+          if (header.includes("Process Frequency"))
+            processData.processFrequency = value;
+          if (header.includes("Nature of Implementation"))
+            processData.natureOfImplementation = value;
+          if (header.includes("Asset Dependency"))
+            processData.assetDependency = value === "Yes";
+          if (header.includes("External Dependency"))
+            processData.externalDependency = value === "Yes";
+          if (header.includes("KPI Measurement Required"))
+            processData.kpiMeasurementRequired = value === "Yes";
+          if (header.includes("PII Capture"))
+            processData.piiCapture = value === "Yes";
+          if (header.includes("Operational Complexity"))
+            processData.operationalComplexity = value;
+        });
+
+        if (processData.name) {
+          try {
+            await fetch("/api/processes", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(processData),
+            });
+          } catch (error) {
+            console.error("Failed to import process:", error);
+          }
+        }
+      }
+
+      fetchData();
+      e.target.value = "";
+    };
+
+    reader.readAsText(file);
+  };
+
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => router.back()}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-          <div>
-            <p className="text-sm text-muted-foreground">Internal Audit</p>
-            <h1 className="text-2xl font-semibold">Audit Library</h1>
-          </div>
-        </div>
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        </div>
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" onClick={() => router.push("/internal-audit/settings")}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
-        </Button>
-        <div>
-          <p className="text-sm text-muted-foreground">Internal Audit</p>
-          <h1 className="text-2xl font-semibold">Audit Library</h1>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.push("/internal-audit/settings")}
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold">Process</h1>
+            <p className="text-gray-600">Define audit processes and workflows</p>
+          </div>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="bg-card rounded-lg border p-6 space-y-6">
-        <h2 className="text-xl font-semibold">Process Hub</h2>
+      {/* Content Card */}
+      <div className="bg-card rounded-lg border">
+        <div className="p-6 space-y-6">
+          <h2 className="text-xl font-semibold">Process Hub</h2>
 
         {/* Summary Cards */}
         <div className="flex gap-4">
@@ -457,14 +656,21 @@ export default function ProcessPage() {
           </Select>
 
           <div className="flex gap-2 ml-auto">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={handleExport}>
               <Download className="h-4 w-4 mr-2" />
               Export
             </Button>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={() => document.getElementById('import-file')?.click()}>
               <Upload className="h-4 w-4 mr-2" />
               Import
             </Button>
+            <input
+              id="import-file"
+              type="file"
+              accept=".csv"
+              className="hidden"
+              onChange={handleImport}
+            />
             <Button onClick={openAddDialog}>
               <Plus className="h-4 w-4 mr-2" />
               New Process
@@ -603,19 +809,40 @@ export default function ProcessPage() {
           </TableBody>
         </Table>
 
-        {/* Pagination info */}
-        <div className="flex items-center justify-end text-sm text-muted-foreground">
-          Currently showing 1 to {filteredProcesses.length} of {filteredProcesses.length}
+          {/* Pagination info */}
+          <div className="mt-4 text-sm text-gray-500">
+            Showing {filteredProcesses.length} of {processes.length} processes
+          </div>
         </div>
       </div>
 
       {/* Add/Edit Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog open={dialogOpen} onOpenChange={handleCloseDialog}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editItem ? "Edit Process" : "New Process"}</DialogTitle>
+            <div className="flex items-center justify-center mt-4">
+              {[1, 2, 3].map((step) => (
+                <div key={step} className="flex items-center">
+                  <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
+                    step === currentStep
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : step < currentStep
+                      ? "bg-primary/20 border-primary"
+                      : "border-gray-300"
+                  }`}>
+                    {step}
+                  </div>
+                  {step < 3 && (
+                    <div className={`w-16 h-0.5 ${step < currentStep ? "bg-primary" : "bg-gray-300"}`} />
+                  )}
+                </div>
+              ))}
+            </div>
+            <p className="text-center mt-2 font-medium">{getStepTitle()}</p>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-4 py-4">{currentStep === 1 && (
+            <>
             <div className="grid grid-cols-2 gap-4">
               {/* Process ID (readonly) */}
               <div>
@@ -834,14 +1061,201 @@ export default function ProcessPage() {
                 />
               </div>
             </div>
+            </>
+            )}
+
+            {/* Step 2: Add Documents */}
+            {currentStep === 2 && (
+            <>
+            <div
+              className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-primary transition-colors cursor-pointer"
+              onClick={() => document.getElementById('fileUpload')?.click()}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.currentTarget.classList.add('border-primary');
+              }}
+              onDragLeave={(e) => {
+                e.preventDefault();
+                e.currentTarget.classList.remove('border-primary');
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                e.currentTarget.classList.remove('border-primary');
+                const files = Array.from(e.dataTransfer.files);
+                const validFiles = files.filter(f =>
+                  ['.pdf', '.doc', '.docx', '.xls', '.xlsx'].some(ext => f.name.toLowerCase().endsWith(ext)) &&
+                  f.size <= 10 * 1024 * 1024
+                );
+                setUploadedFiles(prev => [...prev, ...validFiles]);
+              }}
+            >
+              <div className="flex flex-col items-center gap-4">
+                <div className="text-gray-400">
+                  <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-700">
+                    Drag and drop files here, or click to browse
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Support for PDF, DOC, DOCX, XLS, XLSX (Max 10MB)
+                  </p>
+                </div>
+                <Input
+                  type="file"
+                  multiple
+                  className="hidden"
+                  id="fileUpload"
+                  accept=".pdf,.doc,.docx,.xls,.xlsx"
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files || []);
+                    const validFiles = files.filter(f => f.size <= 10 * 1024 * 1024);
+                    setUploadedFiles(prev => [...prev, ...validFiles]);
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Uploaded Files List */}
+            {uploadedFiles.length > 0 && (
+              <div className="mt-4 space-y-2">
+                <p className="text-sm font-medium text-gray-700">Uploaded Files ({uploadedFiles.length}):</p>
+                {uploadedFiles.map((file, index) => (
+                  <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                    <span className="text-sm text-gray-600 truncate">{file.name}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+                      }}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="text-sm text-gray-500 mt-2">
+              You can upload multiple documents related to this process
+            </div>
+            </>
+            )}
+
+            {/* Step 3: RACI Assignment */}
+            {currentStep === 3 && (
+            <>
+            <div className="grid grid-cols-2 gap-4">
+              {/* Responsible */}
+              <div>
+                <Label>Responsible</Label>
+                <Select
+                  value={formData.responsibleId}
+                  onValueChange={(value) => setFormData({ ...formData, responsibleId: value })}
+                >
+                  <SelectTrigger className="mt-2">
+                    <SelectValue placeholder="Select Responsible" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {users.map((user) => (
+                      <SelectItem key={user.id} value={user.id}>
+                        {user.fullName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Accountable */}
+              <div>
+                <Label>Accountable</Label>
+                <Select
+                  value={formData.accountableId}
+                  onValueChange={(value) => setFormData({ ...formData, accountableId: value })}
+                >
+                  <SelectTrigger className="mt-2">
+                    <SelectValue placeholder="Select Accountable" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {users.map((user) => (
+                      <SelectItem key={user.id} value={user.id}>
+                        {user.fullName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              {/* Consulted */}
+              <div>
+                <Label>Consulted</Label>
+                <Select
+                  value={formData.consultedId}
+                  onValueChange={(value) => setFormData({ ...formData, consultedId: value })}
+                >
+                  <SelectTrigger className="mt-2">
+                    <SelectValue placeholder="Select Consulted" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {users.map((user) => (
+                      <SelectItem key={user.id} value={user.id}>
+                        {user.fullName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Informed */}
+              <div>
+                <Label>Informed</Label>
+                <Select
+                  value={formData.informedId}
+                  onValueChange={(value) => setFormData({ ...formData, informedId: value })}
+                >
+                  <SelectTrigger className="mt-2">
+                    <SelectValue placeholder="Select Informed" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {users.map((user) => (
+                      <SelectItem key={user.id} value={user.id}>
+                        {user.fullName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            </>
+            )}
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+          <DialogFooter className="flex justify-between">
+            <Button variant="outline" onClick={handleCloseDialog}>
               Cancel
             </Button>
-            <Button onClick={handleSave} disabled={saving || !formData.name.trim()}>
-              {saving ? "Saving..." : "Save"}
-            </Button>
+            <div className="flex gap-2">
+              {currentStep > 1 && (
+                <Button variant="outline" onClick={handlePrevious}>
+                  Previous
+                </Button>
+              )}
+              {currentStep < TOTAL_STEPS && (
+                <Button onClick={handleNext} disabled={currentStep === 1 && !formData.name.trim()}>
+                  Next
+                </Button>
+              )}
+              {currentStep === TOTAL_STEPS && (
+                <Button onClick={handleSave} disabled={saving || !formData.name.trim()}>
+                  {saving ? "Saving..." : "Save"}
+                </Button>
+              )}
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>

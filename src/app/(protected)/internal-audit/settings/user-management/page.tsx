@@ -30,7 +30,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Plus, Pencil, Trash2, ArrowUpDown } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, ArrowUpDown, Search } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -75,6 +75,7 @@ export default function UserManagementPage() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Dialog states
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -85,6 +86,7 @@ export default function UserManagementPage() {
     fullName: "",
     userName: "",
     email: "",
+    designation: "",
     departmentId: "",
     roles: [] as string[],
     password: "",
@@ -95,6 +97,14 @@ export default function UserManagementPage() {
   // Delete dialog
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<User | null>(null);
+
+  // Change password dialog
+  const [changePasswordDialogOpen, setChangePasswordDialogOpen] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [changingPassword, setChangingPassword] = useState(false);
 
   // Auto-generated user ID
   const [nextUserId, setNextUserId] = useState("");
@@ -154,6 +164,7 @@ export default function UserManagementPage() {
       fullName: "",
       userName: "",
       email: "",
+      designation: "",
       departmentId: "",
       roles: [],
       password: "",
@@ -172,12 +183,47 @@ export default function UserManagementPage() {
       fullName: user.fullName || "",
       userName: user.userName || "",
       email: user.email || "",
+      designation: user.designation || "",
       departmentId: user.departmentId || "",
       roles,
       password: "",
       confirmPassword: "",
     });
     setDialogOpen(true);
+  };
+
+  const openChangePasswordDialog = () => {
+    setPasswordForm({ newPassword: "", confirmPassword: "" });
+    setChangePasswordDialogOpen(true);
+  };
+
+  const handleChangePassword = async () => {
+    if (!editItem) return;
+    if (!passwordForm.newPassword || passwordForm.newPassword !== passwordForm.confirmPassword) {
+      alert("Passwords do not match!");
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      const response = await fetch(`/api/users/${editItem.id}/change-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: passwordForm.newPassword }),
+      });
+
+      if (response.ok) {
+        setChangePasswordDialogOpen(false);
+        alert("Password changed successfully!");
+      } else {
+        alert("Failed to change password");
+      }
+    } catch (error) {
+      console.error("Failed to change password:", error);
+      alert("Failed to change password");
+    } finally {
+      setChangingPassword(false);
+    }
   };
 
   const handleRoleChange = (role: string, checked: boolean) => {
@@ -207,6 +253,7 @@ export default function UserManagementPage() {
         fullName: formData.fullName || `${formData.firstName} ${formData.lastName}`,
         userName: formData.userName || nextUserId,
         email: formData.email,
+        designation: formData.designation || null,
         departmentId: formData.departmentId || null,
         role: formData.roles.join(", "),
         function: "Audit",
@@ -261,51 +308,61 @@ export default function UserManagementPage() {
     return roleString ? roleString.split(",").map((r) => r.trim()).filter(Boolean) : [];
   };
 
+  const filteredUsers = users.filter((user) =>
+    user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => router.back()}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-          <div>
-            <p className="text-sm text-muted-foreground">Internal Audit</p>
-            <h1 className="text-2xl font-semibold">Audit Settings</h1>
-          </div>
-        </div>
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        </div>
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" onClick={() => router.push("/internal-audit/settings")}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
-        </Button>
-        <div>
-          <p className="text-sm text-muted-foreground">Internal Audit</p>
-          <h1 className="text-2xl font-semibold">Audit Settings</h1>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.push("/internal-audit/settings")}
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold">User Management</h1>
+            <p className="text-gray-600">Manage audit users and permissions</p>
+          </div>
         </div>
-      </div>
-
-      {/* Content */}
-      <div className="bg-card rounded-lg border p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold">User Management</h2>
+        <div className="flex gap-2">
           <Button onClick={openAddDialog}>
             <Plus className="h-4 w-4 mr-2" />
             New User
           </Button>
         </div>
+      </div>
 
-        <Table>
+      {/* Content Card */}
+      <div className="bg-card rounded-lg border">
+        <div className="p-6">
+          {/* Search Bar */}
+          <div className="mb-6">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search users..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+
+          <Table>
           <TableHeader>
             <TableRow>
               <TableHead>
@@ -320,44 +377,44 @@ export default function UserManagementPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell>{user.fullName}</TableCell>
-                <TableCell>{user.email}</TableCell>
-                <TableCell>
-                  <div className="flex flex-wrap gap-1">
-                    {parseRoles(user.role).map((role, idx) => (
-                      <Badge key={idx} variant="secondary" className="text-xs">
-                        {role}
-                      </Badge>
-                    ))}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" onClick={() => openEditDialog(user)}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => openDeleteDialog(user)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-            {users.length === 0 && (
+            {filteredUsers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                  No users found. Add your first user.
+                <TableCell colSpan={4} className="text-center py-8">
+                  <p className="text-gray-500">No users found</p>
                 </TableCell>
               </TableRow>
+            ) : (
+              filteredUsers.map((user) => (
+                <TableRow key={user.id}>
+                  <TableCell className="font-medium">{user.fullName}</TableCell>
+                  <TableCell className="font-medium">{user.email}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1">
+                      {parseRoles(user.role).map((role, idx) => (
+                        <Badge key={idx} variant="secondary" className="text-xs">
+                          {role}
+                        </Badge>
+                      ))}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => openEditDialog(user)}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => openDeleteDialog(user)}>
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
             )}
           </TableBody>
         </Table>
-
-        {/* Pagination info */}
-        <div className="flex items-center justify-end mt-4 text-sm text-muted-foreground">
-          Currently showing 1 to {users.length} of {users.length}
+        <div className="mt-4 text-sm text-gray-500">
+          Showing {filteredUsers.length} of {users.length} users
+        </div>
         </div>
       </div>
 
@@ -439,6 +496,18 @@ export default function UserManagementPage() {
               />
             </div>
 
+            {/* Designation */}
+            <div>
+              <Label htmlFor="designation">Designation</Label>
+              <Input
+                id="designation"
+                value={formData.designation}
+                onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
+                placeholder="Enter designation (optional)"
+                className="mt-2"
+              />
+            </div>
+
             {/* Function (readonly) */}
             <div>
               <Label>Function</Label>
@@ -512,12 +581,70 @@ export default function UserManagementPage() {
               </>
             )}
           </div>
+          <DialogFooter className="flex justify-between">
+            <div>
+              {editItem && (
+                <Button
+                  variant="outline"
+                  onClick={openChangePasswordDialog}
+                  type="button"
+                >
+                  Change Password
+                </Button>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSave} disabled={saving || !formData.firstName.trim() || !formData.email.trim()}>
+                {saving ? "Saving..." : "Save"}
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Change Password Dialog */}
+      <Dialog open={changePasswordDialogOpen} onOpenChange={setChangePasswordDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Change Password</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="newPassword">New Password</Label>
+              <Input
+                id="newPassword"
+                type="password"
+                value={passwordForm.newPassword}
+                onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                placeholder="Enter new password"
+                className="mt-2"
+                autoFocus
+              />
+            </div>
+            <div>
+              <Label htmlFor="confirmNewPassword">Confirm New Password</Label>
+              <Input
+                id="confirmNewPassword"
+                type="password"
+                value={passwordForm.confirmPassword}
+                onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                placeholder="Confirm new password"
+                className="mt-2"
+              />
+            </div>
+          </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setChangePasswordDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSave} disabled={saving || !formData.firstName.trim() || !formData.email.trim()}>
-              {saving ? "Saving..." : "Save"}
+            <Button
+              onClick={handleChangePassword}
+              disabled={changingPassword || !passwordForm.newPassword || passwordForm.newPassword !== passwordForm.confirmPassword}
+            >
+              {changingPassword ? "Changing..." : "Change Password"}
             </Button>
           </DialogFooter>
         </DialogContent>
