@@ -374,6 +374,14 @@ export default function ControlListPage() {
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold text-gray-900">Controls</h3>
           <div className="flex items-center gap-2">
+            <Button onClick={() => setIsCreateDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              New Control
+            </Button>
+            <Button onClick={handleImport} variant="outline">
+              <Upload className="h-4 w-4 mr-2" />
+              Import
+            </Button>
             <Button
               onClick={() => setIsDeleteAllDialogOpen(true)}
               variant="outline"
@@ -381,14 +389,6 @@ export default function ControlListPage() {
             >
               <Trash2 className="h-4 w-4 mr-2" />
               Delete All
-            </Button>
-            <Button onClick={handleImport} variant="outline">
-              <Upload className="h-4 w-4 mr-2" />
-              Import
-            </Button>
-            <Button onClick={() => setIsCreateDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              New Control
             </Button>
           </div>
         </div>
@@ -634,47 +634,27 @@ export default function ControlListPage() {
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Control Details</DialogTitle>
+            <DialogTitle>New Control - Step {createStep} of 3</DialogTitle>
           </DialogHeader>
 
-          {/* Step Indicators */}
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Button
-                variant={createStep === 1 ? "default" : "outline"}
-                size="sm"
-                onClick={() => setCreateStep(1)}
-              >
-                1
-              </Button>
-              <span className={createStep === 1 ? "font-medium" : "text-muted-foreground"}>
-                Control Information
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant={createStep === 2 ? "default" : "outline"}
-                size="sm"
-                onClick={() => setCreateStep(2)}
-              >
-                2
-              </Button>
-              <span className={createStep === 2 ? "font-medium" : "text-muted-foreground"}>
-                Assignments & Details
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant={createStep === 3 ? "default" : "outline"}
-                size="sm"
-                onClick={() => setCreateStep(3)}
-              >
-                3
-              </Button>
-              <span className={createStep === 3 ? "font-medium" : "text-muted-foreground"}>
-                Review informations
-              </span>
-            </div>
+          {/* Step Indicator */}
+          <div className="flex items-center justify-center gap-2 py-4">
+            {[1, 2, 3].map((step) => (
+              <div key={step} className="flex items-center">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                  step === createStep
+                    ? "bg-primary text-primary-foreground"
+                    : step < createStep
+                    ? "bg-green-500 text-white"
+                    : "bg-muted text-muted-foreground"
+                }`}>
+                  {step}
+                </div>
+                {step < 3 && (
+                  <div className={`w-16 h-1 mx-2 ${step < createStep ? "bg-green-500" : "bg-muted"}`} />
+                )}
+              </div>
+            ))}
           </div>
 
           <div className="py-4">

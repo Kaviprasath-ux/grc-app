@@ -16,6 +16,7 @@ export type Scope = typeof SCOPES[number];
 // Resources map to routes/features in the application
 export const RESOURCES = {
   // GRC Administrator Module (System-level management)
+  'grc': '/grc',
   'grc.customer-accounts': '/grc/customer-accounts',
   'grc.customers': '/grc/customers',
   'grc.configuration': '/grc/configuration',
@@ -144,6 +145,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
   // Does NOT have access to: Organization, Asset Management, Risk Management, Internal Audit
   GRCAdministrator: [
     // GRC-specific pages
+    { resource: 'grc', actions: ['*'], scope: 'all' },
     { resource: 'grc.customer-accounts', actions: ['*'], scope: 'all' },
     { resource: 'grc.customers', actions: ['*'], scope: 'all' },
     // Compliance module - specific resources only

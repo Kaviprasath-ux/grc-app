@@ -415,7 +415,6 @@ export default function GovernanceMasterDataPage() {
   const handleDownloadTemplate = () => {
     const templateCsv = [
       ["Policy Name", "Document Type", "Recurrence", "Department", "Content"],
-      ["Example Policy", "Policy", "Monthly", "IT Operations", "Policy content here"],
     ]
       .map((row) => row.map((cell) => `"${cell}"`).join(","))
       .join("\n");
