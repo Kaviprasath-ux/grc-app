@@ -186,20 +186,29 @@ async function main() {
     { userId: "BTS-009", userName: "henry.security", email: "henry.security@btsfinancial.com", firstName: "Henry", lastName: "Wilson", department: "Information Security", designation: "Security Analyst", role: "Contributor", function: "Security" },
     { userId: "BTS-010", userName: "iris.hr", email: "iris.hr@btsfinancial.com", firstName: "Iris", lastName: "Brown", department: "Human Resources", designation: "HR Manager", role: "Auditee", function: "Business" },
     { userId: "BTS-011", userName: "jack.finance", email: "jack.finance@btsfinancial.com", firstName: "Jack", lastName: "Taylor", department: "Finance", designation: "Finance Manager", role: "Auditee", function: "Business" },
+    // UAT Test Users - matching verifaiuat.baarez.com exactly
+    { userId: "BTS-012", userName: "Khalid", email: "khalid@btsfinancial.com", firstName: "Khalid", lastName: "Department Reviewer", department: "Compliance", designation: "Department Reviewer", role: "DepartmentReviewer", function: "Compliance" },
+    { userId: "BTS-013", userName: "Tamil", email: "tamil@btsfinancial.com", firstName: "Tamil", lastName: "Department Contributor", department: "Compliance", designation: "Department Contributor", role: "DepartmentContributor", function: "Compliance" },
   ];
 
   const createdUsers: Record<string, string> = {};
   createdUsers["bts"] = btsUser.id;
 
+  // UAT test users have simple password "1"
+  const uatTestUsers = ["Khalid", "Tamil"];
+
   for (const user of users) {
+    const password = uatTestUsers.includes(user.userName) ? "1" : "password123";
     const created = await prisma.user.upsert({
       where: { userName: user.userName },
-      update: {},
+      update: {
+        password: password,
+      },
       create: {
         userId: user.userId,
         userName: user.userName,
         email: user.email,
-        password: "password123",
+        password: password,
         firstName: user.firstName,
         lastName: user.lastName,
         fullName: `${user.firstName} ${user.lastName}`,
@@ -212,6 +221,66 @@ async function main() {
     createdUsers[user.userName] = created.id;
   }
   console.log("  ✓ Users created");
+
+  // ==================== ASSIGN RBAC ROLES TO UAT TEST USERS ====================
+  console.log("\n🔐 Assigning RBAC roles to UAT test users...");
+
+  // Ensure DepartmentReviewer and DepartmentContributor roles exist
+  const deptReviewerRole = await prisma.role.upsert({
+    where: { name: "DepartmentReviewer" },
+    update: {},
+    create: {
+      name: "DepartmentReviewer",
+      description: "Reviews content within own department",
+      isSystem: true,
+    },
+  });
+
+  const deptContributorRole = await prisma.role.upsert({
+    where: { name: "DepartmentContributor" },
+    update: {},
+    create: {
+      name: "DepartmentContributor",
+      description: "Creates/edits content within own department",
+      isSystem: true,
+    },
+  });
+
+  // Assign DepartmentReviewer role to Khalid
+  if (createdUsers["Khalid"]) {
+    await prisma.userRole.upsert({
+      where: {
+        userId_roleId: {
+          userId: createdUsers["Khalid"],
+          roleId: deptReviewerRole.id,
+        },
+      },
+      update: {},
+      create: {
+        userId: createdUsers["Khalid"],
+        roleId: deptReviewerRole.id,
+      },
+    });
+    console.log("  ✓ Assigned DepartmentReviewer role to Khalid");
+  }
+
+  // Assign DepartmentContributor role to Tamil
+  if (createdUsers["Tamil"]) {
+    await prisma.userRole.upsert({
+      where: {
+        userId_roleId: {
+          userId: createdUsers["Tamil"],
+          roleId: deptContributorRole.id,
+        },
+      },
+      update: {},
+      create: {
+        userId: createdUsers["Tamil"],
+        roleId: deptContributorRole.id,
+      },
+    });
+    console.log("  ✓ Assigned DepartmentContributor role to Tamil");
+  }
 
   // ==================== CREATE STAKEHOLDERS ====================
   console.log("\n🤝 Creating Stakeholders...");
