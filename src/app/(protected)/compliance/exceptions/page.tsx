@@ -429,7 +429,7 @@ export default function ExceptionsPage() {
               New Exception
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>New Exception</DialogTitle>
             </DialogHeader>
@@ -993,7 +993,7 @@ export default function ExceptionsPage() {
 
       {/* Edit Exception Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Exception</DialogTitle>
           </DialogHeader>

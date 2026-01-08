@@ -685,7 +685,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
 
       {/* Edit Dialog with All Fields */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Control</DialogTitle>
           </DialogHeader>

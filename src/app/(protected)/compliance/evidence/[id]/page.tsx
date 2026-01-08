@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -43,9 +44,9 @@ import {
   Check,
   Link2,
   Eye,
-  Edit2,
   MessageSquare,
   Send,
+  Calendar,
 } from "lucide-react";
 
 interface EvidenceComment {
@@ -104,6 +105,7 @@ interface Evidence {
     };
   }>;
   comments?: EvidenceComment[];
+  frameworks?: Array<{ id: string; name: string }>;
 }
 
 interface Department {
@@ -144,7 +146,10 @@ const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", 
 export default function EvidenceDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { data: session } = useSession();
   const id = params.id as string;
+
+  const isGRCAdmin = session?.user?.roles?.includes("GRCAdministrator");
 
   const [evidence, setEvidence] = useState<Evidence | null>(null);
   const [loading, setLoading] = useState(true);
@@ -415,6 +420,209 @@ export default function EvidenceDetailPage() {
 
   const currentStep = getStatusStep(evidence.status);
 
+  // GRC Admin View - Simplified
+  if (isGRCAdmin) {
+    return (
+      <div className="space-y-6 p-6">
+        {/* Header */}
+        <div className="flex items-center gap-2 border-b pb-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => router.push("/compliance/evidence")}
+            className="text-gray-600 hover:text-gray-900"
+          >
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Back
+          </Button>
+          <span className="text-gray-300">|</span>
+          <h1 className="text-xl font-semibold text-blue-700">
+            {evidence.domain || "Evidence Details"}
+          </h1>
+        </div>
+
+        {/* Framework Badges */}
+        <div className="flex gap-2">
+          {evidence.frameworks && evidence.frameworks.length > 0 ? (
+            evidence.frameworks.map((fw) => (
+              <Badge key={fw.id} className="bg-blue-900 text-white hover:bg-blue-800">
+                {fw.name}
+              </Badge>
+            ))
+          ) : evidence.framework ? (
+            <Badge className="bg-blue-900 text-white hover:bg-blue-800">
+              {evidence.framework.name}
+            </Badge>
+          ) : null}
+        </div>
+
+        {/* Evidence Details Section */}
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-blue-700">Evidence Details</h2>
+            <Button variant="ghost" size="icon" className="text-blue-700">
+              <Eye className="h-5 w-5" />
+            </Button>
+          </div>
+
+          <div className="bg-gray-50 rounded-lg p-6">
+            <div className="grid grid-cols-2 gap-8">
+              {/* Left Column */}
+              <div className="space-y-6">
+                <div>
+                  <Label className="text-blue-700 font-medium">Requirement</Label>
+                  <p className="mt-1 text-gray-900">{evidence.name}</p>
+                </div>
+                <div>
+                  <Label className="text-blue-700 font-medium">Recurrence</Label>
+                  <Select
+                    value={evidence.recurrence || ""}
+                    onValueChange={(value) => handleInlineUpdate("recurrence", value || null)}
+                  >
+                    <SelectTrigger className="mt-1 w-48 bg-white">
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {recurrenceOptions.map((r) => (
+                        <SelectItem key={r} value={r}>
+                          {r}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Right Column */}
+              <div className="space-y-6">
+                <div>
+                  <Label className="text-blue-700 font-medium">Artifact</Label>
+                  <p className="mt-1 text-gray-900">{evidence.description || "-"}</p>
+                </div>
+                <div>
+                  <Label className="text-blue-700 font-medium">Review date</Label>
+                  <div className="mt-1 flex items-center gap-2">
+                    <Input
+                      type="date"
+                      value={evidence.reviewDate?.split("T")[0] || ""}
+                      onChange={(e) => handleInlineUpdate("reviewDate", e.target.value ? new Date(e.target.value).toISOString() : null)}
+                      className="w-48 bg-white"
+                      placeholder="dd/mm/yyyy"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="mt-8">
+          <div className="flex gap-2">
+            <button
+              onClick={() => setActiveTab("artifacts")}
+              className={`px-6 py-2 rounded-t-lg font-medium transition-colors ${
+                activeTab === "artifacts"
+                  ? "bg-blue-700 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              Linked Artifact
+            </button>
+            <button
+              onClick={() => setActiveTab("controls")}
+              className={`px-6 py-2 rounded-t-lg font-medium transition-colors ${
+                activeTab === "controls"
+                  ? "bg-blue-700 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              Linked Controls
+            </button>
+          </div>
+
+          {/* Tab Content */}
+          <div className="bg-gray-50 rounded-b-lg rounded-tr-lg p-6">
+            {activeTab === "controls" && (
+              <div>
+                <h3 className="text-lg font-semibold text-blue-700 mb-4">Controls</h3>
+                <div className="space-y-3">
+                  {evidence.evidenceControls?.map((ec) => (
+                    <div
+                      key={ec.id}
+                      className="bg-white border border-gray-200 rounded-lg p-4"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="text-blue-700 font-medium">
+                            {ec.control.controlCode} : {ec.control.name}
+                          </p>
+                          {ec.control.description && (
+                            <p className="text-gray-600 text-sm mt-1">{ec.control.description}</p>
+                          )}
+                        </div>
+                        <Badge className="bg-blue-700 text-white hover:bg-blue-600">
+                          {ec.control.entities || "Organization Wide"}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                  {(!evidence.evidenceControls || evidence.evidenceControls.length === 0) && (
+                    <div className="text-center py-8 text-gray-500">
+                      <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                      <p>No controls linked to this evidence</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {activeTab === "artifacts" && (
+              <div>
+                <h3 className="text-lg font-semibold text-blue-700 mb-4">Artifacts</h3>
+                <div className="space-y-3">
+                  {evidence.linkedArtifacts?.map((la) => (
+                    <div
+                      key={la.id}
+                      className="bg-white border border-gray-200 rounded-lg p-4"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <FileText className="h-8 w-8 text-blue-600" />
+                          <div>
+                            <p className="font-medium">
+                              {la.artifact.artifactCode} : {la.artifact.name}
+                            </p>
+                            <p className="text-sm text-gray-500">{la.artifact.fileName}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button variant="ghost" size="icon">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon">
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {(!evidence.linkedArtifacts || evidence.linkedArtifacts.length === 0) && (
+                    <div className="text-center py-8 text-gray-500">
+                      <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                      <p>No artifacts linked to this evidence</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Regular User View - Full features
   return (
     <div className="space-y-6 p-6">
       {/* Header */}

@@ -36,6 +36,12 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { ColumnDef } from "@tanstack/react-table";
 
 interface Department {
@@ -61,7 +67,23 @@ interface User {
   department?: Department;
 }
 
-const userRoles = ["User", "Administrator", "GRC Admin", "Auditor", "Risk Manager", "Compliance Officer"];
+// RBAC roles mapped by function
+const rolesByFunction: Record<string, string[]> = {
+  Business: ["DepartmentReviewer", "DepartmentContributor"],
+  Security: ["Reviewer"],
+  Audit: ["AuditHead", "Auditor", "Auditee"],
+};
+
+// All assignable roles for filtering (excludes GRCAdministrator)
+const allUserRoles = [
+  "CustomerAdministrator",
+  "AuditHead",
+  "Auditor",
+  "Auditee",
+  "Reviewer",
+  "DepartmentReviewer",
+  "DepartmentContributor",
+];
 
 export default function UsersPage() {
   const [activeTab, setActiveTab] = useState("account-overview");
@@ -88,7 +110,6 @@ export default function UsersPage() {
 
   // Form state
   const [userForm, setUserForm] = useState({
-    userId: "",
     userName: "",
     email: "",
     password: "",
@@ -98,7 +119,7 @@ export default function UsersPage() {
     fullName: "",
     designation: "",
     function: "",
-    role: "User",
+    role: "",
     language: "English",
     timezone: "UTC",
     isActive: true,
@@ -129,7 +150,7 @@ export default function UsersPage() {
 
   // User CRUD
   const handleAddUser = async () => {
-    if (!userForm.userId || !userForm.userName || !userForm.email || !userForm.password || !userForm.firstName || !userForm.lastName || !userForm.fullName) {
+    if (!userForm.userName || !userForm.email || !userForm.password || !userForm.firstName || !userForm.lastName || !userForm.fullName || !userForm.function || !userForm.role) {
       alert("Please fill in all required fields");
       return;
     }
@@ -138,12 +159,15 @@ export default function UsersPage() {
       return;
     }
 
+    // Auto-generate User ID
+    const userId = `USR-${Date.now()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
+
     try {
       const res = await fetch("/api/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          userId: userForm.userId,
+          userId,
           userName: userForm.userName,
           email: userForm.email,
           password: userForm.password,
@@ -226,7 +250,6 @@ export default function UsersPage() {
 
   const resetForm = () => {
     setUserForm({
-      userId: "",
       userName: "",
       email: "",
       password: "",
@@ -236,7 +259,7 @@ export default function UsersPage() {
       fullName: "",
       designation: "",
       function: "",
-      role: "User",
+      role: "",
       language: "English",
       timezone: "UTC",
       isActive: true,
@@ -621,7 +644,7 @@ export default function UsersPage() {
                 label: "Role",
                 options: [
                   { value: "all", label: "All Roles" },
-                  ...userRoles.map((role) => ({ value: role, label: role })),
+                  ...allUserRoles.map((role) => ({ value: role, label: role })),
                 ],
                 value: roleFilter,
                 onChange: setRoleFilter,
@@ -641,7 +664,7 @@ export default function UsersPage() {
           <DataGrid
             columns={userColumns}
             data={filteredUsers}
-            searchPlaceholder="Search users..."
+            hideSearch={true}
           />
         </TabsContent>
       </Tabs>
@@ -654,15 +677,6 @@ export default function UsersPage() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="userId">User ID *</Label>
-                <Input
-                  id="userId"
-                  value={userForm.userId}
-                  onChange={(e) => setUserForm({ ...userForm, userId: e.target.value })}
-                  placeholder="Enter user ID"
-                />
-              </div>
               <div className="space-y-2">
                 <Label htmlFor="userName">Username *</Label>
                 <Input
@@ -709,22 +723,56 @@ export default function UsersPage() {
                   placeholder="Enter full name"
                 />
               </div>
+              {/* Function and Role - side by side */}
               <div className="space-y-2">
-                <Label htmlFor="function">Function</Label>
+                <Label htmlFor="function">Function *</Label>
                 <Select
                   value={userForm.function}
-                  onValueChange={(value) => setUserForm({ ...userForm, function: value })}
+                  onValueChange={(value) => setUserForm({ ...userForm, function: value, role: "" })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select function" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="Business">Business</SelectItem>
                     <SelectItem value="Security">Security</SelectItem>
                     <SelectItem value="Audit">Audit</SelectItem>
-                    <SelectItem value="Business">Business</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="role">Role *</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div>
+                        <Select
+                          value={userForm.role}
+                          onValueChange={(value) => setUserForm({ ...userForm, role: value })}
+                          disabled={!userForm.function}
+                        >
+                          <SelectTrigger className={!userForm.function ? "cursor-not-allowed opacity-50" : ""}>
+                            <SelectValue placeholder={userForm.function ? "Select role" : "Select function first"} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {userForm.function && rolesByFunction[userForm.function]?.map((role) => (
+                              <SelectItem key={role} value={role}>
+                                {role}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </TooltipTrigger>
+                    {!userForm.function && (
+                      <TooltipContent>
+                        <p>Please select a function first</p>
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              {/* Department and Designation - side by side */}
               <div className="space-y-2">
                 <Label htmlFor="department">Department</Label>
                 <Select
@@ -750,25 +798,8 @@ export default function UsersPage() {
                   value={userForm.designation}
                   onChange={(e) => setUserForm({ ...userForm, designation: e.target.value })}
                   placeholder="Enter designation"
+                  autoComplete="off"
                 />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="role">Role</Label>
-                <Select
-                  value={userForm.role}
-                  onValueChange={(value) => setUserForm({ ...userForm, role: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {userRoles.map((role) => (
-                      <SelectItem key={role} value={role}>
-                        {role}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="language">Language</Label>
@@ -795,10 +826,41 @@ export default function UsersPage() {
                   <SelectTrigger>
                     <SelectValue placeholder="Select timezone" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-h-[300px]">
                     <SelectItem value="UTC">UTC</SelectItem>
-                    <SelectItem value="GMT+3">GMT+3 (Qatar)</SelectItem>
-                    <SelectItem value="GMT+5:30">GMT+5:30 (India)</SelectItem>
+                    <SelectItem value="GMT-12:00">(GMT-12:00) International Date Line West</SelectItem>
+                    <SelectItem value="GMT-11:00">(GMT-11:00) Midway Island, Samoa</SelectItem>
+                    <SelectItem value="GMT-10:00">(GMT-10:00) Hawaii</SelectItem>
+                    <SelectItem value="GMT-09:00">(GMT-09:00) Alaska</SelectItem>
+                    <SelectItem value="GMT-08:00">(GMT-08:00) Pacific Time (US & Canada)</SelectItem>
+                    <SelectItem value="GMT-07:00">(GMT-07:00) Mountain Time (US & Canada)</SelectItem>
+                    <SelectItem value="GMT-06:00">(GMT-06:00) Central Time (US & Canada)</SelectItem>
+                    <SelectItem value="GMT-05:00">(GMT-05:00) Eastern Time (US & Canada)</SelectItem>
+                    <SelectItem value="GMT-04:00">(GMT-04:00) Atlantic Time (Canada)</SelectItem>
+                    <SelectItem value="GMT-03:30">(GMT-03:30) Newfoundland</SelectItem>
+                    <SelectItem value="GMT-03:00">(GMT-03:00) Buenos Aires, Brasilia</SelectItem>
+                    <SelectItem value="GMT-02:00">(GMT-02:00) Mid-Atlantic</SelectItem>
+                    <SelectItem value="GMT-01:00">(GMT-01:00) Azores, Cape Verde</SelectItem>
+                    <SelectItem value="GMT+00:00">(GMT+00:00) London, Dublin, Lisbon</SelectItem>
+                    <SelectItem value="GMT+01:00">(GMT+01:00) Berlin, Paris, Rome, Madrid</SelectItem>
+                    <SelectItem value="GMT+02:00">(GMT+02:00) Cairo, Jerusalem, Athens</SelectItem>
+                    <SelectItem value="GMT+03:00">(GMT+03:00) Qatar, Kuwait, Riyadh, Moscow</SelectItem>
+                    <SelectItem value="GMT+03:30">(GMT+03:30) Tehran</SelectItem>
+                    <SelectItem value="GMT+04:00">(GMT+04:00) Abu Dhabi, Dubai, Muscat</SelectItem>
+                    <SelectItem value="GMT+04:30">(GMT+04:30) Kabul</SelectItem>
+                    <SelectItem value="GMT+05:00">(GMT+05:00) Karachi, Tashkent</SelectItem>
+                    <SelectItem value="GMT+05:30">(GMT+05:30) India, Sri Lanka</SelectItem>
+                    <SelectItem value="GMT+05:45">(GMT+05:45) Kathmandu</SelectItem>
+                    <SelectItem value="GMT+06:00">(GMT+06:00) Dhaka, Almaty</SelectItem>
+                    <SelectItem value="GMT+06:30">(GMT+06:30) Yangon</SelectItem>
+                    <SelectItem value="GMT+07:00">(GMT+07:00) Bangkok, Jakarta, Hanoi</SelectItem>
+                    <SelectItem value="GMT+08:00">(GMT+08:00) Singapore, Hong Kong, Beijing</SelectItem>
+                    <SelectItem value="GMT+09:00">(GMT+09:00) Tokyo, Seoul</SelectItem>
+                    <SelectItem value="GMT+09:30">(GMT+09:30) Adelaide, Darwin</SelectItem>
+                    <SelectItem value="GMT+10:00">(GMT+10:00) Sydney, Melbourne, Brisbane</SelectItem>
+                    <SelectItem value="GMT+11:00">(GMT+11:00) Solomon Islands</SelectItem>
+                    <SelectItem value="GMT+12:00">(GMT+12:00) Auckland, Fiji</SelectItem>
+                    <SelectItem value="GMT+13:00">(GMT+13:00) Nuku'alofa, Samoa</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -838,6 +900,7 @@ export default function UsersPage() {
                   value={userForm.password}
                   onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
                   placeholder="Enter password"
+                  autoComplete="new-password"
                 />
               </div>
               <div className="space-y-2">
@@ -848,6 +911,7 @@ export default function UsersPage() {
                   value={userForm.confirmPassword}
                   onChange={(e) => setUserForm({ ...userForm, confirmPassword: e.target.value })}
                   placeholder="Confirm password"
+                  autoComplete="new-password"
                 />
               </div>
             </div>

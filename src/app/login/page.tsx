@@ -34,7 +34,8 @@ export default function LoginPage() {
       if (result?.error) {
         setError("Invalid username or password");
       } else {
-        router.push("/dashboard");
+        // Redirect to root, which handles role-based landing page
+        router.push("/");
         router.refresh();
       }
     } catch {

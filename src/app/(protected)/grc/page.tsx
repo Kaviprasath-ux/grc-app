@@ -1,10 +1,10 @@
 "use client";
 
-export default function GRCDashboardPage() {
+export default function GRCAdminLandingPage() {
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
       <div className="relative w-[600px] h-[600px]">
-        {/* GRC Dashboard Infographic */}
+        {/* GRC Landing Page Infographic */}
         <svg viewBox="0 0 600 600" className="w-full h-full">
           <defs>
             <linearGradient id="outerGradient" x1="0%" y1="0%" x2="100%" y2="100%">

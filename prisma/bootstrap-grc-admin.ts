@@ -5,18 +5,10 @@ const prisma = new PrismaClient();
 /**
  * GRC Administrator Bootstrapping Script
  *
- * This script manages the creation of the GRCAdministrator superadmin account.
- *
- * Configuration Options:
- * - FORCE_CREATE_MODE: When true, always creates/ensures the superadmin account exists
- * - CONDITIONAL_CREATE_MODE: When true, only creates if no GRCAdministrator exists
- *
- * Current Phase: FORCE_CREATE_MODE (Transitional)
- * Future Phase: CONDITIONAL_CREATE_MODE (switch BOOTSTRAP_MODE to 'conditional')
+ * This script ensures a superadmin account with GRCAdministrator role exists.
+ * It checks if a user with username "superadmin" has the GRCAdministrator role.
+ * If not, it creates the account and assigns the role.
  */
-
-// Configuration flag - change this to switch between modes
-const BOOTSTRAP_MODE: 'force' | 'conditional' = 'force';
 
 // Superadmin credentials
 const SUPERADMIN_CONFIG = {
@@ -31,7 +23,6 @@ const SUPERADMIN_CONFIG = {
 
 async function bootstrapGRCAdministrator() {
   console.log("🔐 Running GRC Administrator Bootstrapping...");
-  console.log(`   Mode: ${BOOTSTRAP_MODE.toUpperCase()}`);
 
   try {
     // First, ensure the GRCAdministrator role exists
@@ -46,41 +37,35 @@ async function bootstrapGRCAdministrator() {
     });
     console.log("   ✓ GRCAdministrator role ensured");
 
-    if (BOOTSTRAP_MODE === 'conditional') {
-      // CONDITIONAL MODE: Only create if no GRCAdministrator exists
-      const existingGRCAdmin = await prisma.userRole.findFirst({
-        where: {
-          role: {
-            name: 'GRCAdministrator',
+    // Check if superadmin user with GRCAdministrator role exists
+    const existingSuperadminWithRole = await prisma.user.findFirst({
+      where: {
+        userName: SUPERADMIN_CONFIG.userName,
+        userRoles: {
+          some: {
+            role: {
+              name: 'GRCAdministrator',
+            },
           },
         },
-        include: {
-          user: true,
-        },
-      });
+      },
+    });
 
-      if (existingGRCAdmin) {
-        console.log(`   ℹ GRCAdministrator already exists: ${existingGRCAdmin.user.userName}`);
-        console.log("   Skipping superadmin creation (conditional mode)");
-        return;
-      }
-
-      console.log("   No existing GRCAdministrator found, creating superadmin...");
-    } else {
-      // FORCE MODE: Always ensure superadmin exists
-      console.log("   Force mode: Ensuring superadmin account exists...");
+    if (existingSuperadminWithRole) {
+      console.log("   ✓ Superadmin with GRCAdministrator role already exists");
+      console.log("\n✅ GRC Administrator Bootstrapping complete (no action needed)");
+      return;
     }
 
-    // Check if superadmin user already exists
-    const existingSuperadmin = await prisma.user.findUnique({
+    console.log("   ℹ Superadmin with GRCAdministrator role not found, creating...");
+
+    // Check if superadmin user exists (without the role)
+    let superadminUser = await prisma.user.findUnique({
       where: { userName: SUPERADMIN_CONFIG.userName },
     });
 
-    let superadminUser;
-
-    if (existingSuperadmin) {
-      console.log("   ✓ Superadmin user already exists (not overriding)");
-      superadminUser = existingSuperadmin;
+    if (superadminUser) {
+      console.log("   ✓ Superadmin user exists, assigning GRCAdministrator role...");
     } else {
       // Create the superadmin user
       superadminUser = await prisma.user.create({
@@ -97,7 +82,7 @@ async function bootstrapGRCAdministrator() {
       console.log("   ✓ Superadmin user created");
     }
 
-    // Ensure the user has the GRCAdministrator role
+    // Assign the GRCAdministrator role to superadmin
     await prisma.userRole.upsert({
       where: {
         userId_roleId: {
@@ -126,7 +111,7 @@ async function bootstrapGRCAdministrator() {
 }
 
 // Export for use in other scripts
-export { bootstrapGRCAdministrator, BOOTSTRAP_MODE, SUPERADMIN_CONFIG };
+export { bootstrapGRCAdministrator, SUPERADMIN_CONFIG };
 
 // Run if executed directly
 if (require.main === module) {

@@ -268,7 +268,7 @@ export default function DomainMasterDataPage() {
                 New Domain
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Create New Domain</DialogTitle>
               </DialogHeader>
@@ -392,7 +392,7 @@ export default function DomainMasterDataPage() {
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Domain</DialogTitle>
           </DialogHeader>

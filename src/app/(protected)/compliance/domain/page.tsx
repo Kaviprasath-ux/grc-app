@@ -389,7 +389,7 @@ export default function DomainPage() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingDomain ? "Edit Domain" : "New Domain"}</DialogTitle>
           </DialogHeader>

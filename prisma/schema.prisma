@@ -168,6 +168,10 @@ model User {
   timezone            String      @default("UTC")
   isActive            Boolean     @default(true)
   isBlocked           Boolean     @default(false)
+  // CustomerAdmin fields
+  customerCode        String?     // Customer account code (e.g., GRC_001)
+  logoUrl             String?     // Customer logo URL
+  lastLogin           DateTime?   // Last login timestamp
   departmentId        String?
   department          Department? @relation(fields: [departmentId], references: [id])
   createdAt           DateTime    @default(now())

@@ -286,45 +286,61 @@ async function main() {
   });
 
   if (grcAdminRole) {
-    // Check if superadmin already exists
-    const existingSuperadmin = await prisma.user.findUnique({
-      where: { userName: SUPERADMIN_CONFIG.userName },
+    // Check if superadmin user with GRCAdministrator role exists
+    const existingSuperadminWithRole = await prisma.user.findFirst({
+      where: {
+        userName: SUPERADMIN_CONFIG.userName,
+        userRoles: {
+          some: {
+            role: {
+              name: 'GRCAdministrator',
+            },
+          },
+        },
+      },
     });
 
-    let superadminUser;
-    if (existingSuperadmin) {
-      console.log("  ✓ Superadmin user already exists (not overriding)");
-      superadminUser = existingSuperadmin;
+    if (existingSuperadminWithRole) {
+      console.log("  ✓ Superadmin with GRCAdministrator role already exists");
     } else {
-      superadminUser = await prisma.user.create({
-        data: {
-          userName: SUPERADMIN_CONFIG.userName,
-          password: SUPERADMIN_CONFIG.password,
-          email: SUPERADMIN_CONFIG.email,
-          firstName: SUPERADMIN_CONFIG.firstName,
-          lastName: SUPERADMIN_CONFIG.lastName,
-          fullName: SUPERADMIN_CONFIG.fullName,
-          role: SUPERADMIN_CONFIG.role,
-        },
+      // Check if superadmin user exists (without the role)
+      let superadminUser = await prisma.user.findUnique({
+        where: { userName: SUPERADMIN_CONFIG.userName },
       });
-      console.log("  ✓ Superadmin user created");
-    }
 
-    // Ensure the user has the GRCAdministrator role
-    await prisma.userRole.upsert({
-      where: {
-        userId_roleId: {
+      if (superadminUser) {
+        console.log("  ✓ Superadmin user exists, assigning GRCAdministrator role...");
+      } else {
+        superadminUser = await prisma.user.create({
+          data: {
+            userName: SUPERADMIN_CONFIG.userName,
+            password: SUPERADMIN_CONFIG.password,
+            email: SUPERADMIN_CONFIG.email,
+            firstName: SUPERADMIN_CONFIG.firstName,
+            lastName: SUPERADMIN_CONFIG.lastName,
+            fullName: SUPERADMIN_CONFIG.fullName,
+            role: SUPERADMIN_CONFIG.role,
+          },
+        });
+        console.log("  ✓ Superadmin user created");
+      }
+
+      // Assign the GRCAdministrator role to superadmin
+      await prisma.userRole.upsert({
+        where: {
+          userId_roleId: {
+            userId: superadminUser.id,
+            roleId: grcAdminRole.id,
+          },
+        },
+        update: {},
+        create: {
           userId: superadminUser.id,
           roleId: grcAdminRole.id,
         },
-      },
-      update: {},
-      create: {
-        userId: superadminUser.id,
-        roleId: grcAdminRole.id,
-      },
-    });
-    console.log("  ✓ GRCAdministrator role assigned to superadmin");
+      });
+      console.log("  ✓ GRCAdministrator role assigned to superadmin");
+    }
   }
 
   console.log("\n🎉 RBAC seeding complete!");

@@ -440,7 +440,7 @@ export default function FrameworkOverviewPage() {
 
       {/* Create/Edit Framework Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {isEditMode ? "Create Integrated Framework" : "Create Integrated Framework"}

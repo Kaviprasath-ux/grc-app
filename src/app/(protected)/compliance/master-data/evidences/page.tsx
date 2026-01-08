@@ -680,7 +680,7 @@ export default function EvidencesMasterDataPage() {
         setIsNewDialogOpen(open);
         if (!open) resetNewForm();
       }}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-primary">
               {newStep === 1 ? "Evidence Details" : newStep === 2 ? "Controls" : "Review Information"}
@@ -1012,7 +1012,7 @@ export default function EvidencesMasterDataPage() {
           setEditControlId("");
         }
       }}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-primary">Edit Evidence</DialogTitle>
             <DialogDescription>Modify the evidence details below</DialogDescription>

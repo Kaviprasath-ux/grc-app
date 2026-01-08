@@ -34,8 +34,12 @@ export default auth((req) => {
     return NextResponse.redirect(new URL("/login", nextUrl));
   }
 
-  // Redirect to dashboard if authenticated and trying to access login
+  // Redirect to appropriate landing page if authenticated and trying to access login
   if (isLoggedIn && isPublicRoute) {
+    const userRoles = req.auth?.user?.roles as string[] | undefined;
+    if (userRoles?.includes("GRCAdministrator")) {
+      return NextResponse.redirect(new URL("/grc", nextUrl));
+    }
     return NextResponse.redirect(new URL("/dashboard", nextUrl));
   }
 
@@ -54,10 +58,11 @@ export default auth((req) => {
 
     // Check if user can access this route
     if (!canAccessRoute(permissions, pathname)) {
-      // Redirect to dashboard with access denied flag
-      const dashboardUrl = new URL("/dashboard", nextUrl);
-      dashboardUrl.searchParams.set("accessDenied", "true");
-      return NextResponse.redirect(dashboardUrl);
+      // Redirect to appropriate landing page with access denied flag
+      const landingPage = roles.includes("GRCAdministrator") ? "/grc" : "/dashboard";
+      const redirectUrl = new URL(landingPage, nextUrl);
+      redirectUrl.searchParams.set("accessDenied", "true");
+      return NextResponse.redirect(redirectUrl);
     }
   }
 

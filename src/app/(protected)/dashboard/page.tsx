@@ -1,5 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { StatsCard } from "@/components/shared";
 import { DonutChart, HorizontalBarChart, StackedBarChart } from "@/components/charts";
 import {
@@ -17,6 +20,16 @@ import {
 } from "@/data/dashboard";
 
 export default function DashboardPage() {
+  const { data: session } = useSession();
+  const router = useRouter();
+
+  // Redirect GRCAdmin users to GRC landing page
+  useEffect(() => {
+    if (session?.user?.roles?.includes("GRCAdministrator")) {
+      router.replace("/grc");
+    }
+  }, [session, router]);
+
   // Calculate issue totals
   const issueCategoryTotal = issueByCategoryData.reduce((sum, item) => sum + item.value, 0);
   const issueDepartmentTotal = issueByDepartmentData.reduce((sum, item) => sum + item.value, 0);

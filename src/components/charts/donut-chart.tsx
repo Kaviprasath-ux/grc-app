@@ -27,55 +27,60 @@ export function DonutChart({ title, data, centerLabel, centerSubLabel, className
         <CardTitle className="text-base font-medium">{title}</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="h-[200px] relative">
-          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-            <PieChart>
-              <Pie
-                data={data}
-                cx="50%"
-                cy="50%"
-                innerRadius={50}
-                outerRadius={70}
-                paddingAngle={2}
-                dataKey="value"
-              >
-                {data.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "white",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: "6px",
-                  fontSize: "12px",
-                }}
-              />
-              <Legend
-                layout="vertical"
-                align="right"
-                verticalAlign="middle"
-                formatter={(value, entry) => {
-                  const item = data.find((d) => d.name === value);
-                  return (
-                    <span className="text-sm text-grc-text">
-                      {value}: {item?.value}
-                    </span>
-                  );
-                }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-          {(centerLabel !== undefined || centerSubLabel) && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              {centerLabel !== undefined && (
-                <span className="text-2xl font-bold text-grc-text">{centerLabel}</span>
-              )}
-              {centerSubLabel && (
-                <span className="text-xs text-muted-foreground">{centerSubLabel}</span>
-              )}
-            </div>
-          )}
+        <div className="h-[220px] relative flex">
+          {/* Chart container - left side */}
+          <div className="relative w-[140px] h-full flex-shrink-0">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={data}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={40}
+                  outerRadius={60}
+                  paddingAngle={2}
+                  dataKey="value"
+                >
+                  {data.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "white",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: "6px",
+                    fontSize: "12px",
+                  }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            {/* Center label - positioned relative to chart container */}
+            {(centerLabel !== undefined || centerSubLabel) && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                {centerLabel !== undefined && (
+                  <span className="text-xl font-bold text-grc-text">{centerLabel}</span>
+                )}
+                {centerSubLabel && (
+                  <span className="text-xs text-muted-foreground">{centerSubLabel}</span>
+                )}
+              </div>
+            )}
+          </div>
+          {/* Legend - right side */}
+          <div className="flex-1 flex flex-col justify-center pl-2 min-w-0">
+            {data.map((item, index) => (
+              <div key={index} className="flex items-center gap-2 py-1">
+                <div
+                  className="w-3 h-3 rounded-sm flex-shrink-0"
+                  style={{ backgroundColor: item.color }}
+                />
+                <span className="text-sm text-grc-text truncate">
+                  {item.name}: {item.value}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       </CardContent>
     </Card>

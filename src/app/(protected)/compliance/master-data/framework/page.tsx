@@ -309,7 +309,7 @@ export default function FrameworkMasterDataPage() {
                 New Framework
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-lg">
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>
                   {wizardStep === 1 ? "Create Integrated Framework" : "Import Requirement"}
@@ -565,7 +565,7 @@ export default function FrameworkMasterDataPage() {
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Integrated Framework</DialogTitle>
           </DialogHeader>
