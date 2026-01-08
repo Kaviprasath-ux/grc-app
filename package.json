@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "db:seed": "npx ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts",
+    "db:seed-bts": "npx ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed-customer-bts.ts",
     "db:reset": "npx prisma migrate reset --force"
   },
   "prisma": {

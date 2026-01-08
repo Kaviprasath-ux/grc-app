@@ -593,7 +593,7 @@ export default function KPIDetailPage({
 
       {/* Add Action Plan Dialog */}
       <Dialog open={actionPlanDialogOpen} onOpenChange={setActionPlanDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Update Plan Action</DialogTitle>
           </DialogHeader>

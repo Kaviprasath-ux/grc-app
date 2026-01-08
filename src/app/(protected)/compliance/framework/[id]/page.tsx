@@ -1089,8 +1089,7 @@ export default function FrameworkDetailPage({
   };
 
   const handleDownloadTemplate = () => {
-    const template = "Code,Name,Description,Requirement Type,Chapter Type,Applicability,Implementation Status\n" +
-      "4.1,Understanding the organization,The organization shall determine...,Mandatory,Domain,Yes,Yes\n";
+    const template = "Code,Name,Description,Requirement Type,Chapter Type,Applicability,Implementation Status\n";
     const blob = new Blob([template], { type: "text/csv" });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -1621,7 +1620,7 @@ export default function FrameworkDetailPage({
 
       {/* Add Requirement Dialog */}
       <Dialog open={isAddRequirementOpen} onOpenChange={setIsAddRequirementOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add Requirement</DialogTitle>
           </DialogHeader>
@@ -1738,7 +1737,7 @@ export default function FrameworkDetailPage({
 
       {/* Link Controls Dialog */}
       <Dialog open={isLinkControlsOpen} onOpenChange={setIsLinkControlsOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Control Select</DialogTitle>
           </DialogHeader>
@@ -1856,7 +1855,7 @@ export default function FrameworkDetailPage({
 
       {/* Add Exception Dialog */}
       <Dialog open={isAddExceptionOpen} onOpenChange={setIsAddExceptionOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Exception Management</DialogTitle>
           </DialogHeader>
@@ -1959,7 +1958,7 @@ export default function FrameworkDetailPage({
 
       {/* Import Requirements Dialog */}
       <Dialog open={isImportOpen} onOpenChange={setIsImportOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Template document</DialogTitle>
           </DialogHeader>
@@ -2038,7 +2037,7 @@ export default function FrameworkDetailPage({
 
       {/* Update Requirement Dialog */}
       <Dialog open={isUpdateRequirementOpen} onOpenChange={setIsUpdateRequirementOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Update Requirement</DialogTitle>
           </DialogHeader>

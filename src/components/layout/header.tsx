@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { Bell, Menu, ChevronDown, LogOut, User, Settings, Calendar, Clock, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -21,6 +22,7 @@ interface HeaderProps {
 }
 
 export function Header({ onMenuClick }: HeaderProps) {
+  const { data: session } = useSession();
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
 
   useEffect(() => {
@@ -48,14 +50,17 @@ export function Header({ onMenuClick }: HeaderProps) {
         </Button>
 
         {/* Baarez Logo */}
-        <div className="flex items-center gap-1">
+        <Link
+          href={session?.user?.roles?.includes("GRCAdministrator") ? "/grc" : "/dashboard"}
+          className="flex items-center gap-1 hover:opacity-80 transition-opacity"
+        >
           <svg viewBox="0 0 40 40" className="h-8 w-8">
             <circle cx="20" cy="20" r="18" fill="#1e40af" />
             <path d="M20 8 L32 20 L20 32 L8 20 Z" fill="#ef4444" />
             <circle cx="20" cy="20" r="6" fill="white" />
           </svg>
           <span className="text-xs font-bold text-red-500">Baarez</span>
-        </div>
+        </Link>
 
         {/* Date and Time */}
         <div className="hidden md:flex flex-col text-sm ml-4">

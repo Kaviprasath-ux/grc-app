@@ -415,7 +415,6 @@ export default function GovernanceMasterDataPage() {
   const handleDownloadTemplate = () => {
     const templateCsv = [
       ["Policy Name", "Document Type", "Recurrence", "Department", "Content"],
-      ["Example Policy", "Policy", "Monthly", "IT Operations", "Policy content here"],
     ]
       .map((row) => row.map((cell) => `"${cell}"`).join(","))
       .join("\n");
@@ -1039,7 +1038,7 @@ export default function GovernanceMasterDataPage() {
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Policy</DialogTitle>
           </DialogHeader>

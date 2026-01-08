@@ -26,7 +26,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { code, name } = body;
+    const { name } = body;
 
     if (!name) {
       return NextResponse.json(
@@ -35,8 +35,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate code if not provided
-    const domainCode = code || `DOM-${Date.now()}`;
+    // Auto-generate sequential code in DOM-XXX format
+    const lastDomain = await prisma.controlDomain.findFirst({
+      where: {
+        code: {
+          startsWith: "DOM-",
+        },
+      },
+      orderBy: { code: "desc" },
+    });
+
+    let nextSequence = 1;
+    if (lastDomain?.code) {
+      const match = lastDomain.code.match(/^DOM-(\d+)$/);
+      if (match) {
+        nextSequence = parseInt(match[1], 10) + 1;
+      }
+    }
+
+    const domainCode = `DOM-${nextSequence.toString().padStart(3, "0")}`;
 
     const domain = await prisma.controlDomain.create({
       data: { code: domainCode, name },

@@ -251,7 +251,7 @@ export default function GovernanceTemplatesPage() {
                 New Template
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Add Governance Templates Attachment</DialogTitle>
               </DialogHeader>
@@ -392,7 +392,7 @@ export default function GovernanceTemplatesPage() {
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Governance Template</DialogTitle>
           </DialogHeader>

@@ -104,7 +104,7 @@ export const navigation: NavItem[] = [
       // Below items are for CustomerAdministrator and other roles, not GRCAdministrator
       { name: "Exception Management", href: "/compliance/exceptions", icon: AlertTriangle, permission: "compliance.exceptions:view" },
       { name: "KPI", href: "/compliance/kpis", icon: BarChart3, permission: "compliance.kpi:view" },
-      { name: "Risk Compliance Matrix", href: "/compliance/risk-matrix", icon: AlertTriangle, permission: "compliance.dashboard:view" },
+      { name: "Risk Compliance Matrix", href: "/compliance/risk-matrix", icon: AlertTriangle, permission: "compliance.risk-matrix:view" },
       { name: "Reports", href: "/compliance/reports", icon: FileText, permission: "compliance.dashboard:view" },
       { name: "Master Data", href: "/compliance/master-data", icon: Settings2, permission: "compliance.settings:view" },
     ],
