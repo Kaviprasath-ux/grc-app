@@ -50,6 +50,7 @@ export const RESOURCES = {
   'compliance.artifacts': '/compliance/artifacts',
   'compliance.exceptions': '/compliance/exceptions',
   'compliance.kpi': '/compliance/kpi',
+  'compliance.risk-matrix': '/compliance/risk-matrix',
   'compliance.settings': '/compliance/settings',
 
   // Asset Management Module
@@ -242,6 +243,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'compliance.artifacts', actions: ['view'], scope: 'all' },
     { resource: 'compliance.exceptions', actions: ['view'], scope: 'all' },
     { resource: 'compliance.kpi', actions: ['view'], scope: 'all' },
+    { resource: 'compliance.risk-matrix', actions: ['view'], scope: 'all' },
     // compliance.settings (Master Data) - EXCLUDED
     // Asset Management - view only (NO settings)
     { resource: 'asset.dashboard', actions: ['view'], scope: 'all' },
@@ -269,6 +271,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'compliance.artifacts', actions: ['view', 'create', 'edit'], scope: 'all' },
     { resource: 'compliance.exceptions', actions: ['view', 'create', 'edit'], scope: 'all' },
     { resource: 'compliance.kpi', actions: ['view', 'create', 'edit'], scope: 'all' },
+    { resource: 'compliance.risk-matrix', actions: ['view'], scope: 'all' },
     { resource: 'risk.dashboard', actions: ['view'], scope: 'all' },
     { resource: 'risk.register', actions: ['view', 'create', 'edit'], scope: 'all' },
     { resource: 'risk.assessment', actions: ['view', 'create', 'edit'], scope: 'all' },
@@ -278,33 +281,65 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'asset.classification', actions: ['view', 'create', 'edit'], scope: 'all' },
   ],
 
-  // Department Reviewer - Reviews within own department
+  // Department Reviewer - Reviews within own department (matches UAT exactly)
+  // Has same pages as Reviewer but scoped to department
   DepartmentReviewer: [
+    // Organization - Dashboard, Context, Users, Process, Reports (NO Profile, NO Settings)
     { resource: 'organization.dashboard', actions: ['view'], scope: 'department' },
+    { resource: 'organization.context', actions: ['view'], scope: 'department' },
+    { resource: 'organization.users', actions: ['view'], scope: 'department' },
     { resource: 'organization.process', actions: ['view', 'approve'], scope: 'department' },
+    // Compliance - Framework, Control, Governance, Evidence, Exception, KPI, Reports (NO Domain, NO Settings/Master Data, NO Risk Matrix)
     { resource: 'compliance.dashboard', actions: ['view'], scope: 'department' },
+    { resource: 'compliance.framework', actions: ['view'], scope: 'department' },
     { resource: 'compliance.controls', actions: ['view', 'approve'], scope: 'department' },
+    { resource: 'compliance.governance', actions: ['view'], scope: 'department' },
     { resource: 'compliance.evidence', actions: ['view', 'approve'], scope: 'department' },
-    { resource: 'risk.dashboard', actions: ['view'], scope: 'department' },
-    { resource: 'risk.register', actions: ['view', 'approve'], scope: 'department' },
+    { resource: 'compliance.exceptions', actions: ['view'], scope: 'department' },
+    { resource: 'compliance.kpi', actions: ['view'], scope: 'department' },
+    // Asset Management - Inventory, Classification, Reports (NO Settings)
     { resource: 'asset.dashboard', actions: ['view'], scope: 'department' },
     { resource: 'asset.inventory', actions: ['view', 'approve'], scope: 'department' },
+    { resource: 'asset.classification', actions: ['view'], scope: 'department' },
+    { resource: 'asset.reports', actions: ['view'], scope: 'department' },
+    // Risk Management - Dashboard, Register, Assessment, Response, Reports (NO Settings)
+    { resource: 'risk.dashboard', actions: ['view'], scope: 'department' },
+    { resource: 'risk.register', actions: ['view', 'approve'], scope: 'department' },
+    { resource: 'risk.assessment', actions: ['view'], scope: 'department' },
+    { resource: 'risk.response', actions: ['view'], scope: 'department' },
+    { resource: 'risk.reports', actions: ['view'], scope: 'department' },
+    // Internal Audit - ONLY RiskRegister page (NO Settings, NO other audit pages)
+    { resource: 'audit.auditables', actions: ['view'], scope: 'department' },
   ],
 
-  // Department Contributor - Creates/edits within own department
+  // Department Contributor - Creates/edits within own department (matches UAT exactly)
   DepartmentContributor: [
+    // Organization - Dashboard, Context, Users, Process, Reports (NO Profile, NO Settings)
     { resource: 'organization.dashboard', actions: ['view'], scope: 'department' },
+    { resource: 'organization.context', actions: ['view'], scope: 'department' },
+    { resource: 'organization.users', actions: ['view'], scope: 'department' },
     { resource: 'organization.process', actions: ['view', 'create', 'edit'], scope: 'department' },
+    // Compliance - Framework, Control, Governance, Evidence, Exception, KPI, Reports (NO Domain, NO Risk Matrix, NO Settings)
     { resource: 'compliance.dashboard', actions: ['view'], scope: 'department' },
+    { resource: 'compliance.framework', actions: ['view'], scope: 'department' },
     { resource: 'compliance.controls', actions: ['view', 'create', 'edit'], scope: 'department' },
+    { resource: 'compliance.governance', actions: ['view', 'create', 'edit'], scope: 'department' },
     { resource: 'compliance.evidence', actions: ['view', 'create', 'edit'], scope: 'department' },
-    { resource: 'compliance.artifacts', actions: ['view', 'create', 'edit'], scope: 'department' },
+    { resource: 'compliance.exceptions', actions: ['view', 'create', 'edit'], scope: 'department' },
+    { resource: 'compliance.kpi', actions: ['view'], scope: 'department' },
+    // Asset Management - Inventory, Classification, Reports (NO Settings)
+    { resource: 'asset.dashboard', actions: ['view'], scope: 'department' },
+    { resource: 'asset.inventory', actions: ['view', 'create', 'edit'], scope: 'department' },
+    { resource: 'asset.classification', actions: ['view'], scope: 'department' },
+    { resource: 'asset.reports', actions: ['view'], scope: 'department' },
+    // Risk Management - Dashboard, Register, Assessment, Response, Reports (NO Settings)
     { resource: 'risk.dashboard', actions: ['view'], scope: 'department' },
     { resource: 'risk.register', actions: ['view', 'create', 'edit'], scope: 'department' },
     { resource: 'risk.assessment', actions: ['view', 'create', 'edit'], scope: 'department' },
     { resource: 'risk.response', actions: ['view', 'create', 'edit'], scope: 'department' },
-    { resource: 'asset.dashboard', actions: ['view'], scope: 'department' },
-    { resource: 'asset.inventory', actions: ['view', 'create', 'edit'], scope: 'department' },
+    { resource: 'risk.reports', actions: ['view'], scope: 'department' },
+    // Internal Audit - ONLY RiskRegister (NO Settings)
+    { resource: 'audit.auditables', actions: ['view'], scope: 'department' },
   ],
 };
 
