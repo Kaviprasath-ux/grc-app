@@ -141,7 +141,7 @@ async function main() {
     { userId: "USR-008", userName: "james.anderson", email: "james.anderson@baarez.com", firstName: "James", lastName: "Anderson", department: "Revenue", designation: "Sales Director", role: "User", function: "Business" },
     { userId: "USR-009", userName: "deepika.kumar", email: "deepika.kumar@baarez.com", firstName: "Deepika", lastName: "K", department: "Internal Audit", designation: "Senior Auditor", role: "Auditor", function: "Audit" },
     { userId: "USR-010", userName: "anamika.sharma", email: "anamika.sharma@baarez.com", firstName: "Anamika", lastName: "Sharma", department: "Internal Audit", designation: "Auditor", role: "Auditor", function: "Audit" },
-    { userId: "USR-011", userName: "abhishek.reddy", email: "abhishek.reddy@baarez.com", firstName: "Abhishek", lastName: "Reddy", department: "Internal Audit", designation: "Audit Head", role: "Auditor", function: "Audit" },
+    { userId: "USR-011", userName: "abhishek.reddy", email: "abhishek.reddy@baarez.com", firstName: "Abhishek", lastName: "Reddy", department: "Internal Audit", designation: "Audit Head", role: "AuditHead", function: "Audit" },
     { userId: "USR-012", userName: "kudiarasan.tdev", email: "kudiarasan.t@baarez.com", firstName: "Kudiarasan", lastName: "T", department: "Internal Audit", designation: "Lead Auditor", role: "Auditor", function: "Audit" },
     { userId: "USR-013", userName: "prakash.loganathan", email: "prakash.l@baarez.com", firstName: "Prakash", lastName: "L", department: "Internal Audit", designation: "IT Auditor", role: "Auditor", function: "Audit" },
     { userId: "USR-014", userName: "navita.singh", email: "navita.singh@baarez.com", firstName: "Navita", lastName: "S", department: "Internal Audit", designation: "Auditor", role: "Auditor", function: "Audit" },
@@ -201,6 +201,7 @@ async function main() {
   const roleMapping: { [key: string]: string } = {
     "Administrator": "CustomerAdministrator",
     "GRC Admin": "GRCAdministrator",
+    "AuditHead": "AuditHead",
     "Auditor": "Auditor",
     "Risk Manager": "Contributor",
     "User": "Contributor",
