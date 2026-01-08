@@ -152,7 +152,7 @@ export const navigation: NavItem[] = [
       { name: "Dashboard", href: "/internal-audit/dashboard", icon: LayoutDashboard, permission: "audit.dashboard:view" },
       { name: "Audit Universe", href: "/internal-audit/audit-universe", icon: Network, permission: "audit.auditables:view" },
       { name: "Risk Identification", href: "/internal-audit/risk-identification", icon: Brain, permission: "audit.risk-identification:view" },
-      { name: "RiskRegister", href: "/internal-audit/risk-register", icon: ClipboardList, permission: "audit.auditables:view" },
+      { name: "RiskRegister", href: "/internal-audit/risk-register", icon: ClipboardList, permission: "audit.risk-register:view" },
       { name: "Audit Planning", href: "/internal-audit/audit-planning", icon: Calendar, permission: "audit.planning:view" },
       { name: "FieldWork", href: "/internal-audit/fieldwork", icon: Clipboard, permission: "audit.fieldwork:view" },
       { name: "Report", href: "/internal-audit/report", icon: FileOutput, permission: "audit.reports:view" },

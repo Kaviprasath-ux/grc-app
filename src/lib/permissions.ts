@@ -304,7 +304,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'risk.response', actions: ['view'], scope: 'department' },
     { resource: 'risk.reports', actions: ['view'], scope: 'department' },
     // Internal Audit - ONLY RiskRegister page (NO Settings, NO other audit pages)
-    { resource: 'audit.auditables', actions: ['view'], scope: 'department' },
+    { resource: 'audit.risk-register', actions: ['view'], scope: 'department' },
   ],
 
   // Department Contributor - Creates/edits within own department (matches UAT exactly)
@@ -334,7 +334,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'risk.response', actions: ['view', 'create', 'edit'], scope: 'department' },
     { resource: 'risk.reports', actions: ['view'], scope: 'department' },
     // Internal Audit - ONLY RiskRegister (NO Settings)
-    { resource: 'audit.auditables', actions: ['view'], scope: 'department' },
+    { resource: 'audit.risk-register', actions: ['view'], scope: 'department' },
   ],
 };
 

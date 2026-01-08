@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -60,6 +61,7 @@ interface InternalAuditRisk {
 
 export default function RiskRegisterPage() {
   const router = useRouter();
+  const { data: session } = useSession();
   const [risks, setRisks] = useState<InternalAuditRisk[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,6 +70,12 @@ export default function RiskRegisterPage() {
   const [yearFilter, setYearFilter] = useState<string>("all");
   const [departmentFilter, setDepartmentFilter] = useState<string>("all");
   const [searchFilter, setSearchFilter] = useState<string>("");
+
+  // Check if user has read-only role (DepartmentReviewer or DepartmentContributor)
+  // These roles should see the page in read-only mode per UAT requirements
+  const isReadOnlyRole = session?.user?.roles?.some(
+    (role) => role === "DepartmentReviewer" || role === "DepartmentContributor"
+  ) ?? false;
 
   // Delete dialog
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -206,18 +214,20 @@ export default function RiskRegisterPage() {
             <h1 className="text-2xl font-semibold">Risk Register</h1>
           </div>
         </div>
-        <Button onClick={() => router.push("/internal-audit/risk-register/add")}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Risk Manually
-        </Button>
+        {!isReadOnlyRole && (
+          <Button onClick={() => router.push("/internal-audit/risk-register/add")}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Risk Manually
+          </Button>
+        )}
       </div>
 
       {/* Filters */}
       <div className="bg-card rounded-lg border p-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
-            <Select value={yearFilter} onValueChange={setYearFilter}>
-              <SelectTrigger>
+            <Select value={yearFilter} onValueChange={setYearFilter} disabled={isReadOnlyRole}>
+              <SelectTrigger disabled={isReadOnlyRole}>
                 <SelectValue placeholder="Year" />
               </SelectTrigger>
               <SelectContent>
@@ -231,8 +241,8 @@ export default function RiskRegisterPage() {
             </Select>
           </div>
           <div>
-            <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-              <SelectTrigger>
+            <Select value={departmentFilter} onValueChange={setDepartmentFilter} disabled={isReadOnlyRole}>
+              <SelectTrigger disabled={isReadOnlyRole}>
                 <SelectValue placeholder="Department" />
               </SelectTrigger>
               <SelectContent>
@@ -253,6 +263,7 @@ export default function RiskRegisterPage() {
                 value={searchFilter}
                 onChange={(e) => setSearchFilter(e.target.value)}
                 className="pl-10"
+                disabled={isReadOnlyRole}
               />
             </div>
           </div>
@@ -273,7 +284,7 @@ export default function RiskRegisterPage() {
               <TableHead>Residual Score</TableHead>
               <TableHead>Risk Level</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="w-[120px]">Action</TableHead>
+              {!isReadOnlyRole && <TableHead className="w-[120px]">Action</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -288,40 +299,42 @@ export default function RiskRegisterPage() {
                 <TableCell>{risk.residualScore ?? "-"}</TableCell>
                 <TableCell>{getRiskLevelBadge(risk.riskLevel)}</TableCell>
                 <TableCell>{getStatusBadge(risk.status)}</TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => router.push(`/internal-audit/risk-register/${risk.id}`)}
-                      title="View"
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => router.push(`/internal-audit/risk-register/${risk.id}/edit`)}
-                      title="Edit"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => openDeleteDialog(risk)}
-                      title="Delete"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </TableCell>
+                {!isReadOnlyRole && (
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => router.push(`/internal-audit/risk-register/${risk.id}`)}
+                        title="View"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => router.push(`/internal-audit/risk-register/${risk.id}/edit`)}
+                        title="Edit"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => openDeleteDialog(risk)}
+                        title="Delete"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                )}
               </TableRow>
             ))}
             {risks.length === 0 && (
               <TableRow>
-                <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
-                  No risks found. Click "Add Risk Manually" to create your first risk.
+                <TableCell colSpan={isReadOnlyRole ? 9 : 10} className="text-center py-8 text-muted-foreground">
+                  {isReadOnlyRole ? "No risks found." : "No risks found. Click \"Add Risk Manually\" to create your first risk."}
                 </TableCell>
               </TableRow>
             )}
