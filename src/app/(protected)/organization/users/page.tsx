@@ -1062,7 +1062,7 @@ export default function UsersPage() {
                     <SelectValue placeholder="Select..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {userRoles.map((role) => (
+                    {allUserRoles.map((role) => (
                       <SelectItem key={role} value={role}>
                         {role}
                       </SelectItem>

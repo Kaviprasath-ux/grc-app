@@ -30,7 +30,7 @@ export function DonutChart({ title, data, centerLabel, centerSubLabel, className
         <div className="h-[220px] relative flex">
           {/* Chart container - left side */}
           <div className="relative w-[140px] h-full flex-shrink-0">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minHeight={220}>
               <PieChart>
                 <Pie
                   data={data}
