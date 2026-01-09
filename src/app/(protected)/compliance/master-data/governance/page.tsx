@@ -40,6 +40,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ArrowLeft, Plus, Pencil, Trash2, Download, Upload, Search } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface Department {
   id: string;
@@ -109,6 +110,7 @@ const functionalGroupings = ["Govern", "Identify", "Protect", "Detect", "Respond
 
 export default function GovernanceMasterDataPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -484,7 +486,7 @@ export default function GovernanceMasterDataPage() {
         }
       }
 
-      alert(`Import completed: ${successCount} policies imported, ${errorCount} errors`);
+      toast({ title: "Success", description: `Import completed: ${successCount} policies imported, ${errorCount} errors` });
       setImportDialogOpen(false);
       setImportFile(null);
       if (fileInputRef.current) {
@@ -493,7 +495,7 @@ export default function GovernanceMasterDataPage() {
       fetchPolicies();
     } catch (error) {
       console.error("Error importing policies:", error);
-      alert("Failed to import policies. Please check the file format.");
+      toast({ title: "Error", description: "Failed to import policies. Please check the file format.", variant: "destructive" });
     } finally {
       setImporting(false);
     }

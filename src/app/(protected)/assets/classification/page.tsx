@@ -22,6 +22,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { ColumnDef } from "@tanstack/react-table";
+import { useToast } from "@/hooks/use-toast";
 
 interface AssetCategory {
   id: string;
@@ -71,6 +72,7 @@ interface CIAClassification {
 }
 
 export default function AssetClassificationPage() {
+  const { toast } = useToast();
   const [classifications, setCIAClassifications] = useState<CIAClassification[]>([]);
   const [subCategories, setSubCategories] = useState<AssetSubCategory[]>([]);
   const [groups, setGroups] = useState<AssetGroup[]>([]);
@@ -141,7 +143,7 @@ export default function AssetClassificationPage() {
 
   const handleAdd = async () => {
     if (!formData.subCategoryId || !formData.groupId) {
-      alert("Please select both Sub Category and Group");
+      toast({ title: "Error", description: "Please select both Sub Category and Group", variant: "destructive" });
       return;
     }
     try {
@@ -157,7 +159,7 @@ export default function AssetClassificationPage() {
         setIsAddOpen(false);
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to create classification");
+        toast({ title: "Error", description: error.error || "Failed to create classification", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error adding classification:", error);
@@ -180,7 +182,7 @@ export default function AssetClassificationPage() {
         setIsEditOpen(false);
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to update classification");
+        toast({ title: "Error", description: error.error || "Failed to update classification", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error updating classification:", error);
@@ -199,7 +201,7 @@ export default function AssetClassificationPage() {
         setIsDeleteOpen(false);
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to delete classification");
+        toast({ title: "Error", description: error.error || "Failed to delete classification", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error deleting classification:", error);
@@ -402,7 +404,7 @@ export default function AssetClassificationPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => alert("AI Risk Evaluation - Coming Soon")}
+            onClick={() => toast({ title: "Info", description: "AI Risk Evaluation - Coming Soon" })}
           >
             <Sparkles className="h-4 w-4 mr-1" />
             AI Risk Evaluation

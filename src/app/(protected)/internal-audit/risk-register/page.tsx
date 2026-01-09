@@ -284,7 +284,7 @@ export default function RiskRegisterPage() {
               <TableHead>Residual Score</TableHead>
               <TableHead>Risk Level</TableHead>
               <TableHead>Status</TableHead>
-              {!isReadOnlyRole && <TableHead className="w-[120px]">Action</TableHead>}
+              <TableHead className="w-[120px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -299,8 +299,8 @@ export default function RiskRegisterPage() {
                 <TableCell>{risk.residualScore ?? "-"}</TableCell>
                 <TableCell>{getRiskLevelBadge(risk.riskLevel)}</TableCell>
                 <TableCell>{getStatusBadge(risk.status)}</TableCell>
-                {!isReadOnlyRole && (
-                  <TableCell>
+                <TableCell>
+                  {!isReadOnlyRole && (
                     <div className="flex items-center gap-1">
                       <Button
                         variant="ghost"
@@ -327,13 +327,13 @@ export default function RiskRegisterPage() {
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
-                  </TableCell>
-                )}
+                  )}
+                </TableCell>
               </TableRow>
             ))}
             {risks.length === 0 && (
               <TableRow>
-                <TableCell colSpan={isReadOnlyRole ? 9 : 10} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                   {isReadOnlyRole ? "No risks found." : "No risks found. Click \"Add Risk Manually\" to create your first risk."}
                 </TableCell>
               </TableRow>

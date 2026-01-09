@@ -25,6 +25,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { ColumnDef } from "@tanstack/react-table";
+import { useToast } from "@/hooks/use-toast";
 
 interface AssetCategory {
   id: string;
@@ -156,6 +157,7 @@ const SCORING_CALCULATION_TYPES = [
 ];
 
 export default function AssetSettingsPage() {
+  const { toast } = useToast();
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [entitySubTab, setEntitySubTab] = useState<string | null>(null);
 
@@ -260,7 +262,7 @@ export default function AssetSettingsPage() {
         setIsAddOpen(false);
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to create category");
+        toast({ title: "Error", description: error.error || "Failed to create category", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error adding category:", error);
@@ -282,7 +284,7 @@ export default function AssetSettingsPage() {
         setSelectedItem(null);
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to update category");
+        toast({ title: "Error", description: error.error || "Failed to update category", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error updating category:", error);
@@ -299,7 +301,7 @@ export default function AssetSettingsPage() {
         setSelectedItem(null);
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to delete category");
+        toast({ title: "Error", description: error.error || "Failed to delete category", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error deleting category:", error);
@@ -322,7 +324,7 @@ export default function AssetSettingsPage() {
         setIsAddOpen(false);
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to create sub-category");
+        toast({ title: "Error", description: error.error || "Failed to create sub-category", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error adding sub-category:", error);
@@ -344,7 +346,7 @@ export default function AssetSettingsPage() {
         setSelectedItem(null);
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to update sub-category");
+        toast({ title: "Error", description: error.error || "Failed to update sub-category", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error updating sub-category:", error);
@@ -361,7 +363,7 @@ export default function AssetSettingsPage() {
         setSelectedItem(null);
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to delete sub-category");
+        toast({ title: "Error", description: error.error || "Failed to delete sub-category", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error deleting sub-category:", error);
@@ -384,7 +386,7 @@ export default function AssetSettingsPage() {
         setIsAddOpen(false);
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to create group");
+        toast({ title: "Error", description: error.error || "Failed to create group", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error adding group:", error);
@@ -406,7 +408,7 @@ export default function AssetSettingsPage() {
         setSelectedItem(null);
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to update group");
+        toast({ title: "Error", description: error.error || "Failed to update group", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error updating group:", error);
@@ -423,7 +425,7 @@ export default function AssetSettingsPage() {
         setSelectedItem(null);
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to delete group");
+        toast({ title: "Error", description: error.error || "Failed to delete group", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error deleting group:", error);
@@ -446,7 +448,7 @@ export default function AssetSettingsPage() {
         setIsAddOpen(false);
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to create lifecycle status");
+        toast({ title: "Error", description: error.error || "Failed to create lifecycle status", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error adding lifecycle status:", error);
@@ -468,7 +470,7 @@ export default function AssetSettingsPage() {
         setSelectedItem(null);
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to update lifecycle status");
+        toast({ title: "Error", description: error.error || "Failed to update lifecycle status", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error updating lifecycle status:", error);
@@ -485,7 +487,7 @@ export default function AssetSettingsPage() {
         setSelectedItem(null);
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to delete lifecycle status");
+        toast({ title: "Error", description: error.error || "Failed to delete lifecycle status", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error deleting lifecycle status:", error);
@@ -528,7 +530,7 @@ export default function AssetSettingsPage() {
         setIsAddOpen(false);
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to create asset");
+        toast({ title: "Error", description: error.error || "Failed to create asset", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error adding asset:", error);
@@ -551,7 +553,7 @@ export default function AssetSettingsPage() {
         setIsAddOpen(false);
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to create sensitivity");
+        toast({ title: "Error", description: error.error || "Failed to create sensitivity", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error adding sensitivity:", error);
@@ -573,7 +575,7 @@ export default function AssetSettingsPage() {
         setSelectedItem(null);
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to update sensitivity");
+        toast({ title: "Error", description: error.error || "Failed to update sensitivity", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error updating sensitivity:", error);
@@ -590,7 +592,7 @@ export default function AssetSettingsPage() {
         setSelectedItem(null);
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to delete sensitivity");
+        toast({ title: "Error", description: error.error || "Failed to delete sensitivity", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error deleting sensitivity:", error);
@@ -617,7 +619,7 @@ export default function AssetSettingsPage() {
         setIsCiaAddOpen(false);
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to create CIA rating");
+        toast({ title: "Error", description: error.error || "Failed to create CIA rating", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error adding CIA rating:", error);
@@ -642,7 +644,7 @@ export default function AssetSettingsPage() {
         setSelectedCiaRating(null);
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to update CIA rating");
+        toast({ title: "Error", description: error.error || "Failed to update CIA rating", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error updating CIA rating:", error);
@@ -659,7 +661,7 @@ export default function AssetSettingsPage() {
         setSelectedCiaRating(null);
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to delete CIA rating");
+        toast({ title: "Error", description: error.error || "Failed to delete CIA rating", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error deleting CIA rating:", error);
@@ -769,7 +771,7 @@ export default function AssetSettingsPage() {
       const text = e.target?.result as string;
       const lines = text.split("\n").filter(line => line.trim());
       if (lines.length < 2) {
-        alert("Invalid CSV file");
+        toast({ title: "Error", description: "Invalid CSV file", variant: "destructive" });
         return;
       }
 
@@ -792,7 +794,7 @@ export default function AssetSettingsPage() {
       }
 
       fetchData();
-      alert(`Imported ${imported} categories`);
+      toast({ title: "Success", description: `Imported ${imported} categories` });
     };
     reader.readAsText(file);
     event.target.value = "";
@@ -808,7 +810,7 @@ export default function AssetSettingsPage() {
       const text = e.target?.result as string;
       const lines = text.split("\n").filter(line => line.trim());
       if (lines.length < 2) {
-        alert("Invalid CSV file");
+        toast({ title: "Error", description: "Invalid CSV file", variant: "destructive" });
         return;
       }
 
@@ -831,7 +833,7 @@ export default function AssetSettingsPage() {
       }
 
       fetchData();
-      alert(`Imported ${imported} lifecycle statuses`);
+      toast({ title: "Success", description: `Imported ${imported} lifecycle statuses` });
     };
     reader.readAsText(file);
     event.target.value = "";

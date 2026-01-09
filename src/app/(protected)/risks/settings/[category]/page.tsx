@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/dialog";
 import { ColumnDef } from "@tanstack/react-table";
 import Link from "next/link";
+import { useToast } from "@/hooks/use-toast";
 
 // Type definitions
 interface VulnerabilityCategory {
@@ -140,6 +141,7 @@ const categoryTitles: Record<string, string> = {
 export default function RiskSettingsCategoryPage() {
   const params = useParams();
   const router = useRouter();
+  const { toast } = useToast();
   const category = params.category as string;
 
   const [activeTab, setActiveTab] = useState<string>("tab1");
@@ -266,7 +268,7 @@ export default function RiskSettingsCategoryPage() {
         setIsAddOpen(false);
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to create");
+        toast({ title: "Error", description: error.error || "Failed to create", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error:", error);
@@ -322,7 +324,7 @@ export default function RiskSettingsCategoryPage() {
         setIsAddOpen(false);
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to create");
+        toast({ title: "Error", description: error.error || "Failed to create", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error:", error);
@@ -378,7 +380,7 @@ export default function RiskSettingsCategoryPage() {
         setIsAddOpen(false);
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to create");
+        toast({ title: "Error", description: error.error || "Failed to create", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error:", error);
@@ -434,7 +436,7 @@ export default function RiskSettingsCategoryPage() {
         setIsAddOpen(false);
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to create");
+        toast({ title: "Error", description: error.error || "Failed to create", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error:", error);
@@ -490,7 +492,7 @@ export default function RiskSettingsCategoryPage() {
         setIsAddOpen(false);
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to create");
+        toast({ title: "Error", description: error.error || "Failed to create", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error:", error);
@@ -546,7 +548,7 @@ export default function RiskSettingsCategoryPage() {
         setIsAddOpen(false);
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to create");
+        toast({ title: "Error", description: error.error || "Failed to create", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error:", error);
@@ -602,7 +604,7 @@ export default function RiskSettingsCategoryPage() {
         setIsAddOpen(false);
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to create");
+        toast({ title: "Error", description: error.error || "Failed to create", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error:", error);
@@ -658,7 +660,7 @@ export default function RiskSettingsCategoryPage() {
         setIsAddOpen(false);
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to create");
+        toast({ title: "Error", description: error.error || "Failed to create", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error:", error);
@@ -714,7 +716,7 @@ export default function RiskSettingsCategoryPage() {
         setIsAddOpen(false);
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to create");
+        toast({ title: "Error", description: error.error || "Failed to create", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error:", error);
@@ -770,7 +772,7 @@ export default function RiskSettingsCategoryPage() {
         setIsAddOpen(false);
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to create");
+        toast({ title: "Error", description: error.error || "Failed to create", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error:", error);
@@ -826,7 +828,7 @@ export default function RiskSettingsCategoryPage() {
         setIsAddOpen(false);
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to create");
+        toast({ title: "Error", description: error.error || "Failed to create", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error:", error);
@@ -882,7 +884,7 @@ export default function RiskSettingsCategoryPage() {
         setIsAddOpen(false);
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to create");
+        toast({ title: "Error", description: error.error || "Failed to create", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error:", error);

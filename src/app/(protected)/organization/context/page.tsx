@@ -26,6 +26,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { ColumnDef } from "@tanstack/react-table";
+import { useToast } from "@/hooks/use-toast";
 
 interface Department {
   id: string;
@@ -93,6 +94,7 @@ const ISSUE_STEPS = [
 ];
 
 export default function ContextPage() {
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("stakeholder");
   const [stakeholders, setStakeholders] = useState<Stakeholder[]>([]);
   const [issues, setIssues] = useState<Issue[]>([]);
@@ -328,7 +330,7 @@ export default function ContextPage() {
       const lines = text.split('\n').filter(line => line.trim());
 
       if (lines.length < 2) {
-        alert('CSV file must have a header row and at least one data row');
+        toast({ title: "Error", description: "CSV file must have a header row and at least one data row", variant: "destructive" });
         return;
       }
 
@@ -340,7 +342,7 @@ export default function ContextPage() {
       const issueTypeIndex = headers.findIndex(h => h === 'issuetype' || h === 'issue type' || h === 'type');
 
       if (titleIndex === -1) {
-        alert('CSV must have a "title" column');
+        toast({ title: "Error", description: "CSV must have a \"title\" column", variant: "destructive" });
         return;
       }
 
@@ -379,10 +381,10 @@ export default function ContextPage() {
       setShowImportDialog(false);
       setImportFile(null);
       if (fileInputRef.current) fileInputRef.current.value = '';
-      alert(`Successfully imported ${newIssues.length} issues`);
+      toast({ title: "Success", description: `Successfully imported ${newIssues.length} issues` });
     } catch (error) {
       console.error('Error importing issues:', error);
-      alert('Error importing issues. Please check the file format.');
+      toast({ title: "Error", description: "Error importing issues. Please check the file format.", variant: "destructive" });
     }
     setImporting(false);
   };

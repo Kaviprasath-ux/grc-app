@@ -24,6 +24,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { ColumnDef } from "@tanstack/react-table";
+import { useToast } from "@/hooks/use-toast";
 
 interface Department {
   id: string;
@@ -148,6 +149,7 @@ const formatDate = (dateString: string | null) => {
 };
 
 export default function AssetInventoryPage() {
+  const { toast } = useToast();
   const [assets, setAssets] = useState<Asset[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -328,7 +330,7 @@ export default function AssetInventoryPage() {
         setIsAddAssetOpen(false);
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to create asset");
+        toast({ title: "Error", description: error.error || "Failed to create asset", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error adding asset:", error);
@@ -354,7 +356,7 @@ export default function AssetInventoryPage() {
         setEditingAsset(null);
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to update asset");
+        toast({ title: "Error", description: error.error || "Failed to update asset", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error updating asset:", error);
@@ -528,7 +530,7 @@ export default function AssetInventoryPage() {
       const lines = text.split("\n").filter(line => line.trim());
 
       if (lines.length < 2) {
-        alert("Invalid CSV file: No data rows found");
+        toast({ title: "Error", description: "Invalid CSV file: No data rows found", variant: "destructive" });
         return;
       }
 
@@ -583,7 +585,7 @@ export default function AssetInventoryPage() {
 
       // Refresh data
       fetchData();
-      alert(`Import completed: ${imported} assets imported, ${errors} errors`);
+      toast({ title: "Success", description: `Import completed: ${imported} assets imported, ${errors} errors` });
     };
 
     reader.readAsText(file);

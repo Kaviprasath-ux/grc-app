@@ -25,6 +25,7 @@ import {
   Calendar,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 interface ReportType {
   id: string;
@@ -73,6 +74,7 @@ const reportTypes: ReportType[] = [
 ];
 
 export default function RiskReportsPage() {
+  const { toast } = useToast();
   const [selectedReport, setSelectedReport] = useState<string | null>(null);
   const [exportFormat, setExportFormat] = useState("pdf");
   const [dateRange, setDateRange] = useState({ from: "", to: "" });
@@ -124,9 +126,10 @@ export default function RiskReportsPage() {
           URL.revokeObjectURL(url);
         } else {
           // For PDF/Excel, show a message that it would normally generate the file
-          alert(
-            `Report "${reportTypes.find((r) => r.id === selectedReport)?.name}" would be generated as ${exportFormat.toUpperCase()}.\n\nIn a production environment, this would use a library like jsPDF or ExcelJS.`
-          );
+          toast({
+            title: "Info",
+            description: `Report "${reportTypes.find((r) => r.id === selectedReport)?.name}" would be generated as ${exportFormat.toUpperCase()}. In production, this would use jsPDF or ExcelJS.`,
+          });
         }
       }
     } catch (error) {

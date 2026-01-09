@@ -57,6 +57,7 @@ import {
   Settings2,
   Download,
 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface Control {
   id: string;
@@ -101,6 +102,7 @@ const ITEMS_PER_PAGE = 20;
 
 export default function ControlListPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [controls, setControls] = useState<Control[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -283,17 +285,17 @@ export default function ControlListPage() {
 
       if (response.ok) {
         const result = await response.json();
-        alert(`Successfully imported ${result.imported} control(s)`);
+        toast({ title: "Success", description: `Successfully imported ${result.imported} control(s)` });
         setIsImportDialogOpen(false);
         setImportFile(null);
         fetchControls();
       } else {
         const error = await response.json();
-        alert(`Import failed: ${error.message || "Unknown error"}`);
+        toast({ title: "Error", description: `Import failed: ${error.message || "Unknown error"}`, variant: "destructive" });
       }
     } catch (error) {
       console.error("Error importing controls:", error);
-      alert("Failed to import controls");
+      toast({ title: "Error", description: "Failed to import controls", variant: "destructive" });
     } finally {
       setImporting(false);
       if (importFileInputRef.current) {
@@ -325,11 +327,11 @@ export default function ControlListPage() {
         setIsDeleteAllDialogOpen(false);
         fetchControls();
       } else {
-        alert("Failed to delete controls");
+        toast({ title: "Error", description: "Failed to delete controls", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error deleting controls:", error);
-      alert("Failed to delete controls");
+      toast({ title: "Error", description: "Failed to delete controls", variant: "destructive" });
     } finally {
       setDeleting(false);
     }
