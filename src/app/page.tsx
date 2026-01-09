@@ -9,5 +9,10 @@ export default async function Home() {
     redirect("/grc");
   }
 
+  // Redirect AuditHead users to Internal Audit dashboard
+  if (session?.user?.roles?.includes("AuditHead")) {
+    redirect("/internal-audit/dashboard");
+  }
+
   redirect("/dashboard");
 }

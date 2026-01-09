@@ -197,6 +197,7 @@ model User {
   userRoles           UserRole[]
   // Internal Audit relations
   assignedEngagements AuditEngagement[]   @relation("EngagementAuditor")
+  memberOfEngagements AuditEngagement[]   @relation("EngagementTeamMembers")
   // Process RACI relations
   responsibleProcesses Process[]          @relation("ProcessResponsible")
   accountableProcesses Process[]          @relation("ProcessAccountable")
@@ -1418,6 +1419,7 @@ model AuditEngagement {
   auditType         AuditType?       @relation("EngagementAuditType", fields: [auditTypeId], references: [id])
   assignedAuditorId String?
   assignedAuditor   User?            @relation("EngagementAuditor", fields: [assignedAuditorId], references: [id])
+  teamMembers       User[]           @relation("EngagementTeamMembers")
   // Planning dates
   plannedStartDate  DateTime?
   plannedEndDate    DateTime?
@@ -1438,6 +1440,7 @@ model AuditEngagement {
   fieldwork         AuditFieldwork?
   report            AuditReport?
   findings          InternalAuditFinding[]
+  evidenceRequests  FieldworkEvidenceRequest[]
 }
 
 // ==================== INTERNAL AUDIT - FIELDWORK ====================
@@ -1480,6 +1483,41 @@ model AuditWorkpaper {
   uploadedAt   DateTime       @default(now())
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
+}
+
+// Fieldwork Evidence Request (requests for evidence during audit fieldwork)
+model FieldworkEvidenceRequest {
+  id              String                         @id @default(cuid())
+  engagementId    String
+  engagement      AuditEngagement                @relation(fields: [engagementId], references: [id], onDelete: Cascade)
+  title           String
+  description     String?
+  sampleSize      String?
+  status          String                         @default("Pending") // Pending, In Progress, Submitted, Reviewed
+  aiReviewStatus  String?                        // Satisfactory, Needs Attention
+  aiReviewComment String?
+  dueDate         DateTime?
+  // Auditee assignment (assigned by Audit Head)
+  auditeeId       String?
+  auditeeName     String?
+  createdAt       DateTime                       @default(now())
+  updatedAt       DateTime                       @updatedAt
+  attachments     FieldworkEvidenceAttachment[]
+}
+
+// Fieldwork Evidence Attachment (files attached to evidence requests)
+model FieldworkEvidenceAttachment {
+  id                String                   @id @default(cuid())
+  evidenceRequestId String
+  evidenceRequest   FieldworkEvidenceRequest @relation(fields: [evidenceRequestId], references: [id], onDelete: Cascade)
+  fileName          String
+  fileType          String?
+  fileSize          Int?
+  filePath          String
+  uploadedBy        String?
+  uploadedAt        DateTime                 @default(now())
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
 }
 
 // ==================== INTERNAL AUDIT - REPORTS ====================

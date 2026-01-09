@@ -112,7 +112,7 @@ export const ROLES = {
   },
   Auditee: {
     name: 'Auditee',
-    description: 'Receives audit requests, responds to findings',
+    description: 'Limited access to Fieldwork, CAPA Tracking, and Reports only',
   },
   Reviewer: {
     name: 'Reviewer',
@@ -212,13 +212,15 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'compliance.controls', actions: ['view'], scope: 'all' },
   ],
 
-  // Auditee - Responds to audits (permanent role)
+  // Auditee - Responds to audits (department-scoped access)
+  // STRICT ACCESS: Only Fieldwork, CAPA Tracking, and Reports
+  // NO access to: Dashboard, Audit Universe, Risk Identification, Risk Register,
+  //               Audit Planning, Document Library, Settings, Risk Universe,
+  //               or any other modules (Organization, Compliance, Asset, Risk)
   Auditee: [
-    { resource: 'audit.dashboard', actions: ['view'], scope: 'department' },
-    { resource: 'audit.execution', actions: ['view'], scope: 'department' },
-    { resource: 'audit.followup', actions: ['view', 'edit'], scope: 'department' },
-    { resource: 'organization.dashboard', actions: ['view'], scope: 'department' },
-    { resource: 'organization.process', actions: ['view'], scope: 'department' },
+    { resource: 'audit.fieldwork', actions: ['view'], scope: 'department' },
+    { resource: 'audit.reports', actions: ['view'], scope: 'department' },
+    { resource: 'audit.capa', actions: ['view', 'edit'], scope: 'department' },
   ],
 
   // Reviewer - View access to compliance, risk, asset (no admin, settings, or audit access)

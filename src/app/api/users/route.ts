@@ -1,11 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
-// GET all users
-export async function GET() {
+// GET all users (with optional role filter)
+export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url);
+    const role = searchParams.get("role");
+
+    // Build where clause for role filtering
+    const where: any = {};
+    if (role) {
+      where.userRoles = {
+        some: {
+          role: {
+            name: role,
+          },
+        },
+      };
+    }
+
     const users = await prisma.user.findMany({
-      include: { department: true },
+      where,
+      include: {
+        department: true,
+        userRoles: {
+          include: {
+            role: true,
+          },
+        },
+      },
       orderBy: { fullName: "asc" },
     });
     // Remove password from response

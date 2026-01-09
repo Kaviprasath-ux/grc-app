@@ -24,9 +24,12 @@ export default function DashboardPage() {
   const router = useRouter();
 
   // Redirect GRCAdmin users to GRC landing page
+  // Redirect AuditHead users to Internal Audit dashboard
   useEffect(() => {
     if (session?.user?.roles?.includes("GRCAdministrator")) {
       router.replace("/grc");
+    } else if (session?.user?.roles?.includes("AuditHead")) {
+      router.replace("/internal-audit/dashboard");
     }
   }, [session, router]);
 
