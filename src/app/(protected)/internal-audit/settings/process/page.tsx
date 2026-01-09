@@ -41,6 +41,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useToast } from "@/hooks/use-toast";
 
 interface Process {
   id: string;
@@ -97,6 +98,7 @@ const STATUSES = ["Active", "Inactive"];
 
 export default function ProcessPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [processes, setProcesses] = useState<Process[]>([]);
   const [filteredProcesses, setFilteredProcesses] = useState<Process[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -346,7 +348,7 @@ export default function ProcessPage() {
 
   const handleSave = async () => {
     if (!formData.name.trim()) {
-      alert("Please enter a process name");
+      toast({ title: "Error", description: "Please enter a process name", variant: "destructive" });
       return;
     }
 
@@ -377,7 +379,7 @@ export default function ProcessPage() {
       });
 
       if (response.ok) {
-        alert("Process saved successfully!");
+        toast({ title: "Success", description: "Process saved successfully!" });
         setDialogOpen(false);
         setCurrentStep(1);
         setUploadedFiles([]);
@@ -385,11 +387,11 @@ export default function ProcessPage() {
       } else {
         const errorData = await response.json();
         console.error("Error response:", errorData);
-        alert(`Failed to save process: ${errorData.error || "Unknown error"}`);
+        toast({ title: "Error", description: `Failed to save process: ${errorData.error || "Unknown error"}`, variant: "destructive" });
       }
     } catch (error) {
       console.error("Failed to save:", error);
-      alert("An error occurred while saving the process");
+      toast({ title: "Error", description: "An error occurred while saving the process", variant: "destructive" });
     } finally {
       setSaving(false);
     }

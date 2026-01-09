@@ -23,6 +23,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { ColumnDef } from "@tanstack/react-table";
 import { EditProfileWizard } from "@/components/profile/edit-profile-wizard";
 
@@ -119,6 +129,11 @@ export default function ProfilePage() {
   const [isEditDepartmentOpen, setIsEditDepartmentOpen] = useState(false);
   const [editingDepartment, setEditingDepartment] = useState<Department | null>(null);
 
+  // Delete confirmation dialogs
+  const [deleteDepartmentId, setDeleteDepartmentId] = useState<string | null>(null);
+  const [deleteServiceId, setDeleteServiceId] = useState<string | null>(null);
+  const [deleteRegulationId, setDeleteRegulationId] = useState<string | null>(null);
+
   // Service categories and items
   const [serviceCategories, setServiceCategories] = useState<string[]>([
     "consulting",
@@ -207,15 +222,21 @@ export default function ProfilePage() {
     }
   };
 
-  const handleDeleteDepartment = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this department?")) return;
+  const handleDeleteDepartment = (id: string) => {
+    setDeleteDepartmentId(id);
+  };
+
+  const confirmDeleteDepartment = async () => {
+    if (!deleteDepartmentId) return;
     try {
-      const res = await fetch(`/api/departments/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/departments/${deleteDepartmentId}`, { method: "DELETE" });
       if (res.ok) {
-        setDepartments(departments.filter((d) => d.id !== id));
+        setDepartments(departments.filter((d) => d.id !== deleteDepartmentId));
       }
     } catch (error) {
       console.error("Error deleting department:", error);
+    } finally {
+      setDeleteDepartmentId(null);
     }
   };
 
@@ -283,15 +304,21 @@ export default function ProfilePage() {
     }
   };
 
-  const handleDeleteService = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this service?")) return;
+  const handleDeleteService = (id: string) => {
+    setDeleteServiceId(id);
+  };
+
+  const confirmDeleteService = async () => {
+    if (!deleteServiceId) return;
     try {
-      const res = await fetch(`/api/services/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/services/${deleteServiceId}`, { method: "DELETE" });
       if (res.ok) {
-        setServices(services.filter((s) => s.id !== id));
+        setServices(services.filter((s) => s.id !== deleteServiceId));
       }
     } catch (error) {
       console.error("Error deleting service:", error);
+    } finally {
+      setDeleteServiceId(null);
     }
   };
 
@@ -397,15 +424,21 @@ export default function ProfilePage() {
     }
   };
 
-  const handleDeleteRegulation = async (id: string) => {
-    if (!confirm("Are you sure you want to unsubscribe from this regulation?")) return;
+  const handleDeleteRegulation = (id: string) => {
+    setDeleteRegulationId(id);
+  };
+
+  const confirmDeleteRegulation = async () => {
+    if (!deleteRegulationId) return;
     try {
-      const res = await fetch(`/api/regulations/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/regulations/${deleteRegulationId}`, { method: "DELETE" });
       if (res.ok) {
-        setRegulations(regulations.filter((r) => r.id !== id));
+        setRegulations(regulations.filter((r) => r.id !== deleteRegulationId));
       }
     } catch (error) {
       console.error("Error deleting regulation:", error);
+    } finally {
+      setDeleteRegulationId(null);
     }
   };
 
@@ -1435,6 +1468,54 @@ export default function ProfilePage() {
         organization={organization}
         onSave={handleSaveOrganization}
       />
+
+      {/* Delete Department Confirmation */}
+      <AlertDialog open={!!deleteDepartmentId} onOpenChange={(open) => !open && setDeleteDepartmentId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Department</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this department? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteDepartment}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Service Confirmation */}
+      <AlertDialog open={!!deleteServiceId} onOpenChange={(open) => !open && setDeleteServiceId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Service</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this service? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteService}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Unsubscribe Regulation Confirmation */}
+      <AlertDialog open={!!deleteRegulationId} onOpenChange={(open) => !open && setDeleteRegulationId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unsubscribe from Regulation</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to unsubscribe from this regulation? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteRegulation}>Unsubscribe</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

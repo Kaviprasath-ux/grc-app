@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 
 // Report types as seen in testing
 const reportTypes = [
@@ -76,6 +77,7 @@ const reportTypes = [
 ];
 
 export default function ReportsPage() {
+  const { toast } = useToast();
   const [selectedReport, setSelectedReport] = useState<string | null>(null);
   const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false);
   const [isManagementReportOpen, setIsManagementReportOpen] = useState(false);
@@ -88,7 +90,7 @@ export default function ReportsPage() {
     setTimeout(() => {
       setIsGenerating(false);
       setIsGenerateDialogOpen(false);
-      alert(`Report "${reportTypes.find(r => r.id === selectedReport)?.title}" generated successfully!`);
+      toast({ title: "Success", description: `Report "${reportTypes.find(r => r.id === selectedReport)?.title}" generated successfully!` });
     }, 1500);
   };
 
@@ -98,7 +100,7 @@ export default function ReportsPage() {
     setTimeout(() => {
       setIsGenerating(false);
       setIsManagementReportOpen(false);
-      alert("Management Report generated successfully!");
+      toast({ title: "Success", description: "Management Report generated successfully!" });
     }, 2000);
   };
 

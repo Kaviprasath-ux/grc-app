@@ -26,6 +26,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { ColumnDef } from "@tanstack/react-table";
+import { useToast } from "@/hooks/use-toast";
 
 interface Department {
   id: string;
@@ -92,6 +93,7 @@ const impactDescriptions = {
 };
 
 export default function ProcessPage() {
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("repository");
   const [processes, setProcesses] = useState<Process[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -225,7 +227,7 @@ export default function ProcessPage() {
         setIsAddProcessOpen(false);
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to create process");
+        toast({ title: "Error", description: error.error || "Failed to create process", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error adding process:", error);

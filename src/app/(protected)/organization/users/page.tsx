@@ -43,6 +43,17 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ColumnDef } from "@tanstack/react-table";
+import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Department {
   id: string;
@@ -86,7 +97,10 @@ const allUserRoles = [
 ];
 
 export default function UsersPage() {
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("account-overview");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -151,11 +165,11 @@ export default function UsersPage() {
   // User CRUD
   const handleAddUser = async () => {
     if (!userForm.userName || !userForm.email || !userForm.password || !userForm.firstName || !userForm.lastName || !userForm.fullName || !userForm.function || !userForm.role) {
-      alert("Please fill in all required fields");
+      toast({ title: "Error", description: "Please fill in all required fields", variant: "destructive" });
       return;
     }
     if (userForm.password !== userForm.confirmPassword) {
-      alert("Passwords do not match");
+      toast({ title: "Error", description: "Passwords do not match", variant: "destructive" });
       return;
     }
 
@@ -192,7 +206,7 @@ export default function UsersPage() {
         setIsAddUserOpen(false);
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to create user");
+        toast({ title: "Error", description: error.error || "Failed to create user", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error adding user:", error);
@@ -219,12 +233,19 @@ export default function UsersPage() {
     }
   };
 
-  const handleDeleteUser = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this user?")) return;
+  const openDeleteDialog = (user: User) => {
+    setUserToDelete(user);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return;
     try {
-      const res = await fetch(`/api/users/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/users/${userToDelete.id}`, { method: "DELETE" });
       if (res.ok) {
-        setUsers(users.filter((u) => u.id !== id));
+        setUsers(users.filter((u) => u.id !== userToDelete.id));
+        setDeleteDialogOpen(false);
+        setUserToDelete(null);
       }
     } catch (error) {
       console.error("Error deleting user:", error);
@@ -387,7 +408,7 @@ export default function UsersPage() {
         }
       }
 
-      alert(`Import completed: ${successCount} users imported, ${errorCount} errors`);
+      toast({ title: "Success", description: `Import completed: ${successCount} users imported, ${errorCount} errors` });
       setShowImportDialog(false);
       setImportFile(null);
       if (fileInputRef.current) {
@@ -396,7 +417,7 @@ export default function UsersPage() {
       fetchData();
     } catch (error) {
       console.error("Error importing users:", error);
-      alert("Failed to import users. Please check the file format.");
+      toast({ title: "Error", description: "Failed to import users. Please check the file format.", variant: "destructive" });
     } finally {
       setImporting(false);
     }
@@ -475,7 +496,7 @@ export default function UsersPage() {
             </DropdownMenuItem>
             <DropdownMenuItem
               className="text-destructive"
-              onClick={() => handleDeleteUser(row.original.id)}
+              onClick={() => openDeleteDialog(row.original)}
             >
               Delete
             </DropdownMenuItem>
@@ -606,7 +627,7 @@ export default function UsersPage() {
                                     variant="ghost"
                                     size="icon"
                                     className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                                    onClick={() => handleDeleteUser(user.id)}
+                                    onClick={() => openDeleteDialog(user)}
                                   >
                                     <Trash2 className="h-4 w-4" />
                                   </Button>

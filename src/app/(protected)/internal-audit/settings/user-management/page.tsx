@@ -40,6 +40,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useToast } from "@/hooks/use-toast";
 
 interface User {
   id: string;
@@ -71,6 +72,7 @@ const AUDIT_ROLES = [
 
 export default function UserManagementPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [users, setUsers] = useState<User[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
@@ -200,7 +202,7 @@ export default function UserManagementPage() {
   const handleChangePassword = async () => {
     if (!editItem) return;
     if (!passwordForm.newPassword || passwordForm.newPassword !== passwordForm.confirmPassword) {
-      alert("Passwords do not match!");
+      toast({ title: "Error", description: "Passwords do not match!", variant: "destructive" });
       return;
     }
 
@@ -214,13 +216,13 @@ export default function UserManagementPage() {
 
       if (response.ok) {
         setChangePasswordDialogOpen(false);
-        alert("Password changed successfully!");
+        toast({ title: "Success", description: "Password changed successfully!" });
       } else {
-        alert("Failed to change password");
+        toast({ title: "Error", description: "Failed to change password", variant: "destructive" });
       }
     } catch (error) {
       console.error("Failed to change password:", error);
-      alert("Failed to change password");
+      toast({ title: "Error", description: "Failed to change password", variant: "destructive" });
     } finally {
       setChangingPassword(false);
     }
@@ -238,7 +240,7 @@ export default function UserManagementPage() {
   const handleSave = async () => {
     if (!formData.firstName.trim() || !formData.email.trim()) return;
     if (!editItem && formData.password !== formData.confirmPassword) {
-      alert("Passwords do not match");
+      toast({ title: "Error", description: "Passwords do not match", variant: "destructive" });
       return;
     }
 

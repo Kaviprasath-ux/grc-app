@@ -47,6 +47,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface Framework {
   id: string;
@@ -759,6 +760,7 @@ export default function FrameworkDetailPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
+  const { toast } = useToast();
   const [framework, setFramework] = useState<Framework | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -1129,11 +1131,11 @@ export default function FrameworkDetailPage({
       } else {
         const error = await response.json();
         console.error("Import error:", error);
-        alert("Failed to import requirements. Please check the file format.");
+        toast({ title: "Error", description: "Failed to import requirements. Please check the file format.", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error importing requirements:", error);
-      alert("Failed to import requirements. Please try again.");
+      toast({ title: "Error", description: "Failed to import requirements. Please try again.", variant: "destructive" });
     } finally {
       setImporting(false);
     }

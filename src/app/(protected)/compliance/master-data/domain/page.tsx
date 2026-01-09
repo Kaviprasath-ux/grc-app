@@ -47,6 +47,7 @@ export default function DomainMasterDataPage() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteAllDialogOpen, setDeleteAllDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [selectedDomain, setSelectedDomain] = useState<ControlDomain | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -131,10 +132,11 @@ export default function DomainMasterDataPage() {
     }
   };
 
-  const handleDeleteAll = async () => {
-    if (!confirm("Are you sure you want to delete all domains? This action cannot be undone.")) {
-      return;
-    }
+  const handleDeleteAll = () => {
+    setDeleteAllDialogOpen(true);
+  };
+
+  const confirmDeleteAll = async () => {
     try {
       const response = await fetch("/api/control-domains/delete-all", {
         method: "DELETE",
@@ -145,6 +147,8 @@ export default function DomainMasterDataPage() {
       }
     } catch (error) {
       console.error("Error deleting all domains:", error);
+    } finally {
+      setDeleteAllDialogOpen(false);
     }
   };
 
@@ -451,6 +455,27 @@ export default function DomainMasterDataPage() {
               className="bg-red-600 hover:bg-red-700"
             >
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete All Confirmation */}
+      <AlertDialog open={deleteAllDialogOpen} onOpenChange={setDeleteAllDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete All Domains</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete all domains? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteAll}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete All
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -42,6 +42,7 @@ import {
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft, Plus, Pencil, Trash2, Download, Upload, Search } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface ControlDomain {
   id: string;
@@ -101,6 +102,7 @@ const functionalGroupings = [
 
 export default function ControlsMasterDataPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [controls, setControls] = useState<Control[]>([]);
   const [domains, setDomains] = useState<ControlDomain[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -467,7 +469,7 @@ export default function ControlsMasterDataPage() {
         }
       }
 
-      alert(`Import completed: ${successCount} controls imported, ${errorCount} errors`);
+      toast({ title: "Success", description: `Import completed: ${successCount} controls imported, ${errorCount} errors` });
       setImportDialogOpen(false);
       setImportFile(null);
       if (fileInputRef.current) {
@@ -476,7 +478,7 @@ export default function ControlsMasterDataPage() {
       fetchControls();
     } catch (error) {
       console.error("Error importing controls:", error);
-      alert("Failed to import controls. Please check the file format.");
+      toast({ title: "Error", description: "Failed to import controls. Please check the file format.", variant: "destructive" });
     } finally {
       setImporting(false);
     }
