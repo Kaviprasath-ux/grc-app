@@ -172,6 +172,14 @@ async function main() {
       roles: ["AuditHead"],
     },
     {
+      userName: "test.auditmanager",
+      email: "auditmanager@test.com",
+      firstName: "Test",
+      lastName: "AuditManager",
+      password: "test123",
+      roles: ["AuditManager"],
+    },
+    {
       userName: "test.auditor",
       email: "auditor@test.com",
       firstName: "Test",
@@ -348,6 +356,7 @@ async function main() {
   console.log("  - test.grcadmin (GRCAdministrator - full access)");
   console.log("  - test.customeradmin (CustomerAdministrator - org admin)");
   console.log("  - test.audithead (AuditHead - audit module admin)");
+  console.log("  - test.auditmanager (AuditManager - manage audits, assign auditors)");
   console.log("  - test.auditor (Auditor - conduct audits)");
   console.log("  - test.auditee (Auditee - respond to audits)");
   console.log("  - test.reviewer (Reviewer - view compliance/risk/asset, no admin)");

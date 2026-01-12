@@ -80,18 +80,21 @@ interface User {
 
 // RBAC roles mapped by function
 const rolesByFunction: Record<string, string[]> = {
-  Business: ["DepartmentReviewer", "DepartmentContributor"],
+  Business: ["DepartmentReviewer", "DepartmentContributor", "Contributor"],
   Security: ["Reviewer"],
-  Audit: ["AuditHead", "Auditor", "Auditee"],
+  Audit: ["AuditHead", "AuditManager", "Auditor", "Auditee", "AuditUser"],
 };
 
 // All assignable roles for filtering (excludes GRCAdministrator)
 const allUserRoles = [
   "CustomerAdministrator",
   "AuditHead",
+  "AuditManager",
+  "AuditUser",
   "Auditor",
   "Auditee",
   "Reviewer",
+  "Contributor",
   "DepartmentReviewer",
   "DepartmentContributor",
 ];
