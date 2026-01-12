@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -13,107 +14,349 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import {
   ArrowLeft,
-  Calendar,
-  ClipboardList,
-  Clock,
-  CheckCircle,
-  AlertTriangle,
+  Download,
+  FileText,
   Plus,
+  Pencil,
+  Trash2,
+  Search,
+  Loader2,
 } from "lucide-react";
+
+interface Department {
+  id: string;
+  name: string;
+}
+
+interface Engagement {
+  id: string;
+  auditId: string;
+  engagementTitle: string;
+  department: Department | null;
+  auditType: string | null;
+  status: string;
+  startDate: string | null;
+  endDate: string | null;
+  assignedAuditors: string[];
+}
 
 export default function AuditPlanningPage() {
   const router = useRouter();
   const { data: session } = useSession();
-  const [loading, setLoading] = useState(false);
+  const [engagements, setEngagements] = useState<Engagement[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Filters
+  const [searchFilter, setSearchFilter] = useState("");
+  const [departmentFilter, setDepartmentFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [yearFilter, setYearFilter] = useState("all");
+
+  // Delete dialog
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<Engagement | null>(null);
 
   const isAuditHead = session?.user?.roles?.includes("AuditHead");
 
-  // Placeholder data - will be replaced with API call
-  const stats = {
-    planned: 0,
-    inProgress: 0,
-    completed: 0,
-    overdue: 0,
+  // Generate year options
+  const currentYear = new Date().getFullYear();
+  const yearOptions = Array.from({ length: 6 }, (_, i) => currentYear - i + 1);
+
+  useEffect(() => {
+    fetchDepartments();
+    fetchEngagements();
+  }, []);
+
+  useEffect(() => {
+    fetchEngagements();
+  }, [departmentFilter, statusFilter, yearFilter, searchFilter]);
+
+  const fetchDepartments = async () => {
+    try {
+      const response = await fetch("/api/departments");
+      if (response.ok) {
+        const data = await response.json();
+        setDepartments(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch departments:", error);
+    }
   };
+
+  const fetchEngagements = async () => {
+    try {
+      const params = new URLSearchParams();
+      if (departmentFilter && departmentFilter !== "all") params.append("departmentId", departmentFilter);
+      if (statusFilter && statusFilter !== "all") params.append("status", statusFilter);
+      if (yearFilter && yearFilter !== "all") params.append("year", yearFilter);
+      if (searchFilter) params.append("search", searchFilter);
+
+      const response = await fetch(`/api/internal-audit/engagements?${params.toString()}`);
+      if (response.ok) {
+        const data = await response.json();
+        setEngagements(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch engagements:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openDeleteDialog = (item: Engagement) => {
+    setItemToDelete(item);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!itemToDelete) return;
+
+    try {
+      const response = await fetch(`/api/internal-audit/engagements/${itemToDelete.id}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        toast.success("Engagement deleted successfully");
+        fetchEngagements();
+      } else {
+        toast.error("Failed to delete engagement");
+      }
+    } catch (error) {
+      console.error("Failed to delete:", error);
+      toast.error("Failed to delete engagement");
+    } finally {
+      setDeleteDialogOpen(false);
+      setItemToDelete(null);
+    }
+  };
+
+  const handleExport = async () => {
+    try {
+      // Create CSV content
+      const headers = ["Audit ID", "Engagement Title", "Department", "Audit Type", "Assigned Auditors", "Status"];
+      const rows = engagements.map(e => [
+        e.auditId,
+        e.engagementTitle,
+        e.department?.name || "",
+        e.auditType || "",
+        e.assignedAuditors.join("; "),
+        e.status
+      ]);
+
+      const csvContent = [
+        headers.join(","),
+        ...rows.map(row => row.map(cell => `"${cell}"`).join(","))
+      ].join("\n");
+
+      const blob = new Blob([csvContent], { type: "text/csv" });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `audit-plan-${new Date().toISOString().split("T")[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast.success("Export completed");
+    } catch (error) {
+      toast.error("Failed to export");
+    }
+  };
+
+  const handleGenerateReport = () => {
+    toast.info("Annual plan report generation coming soon");
+  };
+
+  if (loading) {
+    return (
+      <div className="p-6">
+        <h1 className="text-2xl font-bold text-blue-900 mb-6">Annual Audit Plan</h1>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Audit Planning</h1>
-          <p className="text-gray-500 mt-1">
-            Plan and schedule audit engagements
-          </p>
-        </div>
-        {isAuditHead && (
-          <Button className="bg-[#1e3a5f] hover:bg-[#1e3a5f]/90">
-            <Plus className="h-4 w-4 mr-1" />
-            New Engagement
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="sm" onClick={() => router.back()}>
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Back
           </Button>
-        )}
+          <h1 className="text-2xl font-bold text-blue-900">Annual Audit Plan</h1>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={handleExport}>
+            <Download className="h-4 w-4 mr-2" />
+            Export
+          </Button>
+          <Button variant="default" className="bg-blue-600 hover:bg-blue-700" onClick={handleGenerateReport}>
+            <FileText className="h-4 w-4 mr-2" />
+            Generate Annual Plan Report
+          </Button>
+          {isAuditHead && (
+            <Button className="bg-blue-600 hover:bg-blue-700">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Engagement
+            </Button>
+          )}
+        </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="cursor-pointer hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">Planned</CardTitle>
-            <Calendar className="h-5 w-5 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.planned}</div>
-          </CardContent>
-        </Card>
-        <Card className="cursor-pointer hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">In Progress</CardTitle>
-            <Clock className="h-5 w-5 text-yellow-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.inProgress}</div>
-          </CardContent>
-        </Card>
-        <Card className="cursor-pointer hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">Completed</CardTitle>
-            <CheckCircle className="h-5 w-5 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.completed}</div>
-          </CardContent>
-        </Card>
-        <Card className="cursor-pointer hover:shadow-md transition-shadow border-red-200">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">Overdue</CardTitle>
-            <AlertTriangle className="h-5 w-5 text-red-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">{stats.overdue}</div>
-          </CardContent>
-        </Card>
+      {/* Filters */}
+      <div className="flex items-center gap-4">
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search By Audit ID, Name"
+            value={searchFilter}
+            onChange={(e) => setSearchFilter(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Department" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Departments</SelectItem>
+            {departments.map((dept) => (
+              <SelectItem key={dept.id} value={dept.id}>
+                {dept.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[150px]">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="Planned">Planned</SelectItem>
+            <SelectItem value="In Progress">In Progress</SelectItem>
+            <SelectItem value="Completed">Completed</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={yearFilter} onValueChange={setYearFilter}>
+          <SelectTrigger className="w-[120px]">
+            <SelectValue placeholder="Year" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Years</SelectItem>
+            {yearOptions.map((year) => (
+              <SelectItem key={year} value={year.toString()}>
+                {year}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Table */}
       <Card>
-        {loading ? (
-          <div className="p-8 text-center text-gray-500">Loading...</div>
-        ) : (
-          <div className="p-8 text-center text-gray-500">
-            <ClipboardList className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-            <p>No audit engagements planned yet</p>
-            {isAuditHead && (
-              <p className="text-sm mt-2">
-                Click "New Engagement" to create an audit plan
-              </p>
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-blue-900 hover:bg-blue-900">
+              <TableHead className="text-white">Audit ID</TableHead>
+              <TableHead className="text-white">Engagement Name</TableHead>
+              <TableHead className="text-white">Department</TableHead>
+              <TableHead className="text-white">Audit Type</TableHead>
+              <TableHead className="text-white">Assigned Auditors</TableHead>
+              <TableHead className="text-white">Status</TableHead>
+              <TableHead className="text-white">Action</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {engagements.length > 0 ? (
+              engagements.map((engagement) => (
+                <TableRow key={engagement.id}>
+                  <TableCell className="font-medium">{engagement.auditId}</TableCell>
+                  <TableCell>{engagement.engagementTitle}</TableCell>
+                  <TableCell>{engagement.department?.name || "-"}</TableCell>
+                  <TableCell>{engagement.auditType || "-"}</TableCell>
+                  <TableCell>
+                    {engagement.assignedAuditors.length > 0
+                      ? engagement.assignedAuditors.join(", ")
+                      : "No items found"}
+                  </TableCell>
+                  <TableCell>{engagement.status}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {}}
+                        title="Edit"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => openDeleteDialog(engagement)}
+                        title="Delete"
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                  No audit engagements found
+                </TableCell>
+              </TableRow>
             )}
-          </div>
-        )}
+          </TableBody>
+        </Table>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmation</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this engagement?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={handleDelete}>OK</AlertDialogAction>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
