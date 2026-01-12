@@ -13,6 +13,7 @@ export const GET = withAuth(
       const search = url.searchParams.get('search');
 
       const whereClause: Record<string, unknown> = {};
+      const andConditions: Record<string, unknown>[] = [];
 
       if (departmentId && departmentId !== 'all') {
         whereClause.departmentId = departmentId;
@@ -24,17 +25,25 @@ export const GET = withAuth(
 
       if (year && year !== 'all') {
         const yearNum = parseInt(year);
-        whereClause.OR = [
-          { startDate: { gte: new Date(`${yearNum}-01-01`), lte: new Date(`${yearNum}-12-31`) } },
-          { endDate: { gte: new Date(`${yearNum}-01-01`), lte: new Date(`${yearNum}-12-31`) } }
-        ];
+        andConditions.push({
+          OR: [
+            { startDate: { gte: new Date(`${yearNum}-01-01`), lte: new Date(`${yearNum}-12-31`) } },
+            { endDate: { gte: new Date(`${yearNum}-01-01`), lte: new Date(`${yearNum}-12-31`) } }
+          ]
+        });
       }
 
       if (search) {
-        whereClause.OR = [
-          { auditId: { contains: search } },
-          { engagementTitle: { contains: search } }
-        ];
+        andConditions.push({
+          OR: [
+            { auditId: { contains: search, mode: 'insensitive' } },
+            { engagementTitle: { contains: search, mode: 'insensitive' } }
+          ]
+        });
+      }
+
+      if (andConditions.length > 0) {
+        whereClause.AND = andConditions;
       }
 
       const engagements = await prisma.auditEngagement.findMany({
@@ -89,12 +98,20 @@ export const POST = withAuth(
 
       const {
         engagementTitle,
+        engagementObjective,
+        engagementScope,
         departmentId,
+        linkedRiskIds,
+        auditRating,
         auditType,
+        auditorId,
+        auditeeId,
         startDate,
-        endDate,
+        targetDate,
+        initialObservation,
+        relatedPolicies,
+        tasks,
         plannedHours,
-        description
       } = body;
 
       // Generate audit ID
@@ -105,10 +122,17 @@ export const POST = withAuth(
         data: {
           auditId,
           engagementTitle,
-          departmentId,
+          engagementObjective: engagementObjective || null,
+          engagementScope: engagementScope || null,
+          departmentId: departmentId || null,
+          auditRating: auditRating || null,
           auditType: auditType || 'Internal Audit',
+          assignedAuditorId: auditorId || null,
+          auditeeId: auditeeId || null,
           startDate: startDate ? new Date(startDate) : null,
-          endDate: endDate ? new Date(endDate) : null,
+          endDate: targetDate ? new Date(targetDate) : null,
+          initialObservation: initialObservation || null,
+          relatedPolicies: relatedPolicies || null,
           plannedHours: plannedHours || 0,
           actualHours: 0,
           status: 'Planned'
@@ -119,6 +143,16 @@ export const POST = withAuth(
           }
         }
       });
+
+      // Link risks to engagement if provided
+      if (linkedRiskIds && linkedRiskIds.length > 0) {
+        for (const riskId of linkedRiskIds) {
+          await prisma.internalAuditRisk.update({
+            where: { id: riskId },
+            data: { engagementId: engagement.id }
+          });
+        }
+      }
 
       return NextResponse.json(engagement, { status: 201 });
     } catch (error) {

@@ -71,6 +71,7 @@ export default function AddRiskPage() {
 
   // Form data
   const [formData, setFormData] = useState({
+    riskId: "",
     riskName: "",
     riskDescription: "",
     departmentId: "",
@@ -235,6 +236,7 @@ export default function AddRiskPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
+          riskId: formData.riskId || null,
           inherentLikelihood: formData.inherentLikelihood ? parseInt(formData.inherentLikelihood) : null,
           inherentImpact: formData.inherentImpact ? parseInt(formData.inherentImpact) : null,
           inherentScore: inherentScore || null,
@@ -314,6 +316,16 @@ export default function AddRiskPage() {
           <div className="space-y-4">
             <h3 className="text-lg font-medium border-b pb-2">Basic Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="riskId">Risk ID</Label>
+                <Input
+                  id="riskId"
+                  value={formData.riskId}
+                  onChange={(e) => setFormData({ ...formData, riskId: e.target.value })}
+                  placeholder="Enter risk ID (e.g., RISK-001)"
+                  className="mt-2"
+                />
+              </div>
               <div>
                 <Label htmlFor="riskName">Risk Name *</Label>
                 <Input
@@ -409,16 +421,6 @@ export default function AddRiskPage() {
                   className="mt-2"
                 />
               </div>
-              <div>
-                <Label htmlFor="creationDate">Creation Date</Label>
-                <Input
-                  id="creationDate"
-                  type="date"
-                  value={formData.creationDate}
-                  onChange={(e) => setFormData({ ...formData, creationDate: e.target.value })}
-                  className="mt-2"
-                />
-              </div>
             </div>
             <div>
               <Label htmlFor="riskDescription">Risk Description</Label>
@@ -436,7 +438,7 @@ export default function AddRiskPage() {
           {/* Inherent Risk Assessment */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium border-b pb-2">Inherent Risk Assessment</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="inherentLikelihood">Likelihood</Label>
                 <Select
@@ -472,14 +474,6 @@ export default function AddRiskPage() {
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-              <div>
-                <Label>Inherent Score</Label>
-                <Input
-                  value={calculateInherentScore() || "-"}
-                  disabled
-                  className="mt-2 bg-muted"
-                />
               </div>
             </div>
           </div>
@@ -521,7 +515,7 @@ export default function AddRiskPage() {
           {/* Residual Risk Assessment */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium border-b pb-2">Residual Risk Assessment</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="residualLikelihood">Likelihood</Label>
                 <Select
@@ -558,14 +552,6 @@ export default function AddRiskPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <Label>Residual Score</Label>
-                <Input
-                  value={calculateResidualScore() || "-"}
-                  disabled
-                  className="mt-2 bg-muted"
-                />
-              </div>
             </div>
           </div>
 
@@ -573,6 +559,16 @@ export default function AddRiskPage() {
           <div className="space-y-4">
             <h3 className="text-lg font-medium border-b pb-2">Additional Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="creationDate">Creation Date</Label>
+                <Input
+                  id="creationDate"
+                  type="date"
+                  value={formData.creationDate}
+                  onChange={(e) => setFormData({ ...formData, creationDate: e.target.value })}
+                  className="mt-2"
+                />
+              </div>
               <div>
                 <Label htmlFor="status">Status</Label>
                 <Select
@@ -589,7 +585,7 @@ export default function AddRiskPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div>
+              <div className="md:col-span-2">
                 <Label htmlFor="auditComment">Audit Comment</Label>
                 <Textarea
                   id="auditComment"

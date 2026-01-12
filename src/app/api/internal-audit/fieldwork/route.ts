@@ -82,3 +82,102 @@ export const GET = withAuth(
   },
   { resource: 'audit.fieldwork', action: 'view' }
 );
+
+// POST /api/internal-audit/fieldwork - Create a new evidence request
+export const POST = withAuth(
+  async (req: NextRequest) => {
+    try {
+      const body = await req.json();
+
+      const {
+        engagementId,
+        title,
+        description,
+        sampleSize,
+        dueDate,
+        auditeeId,
+        auditeeName,
+        status,
+        priority,
+        requestType,
+        controlReference,
+        testingProcedure,
+        expectedEvidence,
+        auditorNotes,
+      } = body;
+
+      // Validate required fields
+      if (!engagementId) {
+        return NextResponse.json(
+          { error: 'Engagement is required' },
+          { status: 400 }
+        );
+      }
+
+      if (!title || !title.trim()) {
+        return NextResponse.json(
+          { error: 'Evidence title is required' },
+          { status: 400 }
+        );
+      }
+
+      // Verify engagement exists
+      const engagement = await prisma.auditEngagement.findUnique({
+        where: { id: engagementId },
+      });
+
+      if (!engagement) {
+        return NextResponse.json(
+          { error: 'Engagement not found' },
+          { status: 404 }
+        );
+      }
+
+      // Create evidence request
+      const evidenceRequest = await prisma.fieldworkEvidenceRequest.create({
+        data: {
+          engagementId,
+          title: title.trim(),
+          description: description || null,
+          sampleSize: sampleSize || null,
+          dueDate: dueDate ? new Date(dueDate) : null,
+          auditeeId: auditeeId || null,
+          auditeeName: auditeeName || null,
+          status: status || 'Pending',
+        },
+        include: {
+          engagement: {
+            select: {
+              id: true,
+              auditId: true,
+              engagementTitle: true,
+              department: {
+                select: {
+                  id: true,
+                  name: true,
+                }
+              },
+              assignedAuditor: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                }
+              }
+            }
+          },
+          attachments: true,
+        },
+      });
+
+      return NextResponse.json(evidenceRequest, { status: 201 });
+    } catch (error) {
+      console.error('Error creating evidence request:', error);
+      return NextResponse.json(
+        { error: 'Failed to create evidence request' },
+        { status: 500 }
+      );
+    }
+  },
+  { resource: 'audit.fieldwork', action: 'create' }
+);

@@ -46,6 +46,7 @@ import {
   CheckCircle,
   Clock,
   AlertCircle,
+  Plus,
 } from "lucide-react";
 
 interface Attachment {
@@ -236,6 +237,15 @@ export default function FieldworkPage() {
               : "Manage evidence requests for audits"}
           </p>
         </div>
+        {!isAuditee && (
+          <Button
+            className="bg-blue-600 hover:bg-blue-700"
+            onClick={() => router.push("/internal-audit/fieldwork/add")}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Evidence Request
+          </Button>
+        )}
       </div>
 
       {/* Stats Cards */}

@@ -31,6 +31,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -76,6 +83,19 @@ export default function AuditPlanningPage() {
   // Delete dialog
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<Engagement | null>(null);
+
+  // Add/Edit engagement dialog
+  const [engagementDialogOpen, setEngagementDialogOpen] = useState(false);
+  const [editingEngagement, setEditingEngagement] = useState<Engagement | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [formData, setFormData] = useState({
+    engagementTitle: "",
+    departmentId: "",
+    auditType: "",
+    startDate: "",
+    endDate: "",
+    plannedHours: "",
+  });
 
   const isAuditHead = session?.user?.roles?.includes("AuditHead");
 
@@ -190,6 +210,71 @@ export default function AuditPlanningPage() {
     toast.info("Annual plan report generation coming soon");
   };
 
+  const openAddDialog = () => {
+    setEditingEngagement(null);
+    setFormData({
+      engagementTitle: "",
+      departmentId: "",
+      auditType: "",
+      startDate: "",
+      endDate: "",
+      plannedHours: "",
+    });
+    setEngagementDialogOpen(true);
+  };
+
+  const openEditDialog = (engagement: Engagement) => {
+    setEditingEngagement(engagement);
+    setFormData({
+      engagementTitle: engagement.engagementTitle,
+      departmentId: engagement.department?.id || "",
+      auditType: engagement.auditType || "",
+      startDate: engagement.startDate ? engagement.startDate.split("T")[0] : "",
+      endDate: engagement.endDate ? engagement.endDate.split("T")[0] : "",
+      plannedHours: "",
+    });
+    setEngagementDialogOpen(true);
+  };
+
+  const handleSaveEngagement = async () => {
+    if (!formData.engagementTitle.trim()) {
+      toast.error("Engagement title is required");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const url = editingEngagement
+        ? `/api/internal-audit/engagements/${editingEngagement.id}`
+        : "/api/internal-audit/engagements";
+
+      const method = editingEngagement ? "PUT" : "POST";
+
+      const response = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...formData,
+          departmentId: formData.departmentId || null,
+          plannedHours: formData.plannedHours ? parseInt(formData.plannedHours) : 0,
+        }),
+      });
+
+      if (response.ok) {
+        toast.success(editingEngagement ? "Engagement updated successfully" : "Engagement created successfully");
+        setEngagementDialogOpen(false);
+        fetchEngagements();
+      } else {
+        toast.error("Failed to save engagement");
+      }
+    } catch (error) {
+      console.error("Failed to save:", error);
+      toast.error("Failed to save engagement");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-6">
@@ -222,7 +307,7 @@ export default function AuditPlanningPage() {
             Generate Annual Plan Report
           </Button>
           {isAuditHead && (
-            <Button className="bg-blue-600 hover:bg-blue-700">
+            <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => router.push("/internal-audit/audit-planning/add")}>
               <Plus className="h-4 w-4 mr-2" />
               Add Engagement
             </Button>
@@ -313,7 +398,7 @@ export default function AuditPlanningPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => {}}
+                        onClick={() => openEditDialog(engagement)}
                         title="Edit"
                       >
                         <Pencil className="h-4 w-4" />
@@ -357,6 +442,110 @@ export default function AuditPlanningPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Add/Edit Engagement Dialog */}
+      <Dialog open={engagementDialogOpen} onOpenChange={setEngagementDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="text-blue-900">
+              {editingEngagement ? "Edit Engagement" : "Add Engagement"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="engagementTitle">Engagement Title *</Label>
+              <Input
+                id="engagementTitle"
+                value={formData.engagementTitle}
+                onChange={(e) => setFormData({ ...formData, engagementTitle: e.target.value })}
+                placeholder="Enter engagement title"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="departmentId">Department</Label>
+              <Select
+                value={formData.departmentId}
+                onValueChange={(value) => setFormData({ ...formData, departmentId: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select department" />
+                </SelectTrigger>
+                <SelectContent>
+                  {departments.map((dept) => (
+                    <SelectItem key={dept.id} value={dept.id}>
+                      {dept.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="auditType">Audit Type</Label>
+              <Select
+                value={formData.auditType}
+                onValueChange={(value) => setFormData({ ...formData, auditType: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select audit type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Internal Audit">Internal Audit</SelectItem>
+                  <SelectItem value="Compliance Audit">Compliance Audit</SelectItem>
+                  <SelectItem value="Financial Audit">Financial Audit</SelectItem>
+                  <SelectItem value="Operational Audit">Operational Audit</SelectItem>
+                  <SelectItem value="IT Audit">IT Audit</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="startDate">Start Date</Label>
+                <Input
+                  id="startDate"
+                  type="date"
+                  value={formData.startDate}
+                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="endDate">End Date</Label>
+                <Input
+                  id="endDate"
+                  type="date"
+                  value={formData.endDate}
+                  onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="plannedHours">Planned Hours</Label>
+              <Input
+                id="plannedHours"
+                type="number"
+                value={formData.plannedHours}
+                onChange={(e) => setFormData({ ...formData, plannedHours: e.target.value })}
+                placeholder="Enter planned hours"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setEngagementDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSaveEngagement}
+                disabled={saving}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {saving ? "Saving..." : "Save"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -28,11 +28,14 @@ export async function POST(request: NextRequest) {
     const header = parseCSVLine(lines[0]);
     const expectedHeaders = [
       "Risk ID",
-      "Risk Name",
+      "Year",
       "Risk Description",
       "Department",
       "Category",
-      "Audit Type",
+      "Inherent Score",
+      "Residual Score",
+      "Risk Level",
+      "Status",
     ];
 
     // Validate required headers exist
@@ -44,11 +47,9 @@ export async function POST(request: NextRequest) {
     // Get departments and categories for lookup
     const departments = await prisma.department.findMany();
     const categories = await prisma.auditCategory.findMany();
-    const auditTypes = await prisma.auditType.findMany();
 
     const departmentMap = new Map(departments.map((d) => [d.name.toLowerCase(), d.id]));
     const categoryMap = new Map(categories.map((c) => [c.name.toLowerCase(), c.id]));
-    const auditTypeMap = new Map(auditTypes.map((a) => [a.name.toLowerCase(), a.id]));
 
     // Get the last risk ID to continue numbering
     const lastRisk = await prisma.internalAuditRisk.findFirst({
@@ -76,15 +77,14 @@ export async function POST(request: NextRequest) {
           return index !== undefined ? values[index]?.trim() || null : null;
         };
 
-        const riskName = getValue("Risk Name");
-        if (!riskName) {
-          errors.push(`Row ${i + 1}: Risk Name is required`);
+        const riskDescription = getValue("Risk Description");
+        if (!riskDescription) {
+          errors.push(`Row ${i + 1}: Risk Description is required`);
           continue;
         }
 
         const departmentName = getValue("Department");
         const categoryName = getValue("Category");
-        const auditTypeName = getValue("Audit Type");
 
         const departmentId = departmentName
           ? departmentMap.get(departmentName.toLowerCase()) || null
@@ -92,60 +92,53 @@ export async function POST(request: NextRequest) {
         const categoryId = categoryName
           ? categoryMap.get(categoryName.toLowerCase()) || null
           : null;
-        const auditTypeId = auditTypeName
-          ? auditTypeMap.get(auditTypeName.toLowerCase()) || null
-          : null;
 
-        const inherentLikelihood = parseInt(getValue("Inherent Likelihood") || "") || null;
-        const inherentImpact = parseInt(getValue("Inherent Impact") || "") || null;
-        const residualLikelihood = parseInt(getValue("Residual Likelihood") || "") || null;
-        const residualImpact = parseInt(getValue("Residual Impact") || "") || null;
+        const inherentScore = parseInt(getValue("Inherent Score") || "") || null;
+        const residualScore = parseInt(getValue("Residual Score") || "") || null;
 
-        const inherentScore = inherentLikelihood && inherentImpact
-          ? inherentLikelihood * inherentImpact
-          : parseInt(getValue("Inherent Score") || "") || null;
-
-        const residualScore = residualLikelihood && residualImpact
-          ? residualLikelihood * residualImpact
-          : parseInt(getValue("Residual Score") || "") || null;
-
-        // Determine risk level based on residual score
+        // Determine risk level based on residual score or use provided value
         let riskLevel = getValue("Risk Level") || "Low";
         if (residualScore && !getValue("Risk Level")) {
-          if (residualScore >= 250) riskLevel = "Extreme";
-          else if (residualScore >= 100) riskLevel = "High";
-          else if (residualScore >= 50) riskLevel = "Medium";
+          if (residualScore >= 20) riskLevel = "Extreme";
+          else if (residualScore >= 15) riskLevel = "High";
+          else if (residualScore >= 10) riskLevel = "Medium";
           else riskLevel = "Low";
         }
 
-        const riskId = `RID${String(nextNumber).padStart(3, "0")}`;
-        nextNumber++;
+        // Use provided Risk ID or generate one
+        let riskId = getValue("Risk ID");
+        if (!riskId) {
+          riskId = `RID${String(nextNumber).padStart(3, "0")}`;
+          nextNumber++;
+        } else {
+          // If risk ID is provided, update nextNumber if needed
+          const match = riskId.match(/RID(\d+)/i);
+          if (match) {
+            const num = parseInt(match[1]);
+            if (num >= nextNumber) {
+              nextNumber = num + 1;
+            }
+          }
+        }
+
+        // Convert Year to creation date (Jan 1 of that year)
+        const year = getValue("Year");
+        const creationDate = year
+          ? new Date(`${year}-01-01`)
+          : new Date();
 
         await prisma.internalAuditRisk.create({
           data: {
             riskId,
-            riskName,
-            riskDescription: getValue("Risk Description"),
+            riskName: riskDescription,
+            riskDescription,
             departmentId,
             categoryId,
-            auditTypeId,
-            sectionProcess: getValue("Section/Process"),
-            subProcess: getValue("Sub Process"),
-            activity: getValue("Activity"),
-            inherentLikelihood,
-            inherentImpact,
             inherentScore,
-            controlDescription: getValue("Control Description"),
-            controlEffectiveness: getValue("Control Effectiveness"),
-            residualLikelihood,
-            residualImpact,
             residualScore,
             riskLevel,
             status: getValue("Status") || "Open",
-            creationDate: getValue("Creation Date")
-              ? new Date(getValue("Creation Date")!)
-              : new Date(),
-            auditComment: getValue("Audit Comment"),
+            creationDate,
           },
         });
 
