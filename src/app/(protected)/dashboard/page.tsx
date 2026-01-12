@@ -48,7 +48,7 @@ export default function DashboardPage() {
         <StatsCard
           label="Departments"
           value={dashboardStats.departments}
-          href="/organization/profile"
+          href="/organization/profile?tab=departments"
         />
         <StatsCard
           label="Stakeholders"
@@ -58,7 +58,7 @@ export default function DashboardPage() {
         <StatsCard
           label="Regulations"
           value={dashboardStats.regulations}
-          href="/organization/profile"
+          href="/organization/profile?tab=regulations"
         />
         <StatsCard
           label="Issues"

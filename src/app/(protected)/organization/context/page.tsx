@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Plus, Pencil, Trash2, Download, Upload, Search, ChevronRight } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Plus, Pencil, Trash2, Download, Upload, Search, ChevronRight, ArrowLeft } from "lucide-react";
 import { PageHeader, DataGrid } from "@/components/shared";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -94,6 +95,7 @@ const ISSUE_STEPS = [
 ];
 
 export default function ContextPage() {
+  const router = useRouter();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("stakeholder");
   const [stakeholders, setStakeholders] = useState<Stakeholder[]>([]);
@@ -2269,7 +2271,14 @@ export default function ContextPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Context" />
+      <PageHeader
+        title="Context"
+        backAction={{
+          label: "",
+          icon: ArrowLeft,
+          onClick: () => router.back(),
+        }}
+      />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Pencil, Trash2, Upload, X } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Plus, Pencil, Trash2, Upload, X, ArrowLeft } from "lucide-react";
 import { PageHeader, DataGrid } from "@/components/shared";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -110,7 +111,10 @@ interface Regulation {
 }
 
 export default function ProfilePage() {
-  const [activeTab, setActiveTab] = useState("overview");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get("tab") || "overview";
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [services, setServices] = useState<Service[]>([]);
@@ -578,7 +582,14 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Profile" />
+      <PageHeader
+        title="Profile"
+        backAction={{
+          label: "",
+          icon: ArrowLeft,
+          onClick: () => router.back(),
+        }}
+      />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-5">

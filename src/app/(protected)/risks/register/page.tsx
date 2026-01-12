@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { ColumnDef } from "@tanstack/react-table";
 import { DataGrid } from "@/components/shared";
 import { RiskRatingBadge } from "@/components/risks/risk-rating-badge";
@@ -26,6 +26,7 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  ArrowLeft,
 } from "lucide-react";
 import { NewRiskWizard } from "@/components/risks/new-risk-wizard";
 import { RiskDetailDialog } from "@/components/risks/risk-detail-dialog";
@@ -106,6 +107,7 @@ interface Stats {
 
 function RiskRegisterContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const initialStatus = searchParams.get("status") || "";
   const initialRating = searchParams.get("riskRating") || "";
 
@@ -391,11 +393,21 @@ function RiskRegisterContent() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <div className="text-sm text-muted-foreground mb-1">
-            Risk Management
+        <div className="flex items-center gap-4">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => router.back()}
+            className="h-9 w-9"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div>
+            <div className="text-sm text-muted-foreground mb-1">
+              Risk Management
+            </div>
+            <h1 className="text-2xl font-semibold text-grc-text">Risk Register</h1>
           </div>
-          <h1 className="text-2xl font-semibold text-grc-text">Risk Register</h1>
         </div>
       </div>
 
