@@ -33,6 +33,7 @@ export default function RiskIdentificationPage() {
   const [selectedDepartment, setSelectedDepartment] = useState<string>("");
   const [auditFocus, setAuditFocus] = useState<string>("");
   const [loading, setLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
   const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
 
   useEffect(() => {
@@ -53,6 +54,8 @@ export default function RiskIdentificationPage() {
       }
     } catch (error) {
       console.error("Failed to fetch departments:", error);
+    } finally {
+      setPageLoading(false);
     }
   };
 
@@ -97,6 +100,17 @@ export default function RiskIdentificationPage() {
       hour12: true
     });
   };
+
+  if (pageLoading) {
+    return (
+      <div className="p-6">
+        <h1 className="text-2xl font-bold text-blue-900 mb-6">Risk Identification</h1>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
