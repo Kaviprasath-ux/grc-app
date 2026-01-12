@@ -226,15 +226,9 @@ export default function RiskRegisterPage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => router.back()}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-          <div>
-            <p className="text-sm text-muted-foreground">Internal Audit</p>
-            <h1 className="text-2xl font-semibold">Risk Register</h1>
-          </div>
+        <div>
+          <p className="text-sm text-muted-foreground">Internal Audit</p>
+          <h1 className="text-2xl font-semibold">Risk Register</h1>
         </div>
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -247,15 +241,9 @@ export default function RiskRegisterPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => router.back()}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-          <div>
-            <p className="text-sm text-muted-foreground">Internal Audit</p>
-            <h1 className="text-2xl font-semibold">Risk Register</h1>
-          </div>
+        <div>
+          <p className="text-sm text-muted-foreground">Internal Audit</p>
+          <h1 className="text-2xl font-semibold">Risk Register</h1>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={handleExport}>

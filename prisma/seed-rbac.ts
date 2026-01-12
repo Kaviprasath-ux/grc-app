@@ -101,8 +101,8 @@ async function main() {
     "sarah.smith": ["AuditHead"],
     // mike.wilson - risk analyst
     "mike.wilson": ["Contributor", "Reviewer"],
-    // emily.brown - HR Manager (department level access)
-    "emily.brown": ["DepartmentContributor", "Auditee"],
+    // Gauri - HR Manager (department level access)
+    "Gauri": ["DepartmentContributor", "Auditee"],
     // david.jones - IT Support
     "david.jones": ["DepartmentContributor", "Auditee"],
     // lisa.taylor - Product Manager

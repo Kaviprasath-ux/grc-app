@@ -144,10 +144,12 @@ export const navigation: NavItem[] = [
   // ==================== End Risk Management Section ====================
 
   // ==================== Internal Audit Section ====================
+  // Note: Parent permission uses audit.fieldwork:view to allow Auditees to see the menu
+  // Auditees only have access to: Fieldwork, Report, CAPA Tracking
   {
     name: "Internal Audit",
     icon: ClipboardCheck,
-    permission: "audit.dashboard:view",
+    permission: "audit.fieldwork:view",
     children: [
       { name: "Dashboard", href: "/internal-audit/dashboard", icon: LayoutDashboard, permission: "audit.dashboard:view" },
       { name: "Audit Universe", href: "/internal-audit/audit-universe", icon: Network, permission: "audit.auditables:view" },

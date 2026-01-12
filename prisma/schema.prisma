@@ -1544,6 +1544,9 @@ model AuditReport {
   reviewedAt          DateTime?
   publishedAt         DateTime?
   reviewedBy          String?
+  // Auditee assignment (assigned by Audit Head)
+  auditeeId           String?
+  auditeeName         String?
   // Attachment
   reportFilePath      String?
   reportFileName      String?
