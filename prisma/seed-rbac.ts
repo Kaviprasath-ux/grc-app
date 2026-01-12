@@ -321,6 +321,7 @@ async function main() {
       } else {
         superadminUser = await prisma.user.create({
           data: {
+            userId: 'SUPERADMIN-001',
             userName: SUPERADMIN_CONFIG.userName,
             password: SUPERADMIN_CONFIG.password,
             email: SUPERADMIN_CONFIG.email,

@@ -174,7 +174,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'audit.*', actions: ['*'], scope: 'all' },
   ],
 
-  // Audit Manager - Manage audits, limited settings access
+  // Audit Manager - Manage audits (NO Settings access per UAT)
   AuditManager: [
     { resource: 'audit.dashboard', actions: ['view'], scope: 'all' },
     { resource: 'audit.auditables', actions: ['view', 'create', 'edit'], scope: 'all' },
@@ -185,14 +185,12 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'audit.reports', actions: ['*'], scope: 'all' },
     { resource: 'audit.capa', actions: ['*'], scope: 'all' },
     { resource: 'audit.documents', actions: ['view', 'create', 'edit'], scope: 'all' },
-    { resource: 'audit.risk-universe', actions: ['view'], scope: 'all' },
-    { resource: 'audit.settings', actions: ['view'], scope: 'all' },
     { resource: 'organization.dashboard', actions: ['view'], scope: 'all' },
     { resource: 'organization.process', actions: ['view'], scope: 'all' },
     { resource: 'organization.users', actions: ['view'], scope: 'all' },
   ],
 
-  // Audit User - Basic audit access (view-only)
+  // Audit User - Basic audit access (view-only, NO Settings/Risk Universe per UAT)
   AuditUser: [
     { resource: 'audit.dashboard', actions: ['view'], scope: 'all' },
     { resource: 'audit.auditables', actions: ['view'], scope: 'all' },
@@ -203,11 +201,10 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'audit.reports', actions: ['view'], scope: 'all' },
     { resource: 'audit.capa', actions: ['view'], scope: 'all' },
     { resource: 'audit.documents', actions: ['view'], scope: 'all' },
-    { resource: 'audit.risk-universe', actions: ['view'], scope: 'all' },
     { resource: 'organization.dashboard', actions: ['view'], scope: 'all' },
   ],
 
-  // Auditor - Conducts audits
+  // Auditor - Conducts audits (NO Settings/Risk Universe per UAT)
   Auditor: [
     { resource: 'audit.dashboard', actions: ['view'], scope: 'all' },
     { resource: 'audit.auditables', actions: ['view'], scope: 'all' },
@@ -218,7 +215,6 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'audit.reports', actions: ['view', 'create'], scope: 'all' },
     { resource: 'audit.capa', actions: ['view', 'edit'], scope: 'all' },
     { resource: 'audit.documents', actions: ['view', 'create'], scope: 'all' },
-    { resource: 'audit.risk-universe', actions: ['view'], scope: 'all' },
     { resource: 'organization.dashboard', actions: ['view'], scope: 'all' },
     { resource: 'organization.process', actions: ['view'], scope: 'all' },
     { resource: 'compliance.controls', actions: ['view'], scope: 'all' },
