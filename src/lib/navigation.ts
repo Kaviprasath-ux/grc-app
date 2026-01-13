@@ -291,7 +291,7 @@ const ROLE_SPECIFIC_PATHS: Record<string, string[]> = {
   "/organization/users": ["CustomerAdministrator", "DepartmentReviewer", "DepartmentContributor"],
   "/organization/process": ["CustomerAdministrator", "Auditor", "Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
   // Compliance module shared pages
-  "/compliance/framework": ["GRCAdministrator", "Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
+  "/compliance/framework": ["GRCAdministrator", "CustomerAdministrator", "Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
   "/compliance/control": ["GRCAdministrator", "Auditor", "Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
   "/compliance/governance": ["GRCAdministrator", "Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
   "/compliance/evidence": ["GRCAdministrator", "Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
