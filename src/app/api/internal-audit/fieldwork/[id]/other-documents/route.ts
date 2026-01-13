@@ -24,9 +24,41 @@ export const GET = withAuth(
         );
       }
 
-      // For now, return empty array
-      // In production, this would fetch from a dedicated documents table
-      return NextResponse.json([]);
+      // Get attachments from fieldwork evidence requests with category 'other'
+      const attachments = await prisma.fieldworkEvidenceAttachment.findMany({
+        where: {
+          evidenceRequest: {
+            engagementId: engagementId,
+            category: 'other',
+          },
+        },
+        include: {
+          evidenceRequest: {
+            select: {
+              title: true,
+              documentType: true,
+              description: true,
+            },
+          },
+        },
+        orderBy: { uploadedAt: 'desc' },
+      });
+
+      // Transform to document format
+      const documents = attachments.map(att => ({
+        id: att.id,
+        fileName: att.fileName,
+        fileType: att.fileType,
+        fileSize: att.fileSize,
+        filePath: att.filePath,
+        uploadedAt: att.uploadedAt.toISOString(),
+        category: 'other',
+        title: att.evidenceRequest.title,
+        documentType: att.evidenceRequest.documentType,
+        description: att.evidenceRequest.description,
+      }));
+
+      return NextResponse.json(documents);
     } catch (error) {
       console.error('Error fetching other documents:', error);
       return NextResponse.json(

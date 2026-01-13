@@ -30,6 +30,9 @@ export const POST = withAuth(
       const formData = await req.formData();
       const files = formData.getAll('files');
       const category = formData.get('category') as string || 'workpapers';
+      const documentTitle = formData.get('title') as string || '';
+      const documentType = formData.get('documentType') as string || '';
+      const documentDescription = formData.get('description') as string || '';
 
       if (!files || files.length === 0) {
         return NextResponse.json(
@@ -61,11 +64,15 @@ export const POST = withAuth(
           // For workpapers, we need to create an evidence request first to attach files
           // For simplicity, we'll create a general evidence request for workpapers
           if (category === 'workpapers') {
-            // Find or create a general evidence request for workpapers
+            // Use provided title or default to 'Workpapers'
+            const requestTitle = documentTitle || 'Workpapers';
+            const requestDescription = documentDescription || 'General workpapers for this engagement';
+
+            // Find or create an evidence request for this document
             let evidenceRequest = await prisma.fieldworkEvidenceRequest.findFirst({
               where: {
                 engagementId,
-                title: 'Workpapers',
+                title: requestTitle,
               },
             });
 
@@ -73,9 +80,11 @@ export const POST = withAuth(
               evidenceRequest = await prisma.fieldworkEvidenceRequest.create({
                 data: {
                   engagementId,
-                  title: 'Workpapers',
-                  description: 'General workpapers for this engagement',
+                  title: requestTitle,
+                  description: requestDescription,
                   status: 'Reviewed',
+                  category: 'workpapers',
+                  documentType: documentType || null,
                 },
               });
             }
@@ -85,7 +94,7 @@ export const POST = withAuth(
               data: {
                 evidenceRequestId: evidenceRequest.id,
                 fileName: originalName,
-                fileType: file.type,
+                fileType: documentType || file.type,
                 fileSize: file.size,
                 filePath: `/uploads/fieldwork/${engagementId}/${fileName}`,
               },
@@ -99,17 +108,49 @@ export const POST = withAuth(
               filePath: attachment.filePath,
               uploadedAt: attachment.uploadedAt.toISOString(),
               category,
+              title: documentTitle,
+              documentType,
+              description: documentDescription,
             });
           } else {
-            // For other documents, store file info
+            // For other documents, create an evidence request with provided metadata
+            const requestTitle = documentTitle || originalName;
+            const requestDescription = documentDescription || '';
+
+            // Create evidence request for the document
+            const evidenceRequest = await prisma.fieldworkEvidenceRequest.create({
+              data: {
+                engagementId,
+                title: requestTitle,
+                description: requestDescription,
+                status: 'Reviewed',
+                category: 'other',
+                documentType: documentType || null,
+              },
+            });
+
+            // Create attachment record
+            const attachment = await prisma.fieldworkEvidenceAttachment.create({
+              data: {
+                evidenceRequestId: evidenceRequest.id,
+                fileName: originalName,
+                fileType: documentType || file.type,
+                fileSize: file.size,
+                filePath: `/uploads/fieldwork/${engagementId}/${fileName}`,
+              },
+            });
+
             uploadedFiles.push({
-              id: timestamp.toString(),
-              fileName: originalName,
-              fileType: file.type,
-              fileSize: file.size,
-              filePath: `/uploads/fieldwork/${engagementId}/${fileName}`,
-              uploadedAt: new Date().toISOString(),
+              id: attachment.id,
+              fileName: attachment.fileName,
+              fileType: attachment.fileType,
+              fileSize: attachment.fileSize,
+              filePath: attachment.filePath,
+              uploadedAt: attachment.uploadedAt.toISOString(),
               category,
+              title: documentTitle,
+              documentType,
+              description: documentDescription,
             });
           }
         }

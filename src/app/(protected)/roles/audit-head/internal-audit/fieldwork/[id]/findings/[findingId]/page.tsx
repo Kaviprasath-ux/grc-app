@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -21,11 +21,6 @@ import {
   Save,
   Edit2,
 } from "lucide-react";
-
-interface Department {
-  id: string;
-  name: string;
-}
 
 interface User {
   id: string;
@@ -48,18 +43,25 @@ interface Finding {
   identifiedDate: string | null;
   targetDate: string | null;
   closedDate: string | null;
+  // New fields
+  criteria: string;
+  condition: string;
+  cause: string;
+  effect: string;
+  recommendation: string;
 }
 
 export default function ViewFindingPage() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const engagementId = params.id as string;
   const findingId = params.findingId as string;
+  const editMode = searchParams.get("edit") === "true";
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [departments, setDepartments] = useState<Department[]>([]);
+  const [isEditing, setIsEditing] = useState(editMode);
   const [users, setUsers] = useState<User[]>([]);
 
   const [formData, setFormData] = useState<Finding | null>(null);
@@ -68,7 +70,6 @@ export default function ViewFindingPage() {
     const loadData = async () => {
       if (engagementId && findingId) {
         await fetchFinding();
-        await fetchDepartments();
         await fetchUsers();
       }
     };
@@ -84,25 +85,13 @@ export default function ViewFindingPage() {
         setFormData(data);
       } else {
         toast.error("Finding not found");
-        router.push(`/internal-audit/fieldwork/${engagementId}`);
+        router.push(`/roles/audit-head/internal-audit/fieldwork/${engagementId}`);
       }
     } catch (error) {
       console.error("Failed to fetch finding:", error);
       toast.error("Failed to load finding");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchDepartments = async () => {
-    try {
-      const response = await fetch("/api/departments");
-      if (response.ok) {
-        const data = await response.json();
-        setDepartments(data);
-      }
-    } catch (error) {
-      console.error("Failed to fetch departments:", error);
     }
   };
 
@@ -148,12 +137,14 @@ export default function ViewFindingPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: formData.title,
-          description: formData.description,
           severity: formData.severity,
-          status: formData.status,
-          departmentId: formData.departmentId && formData.departmentId !== "none" ? formData.departmentId : null,
+          criteria: formData.criteria,
+          condition: formData.condition,
+          cause: formData.cause || null,
+          effect: formData.effect,
+          recommendation: formData.recommendation,
           responsiblePersonId: formData.responsiblePersonId && formData.responsiblePersonId !== "none" ? formData.responsiblePersonId : null,
-          identifiedDate: formData.identifiedDate || null,
+          status: formData.status !== "none" ? formData.status : "Open",
           targetDate: formData.targetDate || null,
         }),
       });
@@ -176,12 +167,14 @@ export default function ViewFindingPage() {
   if (loading || !formData) {
     return (
       <div className="p-6">
-        <div className="flex items-center gap-4 mb-6">
+        <div className="flex items-center gap-2 mb-6">
           <Button variant="ghost" size="sm" onClick={() => router.back()}>
             <ArrowLeft className="h-4 w-4 mr-1" />
             Back
           </Button>
-          <span className="text-gray-500">|</span>
+          <span className="text-gray-400">|</span>
+          <span className="text-gray-500">Audit Plan</span>
+          <span className="text-gray-400">|</span>
           <span className="text-[#1e3a5f] font-semibold">Finding Details</span>
         </div>
         <div className="flex items-center justify-center h-64">
@@ -199,17 +192,15 @@ export default function ViewFindingPage() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => router.push(`/internal-audit/fieldwork/${engagementId}`)}
+            onClick={() => router.push(`/roles/audit-head/internal-audit/fieldwork/${engagementId}`)}
           >
             <ArrowLeft className="h-4 w-4 mr-1" />
             Back
           </Button>
-          <span className="text-gray-500">|</span>
-          <span className="text-gray-500">Internal Audit</span>
-          <span className="text-gray-500">|</span>
-          <span className="text-gray-500">Field Work</span>
-          <span className="text-gray-500">|</span>
-          <span className="text-[#1e3a5f] font-semibold">Finding Details</span>
+          <span className="text-gray-400">|</span>
+          <span className="text-gray-500">Audit Plan</span>
+          <span className="text-gray-400">|</span>
+          <span className="text-[#1e3a5f] font-semibold">Finding Details - {formData.findingId}</span>
         </div>
         {!isEditing && (
           <Button
@@ -222,94 +213,188 @@ export default function ViewFindingPage() {
         )}
       </div>
 
-      {/* Page Title */}
-      <div className="bg-blue-50 p-4 rounded-lg">
-        <h1 className="text-xl font-semibold text-[#1e3a5f]">
-          Finding Details - {formData.findingId}
-        </h1>
-      </div>
-
       {/* Form */}
       <Card className="p-6">
         <div className="space-y-6">
-          {/* Row 1: Finding ID and Title */}
-          <div className="grid grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">Finding ID</Label>
-              <Input value={formData.findingId} disabled className="bg-gray-50" />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">Finding Title</Label>
-              {isEditing ? (
-                <Input
-                  value={formData.title}
-                  onChange={(e) => handleInputChange("title", e.target.value)}
-                />
-              ) : (
-                <Input value={formData.title} disabled className="bg-gray-50" />
-              )}
-            </div>
-          </div>
-
-          {/* Row 2: Description */}
+          {/* Finding Title */}
           <div className="space-y-2">
-            <Label className="text-[#1e3a5f] font-medium">Description</Label>
+            <Label className="text-[#1e3a5f] font-medium">Finding Title</Label>
             {isEditing ? (
-              <Textarea
-                value={formData.description}
-                onChange={(e) => handleInputChange("description", e.target.value)}
-                rows={4}
+              <Input
+                value={formData.title}
+                onChange={(e) => handleInputChange("title", e.target.value)}
+                className="border-gray-300"
               />
             ) : (
-              <div className="p-3 bg-gray-50 rounded-md border min-h-[100px]">
-                {formData.description || "-"}
+              <div className="p-3 bg-gray-50 rounded-md border">
+                {formData.title || "-"}
               </div>
             )}
           </div>
 
-          {/* Row 3: Severity and Status */}
-          <div className="grid grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">Severity</Label>
+          {/* Severity */}
+          <div className="space-y-2">
+            <Label className="text-[#1e3a5f] font-medium">Severity</Label>
+            {isEditing ? (
+              <Select
+                value={formData.severity}
+                onValueChange={(value) => handleInputChange("severity", value)}
+              >
+                <SelectTrigger className="border-gray-300">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Low">Low</SelectItem>
+                  <SelectItem value="Medium">Medium</SelectItem>
+                  <SelectItem value="High">High</SelectItem>
+                  <SelectItem value="Critical">Critical</SelectItem>
+                </SelectContent>
+              </Select>
+            ) : (
+              <div className="p-3 bg-gray-50 rounded-md border">
+                <span className={`px-2 py-1 rounded text-xs font-medium ${
+                  formData.severity === 'Critical' ? 'bg-red-100 text-red-800' :
+                  formData.severity === 'High' ? 'bg-orange-100 text-orange-800' :
+                  formData.severity === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                  'bg-green-100 text-green-800'
+                }`}>
+                  {formData.severity}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Criteria (What should be) */}
+          <div className="space-y-2">
+            <Label className="text-[#1e3a5f] font-medium">Criteria (What should be)</Label>
+            {isEditing ? (
+              <Textarea
+                value={formData.criteria || ""}
+                onChange={(e) => handleInputChange("criteria", e.target.value)}
+                rows={4}
+                className="border-gray-300 resize-y"
+              />
+            ) : (
+              <div className="p-3 bg-gray-50 rounded-md border min-h-[100px]">
+                {formData.criteria || "-"}
+              </div>
+            )}
+          </div>
+
+          {/* Condition (What is) */}
+          <div className="space-y-2">
+            <Label className="text-[#1e3a5f] font-medium">Condition (What is)</Label>
+            {isEditing ? (
+              <Textarea
+                value={formData.condition || ""}
+                onChange={(e) => handleInputChange("condition", e.target.value)}
+                rows={4}
+                className="border-gray-300 resize-y"
+              />
+            ) : (
+              <div className="p-3 bg-gray-50 rounded-md border min-h-[100px]">
+                {formData.condition || "-"}
+              </div>
+            )}
+          </div>
+
+          {/* Cause (Why it happened) */}
+          <div className="space-y-2">
+            <Label className="text-[#1e3a5f] font-medium">Cause (Why it happened)</Label>
+            {isEditing ? (
+              <Textarea
+                value={formData.cause || ""}
+                onChange={(e) => handleInputChange("cause", e.target.value)}
+                rows={4}
+                className="border-gray-300 resize-y"
+              />
+            ) : (
+              <div className="p-3 bg-gray-50 rounded-md border min-h-[100px]">
+                {formData.cause || "-"}
+              </div>
+            )}
+          </div>
+
+          {/* Effect (The consequence) */}
+          <div className="space-y-2">
+            <Label className="text-[#1e3a5f] font-medium">Effect (The consequence)</Label>
+            {isEditing ? (
+              <Textarea
+                value={formData.effect || ""}
+                onChange={(e) => handleInputChange("effect", e.target.value)}
+                rows={4}
+                className="border-gray-300 resize-y"
+              />
+            ) : (
+              <div className="p-3 bg-gray-50 rounded-md border min-h-[100px]">
+                {formData.effect || "-"}
+              </div>
+            )}
+          </div>
+
+          {/* Recommendation */}
+          <div className="space-y-2">
+            <Label className="text-[#1e3a5f] font-medium">Recommendation</Label>
+            {isEditing ? (
+              <Textarea
+                value={formData.recommendation || ""}
+                onChange={(e) => handleInputChange("recommendation", e.target.value)}
+                rows={4}
+                className="border-gray-300 resize-y"
+              />
+            ) : (
+              <div className="p-3 bg-gray-50 rounded-md border min-h-[100px]">
+                {formData.recommendation || "-"}
+              </div>
+            )}
+          </div>
+
+          {/* Corrective & Preventive Actions (CAPA) Section */}
+          <div className="pt-4">
+            <h2 className="text-lg font-semibold text-[#1e3a5f] mb-4">
+              Corrective & Preventive Actions (CAPA)
+            </h2>
+
+            {/* Responsible Person */}
+            <div className="space-y-2 mb-4">
+              <Label className="text-[#1e3a5f] font-medium">Responsible Person</Label>
               {isEditing ? (
                 <Select
-                  value={formData.severity}
-                  onValueChange={(value) => handleInputChange("severity", value)}
+                  value={formData.responsiblePersonId || "none"}
+                  onValueChange={(value) => handleInputChange("responsiblePersonId", value)}
                 >
-                  <SelectTrigger>
-                    <SelectValue />
+                  <SelectTrigger className="border-gray-300">
+                    <SelectValue placeholder="Select person" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Low">Low</SelectItem>
-                    <SelectItem value="Medium">Medium</SelectItem>
-                    <SelectItem value="High">High</SelectItem>
-                    <SelectItem value="Critical">Critical</SelectItem>
+                    <SelectItem value="none">Select person</SelectItem>
+                    {users.map((user) => (
+                      <SelectItem key={user.id} value={user.id}>
+                        {user.fullName || `${user.firstName} ${user.lastName}`}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               ) : (
                 <div className="p-3 bg-gray-50 rounded-md border">
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${
-                    formData.severity === 'Critical' ? 'bg-red-100 text-red-800' :
-                    formData.severity === 'High' ? 'bg-orange-100 text-orange-800' :
-                    formData.severity === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-green-100 text-green-800'
-                  }`}>
-                    {formData.severity}
-                  </span>
+                  {formData.responsiblePerson || "-"}
                 </div>
               )}
             </div>
-            <div className="space-y-2">
+
+            {/* Status */}
+            <div className="space-y-2 mb-4">
               <Label className="text-[#1e3a5f] font-medium">Status</Label>
               {isEditing ? (
                 <Select
-                  value={formData.status}
+                  value={formData.status || "none"}
                   onValueChange={(value) => handleInputChange("status", value)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="border-gray-300">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="none">Select status</SelectItem>
                     <SelectItem value="Open">Open</SelectItem>
                     <SelectItem value="In Progress">In Progress</SelectItem>
                     <SelectItem value="Closed">Closed</SelectItem>
@@ -329,106 +414,42 @@ export default function ViewFindingPage() {
                 </div>
               )}
             </div>
-          </div>
 
-          {/* Row 4: Department and Responsible Person */}
-          <div className="grid grid-cols-2 gap-6">
+            {/* Target Closure Date */}
             <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">Department</Label>
-              {isEditing ? (
-                <Select
-                  value={formData.departmentId || "none"}
-                  onValueChange={(value) => handleInputChange("departmentId", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select department" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
-                    {departments.map((dept) => (
-                      <SelectItem key={dept.id} value={dept.id}>
-                        {dept.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Input value={formData.departmentName || "-"} disabled className="bg-gray-50" />
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">Responsible Person</Label>
-              {isEditing ? (
-                <Select
-                  value={formData.responsiblePersonId || "none"}
-                  onValueChange={(value) => handleInputChange("responsiblePersonId", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select person" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
-                    {users.map((user) => (
-                      <SelectItem key={user.id} value={user.id}>
-                        {user.fullName || `${user.firstName} ${user.lastName}`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Input value={formData.responsiblePerson || "-"} disabled className="bg-gray-50" />
-              )}
-            </div>
-          </div>
-
-          {/* Row 5: Dates */}
-          <div className="grid grid-cols-3 gap-6">
-            <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">Identified Date</Label>
-              {isEditing ? (
-                <Input
-                  type="date"
-                  value={formatDate(formData.identifiedDate)}
-                  onChange={(e) => handleInputChange("identifiedDate", e.target.value)}
-                />
-              ) : (
-                <Input value={formatDisplayDate(formData.identifiedDate)} disabled className="bg-gray-50" />
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">Target Date</Label>
+              <Label className="text-[#1e3a5f] font-medium">Target Closure Date</Label>
               {isEditing ? (
                 <Input
                   type="date"
                   value={formatDate(formData.targetDate)}
                   onChange={(e) => handleInputChange("targetDate", e.target.value)}
+                  className="border-gray-300"
                 />
               ) : (
-                <Input value={formatDisplayDate(formData.targetDate)} disabled className="bg-gray-50" />
+                <div className="p-3 bg-gray-50 rounded-md border">
+                  {formatDisplayDate(formData.targetDate)}
+                </div>
               )}
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">Closed Date</Label>
-              <Input value={formatDisplayDate(formData.closedDate)} disabled className="bg-gray-50" />
             </div>
           </div>
 
           {/* Action Buttons */}
           {isEditing && (
-            <div className="flex justify-end gap-4 pt-4 border-t">
+            <div className="flex justify-end gap-3 pt-6 border-t">
               <Button
                 variant="outline"
                 onClick={() => {
                   setIsEditing(false);
                   fetchFinding();
                 }}
+                className="border-[#1e3a5f] text-[#1e3a5f] hover:bg-gray-50"
               >
                 Cancel
               </Button>
               <Button
-                className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
                 onClick={handleSave}
                 disabled={saving}
+                className="bg-[#1e3a5f] hover:bg-[#2d4a6f] text-white"
               >
                 {saving ? (
                   <>
@@ -438,7 +459,7 @@ export default function ViewFindingPage() {
                 ) : (
                   <>
                     <Save className="h-4 w-4 mr-2" />
-                    Save Changes
+                    Save
                   </>
                 )}
               </Button>

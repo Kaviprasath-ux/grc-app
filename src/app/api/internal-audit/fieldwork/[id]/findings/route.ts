@@ -64,7 +64,12 @@ export const GET = withAuth(
         identifiedDate: f.identifiedDate?.toISOString() || null,
         targetDate: f.targetDate?.toISOString() || null,
         closedDate: f.closedDate?.toISOString() || null,
-        recommendation: '',
+        // New audit finding fields
+        criteria: f.criteria || '',
+        condition: f.condition || '',
+        cause: f.cause || '',
+        effect: f.effect || '',
+        recommendation: f.recommendation || '',
       }));
 
       return NextResponse.json(transformed);
@@ -127,6 +132,12 @@ export const POST = withAuth(
           responsiblePersonId: body.responsiblePersonId || null,
           identifiedDate: body.identifiedDate ? new Date(body.identifiedDate) : new Date(),
           targetDate: body.targetDate ? new Date(body.targetDate) : null,
+          // New fields for audit findings
+          criteria: body.criteria || null,
+          condition: body.condition || null,
+          cause: body.cause || null,
+          effect: body.effect || null,
+          recommendation: body.recommendation || null,
         },
         include: {
           department: true,
@@ -146,11 +157,12 @@ export const POST = withAuth(
         responsiblePersonId: finding.responsiblePersonId || '',
         identifiedDate: finding.identifiedDate?.toISOString() || null,
         targetDate: finding.targetDate?.toISOString() || null,
-        recommendation: body.recommendation || '',
-        rootCause: body.rootCause || '',
-        riskRating: body.riskRating || '',
-        managementResponse: body.managementResponse || '',
-        agreedActionPlan: body.agreedActionPlan || '',
+        // New audit finding fields
+        criteria: finding.criteria || '',
+        condition: finding.condition || '',
+        cause: finding.cause || '',
+        effect: finding.effect || '',
+        recommendation: finding.recommendation || '',
       }, { status: 201 });
     } catch (error) {
       console.error('Error creating finding:', error);

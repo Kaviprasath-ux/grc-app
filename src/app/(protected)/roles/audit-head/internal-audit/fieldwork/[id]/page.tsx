@@ -50,6 +50,8 @@ import {
   Plus,
   MessageSquare,
   FileSpreadsheet,
+  Edit2,
+  Trash2,
 } from "lucide-react";
 
 interface Department {
@@ -111,6 +113,7 @@ interface EvidenceRequest {
   status: string;
   dueDate: string | null;
   auditee: string;
+  numberOfSamples: string | null;
 }
 
 interface Finding {
@@ -193,8 +196,18 @@ export default function FieldworkDetailsPage() {
   const [newEvidence, setNewEvidence] = useState({
     title: "",
     description: "",
-    auditee: "",
-    dueDate: "",
+    auditeeId: "none",
+    numberOfSamples: "",
+  });
+
+  // Auditees for dropdown
+  const [auditees, setAuditees] = useState<{ id: string; firstName: string; lastName: string; fullName?: string }[]>([]);
+
+  // New document form state
+  const [newDocument, setNewDocument] = useState({
+    title: "",
+    documentType: "none",
+    description: "",
   });
 
   useEffect(() => {
@@ -206,6 +219,7 @@ export default function FieldworkDetailsPage() {
       fetchEvidenceRequests();
       fetchOtherDocuments();
       fetchFindings();
+      fetchAuditees();
     }
   }, [engagementId]);
 
@@ -296,6 +310,19 @@ export default function FieldworkDetailsPage() {
     }
   };
 
+  const fetchAuditees = async () => {
+    try {
+      // Fetch users with auditee role or all users
+      const response = await fetch("/api/users");
+      if (response.ok) {
+        const data = await response.json();
+        setAuditees(data.users || data || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch auditees:", error);
+    }
+  };
+
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "-";
     return new Date(dateString).toLocaleDateString("en-GB", {
@@ -371,26 +398,38 @@ export default function FieldworkDetailsPage() {
       });
       formData.append("category", uploadCategory);
 
+      // Add document metadata
+      if (newDocument.title) {
+        formData.append("title", newDocument.title);
+      }
+      if (newDocument.documentType && newDocument.documentType !== "none") {
+        formData.append("documentType", newDocument.documentType);
+      }
+      if (newDocument.description) {
+        formData.append("description", newDocument.description);
+      }
+
       const response = await fetch(`/api/internal-audit/fieldwork/${engagementId}/upload`, {
         method: "POST",
         body: formData,
       });
 
       if (response.ok) {
-        toast.success("Files uploaded successfully");
+        toast.success("Document saved successfully");
         setUploadDialogOpen(false);
         setUploadedFiles([]);
+        setNewDocument({ title: "", documentType: "none", description: "" });
         if (uploadCategory === "workpapers") {
           fetchWorkpapers();
         } else {
           fetchOtherDocuments();
         }
       } else {
-        toast.error("Failed to upload files");
+        toast.error("Failed to save document");
       }
     } catch (error) {
       console.error("Upload error:", error);
-      toast.error("Failed to upload files");
+      toast.error("Failed to save document");
     } finally {
       setUploading(false);
     }
@@ -470,7 +509,7 @@ export default function FieldworkDetailsPage() {
 
   const handleAddEvidence = async () => {
     if (!newEvidence.title.trim()) {
-      toast.error("Evidence title is required");
+      toast.error("Request title is required");
       return;
     }
 
@@ -478,13 +517,19 @@ export default function FieldworkDetailsPage() {
       const response = await fetch(`/api/internal-audit/fieldwork/${engagementId}/evidence-requests`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...newEvidence, status: "Pending" }),
+        body: JSON.stringify({
+          title: newEvidence.title,
+          description: newEvidence.description,
+          auditeeId: newEvidence.auditeeId !== "none" ? newEvidence.auditeeId : null,
+          numberOfSamples: newEvidence.numberOfSamples ? parseInt(newEvidence.numberOfSamples) : null,
+          status: "Pending",
+        }),
       });
 
       if (response.ok) {
         toast.success("Evidence request added successfully");
         setAddEvidenceDialogOpen(false);
-        setNewEvidence({ title: "", description: "", auditee: "", dueDate: "" });
+        setNewEvidence({ title: "", description: "", auditeeId: "none", numberOfSamples: "" });
         fetchEvidenceRequests();
       } else {
         toast.error("Failed to add evidence request");
@@ -831,39 +876,60 @@ export default function FieldworkDetailsPage() {
         onToggle={() => setEvidenceRequestOpen(!evidenceRequestOpen)}
       >
         <div className="space-y-4">
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-[#1e3a5f] text-[#1e3a5f] hover:bg-blue-50"
+              onClick={() => toast.info("AI Review feature coming soon")}
+            >
+              <span className="mr-2">✨</span>
+              AI Review
+            </Button>
             <Button
               size="sm"
               className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
               onClick={() => setAddEvidenceDialogOpen(true)}
             >
               <Plus className="h-4 w-4 mr-2" />
-              Add Evidence Request
+              Add Request
             </Button>
           </div>
           {evidenceRequests.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-[#1e3a5f]">Title</TableHead>
-                  <TableHead className="text-[#1e3a5f]">Description</TableHead>
-                  <TableHead className="text-[#1e3a5f]">Auditee</TableHead>
-                  <TableHead className="text-[#1e3a5f]">Due Date</TableHead>
-                  <TableHead className="text-[#1e3a5f]">Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {evidenceRequests.map((er) => (
-                  <TableRow key={er.id}>
-                    <TableCell className="font-medium">{er.title}</TableCell>
-                    <TableCell className="max-w-[200px] truncate">{er.description}</TableCell>
-                    <TableCell>{er.auditee || "-"}</TableCell>
-                    <TableCell>{formatDate(er.dueDate)}</TableCell>
-                    <TableCell>{er.status}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <div className="space-y-4">
+              {evidenceRequests.map((er) => (
+                <div key={er.id} className="p-4 bg-gray-50 rounded-lg border">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="font-medium text-[#1e3a5f]">Title : {er.title}</span>
+                        <span className="text-gray-500">|</span>
+                        <span className="text-gray-600">Sample Size : {er.numberOfSamples || '-'}</span>
+                        {er.status === 'Reviewed' && (
+                          <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded">AI Review</span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600 mb-1">Description: {er.description || '-'}</p>
+                      <p className="text-sm text-gray-500">Auditee: {er.auditee || '-'}</p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="icon" title="View">
+                        <Eye className="h-4 w-4 text-blue-600" />
+                      </Button>
+                      <Button variant="ghost" size="icon" title="Attach">
+                        <Upload className="h-4 w-4 text-blue-600" />
+                      </Button>
+                      <Button variant="ghost" size="icon" title="Edit">
+                        <Edit2 className="h-4 w-4 text-blue-600" />
+                      </Button>
+                      <Button variant="ghost" size="icon" title="Delete" className="text-red-500 hover:text-red-700">
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           ) : (
             <div className="text-center py-8 text-gray-500">No evidence requests found</div>
           )}
@@ -886,8 +952,8 @@ export default function FieldworkDetailsPage() {
                 setUploadDialogOpen(true);
               }}
             >
-              <Upload className="h-4 w-4 mr-2" />
-              Upload Document
+              <Plus className="h-4 w-4 mr-2" />
+              Add Document
             </Button>
           </div>
           {otherDocuments.length > 0 ? (
@@ -930,22 +996,14 @@ export default function FieldworkDetailsPage() {
         onToggle={() => setFindingsOpen(!findingsOpen)}
       >
         <div className="space-y-4">
-          <div className="flex justify-end gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setAddFindingDialogOpen(true)}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Quick Add
-            </Button>
+          <div className="flex justify-end">
             <Button
               size="sm"
               className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
-              onClick={() => router.push(`/internal-audit/fieldwork/${engagementId}/add-finding`)}
+              onClick={() => router.push(`/roles/audit-head/internal-audit/fieldwork/${engagementId}/add-finding`)}
             >
               <Plus className="h-4 w-4 mr-2" />
-              Add Finding (Full Form)
+              Add Finding
             </Button>
           </div>
           {findings.length > 0 ? (
@@ -989,13 +1047,33 @@ export default function FieldworkDetailsPage() {
                       </span>
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => router.push(`/internal-audit/fieldwork/${engagementId}/findings/${finding.id}`)}
-                      >
-                        <Eye className="h-4 w-4 text-gray-600" />
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="View"
+                          onClick={() => router.push(`/roles/audit-head/internal-audit/fieldwork/${engagementId}/findings/${finding.id}`)}
+                        >
+                          <Eye className="h-4 w-4 text-blue-600" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Edit"
+                          onClick={() => router.push(`/roles/audit-head/internal-audit/fieldwork/${engagementId}/findings/${finding.id}?edit=true`)}
+                        >
+                          <Edit2 className="h-4 w-4 text-blue-600" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Delete"
+                          className="text-red-500 hover:text-red-700"
+                          onClick={() => toast.info("Delete functionality coming soon")}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -1026,86 +1104,146 @@ export default function FieldworkDetailsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Upload Dialog */}
-      <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
+      {/* Upload Dialog - New Document Modal */}
+      <Dialog open={uploadDialogOpen} onOpenChange={(open) => {
+        setUploadDialogOpen(open);
+        if (!open) {
+          setNewDocument({ title: "", documentType: "none", description: "" });
+          setUploadedFiles([]);
+        }
+      }}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>
-              Upload {uploadCategory === "workpapers" ? "Workpaper" : "Document"}
-            </DialogTitle>
+            <DialogTitle className="text-[#1e3a5f]">New Document</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div
-              className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-                isDragOver ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-gray-400"
-              }`}
-              onDragOver={(e) => {
-                e.preventDefault();
-                setIsDragOver(true);
-              }}
-              onDragLeave={() => setIsDragOver(false)}
-              onDrop={handleFileDrop}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-              <p className="text-gray-600">Drag and drop files here, or click to browse</p>
-              <p className="text-sm text-gray-400 mt-1">
-                Supported formats: PDF, DOC, DOCX, XLS, XLSX, PNG, JPG
-              </p>
-              <input
-                ref={fileInputRef}
-                type="file"
-                className="hidden"
-                multiple
-                accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
-                onChange={handleFileSelect}
+            {/* Title */}
+            <div className="space-y-2">
+              <Label className="text-[#1e3a5f] font-medium">Title</Label>
+              <Input
+                value={newDocument.title}
+                onChange={(e) => setNewDocument({ ...newDocument, title: e.target.value })}
+                placeholder=""
+                className="border-gray-300"
               />
             </div>
-            {uploadedFiles.length > 0 && (
-              <div className="space-y-2">
-                {uploadedFiles.map((file) => (
-                  <div
-                    key={file.id}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border"
-                  >
-                    <div className="flex items-center gap-3">
-                      <FileText className="h-5 w-5 text-blue-500" />
-                      <div>
-                        <span className="text-sm font-medium">{file.name}</span>
-                        <span className="text-xs text-gray-400 ml-2">
-                          ({formatFileSize(file.size)})
-                        </span>
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeFile(file.id)}
-                      className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
+
+            {/* Document Type */}
+            <div className="space-y-2">
+              <Label className="text-[#1e3a5f] font-medium">Document Type</Label>
+              <Select
+                value={newDocument.documentType}
+                onValueChange={(value) => setNewDocument({ ...newDocument, documentType: value })}
+              >
+                <SelectTrigger className="border-gray-300">
+                  <SelectValue placeholder="Select document type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Select document type</SelectItem>
+                  <SelectItem value="Policy">Policy</SelectItem>
+                  <SelectItem value="Procedure">Procedure</SelectItem>
+                  <SelectItem value="Evidence">Evidence</SelectItem>
+                  <SelectItem value="Report">Report</SelectItem>
+                  <SelectItem value="Supporting Document">Supporting Document</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Description */}
+            <div className="space-y-2">
+              <Label className="text-[#1e3a5f] font-medium">Description</Label>
+              <Textarea
+                value={newDocument.description}
+                onChange={(e) => setNewDocument({ ...newDocument, description: e.target.value })}
+                placeholder=""
+                rows={4}
+                className="border-gray-300 resize-y"
+              />
+            </div>
+
+            {/* Attach File */}
+            <div className="space-y-2">
+              <Label className="text-[#1e3a5f] font-medium">Attach File</Label>
+              <div
+                className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+                  isDragOver ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-gray-400"
+                }`}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setIsDragOver(true);
+                }}
+                onDragLeave={() => setIsDragOver(false)}
+                onDrop={handleFileDrop}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <p className="text-gray-500">Click here, or drop files here to upload.</p>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className="hidden"
+                  multiple
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
+                  onChange={handleFileSelect}
+                />
               </div>
-            )}
+              {uploadedFiles.length > 0 && (
+                <div className="space-y-2 mt-2">
+                  {uploadedFiles.map((file) => (
+                    <div
+                      key={file.id}
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border"
+                    >
+                      <div className="flex items-center gap-3">
+                        <FileText className="h-5 w-5 text-blue-500" />
+                        <div>
+                          <span className="text-sm font-medium">{file.name}</span>
+                          <span className="text-xs text-gray-400 ml-2">
+                            ({formatFileSize(file.size)})
+                          </span>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeFile(file.id);
+                        }}
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setUploadDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setUploadDialogOpen(false);
+                setNewDocument({ title: "", documentType: "none", description: "" });
+                setUploadedFiles([]);
+              }}
+              className="border-[#1e3a5f] text-[#1e3a5f] hover:bg-gray-50"
+            >
               Cancel
             </Button>
             <Button
-              className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
+              className="bg-[#1e3a5f] hover:bg-[#2d4a6f] text-white"
               onClick={handleUploadFiles}
               disabled={uploading || uploadedFiles.length === 0}
             >
               {uploading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Uploading...
+                  Saving...
                 </>
               ) : (
-                "Upload"
+                "Save"
               )}
             </Button>
           </DialogFooter>
@@ -1226,53 +1364,92 @@ export default function FieldworkDetailsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Add Evidence Request Dialog */}
-      <Dialog open={addEvidenceDialogOpen} onOpenChange={setAddEvidenceDialogOpen}>
+      {/* Add Evidence Request Dialog - New Evidence Request Modal */}
+      <Dialog open={addEvidenceDialogOpen} onOpenChange={(open) => {
+        setAddEvidenceDialogOpen(open);
+        if (!open) {
+          setNewEvidence({ title: "", description: "", auditeeId: "none", numberOfSamples: "" });
+        }
+      }}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Add Evidence Request</DialogTitle>
+            <DialogTitle className="text-[#1e3a5f]">New Evidence Request</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            {/* Request Title */}
             <div className="space-y-2">
-              <Label>Title *</Label>
+              <Label className="text-[#1e3a5f] font-medium">
+                Request Title <span className="text-red-500">*</span>
+              </Label>
               <Input
                 value={newEvidence.title}
                 onChange={(e) => setNewEvidence({ ...newEvidence, title: e.target.value })}
-                placeholder="Enter evidence request title"
+                placeholder=""
+                className="border-blue-400 focus:border-blue-500"
               />
             </div>
+
+            {/* Auditee */}
             <div className="space-y-2">
-              <Label>Description</Label>
+              <Label className="text-[#1e3a5f] font-medium">Auditee</Label>
+              <Select
+                value={newEvidence.auditeeId}
+                onValueChange={(value) => setNewEvidence({ ...newEvidence, auditeeId: value })}
+              >
+                <SelectTrigger className="border-gray-300">
+                  <SelectValue placeholder="Select auditee" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Select auditee</SelectItem>
+                  {auditees.map((auditee) => (
+                    <SelectItem key={auditee.id} value={auditee.id}>
+                      {auditee.fullName || `${auditee.firstName} ${auditee.lastName}`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Number of Samples */}
+            <div className="space-y-2">
+              <Label className="text-[#1e3a5f] font-medium">Number of Samples</Label>
+              <Input
+                type="number"
+                value={newEvidence.numberOfSamples}
+                onChange={(e) => setNewEvidence({ ...newEvidence, numberOfSamples: e.target.value })}
+                placeholder=""
+                className="border-gray-300"
+              />
+            </div>
+
+            {/* Description */}
+            <div className="space-y-2">
+              <Label className="text-[#1e3a5f] font-medium">Description</Label>
               <Textarea
                 value={newEvidence.description}
                 onChange={(e) => setNewEvidence({ ...newEvidence, description: e.target.value })}
-                placeholder="Enter description"
-                rows={3}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Auditee</Label>
-              <Input
-                value={newEvidence.auditee}
-                onChange={(e) => setNewEvidence({ ...newEvidence, auditee: e.target.value })}
-                placeholder="Enter auditee name"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Due Date</Label>
-              <Input
-                type="date"
-                value={newEvidence.dueDate}
-                onChange={(e) => setNewEvidence({ ...newEvidence, dueDate: e.target.value })}
+                placeholder=""
+                rows={5}
+                className="border-gray-300 resize-y"
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAddEvidenceDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setAddEvidenceDialogOpen(false);
+                setNewEvidence({ title: "", description: "", auditeeId: "none", numberOfSamples: "" });
+              }}
+              className="border-[#1e3a5f] text-[#1e3a5f] hover:bg-gray-50"
+            >
               Cancel
             </Button>
-            <Button className="bg-[#1e3a5f] hover:bg-[#2d4a6f]" onClick={handleAddEvidence}>
-              Add Evidence Request
+            <Button
+              className="bg-[#1e3a5f] hover:bg-[#2d4a6f] text-white"
+              onClick={handleAddEvidence}
+            >
+              Save
             </Button>
           </DialogFooter>
         </DialogContent>

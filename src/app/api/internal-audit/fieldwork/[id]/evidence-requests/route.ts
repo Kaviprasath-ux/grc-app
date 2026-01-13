@@ -41,6 +41,8 @@ export const GET = withAuth(
         status: er.status,
         dueDate: er.dueDate?.toISOString() || null,
         auditee: er.auditeeName || '',
+        auditeeId: er.auditeeId || null,
+        numberOfSamples: er.sampleSize || null,
       }));
 
       return NextResponse.json(transformed);
@@ -74,6 +76,18 @@ export const POST = withAuth(
         );
       }
 
+      // Get auditee name if auditeeId provided
+      let auditeeName = body.auditee || null;
+      if (body.auditeeId) {
+        const auditee = await prisma.user.findUnique({
+          where: { id: body.auditeeId },
+          select: { firstName: true, lastName: true },
+        });
+        if (auditee) {
+          auditeeName = `${auditee.firstName} ${auditee.lastName}`;
+        }
+      }
+
       // Create evidence request
       const evidenceRequest = await prisma.fieldworkEvidenceRequest.create({
         data: {
@@ -82,7 +96,9 @@ export const POST = withAuth(
           description: body.description || null,
           status: body.status || 'Pending',
           dueDate: body.dueDate ? new Date(body.dueDate) : null,
-          auditeeName: body.auditee || null,
+          auditeeId: body.auditeeId || null,
+          auditeeName: auditeeName,
+          sampleSize: body.numberOfSamples ? String(body.numberOfSamples) : null,
         },
       });
 
@@ -93,6 +109,8 @@ export const POST = withAuth(
         status: evidenceRequest.status,
         dueDate: evidenceRequest.dueDate?.toISOString() || null,
         auditee: evidenceRequest.auditeeName || '',
+        auditeeId: evidenceRequest.auditeeId || null,
+        numberOfSamples: evidenceRequest.sampleSize || null,
       }, { status: 201 });
     } catch (error) {
       console.error('Error creating evidence request:', error);

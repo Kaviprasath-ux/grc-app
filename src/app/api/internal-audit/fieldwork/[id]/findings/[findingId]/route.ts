@@ -41,6 +41,12 @@ export const GET = withAuth(
         identifiedDate: finding.identifiedDate?.toISOString() || null,
         targetDate: finding.targetDate?.toISOString() || null,
         closedDate: finding.closedDate?.toISOString() || null,
+        // New audit finding fields
+        criteria: finding.criteria || '',
+        condition: finding.condition || '',
+        cause: finding.cause || '',
+        effect: finding.effect || '',
+        recommendation: finding.recommendation || '',
       });
     } catch (error) {
       console.error('Error fetching finding:', error);
@@ -106,6 +112,12 @@ export const PATCH = withAuth(
           identifiedDate: body.identifiedDate ? new Date(body.identifiedDate) : existingFinding.identifiedDate,
           targetDate: body.targetDate ? new Date(body.targetDate) : (body.targetDate === null ? null : existingFinding.targetDate),
           closedDate: closedDate,
+          // New audit finding fields
+          criteria: body.criteria !== undefined ? body.criteria : existingFinding.criteria,
+          condition: body.condition !== undefined ? body.condition : existingFinding.condition,
+          cause: body.cause !== undefined ? body.cause : existingFinding.cause,
+          effect: body.effect !== undefined ? body.effect : existingFinding.effect,
+          recommendation: body.recommendation !== undefined ? body.recommendation : existingFinding.recommendation,
         },
         include: {
           department: true,
@@ -126,6 +138,12 @@ export const PATCH = withAuth(
         identifiedDate: updatedFinding.identifiedDate?.toISOString() || null,
         targetDate: updatedFinding.targetDate?.toISOString() || null,
         closedDate: updatedFinding.closedDate?.toISOString() || null,
+        // New audit finding fields
+        criteria: updatedFinding.criteria || '',
+        condition: updatedFinding.condition || '',
+        cause: updatedFinding.cause || '',
+        effect: updatedFinding.effect || '',
+        recommendation: updatedFinding.recommendation || '',
       });
     } catch (error) {
       console.error('Error updating finding:', error);

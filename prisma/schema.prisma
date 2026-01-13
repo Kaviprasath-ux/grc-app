@@ -1513,6 +1513,8 @@ model FieldworkEvidenceRequest {
   aiReviewStatus  String?                        // Satisfactory, Needs Attention
   aiReviewComment String?
   dueDate         DateTime?
+  category        String?                        // workpapers, other, evidence-request
+  documentType    String?                        // Policy, Procedure, Evidence, Report, etc.
   // Auditee assignment (assigned by Audit Head)
   auditeeId       String?
   auditeeName     String?
@@ -1582,11 +1584,17 @@ model InternalAuditFinding {
   // Finding details
   finding            String
   description        String?
-  severity           String                @default("Medium") // Low, Medium, High
+  severity           String                @default("Medium") // Low, Medium, High, Critical
   departmentId       String?
   department         Department?           @relation(fields: [departmentId], references: [id])
   responsiblePerson  String?
   responsiblePersonId String?
+  // Audit Finding Fields (Criteria, Condition, Cause, Effect)
+  criteria           String?               // What should be
+  condition          String?               // What is
+  cause              String?               // Why it happened
+  effect             String?               // The consequence
+  recommendation     String?               // Recommendation
   // Dates
   identifiedDate     DateTime              @default(now())
   targetDate         DateTime?

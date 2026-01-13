@@ -24,11 +24,21 @@ export const GET = withAuth(
         );
       }
 
-      // Get attachments from fieldwork evidence requests with category 'workpaper'
+      // Get attachments from fieldwork evidence requests with category 'workpapers'
       const attachments = await prisma.fieldworkEvidenceAttachment.findMany({
         where: {
           evidenceRequest: {
             engagementId: engagementId,
+            category: 'workpapers',
+          },
+        },
+        include: {
+          evidenceRequest: {
+            select: {
+              title: true,
+              documentType: true,
+              description: true,
+            },
           },
         },
         orderBy: { uploadedAt: 'desc' },
