@@ -83,6 +83,50 @@ export const PUT = withAuth(
   { resource: 'audit.planning', action: 'update' }
 );
 
+// PATCH /api/internal-audit/engagements/[id] - Partial update an engagement (e.g., status change)
+export const PATCH = withAuth(
+  async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+    try {
+      const { id } = await params;
+      const body = await req.json();
+
+      // Only allow specific fields to be updated via PATCH
+      const updateData: Record<string, unknown> = {};
+
+      if (body.status !== undefined) {
+        updateData.status = body.status;
+      }
+      if (body.completionDate !== undefined) {
+        updateData.completionDate = body.completionDate ? new Date(body.completionDate) : null;
+      }
+
+      // If marking as completed, set completion date if not provided
+      if (body.status === 'Completed' && !body.completionDate) {
+        updateData.completionDate = new Date();
+      }
+
+      const engagement = await prisma.auditEngagement.update({
+        where: { id },
+        data: updateData,
+        include: {
+          department: {
+            select: { id: true, name: true }
+          }
+        }
+      });
+
+      return NextResponse.json(engagement);
+    } catch (error) {
+      console.error('Error updating engagement:', error);
+      return NextResponse.json(
+        { error: 'Failed to update engagement' },
+        { status: 500 }
+      );
+    }
+  },
+  { resource: 'audit.fieldwork', action: 'update' }
+);
+
 // DELETE /api/internal-audit/engagements/[id] - Delete an engagement
 export const DELETE = withAuth(
   async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
