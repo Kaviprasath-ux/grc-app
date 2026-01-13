@@ -4,15 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Card } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -21,376 +13,338 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import {
-  ArrowLeft,
-  Search,
-  Eye,
-  Upload,
-  FileText,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  Paperclip,
-  CheckCircle,
-  Clock,
-  AlertCircle,
-  Plus,
+  Loader2,
+  ArrowUpDown,
 } from "lucide-react";
 
-interface Attachment {
+interface Department {
   id: string;
-  fileName: string;
-  fileType: string | null;
-  fileSize: number | null;
-  filePath: string;
-  uploadedAt: string;
+  name: string;
 }
 
-interface EvidenceRequest {
+interface Auditor {
   id: string;
-  title: string;
-  description: string | null;
-  sampleSize: string | null;
+  firstName: string;
+  lastName: string;
+}
+
+interface Engagement {
+  id: string;
+  auditId: string;
+  engagementTitle: string;
+  department: Department | null;
   status: string;
-  aiReviewStatus: string | null;
-  aiReviewComment: string | null;
-  dueDate: string | null;
-  auditeeId: string | null;
-  auditeeName: string | null;
-  createdAt: string;
-  engagement: {
-    id: string;
-    auditId: string;
-    engagementTitle: string;
-    department: {
-      id: string;
-      name: string;
-    } | null;
-    assignedAuditor: {
-      id: string;
-      firstName: string;
-      lastName: string;
-    } | null;
-  };
-  attachments: Attachment[];
+  startDate: string | null;
+  endDate: string | null;
+  assignedAuditor: Auditor | null;
+  assignedAuditorId: string | null;
+  assignedAuditors: string[];
 }
-
-const statusColors: Record<string, string> = {
-  Pending: "bg-yellow-100 text-yellow-800",
-  "In Progress": "bg-blue-100 text-blue-800",
-  Submitted: "bg-purple-100 text-purple-800",
-  Reviewed: "bg-green-100 text-green-800",
-};
-
-const aiStatusColors: Record<string, string> = {
-  Satisfactory: "bg-green-100 text-green-800",
-  "Needs Attention": "bg-red-100 text-red-800",
-};
 
 export default function FieldworkPage() {
   const router = useRouter();
   const { data: session } = useSession();
-  const [data, setData] = useState<EvidenceRequest[]>([]);
+  const [engagements, setEngagements] = useState<Engagement[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [auditors, setAuditors] = useState<Auditor[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchFilter, setSearchFilter] = useState("");
+
+  // Filters
   const [statusFilter, setStatusFilter] = useState("all");
+  const [auditorFilter, setAuditorFilter] = useState("all");
+  const [departmentFilter, setDepartmentFilter] = useState("all");
+
+  // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedRequest, setSelectedRequest] = useState<EvidenceRequest | null>(null);
-  const [viewDialogOpen, setViewDialogOpen] = useState(false);
-  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
   const itemsPerPage = 10;
 
-  const isAuditee = session?.user?.roles?.includes("Auditee") &&
-                    !session?.user?.roles?.includes("AuditHead") &&
-                    !session?.user?.roles?.includes("Auditor");
+  // Sorting
+  const [sortField, setSortField] = useState<string | null>(null);
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   useEffect(() => {
-    fetchData();
-  }, [statusFilter]);
+    fetchDepartments();
+    fetchAuditors();
+    fetchEngagements();
+  }, []);
 
-  const fetchData = async () => {
+  useEffect(() => {
+    fetchEngagements();
+  }, [statusFilter, departmentFilter]);
+
+  // Reset to first page when auditor filter changes (client-side filter)
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [auditorFilter]);
+
+  const fetchDepartments = async () => {
+    try {
+      const response = await fetch("/api/departments");
+      if (response.ok) {
+        const data = await response.json();
+        setDepartments(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch departments:", error);
+    }
+  };
+
+  const fetchAuditors = async () => {
+    try {
+      const response = await fetch("/api/users?role=Auditor");
+      if (response.ok) {
+        const data = await response.json();
+        setAuditors(data.users || data || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch auditors:", error);
+    }
+  };
+
+  const fetchEngagements = async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams();
-      if (statusFilter !== "all") params.append("status", statusFilter);
+      if (statusFilter && statusFilter !== "all") params.append("status", statusFilter);
+      if (departmentFilter && departmentFilter !== "all") params.append("departmentId", departmentFilter);
+      // Note: auditorId filtering is done client-side
 
-      const response = await fetch(`/api/internal-audit/fieldwork?${params}`);
+      const response = await fetch(`/api/internal-audit/engagements?${params.toString()}`);
       if (response.ok) {
-        const result = await response.json();
-        setData(result);
-      } else {
-        toast.error("Failed to fetch evidence requests");
+        const data = await response.json();
+        setEngagements(data);
       }
     } catch (error) {
-      console.error("Error fetching data:", error);
-      toast.error("Failed to fetch evidence requests");
+      console.error("Failed to fetch engagements:", error);
+      toast.error("Failed to fetch fieldwork data");
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredData = data.filter((item) => {
-    const matchesSearch =
-      searchFilter === "" ||
-      item.title.toLowerCase().includes(searchFilter.toLowerCase()) ||
-      item.engagement.auditId.toLowerCase().includes(searchFilter.toLowerCase()) ||
-      item.engagement.engagementTitle.toLowerCase().includes(searchFilter.toLowerCase());
-    return matchesSearch;
-  });
-
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedData = filteredData.slice(startIndex, endIndex);
-
-  const handleView = (request: EvidenceRequest) => {
-    setSelectedRequest(request);
-    setViewDialogOpen(true);
-  };
-
-  const handleUpload = (request: EvidenceRequest) => {
-    setSelectedRequest(request);
-    setUploadDialogOpen(true);
-  };
-
-  const handleSubmitEvidence = async () => {
-    if (!selectedRequest) return;
-
-    try {
-      setSubmitting(true);
-      const response = await fetch(`/api/internal-audit/fieldwork/${selectedRequest.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "Submitted" }),
-      });
-
-      if (response.ok) {
-        toast.success("Evidence submitted successfully");
-        setUploadDialogOpen(false);
-        fetchData();
-      } else {
-        const error = await response.json();
-        toast.error(error.error || "Failed to submit evidence");
-      }
-    } catch (error) {
-      console.error("Error submitting evidence:", error);
-      toast.error("Failed to submit evidence");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "-";
-    return new Date(dateString).toLocaleDateString("en-US", {
+    return new Date(dateString).toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
       year: "numeric",
-      month: "short",
-      day: "numeric",
     });
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "Pending":
-        return <Clock className="h-4 w-4" />;
-      case "In Progress":
-        return <AlertCircle className="h-4 w-4" />;
-      case "Submitted":
-        return <Upload className="h-4 w-4" />;
-      case "Reviewed":
-        return <CheckCircle className="h-4 w-4" />;
-      default:
-        return null;
+  const getAuditorName = (engagement: Engagement) => {
+    if (engagement.assignedAuditor) {
+      return `${engagement.assignedAuditor.firstName} ${engagement.assignedAuditor.lastName}`;
+    }
+    if (engagement.assignedAuditors && engagement.assignedAuditors.length > 0) {
+      return engagement.assignedAuditors.join(", ");
+    }
+    return "No items found";
+  };
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
     }
   };
 
-  // Calculate stats
-  const stats = {
-    pending: data.filter((d) => d.status === "Pending").length,
-    inProgress: data.filter((d) => d.status === "In Progress").length,
-    submitted: data.filter((d) => d.status === "Submitted").length,
-    reviewed: data.filter((d) => d.status === "Reviewed").length,
-  };
+  // Filter by auditor (client-side) then sort
+  const filteredEngagements = engagements.filter((engagement) => {
+    if (auditorFilter === "all") return true;
+    // Check if assignedAuditorId matches or if the auditor name is in assignedAuditors
+    if (engagement.assignedAuditorId === auditorFilter) return true;
+    if (engagement.assignedAuditor?.id === auditorFilter) return true;
+    // Also check by auditor name in assignedAuditors array
+    const selectedAuditor = auditors.find(a => a.id === auditorFilter);
+    if (selectedAuditor) {
+      const auditorName = `${selectedAuditor.firstName} ${selectedAuditor.lastName}`;
+      if (engagement.assignedAuditors?.includes(auditorName)) return true;
+    }
+    return false;
+  });
+
+  const sortedEngagements = [...filteredEngagements].sort((a, b) => {
+    if (!sortField) return 0;
+
+    let aValue: string | number = "";
+    let bValue: string | number = "";
+
+    switch (sortField) {
+      case "auditId":
+        aValue = a.auditId;
+        bValue = b.auditId;
+        break;
+      case "name":
+        aValue = a.engagementTitle;
+        bValue = b.engagementTitle;
+        break;
+      case "auditor":
+        aValue = getAuditorName(a);
+        bValue = getAuditorName(b);
+        break;
+      case "startDate":
+        aValue = a.startDate || "";
+        bValue = b.startDate || "";
+        break;
+      case "targetDate":
+        aValue = a.endDate || "";
+        bValue = b.endDate || "";
+        break;
+      case "status":
+        aValue = a.status;
+        bValue = b.status;
+        break;
+    }
+
+    if (sortDirection === "asc") {
+      return aValue > bValue ? 1 : -1;
+    } else {
+      return aValue < bValue ? 1 : -1;
+    }
+  });
+
+  // Pagination calculations
+  const totalPages = Math.ceil(sortedEngagements.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedData = sortedEngagements.slice(startIndex, endIndex);
+
+  const SortableHeader = ({ field, children }: { field: string; children: React.ReactNode }) => (
+    <TableHead
+      className="text-white cursor-pointer hover:bg-[#1a365d] select-none"
+      onClick={() => handleSort(field)}
+    >
+      <div className="flex items-center gap-1">
+        {children}
+        <ArrowUpDown className="h-4 w-4" />
+      </div>
+    </TableHead>
+  );
+
+  if (loading) {
+    return (
+      <div className="p-6">
+        <h1 className="text-2xl font-bold text-[#1e3a5f] mb-6">Fieldwork</h1>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Fieldwork - Evidence Requests</h1>
-          <p className="text-gray-500 mt-1">
-            {isAuditee
-              ? "Evidence requests assigned to you"
-              : "Manage evidence requests for audits"}
-          </p>
-        </div>
-        {!isAuditee && (
-          <Button
-            className="bg-blue-600 hover:bg-blue-700"
-            onClick={() => router.push("/internal-audit/fieldwork/add")}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Evidence Request
-          </Button>
-        )}
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="cursor-pointer hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">Pending</CardTitle>
-            <Clock className="h-5 w-5 text-yellow-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.pending}</div>
-          </CardContent>
-        </Card>
-        <Card className="cursor-pointer hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">In Progress</CardTitle>
-            <AlertCircle className="h-5 w-5 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.inProgress}</div>
-          </CardContent>
-        </Card>
-        <Card className="cursor-pointer hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">Submitted</CardTitle>
-            <Upload className="h-5 w-5 text-purple-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.submitted}</div>
-          </CardContent>
-        </Card>
-        <Card className="cursor-pointer hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">Reviewed</CardTitle>
-            <CheckCircle className="h-5 w-5 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.reviewed}</div>
-          </CardContent>
-        </Card>
-      </div>
+      <h1 className="text-2xl font-bold text-[#1e3a5f]">Fieldwork</h1>
 
       {/* Filters */}
-      <div className="flex gap-4">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="Search by title, audit ID, or engagement"
-            value={searchFilter}
-            onChange={(e) => setSearchFilter(e.target.value)}
-            className="pl-10"
-          />
-        </div>
+      <div className="flex items-center justify-end gap-4">
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Status" />
+          <SelectTrigger className="w-[150px]">
+            <SelectValue placeholder="All Status" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="Pending">Pending</SelectItem>
+            <SelectItem value="Planned">Planned</SelectItem>
             <SelectItem value="In Progress">In Progress</SelectItem>
-            <SelectItem value="Submitted">Submitted</SelectItem>
-            <SelectItem value="Reviewed">Reviewed</SelectItem>
+            <SelectItem value="Completed">Completed</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={auditorFilter} onValueChange={setAuditorFilter}>
+          <SelectTrigger className="w-[150px]">
+            <SelectValue placeholder="All Auditor" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Auditor</SelectItem>
+            {auditors.map((auditor) => (
+              <SelectItem key={auditor.id} value={auditor.id}>
+                {auditor.firstName} {auditor.lastName}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Select Department" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Select Department</SelectItem>
+            {departments.map((dept) => (
+              <SelectItem key={dept.id} value={dept.id}>
+                {dept.name}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
 
       {/* Table */}
       <Card>
-        {loading ? (
-          <div className="p-8 text-center text-gray-500">Loading...</div>
-        ) : paginatedData.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
-            {isAuditee
-              ? "No evidence requests assigned to you yet."
-              : "No evidence requests found."}
-          </div>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Audit ID</TableHead>
-                <TableHead>Engagement</TableHead>
-                <TableHead>Evidence Title</TableHead>
-                <TableHead>Department</TableHead>
-                <TableHead>Due Date</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>AI Review</TableHead>
-                <TableHead>Attachments</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedData.map((row) => (
-                <TableRow key={row.id} className="hover:bg-gray-50">
-                  <TableCell className="font-medium">{row.engagement.auditId}</TableCell>
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-[#1e3a5f] hover:bg-[#1e3a5f]">
+              <SortableHeader field="auditId">Audit ID</SortableHeader>
+              <SortableHeader field="name">Name</SortableHeader>
+              <SortableHeader field="auditor">Auditor</SortableHeader>
+              <SortableHeader field="startDate">Start Date</SortableHeader>
+              <SortableHeader field="targetDate">Target Date</SortableHeader>
+              <SortableHeader field="status">Status</SortableHeader>
+              <TableHead className="text-white">Action</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {paginatedData.length > 0 ? (
+              paginatedData.map((engagement) => (
+                <TableRow key={engagement.id} className="hover:bg-gray-50">
+                  <TableCell className="font-medium">{engagement.auditId}</TableCell>
                   <TableCell className="max-w-[200px] truncate">
-                    {row.engagement.engagementTitle}
+                    {engagement.engagementTitle}
                   </TableCell>
-                  <TableCell className="max-w-[200px] truncate">{row.title}</TableCell>
-                  <TableCell>{row.engagement.department?.name || "-"}</TableCell>
-                  <TableCell>{formatDate(row.dueDate)}</TableCell>
+                  <TableCell>{getAuditorName(engagement)}</TableCell>
+                  <TableCell>{formatDate(engagement.startDate)}</TableCell>
+                  <TableCell>{formatDate(engagement.endDate)}</TableCell>
+                  <TableCell>{engagement.status}</TableCell>
                   <TableCell>
-                    <Badge className={statusColors[row.status] || "bg-gray-100 text-gray-800"}>
-                      <span className="flex items-center gap-1">
-                        {getStatusIcon(row.status)}
-                        {row.status}
-                      </span>
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {row.aiReviewStatus ? (
-                      <Badge className={aiStatusColors[row.aiReviewStatus] || ""}>
-                        {row.aiReviewStatus}
-                      </Badge>
-                    ) : (
-                      "-"
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <span className="flex items-center gap-1">
-                      <Paperclip className="h-4 w-4 text-gray-400" />
-                      {row.attachments.length}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="icon" onClick={() => handleView(row)}>
-                        <Eye className="h-4 w-4 text-blue-600" />
-                      </Button>
-                      {isAuditee && (row.status === "Pending" || row.status === "In Progress") && (
-                        <Button variant="ghost" size="icon" onClick={() => handleUpload(row)}>
-                          <Upload className="h-4 w-4 text-green-600" />
-                        </Button>
-                      )}
-                    </div>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="bg-[#1e3a5f] hover:bg-[#2d4a6f] text-white"
+                      onClick={() => router.push(`/internal-audit/fieldwork/${engagement.id}`)}
+                    >
+                      Add/View Details
+                    </Button>
                   </TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                  No fieldwork items found
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
 
         {/* Pagination */}
-        {!loading && filteredData.length > 0 && (
+        {sortedEngagements.length > 0 && (
           <div className="flex items-center justify-end gap-2 p-4 border-t">
             <Button
               variant="ghost"
@@ -409,7 +363,7 @@ export default function FieldworkPage() {
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <span className="text-sm text-gray-600">
-              {startIndex + 1} to {Math.min(endIndex, filteredData.length)} of {filteredData.length}
+              {startIndex + 1} to {Math.min(endIndex, sortedEngagements.length)} of {sortedEngagements.length}
             </span>
             <Button
               variant="ghost"
@@ -430,173 +384,6 @@ export default function FieldworkPage() {
           </div>
         )}
       </Card>
-
-      {/* View Dialog */}
-      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Evidence Request Details</DialogTitle>
-            <DialogDescription>
-              {selectedRequest?.engagement.auditId} - {selectedRequest?.title}
-            </DialogDescription>
-          </DialogHeader>
-          {selectedRequest && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm text-gray-500">Engagement</Label>
-                  <p className="font-medium">{selectedRequest.engagement.engagementTitle}</p>
-                </div>
-                <div>
-                  <Label className="text-sm text-gray-500">Department</Label>
-                  <p className="font-medium">{selectedRequest.engagement.department?.name || "-"}</p>
-                </div>
-                <div>
-                  <Label className="text-sm text-gray-500">Assigned Auditor</Label>
-                  <p className="font-medium">
-                    {selectedRequest.engagement.assignedAuditor
-                      ? `${selectedRequest.engagement.assignedAuditor.firstName} ${selectedRequest.engagement.assignedAuditor.lastName}`
-                      : "-"}
-                  </p>
-                </div>
-                <div>
-                  <Label className="text-sm text-gray-500">Due Date</Label>
-                  <p className="font-medium">{formatDate(selectedRequest.dueDate)}</p>
-                </div>
-                <div>
-                  <Label className="text-sm text-gray-500">Sample Size</Label>
-                  <p className="font-medium">{selectedRequest.sampleSize || "-"}</p>
-                </div>
-                <div>
-                  <Label className="text-sm text-gray-500">Status</Label>
-                  <Badge className={statusColors[selectedRequest.status] || ""}>
-                    {selectedRequest.status}
-                  </Badge>
-                </div>
-              </div>
-
-              <div>
-                <Label className="text-sm text-gray-500">Description</Label>
-                <p className="text-sm mt-1">{selectedRequest.description || "No description provided"}</p>
-              </div>
-
-              {selectedRequest.aiReviewStatus && (
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <Label className="text-sm text-gray-500">AI Review</Label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Badge className={aiStatusColors[selectedRequest.aiReviewStatus] || ""}>
-                      {selectedRequest.aiReviewStatus}
-                    </Badge>
-                    {selectedRequest.aiReviewComment && (
-                      <span className="text-sm text-gray-600">{selectedRequest.aiReviewComment}</span>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {selectedRequest.attachments.length > 0 && (
-                <div>
-                  <Label className="text-sm text-gray-500">Attachments</Label>
-                  <div className="mt-2 space-y-2">
-                    {selectedRequest.attachments.map((attachment) => (
-                      <div
-                        key={attachment.id}
-                        className="flex items-center gap-2 p-2 bg-gray-50 rounded"
-                      >
-                        <FileText className="h-4 w-4 text-gray-400" />
-                        <span className="text-sm">{attachment.fileName}</span>
-                        <span className="text-xs text-gray-400">
-                          ({Math.round((attachment.fileSize || 0) / 1024)} KB)
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setViewDialogOpen(false)}>
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Upload/Submit Dialog */}
-      <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Submit Evidence</DialogTitle>
-            <DialogDescription>
-              Upload files and submit evidence for: {selectedRequest?.title}
-            </DialogDescription>
-          </DialogHeader>
-          {selectedRequest && (
-            <div className="space-y-4">
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-600">{selectedRequest.description}</p>
-                {selectedRequest.sampleSize && (
-                  <p className="text-sm text-gray-500 mt-2">
-                    <strong>Sample Size:</strong> {selectedRequest.sampleSize}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <Label>Upload Evidence Files</Label>
-                <div className="mt-2 border-2 border-dashed border-gray-200 rounded-lg p-6 text-center">
-                  <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm text-gray-500">
-                    Drag and drop files here, or click to browse
-                  </p>
-                  <Input
-                    type="file"
-                    multiple
-                    className="mt-2"
-                    onChange={(e) => {
-                      // Handle file upload
-                      const files = e.target.files;
-                      if (files && files.length > 0) {
-                        toast.info(`${files.length} file(s) selected`);
-                      }
-                    }}
-                  />
-                </div>
-              </div>
-
-              {selectedRequest.attachments.length > 0 && (
-                <div>
-                  <Label className="text-sm text-gray-500">Previously Uploaded</Label>
-                  <div className="mt-2 space-y-2">
-                    {selectedRequest.attachments.map((attachment) => (
-                      <div
-                        key={attachment.id}
-                        className="flex items-center gap-2 p-2 bg-gray-50 rounded"
-                      >
-                        <FileText className="h-4 w-4 text-gray-400" />
-                        <span className="text-sm">{attachment.fileName}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setUploadDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSubmitEvidence}
-              disabled={submitting}
-              className="bg-[#1e3a5f] hover:bg-[#1e3a5f]/90"
-            >
-              {submitting ? "Submitting..." : "Submit Evidence"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

@@ -1,0 +1,174 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { withAuth } from '@/lib/api-auth';
+
+interface RouteContext {
+  params: Promise<{ id: string; findingId: string }>;
+}
+
+// GET /api/internal-audit/fieldwork/[id]/findings/[findingId] - Get a specific finding
+export const GET = withAuth(
+  async (req: NextRequest, context: RouteContext) => {
+    try {
+      const { id: engagementId, findingId } = await context.params;
+
+      // Get finding
+      const finding = await prisma.internalAuditFinding.findUnique({
+        where: { id: findingId },
+        include: {
+          department: true,
+        },
+      });
+
+      if (!finding || finding.engagementId !== engagementId) {
+        return NextResponse.json(
+          { error: 'Finding not found' },
+          { status: 404 }
+        );
+      }
+
+      return NextResponse.json({
+        id: finding.id,
+        findingId: finding.findingId,
+        title: finding.finding,
+        description: finding.description || '',
+        severity: finding.severity,
+        status: finding.status,
+        departmentId: finding.departmentId,
+        departmentName: finding.department?.name || '',
+        responsiblePerson: finding.responsiblePerson || '',
+        responsiblePersonId: finding.responsiblePersonId || '',
+        identifiedDate: finding.identifiedDate?.toISOString() || null,
+        targetDate: finding.targetDate?.toISOString() || null,
+        closedDate: finding.closedDate?.toISOString() || null,
+      });
+    } catch (error) {
+      console.error('Error fetching finding:', error);
+      return NextResponse.json(
+        { error: 'Failed to fetch finding' },
+        { status: 500 }
+      );
+    }
+  },
+  { resource: 'audit.fieldwork', action: 'view' }
+);
+
+// PATCH /api/internal-audit/fieldwork/[id]/findings/[findingId] - Update a finding
+export const PATCH = withAuth(
+  async (req: NextRequest, context: RouteContext) => {
+    try {
+      const { id: engagementId, findingId } = await context.params;
+      const body = await req.json();
+
+      // Verify finding exists and belongs to engagement
+      const existingFinding = await prisma.internalAuditFinding.findUnique({
+        where: { id: findingId },
+      });
+
+      if (!existingFinding || existingFinding.engagementId !== engagementId) {
+        return NextResponse.json(
+          { error: 'Finding not found' },
+          { status: 404 }
+        );
+      }
+
+      // Get responsible person name if ID provided
+      let responsiblePersonName = body.responsiblePerson || existingFinding.responsiblePerson;
+      if (body.responsiblePersonId && body.responsiblePersonId !== existingFinding.responsiblePersonId) {
+        const user = await prisma.user.findUnique({
+          where: { id: body.responsiblePersonId },
+          select: { fullName: true, firstName: true, lastName: true },
+        });
+        if (user) {
+          responsiblePersonName = user.fullName || `${user.firstName} ${user.lastName}`;
+        }
+      }
+
+      // Determine closed date
+      let closedDate = existingFinding.closedDate;
+      if (body.status === 'Closed' && existingFinding.status !== 'Closed') {
+        closedDate = new Date();
+      } else if (body.status !== 'Closed' && existingFinding.status === 'Closed') {
+        closedDate = null;
+      }
+
+      // Update finding
+      const updatedFinding = await prisma.internalAuditFinding.update({
+        where: { id: findingId },
+        data: {
+          finding: body.title !== undefined ? body.title : existingFinding.finding,
+          description: body.description !== undefined ? body.description : existingFinding.description,
+          severity: body.severity || existingFinding.severity,
+          status: body.status || existingFinding.status,
+          departmentId: body.departmentId !== undefined ? (body.departmentId || null) : existingFinding.departmentId,
+          responsiblePerson: responsiblePersonName,
+          responsiblePersonId: body.responsiblePersonId !== undefined ? (body.responsiblePersonId || null) : existingFinding.responsiblePersonId,
+          identifiedDate: body.identifiedDate ? new Date(body.identifiedDate) : existingFinding.identifiedDate,
+          targetDate: body.targetDate ? new Date(body.targetDate) : (body.targetDate === null ? null : existingFinding.targetDate),
+          closedDate: closedDate,
+        },
+        include: {
+          department: true,
+        },
+      });
+
+      return NextResponse.json({
+        id: updatedFinding.id,
+        findingId: updatedFinding.findingId,
+        title: updatedFinding.finding,
+        description: updatedFinding.description || '',
+        severity: updatedFinding.severity,
+        status: updatedFinding.status,
+        departmentId: updatedFinding.departmentId,
+        departmentName: updatedFinding.department?.name || '',
+        responsiblePerson: updatedFinding.responsiblePerson || '',
+        responsiblePersonId: updatedFinding.responsiblePersonId || '',
+        identifiedDate: updatedFinding.identifiedDate?.toISOString() || null,
+        targetDate: updatedFinding.targetDate?.toISOString() || null,
+        closedDate: updatedFinding.closedDate?.toISOString() || null,
+      });
+    } catch (error) {
+      console.error('Error updating finding:', error);
+      return NextResponse.json(
+        { error: 'Failed to update finding' },
+        { status: 500 }
+      );
+    }
+  },
+  { resource: 'audit.fieldwork', action: 'update' }
+);
+
+// DELETE /api/internal-audit/fieldwork/[id]/findings/[findingId] - Delete a finding
+export const DELETE = withAuth(
+  async (req: NextRequest, context: RouteContext) => {
+    try {
+      const { id: engagementId, findingId } = await context.params;
+
+      // Verify finding exists and belongs to engagement
+      const existingFinding = await prisma.internalAuditFinding.findUnique({
+        where: { id: findingId },
+      });
+
+      if (!existingFinding || existingFinding.engagementId !== engagementId) {
+        return NextResponse.json(
+          { error: 'Finding not found' },
+          { status: 404 }
+        );
+      }
+
+      // Delete finding
+      await prisma.internalAuditFinding.delete({
+        where: { id: findingId },
+      });
+
+      return NextResponse.json({ message: 'Finding deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting finding:', error);
+      return NextResponse.json(
+        { error: 'Failed to delete finding' },
+        { status: 500 }
+      );
+    }
+  },
+  { resource: 'audit.fieldwork', action: 'delete' }
+);
