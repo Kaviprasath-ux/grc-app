@@ -23,13 +23,17 @@ export default function DashboardPage() {
   const { data: session } = useSession();
   const router = useRouter();
 
-  // Redirect GRCAdmin users to GRC landing page
-  // Redirect AuditHead users to Internal Audit dashboard
+  // Redirect users based on their role to appropriate landing pages
   useEffect(() => {
     if (session?.user?.roles?.includes("GRCAdministrator")) {
       router.replace("/grc");
     } else if (session?.user?.roles?.includes("AuditHead")) {
       router.replace("/internal-audit/dashboard");
+    } else if (session?.user?.roles?.includes("Auditee") &&
+               !session?.user?.roles?.includes("AuditHead") &&
+               !session?.user?.roles?.includes("Auditor")) {
+      // Auditee can only access Fieldwork, CAPA Tracking, and Reports (NO Dashboard)
+      router.replace("/internal-audit/fieldwork");
     }
   }, [session, router]);
 

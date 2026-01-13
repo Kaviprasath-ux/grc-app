@@ -224,7 +224,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
   //               Audit Planning, Document Library, Settings, Risk Universe,
   //               or any other modules (Organization, Compliance, Asset, Risk)
   Auditee: [
-    { resource: 'audit.fieldwork', actions: ['view'], scope: 'department' },
+    { resource: 'audit.fieldwork', actions: ['view', 'edit'], scope: 'department' },
     { resource: 'audit.reports', actions: ['view'], scope: 'department' },
     { resource: 'audit.capa', actions: ['view', 'edit'], scope: 'department' },
   ],

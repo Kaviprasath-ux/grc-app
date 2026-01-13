@@ -197,6 +197,7 @@ model User {
   userRoles           UserRole[]
   // Internal Audit relations
   assignedEngagements AuditEngagement[]   @relation("EngagementAuditor")
+  auditeeEngagements  AuditEngagement[]   @relation("EngagementAuditee")
   memberOfEngagements AuditEngagement[]   @relation("EngagementTeamMembers")
   // Process RACI relations
   responsibleProcesses Process[]          @relation("ProcessResponsible")
@@ -1378,6 +1379,9 @@ model InternalAuditRisk {
   status               String         @default("Open") // Open, Closed, Under Review
   evidenceFilePath     String?
   evidenceFileName     String?
+  // Engagement link
+  engagementId         String?
+  engagement           AuditEngagement? @relation(fields: [engagementId], references: [id])
   createdAt            DateTime       @default(now())
   updatedAt            DateTime       @updatedAt
 }
@@ -1407,40 +1411,52 @@ model AuditableEntity {
 
 // Audit Engagement (Annual Audit Plan items)
 model AuditEngagement {
-  id                String           @id @default(cuid())
-  auditId           String           @unique // Auto-generated AUD001, AUD002
-  engagementTitle   String
-  description       String?
-  departmentId      String?
-  department        Department?      @relation(fields: [departmentId], references: [id])
-  auditableEntityId String?
-  auditableEntity   AuditableEntity? @relation(fields: [auditableEntityId], references: [id])
-  auditTypeId       String?
-  auditType         AuditType?       @relation("EngagementAuditType", fields: [auditTypeId], references: [id])
-  assignedAuditorId String?
-  assignedAuditor   User?            @relation("EngagementAuditor", fields: [assignedAuditorId], references: [id])
-  teamMembers       User[]           @relation("EngagementTeamMembers")
+  id                  String           @id @default(cuid())
+  auditId             String           @unique // Auto-generated AUD001, AUD002
+  engagementTitle     String
+  engagementObjective String?
+  engagementScope     String?
+  description         String?
+  departmentId        String?
+  department          Department?      @relation(fields: [departmentId], references: [id])
+  auditableEntityId   String?
+  auditableEntity     AuditableEntity? @relation(fields: [auditableEntityId], references: [id])
+  auditTypeId         String?
+  auditType           String?          // Internal Audit, Compliance, Financial, etc.
+  auditTypeRef        AuditType?       @relation("EngagementAuditType", fields: [auditTypeId], references: [id])
+  auditRating         String?          // Satisfactory, Needs Improvement, Unsatisfactory
+  assignedAuditorId   String?
+  assignedAuditor     User?            @relation("EngagementAuditor", fields: [assignedAuditorId], references: [id])
+  auditeeId           String?
+  auditee             User?            @relation("EngagementAuditee", fields: [auditeeId], references: [id])
+  teamMembers         User[]           @relation("EngagementTeamMembers")
   // Planning dates
-  plannedStartDate  DateTime?
-  plannedEndDate    DateTime?
-  actualStartDate   DateTime?
-  actualEndDate     DateTime?
+  plannedStartDate    DateTime?
+  plannedEndDate      DateTime?
+  actualStartDate     DateTime?
+  actualEndDate       DateTime?
+  startDate           DateTime?
+  endDate             DateTime?
   // Hours
-  plannedHours      Float            @default(0)
-  actualHours       Float            @default(0)
+  plannedHours        Float            @default(0)
+  actualHours         Float            @default(0)
+  // Additional fields
+  initialObservation  String?
+  relatedPolicies     String?
   // Status
-  status            String           @default("Planned") // Planned, In Progress, Completed, Cancelled
-  priority          String           @default("Medium") // Low, Medium, High
-  year              Int              @default(2026)
-  quarter           String?          // Q1, Q2, Q3, Q4
+  status              String           @default("Planned") // Planned, In Progress, Completed, Cancelled
+  priority            String           @default("Medium") // Low, Medium, High
+  year                Int              @default(2026)
+  quarter             String?          // Q1, Q2, Q3, Q4
   // Timestamps
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
   // Relations
-  fieldwork         AuditFieldwork?
-  report            AuditReport?
-  findings          InternalAuditFinding[]
-  evidenceRequests  FieldworkEvidenceRequest[]
+  fieldwork           AuditFieldwork?
+  report              AuditReport?
+  findings            InternalAuditFinding[]
+  evidenceRequests    FieldworkEvidenceRequest[]
+  linkedRisks         InternalAuditRisk[]
 }
 
 // ==================== INTERNAL AUDIT - FIELDWORK ====================
@@ -1544,6 +1560,9 @@ model AuditReport {
   reviewedAt          DateTime?
   publishedAt         DateTime?
   reviewedBy          String?
+  // Auditee assignment (assigned by Audit Head)
+  auditeeId           String?
+  auditeeName         String?
   // Attachment
   reportFilePath      String?
   reportFileName      String?

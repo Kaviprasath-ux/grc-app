@@ -21,8 +21,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Plus, Pencil, Trash2, ArrowUpDown, Eye, Search, Download, Upload } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, ArrowUpDown, Eye, Search, Download, Upload, X, FileText } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -80,6 +86,11 @@ export default function RiskRegisterPage() {
   // Delete dialog
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<InternalAuditRisk | null>(null);
+
+  // Import dialog
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [importing, setImporting] = useState(false);
 
   // Generate year options (current year + 5 years back)
   const currentYear = new Date().getFullYear();
@@ -168,12 +179,12 @@ export default function RiskRegisterPage() {
     }
   };
 
-  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const handleImport = async () => {
+    if (!selectedFile) return;
 
+    setImporting(true);
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", selectedFile);
 
     try {
       const response = await fetch("/api/internal-audit/risks/import", {
@@ -183,13 +194,41 @@ export default function RiskRegisterPage() {
 
       if (response.ok) {
         fetchRisks();
+        setImportDialogOpen(false);
+        setSelectedFile(null);
       }
     } catch (error) {
       console.error("Failed to import:", error);
+    } finally {
+      setImporting(false);
     }
+  };
 
-    // Reset the input
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+    }
     event.target.value = "";
+  };
+
+  const handleDownloadTemplate = async () => {
+    try {
+      const response = await fetch("/api/internal-audit/risks/template");
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "risk-import-template.csv";
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }
+    } catch (error) {
+      console.error("Failed to download template:", error);
+    }
   };
 
   const getRiskLevelBadge = (level: string | null) => {
@@ -226,15 +265,9 @@ export default function RiskRegisterPage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => router.back()}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-          <div>
-            <p className="text-sm text-muted-foreground">Internal Audit</p>
-            <h1 className="text-2xl font-semibold">Risk Register</h1>
-          </div>
+        <div>
+          <p className="text-sm text-muted-foreground">Internal Audit</p>
+          <h1 className="text-2xl font-semibold">Risk Register</h1>
         </div>
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -247,15 +280,9 @@ export default function RiskRegisterPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => router.back()}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-          <div>
-            <p className="text-sm text-muted-foreground">Internal Audit</p>
-            <h1 className="text-2xl font-semibold">Risk Register</h1>
-          </div>
+        <div>
+          <p className="text-sm text-muted-foreground">Internal Audit</p>
+          <h1 className="text-2xl font-semibold">Risk Register</h1>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={handleExport}>
@@ -264,17 +291,10 @@ export default function RiskRegisterPage() {
           </Button>
           {!isReadOnlyRole && (
             <>
-              <Button variant="outline" onClick={() => document.getElementById('import-file')?.click()}>
+              <Button variant="outline" onClick={() => setImportDialogOpen(true)}>
                 <Upload className="h-4 w-4 mr-2" />
                 Import
               </Button>
-              <input
-                id="import-file"
-                type="file"
-                accept=".csv,.xlsx,.xls"
-                className="hidden"
-                onChange={handleImport}
-              />
               <Button onClick={() => router.push("/internal-audit/risk-register/add")}>
                 <Plus className="h-4 w-4 mr-2" />
                 Add Risk Manually
@@ -424,6 +444,71 @@ export default function RiskRegisterPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Import Dialog */}
+      <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="text-blue-900">Risk Import File Upload</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6 py-4">
+            {/* File Upload */}
+            <div className="flex items-center gap-4">
+              <label className="text-sm font-medium min-w-[100px]">Upload File</label>
+              <div className="flex-1 flex items-center gap-2">
+                <Input
+                  readOnly
+                  value={selectedFile?.name || ""}
+                  placeholder=""
+                  className="flex-1"
+                />
+                <Button
+                  variant="outline"
+                  onClick={() => document.getElementById("import-file-input")?.click()}
+                >
+                  Browse...
+                </Button>
+                <input
+                  id="import-file-input"
+                  type="file"
+                  accept=".csv,.xlsx,.xls"
+                  className="hidden"
+                  onChange={handleFileSelect}
+                />
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center justify-between pt-4">
+              <Button
+                onClick={handleDownloadTemplate}
+                className="bg-blue-900 hover:bg-blue-800"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Download Import Template
+              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={handleImport}
+                  disabled={!selectedFile || importing}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  {importing ? "Importing..." : "Import"}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setImportDialogOpen(false);
+                    setSelectedFile(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
