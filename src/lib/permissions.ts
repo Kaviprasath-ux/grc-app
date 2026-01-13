@@ -166,7 +166,8 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'compliance.*', actions: ['view'], scope: 'all' },
     { resource: 'asset.*', actions: ['view'], scope: 'all' },
     { resource: 'risk.*', actions: ['view'], scope: 'all' },
-    { resource: 'audit.*', actions: ['view'], scope: 'all' },
+    { resource: 'audit.risk-register', actions: ['view'], scope: 'all' },
+    { resource: 'audit.settings', actions: ['view'], scope: 'all' },
   ],
 
   // Audit Head - Full access to Internal Audit module ONLY
@@ -185,9 +186,6 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'audit.reports', actions: ['*'], scope: 'all' },
     { resource: 'audit.capa', actions: ['*'], scope: 'all' },
     { resource: 'audit.documents', actions: ['view', 'create', 'edit'], scope: 'all' },
-    { resource: 'organization.dashboard', actions: ['view'], scope: 'all' },
-    { resource: 'organization.process', actions: ['view'], scope: 'all' },
-    { resource: 'organization.users', actions: ['view'], scope: 'all' },
   ],
 
   // Audit User - Basic audit access (view-only, NO Settings/Risk Universe per UAT)
