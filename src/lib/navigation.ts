@@ -262,3 +262,163 @@ export function getAccessibleRoutes(userPermissions: UserPermission[]): string[]
   collectRoutes(navigation);
   return routes;
 }
+
+/**
+ * Role name to kebab-case folder name mapping for role-specific pages
+ */
+const ROLE_PATH_MAP: Record<string, string> = {
+  "GRCAdministrator": "grc-administrator",
+  "CustomerAdministrator": "customer-administrator",
+  "AuditHead": "audit-head",
+  "AuditManager": "audit-manager",
+  "AuditUser": "audit-user",
+  "Auditor": "auditor",
+  "Auditee": "auditee",
+  "Reviewer": "reviewer",
+  "Contributor": "contributor",
+  "DepartmentReviewer": "department-reviewer",
+  "DepartmentContributor": "department-contributor",
+};
+
+/**
+ * Paths that have role-specific versions
+ * Maps original path to the module path that should be prefixed with role
+ */
+const ROLE_SPECIFIC_PATHS: Record<string, string[]> = {
+  // Organization module shared pages
+  "/dashboard": ["CustomerAdministrator", "AuditUser", "Auditor", "Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
+  "/organization/context": ["CustomerAdministrator", "Reviewer", "DepartmentReviewer", "DepartmentContributor"],
+  "/organization/users": ["CustomerAdministrator", "DepartmentReviewer", "DepartmentContributor"],
+  "/organization/process": ["CustomerAdministrator", "Auditor", "Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
+  // Compliance module shared pages
+  "/compliance/framework": ["GRCAdministrator", "Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
+  "/compliance/control": ["GRCAdministrator", "Auditor", "Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
+  "/compliance/governance": ["GRCAdministrator", "Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
+  "/compliance/evidence": ["GRCAdministrator", "Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
+  "/compliance/domain": ["GRCAdministrator"],
+  "/compliance/exceptions": ["Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
+  "/compliance/kpis": ["Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
+  // Asset module shared pages
+  "/assets/inventory": ["Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
+  "/assets/classification": ["Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
+  "/assets/reports": ["Reviewer", "DepartmentReviewer", "DepartmentContributor"],
+  // Risk module shared pages
+  "/risks/dashboard": ["Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
+  "/risks/register": ["Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
+  "/risks/assessment": ["Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
+  "/risks/response": ["Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
+  "/risks/reports": ["Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
+  // Internal Audit module shared pages
+  "/internal-audit/dashboard": ["AuditHead", "AuditManager", "AuditUser", "Auditor"],
+  "/internal-audit/audit-universe": ["AuditHead", "AuditManager", "AuditUser", "Auditor"],
+  "/internal-audit/risk-identification": ["AuditHead", "AuditManager", "AuditUser", "Auditor"],
+  "/internal-audit/risk-register": ["AuditHead", "AuditManager", "AuditUser", "Auditor", "DepartmentReviewer", "DepartmentContributor"],
+  "/internal-audit/audit-planning": ["AuditHead", "AuditManager", "AuditUser", "Auditor"],
+  "/internal-audit/fieldwork": ["AuditHead", "AuditManager", "AuditUser", "Auditor", "Auditee"],
+  "/internal-audit/report": ["AuditHead", "AuditManager", "AuditUser", "Auditor", "Auditee"],
+  "/internal-audit/capa-tracking": ["AuditHead", "AuditManager", "AuditUser", "Auditor", "Auditee"],
+  "/internal-audit/document-library": ["AuditHead", "AuditManager", "AuditUser", "Auditor"],
+};
+
+/**
+ * Get the role-specific path for a given original path and user role
+ */
+function getRoleSpecificPath(originalPath: string, userRole: string): string {
+  const rolesForPath = ROLE_SPECIFIC_PATHS[originalPath];
+
+  // If no role-specific version exists for this path, return original
+  if (!rolesForPath) return originalPath;
+
+  // If this role has a specific version of the page
+  if (rolesForPath.includes(userRole)) {
+    const rolePath = ROLE_PATH_MAP[userRole];
+    if (rolePath) {
+      return `/roles/${rolePath}${originalPath}`;
+    }
+  }
+
+  return originalPath;
+}
+
+/**
+ * Determine the primary role to use for navigation paths
+ * Priority: AuditHead > AuditManager > Auditor > AuditUser > Auditee >
+ *           GRCAdministrator > CustomerAdministrator >
+ *           Reviewer > DepartmentReviewer > Contributor > DepartmentContributor
+ */
+function getPrimaryRole(roles: string[]): string {
+  const rolePriority = [
+    "AuditHead",
+    "AuditManager",
+    "Auditor",
+    "AuditUser",
+    "Auditee",
+    "GRCAdministrator",
+    "CustomerAdministrator",
+    "Reviewer",
+    "DepartmentReviewer",
+    "Contributor",
+    "DepartmentContributor",
+  ];
+
+  for (const role of rolePriority) {
+    if (roles.includes(role)) {
+      return role;
+    }
+  }
+
+  return roles[0] || "Contributor";
+}
+
+/**
+ * Transform navigation items to use role-specific paths
+ */
+function transformNavItemsForRole(items: NavItem[], userRole: string): NavItem[] {
+  return items.map(item => {
+    const transformed = { ...item };
+
+    // Transform href if it exists
+    if (transformed.href) {
+      transformed.href = getRoleSpecificPath(transformed.href, userRole);
+    }
+
+    // Transform children recursively
+    if (transformed.children && transformed.children.length > 0) {
+      transformed.children = transformNavItemsForRole(transformed.children, userRole);
+    }
+
+    return transformed;
+  });
+}
+
+/**
+ * Filter and transform navigation items based on user permissions and role.
+ * Returns navigation with role-specific paths.
+ */
+export function filterNavigationByPermissionsAndRole(
+  items: NavItem[],
+  userPermissions: UserPermission[],
+  userRoles: string[]
+): NavItem[] {
+  const primaryRole = getPrimaryRole(userRoles);
+
+  // First filter by permissions
+  const filteredItems = filterNavigationByPermissions(items, userPermissions);
+
+  // Then transform to role-specific paths
+  return transformNavItemsForRole(filteredItems, primaryRole);
+}
+
+/**
+ * Get the primary role from user roles array
+ */
+export function getUserPrimaryRole(roles: string[]): string {
+  return getPrimaryRole(roles);
+}
+
+/**
+ * Get role-specific path for a given path and role
+ */
+export function getRoleBasedPath(path: string, role: string): string {
+  return getRoleSpecificPath(path, role);
+}

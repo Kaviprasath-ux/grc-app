@@ -24,27 +24,30 @@ export async function GET(
       );
     }
 
-    // Get changes with pagination
-    const [changes, totalChanges] = await Promise.all([
-      prisma.auditLogChange.findMany({
-        where: { auditLogId: id },
-        orderBy: { attributeName: "asc" },
-        take: limit,
-        skip: offset,
-      }),
-      prisma.auditLogChange.count({ where: { auditLogId: id } }),
-    ]);
+    // Parse changes from JSON field
+    let changes: Array<{ attributeName: string; oldValue: string; newValue: string }> = [];
+    if (auditLog.changes) {
+      try {
+        changes = JSON.parse(auditLog.changes);
+      } catch {
+        changes = [];
+      }
+    }
+
+    // Apply pagination to changes array
+    const totalChanges = changes.length;
+    const paginatedChanges = changes.slice(offset, offset + limit);
 
     return NextResponse.json({
       ...auditLog,
-      changes,
+      changes: paginatedChanges,
       pagination: {
         total: totalChanges,
         limit,
         offset,
         currentPage: Math.floor(offset / limit) + 1,
         totalPages: Math.ceil(totalChanges / limit),
-        hasMore: offset + changes.length < totalChanges,
+        hasMore: offset + paginatedChanges.length < totalChanges,
       },
     });
   } catch (error) {

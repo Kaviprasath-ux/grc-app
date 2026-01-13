@@ -74,6 +74,7 @@ export async function POST(req: NextRequest) {
     // Create the user
     const newUser = await prisma.user.create({
       data: {
+        userId: `USR-${Date.now()}-${userName.substring(0, 4).toUpperCase()}`,
         userName,
         email,
         password, // In production, this should be hashed

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Plus, Pencil, Trash2, Upload, X, ArrowLeft } from "lucide-react";
 import { PageHeader, DataGrid } from "@/components/shared";
@@ -110,7 +110,7 @@ interface Regulation {
   status: string;
 }
 
-export default function ProfilePage() {
+function ProfilePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialTab = searchParams.get("tab") || "overview";
@@ -1528,5 +1528,13 @@ export default function ProfilePage() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+  );
+}
+
+export default function ProfilePage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-64"><p className="text-muted-foreground">Loading...</p></div>}>
+      <ProfilePageContent />
+    </Suspense>
   );
 }

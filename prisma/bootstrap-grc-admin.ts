@@ -70,6 +70,7 @@ async function bootstrapGRCAdministrator() {
       // Create the superadmin user
       superadminUser = await prisma.user.create({
         data: {
+          userId: `USR-${Date.now()}-ADMIN`,
           userName: SUPERADMIN_CONFIG.userName,
           password: SUPERADMIN_CONFIG.password,
           email: SUPERADMIN_CONFIG.email,

@@ -135,7 +135,7 @@ export const PATCH = withAuth(
       );
     }
   },
-  { resource: 'audit.fieldwork', action: 'update' }
+  { resource: 'audit.fieldwork', action: 'edit' }
 );
 
 // DELETE /api/internal-audit/fieldwork/[id]/findings/[findingId] - Delete a finding

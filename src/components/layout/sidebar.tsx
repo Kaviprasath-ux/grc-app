@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { navigation, filterNavigationByPermissions, type NavItem } from "@/lib/navigation";
+import { navigation, filterNavigationByPermissionsAndRole, type NavItem } from "@/lib/navigation";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface NavItemProps {
@@ -102,15 +102,19 @@ function NavItemComponent({ item, depth = 0 }: NavItemProps) {
 export function Sidebar() {
   const { data: session, status } = useSession();
 
-  // Filter navigation based on user permissions
+  // Filter navigation based on user permissions and transform paths for role
   const filteredNavigation = useMemo(() => {
-    if (!session?.user?.permissions) {
+    if (!session?.user?.permissions || !session?.user?.roles) {
       // Return empty array if no permissions to avoid showing wrong menu
       return [];
     }
 
-    return filterNavigationByPermissions(navigation, session.user.permissions);
-  }, [session?.user?.permissions]);
+    return filterNavigationByPermissionsAndRole(
+      navigation,
+      session.user.permissions,
+      session.user.roles
+    );
+  }, [session?.user?.permissions, session?.user?.roles]);
 
   // Determine if user info should be shown
   const showUserInfo = session?.user?.roles && session.user.roles.length > 0;

@@ -80,7 +80,7 @@ export const PUT = withAuth(
       );
     }
   },
-  { resource: 'audit.planning', action: 'update' }
+  { resource: 'audit.planning', action: 'edit' }
 );
 
 // PATCH /api/internal-audit/engagements/[id] - Partial update an engagement (e.g., status change)
@@ -124,7 +124,7 @@ export const PATCH = withAuth(
       );
     }
   },
-  { resource: 'audit.fieldwork', action: 'update' }
+  { resource: 'audit.fieldwork', action: 'edit' }
 );
 
 // DELETE /api/internal-audit/engagements/[id] - Delete an engagement

@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
           OR: [
             { entityType: { contains: search } },
             { userName: { contains: search } },
-            { referenceNumber: { contains: search } },
+            { entityId: { contains: search } },
           ],
         }
       : {};
@@ -27,11 +27,6 @@ export async function GET(request: NextRequest) {
         orderBy: { createdAt: "desc" },
         take: limit,
         skip: offset,
-        include: {
-          _count: {
-            select: { auditLogChanges: true },
-          },
-        },
       }),
       prisma.auditLog.count({ where }),
     ]);

@@ -53,6 +53,7 @@ interface User {
   departmentId: string | null;
   department?: { id: string; name: string } | null;
   function?: string;
+  designation?: string;
 }
 
 interface Department {
