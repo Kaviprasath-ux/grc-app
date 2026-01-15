@@ -110,27 +110,35 @@ const controlStatusColors: Record<string, string> = {
   "Not Implemented": "bg-gray-100 text-gray-800",
 };
 
-const categories = [
-  "Strategic",
-  "Operational",
-  "Financial",
-  "Compliance",
-  "Technology",
-  "Reputational",
-];
-
-const mitigationStatuses = [
+const defaultMitigationStatuses = [
   "Not Started",
   "In Progress",
   "Implemented",
   "Verified",
 ];
 
+interface RiskSettingOption {
+  key: string;
+  label: string;
+  description?: string;
+  value: string;
+}
+
+interface RiskSettings {
+  likelihood_scale: RiskSettingOption[];
+  impact_scale: RiskSettingOption[];
+}
+
+interface RiskCategory {
+  id: string;
+  name: string;
+}
+
 export default function RiskDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
-  const { canView, canEdit, isLoading: permissionsLoading } = usePermissions('risk.risk-matrix');
+  const { canView, isLoading: permissionsLoading } = usePermissions('risk.risk-matrix');
 
   const [risk, setRisk] = useState<Risk | null>(null);
   const [loading, setLoading] = useState(true);
@@ -157,6 +165,23 @@ export default function RiskDetailPage() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [availableControls, setAvailableControls] = useState<Control[]>([]);
   const [selectedControlId, setSelectedControlId] = useState("");
+
+  // Dynamic settings from API
+  const [categories, setCategories] = useState<RiskCategory[]>([]);
+  const [likelihoodOptions, setLikelihoodOptions] = useState<{ label: string; value: number }[]>([]);
+  const [impactOptions, setImpactOptions] = useState<{ label: string; value: number }[]>([]);
+  const [mitigationStatuses] = useState(defaultMitigationStatuses);
+
+  // Helper to get label for a likelihood/impact value
+  const getLikelihoodLabel = (value: number): string => {
+    const option = likelihoodOptions.find(o => o.value === value);
+    return option?.label || `Level ${value}`;
+  };
+
+  const getImpactLabel = (value: number): string => {
+    const option = impactOptions.find(o => o.value === value);
+    return option?.label || `Level ${value}`;
+  };
 
   const fetchRisk = useCallback(async () => {
     try {
@@ -188,9 +213,11 @@ export default function RiskDetailPage() {
 
   const fetchReferenceData = useCallback(async () => {
     try {
-      const [departmentsRes, controlsRes] = await Promise.all([
+      const [departmentsRes, controlsRes, categoriesRes, settingsRes] = await Promise.all([
         fetch("/api/departments"),
         fetch("/api/controls"),
+        fetch("/api/risk-categories"),
+        fetch("/api/risk-settings"),
       ]);
 
       if (departmentsRes.ok) {
@@ -200,6 +227,34 @@ export default function RiskDetailPage() {
       if (controlsRes.ok) {
         const ctrlData = await controlsRes.json();
         setAvailableControls(Array.isArray(ctrlData) ? ctrlData : ctrlData.data || []);
+      }
+      if (categoriesRes.ok) {
+        const catData = await categoriesRes.json();
+        setCategories(Array.isArray(catData) ? catData : catData.data || []);
+      }
+
+      // Parse risk settings
+      if (settingsRes.ok) {
+        const settingsData = await settingsRes.json();
+        const defaults = settingsData.defaults as RiskSettings | undefined;
+
+        if (defaults) {
+          // Set likelihood options from settings
+          if (defaults.likelihood_scale && defaults.likelihood_scale.length > 0) {
+            setLikelihoodOptions(defaults.likelihood_scale.map(opt => ({
+              label: opt.label,
+              value: parseInt(opt.value) || parseInt(opt.key),
+            })));
+          }
+
+          // Set impact options from settings
+          if (defaults.impact_scale && defaults.impact_scale.length > 0) {
+            setImpactOptions(defaults.impact_scale.map(opt => ({
+              label: opt.label,
+              value: parseInt(opt.value) || parseInt(opt.key),
+            })));
+          }
+        }
       }
     } catch (error) {
       console.error("Error fetching reference data:", error);
@@ -370,11 +425,11 @@ export default function RiskDetailPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="1">1 - Rare</SelectItem>
-                      <SelectItem value="2">2 - Unlikely</SelectItem>
-                      <SelectItem value="3">3 - Possible</SelectItem>
-                      <SelectItem value="4">4 - Likely</SelectItem>
-                      <SelectItem value="5">5 - Almost Certain</SelectItem>
+                      {likelihoodOptions.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value.toString()}>
+                          {opt.value} - {opt.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -390,11 +445,11 @@ export default function RiskDetailPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="1">1 - Insignificant</SelectItem>
-                      <SelectItem value="2">2 - Minor</SelectItem>
-                      <SelectItem value="3">3 - Moderate</SelectItem>
-                      <SelectItem value="4">4 - Major</SelectItem>
-                      <SelectItem value="5">5 - Catastrophic</SelectItem>
+                      {impactOptions.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value.toString()}>
+                          {opt.value} - {opt.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -416,11 +471,11 @@ export default function RiskDetailPage() {
                       <SelectValue placeholder="Select likelihood" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="1">1 - Rare</SelectItem>
-                      <SelectItem value="2">2 - Unlikely</SelectItem>
-                      <SelectItem value="3">3 - Possible</SelectItem>
-                      <SelectItem value="4">4 - Likely</SelectItem>
-                      <SelectItem value="5">5 - Almost Certain</SelectItem>
+                      {likelihoodOptions.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value.toString()}>
+                          {opt.value} - {opt.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -436,11 +491,11 @@ export default function RiskDetailPage() {
                       <SelectValue placeholder="Select impact" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="1">1 - Insignificant</SelectItem>
-                      <SelectItem value="2">2 - Minor</SelectItem>
-                      <SelectItem value="3">3 - Moderate</SelectItem>
-                      <SelectItem value="4">4 - Major</SelectItem>
-                      <SelectItem value="5">5 - Catastrophic</SelectItem>
+                      {impactOptions.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value.toString()}>
+                          {opt.value} - {opt.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -461,8 +516,8 @@ export default function RiskDetailPage() {
                     </SelectTrigger>
                     <SelectContent>
                       {categories.map((c) => (
-                        <SelectItem key={c} value={c}>
-                          {c}
+                        <SelectItem key={c.id} value={c.name}>
+                          {c.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -574,30 +629,14 @@ export default function RiskDetailPage() {
               <p className="text-sm text-gray-500">Likelihood</p>
               <p className="text-3xl font-bold">{risk.likelihood}</p>
               <p className="text-xs text-gray-400">
-                {risk.likelihood === 1
-                  ? "Rare"
-                  : risk.likelihood === 2
-                  ? "Unlikely"
-                  : risk.likelihood === 3
-                  ? "Possible"
-                  : risk.likelihood === 4
-                  ? "Likely"
-                  : "Almost Certain"}
+                {getLikelihoodLabel(risk.likelihood)}
               </p>
             </div>
             <div className="text-center p-4 bg-gray-50 rounded-lg">
               <p className="text-sm text-gray-500">Impact</p>
               <p className="text-3xl font-bold">{risk.impact}</p>
               <p className="text-xs text-gray-400">
-                {risk.impact === 1
-                  ? "Insignificant"
-                  : risk.impact === 2
-                  ? "Minor"
-                  : risk.impact === 3
-                  ? "Moderate"
-                  : risk.impact === 4
-                  ? "Major"
-                  : "Catastrophic"}
+                {getImpactLabel(risk.impact)}
               </p>
             </div>
             <div className="text-center p-4 bg-gray-50 rounded-lg">
@@ -634,30 +673,14 @@ export default function RiskDetailPage() {
                 <p className="text-sm text-gray-500">Likelihood</p>
                 <p className="text-3xl font-bold">{risk.residualLikelihood}</p>
                 <p className="text-xs text-gray-400">
-                  {risk.residualLikelihood === 1
-                    ? "Rare"
-                    : risk.residualLikelihood === 2
-                    ? "Unlikely"
-                    : risk.residualLikelihood === 3
-                    ? "Possible"
-                    : risk.residualLikelihood === 4
-                    ? "Likely"
-                    : "Almost Certain"}
+                  {getLikelihoodLabel(risk.residualLikelihood)}
                 </p>
               </div>
               <div className="text-center p-4 bg-gray-50 rounded-lg">
                 <p className="text-sm text-gray-500">Impact</p>
                 <p className="text-3xl font-bold">{risk.residualImpact}</p>
                 <p className="text-xs text-gray-400">
-                  {risk.residualImpact === 1
-                    ? "Insignificant"
-                    : risk.residualImpact === 2
-                    ? "Minor"
-                    : risk.residualImpact === 3
-                    ? "Moderate"
-                    : risk.residualImpact === 4
-                    ? "Major"
-                    : "Catastrophic"}
+                  {getImpactLabel(risk.residualImpact)}
                 </p>
               </div>
               <div className="text-center p-4 bg-gray-50 rounded-lg">

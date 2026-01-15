@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { PageHeader } from "@/components/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -66,6 +66,28 @@ interface Vulnerability {
   name: string;
 }
 
+interface RiskSettingOption {
+  key: string;
+  label: string;
+  description?: string;
+  value: string;
+}
+
+interface RiskRatingThreshold {
+  min: number;
+  max: number;
+  rating: string;
+  color: string;
+}
+
+interface RiskSettings {
+  likelihood_scale: RiskSettingOption[];
+  impact_scale: RiskSettingOption[];
+  rating_matrix: {
+    thresholds: RiskRatingThreshold[];
+  };
+}
+
 const assessmentSteps = [
   { id: 1, name: "Risk Context" },
   { id: 2, name: "Likelihood" },
@@ -75,10 +97,34 @@ const assessmentSteps = [
   { id: 6, name: "Risk Summary" },
 ];
 
-const likelihoodOptions = [
+// Default values used as fallback if API fails
+const defaultLikelihoodOptions = [
   { label: "Rare", value: 1 },
-  { label: "Moderate", value: 5 },
-  { label: "High", value: 10 },
+  { label: "Unlikely", value: 2 },
+  { label: "Possible", value: 3 },
+  { label: "Likely", value: 4 },
+  { label: "Almost Certain", value: 5 },
+];
+
+const defaultImpactOptions = [
+  { label: "Insignificant", value: 1 },
+  { label: "Minor", value: 2 },
+  { label: "Moderate", value: 3 },
+  { label: "Major", value: 4 },
+  { label: "Catastrophic", value: 5 },
+];
+
+const defaultVulnerabilityOptions = [
+  { label: "Strong", value: 10 },
+  { label: "Medium", value: 7 },
+  { label: "Weak", value: 5 },
+];
+
+const defaultRatingThresholds: RiskRatingThreshold[] = [
+  { min: 1, max: 9, rating: "Low Risk", color: "#22c55e" },
+  { min: 10, max: 14, rating: "High", color: "#f59e0b" },
+  { min: 15, max: 19, rating: "Very high", color: "#ea580c" },
+  { min: 20, max: 25, rating: "Catastrophic", color: "#dc2626" },
 ];
 
 const impactCategories = [
@@ -89,33 +135,6 @@ const impactCategories = [
   "Operational",
 ];
 
-const impactOptions = [
-  { label: "Low", value: 1 },
-  { label: "Insignificant", value: 2 },
-  { label: "Minor", value: 5 },
-  { label: "High impact", value: 10 },
-];
-
-const vulnerabilityOptions = [
-  { label: "strong", value: 10 },
-  { label: "medium", value: 7 },
-  { label: "Weak", value: 5 },
-];
-
-const riskRatingScale = [
-  { label: "Low Risk", range: "[0 - 10]", min: 0, max: 10 },
-  { label: "High", range: "[11 - 50]", min: 11, max: 50 },
-  { label: "very high", range: "[51 - 99]", min: 51, max: 99 },
-  { label: "Catastrophic", range: "[100 - 500]", min: 100, max: 500 },
-];
-
-function getRiskRatingFromScore(score: number): string {
-  if (score >= 100) return "Catastrophic";
-  if (score >= 51) return "very high";
-  if (score >= 11) return "High";
-  return "Low Risk";
-}
-
 export default function RiskAssessmentPage() {
   const { canView, isLoading: permissionsLoading } = usePermissions('risk.assessment');
   const [risks, setRisks] = useState<Risk[]>([]);
@@ -124,6 +143,12 @@ export default function RiskAssessmentPage() {
   const [threats, setThreats] = useState<Threat[]>([]);
   const [vulnerabilities, setVulnerabilities] = useState<Vulnerability[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Dynamic settings from API
+  const [likelihoodOptions, setLikelihoodOptions] = useState(defaultLikelihoodOptions);
+  const [impactOptions, setImpactOptions] = useState(defaultImpactOptions);
+  const [vulnerabilityOptions] = useState(defaultVulnerabilityOptions);
+  const [ratingThresholds, setRatingThresholds] = useState<RiskRatingThreshold[]>(defaultRatingThresholds);
 
   // Filters
   const [searchTerm, setSearchTerm] = useState("");
@@ -146,18 +171,40 @@ export default function RiskAssessmentPage() {
   const [threatImpacts, setThreatImpacts] = useState<Record<string, Record<string, number>>>({});
   const [vulnerabilityRatings, setVulnerabilityRatings] = useState<Record<string, number>>({});
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  // Helper function to get risk rating from score using dynamic thresholds
+  const getRiskRatingFromScore = useCallback((score: number): string => {
+    for (const threshold of ratingThresholds) {
+      if (score >= threshold.min && score <= threshold.max) {
+        return threshold.rating;
+      }
+    }
+    // If score exceeds all thresholds, return the highest rating
+    if (ratingThresholds.length > 0) {
+      const maxThreshold = ratingThresholds.reduce((prev, curr) =>
+        curr.max > prev.max ? curr : prev
+      );
+      if (score > maxThreshold.max) return maxThreshold.rating;
+    }
+    return "Low Risk";
+  }, [ratingThresholds]);
 
-  const fetchData = async () => {
+  // Computed risk rating scale for display
+  const riskRatingScale = ratingThresholds.map(t => ({
+    label: t.rating,
+    range: `[${t.min} - ${t.max}]`,
+    min: t.min,
+    max: t.max,
+  }));
+
+  const fetchData = useCallback(async () => {
     try {
-      const [risksRes, categoriesRes, typesRes, threatsRes, vulnsRes] = await Promise.all([
+      const [risksRes, categoriesRes, typesRes, threatsRes, vulnsRes, settingsRes] = await Promise.all([
         fetch("/api/risks"),
         fetch("/api/risk-categories"),
         fetch("/api/risk-types"),
         fetch("/api/risk-threats"),
         fetch("/api/risk-vulnerabilities"),
+        fetch("/api/risk-settings"),
       ]);
 
       if (risksRes.ok) {
@@ -180,12 +227,45 @@ export default function RiskAssessmentPage() {
         const data = await vulnsRes.json();
         setVulnerabilities(data);
       }
+
+      // Parse risk settings
+      if (settingsRes.ok) {
+        const settingsData = await settingsRes.json();
+        const defaults = settingsData.defaults as RiskSettings | undefined;
+
+        if (defaults) {
+          // Set likelihood options from settings
+          if (defaults.likelihood_scale && defaults.likelihood_scale.length > 0) {
+            setLikelihoodOptions(defaults.likelihood_scale.map(opt => ({
+              label: opt.label,
+              value: parseInt(opt.value) || parseInt(opt.key),
+            })));
+          }
+
+          // Set impact options from settings
+          if (defaults.impact_scale && defaults.impact_scale.length > 0) {
+            setImpactOptions(defaults.impact_scale.map(opt => ({
+              label: opt.label,
+              value: parseInt(opt.value) || parseInt(opt.key),
+            })));
+          }
+
+          // Set rating thresholds from settings
+          if (defaults.rating_matrix?.thresholds && defaults.rating_matrix.thresholds.length > 0) {
+            setRatingThresholds(defaults.rating_matrix.thresholds);
+          }
+        }
+      }
     } catch (error) {
       console.error("Failed to fetch data:", error);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   // Filter risks
   const filteredRisks = risks.filter((risk) => {
@@ -380,10 +460,11 @@ export default function RiskAssessmentPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Risk Rating</SelectItem>
-            <SelectItem value="Catastrophic">Catastrophic</SelectItem>
-            <SelectItem value="High">High</SelectItem>
-            <SelectItem value="Low Risk">Low Risk</SelectItem>
-            <SelectItem value="very high">very high</SelectItem>
+            {ratingThresholds.map((threshold) => (
+              <SelectItem key={threshold.rating} value={threshold.rating}>
+                {threshold.rating}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
         <Select value={categoryFilter} onValueChange={setCategoryFilter}>

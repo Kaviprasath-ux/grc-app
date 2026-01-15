@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useSession } from "next-auth/react";
 import {
   Select,
   SelectContent,
@@ -101,6 +102,7 @@ const allUserRoles = [
 
 export default function UsersPage() {
   const { toast } = useToast();
+  const { data: session } = useSession();
   const [activeTab, setActiveTab] = useState("account-overview");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
@@ -108,10 +110,27 @@ export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Check if user is DeptReviewer or DeptContributor (read-only department view)
+  const userRoles = session?.user?.roles || [];
+  const isDeptRole = userRoles.some((r: string) =>
+    ["DepartmentReviewer", "DepartmentContributor"].includes(r)
+  ) && !userRoles.some((r: string) =>
+    ["Administrator", "CustomerAdministrator", "Reviewer", "Contributor"].includes(r)
+  );
+  const currentUserDepartmentId = session?.user?.departmentId;
+
   // Dialog states
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
   const [isEditUserOpen, setIsEditUserOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+
+  // Change password dialog states
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [changePasswordForm, setChangePasswordForm] = useState({
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [changingPassword, setChangingPassword] = useState(false);
 
   // Filter states
   const [roleFilter, setRoleFilter] = useState("all");
@@ -233,6 +252,62 @@ export default function UsersPage() {
       }
     } catch (error) {
       console.error("Error updating user:", error);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (!editingUser) return;
+
+    if (changePasswordForm.newPassword !== changePasswordForm.confirmPassword) {
+      toast({
+        title: "Error",
+        description: "Passwords do not match",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!changePasswordForm.newPassword) {
+      toast({
+        title: "Error",
+        description: "Please enter a new password",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      const res = await fetch(`/api/users/${editingUser.id}/change-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(changePasswordForm),
+      });
+
+      if (res.ok) {
+        toast({
+          title: "Success",
+          description: "Password changed successfully",
+        });
+        setIsChangePasswordOpen(false);
+        setChangePasswordForm({ newPassword: "", confirmPassword: "" });
+      } else {
+        const error = await res.json();
+        toast({
+          title: "Error",
+          description: error.error || "Failed to change password",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error changing password:", error);
+      toast({
+        title: "Error",
+        description: "Failed to change password",
+        variant: "destructive",
+      });
+    } finally {
+      setChangingPassword(false);
     }
   };
 
@@ -518,10 +593,70 @@ export default function UsersPage() {
     return matchesRole && matchesDepartment && matchesSearch;
   });
 
+  // Users filtered to current user's department (for DeptReviewer/DeptContributor)
+  const departmentUsers = users.filter((user) =>
+    user.departmentId === currentUserDepartmentId
+  );
+
+  // Get current user's department name
+  const currentDepartment = departments.find((d) => d.id === currentUserDepartmentId);
+
+  // Columns for department view (read-only, no actions)
+  const departmentUserColumns: ColumnDef<User>[] = [
+    {
+      accessorKey: "fullName",
+      header: "Full Name",
+      cell: ({ row }) => (
+        <span className="font-medium">{row.getValue("fullName")}</span>
+      ),
+    },
+    {
+      accessorKey: "designation",
+      header: "Designation Name",
+      cell: ({ row }) => row.original.designation || "-",
+    },
+    {
+      id: "reportingManager",
+      header: "Reporting Manager",
+      cell: () => "-",
+    },
+    {
+      accessorKey: "email",
+      header: "Email ID",
+    },
+    {
+      id: "lastLogin",
+      header: "Last Login",
+      cell: () => "-",
+    },
+  ];
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <p className="text-muted-foreground">Loading...</p>
+      </div>
+    );
+  }
+
+  // Simplified view for DeptReviewer/DeptContributor
+  if (isDeptRole) {
+    return (
+      <div className="space-y-6">
+        <PageHeader title="Account Overview" />
+
+        <div className="space-y-4">
+          {currentDepartment && (
+            <div className="text-lg font-semibold text-foreground">
+              {currentDepartment.name} - {departmentUsers.length} users
+            </div>
+          )}
+          <DataGrid
+            columns={departmentUserColumns}
+            data={departmentUsers}
+            searchPlaceholder="Search users..."
+          />
+        </div>
       </div>
     );
   }
@@ -1225,7 +1360,11 @@ export default function UsersPage() {
               {/* Change Password Button */}
               <div className="grid grid-cols-[140px_1fr] items-center gap-4">
                 <div></div>
-                <Button variant="default" className="w-fit">
+                <Button
+                  variant="default"
+                  className="w-fit"
+                  onClick={() => setIsChangePasswordOpen(true)}
+                >
                   Change password
                 </Button>
               </div>
@@ -1302,6 +1441,74 @@ export default function UsersPage() {
               </div>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Change Password Dialog */}
+      <Dialog
+        open={isChangePasswordOpen}
+        onOpenChange={(open) => {
+          setIsChangePasswordOpen(open);
+          if (!open) {
+            setChangePasswordForm({ newPassword: "", confirmPassword: "" });
+          }
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Change Password</DialogTitle>
+            <DialogDescription>
+              Enter a new password for {editingUser?.fullName || editingUser?.userName}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="newPassword">New Password *</Label>
+              <Input
+                id="newPassword"
+                type="password"
+                value={changePasswordForm.newPassword}
+                onChange={(e) =>
+                  setChangePasswordForm({
+                    ...changePasswordForm,
+                    newPassword: e.target.value,
+                  })
+                }
+                placeholder="Enter new password"
+                autoComplete="new-password"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirmNewPassword">Confirm Password *</Label>
+              <Input
+                id="confirmNewPassword"
+                type="password"
+                value={changePasswordForm.confirmPassword}
+                onChange={(e) =>
+                  setChangePasswordForm({
+                    ...changePasswordForm,
+                    confirmPassword: e.target.value,
+                  })
+                }
+                placeholder="Confirm new password"
+                autoComplete="new-password"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsChangePasswordOpen(false);
+                setChangePasswordForm({ newPassword: "", confirmPassword: "" });
+              }}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleChangePassword} disabled={changingPassword}>
+              {changingPassword ? "Changing..." : "Change Password"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

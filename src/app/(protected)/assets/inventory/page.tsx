@@ -8,9 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { usePermissions } from "@/hooks/usePermissions";
+import { usePermissions, useUserRoles } from "@/hooks/usePermissions";
 import { PermissionGate } from "@/components/ui/permission-gate";
 import { Unauthorized } from "@/components/ui/unauthorized";
+import { useSession } from "next-auth/react";
 import {
   Select,
   SelectContent,
@@ -153,7 +154,16 @@ const formatDate = (dateString: string | null) => {
 
 export default function AssetInventoryPage() {
   const { toast } = useToast();
+  const { data: session } = useSession();
+  const userRoles = useUserRoles();
   const { canView, canCreate, canEdit, canDelete, isLoading: permissionsLoading } = usePermissions('asset.inventory');
+
+  // Check if user is DepartmentReviewer or DepartmentContributor (department-scoped)
+  const isDepartmentRole = userRoles.some(
+    (role) => role === "DepartmentReviewer" || role === "DepartmentContributor"
+  );
+  const userDepartmentId = session?.user?.departmentId;
+
   const [assets, setAssets] = useState<Asset[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -264,6 +274,10 @@ export default function AssetInventoryPage() {
 
   // Filter assets
   const filteredAssets = assets.filter((a) => {
+    // Department-scoped filtering for DepartmentReviewer/DepartmentContributor
+    if (isDepartmentRole && userDepartmentId && a.departmentId !== userDepartmentId) {
+      return false;
+    }
     const matchesSearch =
       a.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       a.assetId.toLowerCase().includes(searchTerm.toLowerCase()) ||

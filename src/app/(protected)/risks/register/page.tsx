@@ -7,9 +7,10 @@ import { DataGrid } from "@/components/shared";
 import { RiskRatingBadge } from "@/components/risks/risk-rating-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { usePermissions } from "@/hooks/usePermissions";
+import { usePermissions, useUserRoles } from "@/hooks/usePermissions";
 import { PermissionGate } from "@/components/ui/permission-gate";
 import { Unauthorized } from "@/components/ui/unauthorized";
+import { useSession } from "next-auth/react";
 import {
   Select,
   SelectContent,
@@ -111,9 +112,17 @@ interface Stats {
 function RiskRegisterContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { data: session } = useSession();
+  const userRoles = useUserRoles();
   const { canView, canCreate, canEdit, canDelete, isLoading: permissionsLoading } = usePermissions('risk.register');
   const initialStatus = searchParams.get("status") || "";
   const initialRating = searchParams.get("riskRating") || "";
+
+  // Check if user is DepartmentReviewer or DepartmentContributor (department-scoped)
+  const isDepartmentRole = userRoles.some(
+    (role) => role === "DepartmentReviewer" || role === "DepartmentContributor"
+  );
+  const userDepartmentId = session?.user?.departmentId;
 
   const [risks, setRisks] = useState<Risk[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -554,7 +563,9 @@ function RiskRegisterContent() {
       ) : (
         <DataGrid
           columns={columns}
-          data={risks}
+          data={isDepartmentRole && userDepartmentId
+            ? risks.filter(r => r.department?.id === userDepartmentId)
+            : risks}
           onRowClick={handleViewRisk}
           showColumnSelector
           pageSize={20}

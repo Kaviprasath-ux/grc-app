@@ -24,6 +24,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { useUserRoles } from "@/hooks/usePermissions";
 
 interface Risk {
   id: string;
@@ -39,6 +41,7 @@ interface Risk {
   impact: number;
   owner: { fullName: string } | null;
   assessmentStatus?: string;
+  department?: { id: string; name: string } | null;
 }
 
 // Horizontal Progress Bar component matching website
@@ -84,8 +87,16 @@ function ProgressBar({
 
 export default function RiskResponsePage() {
   const router = useRouter();
+  const { data: session } = useSession();
+  const userRoles = useUserRoles();
   const [risks, setRisks] = useState<Risk[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Check if user is DepartmentReviewer or DepartmentContributor (department-scoped)
+  const isDepartmentRole = userRoles.some(
+    (role) => role === "DepartmentReviewer" || role === "DepartmentContributor"
+  );
+  const userDepartmentId = session?.user?.departmentId;
 
   // Filters - Default to first option (no "all" option per source system)
   const [strategyFilter, setStrategyFilter] = useState("Treat");
@@ -281,7 +292,12 @@ export default function RiskResponsePage() {
   };
 
   // Filter risks based on strategy (no "all" option per source system)
-  const filteredByStrategy = risks.filter((risk) => risk.responseStrategy === strategyFilter);
+  // First apply department filtering for department-scoped roles
+  const departmentFilteredRisks = isDepartmentRole && userDepartmentId
+    ? risks.filter((risk) => risk.department?.id === userDepartmentId)
+    : risks;
+
+  const filteredByStrategy = departmentFilteredRisks.filter((risk) => risk.responseStrategy === strategyFilter);
 
   // Get normalized status for a risk
   const getRiskStatus = (risk: Risk) => {

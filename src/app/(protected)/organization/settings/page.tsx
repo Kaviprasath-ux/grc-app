@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { ArrowLeft, Plus, Pencil, Trash2, Download, Upload, Search, Settings2, MapPin, FileType, Clock, Briefcase, BarChart3 } from "lucide-react";
 import { PageHeader, DataGrid } from "@/components/shared";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -106,6 +107,7 @@ const mockSettingsData: Record<string, SettingItem[]> = {
 };
 
 export default function OrganizationSettingsPage() {
+  const router = useRouter();
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [settingsData, setSettingsData] = useState<Record<string, SettingItem[]>>(mockSettingsData);
   const [searchTerm, setSearchTerm] = useState("");
@@ -363,7 +365,14 @@ export default function OrganizationSettingsPage() {
             <Card
               key={category.id}
               className="cursor-pointer hover:border-blue-300 hover:shadow-md transition-all"
-              onClick={() => setActiveCategory(category.id)}
+              onClick={() => {
+                // Navigate to dedicated BIA settings page
+                if (category.id === "bia") {
+                  router.push("/organization/settings/bia");
+                } else {
+                  setActiveCategory(category.id);
+                }
+              }}
             >
               <CardHeader className="flex flex-row items-center gap-4">
                 <div className="p-3 bg-blue-50 rounded-lg">

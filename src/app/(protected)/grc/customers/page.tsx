@@ -29,6 +29,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Pencil, Image, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useRouter } from "next/navigation";
 
 interface Customer {
   id: string;
@@ -52,6 +53,7 @@ const LANGUAGES = [
 
 export default function CustomersPage() {
   const { toast } = useToast();
+  const router = useRouter();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -230,6 +232,10 @@ export default function CustomersPage() {
     setShowLogoDialog(true);
   };
 
+  const handleRowDoubleClick = (customer: Customer) => {
+    router.push(`/grc/customers/${customer.id}/frameworks`);
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -264,7 +270,11 @@ export default function CustomersPage() {
                 </TableRow>
               ) : (
                 customers.map((customer) => (
-                  <TableRow key={customer.id} className="hover:bg-gray-50">
+                  <TableRow
+                    key={customer.id}
+                    className="hover:bg-gray-50 cursor-pointer"
+                    onDoubleClick={() => handleRowDoubleClick(customer)}
+                  >
                     <TableCell className="font-medium">{customer.customerCode}</TableCell>
                     <TableCell>{customer.customerName}</TableCell>
                     <TableCell>{customer.email}</TableCell>

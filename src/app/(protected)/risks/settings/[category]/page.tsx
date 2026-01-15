@@ -28,6 +28,8 @@ import {
 import { ColumnDef } from "@tanstack/react-table";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
+import { usePermissions } from "@/hooks/usePermissions";
+import { Unauthorized } from "@/components/ui/unauthorized";
 
 // Type definitions
 interface VulnerabilityCategory {
@@ -131,7 +133,7 @@ const categoryTitles: Record<string, string> = {
   "likelihood": "Likelihood",
   "threat": "Threat",
   "vulnerability": "Vulnerability",
-  "methodology": "Risk Methodology",
+  "risk-methodology": "Risk Methodology",
   "risk-category": "Risk Category",
   "impact": "Impact",
   "vulnerability-rating": "Vulnerability Rating",
@@ -143,6 +145,7 @@ export default function RiskSettingsCategoryPage() {
   const router = useRouter();
   const { toast } = useToast();
   const category = params.category as string;
+  const { canView, canCreate, canEdit, canDelete, isLoading: permissionsLoading } = usePermissions('risk.settings');
 
   const [activeTab, setActiveTab] = useState<string>("tab1");
   const [loading, setLoading] = useState(true);
@@ -221,7 +224,7 @@ export default function RiskSettingsCategoryPage() {
         ]);
         if (vulnsRes.ok) setVulnerabilities(await vulnsRes.json());
         if (catsRes.ok) setVulnerabilityCategories(await catsRes.json());
-      } else if (category === "methodology") {
+      } else if (category === "risk-methodology") {
         const [configRes, rangesRes] = await Promise.all([
           fetch("/api/risk-score-config"),
           fetch("/api/risk-ranges")
@@ -942,91 +945,97 @@ export default function RiskSettingsCategoryPage() {
     }
   };
 
-  // Column Definitions
+  // Column Definitions - Matching UAT design
   const vulnCatColumns: ColumnDef<VulnerabilityCategory>[] = [
-    { accessorKey: "name", header: "Name" },
-    {
-      accessorKey: "_count.vulnerabilities",
-      header: "Vulnerabilities",
-      cell: ({ row }) => row.original._count?.vulnerabilities || 0,
-    },
-    {
+    { accessorKey: "name", header: "Vulnerability Category" },
+    ...((canEdit || canDelete) ? [{
       id: "actions",
       header: "Action",
-      cell: ({ row }) => (
+      cell: ({ row }: { row: { original: VulnerabilityCategory } }) => (
         <div className="flex gap-2">
-          <Button variant="ghost" size="icon" onClick={() => {
-            setSelectedItem(row.original);
-            setVulnCatForm({ name: row.original.name });
-            setIsEditOpen(true);
-          }}>
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="text-destructive" onClick={() => {
-            setSelectedItem(row.original);
-            setIsDeleteOpen(true);
-          }}>
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          {canEdit && (
+            <Button variant="ghost" size="icon" onClick={() => {
+              setActiveTab("tab1");
+              setSelectedItem(row.original);
+              setVulnCatForm({ name: row.original.name });
+              setIsEditOpen(true);
+            }}>
+              <Pencil className="h-4 w-4" />
+            </Button>
+          )}
+          {canDelete && (
+            <Button variant="ghost" size="icon" className="text-destructive" onClick={() => {
+              setActiveTab("tab1");
+              setSelectedItem(row.original);
+              setIsDeleteOpen(true);
+            }}>
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       ),
-    },
+    }] : []),
   ];
 
   const threatCatColumns: ColumnDef<ThreatCategory>[] = [
-    { accessorKey: "name", header: "Name" },
-    {
-      accessorKey: "_count.threats",
-      header: "Threats",
-      cell: ({ row }) => row.original._count?.threats || 0,
-    },
-    {
+    { accessorKey: "name", header: "Threat Category" },
+    ...((canEdit || canDelete) ? [{
       id: "actions",
       header: "Action",
-      cell: ({ row }) => (
+      cell: ({ row }: { row: { original: ThreatCategory } }) => (
         <div className="flex gap-2">
-          <Button variant="ghost" size="icon" onClick={() => {
-            setSelectedItem(row.original);
-            setThreatCatForm({ name: row.original.name });
-            setIsEditOpen(true);
-          }}>
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="text-destructive" onClick={() => {
-            setSelectedItem(row.original);
-            setIsDeleteOpen(true);
-          }}>
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          {canEdit && (
+            <Button variant="ghost" size="icon" onClick={() => {
+              setActiveTab("tab2");
+              setSelectedItem(row.original);
+              setThreatCatForm({ name: row.original.name });
+              setIsEditOpen(true);
+            }}>
+              <Pencil className="h-4 w-4" />
+            </Button>
+          )}
+          {canDelete && (
+            <Button variant="ghost" size="icon" className="text-destructive" onClick={() => {
+              setActiveTab("tab2");
+              setSelectedItem(row.original);
+              setIsDeleteOpen(true);
+            }}>
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       ),
-    },
+    }] : []),
   ];
 
   const controlStrengthColumns: ColumnDef<ControlStrength>[] = [
-    { accessorKey: "name", header: "Name" },
+    { accessorKey: "name", header: "Control Strength Name" },
     { accessorKey: "score", header: "Score" },
-    {
+    ...((canEdit || canDelete) ? [{
       id: "actions",
       header: "Action",
-      cell: ({ row }) => (
+      cell: ({ row }: { row: { original: ControlStrength } }) => (
         <div className="flex gap-2">
-          <Button variant="ghost" size="icon" onClick={() => {
-            setSelectedItem(row.original);
-            setControlStrengthForm({ name: row.original.name, score: row.original.score });
-            setIsEditOpen(true);
-          }}>
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="text-destructive" onClick={() => {
-            setSelectedItem(row.original);
-            setIsDeleteOpen(true);
-          }}>
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          {canEdit && (
+            <Button variant="ghost" size="icon" onClick={() => {
+              setSelectedItem(row.original);
+              setControlStrengthForm({ name: row.original.name, score: row.original.score });
+              setIsEditOpen(true);
+            }}>
+              <Pencil className="h-4 w-4" />
+            </Button>
+          )}
+          {canDelete && (
+            <Button variant="ghost" size="icon" className="text-destructive" onClick={() => {
+              setSelectedItem(row.original);
+              setIsDeleteOpen(true);
+            }}>
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       ),
-    },
+    }] : []),
   ];
 
   const likelihoodColumns: ColumnDef<RiskLikelihood>[] = [
@@ -1317,9 +1326,10 @@ export default function RiskSettingsCategoryPage() {
 
   const title = categoryTitles[category] || "Settings";
 
-  if (loading) {
+  // Show loading state while permissions or data is loading
+  if (permissionsLoading || loading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 p-6">
         <div className="flex items-center gap-4">
           <Link href="/risks/settings">
             <Button variant="ghost" size="sm">
@@ -1336,8 +1346,13 @@ export default function RiskSettingsCategoryPage() {
     );
   }
 
+  // Show unauthorized if user doesn't have view permission
+  if (!canView) {
+    return <Unauthorized description="You don't have permission to access Risk Settings." />;
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       <div className="flex items-center gap-4">
         <Link href="/risks/settings">
           <Button variant="ghost" size="sm">
@@ -1348,41 +1363,38 @@ export default function RiskSettingsCategoryPage() {
         <PageHeader title={title} />
       </div>
 
-      {/* Category: Vulnerability Category + Threat Category tabs */}
+      {/* Category: Vulnerability Category + Threat Category sections */}
       {category === "category" && (
-        <div className="space-y-4">
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList>
-              <TabsTrigger value="tab1">Vulnerability Category</TabsTrigger>
-              <TabsTrigger value="tab2">Threat Category</TabsTrigger>
-            </TabsList>
+        <div className="space-y-8">
+          {/* Vulnerability Category Section */}
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold">Vulnerability Category</h3>
+              <Button onClick={() => { setActiveTab("tab1"); setVulnCatForm({ name: "" }); setIsAddOpen(true); }}>
+                <Plus className="h-4 w-4 mr-2" />Add Vulnerability Category
+              </Button>
+            </div>
+            <DataGrid
+              columns={vulnCatColumns}
+              data={vulnerabilityCategories}
+              hideSearch={true}
+            />
+          </div>
 
-            <TabsContent value="tab1" className="space-y-4">
-              <div className="flex justify-between items-center">
-                <div className="relative w-64">
-                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input placeholder="Search..." className="pl-8" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-                </div>
-                <Button onClick={() => { setVulnCatForm({ name: "" }); setIsAddOpen(true); }}>
-                  <Plus className="h-4 w-4 mr-2" />Add Vulnerability Category
-                </Button>
-              </div>
-              <DataGrid columns={vulnCatColumns} data={vulnerabilityCategories.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()))} hideSearch={true} />
-            </TabsContent>
-
-            <TabsContent value="tab2" className="space-y-4">
-              <div className="flex justify-between items-center">
-                <div className="relative w-64">
-                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input placeholder="Search..." className="pl-8" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-                </div>
-                <Button onClick={() => { setThreatCatForm({ name: "" }); setIsAddOpen(true); }}>
-                  <Plus className="h-4 w-4 mr-2" />Add Threat Category
-                </Button>
-              </div>
-              <DataGrid columns={threatCatColumns} data={threatCategories.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()))} hideSearch={true} />
-            </TabsContent>
-          </Tabs>
+          {/* Threat Category Section */}
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold">Threat Category</h3>
+              <Button onClick={() => { setActiveTab("tab2"); setThreatCatForm({ name: "" }); setIsAddOpen(true); }}>
+                <Plus className="h-4 w-4 mr-2" />Add Threat Category
+              </Button>
+            </div>
+            <DataGrid
+              columns={threatCatColumns}
+              data={threatCategories}
+              hideSearch={true}
+            />
+          </div>
         </div>
       )}
 
@@ -1451,7 +1463,7 @@ export default function RiskSettingsCategoryPage() {
       )}
 
       {/* Methodology */}
-      {category === "methodology" && (
+      {category === "risk-methodology" && (
         <div className="space-y-6">
           {/* Score Configuration */}
           <div className="space-y-4">
@@ -1600,30 +1612,43 @@ export default function RiskSettingsCategoryPage() {
       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add New Item</DialogTitle>
+            <DialogTitle>
+              {category === "category" && activeTab === "tab1" && "Add Vulnerability Category"}
+              {category === "category" && activeTab === "tab2" && "Add Threat Category"}
+              {category === "control-strength" && "Add Control Strength"}
+              {category === "likelihood" && "Add Likelihood"}
+              {category === "threat" && "Add Threat"}
+              {category === "vulnerability" && "Add Vulnerability"}
+              {category === "risk-methodology" && "Add Risk Range"}
+              {category === "risk-category" && "Add Risk Category"}
+              {category === "impact" && activeTab === "tab1" && "Add Impact Category"}
+              {category === "impact" && activeTab === "tab2" && "Add Impact Rating"}
+              {category === "vulnerability-rating" && "Add Vulnerability Rating"}
+              {category === "risk-sub-category" && "Add Risk Sub Category"}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             {category === "category" && activeTab === "tab1" && (
               <div className="space-y-2">
-                <Label>Name</Label>
-                <Input value={vulnCatForm.name} onChange={(e) => setVulnCatForm({ name: e.target.value })} />
+                <Label>Label</Label>
+                <Input value={vulnCatForm.name} onChange={(e) => setVulnCatForm({ name: e.target.value })} placeholder="Enter vulnerability category" />
               </div>
             )}
             {category === "category" && activeTab === "tab2" && (
               <div className="space-y-2">
-                <Label>Name</Label>
-                <Input value={threatCatForm.name} onChange={(e) => setThreatCatForm({ name: e.target.value })} />
+                <Label>Label</Label>
+                <Input value={threatCatForm.name} onChange={(e) => setThreatCatForm({ name: e.target.value })} placeholder="Enter threat category" />
               </div>
             )}
             {category === "control-strength" && (
               <>
                 <div className="space-y-2">
-                  <Label>Name</Label>
-                  <Input value={controlStrengthForm.name} onChange={(e) => setControlStrengthForm({ ...controlStrengthForm, name: e.target.value })} />
+                  <Label>Control Strength Name</Label>
+                  <Input value={controlStrengthForm.name} onChange={(e) => setControlStrengthForm({ ...controlStrengthForm, name: e.target.value })} placeholder="Enter control strength name" />
                 </div>
                 <div className="space-y-2">
                   <Label>Score</Label>
-                  <Input type="number" value={controlStrengthForm.score} onChange={(e) => setControlStrengthForm({ ...controlStrengthForm, score: parseInt(e.target.value) || 0 })} />
+                  <Input type="number" value={controlStrengthForm.score} onChange={(e) => setControlStrengthForm({ ...controlStrengthForm, score: parseInt(e.target.value) || 0 })} placeholder="Enter score" />
                 </div>
               </>
             )}
@@ -1697,7 +1722,7 @@ export default function RiskSettingsCategoryPage() {
                 </div>
               </>
             )}
-            {category === "methodology" && (
+            {category === "risk-methodology" && (
               <>
                 <div className="space-y-2">
                   <Label>Title</Label>
@@ -1797,7 +1822,7 @@ export default function RiskSettingsCategoryPage() {
               else if (category === "likelihood") handleAddLikelihood();
               else if (category === "threat") handleAddThreat();
               else if (category === "vulnerability") handleAddVulnerability();
-              else if (category === "methodology") handleAddRiskRange();
+              else if (category === "risk-methodology") handleAddRiskRange();
               else if (category === "risk-category") handleAddRiskCategory();
               else if (category === "impact" && activeTab === "tab1") handleAddImpactCat();
               else if (category === "impact" && activeTab === "tab2") handleAddImpactRating();
@@ -1812,25 +1837,38 @@ export default function RiskSettingsCategoryPage() {
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Item</DialogTitle>
+            <DialogTitle>
+              {category === "category" && activeTab === "tab1" && "Edit Vulnerability Category"}
+              {category === "category" && activeTab === "tab2" && "Edit Threat Category"}
+              {category === "control-strength" && "Edit Control Strength"}
+              {category === "likelihood" && "Edit Likelihood"}
+              {category === "threat" && "Edit Threat"}
+              {category === "vulnerability" && "Edit Vulnerability"}
+              {category === "risk-methodology" && "Edit Risk Range"}
+              {category === "risk-category" && "Edit Risk Category"}
+              {category === "impact" && activeTab === "tab1" && "Edit Impact Category"}
+              {category === "impact" && activeTab === "tab2" && "Edit Impact Rating"}
+              {category === "vulnerability-rating" && "Edit Vulnerability Rating"}
+              {category === "risk-sub-category" && "Edit Risk Sub Category"}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             {category === "category" && activeTab === "tab1" && (
               <div className="space-y-2">
-                <Label>Name</Label>
+                <Label>Label</Label>
                 <Input value={vulnCatForm.name} onChange={(e) => setVulnCatForm({ name: e.target.value })} />
               </div>
             )}
             {category === "category" && activeTab === "tab2" && (
               <div className="space-y-2">
-                <Label>Name</Label>
+                <Label>Label</Label>
                 <Input value={threatCatForm.name} onChange={(e) => setThreatCatForm({ name: e.target.value })} />
               </div>
             )}
             {category === "control-strength" && (
               <>
                 <div className="space-y-2">
-                  <Label>Name</Label>
+                  <Label>Control Strength Name</Label>
                   <Input value={controlStrengthForm.name} onChange={(e) => setControlStrengthForm({ ...controlStrengthForm, name: e.target.value })} />
                 </div>
                 <div className="space-y-2">
@@ -1909,7 +1947,7 @@ export default function RiskSettingsCategoryPage() {
                 </div>
               </>
             )}
-            {category === "methodology" && (
+            {category === "risk-methodology" && (
               <>
                 <div className="space-y-2">
                   <Label>Title</Label>
@@ -2009,7 +2047,7 @@ export default function RiskSettingsCategoryPage() {
               else if (category === "likelihood") handleEditLikelihood();
               else if (category === "threat") handleEditThreat();
               else if (category === "vulnerability") handleEditVulnerability();
-              else if (category === "methodology") handleEditRiskRange();
+              else if (category === "risk-methodology") handleEditRiskRange();
               else if (category === "risk-category") handleEditRiskCategory();
               else if (category === "impact" && activeTab === "tab1") handleEditImpactCat();
               else if (category === "impact" && activeTab === "tab2") handleEditImpactRating();
@@ -2038,7 +2076,7 @@ export default function RiskSettingsCategoryPage() {
               else if (category === "likelihood") handleDeleteLikelihood();
               else if (category === "threat") handleDeleteThreat();
               else if (category === "vulnerability") handleDeleteVulnerability();
-              else if (category === "methodology") handleDeleteRiskRange();
+              else if (category === "risk-methodology") handleDeleteRiskRange();
               else if (category === "risk-category") handleDeleteRiskCategory();
               else if (category === "impact" && activeTab === "tab1") handleDeleteImpactCat();
               else if (category === "impact" && activeTab === "tab2") handleDeleteImpactRating();

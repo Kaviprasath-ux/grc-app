@@ -621,6 +621,20 @@ model ProcessBIA {
   updatedAt          DateTime            @updatedAt
   // Category ratings
   categoryRatings    ProcessBIARating[]
+  // BIA Comments (for send back flow)
+  biaComments        ProcessBIAComment[]
+}
+
+// Process BIA Comments (for tracking send back comments)
+model ProcessBIAComment {
+  id           String     @id @default(cuid())
+  processBIAId String
+  processBIA   ProcessBIA @relation(fields: [processBIAId], references: [id], onDelete: Cascade)
+  comment      String
+  createdBy    String     // User ID
+  createdByName String    // User name at time of comment
+  action       String     // "SendBack", "Approve", "Submit"
+  createdAt    DateTime   @default(now())
 }
 
 // Process BIA Category Ratings (individual category ratings for a process)
