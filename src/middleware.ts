@@ -20,42 +20,19 @@ const ROLE_PATH_MAP: Record<string, string> = {
 };
 
 /**
- * Paths that have role-specific versions
+ * Paths that have role-specific versions with genuinely different UI.
+ *
+ * IMPORTANT: Only paths with fundamentally different UI/functionality should
+ * be listed here. For most pages, use permission-based rendering instead
+ * of creating duplicate role-specific pages.
+ *
+ * @see src/hooks/usePermissions.ts for permission-based rendering
+ * @see src/components/ui/permission-gate.tsx for conditional rendering
  */
 const ROLE_SPECIFIC_PATHS: Record<string, string[]> = {
-  // Organization module shared pages
-  "/dashboard": ["CustomerAdministrator", "AuditUser", "Auditor", "Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
-  "/organization/context": ["CustomerAdministrator", "Reviewer", "DepartmentReviewer", "DepartmentContributor"],
-  "/organization/users": ["CustomerAdministrator", "DepartmentReviewer", "DepartmentContributor"],
-  "/organization/process": ["CustomerAdministrator", "Auditor", "Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
-  // Compliance module shared pages
-  "/compliance/framework": ["GRCAdministrator", "Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
-  "/compliance/control": ["GRCAdministrator", "Auditor", "Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
-  "/compliance/governance": ["GRCAdministrator", "Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
-  "/compliance/evidence": ["GRCAdministrator", "Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
-  "/compliance/domain": ["GRCAdministrator"],
-  "/compliance/exceptions": ["Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
-  "/compliance/kpis": ["Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
-  // Asset module shared pages
-  "/assets/inventory": ["Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
-  "/assets/classification": ["Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
-  "/assets/reports": ["Reviewer", "DepartmentReviewer", "DepartmentContributor"],
-  // Risk module shared pages
-  "/risks/dashboard": ["Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
-  "/risks/register": ["Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
-  "/risks/assessment": ["Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
-  "/risks/response": ["Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
-  "/risks/reports": ["Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
-  // Internal Audit module shared pages (including sub-pages)
-  "/internal-audit/dashboard": ["AuditHead", "AuditManager", "AuditUser", "Auditor"],
-  "/internal-audit/audit-universe": ["AuditHead", "AuditManager", "AuditUser", "Auditor"],
-  "/internal-audit/risk-identification": ["AuditHead", "AuditManager", "AuditUser", "Auditor"],
-  "/internal-audit/risk-register": ["AuditHead", "AuditManager", "AuditUser", "Auditor", "DepartmentReviewer", "DepartmentContributor"],
-  "/internal-audit/audit-planning": ["AuditHead", "AuditManager", "AuditUser", "Auditor"],
-  "/internal-audit/fieldwork": ["AuditHead", "AuditManager", "AuditUser", "Auditor", "Auditee"],
-  "/internal-audit/report": ["AuditHead", "AuditManager", "AuditUser", "Auditor", "Auditee"],
-  "/internal-audit/capa-tracking": ["AuditHead", "AuditManager", "AuditUser", "Auditor", "Auditee"],
-  "/internal-audit/document-library": ["AuditHead", "AuditManager", "AuditUser", "Auditor"],
+  // CustomerAdministrator has unique card-grid UI with subscription management
+  // (vs table view for other roles) - keep as exception
+  "/compliance/framework": ["CustomerAdministrator"],
 };
 
 /**
@@ -125,6 +102,32 @@ function hasAccessToRolePath(pathname: string, userRoles: string[]): boolean {
   return false;
 }
 
+/**
+ * Check if a role-specific path should be redirected to base path.
+ * Returns the base path if it should redirect, null otherwise.
+ *
+ * This handles deprecated role-specific paths that no longer need
+ * role-specific versions (now using permission-based rendering).
+ */
+function getBasePathFromRoleSpecificPath(pathname: string): string | null {
+  // Match paths like /roles/reviewer/compliance/governance
+  const match = pathname.match(/^\/roles\/[^\/]+(\/.+)$/);
+  if (!match) return null;
+
+  const basePath = match[1];
+
+  // Check if this base path still needs role-specific handling
+  // If it's in ROLE_SPECIFIC_PATHS, don't redirect (it's still role-specific)
+  for (const path of Object.keys(ROLE_SPECIFIC_PATHS)) {
+    if (basePath === path || basePath.startsWith(path + "/")) {
+      return null; // Don't redirect - this path is still role-specific
+    }
+  }
+
+  // This role-specific path is deprecated - return base path for redirect
+  return basePath;
+}
+
 export default auth((request) => {
   const { pathname } = request.nextUrl;
 
@@ -149,8 +152,16 @@ export default auth((request) => {
 
   const userRoles = (session.user.roles as string[]) || [];
 
-  // Check if user is trying to access a role-specific path they don't have access to
+  // Check if user is trying to access a role-specific path
   if (pathname.startsWith("/roles/")) {
+    // First check if this is a deprecated role-specific path that should redirect to base
+    const basePath = getBasePathFromRoleSpecificPath(pathname);
+    if (basePath) {
+      // Redirect to base path - the page now uses permission-based rendering
+      return NextResponse.redirect(new URL(basePath, request.url));
+    }
+
+    // For paths that are still role-specific, check if user has access
     if (!hasAccessToRolePath(pathname, userRoles)) {
       // Redirect to dashboard or unauthorized page
       return NextResponse.redirect(new URL("/dashboard", request.url));

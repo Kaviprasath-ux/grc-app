@@ -8,6 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { usePermissions } from "@/hooks/usePermissions";
+import { PermissionGate } from "@/components/ui/permission-gate";
+import { Unauthorized } from "@/components/ui/unauthorized";
 import {
   Select,
   SelectContent,
@@ -150,6 +153,7 @@ const formatDate = (dateString: string | null) => {
 
 export default function AssetInventoryPage() {
   const { toast } = useToast();
+  const { canView, canCreate, canEdit, canDelete, isLoading: permissionsLoading } = usePermissions('asset.inventory');
   const [assets, setAssets] = useState<Asset[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -646,46 +650,56 @@ export default function AssetInventoryPage() {
       header: "Action",
       cell: ({ row }) => (
         <div className="flex gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => {
-              setEditingAsset({
-                ...row.original,
-                acquisitionDate: row.original.acquisitionDate
-                  ? new Date(row.original.acquisitionDate).toISOString().split('T')[0]
-                  : null,
-                nextReviewDate: row.original.nextReviewDate
-                  ? new Date(row.original.nextReviewDate).toISOString().split('T')[0]
-                  : null,
-              });
-              setIsEditAssetOpen(true);
-            }}
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-destructive"
-            onClick={() => {
-              setDeletingAssetId(row.original.id);
-              setIsDeleteDialogOpen(true);
-            }}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          {canEdit && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => {
+                setEditingAsset({
+                  ...row.original,
+                  acquisitionDate: row.original.acquisitionDate
+                    ? new Date(row.original.acquisitionDate).toISOString().split('T')[0]
+                    : null,
+                  nextReviewDate: row.original.nextReviewDate
+                    ? new Date(row.original.nextReviewDate).toISOString().split('T')[0]
+                    : null,
+                });
+                setIsEditAssetOpen(true);
+              }}
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+          )}
+          {canDelete && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-destructive"
+              onClick={() => {
+                setDeletingAssetId(row.original.id);
+                setIsDeleteDialogOpen(true);
+              }}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       ),
     },
   ];
 
-  if (loading) {
+  // Show loading state while permissions or data is being fetched
+  if (permissionsLoading || loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <p className="text-muted-foreground">Loading...</p>
       </div>
     );
+  }
+
+  // Show unauthorized if user doesn't have view permission
+  if (!canView) {
+    return <Unauthorized description="You don't have permission to access Asset Inventory." />;
   }
 
   return (
@@ -790,31 +804,35 @@ export default function AssetInventoryPage() {
           </Select>
         </div>
         <div className="flex items-center gap-2">
-          <label>
-            <input
-              type="file"
-              accept=".csv"
-              onChange={handleImport}
-              className="hidden"
-            />
-            <Button variant="outline" size="sm" asChild>
-              <span>
-                <Upload className="h-4 w-4 mr-2" />
-                Import
-              </span>
-            </Button>
-          </label>
+          <PermissionGate resource="asset.inventory" action="create">
+            <label>
+              <input
+                type="file"
+                accept=".csv"
+                onChange={handleImport}
+                className="hidden"
+              />
+              <Button variant="outline" size="sm" asChild>
+                <span>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Import
+                </span>
+              </Button>
+            </label>
+          </PermissionGate>
           <Button variant="outline" size="sm" onClick={handleExport}>
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>
-          <Button onClick={() => {
-            setNewAsset({ ...newAsset, assetId: generateAssetId() });
-            setIsAddAssetOpen(true);
-          }}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Asset
-          </Button>
+          <PermissionGate resource="asset.inventory" action="create">
+            <Button onClick={() => {
+              setNewAsset({ ...newAsset, assetId: generateAssetId() });
+              setIsAddAssetOpen(true);
+            }}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Asset
+            </Button>
+          </PermissionGate>
         </div>
       </div>
 

@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { usePermissions } from "@/hooks/usePermissions";
+import { Unauthorized } from "@/components/ui/unauthorized";
 import {
   Select,
   SelectContent,
@@ -115,6 +117,7 @@ function getRiskRatingFromScore(score: number): string {
 }
 
 export default function RiskAssessmentPage() {
+  const { canView, isLoading: permissionsLoading } = usePermissions('risk.assessment');
   const [risks, setRisks] = useState<Risk[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [riskTypes, setRiskTypes] = useState<RiskType[]>([]);
@@ -324,7 +327,8 @@ export default function RiskAssessmentPage() {
   const riskScore = calcLikelihood * calcImpact * (calcVulnerability / 10 || 1);
   const calculatedRating = getRiskRatingFromScore(riskScore);
 
-  if (loading) {
+  // Show loading state while permissions or data is being fetched
+  if (permissionsLoading || loading) {
     return (
       <div className="space-y-6">
         <PageHeader title="Risk Assessment" description="Assess and evaluate risks" />
@@ -333,6 +337,11 @@ export default function RiskAssessmentPage() {
         </div>
       </div>
     );
+  }
+
+  // Show unauthorized if user doesn't have view permission
+  if (!canView) {
+    return <Unauthorized description="You don't have permission to access Risk Assessment." />;
   }
 
   return (

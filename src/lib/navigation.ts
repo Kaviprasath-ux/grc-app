@@ -100,11 +100,9 @@ export const navigation: NavItem[] = [
       { name: "Controls", href: "/compliance/control", icon: Link, permission: "compliance.controls:view" },
       { name: "Governance", href: "/compliance/governance", icon: FileCheck, permission: "compliance.governance:view" },
       { name: "Evidence", href: "/compliance/evidence", icon: ClipboardList, permission: "compliance.evidence:view" },
-      { name: "Domain", href: "/compliance/domain", icon: Globe, permission: "compliance.domain:view" },
       // Below items are for CustomerAdministrator and other roles, not GRCAdministrator
       { name: "Exception Management", href: "/compliance/exceptions", icon: AlertTriangle, permission: "compliance.exceptions:view" },
       { name: "KPI", href: "/compliance/kpis", icon: BarChart3, permission: "compliance.kpi:view" },
-      { name: "Risk Compliance Matrix", href: "/compliance/risk-matrix", icon: AlertTriangle, permission: "compliance.risk-matrix:view" },
       { name: "Reports", href: "/compliance/reports", icon: FileText, permission: "compliance.dashboard:view" },
       { name: "Master Data", href: "/compliance/master-data", icon: Settings2, permission: "compliance.settings:view" },
     ],
@@ -137,6 +135,7 @@ export const navigation: NavItem[] = [
       { name: "Risk Register", href: "/risks/register", icon: ClipboardList, permission: "risk.register:view" },
       { name: "Risk Assessment", href: "/risks/assessment", icon: Search, permission: "risk.assessment:view" },
       { name: "Risk Response Strategy", href: "/risks/response", icon: CheckSquare, permission: "risk.response:view" },
+      { name: "Risk Control Matrix", href: "/risks/risk-control-matrix", icon: AlertTriangle, permission: "risk.risk-matrix:view" },
       { name: "Risk Settings", href: "/risks/settings", icon: Settings2, permission: "risk.settings:view" },
       { name: "Reports", href: "/risks/reports", icon: FileText, permission: "risk.reports:view" },
     ],
@@ -281,43 +280,22 @@ const ROLE_PATH_MAP: Record<string, string> = {
 };
 
 /**
- * Paths that have role-specific versions
- * Maps original path to the module path that should be prefixed with role
+ * Paths that have role-specific versions with genuinely different UI.
+ *
+ * IMPORTANT: Only add paths here if the role-specific page has fundamentally
+ * different UI/functionality that cannot be achieved with permission-based
+ * rendering (e.g., completely different layout, not just hidden buttons).
+ *
+ * For most pages, use the base path with permission-based rendering instead
+ * of creating duplicate role-specific pages.
+ *
+ * @see src/hooks/usePermissions.ts for permission-based rendering
+ * @see src/components/ui/permission-gate.tsx for conditional rendering
  */
 const ROLE_SPECIFIC_PATHS: Record<string, string[]> = {
-  // Organization module shared pages
-  "/dashboard": ["CustomerAdministrator", "AuditUser", "Auditor", "Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
-  "/organization/context": ["CustomerAdministrator", "Reviewer", "DepartmentReviewer", "DepartmentContributor"],
-  "/organization/users": ["CustomerAdministrator", "DepartmentReviewer", "DepartmentContributor"],
-  "/organization/process": ["CustomerAdministrator", "Auditor", "Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
-  // Compliance module shared pages
-  "/compliance/framework": ["GRCAdministrator", "CustomerAdministrator", "Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
-  "/compliance/control": ["GRCAdministrator", "Auditor", "Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
-  "/compliance/governance": ["GRCAdministrator", "Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
-  "/compliance/evidence": ["GRCAdministrator", "Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
-  "/compliance/domain": ["GRCAdministrator"],
-  "/compliance/exceptions": ["Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
-  "/compliance/kpis": ["Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
-  // Asset module shared pages
-  "/assets/inventory": ["Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
-  "/assets/classification": ["Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
-  "/assets/reports": ["Reviewer", "DepartmentReviewer", "DepartmentContributor"],
-  // Risk module shared pages
-  "/risks/dashboard": ["Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
-  "/risks/register": ["Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
-  "/risks/assessment": ["Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
-  "/risks/response": ["Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
-  "/risks/reports": ["Reviewer", "Contributor", "DepartmentReviewer", "DepartmentContributor"],
-  // Internal Audit module shared pages
-  "/internal-audit/dashboard": ["AuditHead", "AuditManager", "AuditUser", "Auditor"],
-  "/internal-audit/audit-universe": ["AuditHead", "AuditManager", "AuditUser", "Auditor"],
-  "/internal-audit/risk-identification": ["AuditHead", "AuditManager", "AuditUser", "Auditor"],
-  "/internal-audit/risk-register": ["AuditHead", "AuditManager", "AuditUser", "Auditor", "DepartmentReviewer", "DepartmentContributor"],
-  "/internal-audit/audit-planning": ["AuditHead", "AuditManager", "AuditUser", "Auditor"],
-  "/internal-audit/fieldwork": ["AuditHead", "AuditManager", "AuditUser", "Auditor", "Auditee"],
-  "/internal-audit/report": ["AuditHead", "AuditManager", "AuditUser", "Auditor", "Auditee"],
-  "/internal-audit/capa-tracking": ["AuditHead", "AuditManager", "AuditUser", "Auditor", "Auditee"],
-  "/internal-audit/document-library": ["AuditHead", "AuditManager", "AuditUser", "Auditor"],
+  // CustomerAdministrator has unique card-grid UI with subscription management
+  // (vs table view for other roles) - keep as exception
+  "/compliance/framework": ["CustomerAdministrator"],
 };
 
 /**

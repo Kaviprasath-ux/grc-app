@@ -4,6 +4,9 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { usePermissions } from "@/hooks/usePermissions";
+import { PermissionGate } from "@/components/ui/permission-gate";
+import { Unauthorized } from "@/components/ui/unauthorized";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -123,6 +126,7 @@ const statuses = [
 
 export default function ExceptionsPage() {
   const router = useRouter();
+  const { canView, canCreate, canEdit, canDelete, isLoading: permissionsLoading } = usePermissions('compliance.exceptions');
   const [exceptions, setExceptions] = useState<Exception[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -407,12 +411,18 @@ export default function ExceptionsPage() {
     {} as Record<string, number>
   );
 
-  if (loading) {
+  // Show loading state while permissions are being fetched
+  if (permissionsLoading || loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
+  }
+
+  // Show unauthorized if user doesn't have view permission
+  if (!canView) {
+    return <Unauthorized description="You don't have permission to access Exception Management." />;
   }
 
   return (
@@ -422,13 +432,14 @@ export default function ExceptionsPage() {
         <div>
           <h1 className="text-2xl font-bold">Exception Dashboard</h1>
         </div>
-        <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              New Exception
-            </Button>
-          </DialogTrigger>
+        <PermissionGate resource="compliance.exceptions" action="create">
+          <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                New Exception
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>New Exception</DialogTitle>
@@ -672,6 +683,7 @@ export default function ExceptionsPage() {
             </div>
           </DialogContent>
         </Dialog>
+        </PermissionGate>
 
         {/* Approver Selection Dialog */}
         <Dialog open={approverDialogOpen} onOpenChange={setApproverDialogOpen}>
@@ -957,23 +969,27 @@ export default function ExceptionsPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => handleOpenEdit(exception, e)}
-                          title="Edit"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => handleOpenDelete(exception, e)}
-                          title="Delete"
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <PermissionGate resource="compliance.exceptions" action="edit">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => handleOpenEdit(exception, e)}
+                            title="Edit"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        </PermissionGate>
+                        <PermissionGate resource="compliance.exceptions" action="delete">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => handleOpenDelete(exception, e)}
+                            title="Delete"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </PermissionGate>
                       </div>
                     </TableCell>
                   </TableRow>

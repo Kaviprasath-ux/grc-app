@@ -7,6 +7,9 @@ import { DataGrid } from "@/components/shared";
 import { RiskRatingBadge } from "@/components/risks/risk-rating-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { usePermissions } from "@/hooks/usePermissions";
+import { PermissionGate } from "@/components/ui/permission-gate";
+import { Unauthorized } from "@/components/ui/unauthorized";
 import {
   Select,
   SelectContent,
@@ -108,6 +111,7 @@ interface Stats {
 function RiskRegisterContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { canView, canCreate, canEdit, canDelete, isLoading: permissionsLoading } = usePermissions('risk.register');
   const initialStatus = searchParams.get("status") || "";
   const initialRating = searchParams.get("riskRating") || "";
 
@@ -361,33 +365,51 @@ function RiskRegisterContent() {
         const risk = row.original;
         return (
           <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleEditRisk(risk);
-              }}
-              className="h-8 w-8"
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDeleteClick(risk);
-              }}
-              className="h-8 w-8 text-red-600 hover:text-red-700"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            {canEdit && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEditRisk(risk);
+                }}
+                className="h-8 w-8"
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+            )}
+            {canDelete && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteClick(risk);
+                }}
+                className="h-8 w-8 text-red-600 hover:text-red-700"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         );
       },
     },
   ];
+
+  // Show loading state while permissions are being fetched
+  if (permissionsLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // Show unauthorized if user doesn't have view permission
+  if (!canView) {
+    return <Unauthorized description="You don't have permission to access Risk Register." />;
+  }
 
   return (
     <div className="space-y-6">
@@ -413,18 +435,22 @@ function RiskRegisterContent() {
 
       {/* Action Buttons */}
       <div className="flex items-center gap-2">
-        <Button onClick={() => setWizardOpen(true)} className="gap-2">
-          <Plus className="h-4 w-4" />
-          New Risk
-        </Button>
+        <PermissionGate resource="risk.register" action="create">
+          <Button onClick={() => setWizardOpen(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            New Risk
+          </Button>
+        </PermissionGate>
         <Button variant="outline" onClick={handleExport} className="gap-2">
           <Download className="h-4 w-4" />
           Export
         </Button>
-        <Button variant="outline" onClick={() => setImportDialogOpen(true)} className="gap-2">
-          <Upload className="h-4 w-4" />
-          Import
-        </Button>
+        <PermissionGate resource="risk.register" action="create">
+          <Button variant="outline" onClick={() => setImportDialogOpen(true)} className="gap-2">
+            <Upload className="h-4 w-4" />
+            Import
+          </Button>
+        </PermissionGate>
         <Button variant="outline" onClick={handleActivityLogOpen} className="gap-2">
           <Activity className="h-4 w-4" />
           Activity Log

@@ -4,6 +4,9 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { usePermissions } from "@/hooks/usePermissions";
+import { PermissionGate } from "@/components/ui/permission-gate";
+import { Unauthorized } from "@/components/ui/unauthorized";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -111,6 +114,7 @@ const recurrenceOptions = ["Yearly", "Half-yearly", "Quarterly", "Monthly"];
 
 export default function EvidencePage() {
   const router = useRouter();
+  const { canView, canCreate, canDelete, isLoading: permissionsLoading } = usePermissions('compliance.evidence');
   const [evidences, setEvidences] = useState<Evidence[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -378,24 +382,44 @@ export default function EvidencePage() {
   const startItem = total > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0;
   const endItem = Math.min(currentPage * itemsPerPage, total);
 
+  // Show loading state while permissions are being fetched
+  if (permissionsLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // Show unauthorized if user doesn't have view permission
+  if (!canView) {
+    return <Unauthorized description="You don't have permission to access Evidence." />;
+  }
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Evidence</h1>
         <div className="flex gap-2">
-          <Button onClick={() => setCreateDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Evidence
-          </Button>
-          <Button variant="outline" onClick={() => setIsImportDialogOpen(true)}>
-            <Upload className="h-4 w-4 mr-2" />
-            Import
-          </Button>
-          <Button variant="outline" onClick={() => setIsDeleteAllDialogOpen(true)}>
-            <Trash2 className="h-4 w-4 mr-2" />
-            Delete All
-          </Button>
+          <PermissionGate resource="compliance.evidence" action="create">
+            <Button onClick={() => setCreateDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              New Evidence
+            </Button>
+          </PermissionGate>
+          <PermissionGate resource="compliance.evidence" action="create">
+            <Button variant="outline" onClick={() => setIsImportDialogOpen(true)}>
+              <Upload className="h-4 w-4 mr-2" />
+              Import
+            </Button>
+          </PermissionGate>
+          <PermissionGate resource="compliance.evidence" action="delete">
+            <Button variant="outline" onClick={() => setIsDeleteAllDialogOpen(true)}>
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete All
+            </Button>
+          </PermissionGate>
         </div>
       </div>
 

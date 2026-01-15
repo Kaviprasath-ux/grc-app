@@ -3,6 +3,9 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { usePermissions } from "@/hooks/usePermissions";
+import { PermissionGate } from "@/components/ui/permission-gate";
+import { Unauthorized } from "@/components/ui/unauthorized";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
@@ -105,6 +108,7 @@ const RECURRENCE_OPTIONS = ["Weekly", "Monthly", "Quarterly", "Yearly"];
 
 export default function GovernancePage() {
   const router = useRouter();
+  const { canView, canCreate, canEdit, canDelete, isLoading: permissionsLoading } = usePermissions('compliance.governance');
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeDocType, setActiveDocType] = useState<string>("Policy");
@@ -363,27 +367,47 @@ export default function GovernancePage() {
   const startItem = total > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0;
   const endItem = Math.min(currentPage * itemsPerPage, total);
 
+  // Show loading while checking permissions
+  if (permissionsLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // Show unauthorized if user cannot view
+  if (!canView) {
+    return <Unauthorized description="You don't have permission to access Governance." />;
+  }
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Governance</h1>
         <div className="flex gap-2">
-          <Button onClick={() => {
-            setNewPolicy({ ...newPolicy, documentType: activeDocType });
-            setIsCreateDialogOpen(true);
-          }}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Governance
-          </Button>
-          <Button variant="outline" onClick={() => setIsImportDialogOpen(true)}>
-            <Upload className="h-4 w-4 mr-2" />
-            Import
-          </Button>
-          <Button variant="outline" onClick={() => setIsDeleteAllDialogOpen(true)}>
-            <Trash2 className="h-4 w-4 mr-2" />
-            Delete All
-          </Button>
+          <PermissionGate resource="compliance.governance" action="create">
+            <Button onClick={() => {
+              setNewPolicy({ ...newPolicy, documentType: activeDocType });
+              setIsCreateDialogOpen(true);
+            }}>
+              <Plus className="h-4 w-4 mr-2" />
+              New Governance
+            </Button>
+          </PermissionGate>
+          <PermissionGate resource="compliance.governance" action="create">
+            <Button variant="outline" onClick={() => setIsImportDialogOpen(true)}>
+              <Upload className="h-4 w-4 mr-2" />
+              Import
+            </Button>
+          </PermissionGate>
+          <PermissionGate resource="compliance.governance" action="delete">
+            <Button variant="outline" onClick={() => setIsDeleteAllDialogOpen(true)}>
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete All
+            </Button>
+          </PermissionGate>
         </div>
       </div>
 
@@ -469,27 +493,31 @@ export default function GovernancePage() {
                           <TableCell>{policy.department?.name || ""}</TableCell>
                           <TableCell>
                             <div className="flex gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  router.push(`/compliance/governance/${policy.id}`);
-                                }}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setPolicyToDelete(policy);
-                                  setIsDeleteDialogOpen(true);
-                                }}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                              <PermissionGate resource="compliance.governance" action="edit">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    router.push(`/compliance/governance/${policy.id}`);
+                                  }}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                              </PermissionGate>
+                              <PermissionGate resource="compliance.governance" action="delete">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setPolicyToDelete(policy);
+                                    setIsDeleteDialogOpen(true);
+                                  }}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </PermissionGate>
                             </div>
                           </TableCell>
                         </TableRow>

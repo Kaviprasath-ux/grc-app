@@ -65,6 +65,7 @@ export const RESOURCES = {
   'risk.register': '/risk-management/register',
   'risk.assessment': '/risk-management/assessment',
   'risk.response': '/risk-management/response',
+  'risk.risk-matrix': '/risks/risk-control-matrix',
   'risk.settings': '/risk-management/settings',
   'risk.reports': '/risk-management/reports',
 

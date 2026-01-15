@@ -6,6 +6,8 @@ import { useSession } from "next-auth/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { usePermissions } from "@/hooks/usePermissions";
+import { Unauthorized } from "@/components/ui/unauthorized";
 import {
   Table,
   TableBody,
@@ -114,6 +116,7 @@ const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "
 export default function InternalAuditDashboard() {
   const router = useRouter();
   const { data: session } = useSession();
+  const { canView, isLoading: permissionsLoading } = usePermissions('audit.dashboard');
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [capaPage, setCapaPage] = useState(0);
@@ -161,12 +164,18 @@ export default function InternalAuditDashboard() {
     (capaPage + 1) * itemsPerPage
   ) || [];
 
-  if (loading) {
+  // Show loading state while permissions or data is being fetched
+  if (permissionsLoading || loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
       </div>
     );
+  }
+
+  // Show unauthorized if user doesn't have view permission
+  if (!canView) {
+    return <Unauthorized description="You don't have permission to access the Internal Audit Dashboard." />;
   }
 
   // Auditee view - simplified dashboard

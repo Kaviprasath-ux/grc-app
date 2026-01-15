@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { usePermissions } from "@/hooks/usePermissions";
+import { Unauthorized } from "@/components/ui/unauthorized";
 import {
   Table,
   TableBody,
@@ -57,6 +59,7 @@ interface Engagement {
 export default function FieldworkPage() {
   const router = useRouter();
   const { data: session } = useSession();
+  const { canView, isLoading: permissionsLoading } = usePermissions('audit.fieldwork');
   const [engagements, setEngagements] = useState<Engagement[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [auditors, setAuditors] = useState<Auditor[]>([]);
@@ -236,7 +239,8 @@ export default function FieldworkPage() {
     </TableHead>
   );
 
-  if (loading) {
+  // Show loading state while permissions or data is being fetched
+  if (permissionsLoading || loading) {
     return (
       <div className="p-6">
         <h1 className="text-2xl font-bold text-[#1e3a5f] mb-6">Fieldwork</h1>
@@ -245,6 +249,11 @@ export default function FieldworkPage() {
         </div>
       </div>
     );
+  }
+
+  // Show unauthorized if user doesn't have view permission
+  if (!canView) {
+    return <Unauthorized description="You don't have permission to access Fieldwork." />;
   }
 
   return (

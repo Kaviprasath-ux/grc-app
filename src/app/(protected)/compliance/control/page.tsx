@@ -3,6 +3,9 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { usePermissions } from "@/hooks/usePermissions";
+import { PermissionGate } from "@/components/ui/permission-gate";
+import { Unauthorized } from "@/components/ui/unauthorized";
 import {
   Select,
   SelectContent,
@@ -103,6 +106,7 @@ const ITEMS_PER_PAGE = 20;
 export default function ControlListPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { canView, canCreate, canDelete, isLoading: permissionsLoading } = usePermissions('compliance.controls');
   const [controls, setControls] = useState<Control[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -369,6 +373,20 @@ export default function ControlListPage() {
     return users.filter((u) => u.departmentId === newControl.departmentId);
   };
 
+  // Show loading state while permissions are being fetched
+  if (permissionsLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // Show unauthorized if user doesn't have view permission
+  if (!canView) {
+    return <Unauthorized description="You don't have permission to access Controls." />;
+  }
+
   return (
     <div className="space-y-4">
       {/* Header Section */}
@@ -376,22 +394,28 @@ export default function ControlListPage() {
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold text-gray-900">Controls</h3>
           <div className="flex items-center gap-2">
-            <Button onClick={() => setIsCreateDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              New Control
-            </Button>
-            <Button onClick={handleImport} variant="outline">
-              <Upload className="h-4 w-4 mr-2" />
-              Import
-            </Button>
-            <Button
-              onClick={() => setIsDeleteAllDialogOpen(true)}
-              variant="outline"
-              className="text-red-600 hover:text-red-700 hover:bg-red-50"
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Delete All
-            </Button>
+            <PermissionGate resource="compliance.controls" action="create">
+              <Button onClick={() => setIsCreateDialogOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                New Control
+              </Button>
+            </PermissionGate>
+            <PermissionGate resource="compliance.controls" action="create">
+              <Button onClick={handleImport} variant="outline">
+                <Upload className="h-4 w-4 mr-2" />
+                Import
+              </Button>
+            </PermissionGate>
+            <PermissionGate resource="compliance.controls" action="delete">
+              <Button
+                onClick={() => setIsDeleteAllDialogOpen(true)}
+                variant="outline"
+                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete All
+              </Button>
+            </PermissionGate>
           </div>
         </div>
       </div>
