@@ -204,35 +204,109 @@ model User {
   accountableProcesses Process[]          @relation("ProcessAccountable")
   consultedProcesses   Process[]          @relation("ProcessConsulted")
   informedProcesses    Process[]          @relation("ProcessInformed")
+  // Issue relations
+  ownedIssues          Issue[]       @relation("IssueOwner")
+  createdActions       IssueAction[]
 }
 
 // Stakeholders
 model Stakeholder {
-  id           String      @id @default(cuid())
+  id           String             @id @default(cuid())
   name         String
   email        String?
-  type         String      @default("Internal") // Internal, External, Third Party
-  status       String      @default("Active") // Active, Inactive
+  type         String             @default("Internal") // Internal, External, Third Party
+  status       String             @default("Active") // Active, Inactive
   departmentId String?
-  department   Department? @relation(fields: [departmentId], references: [id])
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  department   Department?        @relation(fields: [departmentId], references: [id])
+  issues       IssueStakeholder[]
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
 }
 
 // Issues
 model Issue {
-  id           String      @id @default(cuid())
+  id           String             @id @default(cuid())
   title        String
   description  String?
   domain       String // Internal, External, IT, GRC
   category     String // Finance, Human Resources, Data breach, etc.
   issueType    String? // Financial, Operational, Compliance, Security, etc.
-  status       String      @default("Open") // Open, In Progress, Pending, Resolved, Closed
+  status       String             @default("Open") // Open, In Progress, Pending, Resolved, Closed
   dueDate      DateTime?
   departmentId String?
-  department   Department? @relation(fields: [departmentId], references: [id])
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  department   Department?        @relation(fields: [departmentId], references: [id])
+  ownerId      String?
+  owner        User?              @relation("IssueOwner", fields: [ownerId], references: [id])
+  actions      IssueAction[]
+  regulations  IssueRegulation[]
+  processes    IssueProcess[]
+  stakeholders IssueStakeholder[]
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+}
+
+// Issue Actions (created by DepartmentReviewer, reviewed by CustomerAdmin/Reviewer)
+model IssueAction {
+  id            String               @id @default(cuid())
+  issueId       String
+  issue         Issue                @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  actionType    String // "Preventive", "Corrective"
+  description   String
+  completion    Int                  @default(0) // Completion percentage (0-100)
+  comment       String?
+  status        String               @default("Pending") // "Pending", "Resolved", "Sent Back"
+  createdById   String
+  createdBy     User                 @relation(fields: [createdById], references: [id])
+  comments      IssueActionComment[]
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+}
+
+// Comments on Issue Actions (for resend flow)
+model IssueActionComment {
+  id        String      @id @default(cuid())
+  actionId  String
+  action    IssueAction @relation(fields: [actionId], references: [id], onDelete: Cascade)
+  comment   String
+  createdBy String // User name or organization name
+  createdAt DateTime    @default(now())
+}
+
+// Issue-Regulation Junction Table
+model IssueRegulation {
+  id           String     @id @default(cuid())
+  issueId      String
+  issue        Issue      @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  regulationId String
+  regulation   Regulation @relation(fields: [regulationId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+
+  @@unique([issueId, regulationId])
+}
+
+// Issue-Process Junction Table
+model IssueProcess {
+  id        String   @id @default(cuid())
+  issueId   String
+  issue     Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  processId String
+  process   Process  @relation(fields: [processId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([issueId, processId])
+}
+
+// Issue-Stakeholder Junction Table
+model IssueStakeholder {
+  id            String      @id @default(cuid())
+  issueId       String
+  issue         Issue       @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  stakeholderId String
+  stakeholder   Stakeholder @relation(fields: [stakeholderId], references: [id], onDelete: Cascade)
+  needExpectation String?   // What the stakeholder needs/expects from this issue resolution
+  createdAt     DateTime    @default(now())
+
+  @@unique([issueId, stakeholderId])
 }
 
 // Services
@@ -352,8 +426,8 @@ model RequirementException {
 
 // Regulations (legacy - keeping for backwards compatibility)
 model Regulation {
-  id                     String   @id @default(cuid())
-  name                   String   @unique
+  id                     String            @id @default(cuid())
+  name                   String            @unique
   version                String?
   sa1Date                String?
   sa2Date                String?
@@ -361,9 +435,10 @@ model Regulation {
   exclusionJustification String?
   document               String?
   certificate            String?
-  status                 String   @default("Subscribed") // Subscribed, Not Subscribed
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
+  status                 String            @default("Subscribed") // Subscribed, Not Subscribed
+  issues                 IssueRegulation[]
+  createdAt              DateTime          @default(now())
+  updatedAt              DateTime          @updatedAt
 }
 
 // Control Domains
@@ -442,17 +517,19 @@ model Process {
   lastAuditDate          DateTime?
   // RACI fields
   responsibleId          String?
-  responsible            User?        @relation("ProcessResponsible", fields: [responsibleId], references: [id])
+  responsible            User?          @relation("ProcessResponsible", fields: [responsibleId], references: [id])
   accountableId          String?
-  accountable            User?        @relation("ProcessAccountable", fields: [accountableId], references: [id])
+  accountable            User?          @relation("ProcessAccountable", fields: [accountableId], references: [id])
   consultedId            String?
-  consulted              User?        @relation("ProcessConsulted", fields: [consultedId], references: [id])
+  consulted              User?          @relation("ProcessConsulted", fields: [consultedId], references: [id])
   informedId             String?
-  informed               User?        @relation("ProcessInformed", fields: [informedId], references: [id])
-  createdAt              DateTime     @default(now())
-  updatedAt              DateTime     @updatedAt
+  informed               User?          @relation("ProcessInformed", fields: [informedId], references: [id])
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
   // BIA Relation
   biaAssessment          ProcessBIA?
+  // Issue Relation
+  issues                 IssueProcess[]
 }
 
 // ==================== BUSINESS IMPACT ANALYSIS (BIA) ====================
@@ -986,6 +1063,7 @@ model RiskCategory {
   name        String   @unique // Strategic, Operational, Financial, Compliance, IT/Cyber, Reputational
   description String?
   color       String?  // Color code for UI display
+  status      String   @default("Active") // Active, Inactive
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   risks       Risk[]
@@ -1003,21 +1081,27 @@ model RiskType {
 
 // Risk Threats
 model RiskThreat {
-  id          String   @id @default(cuid())
-  name        String   @unique
+  id          String          @id @default(cuid())
+  threatId    String?         @unique
+  name        String          @unique
   description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  categoryId  String?
+  category    ThreatCategory? @relation(fields: [categoryId], references: [id])
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
   risks       RiskThreatMapping[]
 }
 
 // Risk Vulnerabilities
 model RiskVulnerability {
-  id          String   @id @default(cuid())
-  name        String   @unique
+  id          String                 @id @default(cuid())
+  vulnId      String?                @unique
+  name        String                 @unique
   description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  categoryId  String?
+  category    VulnerabilityCategory? @relation(fields: [categoryId], references: [id])
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
   risks       RiskVulnerabilityMapping[]
 }
 
@@ -1182,6 +1266,108 @@ model RiskSetting {
 
   @@unique([category, key])
 }
+
+// ==================== RISK SETTINGS MASTER DATA ====================
+
+// Vulnerability Category (for categorizing vulnerabilities)
+model VulnerabilityCategory {
+  id              String            @id @default(cuid())
+  name            String            @unique
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  vulnerabilities RiskVulnerability[]
+}
+
+// Threat Category (for categorizing threats)
+model ThreatCategory {
+  id        String       @id @default(cuid())
+  name      String       @unique
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  threats   RiskThreat[]
+}
+
+// Control Strength (effectiveness rating of controls)
+model ControlStrength {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  score     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Risk Likelihood (probability scale)
+model RiskLikelihood {
+  id          String   @id @default(cuid())
+  title       String   @unique
+  score       Int      @default(0)
+  timeFrame   String?  // e.g., "Within 1 year", "Within 5 years"
+  probability String?  // e.g., ">90%", "50-90%", "<10%"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Impact Category (types of impact)
+model ImpactCategory {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Impact Rating (severity scale)
+model ImpactRating {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  score       Int      @default(0)
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Vulnerability Rating (severity of vulnerabilities)
+model VulnerabilityRating {
+  id        String   @id @default(cuid())
+  label     String   @unique
+  score     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Risk Sub Category
+model RiskSubCategory {
+  id        String   @id @default(cuid())
+  type      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Risk Range (risk rating thresholds with colors and timelines)
+model RiskRange {
+  id           String   @id @default(cuid())
+  title        String   @unique
+  color        String?  // Hex color code
+  lowRange     Int      @default(0)
+  highRange    Int      @default(0)
+  timelineDays Int      @default(0)  // Days to remediate
+  description  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// Risk Score Configuration (formula settings)
+model RiskScoreConfig {
+  id                    String   @id @default(cuid())
+  useLikelihood         Boolean  @default(true)
+  useImpact             Boolean  @default(true)
+  useAssetScore         Boolean  @default(false)
+  useVulnerabilityScore Boolean  @default(false)
+  riskTolerance         Int      @default(10)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+// ==================== END RISK SETTINGS MASTER DATA ====================
 
 // Risk Activity Log (for tracking all risk-related activities)
 model RiskActivityLog {

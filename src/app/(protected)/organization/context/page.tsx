@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, Trash2, Download, Upload, Search, ChevronRight, ArrowLeft } from "lucide-react";
+import { Plus, Pencil, Trash2, Download, Upload, Search, ChevronRight, ArrowLeft, MessageSquare } from "lucide-react";
 import { PageHeader, DataGrid } from "@/components/shared";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,6 +28,8 @@ import {
 } from "@/components/ui/dialog";
 import { ColumnDef } from "@tanstack/react-table";
 import { useToast } from "@/hooks/use-toast";
+import { useUserRoles } from "@/hooks/usePermissions";
+import { useSession } from "next-auth/react";
 
 interface Department {
   id: string;
@@ -50,6 +52,64 @@ interface User {
   departmentId: string | null;
 }
 
+interface IssueActionComment {
+  id: string;
+  actionId: string;
+  comment: string;
+  createdBy: string;
+  createdAt: string;
+}
+
+interface IssueAction {
+  id: string;
+  issueId: string;
+  actionType: string; // "Preventive", "Corrective"
+  description: string;
+  completion: number;
+  comment: string | null;
+  status: string; // "Pending", "Resolved", "Sent Back"
+  createdById: string;
+  createdBy: { id: string; fullName: string };
+  comments: IssueActionComment[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface IssueRegulation {
+  id: string;
+  issueId: string;
+  regulationId: string;
+  regulation: {
+    id: string;
+    name: string;
+    version: string | null;
+    status: string;
+  };
+}
+
+interface IssueProcess {
+  id: string;
+  issueId: string;
+  processId: string;
+  process: {
+    id: string;
+    processCode: string;
+    name: string;
+  };
+}
+
+interface IssueStakeholder {
+  id: string;
+  issueId: string;
+  stakeholderId: string;
+  needExpectation: string | null;
+  stakeholder: {
+    id: string;
+    name: string;
+    type: string;
+  };
+}
+
 interface Issue {
   id: string;
   title: string;
@@ -63,6 +123,10 @@ interface Issue {
   department: Department | null;
   ownerId: string | null;
   owner: User | null;
+  actions?: IssueAction[];
+  regulations?: IssueRegulation[];
+  processes?: IssueProcess[];
+  stakeholders?: IssueStakeholder[];
 }
 
 interface Regulation {
@@ -97,6 +161,17 @@ const ISSUE_STEPS = [
 export default function ContextPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { data: session } = useSession();
+  const userRoles = useUserRoles();
+
+  // Check if user is DepartmentReviewer or DepartmentContributor (read-only for stakeholders, export-only for issues)
+  const isReadOnlyRole = userRoles.some(
+    (role) => role === "DepartmentReviewer" || role === "DepartmentContributor"
+  );
+
+  // Get user's department ID for department-scoped filtering
+  const userDepartmentId = session?.user?.departmentId;
+
   const [activeTab, setActiveTab] = useState("stakeholder");
   const [stakeholders, setStakeholders] = useState<Stakeholder[]>([]);
   const [issues, setIssues] = useState<Issue[]>([]);
@@ -142,6 +217,39 @@ export default function ContextPage() {
   const [showEditProcessDialog, setShowEditProcessDialog] = useState(false);
   const [editProcessSearchQuery, setEditProcessSearchQuery] = useState("");
   const [editTempSelectedProcesses, setEditTempSelectedProcesses] = useState<string[]>([]);
+
+  // Issue Action states (for DepartmentReviewer)
+  const [showCreateActionDialog, setShowCreateActionDialog] = useState(false);
+  const [showViewActionsDialog, setShowViewActionsDialog] = useState(false);
+  const [selectedIssueForAction, setSelectedIssueForAction] = useState<Issue | null>(null);
+  const [actionForm, setActionForm] = useState({
+    actionType: "",
+    description: "",
+    completion: 0,
+    comment: "",
+  });
+  const [savingAction, setSavingAction] = useState(false);
+
+  // Action Review states (for CustomerAdmin/Reviewer)
+  const [showActionReviewDialog, setShowActionReviewDialog] = useState(false);
+  const [selectedActionForReview, setSelectedActionForReview] = useState<IssueAction | null>(null);
+  const [showResendDialog, setShowResendDialog] = useState(false);
+  const [resendComment, setResendComment] = useState("");
+  const [processingAction, setProcessingAction] = useState(false);
+
+  // Action Comments dialog (for DepartmentReviewer to view sent back comments)
+  const [showActionCommentsDialog, setShowActionCommentsDialog] = useState(false);
+  const [selectedActionForComments, setSelectedActionForComments] = useState<IssueAction | null>(null);
+
+  // Edit Action dialog (for DepartmentReviewer to edit sent back action)
+  const [showEditActionDialog, setShowEditActionDialog] = useState(false);
+  const [editingAction, setEditingAction] = useState<IssueAction | null>(null);
+  const [editActionForm, setEditActionForm] = useState({
+    actionType: "",
+    description: "",
+    completion: 0,
+    comment: "",
+  });
 
   // Edit Stakeholder step 4 state
   const [editStakeholderType, setEditStakeholderType] = useState("Internal");
@@ -427,7 +535,7 @@ export default function ContextPage() {
     return matchesSearch && matchesType && matchesStatus;
   });
 
-  // Filter issues
+  // Filter issues (role-based filtering is done server-side in API)
   const filteredIssues = issues.filter((i) => {
     const matchesSearch = i.title.toLowerCase().includes(issueSearch.toLowerCase()) ||
       (i.description && i.description.toLowerCase().includes(issueSearch.toLowerCase()));
@@ -480,7 +588,22 @@ export default function ContextPage() {
 
   // Issue CRUD
   const handleAddIssue = async () => {
-    if (!newIssue.title.trim()) return;
+    if (!newIssue.title.trim()) {
+      toast({
+        title: "Error",
+        description: "Title is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Debug logging
+    console.log("Creating issue with data:", {
+      selectedRegulations: newIssue.selectedRegulations,
+      selectedProcesses: newIssue.selectedProcesses,
+      stakeholderNeeds: stakeholderNeeds,
+    });
+
     try {
       const res = await fetch("/api/issues", {
         method: "POST",
@@ -494,6 +617,10 @@ export default function ContextPage() {
           status: newIssue.status,
           dueDate: newIssue.dueDate || null,
           departmentId: newIssue.departmentId || null,
+          ownerId: newIssue.ownerId || null,
+          selectedRegulations: newIssue.selectedRegulations,
+          selectedProcesses: newIssue.selectedProcesses,
+          stakeholderNeeds: stakeholderNeeds,
         }),
       });
       if (res.ok) {
@@ -513,11 +640,29 @@ export default function ContextPage() {
           selectedProcesses: [] as string[],
           selectedStakeholders: [] as string[],
         });
+        setStakeholderNeeds([]);
         setShowAddIssue(false);
         setCurrentStep(1);
+        toast({
+          title: "Success",
+          description: "Issue created successfully",
+        });
+      } else {
+        const errorData = await res.json();
+        console.error("API Error:", errorData);
+        toast({
+          title: "Error",
+          description: errorData.error || "Failed to create issue",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Error adding issue:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create issue",
+        variant: "destructive",
+      });
     }
   };
 
@@ -546,6 +691,23 @@ export default function ContextPage() {
   // Edit Issue handlers
   const handleEditIssue = (issue: Issue) => {
     setEditingIssue(issue);
+    // Extract existing associations from the issue
+    const existingRegulations = issue.regulations?.map((r) => r.regulationId) || [];
+    const existingProcesses = issue.processes?.map((p) => p.processId) || [];
+    const existingStakeholderNeeds = issue.stakeholders?.map((s) => ({
+      stakeholderId: s.stakeholderId,
+      needExpectation: s.needExpectation || "",
+    })) || [];
+
+    // Debug logging
+    console.log("Loading issue for edit:", {
+      issueId: issue.id,
+      regulations: issue.regulations,
+      processes: issue.processes,
+      stakeholders: issue.stakeholders,
+      extractedStakeholderNeeds: existingStakeholderNeeds,
+    });
+
     setEditIssueForm({
       title: issue.title,
       description: issue.description || "",
@@ -554,19 +716,27 @@ export default function ContextPage() {
       issueType: issue.issueType,
       departmentId: issue.departmentId || "",
       ownerId: issue.ownerId || "",
-      selectedRegulations: [],
-      selectedProcesses: [],
+      selectedRegulations: existingRegulations,
+      selectedProcesses: existingProcesses,
     });
     setEditCurrentStep(1);
     setEditStakeholderType("Internal");
     setEditSelectedStakeholderId("");
     setEditSelectedNeedExpectation("");
-    setEditStakeholderNeeds([]);
+    setEditStakeholderNeeds(existingStakeholderNeeds);
     setShowEditIssue(true);
   };
 
   const handleUpdateIssue = async () => {
     if (!editingIssue || !editIssueForm.title.trim()) return;
+
+    // Debug logging
+    console.log("Updating issue with data:", {
+      selectedRegulations: editIssueForm.selectedRegulations,
+      selectedProcesses: editIssueForm.selectedProcesses,
+      stakeholderNeeds: editStakeholderNeeds,
+    });
+
     try {
       const res = await fetch(`/api/issues/${editingIssue.id}`, {
         method: "PUT",
@@ -578,6 +748,10 @@ export default function ContextPage() {
           category: editIssueForm.category,
           issueType: editIssueForm.issueType,
           departmentId: editIssueForm.departmentId || null,
+          ownerId: editIssueForm.ownerId || null,
+          selectedRegulations: editIssueForm.selectedRegulations,
+          selectedProcesses: editIssueForm.selectedProcesses,
+          stakeholderNeeds: editStakeholderNeeds,
         }),
       });
       if (res.ok) {
@@ -587,11 +761,207 @@ export default function ContextPage() {
         setEditingIssue(null);
         setEditCurrentStep(1);
         setEditStakeholderNeeds([]);
+        toast({
+          title: "Success",
+          description: "Issue updated successfully",
+        });
       }
     } catch (error) {
       console.error("Error updating issue:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update issue",
+        variant: "destructive",
+      });
     }
   };
+
+  // ============ Issue Action Handlers ============
+
+  // Create Action (DepartmentReviewer)
+  const handleCreateAction = async () => {
+    if (!selectedIssueForAction || !actionForm.actionType || !actionForm.description) {
+      toast({
+        title: "Error",
+        description: "Action type and description are required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSavingAction(true);
+    try {
+      const res = await fetch(`/api/issues/${selectedIssueForAction.id}/actions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...actionForm,
+          createdById: session?.user?.id,
+        }),
+      });
+
+      if (res.ok) {
+        toast({
+          title: "Success",
+          description: "Action created successfully",
+        });
+        // Refresh issues to get updated actions
+        const issuesRes = await fetch("/api/issues");
+        if (issuesRes.ok) setIssues(await issuesRes.json());
+        setShowCreateActionDialog(false);
+        setActionForm({ actionType: "", description: "", completion: 0, comment: "" });
+        setSelectedIssueForAction(null);
+      } else {
+        const error = await res.json();
+        toast({
+          title: "Error",
+          description: error.error || "Failed to create action",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error creating action:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create action",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingAction(false);
+    }
+  };
+
+  // Resolve Action (CustomerAdmin/Reviewer)
+  const handleResolveAction = async (action: IssueAction) => {
+    setProcessingAction(true);
+    try {
+      const res = await fetch(`/api/issues/${action.issueId}/actions/${action.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "resolve" }),
+      });
+
+      if (res.ok) {
+        toast({
+          title: "Success",
+          description: "Action is resolved",
+        });
+        // Refresh issues
+        const issuesRes = await fetch("/api/issues");
+        if (issuesRes.ok) setIssues(await issuesRes.json());
+        setShowActionReviewDialog(false);
+        setSelectedActionForReview(null);
+      }
+    } catch (error) {
+      console.error("Error resolving action:", error);
+      toast({
+        title: "Error",
+        description: "Failed to resolve action",
+        variant: "destructive",
+      });
+    } finally {
+      setProcessingAction(false);
+    }
+  };
+
+  // Resend Action (CustomerAdmin/Reviewer)
+  const handleResendAction = async () => {
+    if (!selectedActionForReview || !resendComment) {
+      toast({
+        title: "Error",
+        description: "Comment is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setProcessingAction(true);
+    try {
+      const res = await fetch(`/api/issues/${selectedActionForReview.issueId}/actions/${selectedActionForReview.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "resend",
+          comment: resendComment,
+          createdBy: session?.user?.name || "Admin",
+        }),
+      });
+
+      if (res.ok) {
+        toast({
+          title: "Success",
+          description: "Action is sent back",
+        });
+        // Refresh issues
+        const issuesRes = await fetch("/api/issues");
+        if (issuesRes.ok) setIssues(await issuesRes.json());
+        setShowResendDialog(false);
+        setShowActionReviewDialog(false);
+        setResendComment("");
+        setSelectedActionForReview(null);
+      }
+    } catch (error) {
+      console.error("Error resending action:", error);
+      toast({
+        title: "Error",
+        description: "Failed to send back action",
+        variant: "destructive",
+      });
+    } finally {
+      setProcessingAction(false);
+    }
+  };
+
+  // Update Action (DepartmentReviewer - after sent back)
+  const handleUpdateAction = async () => {
+    if (!editingAction || !editActionForm.actionType || !editActionForm.description) {
+      toast({
+        title: "Error",
+        description: "Action type and description are required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSavingAction(true);
+    try {
+      const res = await fetch(`/api/issues/${editingAction.issueId}/actions/${editingAction.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...editActionForm,
+          status: "Pending", // Reset to pending when resubmitting
+        }),
+      });
+
+      if (res.ok) {
+        toast({
+          title: "Success",
+          description: "Action updated and resubmitted",
+        });
+        // Refresh issues
+        const issuesRes = await fetch("/api/issues");
+        if (issuesRes.ok) setIssues(await issuesRes.json());
+        setShowEditActionDialog(false);
+        setEditingAction(null);
+        setEditActionForm({ actionType: "", description: "", completion: 0, comment: "" });
+      }
+    } catch (error) {
+      console.error("Error updating action:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update action",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingAction(false);
+    }
+  };
+
+  // Check if user is CustomerAdmin or Reviewer (can review actions)
+  const isReviewerRole = userRoles.some(
+    (role) => role === "CustomerAdministrator" || role === "Reviewer"
+  );
 
   // Export Issues handler
   const handleExport = () => {
@@ -657,10 +1027,11 @@ export default function ContextPage() {
         );
       },
     },
-    {
+    // Only show actions column for non-readonly roles
+    ...(!isReadOnlyRole ? [{
       id: "actions",
       header: "Actions",
-      cell: ({ row }) => (
+      cell: ({ row }: { row: { original: Stakeholder } }) => (
         <div className="flex gap-2">
           <Button variant="ghost" size="icon">
             <Pencil className="h-4 w-4" />
@@ -678,7 +1049,7 @@ export default function ContextPage() {
           </Button>
         </div>
       ),
-    },
+    }] : []),
   ];
 
   // Get unique categories and domains from issues
@@ -1166,7 +1537,8 @@ export default function ContextPage() {
                     onClick={handleAddStakeholderNeed}
                     disabled={!selectedStakeholderId || !selectedNeedExpectation}
                   >
-                    <Plus className="h-4 w-4" />
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Stakeholder
                   </Button>
                 </div>
 
@@ -1886,7 +2258,8 @@ export default function ContextPage() {
                     onClick={handleAddEditStakeholderNeed}
                     disabled={!editSelectedStakeholderId || !editSelectedNeedExpectation}
                   >
-                    <Plus className="h-4 w-4" />
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Stakeholder
                   </Button>
                 </div>
 
@@ -2321,10 +2694,12 @@ export default function ContextPage() {
                 </SelectContent>
               </Select>
             </div>
-            <Button onClick={() => setShowAddStakeholder(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              New Stakeholder
-            </Button>
+            {!isReadOnlyRole && (
+              <Button onClick={() => setShowAddStakeholder(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                New Stakeholder
+              </Button>
+            )}
           </div>
 
           <DataGrid
@@ -2388,64 +2763,142 @@ export default function ContextPage() {
               </Select>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)}>
-                <Upload className="h-4 w-4 mr-2" />
-                Import
-              </Button>
+              {!isReadOnlyRole && (
+                <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)}>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Import
+                </Button>
+              )}
               <Button variant="outline" size="sm" onClick={handleExport}>
                 <Download className="h-4 w-4 mr-2" />
                 Export
               </Button>
-              <Button variant="outline" size="sm" className="text-destructive">
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete All
-              </Button>
-              <Button onClick={() => setShowAddIssue(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add New
-              </Button>
+              {!isReadOnlyRole && (
+                <>
+                  <Button variant="outline" size="sm" className="text-destructive">
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete All
+                  </Button>
+                  <Button onClick={() => setShowAddIssue(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add New
+                  </Button>
+                </>
+              )}
             </div>
           </div>
 
-          {/* Issue Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredIssues.map((issue) => (
+          {/* Issue Cards - Single column list layout */}
+          <div className="space-y-4">
+            {filteredIssues.map((issue, index) => (
               <Card key={issue.id} className="relative">
-                <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between">
-                    <CardTitle className="text-base">{issue.title}</CardTitle>
-                    <div className="flex gap-1">
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditIssue(issue)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive"
-                        onClick={() => {
-                          setDeletingItem({ type: "issue", id: issue.id });
-                          setIsDeleteDialogOpen(true);
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                <CardContent className="p-6">
+                  {/* Header Row */}
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <h3 className="text-lg font-semibold text-primary">
+                        IS{index + 1} - {issue.id.slice(0, 4).toUpperCase()}
+                      </h3>
+                      <p className="text-base text-foreground">{issue.title}</p>
+                    </div>
+                    {!isReadOnlyRole && (
+                      <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditIssue(issue)}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive"
+                          onClick={() => {
+                            setDeletingItem({ type: "issue", id: issue.id });
+                            setIsDeleteDialogOpen(true);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Details Grid */}
+                  <div className="grid grid-cols-5 gap-4">
+                    <div>
+                      <p className="text-sm font-medium text-primary">Issue Owner</p>
+                      <p className="text-sm text-foreground">{issue.owner?.fullName || "-"}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-primary">Category</p>
+                      <p className="text-sm text-foreground">{issue.category || "-"}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-primary">Type</p>
+                      <p className="text-sm text-foreground">{issue.issueType || "-"}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-primary">Domain</p>
+                      <p className="text-sm text-foreground">{issue.domain || "-"}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-primary">Department</p>
+                      <p className="text-sm text-foreground">{issue.department?.name || "-"}</p>
                     </div>
                   </div>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <p className="text-sm text-muted-foreground line-clamp-2">
-                    {issue.description || "No description"}
-                  </p>
-                  <div className="flex flex-wrap gap-2 pt-2">
-                    <Badge variant="outline">{issue.domain}</Badge>
-                    <Badge variant="outline">{issue.category}</Badge>
-                    <Badge className={getStatusColor(issue.status)}>{issue.status}</Badge>
+
+                  {/* Action Buttons Row */}
+                  <div className="flex items-center gap-2 mt-4 pt-4 border-t">
+                    {/* DeptReviewer/DeptContributor: Create Action and View Action buttons */}
+                    {isReadOnlyRole && (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedIssueForAction(issue);
+                            setActionForm({ actionType: "", description: "", completion: 0, comment: "" });
+                            setShowCreateActionDialog(true);
+                          }}
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Create Action
+                        </Button>
+                        {issue.actions && issue.actions.length > 0 && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedIssueForAction(issue);
+                              setShowViewActionsDialog(true);
+                            }}
+                          >
+                            View Action ({issue.actions.length})
+                          </Button>
+                        )}
+                      </>
+                    )}
+
+                    {/* CustomerAdmin/Reviewer: Action button (only if actions exist) */}
+                    {isReviewerRole && issue.actions && issue.actions.length > 0 && (
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedIssueForAction(issue);
+                          // Open review dialog with the first pending action
+                          const pendingAction = issue.actions?.find(a => a.status === "Pending");
+                          if (pendingAction) {
+                            setSelectedActionForReview(pendingAction);
+                            setShowActionReviewDialog(true);
+                          } else {
+                            // Show all actions if none pending
+                            setShowViewActionsDialog(true);
+                          }
+                        }}
+                      >
+                        Action ({issue.actions.filter(a => a.status === "Pending").length} pending)
+                      </Button>
+                    )}
                   </div>
-                  {issue.department && (
-                    <p className="text-xs text-muted-foreground pt-2">
-                      Department: {issue.department.name}
-                    </p>
-                  )}
                 </CardContent>
               </Card>
             ))}
@@ -2567,6 +3020,368 @@ export default function ContextPage() {
             </Button>
             <Button onClick={handleAddType} disabled={!newType.trim()}>
               Add Type
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Action Dialog (DeptReviewer) */}
+      <Dialog open={showCreateActionDialog} onOpenChange={(open) => {
+        setShowCreateActionDialog(open);
+        if (!open) {
+          setActionForm({ actionType: "", description: "", completion: 0, comment: "" });
+          setSelectedIssueForAction(null);
+        }
+      }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Action Details</DialogTitle>
+            <DialogDescription>
+              Create a new action for issue: {selectedIssueForAction?.title}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="actionType">Action Type *</Label>
+              <Select
+                value={actionForm.actionType}
+                onValueChange={(value) => setActionForm({ ...actionForm, actionType: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select action type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Preventive">Preventive</SelectItem>
+                  <SelectItem value="Corrective">Corrective</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="description">Description *</Label>
+              <textarea
+                id="description"
+                className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                placeholder="Enter action description"
+                value={actionForm.description}
+                onChange={(e) => setActionForm({ ...actionForm, description: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="completion">Completion (%)</Label>
+              <Input
+                id="completion"
+                type="number"
+                min="0"
+                max="100"
+                value={actionForm.completion}
+                onChange={(e) => setActionForm({ ...actionForm, completion: parseInt(e.target.value) || 0 })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="comment">Comment</Label>
+              <textarea
+                id="comment"
+                className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                placeholder="Optional comment"
+                value={actionForm.comment}
+                onChange={(e) => setActionForm({ ...actionForm, comment: e.target.value })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreateActionDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateAction} disabled={savingAction || !actionForm.actionType || !actionForm.description}>
+              {savingAction ? "Submitting..." : "Submit"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Actions Dialog (DeptReviewer) */}
+      <Dialog open={showViewActionsDialog} onOpenChange={(open) => {
+        setShowViewActionsDialog(open);
+        if (!open) setSelectedIssueForAction(null);
+      }}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Actions for Issue</DialogTitle>
+            <DialogDescription>
+              {selectedIssueForAction?.title}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {selectedIssueForAction?.actions?.map((action) => (
+              <Card key={action.id} className={`${action.status === "Sent Back" ? "border-orange-500" : action.status === "Resolved" ? "border-green-500" : ""}`}>
+                <CardContent className="p-4">
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <Badge variant={action.status === "Resolved" ? "default" : action.status === "Sent Back" ? "destructive" : "secondary"}>
+                        {action.status}
+                      </Badge>
+                      <Badge variant="outline" className="ml-2">{action.actionType}</Badge>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {action.status === "Sent Back" && action.comments.length > 0 && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => {
+                            setSelectedActionForComments(action);
+                            setShowActionCommentsDialog(true);
+                          }}
+                        >
+                          <MessageSquare className="h-4 w-4 text-orange-500" />
+                        </Button>
+                      )}
+                      {action.status === "Sent Back" && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setEditingAction(action);
+                            setEditActionForm({
+                              actionType: action.actionType,
+                              description: action.description,
+                              completion: action.completion,
+                              comment: action.comment || "",
+                            });
+                            setShowEditActionDialog(true);
+                          }}
+                        >
+                          <Pencil className="h-4 w-4 mr-1" />
+                          Edit
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-sm mb-2">{action.description}</p>
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>By: {action.createdBy.fullName}</span>
+                    <span>Completion: {action.completion}%</span>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+            {(!selectedIssueForAction?.actions || selectedIssueForAction.actions.length === 0) && (
+              <p className="text-center text-muted-foreground py-4">No actions found</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowViewActionsDialog(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Action Review Dialog (CustomerAdmin/Reviewer) */}
+      <Dialog open={showActionReviewDialog} onOpenChange={(open) => {
+        setShowActionReviewDialog(open);
+        if (!open) {
+          setSelectedActionForReview(null);
+          setSelectedIssueForAction(null);
+        }
+      }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Review Action</DialogTitle>
+            <DialogDescription>
+              Review and take action on this submission
+            </DialogDescription>
+          </DialogHeader>
+          {selectedActionForReview && (
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Action Type</Label>
+                <p className="text-sm p-2 bg-muted rounded">{selectedActionForReview.actionType}</p>
+              </div>
+              <div className="space-y-2">
+                <Label>Description</Label>
+                <p className="text-sm p-2 bg-muted rounded whitespace-pre-wrap">{selectedActionForReview.description}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Completion</Label>
+                  <p className="text-sm p-2 bg-muted rounded">{selectedActionForReview.completion}%</p>
+                </div>
+                <div className="space-y-2">
+                  <Label>Created By</Label>
+                  <p className="text-sm p-2 bg-muted rounded">{selectedActionForReview.createdBy.fullName}</p>
+                </div>
+              </div>
+              {selectedActionForReview.comment && (
+                <div className="space-y-2">
+                  <Label>Comment</Label>
+                  <p className="text-sm p-2 bg-muted rounded whitespace-pre-wrap">{selectedActionForReview.comment}</p>
+                </div>
+              )}
+            </div>
+          )}
+          <DialogFooter className="flex gap-2">
+            <Button variant="outline" onClick={() => setShowActionReviewDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="default"
+              onClick={() => selectedActionForReview && handleResolveAction(selectedActionForReview)}
+              disabled={processingAction}
+            >
+              {processingAction ? "Processing..." : "Resolved"}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => setShowResendDialog(true)}
+              disabled={processingAction}
+            >
+              Resend
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Resend Comment Dialog (CustomerAdmin/Reviewer) */}
+      <Dialog open={showResendDialog} onOpenChange={(open) => {
+        setShowResendDialog(open);
+        if (!open) setResendComment("");
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Send Back Action</DialogTitle>
+            <DialogDescription>
+              Add a comment explaining why this action is being sent back
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="resendComment">Comment *</Label>
+              <textarea
+                id="resendComment"
+                className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                placeholder="Enter your feedback..."
+                value={resendComment}
+                onChange={(e) => setResendComment(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowResendDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleResendAction} disabled={processingAction || !resendComment.trim()}>
+              {processingAction ? "Sending..." : "Send Back"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Action Comments Dialog (DeptReviewer) */}
+      <Dialog open={showActionCommentsDialog} onOpenChange={(open) => {
+        setShowActionCommentsDialog(open);
+        if (!open) setSelectedActionForComments(null);
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Comments</DialogTitle>
+            <DialogDescription>
+              Feedback from reviewer
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4 max-h-[400px] overflow-y-auto">
+            {selectedActionForComments?.comments.map((comment) => (
+              <Card key={comment.id}>
+                <CardContent className="p-3">
+                  <p className="text-sm whitespace-pre-wrap">{comment.comment}</p>
+                  <div className="flex justify-between text-xs text-muted-foreground mt-2">
+                    <span>By: {comment.createdBy}</span>
+                    <span>{new Date(comment.createdAt).toLocaleDateString()}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+            {(!selectedActionForComments?.comments || selectedActionForComments.comments.length === 0) && (
+              <p className="text-center text-muted-foreground py-4">No comments</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowActionCommentsDialog(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Action Dialog (DeptReviewer - for sent back actions) */}
+      <Dialog open={showEditActionDialog} onOpenChange={(open) => {
+        setShowEditActionDialog(open);
+        if (!open) {
+          setEditingAction(null);
+          setEditActionForm({ actionType: "", description: "", completion: 0, comment: "" });
+        }
+      }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Action</DialogTitle>
+            <DialogDescription>
+              Update and resubmit this action
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="editActionType">Action Type *</Label>
+              <Select
+                value={editActionForm.actionType}
+                onValueChange={(value) => setEditActionForm({ ...editActionForm, actionType: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select action type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Preventive">Preventive</SelectItem>
+                  <SelectItem value="Corrective">Corrective</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editDescription">Description *</Label>
+              <textarea
+                id="editDescription"
+                className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                placeholder="Enter action description"
+                value={editActionForm.description}
+                onChange={(e) => setEditActionForm({ ...editActionForm, description: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editCompletion">Completion (%)</Label>
+              <Input
+                id="editCompletion"
+                type="number"
+                min="0"
+                max="100"
+                value={editActionForm.completion}
+                onChange={(e) => setEditActionForm({ ...editActionForm, completion: parseInt(e.target.value) || 0 })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editComment">Comment</Label>
+              <textarea
+                id="editComment"
+                className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                placeholder="Optional comment"
+                value={editActionForm.comment}
+                onChange={(e) => setEditActionForm({ ...editActionForm, comment: e.target.value })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditActionDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpdateAction} disabled={savingAction || !editActionForm.actionType || !editActionForm.description}>
+              {savingAction ? "Saving..." : "Save & Resubmit"}
             </Button>
           </DialogFooter>
         </DialogContent>
