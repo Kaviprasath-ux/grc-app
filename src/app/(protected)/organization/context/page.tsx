@@ -237,6 +237,12 @@ export default function ContextPage() {
   const [isDraggingActionFile, setIsDraggingActionFile] = useState(false);
   const actionFileInputRef = useRef<HTMLInputElement>(null);
 
+  // View Actions file upload states (for DeptReviewer)
+  const [viewActionFile, setViewActionFile] = useState<File | null>(null);
+  const [uploadingActionId, setUploadingActionId] = useState<string | null>(null);
+  const [isDraggingViewActionFile, setIsDraggingViewActionFile] = useState<string | null>(null);
+  const viewActionFileInputRef = useRef<HTMLInputElement>(null);
+
   // Action Review states (for CustomerAdmin/Reviewer)
   const [showActionReviewDialog, setShowActionReviewDialog] = useState(false);
   const [selectedActionForReview, setSelectedActionForReview] = useState<IssueAction | null>(null);
@@ -809,6 +815,135 @@ export default function ContextPage() {
     const file = e.target.files?.[0];
     if (file) {
       setActionFile(file);
+    }
+  };
+
+  // View Actions file handlers (for DeptReviewer)
+  const handleViewActionFileDragOver = (e: React.DragEvent, actionId: string) => {
+    e.preventDefault();
+    setIsDraggingViewActionFile(actionId);
+  };
+
+  const handleViewActionFileDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingViewActionFile(null);
+  };
+
+  const handleViewActionFileDrop = async (e: React.DragEvent, action: IssueAction) => {
+    e.preventDefault();
+    setIsDraggingViewActionFile(null);
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      await uploadFileToAction(action, files[0]);
+    }
+  };
+
+  const handleViewActionFileChange = async (e: React.ChangeEvent<HTMLInputElement>, action: IssueAction) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      await uploadFileToAction(action, file);
+    }
+    // Reset input
+    if (viewActionFileInputRef.current) {
+      viewActionFileInputRef.current.value = "";
+    }
+  };
+
+  const uploadFileToAction = async (action: IssueAction, file: File) => {
+    setUploadingActionId(action.id);
+    try {
+      // Upload file first
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const uploadRes = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!uploadRes.ok) {
+        toast({
+          title: "Error",
+          description: "Failed to upload file",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const uploadResult = await uploadRes.json();
+
+      // Update action with file info
+      const res = await fetch(`/api/issues/${action.issueId}/actions/${action.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fileName: uploadResult.file.originalName,
+          fileType: uploadResult.file.fileType,
+          filePath: uploadResult.file.filePath,
+          fileSize: uploadResult.file.fileSize,
+        }),
+      });
+
+      if (res.ok) {
+        toast({
+          title: "Success",
+          description: "File uploaded successfully",
+        });
+        // Refresh issues
+        const issuesRes = await fetch("/api/issues");
+        if (issuesRes.ok) setIssues(await issuesRes.json());
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to attach file to action",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      toast({
+        title: "Error",
+        description: "Failed to upload file",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingActionId(null);
+    }
+  };
+
+  const handleDeleteActionFile = async (action: IssueAction) => {
+    setUploadingActionId(action.id);
+    try {
+      const res = await fetch(`/api/issues/${action.issueId}/actions/${action.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ deleteFile: true }),
+      });
+
+      if (res.ok) {
+        toast({
+          title: "Success",
+          description: "File deleted successfully",
+        });
+        // Refresh issues
+        const issuesRes = await fetch("/api/issues");
+        if (issuesRes.ok) setIssues(await issuesRes.json());
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to delete file",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error deleting file:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete file",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingActionId(null);
     }
   };
 
@@ -3275,46 +3410,91 @@ export default function ContextPage() {
                     </div>
                   </div>
                   <p className="text-sm mb-2">{action.description}</p>
-                  {/* File Attachment Display */}
-                  {action.fileName && action.filePath && (
-                    <div className="flex items-center justify-between p-2 bg-muted rounded-lg mb-2">
-                      <div className="flex items-center gap-2">
-                        {action.fileType?.match(/^(jpg|jpeg|png|gif|bmp|webp)$/i) ? (
-                          <FileImage className="h-5 w-5 text-blue-500" />
-                        ) : action.fileType?.match(/^(xls|xlsx|csv)$/i) ? (
-                          <FileSpreadsheet className="h-5 w-5 text-green-600" />
-                        ) : action.fileType?.match(/^(doc|docx|txt|pdf)$/i) ? (
-                          <FileText className="h-5 w-5 text-red-500" />
-                        ) : (
-                          <File className="h-5 w-5 text-gray-500" />
-                        )}
-                        <span className="text-sm truncate max-w-[150px]">{action.fileName}</span>
-                        {action.fileSize && (
-                          <span className="text-xs text-muted-foreground">
-                            ({(action.fileSize / 1024).toFixed(1)} KB)
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => window.open(action.filePath!, "_blank")}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          asChild
-                        >
-                          <a href={action.filePath!} download={action.fileName}>
-                            <Download className="h-4 w-4" />
-                          </a>
-                        </Button>
-                      </div>
+
+                  {/* File Upload Dropzone */}
+                  <div className="space-y-2 mb-2">
+                    <div
+                      className={`border-2 border-dashed rounded-lg p-3 text-center cursor-pointer transition-colors ${
+                        isDraggingViewActionFile === action.id ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50"
+                      } ${uploadingActionId === action.id ? "opacity-50 pointer-events-none" : ""}`}
+                      onDragOver={(e) => handleViewActionFileDragOver(e, action.id)}
+                      onDragLeave={handleViewActionFileDragLeave}
+                      onDrop={(e) => handleViewActionFileDrop(e, action)}
+                      onClick={() => {
+                        if (viewActionFileInputRef.current) {
+                          viewActionFileInputRef.current.setAttribute("data-action-id", action.id);
+                          viewActionFileInputRef.current.setAttribute("data-issue-id", action.issueId);
+                          viewActionFileInputRef.current.click();
+                        }
+                      }}
+                    >
+                      {uploadingActionId === action.id ? (
+                        <div className="flex items-center justify-center gap-2 py-1">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                          <span className="text-sm text-muted-foreground">Uploading...</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center gap-2 py-1">
+                          <Upload className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm text-muted-foreground">Drop file here or click to upload</span>
+                        </div>
+                      )}
                     </div>
-                  )}
+
+                    {/* File List */}
+                    {action.fileName && action.filePath && (
+                      <div className="flex items-center justify-between p-2 bg-muted rounded-lg">
+                        <div className="flex items-center gap-2">
+                          {action.fileType?.match(/^(jpg|jpeg|png|gif|bmp|webp)$/i) ? (
+                            <FileImage className="h-5 w-5 text-blue-500" />
+                          ) : action.fileType?.match(/^(xls|xlsx|csv)$/i) ? (
+                            <FileSpreadsheet className="h-5 w-5 text-green-600" />
+                          ) : action.fileType?.match(/^(doc|docx|txt|pdf)$/i) ? (
+                            <FileText className="h-5 w-5 text-red-500" />
+                          ) : (
+                            <File className="h-5 w-5 text-gray-500" />
+                          )}
+                          <span className="text-sm truncate max-w-[150px]">{action.fileName}</span>
+                          {action.fileSize && (
+                            <span className="text-xs text-muted-foreground">
+                              ({(action.fileSize / 1024).toFixed(1)} KB)
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => window.open(action.filePath!, "_blank")}
+                            title="View"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            asChild
+                            title="Download"
+                          >
+                            <a href={action.filePath!} download={action.fileName}>
+                              <Download className="h-4 w-4" />
+                            </a>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteActionFile(action)}
+                            disabled={uploadingActionId === action.id}
+                            title="Delete"
+                            className="text-red-500 hover:text-red-700"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   <div className="flex justify-between text-xs text-muted-foreground">
                     <span>By: {action.createdBy.fullName}</span>
                     <span>Completion: {action.completion}%</span>
@@ -3325,6 +3505,20 @@ export default function ContextPage() {
             {(!selectedIssueForAction?.actions || selectedIssueForAction.actions.length === 0) && (
               <p className="text-center text-muted-foreground py-4">No actions found</p>
             )}
+            {/* Hidden file input for View Actions */}
+            <input
+              ref={viewActionFileInputRef}
+              type="file"
+              className="hidden"
+              onChange={(e) => {
+                const actionId = viewActionFileInputRef.current?.getAttribute("data-action-id");
+                const issueId = viewActionFileInputRef.current?.getAttribute("data-issue-id");
+                const action = selectedIssueForAction?.actions?.find(a => a.id === actionId);
+                if (action) {
+                  handleViewActionFileChange(e, action);
+                }
+              }}
+            />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowViewActionsDialog(false)}>

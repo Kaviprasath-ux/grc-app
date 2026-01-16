@@ -43,17 +43,35 @@ export async function PUT(
   try {
     const { actionId } = await params;
     const body = await request.json();
-    const { actionType, description, completion, comment, status } = body;
+    const { actionType, description, completion, comment, status, fileName, fileType, filePath, fileSize, deleteFile } = body;
+
+    // Build update data
+    const updateData: Record<string, unknown> = {};
+
+    if (actionType !== undefined) updateData.actionType = actionType;
+    if (description !== undefined) updateData.description = description;
+    if (completion !== undefined) updateData.completion = completion;
+    if (comment !== undefined) updateData.comment = comment;
+    if (status !== undefined) updateData.status = status;
+
+    // Handle file updates
+    if (deleteFile) {
+      // Delete file by setting fields to null
+      updateData.fileName = null;
+      updateData.fileType = null;
+      updateData.filePath = null;
+      updateData.fileSize = null;
+    } else if (fileName !== undefined) {
+      // Add/update file
+      updateData.fileName = fileName;
+      updateData.fileType = fileType || null;
+      updateData.filePath = filePath || null;
+      updateData.fileSize = fileSize || null;
+    }
 
     const action = await prisma.issueAction.update({
       where: { id: actionId },
-      data: {
-        actionType: actionType || undefined,
-        description: description || undefined,
-        completion: completion !== undefined ? completion : undefined,
-        comment: comment !== undefined ? comment : undefined,
-        status: status || "Pending", // Reset to Pending when edited and resubmitted
-      },
+      data: updateData,
       include: {
         createdBy: {
           select: { id: true, fullName: true },
