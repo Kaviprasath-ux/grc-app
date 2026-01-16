@@ -238,6 +238,32 @@ export default function FieldworkDetailsPage() {
   const [aiReviewDialogOpen, setAiReviewDialogOpen] = useState(false);
   const [aiReviewResult, setAiReviewResult] = useState<string>("");
 
+  // Workpaper delete states
+  const [deleteWorkpaperDialogOpen, setDeleteWorkpaperDialogOpen] = useState(false);
+  const [workpaperToDelete, setWorkpaperToDelete] = useState<Workpaper | null>(null);
+  const [deletingWorkpaper, setDeletingWorkpaper] = useState(false);
+
+  // AI Workpaper edit/delete states
+  const [editAIWorkpaperDialogOpen, setEditAIWorkpaperDialogOpen] = useState(false);
+  const [deleteAIWorkpaperDialogOpen, setDeleteAIWorkpaperDialogOpen] = useState(false);
+  const [selectedAIWorkpaper, setSelectedAIWorkpaper] = useState<AIWorkpaper | null>(null);
+  const [editAIWorkpaper, setEditAIWorkpaper] = useState({
+    task: "",
+    evidences: "",
+    steps: "",
+    questionChecklist: "",
+    comments: "",
+  });
+  const [savingAIWorkpaper, setSavingAIWorkpaper] = useState(false);
+  const [deletingAIWorkpaper, setDeletingAIWorkpaper] = useState(false);
+
+  // Generate AI Workpaper states
+  const [generateAIDialogOpen, setGenerateAIDialogOpen] = useState(false);
+  const [generatingWorkpapers, setGeneratingWorkpapers] = useState(false);
+  const [generatedWorkpapers, setGeneratedWorkpapers] = useState<AIWorkpaper[]>([]);
+  const [selectedGeneratedIds, setSelectedGeneratedIds] = useState<string[]>([]);
+  const [addingGeneratedWorkpapers, setAddingGeneratedWorkpapers] = useState(false);
+
   // Form states for new items
   const [newFinding, setNewFinding] = useState({
     title: "",
@@ -490,6 +516,157 @@ export default function FieldworkDetailsPage() {
     }
   };
 
+  const handleOpenEditAIWorkpaper = (wp: AIWorkpaper) => {
+    setSelectedAIWorkpaper(wp);
+    setEditAIWorkpaper({
+      task: wp.task,
+      evidences: wp.evidences,
+      steps: wp.steps,
+      questionChecklist: wp.questionChecklist,
+      comments: wp.comments,
+    });
+    setEditAIWorkpaperDialogOpen(true);
+  };
+
+  const handleUpdateAIWorkpaper = async () => {
+    if (!selectedAIWorkpaper) return;
+    if (!editAIWorkpaper.task.trim()) {
+      toast.error("Task is required");
+      return;
+    }
+
+    setSavingAIWorkpaper(true);
+    try {
+      const response = await fetch(
+        `/api/internal-audit/fieldwork/${engagementId}/ai-workpapers/${selectedAIWorkpaper.id}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(editAIWorkpaper),
+        }
+      );
+
+      if (response.ok) {
+        setAiWorkpapers((prev) =>
+          prev.map((wp) =>
+            wp.id === selectedAIWorkpaper.id
+              ? { ...wp, ...editAIWorkpaper }
+              : wp
+          )
+        );
+        toast.success("AI Workpaper updated successfully");
+        setEditAIWorkpaperDialogOpen(false);
+        setSelectedAIWorkpaper(null);
+      } else {
+        toast.error("Failed to update AI Workpaper");
+      }
+    } catch (error) {
+      console.error("Error updating AI Workpaper:", error);
+      toast.error("Failed to update AI Workpaper");
+    } finally {
+      setSavingAIWorkpaper(false);
+    }
+  };
+
+  const handleDeleteAIWorkpaper = async () => {
+    if (!selectedAIWorkpaper) return;
+
+    setDeletingAIWorkpaper(true);
+    try {
+      const response = await fetch(
+        `/api/internal-audit/fieldwork/${engagementId}/ai-workpapers/${selectedAIWorkpaper.id}`,
+        { method: "DELETE" }
+      );
+
+      if (response.ok) {
+        setAiWorkpapers((prev) =>
+          prev.filter((wp) => wp.id !== selectedAIWorkpaper.id)
+        );
+        toast.success("AI Workpaper deleted successfully");
+        setDeleteAIWorkpaperDialogOpen(false);
+        setSelectedAIWorkpaper(null);
+      } else {
+        toast.error("Failed to delete AI Workpaper");
+      }
+    } catch (error) {
+      console.error("Error deleting AI Workpaper:", error);
+      toast.error("Failed to delete AI Workpaper");
+    } finally {
+      setDeletingAIWorkpaper(false);
+    }
+  };
+
+  const handleGenerateAIWorkpapers = async () => {
+    setGeneratingWorkpapers(true);
+    setGeneratedWorkpapers([]);
+    setSelectedGeneratedIds([]);
+    setGenerateAIDialogOpen(true);
+
+    try {
+      const response = await fetch(
+        `/api/internal-audit/fieldwork/${engagementId}/ai-workpapers/generate`,
+        { method: "POST" }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        setGeneratedWorkpapers(data.workpapers || []);
+      } else {
+        toast.error("Failed to generate AI workpapers");
+      }
+    } catch (error) {
+      console.error("Error generating AI workpapers:", error);
+      toast.error("Failed to generate AI workpapers");
+    } finally {
+      setGeneratingWorkpapers(false);
+    }
+  };
+
+  const handleToggleGeneratedSelection = (id: string) => {
+    setSelectedGeneratedIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
+  };
+
+  const handleAddSelectedWorkpapers = async () => {
+    if (selectedGeneratedIds.length === 0) {
+      toast.error("Please select at least one workpaper");
+      return;
+    }
+
+    setAddingGeneratedWorkpapers(true);
+    try {
+      const selectedWorkpapers = generatedWorkpapers.filter((wp) =>
+        selectedGeneratedIds.includes(wp.id)
+      );
+
+      const response = await fetch(
+        `/api/internal-audit/fieldwork/${engagementId}/ai-workpapers/add`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ workpapers: selectedWorkpapers }),
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        setAiWorkpapers((prev) => [...prev, ...data.workpapers]);
+        toast.success(`${selectedGeneratedIds.length} workpaper(s) added successfully`);
+        setGenerateAIDialogOpen(false);
+        setGeneratedWorkpapers([]);
+        setSelectedGeneratedIds([]);
+      } else {
+        toast.error("Failed to add workpapers");
+      }
+    } catch (error) {
+      console.error("Error adding workpapers:", error);
+      toast.error("Failed to add workpapers");
+    } finally {
+      setAddingGeneratedWorkpapers(false);
+    }
+  };
+
   const handleAddFinding = async () => {
     if (!newFinding.title.trim()) {
       toast.error("Finding title is required");
@@ -610,6 +787,32 @@ export default function FieldworkDetailsPage() {
       toast.error("Failed to delete document");
     } finally {
       setDeletingDocument(false);
+    }
+  };
+
+  const handleDeleteWorkpaper = async () => {
+    if (!workpaperToDelete) return;
+
+    setDeletingWorkpaper(true);
+    try {
+      const response = await fetch(
+        `/api/internal-audit/fieldwork/${engagementId}/workpapers/${workpaperToDelete.id}`,
+        { method: "DELETE" }
+      );
+
+      if (response.ok) {
+        toast.success("Workpaper deleted successfully");
+        setDeleteWorkpaperDialogOpen(false);
+        setWorkpaperToDelete(null);
+        fetchWorkpapers();
+      } else {
+        toast.error("Failed to delete workpaper");
+      }
+    } catch (error) {
+      console.error("Error deleting workpaper:", error);
+      toast.error("Failed to delete workpaper");
+    } finally {
+      setDeletingWorkpaper(false);
     }
   };
 
@@ -1228,6 +1431,19 @@ export default function FieldworkDetailsPage() {
                     >
                       <Download className="h-5 w-5 text-gray-600" />
                     </Button>
+                    {isAuditHead && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title="Delete"
+                        onClick={() => {
+                          setWorkpaperToDelete(wp);
+                          setDeleteWorkpaperDialogOpen(true);
+                        }}
+                      >
+                        <Trash2 className="h-5 w-5 text-red-500" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))}
@@ -1244,47 +1460,105 @@ export default function FieldworkDetailsPage() {
         isOpen={aiWorkpapersOpen}
         onToggle={() => setAiWorkpapersOpen(!aiWorkpapersOpen)}
       >
-        {aiWorkpapers.length > 0 ? (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="text-[#1e3a5f]">Task</TableHead>
-                <TableHead className="text-[#1e3a5f]">Evidences</TableHead>
-                <TableHead className="text-[#1e3a5f]">Steps</TableHead>
-                <TableHead className="text-[#1e3a5f]">Question Checklist</TableHead>
-                <TableHead className="text-[#1e3a5f]">Comments</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {aiWorkpapers.map((wp) => (
-                <TableRow key={wp.id}>
-                  <TableCell>
-                    <div className="space-y-2">
-                      <p>{wp.task}</p>
-                      <div className="space-y-1">
-                        <span className="text-[#1e3a5f] font-medium block">Executed</span>
-                        <Checkbox
-                          checked={wp.executed}
-                          onCheckedChange={() => handleToggleExecuted(wp.id, wp.executed)}
-                        />
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="max-w-[200px]">
-                    <p className="text-sm whitespace-pre-wrap">{wp.evidences}</p>
-                  </TableCell>
-                  <TableCell className="max-w-[250px]">
-                    <p className="text-sm whitespace-pre-wrap">{wp.steps}</p>
-                  </TableCell>
-                  <TableCell>{wp.questionChecklist || "-"}</TableCell>
-                  <TableCell>{wp.comments || "-"}</TableCell>
+        <div className="space-y-4">
+          {isAuditHead && (
+            <div className="flex justify-end">
+              <Button
+                size="sm"
+                className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
+                onClick={handleGenerateAIWorkpapers}
+                disabled={generatingWorkpapers}
+              >
+                {generatingWorkpapers ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <FileText className="h-4 w-4 mr-2" />
+                    Generate Workpaper with AI
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
+          {aiWorkpapers.length > 0 ? (
+            <div className="border rounded-lg overflow-hidden">
+              <Table>
+              <TableHeader>
+                <TableRow className="bg-gray-50 border-b">
+                  <TableHead className="text-[#1e3a5f] font-semibold w-[200px]">Task</TableHead>
+                  <TableHead className="text-[#1e3a5f] font-semibold w-[180px]">Evidences</TableHead>
+                  <TableHead className="text-[#1e3a5f] font-semibold w-[250px]">Steps</TableHead>
+                  <TableHead className="text-[#1e3a5f] font-semibold w-[120px]">Question Checklist</TableHead>
+                  <TableHead className="text-[#1e3a5f] font-semibold w-[100px]">Comments</TableHead>
+                  {isAuditHead && (
+                    <TableHead className="text-[#1e3a5f] font-semibold w-[100px]">Action</TableHead>
+                  )}
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        ) : (
-          <div className="text-center py-8 text-gray-500">No AI-generated workpapers available</div>
-        )}
+              </TableHeader>
+              <TableBody>
+                {aiWorkpapers.map((wp) => (
+                  <TableRow key={wp.id} className="border-b hover:bg-gray-50">
+                    <TableCell className="align-top py-4">
+                      <div className="space-y-3">
+                        <p className="text-gray-800">{wp.task}</p>
+                        <div>
+                          <span className="text-[#1e3a5f] font-medium block mb-1">Executed</span>
+                          <Checkbox
+                            checked={wp.executed}
+                            onCheckedChange={() => handleToggleExecuted(wp.id, wp.executed)}
+                          />
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="align-top py-4">
+                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{wp.evidences}</p>
+                    </TableCell>
+                    <TableCell className="align-top py-4">
+                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{wp.steps}</p>
+                    </TableCell>
+                    <TableCell className="align-top py-4 text-center">
+                      {wp.questionChecklist || "-"}
+                    </TableCell>
+                    <TableCell className="align-top py-4 text-center">
+                      {wp.comments || "-"}
+                    </TableCell>
+                    {isAuditHead && (
+                      <TableCell className="align-top py-4">
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="Edit"
+                            onClick={() => handleOpenEditAIWorkpaper(wp)}
+                          >
+                            <Pencil className="h-4 w-4 text-blue-600" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="Delete"
+                            onClick={() => {
+                              setSelectedAIWorkpaper(wp);
+                              setDeleteAIWorkpaperDialogOpen(true);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4 text-red-500" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))}
+              </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">No AI-generated workpapers available</div>
+          )}
+        </div>
       </CollapsibleSection>
 
       {/* Audit Engagement Task List Section */}
@@ -2216,6 +2490,244 @@ export default function FieldworkDetailsPage() {
                 </>
               ) : (
                 "Delete"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Workpaper Confirmation Dialog */}
+      <Dialog open={deleteWorkpaperDialogOpen} onOpenChange={setDeleteWorkpaperDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete Workpaper</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete "{workpaperToDelete?.fileName}"? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDeleteWorkpaperDialogOpen(false);
+                setWorkpaperToDelete(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteWorkpaper}
+              disabled={deletingWorkpaper}
+            >
+              {deletingWorkpaper ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit AI Workpaper Dialog */}
+      <Dialog open={editAIWorkpaperDialogOpen} onOpenChange={setEditAIWorkpaperDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit AI Workpaper</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-[#1e3a5f] font-medium">Task *</Label>
+              <Input
+                value={editAIWorkpaper.task}
+                onChange={(e) => setEditAIWorkpaper({ ...editAIWorkpaper, task: e.target.value })}
+                placeholder="Enter task description"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[#1e3a5f] font-medium">Evidences</Label>
+              <Textarea
+                value={editAIWorkpaper.evidences}
+                onChange={(e) => setEditAIWorkpaper({ ...editAIWorkpaper, evidences: e.target.value })}
+                placeholder="Enter evidences (one per line)"
+                rows={4}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[#1e3a5f] font-medium">Steps</Label>
+              <Textarea
+                value={editAIWorkpaper.steps}
+                onChange={(e) => setEditAIWorkpaper({ ...editAIWorkpaper, steps: e.target.value })}
+                placeholder="Enter steps (one per line)"
+                rows={4}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[#1e3a5f] font-medium">Question Checklist</Label>
+              <Input
+                value={editAIWorkpaper.questionChecklist}
+                onChange={(e) => setEditAIWorkpaper({ ...editAIWorkpaper, questionChecklist: e.target.value })}
+                placeholder="Enter question checklist"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[#1e3a5f] font-medium">Comments</Label>
+              <Textarea
+                value={editAIWorkpaper.comments}
+                onChange={(e) => setEditAIWorkpaper({ ...editAIWorkpaper, comments: e.target.value })}
+                placeholder="Enter comments"
+                rows={2}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setEditAIWorkpaperDialogOpen(false);
+                setSelectedAIWorkpaper(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
+              onClick={handleUpdateAIWorkpaper}
+              disabled={savingAIWorkpaper}
+            >
+              {savingAIWorkpaper ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save Changes"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete AI Workpaper Confirmation Dialog */}
+      <Dialog open={deleteAIWorkpaperDialogOpen} onOpenChange={setDeleteAIWorkpaperDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete AI Workpaper</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this AI workpaper? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDeleteAIWorkpaperDialogOpen(false);
+                setSelectedAIWorkpaper(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteAIWorkpaper}
+              disabled={deletingAIWorkpaper}
+            >
+              {deletingAIWorkpaper ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Generated Workpaper with AI Dialog */}
+      <Dialog open={generateAIDialogOpen} onOpenChange={setGenerateAIDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="text-[#1e3a5f]">Generated Workpaper with AI</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto pr-2">
+            {generatingWorkpapers ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-[#1e3a5f]" />
+                <span className="ml-3 text-gray-600">Generating workpapers...</span>
+              </div>
+            ) : generatedWorkpapers.length > 0 ? (
+              <div className="space-y-6">
+                {generatedWorkpapers.map((wp) => (
+                  <div
+                    key={wp.id}
+                    className={`border rounded-lg p-4 ${
+                      selectedGeneratedIds.includes(wp.id)
+                        ? "border-[#1e3a5f] bg-blue-50"
+                        : "border-gray-200"
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <Checkbox
+                        checked={selectedGeneratedIds.includes(wp.id)}
+                        onCheckedChange={() => handleToggleGeneratedSelection(wp.id)}
+                        className="mt-1"
+                      />
+                      <div className="flex-1 space-y-4">
+                        <h4 className="font-semibold text-gray-900">{wp.task}</h4>
+
+                        <div>
+                          <h5 className="font-medium text-gray-700 mb-2">Steps</h5>
+                          <p className="text-sm text-gray-600 whitespace-pre-wrap pl-4">
+                            {wp.steps}
+                          </p>
+                        </div>
+
+                        <div>
+                          <h5 className="font-medium text-gray-700 mb-2">Evidences</h5>
+                          <p className="text-sm text-gray-600 whitespace-pre-wrap pl-4">
+                            {wp.evidences}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12 text-gray-500">
+                No workpapers generated. Click generate to create AI workpapers.
+              </div>
+            )}
+          </div>
+          <DialogFooter className="mt-4 pt-4 border-t">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setGenerateAIDialogOpen(false);
+                setGeneratedWorkpapers([]);
+                setSelectedGeneratedIds([]);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
+              onClick={handleAddSelectedWorkpapers}
+              disabled={addingGeneratedWorkpapers || selectedGeneratedIds.length === 0}
+            >
+              {addingGeneratedWorkpapers ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Adding...
+                </>
+              ) : (
+                `Add Selected (${selectedGeneratedIds.length})`
               )}
             </Button>
           </DialogFooter>

@@ -1,11 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -21,7 +17,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -31,533 +26,792 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
-import {
-  ArrowLeft,
-  Search,
-  Eye,
-  CheckCircle,
-  Clock,
-  AlertTriangle,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-  PlayCircle,
-  FileText,
-  Upload,
-} from "lucide-react";
+import { Loader2, Trash2, Eye, Pencil } from "lucide-react";
+import { useHasRole } from "@/hooks/usePermissions";
 
-interface CAPA {
+interface Finding {
   id: string;
-  capaId: string;
-  title: string;
+  findingId: string;
+  finding: string;
   description: string | null;
-  actionType: string;
-  responsiblePerson: string | null;
+  severity: string;
+  auditPlan: string;
+  engagementId: string;
+  departmentId: string | null;
+  departmentName: string;
+  responsiblePerson: string;
   targetDate: string | null;
-  completedDate: string | null;
   status: string;
-  evidenceFilePath: string | null;
-  evidenceFileName: string | null;
-  finding: {
-    id: string;
-    findingId: string;
-    finding: string;
-    severity: string;
-    department: { id: string; name: string } | null;
-    engagement: {
-      id: string;
-      auditId: string;
-      engagementTitle: string;
-    };
-  };
+  identifiedDate: string;
+  closedDate: string | null;
+  createdAt: string;
+  // Additional fields for Edit CAPA
+  criteria: string | null;
+  condition: string | null;
+  cause: string | null;
+  effect: string | null;
+  recommendation: string | null;
+  auditeeComment: string | null;
 }
 
-const statusColors: Record<string, string> = {
-  Open: "bg-yellow-100 text-yellow-800",
-  "In Progress": "bg-blue-100 text-blue-800",
-  Closed: "bg-green-100 text-green-800",
-  Overdue: "bg-red-100 text-red-800",
-};
+interface Department {
+  id: string;
+  name: string;
+}
 
-const severityColors: Record<string, string> = {
-  Low: "bg-green-100 text-green-800",
-  Medium: "bg-yellow-100 text-yellow-800",
-  High: "bg-red-100 text-red-800",
-};
+interface AuditEngagement {
+  id: string;
+  engagementTitle: string;
+}
+
+interface Pagination {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
 
 export default function CAPATrackingPage() {
-  const router = useRouter();
-  const { data: session } = useSession();
-  const [data, setData] = useState<CAPA[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchFilter, setSearchFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [selectedCAPA, setSelectedCAPA] = useState<CAPA | null>(null);
-  const [viewDialogOpen, setViewDialogOpen] = useState(false);
-  const [updateDialogOpen, setUpdateDialogOpen] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [updateNotes, setUpdateNotes] = useState("");
-  const itemsPerPage = 10;
+  const isAuditHead = useHasRole("AuditHead");
 
-  const isAuditee =
-    session?.user?.roles?.includes("Auditee") &&
-    !session?.user?.roles?.includes("AuditHead") &&
-    !session?.user?.roles?.includes("Auditor");
+  const [loading, setLoading] = useState(true);
+  const [findings, setFindings] = useState<Finding[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [pagination, setPagination] = useState<Pagination>({
+    total: 0,
+    page: 1,
+    limit: 20,
+    totalPages: 0,
+  });
+
+  // Filters
+  const [selectedDepartment, setSelectedDepartment] = useState<string>("");
+
+  // Delete dialog
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [findingToDelete, setFindingToDelete] = useState<Finding | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  // View dialog
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [findingToView, setFindingToView] = useState<Finding | null>(null);
+
+  // Edit dialog
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [findingToEdit, setFindingToEdit] = useState<Finding | null>(null);
+  const [editForm, setEditForm] = useState({
+    engagementId: "",
+    finding: "",
+    severity: "",
+    criteria: "",
+    condition: "",
+    cause: "",
+    effect: "",
+    recommendation: "",
+    status: "",
+    targetDate: "",
+    auditeeComment: "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [auditEngagements, setAuditEngagements] = useState<AuditEngagement[]>([]);
 
   useEffect(() => {
-    fetchData();
-  }, [statusFilter]);
+    fetchDepartments();
+    fetchAuditEngagements();
+  }, []);
 
-  const fetchData = async () => {
+  useEffect(() => {
+    fetchFindings();
+  }, [selectedDepartment, pagination.page]);
+
+  const fetchDepartments = async () => {
     try {
-      setLoading(true);
-      const params = new URLSearchParams();
-      if (statusFilter !== "all") params.append("status", statusFilter);
-
-      const response = await fetch(`/api/internal-audit/capa?${params}`);
+      const response = await fetch("/api/departments");
       if (response.ok) {
-        const result = await response.json();
-        setData(result);
-      } else {
-        toast.error("Failed to fetch CAPAs");
+        const data = await response.json();
+        setDepartments(Array.isArray(data) ? data : []);
       }
     } catch (error) {
-      console.error("Error fetching data:", error);
-      toast.error("Failed to fetch CAPAs");
+      console.error("Failed to fetch departments:", error);
+    }
+  };
+
+  const fetchAuditEngagements = async () => {
+    try {
+      const response = await fetch("/api/internal-audit/engagements");
+      if (response.ok) {
+        const data = await response.json();
+        setAuditEngagements(Array.isArray(data) ? data : data.engagements || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch audit engagements:", error);
+    }
+  };
+
+  const fetchFindings = async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (selectedDepartment) {
+        params.append("departmentId", selectedDepartment);
+      }
+      params.append("page", pagination.page.toString());
+      params.append("limit", pagination.limit.toString());
+
+      const response = await fetch(`/api/internal-audit/capa-tracking?${params}`);
+      if (response.ok) {
+        const data = await response.json();
+        setFindings(data.findings || []);
+        setPagination(data.pagination || pagination);
+      }
+    } catch (error) {
+      console.error("Failed to fetch findings:", error);
+      toast.error("Failed to fetch CAPA tracking data");
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredData = data.filter((item) => {
-    const matchesSearch =
-      searchFilter === "" ||
-      item.title.toLowerCase().includes(searchFilter.toLowerCase()) ||
-      item.capaId.toLowerCase().includes(searchFilter.toLowerCase()) ||
-      item.finding.findingId.toLowerCase().includes(searchFilter.toLowerCase());
-    return matchesSearch;
-  });
+  const handleDeleteFinding = async () => {
+    if (!findingToDelete) return;
 
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedData = filteredData.slice(startIndex, endIndex);
-
-  const handleView = (capa: CAPA) => {
-    setSelectedCAPA(capa);
-    setViewDialogOpen(true);
-  };
-
-  const handleUpdate = (capa: CAPA) => {
-    setSelectedCAPA(capa);
-    setUpdateNotes("");
-    setUpdateDialogOpen(true);
-  };
-
-  const handleStatusUpdate = async (newStatus: string) => {
-    if (!selectedCAPA) return;
-
+    setDeleting(true);
     try {
-      setSubmitting(true);
-      const response = await fetch(`/api/internal-audit/capa/${selectedCAPA.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
-      });
+      const response = await fetch(
+        `/api/internal-audit/capa-tracking/${findingToDelete.id}`,
+        { method: "DELETE" }
+      );
 
       if (response.ok) {
-        toast.success(`CAPA marked as ${newStatus}`);
-        setUpdateDialogOpen(false);
-        fetchData();
+        toast.success("Finding deleted successfully");
+        setDeleteDialogOpen(false);
+        setFindingToDelete(null);
+        fetchFindings();
       } else {
-        const error = await response.json();
-        toast.error(error.error || "Failed to update CAPA");
+        toast.error("Failed to delete finding");
       }
     } catch (error) {
-      console.error("Error updating CAPA:", error);
-      toast.error("Failed to update CAPA");
+      console.error("Error deleting finding:", error);
+      toast.error("Failed to delete finding");
     } finally {
-      setSubmitting(false);
+      setDeleting(false);
+    }
+  };
+
+  const handleOpenEdit = (finding: Finding) => {
+    setFindingToEdit(finding);
+    setEditForm({
+      engagementId: finding.engagementId,
+      finding: finding.finding,
+      severity: finding.severity,
+      criteria: finding.criteria || "",
+      condition: finding.condition || "",
+      cause: finding.cause || "",
+      effect: finding.effect || "",
+      recommendation: finding.recommendation || "",
+      status: finding.status,
+      targetDate: finding.targetDate ? finding.targetDate.split("T")[0] : "",
+      auditeeComment: finding.auditeeComment || "",
+    });
+    setEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!findingToEdit) return;
+
+    setSaving(true);
+    try {
+      const response = await fetch(
+        `/api/internal-audit/capa-tracking/${findingToEdit.id}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(editForm),
+        }
+      );
+
+      if (response.ok) {
+        toast.success("Finding updated successfully");
+        setEditDialogOpen(false);
+        setFindingToEdit(null);
+        fetchFindings();
+      } else {
+        toast.error("Failed to update finding");
+      }
+    } catch (error) {
+      console.error("Error updating finding:", error);
+      toast.error("Failed to update finding");
+    } finally {
+      setSaving(false);
     }
   };
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "-";
-    return new Date(dateString).toLocaleDateString("en-US", {
+    return new Date(dateString).toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
       year: "numeric",
-      month: "short",
-      day: "numeric",
     });
   };
 
-  const isOverdue = (capa: CAPA) => {
-    if (!capa.targetDate || capa.status === "Closed") return false;
-    return new Date(capa.targetDate) < new Date();
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "Open":
-        return <Clock className="h-4 w-4" />;
-      case "In Progress":
-        return <PlayCircle className="h-4 w-4" />;
-      case "Closed":
-        return <CheckCircle className="h-4 w-4" />;
+  const getSeverityColor = (severity: string) => {
+    switch (severity.toLowerCase()) {
+      case "high":
+      case "critical":
+        return "text-red-600 font-semibold";
+      case "medium":
+        return "text-orange-600 font-semibold";
+      case "low":
+        return "text-green-600 font-semibold";
       default:
-        return null;
+        return "text-gray-600";
     }
   };
 
-  // Calculate stats
-  const stats = {
-    open: data.filter((c) => c.status === "Open").length,
-    inProgress: data.filter((c) => c.status === "In Progress").length,
-    closed: data.filter((c) => c.status === "Closed").length,
-    overdue: data.filter((c) => isOverdue(c)).length,
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "open":
+        return "text-blue-600";
+      case "closed":
+        return "text-green-600";
+      case "in progress":
+        return "text-orange-600";
+      case "overdue":
+        return "text-red-600";
+      default:
+        return "text-gray-600";
+    }
   };
+
+  const startIndex = (pagination.page - 1) * pagination.limit + 1;
+  const endIndex = Math.min(pagination.page * pagination.limit, pagination.total);
 
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">CAPA Tracking</h1>
-          <p className="text-gray-500 mt-1">
-            {isAuditee
-              ? "Corrective actions assigned to you"
-              : "Track corrective and preventive actions"}
-          </p>
-        </div>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="cursor-pointer hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">Open</CardTitle>
-            <Clock className="h-5 w-5 text-yellow-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.open}</div>
-          </CardContent>
-        </Card>
-        <Card className="cursor-pointer hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">In Progress</CardTitle>
-            <PlayCircle className="h-5 w-5 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.inProgress}</div>
-          </CardContent>
-        </Card>
-        <Card className="cursor-pointer hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">Closed</CardTitle>
-            <CheckCircle className="h-5 w-5 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.closed}</div>
-          </CardContent>
-        </Card>
-        <Card className="cursor-pointer hover:shadow-md transition-shadow border-red-200">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">Overdue</CardTitle>
-            <AlertTriangle className="h-5 w-5 text-red-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">{stats.overdue}</div>
-          </CardContent>
-        </Card>
+      <div className="border-b pb-4">
+        <h1 className="text-xl font-bold text-[#1e3a5f]">
+          Corrective & Preventive Actions (CAPA)
+        </h1>
       </div>
 
       {/* Filters */}
-      <div className="flex gap-4">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="Search by CAPA ID, title, or finding"
-            value={searchFilter}
-            onChange={(e) => setSearchFilter(e.target.value)}
-            className="pl-10"
-          />
+      <div className="flex justify-end">
+        <div className="w-[200px]">
+          <Select
+            value={selectedDepartment}
+            onValueChange={(value) => {
+              setSelectedDepartment(value === "all" ? "" : value);
+              setPagination((prev) => ({ ...prev, page: 1 }));
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Department" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Department</SelectItem>
+              {departments.map((dept) => (
+                <SelectItem key={dept.id} value={dept.id}>
+                  {dept.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="Open">Open</SelectItem>
-            <SelectItem value="In Progress">In Progress</SelectItem>
-            <SelectItem value="Closed">Closed</SelectItem>
-          </SelectContent>
-        </Select>
       </div>
 
       {/* Table */}
-      <Card>
-        {loading ? (
-          <div className="p-8 text-center text-gray-500">Loading...</div>
-        ) : paginatedData.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
-            <CheckCircle className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-            <p>No corrective actions found</p>
-          </div>
-        ) : (
-          <Table>
-            <TableHeader>
+      <div className="border rounded-lg overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-gray-50">
+              <TableHead className="text-[#1e3a5f] font-semibold">FindingsId</TableHead>
+              <TableHead className="text-[#1e3a5f] font-semibold">Finding</TableHead>
+              <TableHead className="text-[#1e3a5f] font-semibold">Severity</TableHead>
+              <TableHead className="text-[#1e3a5f] font-semibold">Audit Plan</TableHead>
+              <TableHead className="text-[#1e3a5f] font-semibold">Department</TableHead>
+              <TableHead className="text-[#1e3a5f] font-semibold">Responsible Person</TableHead>
+              <TableHead className="text-[#1e3a5f] font-semibold">Target date</TableHead>
+              <TableHead className="text-[#1e3a5f] font-semibold">Status</TableHead>
+              {isAuditHead && (
+                <TableHead className="text-[#1e3a5f] font-semibold">Actions</TableHead>
+              )}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
               <TableRow>
-                <TableHead>CAPA ID</TableHead>
-                <TableHead>Title</TableHead>
-                <TableHead>Finding</TableHead>
-                <TableHead>Audit</TableHead>
-                <TableHead>Severity</TableHead>
-                <TableHead>Target Date</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableCell colSpan={isAuditHead ? 9 : 8} className="text-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin mx-auto text-[#1e3a5f]" />
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedData.map((row) => (
-                <TableRow
-                  key={row.id}
-                  className={`hover:bg-gray-50 ${isOverdue(row) ? "bg-red-50" : ""}`}
-                >
-                  <TableCell className="font-medium">{row.capaId}</TableCell>
-                  <TableCell className="max-w-[200px] truncate">{row.title}</TableCell>
-                  <TableCell className="max-w-[150px] truncate">
-                    {row.finding.findingId}
-                  </TableCell>
-                  <TableCell>{row.finding.engagement.auditId}</TableCell>
-                  <TableCell>
-                    <Badge className={severityColors[row.finding.severity] || ""}>
-                      {row.finding.severity}
-                    </Badge>
+            ) : findings.length > 0 ? (
+              findings.map((finding) => (
+                <TableRow key={finding.id} className="hover:bg-gray-50">
+                  <TableCell className="font-medium">{finding.findingId}</TableCell>
+                  <TableCell className="max-w-[250px]">
+                    <span className="line-clamp-2">{finding.finding}</span>
                   </TableCell>
                   <TableCell>
-                    <span className={isOverdue(row) ? "text-red-600 font-medium" : ""}>
-                      {formatDate(row.targetDate)}
+                    <span className={getSeverityColor(finding.severity)}>
+                      {finding.severity}
                     </span>
                   </TableCell>
-                  <TableCell>
-                    <Badge className={statusColors[row.status] || ""}>
-                      <span className="flex items-center gap-1">
-                        {getStatusIcon(row.status)}
-                        {row.status}
-                      </span>
-                    </Badge>
+                  <TableCell className="max-w-[200px]">
+                    <span className="line-clamp-2">{finding.auditPlan}</span>
                   </TableCell>
+                  <TableCell>{finding.departmentName}</TableCell>
+                  <TableCell>{finding.responsiblePerson}</TableCell>
+                  <TableCell>{formatDate(finding.targetDate)}</TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="icon" onClick={() => handleView(row)}>
-                        <Eye className="h-4 w-4 text-blue-600" />
-                      </Button>
-                      {isAuditee && row.status !== "Closed" && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleUpdate(row)}
-                        >
-                          <CheckCircle className="h-4 w-4 text-green-600" />
-                        </Button>
-                      )}
-                    </div>
+                    <span className={getStatusColor(finding.status)}>
+                      {finding.status}
+                    </span>
                   </TableCell>
+                  {isAuditHead && (
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        {finding.status.toLowerCase() === "closed" ? (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="View"
+                            onClick={() => {
+                              setFindingToView(finding);
+                              setViewDialogOpen(true);
+                            }}
+                          >
+                            <Eye className="h-4 w-4 text-blue-500" />
+                          </Button>
+                        ) : (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              title="Edit"
+                              onClick={() => handleOpenEdit(finding)}
+                            >
+                              <Pencil className="h-4 w-4 text-blue-500" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              title="Delete"
+                              onClick={() => {
+                                setFindingToDelete(finding);
+                                setDeleteDialogOpen(true);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </TableCell>
+                  )}
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={isAuditHead ? 9 : 8} className="text-center py-8 text-gray-500">
+                  No findings found
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
 
-        {/* Pagination */}
-        {!loading && filteredData.length > 0 && (
-          <div className="flex items-center justify-end gap-2 p-4 border-t">
+      {/* Pagination */}
+      {pagination.total > 0 && (
+        <div className="flex items-center justify-between text-sm text-gray-600">
+          <span>
+            Currently showing {startIndex} to {endIndex} of {pagination.total}
+          </span>
+          <div className="flex items-center gap-2">
             <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setCurrentPage(1)}
-              disabled={currentPage === 1}
+              variant="outline"
+              size="sm"
+              disabled={pagination.page === 1}
+              onClick={() => setPagination((prev) => ({ ...prev, page: prev.page - 1 }))}
             >
-              <ChevronsLeft className="h-4 w-4" />
+              Previous
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setCurrentPage(currentPage - 1)}
-              disabled={currentPage === 1}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="text-sm text-gray-600">
-              {startIndex + 1} to {Math.min(endIndex, filteredData.length)} of{" "}
-              {filteredData.length}
+            <span>
+              {startIndex} to {endIndex} of {pagination.total}
             </span>
             <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setCurrentPage(currentPage + 1)}
-              disabled={currentPage === totalPages || totalPages === 0}
+              variant="outline"
+              size="sm"
+              disabled={pagination.page >= pagination.totalPages}
+              onClick={() => setPagination((prev) => ({ ...prev, page: prev.page + 1 }))}
             >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setCurrentPage(totalPages)}
-              disabled={currentPage === totalPages || totalPages === 0}
-            >
-              <ChevronsRight className="h-4 w-4" />
+              Next
             </Button>
           </div>
-        )}
-      </Card>
+        </div>
+      )}
 
-      {/* View Dialog */}
-      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-        <DialogContent className="max-w-2xl">
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>CAPA Details</DialogTitle>
+            <DialogTitle>Delete Finding</DialogTitle>
             <DialogDescription>
-              {selectedCAPA?.capaId} - {selectedCAPA?.title}
+              Are you sure you want to delete finding "{findingToDelete?.findingId}"? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
-          {selectedCAPA && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm text-gray-500">Action Type</Label>
-                  <p className="font-medium">{selectedCAPA.actionType}</p>
-                </div>
-                <div>
-                  <Label className="text-sm text-gray-500">Responsible Person</Label>
-                  <p className="font-medium">{selectedCAPA.responsiblePerson || "-"}</p>
-                </div>
-                <div>
-                  <Label className="text-sm text-gray-500">Target Date</Label>
-                  <p className="font-medium">{formatDate(selectedCAPA.targetDate)}</p>
-                </div>
-                <div>
-                  <Label className="text-sm text-gray-500">Status</Label>
-                  <Badge className={statusColors[selectedCAPA.status] || ""}>
-                    {selectedCAPA.status}
-                  </Badge>
-                </div>
-              </div>
-
-              <div>
-                <Label className="text-sm text-gray-500">Description</Label>
-                <p className="text-sm mt-1">
-                  {selectedCAPA.description || "No description provided"}
-                </p>
-              </div>
-
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <Label className="text-sm text-gray-500">Related Finding</Label>
-                <div className="mt-2">
-                  <p className="font-medium">
-                    {selectedCAPA.finding.findingId} - {selectedCAPA.finding.finding}
-                  </p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Audit: {selectedCAPA.finding.engagement.auditId} -{" "}
-                    {selectedCAPA.finding.engagement.engagementTitle}
-                  </p>
-                  <Badge className={severityColors[selectedCAPA.finding.severity] || ""}>
-                    {selectedCAPA.finding.severity} Severity
-                  </Badge>
-                </div>
-              </div>
-
-              {selectedCAPA.evidenceFileName && (
-                <div>
-                  <Label className="text-sm text-gray-500">Evidence Submitted</Label>
-                  <div className="flex items-center gap-2 mt-1 p-2 bg-green-50 rounded">
-                    <FileText className="h-4 w-4 text-green-600" />
-                    <span className="text-sm">{selectedCAPA.evidenceFileName}</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setViewDialogOpen(false)}>
-              Close
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDeleteDialogOpen(false);
+                setFindingToDelete(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteFinding}
+              disabled={deleting}
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Update Dialog */}
-      <Dialog open={updateDialogOpen} onOpenChange={setUpdateDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Update CAPA Status</DialogTitle>
-            <DialogDescription>
-              {selectedCAPA?.capaId} - {selectedCAPA?.title}
-            </DialogDescription>
+      {/* View Dialog (for Closed findings) */}
+      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+        <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="border-b pb-4">
+            <DialogTitle className="text-[#1e3a5f]">View CAPA</DialogTitle>
           </DialogHeader>
-          {selectedCAPA && (
-            <div className="space-y-4">
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm">{selectedCAPA.description}</p>
-                <p className="text-sm text-gray-500 mt-2">
-                  Target Date: {formatDate(selectedCAPA.targetDate)}
-                </p>
-              </div>
-
-              <div>
-                <Label>Upload Evidence (Optional)</Label>
-                <div className="mt-2 border-2 border-dashed border-gray-200 rounded-lg p-4 text-center">
-                  <Upload className="h-6 w-6 text-gray-400 mx-auto mb-2" />
-                  <Input
-                    type="file"
-                    onChange={(e) => {
-                      const files = e.target.files;
-                      if (files && files.length > 0) {
-                        toast.info(`${files[0].name} selected`);
-                      }
-                    }}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label>Notes (Optional)</Label>
-                <Textarea
-                  placeholder="Add any notes about the corrective action..."
-                  value={updateNotes}
-                  onChange={(e) => setUpdateNotes(e.target.value)}
-                  className="mt-2"
-                />
-              </div>
+          <div className="space-y-4 py-4">
+            {/* Audit Plan */}
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-[#1e3a5f] font-medium">Audit plan</Label>
+              <Input value={findingToView?.auditPlan || ""} readOnly className="bg-gray-50" />
             </div>
-          )}
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setUpdateDialogOpen(false)}>
+
+            {/* Finding Title */}
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-[#1e3a5f] font-medium">Finding title</Label>
+              <Input value={findingToView?.finding || ""} readOnly className="bg-gray-50" />
+            </div>
+
+            {/* Severity */}
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-[#1e3a5f] font-medium">Severity</Label>
+              <RadioGroup value={findingToView?.severity || ""} className="flex gap-6" disabled>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="Low" id="view-severity-low" disabled />
+                  <Label htmlFor="view-severity-low" className="font-normal">Low</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="Medium" id="view-severity-medium" disabled />
+                  <Label htmlFor="view-severity-medium" className="font-normal">Medium</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="High" id="view-severity-high" disabled />
+                  <Label htmlFor="view-severity-high" className="font-normal">High</Label>
+                </div>
+              </RadioGroup>
+            </div>
+
+            {/* Criteria */}
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-[#1e3a5f] font-medium">Criteria</Label>
+              <Input value={findingToView?.criteria || ""} readOnly className="bg-gray-50" />
+            </div>
+
+            {/* Condition */}
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-[#1e3a5f] font-medium">Condition</Label>
+              <Input value={findingToView?.condition || ""} readOnly className="bg-gray-50" />
+            </div>
+
+            {/* Cause */}
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-[#1e3a5f] font-medium">Cause</Label>
+              <Input value={findingToView?.cause || ""} readOnly className="bg-gray-50" />
+            </div>
+
+            {/* Effect */}
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-[#1e3a5f] font-medium">Effect</Label>
+              <Input value={findingToView?.effect || ""} readOnly className="bg-gray-50" />
+            </div>
+
+            {/* Recommendation */}
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-[#1e3a5f] font-medium">Recommendation</Label>
+              <Input value={findingToView?.recommendation || ""} readOnly className="bg-gray-50" />
+            </div>
+
+            {/* Status */}
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-[#1e3a5f] font-medium">Status</Label>
+              <RadioGroup value={findingToView?.status || ""} className="flex gap-6" disabled>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="Open" id="view-status-open" disabled />
+                  <Label htmlFor="view-status-open" className="font-normal">Open</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="Closed" id="view-status-closed" disabled />
+                  <Label htmlFor="view-status-closed" className="font-normal">Closed</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="Under Review" id="view-status-review" disabled />
+                  <Label htmlFor="view-status-review" className="font-normal">Under Review</Label>
+                </div>
+              </RadioGroup>
+            </div>
+
+            {/* Target Date */}
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-[#1e3a5f] font-medium">Target date</Label>
+              <Input
+                value={findingToView?.targetDate ? formatDate(findingToView.targetDate) : ""}
+                readOnly
+                className="bg-gray-50"
+              />
+            </div>
+
+            {/* Auditee Comment */}
+            <div className="grid grid-cols-[140px_1fr] items-start gap-4">
+              <Label className="text-[#1e3a5f] font-medium pt-2">Auditee Comment</Label>
+              <Textarea
+                value={findingToView?.auditeeComment || ""}
+                readOnly
+                className="bg-gray-50"
+                rows={3}
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-2 pt-4 border-t">
+            <Button
+              className="bg-[#1e3a5f] hover:bg-[#2e4a6f]"
+              onClick={() => {
+                setViewDialogOpen(false);
+                setFindingToView(null);
+              }}
+            >
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="border-b pb-4">
+            <DialogTitle className="text-[#1e3a5f]">Edit CAPA</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {/* Audit Plan */}
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-[#1e3a5f] font-medium">Audit plan</Label>
+              <Select
+                value={editForm.engagementId}
+                onValueChange={(value) =>
+                  setEditForm((prev) => ({ ...prev, engagementId: value }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select audit plan" />
+                </SelectTrigger>
+                <SelectContent>
+                  {auditEngagements.map((engagement) => (
+                    <SelectItem key={engagement.id} value={engagement.id}>
+                      {engagement.engagementTitle}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Finding Title */}
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-[#1e3a5f] font-medium">Finding title</Label>
+              <Input
+                value={editForm.finding}
+                onChange={(e) =>
+                  setEditForm((prev) => ({ ...prev, finding: e.target.value }))
+                }
+              />
+            </div>
+
+            {/* Severity */}
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-[#1e3a5f] font-medium">Severity</Label>
+              <RadioGroup
+                value={editForm.severity}
+                onValueChange={(value) =>
+                  setEditForm((prev) => ({ ...prev, severity: value }))
+                }
+                className="flex gap-6"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="Low" id="severity-low" />
+                  <Label htmlFor="severity-low" className="font-normal cursor-pointer">Low</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="Medium" id="severity-medium" />
+                  <Label htmlFor="severity-medium" className="font-normal cursor-pointer">Medium</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="High" id="severity-high" />
+                  <Label htmlFor="severity-high" className="font-normal cursor-pointer">High</Label>
+                </div>
+              </RadioGroup>
+            </div>
+
+            {/* Criteria */}
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-[#1e3a5f] font-medium">Criteria</Label>
+              <Input
+                value={editForm.criteria}
+                onChange={(e) =>
+                  setEditForm((prev) => ({ ...prev, criteria: e.target.value }))
+                }
+              />
+            </div>
+
+            {/* Condition */}
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-[#1e3a5f] font-medium">Condition</Label>
+              <Input
+                value={editForm.condition}
+                onChange={(e) =>
+                  setEditForm((prev) => ({ ...prev, condition: e.target.value }))
+                }
+              />
+            </div>
+
+            {/* Cause */}
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-[#1e3a5f] font-medium">Cause</Label>
+              <Input
+                value={editForm.cause}
+                onChange={(e) =>
+                  setEditForm((prev) => ({ ...prev, cause: e.target.value }))
+                }
+              />
+            </div>
+
+            {/* Effect */}
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-[#1e3a5f] font-medium">Effect</Label>
+              <Input
+                value={editForm.effect}
+                onChange={(e) =>
+                  setEditForm((prev) => ({ ...prev, effect: e.target.value }))
+                }
+              />
+            </div>
+
+            {/* Recommendation */}
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-[#1e3a5f] font-medium">Recommendation</Label>
+              <Input
+                value={editForm.recommendation}
+                onChange={(e) =>
+                  setEditForm((prev) => ({ ...prev, recommendation: e.target.value }))
+                }
+              />
+            </div>
+
+            {/* Status */}
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-[#1e3a5f] font-medium">Status</Label>
+              <RadioGroup
+                value={editForm.status}
+                onValueChange={(value) =>
+                  setEditForm((prev) => ({ ...prev, status: value }))
+                }
+                className="flex gap-6"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="Open" id="status-open" />
+                  <Label htmlFor="status-open" className="font-normal cursor-pointer">Open</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="Closed" id="status-closed" />
+                  <Label htmlFor="status-closed" className="font-normal cursor-pointer">Closed</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="Under Review" id="status-review" />
+                  <Label htmlFor="status-review" className="font-normal cursor-pointer">Under Review</Label>
+                </div>
+              </RadioGroup>
+            </div>
+
+            {/* Target Date */}
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-[#1e3a5f] font-medium">Target date</Label>
+              <Input
+                type="date"
+                value={editForm.targetDate}
+                onChange={(e) =>
+                  setEditForm((prev) => ({ ...prev, targetDate: e.target.value }))
+                }
+              />
+            </div>
+
+            {/* Auditee Comment */}
+            <div className="grid grid-cols-[140px_1fr] items-start gap-4">
+              <Label className="text-[#1e3a5f] font-medium pt-2">Auditee Comment</Label>
+              <Textarea
+                value={editForm.auditeeComment}
+                onChange={(e) =>
+                  setEditForm((prev) => ({ ...prev, auditeeComment: e.target.value }))
+                }
+                rows={3}
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-2 pt-4 border-t">
+            <Button
+              className="bg-[#1e3a5f] hover:bg-[#2e4a6f]"
+              onClick={handleSaveEdit}
+              disabled={saving}
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save"
+              )}
+            </Button>
+            <Button
+              className="bg-[#1e3a5f] hover:bg-[#2e4a6f]"
+              onClick={() => {
+                setEditDialogOpen(false);
+                setFindingToEdit(null);
+              }}
+            >
               Cancel
             </Button>
-            {selectedCAPA?.status === "Open" && (
-              <Button
-                variant="outline"
-                onClick={() => handleStatusUpdate("In Progress")}
-                disabled={submitting}
-              >
-                <PlayCircle className="h-4 w-4 mr-1" />
-                Mark In Progress
-              </Button>
-            )}
-            <Button
-              onClick={() => handleStatusUpdate("Closed")}
-              disabled={submitting}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              <CheckCircle className="h-4 w-4 mr-1" />
-              {submitting ? "Closing..." : "Mark as Closed"}
-            </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

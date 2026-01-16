@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { usePermissions } from "@/hooks/usePermissions";
+import { usePermissions, useHasRole } from "@/hooks/usePermissions";
 import { PermissionGate } from "@/components/ui/permission-gate";
 import { Unauthorized } from "@/components/ui/unauthorized";
 import { Input } from "@/components/ui/input";
@@ -90,6 +91,12 @@ interface User {
   id: string;
   fullName: string;
   departmentId: string | null;
+  customerCode?: string;
+}
+
+interface CurrentUser {
+  id: string;
+  customerCode?: string;
 }
 
 interface Framework {
@@ -114,8 +121,11 @@ const recurrenceOptions = ["Yearly", "Half-yearly", "Quarterly", "Monthly"];
 
 export default function EvidencePage() {
   const router = useRouter();
+  const { data: session } = useSession();
   const { canView, canCreate, canDelete, isLoading: permissionsLoading } = usePermissions('compliance.evidence');
+  const isCustomerAdmin = useHasRole("CustomerAdministrator");
   const [evidences, setEvidences] = useState<Evidence[]>([]);
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -204,7 +214,19 @@ export default function EvidencePage() {
       }
       if (usersRes.ok) {
         const data = await usersRes.json();
-        setUsers(data.data || data || []);
+        const userData = data.data || data || [];
+        setUsers(userData);
+
+        // Find current user to get customerCode for customer scoping
+        if (session?.user?.id) {
+          const currentUserData = userData.find((u: User) => u.id === session.user.id);
+          if (currentUserData) {
+            setCurrentUser({
+              id: currentUserData.id,
+              customerCode: currentUserData.customerCode,
+            });
+          }
+        }
       }
       if (fwRes.ok) {
         const data = await fwRes.json();
@@ -221,7 +243,7 @@ export default function EvidencePage() {
     } catch (error) {
       console.error("Error fetching reference data:", error);
     }
-  }, []);
+  }, [session?.user?.id]);
 
   useEffect(() => {
     fetchReferenceData();
@@ -231,10 +253,29 @@ export default function EvidencePage() {
     fetchEvidences();
   }, [fetchEvidences]);
 
-  // Filtered users by department
-  const filteredUsers = createForm.departmentId
-    ? users.filter((u) => u.departmentId === createForm.departmentId)
-    : users;
+  // Customer scoping functions for Customer Admin role
+  const getCustomerScopedUsers = () => {
+    if (!isCustomerAdmin || !currentUser?.customerCode) return users;
+    return users.filter((u) => u.customerCode === currentUser.customerCode);
+  };
+
+  const getCustomerScopedDepartments = () => {
+    if (!isCustomerAdmin || !currentUser?.customerCode) return departments;
+    // Get departments that have users from the same customer
+    const customerUserDeptIds = new Set(
+      users
+        .filter((u) => u.customerCode === currentUser.customerCode && u.departmentId)
+        .map((u) => u.departmentId)
+    );
+    return departments.filter((d) => customerUserDeptIds.has(d.id));
+  };
+
+  // Filtered users by department (with customer scoping for Customer Admin)
+  const filteredUsers = (() => {
+    const baseUsers = getCustomerScopedUsers();
+    if (!createForm.departmentId) return baseUsers;
+    return baseUsers.filter((u) => u.departmentId === createForm.departmentId);
+  })();
 
   // Filtered controls for step 2
   const filteredControls = controls.filter((c) => {
@@ -402,12 +443,20 @@ export default function EvidencePage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Evidence</h1>
         <div className="flex gap-2">
-          <PermissionGate resource="compliance.evidence" action="create">
+          {/* Show New Evidence button for Customer Admin or users with create permission */}
+          {isCustomerAdmin ? (
             <Button onClick={() => setCreateDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               New Evidence
             </Button>
-          </PermissionGate>
+          ) : (
+            <PermissionGate resource="compliance.evidence" action="create">
+              <Button onClick={() => setCreateDialogOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                New Evidence
+              </Button>
+            </PermissionGate>
+          )}
           <PermissionGate resource="compliance.evidence" action="create">
             <Button variant="outline" onClick={() => setIsImportDialogOpen(true)}>
               <Upload className="h-4 w-4 mr-2" />
@@ -611,7 +660,7 @@ export default function EvidencePage() {
                         <SelectValue placeholder="Select department" />
                       </SelectTrigger>
                       <SelectContent>
-                        {departments.map((d) => (
+                        {getCustomerScopedDepartments().map((d) => (
                           <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                         ))}
                       </SelectContent>
@@ -757,13 +806,13 @@ export default function EvidencePage() {
                   <div>
                     <Label className="text-muted-foreground text-sm">Department</Label>
                     <p className="font-medium">
-                      {departments.find((d) => d.id === createForm.departmentId)?.name || "-"}
+                      {getCustomerScopedDepartments().find((d) => d.id === createForm.departmentId)?.name || "-"}
                     </p>
                   </div>
                   <div>
                     <Label className="text-muted-foreground text-sm">Assignee</Label>
                     <p className="font-medium">
-                      {users.find((u) => u.id === createForm.assigneeId)?.fullName || "-"}
+                      {getCustomerScopedUsers().find((u) => u.id === createForm.assigneeId)?.fullName || "-"}
                     </p>
                   </div>
                   <div>

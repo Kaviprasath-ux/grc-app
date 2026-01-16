@@ -1760,6 +1760,8 @@ model AuditReport {
   recommendations     String?
   managementResponse  String?
   conclusion          String?
+  // Overall Result (Pass/Fail)
+  overallResult       String?         // Pass, Fail
   // Status
   status              String          @default("Draft") // Draft, Review, Final, Published
   draftGeneratedAt    DateTime?
@@ -1769,6 +1771,7 @@ model AuditReport {
   // Auditee assignment (assigned by Audit Head)
   auditeeId           String?
   auditeeName         String?
+  auditeeComment      String?
   // Attachment
   reportFilePath      String?
   reportFileName      String?

@@ -2,8 +2,9 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
-import { usePermissions } from "@/hooks/usePermissions";
+import { usePermissions, useHasRole } from "@/hooks/usePermissions";
 import { PermissionGate } from "@/components/ui/permission-gate";
 import { Unauthorized } from "@/components/ui/unauthorized";
 import {
@@ -97,6 +98,12 @@ interface User {
   id: string;
   fullName: string;
   departmentId?: string;
+  customerCode?: string;
+}
+
+interface CurrentUser {
+  id: string;
+  customerCode?: string;
 }
 
 const FUNCTIONAL_GROUPINGS = ["Govern", "Identify", "Protect", "Detect", "Respond", "Recover"];
@@ -105,8 +112,10 @@ const ITEMS_PER_PAGE = 20;
 
 export default function ControlListPage() {
   const router = useRouter();
+  const { data: session } = useSession();
   const { toast } = useToast();
   const { canView, canCreate, canDelete, isLoading: permissionsLoading } = usePermissions('compliance.controls');
+  const isCustomerAdmin = useHasRole("CustomerAdministrator");
   const [controls, setControls] = useState<Control[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -133,6 +142,7 @@ export default function ControlListPage() {
   const [domains, setDomains] = useState<ControlDomain[]>([]);
   const [frameworks, setFrameworks] = useState<Framework[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
 
   // Create dialog
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -160,7 +170,7 @@ export default function ControlListPage() {
 
   useEffect(() => {
     fetchFilterOptions();
-  }, []);
+  }, [session?.user?.id]);
 
   useEffect(() => {
     fetchControls();
@@ -177,7 +187,21 @@ export default function ControlListPage() {
       if (deptRes.ok) setDepartments(await deptRes.json());
       if (domainRes.ok) setDomains(await domainRes.json());
       if (frameworkRes.ok) setFrameworks(await frameworkRes.json());
-      if (userRes.ok) setUsers(await userRes.json());
+      if (userRes.ok) {
+        const userData = await userRes.json();
+        setUsers(userData);
+
+        // Find current user to get customerCode for customer scoping
+        if (session?.user?.id) {
+          const currentUserData = userData.find((u: User) => u.id === session.user.id);
+          if (currentUserData) {
+            setCurrentUser({
+              id: currentUserData.id,
+              customerCode: currentUserData.customerCode,
+            });
+          }
+        }
+      }
     } catch (error) {
       console.error("Error fetching filter options:", error);
     }
@@ -368,9 +392,28 @@ export default function ControlListPage() {
     }
   };
 
+  // Customer scoping functions for Customer Admin role
+  const getCustomerScopedUsers = () => {
+    if (!isCustomerAdmin || !currentUser?.customerCode) return users;
+    return users.filter((u) => u.customerCode === currentUser.customerCode);
+  };
+
+  const getCustomerScopedDepartments = () => {
+    if (!isCustomerAdmin || !currentUser?.customerCode) return departments;
+    // Get departments that have users from the same customer
+    const customerUserDeptIds = new Set(
+      users
+        .filter((u) => u.customerCode === currentUser.customerCode && u.departmentId)
+        .map((u) => u.departmentId)
+    );
+    return departments.filter((d) => customerUserDeptIds.has(d.id));
+  };
+
   const getFilteredUsers = () => {
-    if (!newControl.departmentId) return users;
-    return users.filter((u) => u.departmentId === newControl.departmentId);
+    // Start with customer-scoped users if Customer Admin
+    const baseUsers = getCustomerScopedUsers();
+    if (!newControl.departmentId) return baseUsers;
+    return baseUsers.filter((u) => u.departmentId === newControl.departmentId);
   };
 
   // Show loading state while permissions are being fetched
@@ -394,12 +437,20 @@ export default function ControlListPage() {
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold text-gray-900">Controls</h3>
           <div className="flex items-center gap-2">
-            <PermissionGate resource="compliance.controls" action="create">
+            {/* Show New Control button for Customer Admin or users with create permission */}
+            {isCustomerAdmin ? (
               <Button onClick={() => setIsCreateDialogOpen(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 New Control
               </Button>
-            </PermissionGate>
+            ) : (
+              <PermissionGate resource="compliance.controls" action="create">
+                <Button onClick={() => setIsCreateDialogOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  New Control
+                </Button>
+              </PermissionGate>
+            )}
             <PermissionGate resource="compliance.controls" action="create">
               <Button onClick={handleImport} variant="outline">
                 <Upload className="h-4 w-4 mr-2" />
@@ -750,7 +801,7 @@ export default function ControlListPage() {
                       <SelectValue placeholder="Select department" />
                     </SelectTrigger>
                     <SelectContent>
-                      {departments.map((d) => (
+                      {getCustomerScopedDepartments().map((d) => (
                         <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                       ))}
                     </SelectContent>
@@ -763,7 +814,7 @@ export default function ControlListPage() {
                       <SelectValue placeholder="Select owner" />
                     </SelectTrigger>
                     <SelectContent>
-                      {users.map((u) => (
+                      {getCustomerScopedUsers().map((u) => (
                         <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
                       ))}
                     </SelectContent>
@@ -812,15 +863,15 @@ export default function ControlListPage() {
                   </div>
                   <div>
                     <span className="text-muted-foreground">Department:</span>
-                    <p className="font-medium">{departments.find(d => d.id === newControl.departmentId)?.name || "-"}</p>
+                    <p className="font-medium">{getCustomerScopedDepartments().find(d => d.id === newControl.departmentId)?.name || "-"}</p>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Owner:</span>
-                    <p className="font-medium">{users.find(u => u.id === newControl.ownerId)?.fullName || "-"}</p>
+                    <p className="font-medium">{getCustomerScopedUsers().find(u => u.id === newControl.ownerId)?.fullName || "-"}</p>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Assignee:</span>
-                    <p className="font-medium">{users.find(u => u.id === newControl.assigneeId)?.fullName || "-"}</p>
+                    <p className="font-medium">{getCustomerScopedUsers().find(u => u.id === newControl.assigneeId)?.fullName || "-"}</p>
                   </div>
                 </div>
               </div>
