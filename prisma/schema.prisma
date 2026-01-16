@@ -255,6 +255,10 @@ model IssueAction {
   completion    Int                  @default(0) // Completion percentage (0-100)
   comment       String?
   status        String               @default("Pending") // "Pending", "Resolved", "Sent Back"
+  fileName      String?              // Original file name
+  fileType      String?              // File extension/type
+  filePath      String?              // Path to stored file
+  fileSize      Int?                 // File size in bytes
   createdById   String
   createdBy     User                 @relation(fields: [createdById], references: [id])
   comments      IssueActionComment[]

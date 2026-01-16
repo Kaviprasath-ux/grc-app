@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { usePermissions } from "@/hooks/usePermissions";
+import { PermissionGate } from "@/components/ui/permission-gate";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -171,6 +173,7 @@ export default function GovernanceDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
+  const { canEdit, canApprove, canDelete, isLoading: permissionsLoading } = usePermissions('compliance.governance');
 
   const [policy, setPolicy] = useState<Policy | null>(null);
   const [loading, setLoading] = useState(true);
@@ -488,30 +491,35 @@ export default function GovernanceDetailPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Approve Button */}
-          {policy.status !== "Approved" && policy.status !== "Published" && (
-            <Button variant="outline" onClick={handleApprove}>
-              <Check className="h-4 w-4 mr-2" />
-              Approve
-            </Button>
-          )}
-
-          {/* Start AI Review Button */}
-          {policy.aiReviewStatus !== "In Progress" && (
-            <Button variant="outline" onClick={handleTriggerAIReview}>
-              <Sparkles className="h-4 w-4 mr-2" />
-              {policy.aiReviewStatus === "Completed" ? "Re-run AI Review" : "Start AI Review"}
-            </Button>
-          )}
-
-          {/* Edit Button */}
-          <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Edit className="h-4 w-4 mr-2" />
-                Edit
+          {/* Approve Button - Only show if user can approve */}
+          <PermissionGate resource="compliance.governance" action="approve">
+            {policy.status !== "Approved" && policy.status !== "Published" && (
+              <Button variant="outline" onClick={handleApprove}>
+                <Check className="h-4 w-4 mr-2" />
+                Approve
               </Button>
-            </DialogTrigger>
+            )}
+          </PermissionGate>
+
+          {/* Start AI Review Button - Requires edit permission */}
+          <PermissionGate resource="compliance.governance" action="edit">
+            {policy.aiReviewStatus !== "In Progress" && (
+              <Button variant="outline" onClick={handleTriggerAIReview}>
+                <Sparkles className="h-4 w-4 mr-2" />
+                {policy.aiReviewStatus === "Completed" ? "Re-run AI Review" : "Start AI Review"}
+              </Button>
+            )}
+          </PermissionGate>
+
+          {/* Edit Button - Only show if user can edit */}
+          <PermissionGate resource="compliance.governance" action="edit">
+            <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit
+                </Button>
+              </DialogTrigger>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Edit {typeLabels[policy.type]}</DialogTitle>
@@ -676,6 +684,7 @@ export default function GovernanceDetailPage() {
               </div>
             </DialogContent>
           </Dialog>
+          </PermissionGate>
         </div>
       </div>
 
@@ -706,7 +715,7 @@ export default function GovernanceDetailPage() {
         </div>
       )}
 
-      {/* Status Workflow Steps */}
+      {/* Status Workflow Steps - Only clickable with edit permission */}
       <Card>
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
@@ -718,14 +727,15 @@ export default function GovernanceDetailPage() {
               return (
                 <div key={step.key} className="flex items-center flex-1">
                   <button
-                    onClick={() => handleStatusChange(step.key)}
+                    onClick={() => canEdit && handleStatusChange(step.key)}
+                    disabled={!canEdit}
                     className={`flex flex-col items-center gap-2 p-3 rounded-lg transition-colors ${
                       isActive
                         ? "bg-primary text-primary-foreground"
                         : isCompleted
                         ? "bg-green-100 text-green-800 hover:bg-green-200"
                         : "bg-muted text-muted-foreground hover:bg-muted/80"
-                    }`}
+                    } ${!canEdit ? "cursor-not-allowed opacity-60" : ""}`}
                   >
                     <Icon className="h-6 w-6" />
                     <span className="text-sm font-medium">{step.label}</span>
@@ -742,146 +752,162 @@ export default function GovernanceDetailPage() {
         </CardContent>
       </Card>
 
-      {/* Policy Details - Inline Editable */}
+      {/* Policy Details - Inline Editable (with permission check) */}
       <Card>
         <CardHeader>
           <CardTitle>Policy Details</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-            {/* Department - Inline Dropdown */}
+            {/* Department - Inline Dropdown (editable only with permission) */}
             <div>
               <Label className="text-muted-foreground text-sm">Department</Label>
-              <Select
-                value={selectedDepartmentId}
-                onValueChange={(value) => {
-                  setSelectedDepartmentId(value);
-                  handleInlineUpdate("departmentId", value);
-                }}
-              >
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Select department" />
-                </SelectTrigger>
-                <SelectContent>
-                  {departments.map((d) => (
-                    <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {canEdit ? (
+                <Select
+                  value={selectedDepartmentId}
+                  onValueChange={(value) => {
+                    setSelectedDepartmentId(value);
+                    handleInlineUpdate("departmentId", value);
+                  }}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {departments.map((d) => (
+                      <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <p className="font-medium mt-1">{policy.department?.name || "-"}</p>
+              )}
             </div>
 
-            {/* Assigned To - With Edit Button */}
+            {/* Assigned To - With Edit Button (only with edit permission) */}
             <div>
               <Label className="text-muted-foreground text-sm">Assigned To</Label>
               <div className="flex items-center gap-2 mt-1">
                 <span className="font-medium">{policy.assignee?.fullName || "-"}</span>
-                <Dialog open={assigneeDialogOpen} onOpenChange={setAssigneeDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="ghost" size="sm">
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Edit Assignee</DialogTitle>
-                    </DialogHeader>
-                    <div className="py-4">
-                      <Label>Select Assignee</Label>
-                      <Select value={selectedAssigneeId} onValueChange={setSelectedAssigneeId}>
-                        <SelectTrigger className="mt-2">
-                          <SelectValue placeholder="Select assignee" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {users.map((u) => (
-                            <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="flex justify-end gap-2">
-                      <Button variant="outline" onClick={() => setAssigneeDialogOpen(false)}>
-                        Cancel
+                <PermissionGate resource="compliance.governance" action="edit">
+                  <Dialog open={assigneeDialogOpen} onOpenChange={setAssigneeDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        <Edit className="h-4 w-4" />
                       </Button>
-                      <Button onClick={handleSaveAssignee}>Save</Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Edit Assignee</DialogTitle>
+                      </DialogHeader>
+                      <div className="py-4">
+                        <Label>Select Assignee</Label>
+                        <Select value={selectedAssigneeId} onValueChange={setSelectedAssigneeId}>
+                          <SelectTrigger className="mt-2">
+                            <SelectValue placeholder="Select assignee" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {users.map((u) => (
+                              <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" onClick={() => setAssigneeDialogOpen(false)}>
+                          Cancel
+                        </Button>
+                        <Button onClick={handleSaveAssignee}>Save</Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </PermissionGate>
               </div>
             </div>
 
-            {/* Approvers - With Add Button */}
+            {/* Approvers - With Add Button (only with edit permission) */}
             <div>
               <Label className="text-muted-foreground text-sm">Approvers</Label>
               <div className="flex items-center gap-2 mt-1">
                 <span className="font-medium">{policy.approver?.fullName || "-"}</span>
-                <Dialog open={approverDialogOpen} onOpenChange={setApproverDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="ghost" size="sm">
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Add Approver</DialogTitle>
-                    </DialogHeader>
-                    <div className="py-4">
-                      <Label>Select Approver</Label>
-                      <Select value={selectedApproverId} onValueChange={setSelectedApproverId}>
-                        <SelectTrigger className="mt-2">
-                          <SelectValue placeholder="Select approver" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {users.map((u) => (
-                            <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="flex justify-end gap-2">
-                      <Button variant="outline" onClick={() => setApproverDialogOpen(false)}>
-                        Cancel
+                <PermissionGate resource="compliance.governance" action="edit">
+                  <Dialog open={approverDialogOpen} onOpenChange={setApproverDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        <Plus className="h-4 w-4" />
                       </Button>
-                      <Button onClick={handleSaveApprover}>Save</Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Add Approver</DialogTitle>
+                      </DialogHeader>
+                      <div className="py-4">
+                        <Label>Select Approver</Label>
+                        <Select value={selectedApproverId} onValueChange={setSelectedApproverId}>
+                          <SelectTrigger className="mt-2">
+                            <SelectValue placeholder="Select approver" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {users.map((u) => (
+                              <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" onClick={() => setApproverDialogOpen(false)}>
+                          Cancel
+                        </Button>
+                        <Button onClick={handleSaveApprover}>Save</Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </PermissionGate>
               </div>
             </div>
 
-            {/* Recurrence - Inline Dropdown */}
+            {/* Recurrence - Inline Dropdown (editable only with permission) */}
             <div>
               <Label className="text-muted-foreground text-sm">Recurrence</Label>
-              <Select
-                value={selectedRecurrence}
-                onValueChange={(value) => {
-                  setSelectedRecurrence(value);
-                  handleInlineUpdate("recurrence", value);
-                }}
-              >
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Select recurrence" />
-                </SelectTrigger>
-                <SelectContent>
-                  {RECURRENCE_OPTIONS.map((r) => (
-                    <SelectItem key={r} value={r}>{r}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {canEdit ? (
+                <Select
+                  value={selectedRecurrence}
+                  onValueChange={(value) => {
+                    setSelectedRecurrence(value);
+                    handleInlineUpdate("recurrence", value);
+                  }}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select recurrence" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {RECURRENCE_OPTIONS.map((r) => (
+                      <SelectItem key={r} value={r}>{r}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <p className="font-medium mt-1">{policy.recurrence || "-"}</p>
+              )}
             </div>
 
-            {/* Review Date - Inline Date Picker */}
+            {/* Review Date - Inline Date Picker (editable only with permission) */}
             <div>
               <Label className="text-muted-foreground text-sm">Review Date</Label>
               <div className="flex items-center gap-2 mt-1">
-                <Input
-                  type="date"
-                  value={selectedReviewDate}
-                  onChange={(e) => {
-                    setSelectedReviewDate(e.target.value);
-                    handleInlineUpdate("reviewDate", e.target.value);
-                  }}
-                  className="w-full"
-                />
+                {canEdit ? (
+                  <Input
+                    type="date"
+                    value={selectedReviewDate}
+                    onChange={(e) => {
+                      setSelectedReviewDate(e.target.value);
+                      handleInlineUpdate("reviewDate", e.target.value);
+                    }}
+                    className="w-full"
+                  />
+                ) : (
+                  <p className="font-medium">{policy.reviewDate ? new Date(policy.reviewDate).toLocaleDateString() : "-"}</p>
+                )}
               </div>
             </div>
 
@@ -960,10 +986,12 @@ export default function GovernanceDetailPage() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Attachments</CardTitle>
-          <Button size="sm">
-            <Upload className="h-4 w-4 mr-2" />
-            Upload
-          </Button>
+          <PermissionGate resource="compliance.governance" action="edit">
+            <Button size="sm">
+              <Upload className="h-4 w-4 mr-2" />
+              Upload
+            </Button>
+          </PermissionGate>
         </CardHeader>
         <CardContent>
           {attachments.length === 0 ? (
@@ -992,9 +1020,11 @@ export default function GovernanceDetailPage() {
                         <Button variant="ghost" size="icon">
                           <Download className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon">
-                          <Trash2 className="h-4 w-4 text-red-500" />
-                        </Button>
+                        <PermissionGate resource="compliance.governance" action="delete">
+                          <Button variant="ghost" size="icon">
+                            <Trash2 className="h-4 w-4 text-red-500" />
+                          </Button>
+                        </PermissionGate>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -1035,42 +1065,44 @@ export default function GovernanceDetailPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Linked Control</CardTitle>
-            <Dialog open={linkControlDialogOpen} onOpenChange={setLinkControlDialogOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Link Control
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Link Control</DialogTitle>
-                </DialogHeader>
-                <div className="py-4">
-                  <Label>Select Control</Label>
-                  <Select value={selectedControlId} onValueChange={setSelectedControlId}>
-                    <SelectTrigger className="mt-2">
-                      <SelectValue placeholder="Select a control" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableControls
-                        .filter((c) => !linkedControls.find((lc) => lc.control.id === c.id))
-                        .map((control) => (
-                          <SelectItem key={control.id} value={control.id}>
-                            {control.controlCode} - {control.name}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setLinkControlDialogOpen(false)}>
-                    Cancel
+            <PermissionGate resource="compliance.governance" action="edit">
+              <Dialog open={linkControlDialogOpen} onOpenChange={setLinkControlDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Link Control
                   </Button>
-                  <Button onClick={handleLinkControl}>Link</Button>
-                </div>
-              </DialogContent>
-            </Dialog>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Link Control</DialogTitle>
+                  </DialogHeader>
+                  <div className="py-4">
+                    <Label>Select Control</Label>
+                    <Select value={selectedControlId} onValueChange={setSelectedControlId}>
+                      <SelectTrigger className="mt-2">
+                        <SelectValue placeholder="Select a control" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableControls
+                          .filter((c) => !linkedControls.find((lc) => lc.control.id === c.id))
+                          .map((control) => (
+                            <SelectItem key={control.id} value={control.id}>
+                              {control.controlCode} - {control.name}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => setLinkControlDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleLinkControl}>Link</Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </PermissionGate>
           </CardHeader>
           <CardContent>
             {linkedControls.length === 0 ? (
@@ -1101,14 +1133,16 @@ export default function GovernanceDetailPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleUnlinkControl(pc.control.id)}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          Unlink
-                        </Button>
+                        <PermissionGate resource="compliance.governance" action="edit">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleUnlinkControl(pc.control.id)}
+                            className="text-red-500 hover:text-red-700"
+                          >
+                            Unlink
+                          </Button>
+                        </PermissionGate>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -1164,10 +1198,12 @@ export default function GovernanceDetailPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Linked Documents</CardTitle>
-            <Button size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              Link Document
-            </Button>
+            <PermissionGate resource="compliance.governance" action="edit">
+              <Button size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Link Document
+              </Button>
+            </PermissionGate>
           </CardHeader>
           <CardContent>
             {linkedDocuments.length === 0 ? (
@@ -1192,9 +1228,11 @@ export default function GovernanceDetailPage() {
                       <TableCell>{doc.name}</TableCell>
                       <TableCell>{doc.type}</TableCell>
                       <TableCell>
-                        <Button variant="ghost" size="sm" className="text-red-500">
-                          Unlink
-                        </Button>
+                        <PermissionGate resource="compliance.governance" action="edit">
+                          <Button variant="ghost" size="sm" className="text-red-500">
+                            Unlink
+                          </Button>
+                        </PermissionGate>
                       </TableCell>
                     </TableRow>
                   ))}

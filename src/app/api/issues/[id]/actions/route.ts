@@ -40,7 +40,7 @@ export async function POST(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { actionType, description, completion, comment, createdById } = body;
+    const { actionType, description, completion, comment, createdById, fileName, fileType, filePath, fileSize } = body;
 
     if (!actionType || !description || !createdById) {
       return NextResponse.json(
@@ -67,6 +67,10 @@ export async function POST(
         comment: comment || null,
         createdById,
         status: "Pending",
+        fileName: fileName || null,
+        fileType: fileType || null,
+        filePath: filePath || null,
+        fileSize: fileSize || null,
       },
       include: {
         createdBy: {

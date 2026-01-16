@@ -8,6 +8,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { usePermissions } from "@/hooks/usePermissions";
+import { PermissionGate } from "@/components/ui/permission-gate";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -148,6 +150,7 @@ export function RiskDetailDialog({
   categories,
   departments,
 }: RiskDetailDialogProps) {
+  const { canEdit } = usePermissions('risk.register');
   const [users, setUsers] = useState<User[]>([]);
   const [riskTypes, setRiskTypes] = useState<RiskType[]>([]);
   const [loading, setLoading] = useState(false);
@@ -298,10 +301,12 @@ export function RiskDetailDialog({
             </DialogTitle>
             <div className="flex gap-2">
               {!editMode ? (
-                <Button variant="outline" size="sm" onClick={() => onEditModeChange(true)}>
-                  <Pencil className="h-4 w-4 mr-1" />
-                  Edit
-                </Button>
+                <PermissionGate resource="risk.register" action="edit">
+                  <Button variant="outline" size="sm" onClick={() => onEditModeChange(true)}>
+                    <Pencil className="h-4 w-4 mr-1" />
+                    Edit
+                  </Button>
+                </PermissionGate>
               ) : (
                 <>
                   <Button variant="outline" size="sm" onClick={() => onEditModeChange(false)}>

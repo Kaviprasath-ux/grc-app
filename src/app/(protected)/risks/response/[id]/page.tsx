@@ -23,6 +23,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { usePermissions } from "@/hooks/usePermissions";
+import { PermissionGate } from "@/components/ui/permission-gate";
 
 interface Risk {
   id: string;
@@ -60,6 +62,7 @@ interface PlannedControl {
 export default function RiskViewPage() {
   const params = useParams();
   const router = useRouter();
+  const { canEdit } = usePermissions('risk.response');
   const [risk, setRisk] = useState<Risk | null>(null);
   const [loading, setLoading] = useState(true);
   const [controls, setControls] = useState<Control[]>([]);
@@ -232,13 +235,15 @@ export default function RiskViewPage() {
           <span className="text-muted-foreground">|</span>
           <span className="font-semibold text-primary text-lg">Risk View</span>
         </div>
-        <Button
-          className="bg-primary hover:bg-primary/90"
-          onClick={handleSubmitForApproval}
-          disabled={submitting || risk?.status === "Awaiting Approval"}
-        >
-          {submitting ? "Submitting..." : "Submit for Approval"}
-        </Button>
+        {canEdit && (
+          <Button
+            className="bg-primary hover:bg-primary/90"
+            onClick={handleSubmitForApproval}
+            disabled={submitting || risk?.status === "Awaiting Approval"}
+          >
+            {submitting ? "Submitting..." : "Submit for Approval"}
+          </Button>
+        )}
       </div>
 
       {/* Charts - 2x2 Grid Layout */}
@@ -495,15 +500,17 @@ export default function RiskViewPage() {
       <div>
         <div className="flex items-center justify-between mb-3">
           <p className="text-primary font-medium">Planned Controls</p>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => setAddControlOpen(true)}>
-              <Plus className="h-4 w-4 mr-1" />
-              Add New Control
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setChooseControlOpen(true)}>
-              Choose Control
-            </Button>
-          </div>
+          {canEdit && (
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => setAddControlOpen(true)}>
+                <Plus className="h-4 w-4 mr-1" />
+                Add New Control
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setChooseControlOpen(true)}>
+                Choose Control
+              </Button>
+            </div>
+          )}
         </div>
         {plannedControls.length === 0 ? (
           <Card>

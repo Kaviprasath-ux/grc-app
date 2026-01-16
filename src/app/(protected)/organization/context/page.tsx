@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, Trash2, Download, Upload, Search, ChevronRight, ArrowLeft, MessageSquare } from "lucide-react";
+import { Plus, Pencil, Trash2, Download, Upload, Search, ChevronRight, ArrowLeft, MessageSquare, File, FileText, FileImage, FileSpreadsheet, Eye, X } from "lucide-react";
 import { PageHeader, DataGrid } from "@/components/shared";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -68,6 +68,10 @@ interface IssueAction {
   completion: number;
   comment: string | null;
   status: string; // "Pending", "Resolved", "Sent Back"
+  fileName: string | null;
+  fileType: string | null;
+  filePath: string | null;
+  fileSize: number | null;
   createdById: string;
   createdBy: { id: string; fullName: string };
   comments: IssueActionComment[];
@@ -229,6 +233,9 @@ export default function ContextPage() {
     comment: "",
   });
   const [savingAction, setSavingAction] = useState(false);
+  const [actionFile, setActionFile] = useState<File | null>(null);
+  const [isDraggingActionFile, setIsDraggingActionFile] = useState(false);
+  const actionFileInputRef = useRef<HTMLInputElement>(null);
 
   // Action Review states (for CustomerAdmin/Reviewer)
   const [showActionReviewDialog, setShowActionReviewDialog] = useState(false);
@@ -778,6 +785,33 @@ export default function ContextPage() {
 
   // ============ Issue Action Handlers ============
 
+  // File handlers for action file upload
+  const handleActionFileDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingActionFile(true);
+  };
+
+  const handleActionFileDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingActionFile(false);
+  };
+
+  const handleActionFileDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingActionFile(false);
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      setActionFile(files[0]);
+    }
+  };
+
+  const handleActionFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setActionFile(file);
+    }
+  };
+
   // Create Action (DepartmentReviewer)
   const handleCreateAction = async () => {
     if (!selectedIssueForAction || !actionForm.actionType || !actionForm.description) {
@@ -791,11 +825,43 @@ export default function ContextPage() {
 
     setSavingAction(true);
     try {
+      let fileData = {};
+
+      // Upload file first if present
+      if (actionFile) {
+        const formData = new FormData();
+        formData.append("file", actionFile);
+
+        const uploadRes = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (uploadRes.ok) {
+          const uploadResult = await uploadRes.json();
+          fileData = {
+            fileName: uploadResult.file.originalName,
+            fileType: uploadResult.file.fileType,
+            filePath: uploadResult.file.filePath,
+            fileSize: uploadResult.file.fileSize,
+          };
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to upload file",
+            variant: "destructive",
+          });
+          setSavingAction(false);
+          return;
+        }
+      }
+
       const res = await fetch(`/api/issues/${selectedIssueForAction.id}/actions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...actionForm,
+          ...fileData,
           createdById: session?.user?.id,
         }),
       });
@@ -810,6 +876,7 @@ export default function ContextPage() {
         if (issuesRes.ok) setIssues(await issuesRes.json());
         setShowCreateActionDialog(false);
         setActionForm({ actionType: "", description: "", completion: 0, comment: "" });
+        setActionFile(null);
         setSelectedIssueForAction(null);
       } else {
         const error = await res.json();
@@ -3030,6 +3097,7 @@ export default function ContextPage() {
         setShowCreateActionDialog(open);
         if (!open) {
           setActionForm({ actionType: "", description: "", completion: 0, comment: "" });
+          setActionFile(null);
           setSelectedIssueForAction(null);
         }
       }}>
@@ -3086,6 +3154,55 @@ export default function ContextPage() {
                 value={actionForm.comment}
                 onChange={(e) => setActionForm({ ...actionForm, comment: e.target.value })}
               />
+            </div>
+            {/* File Upload Section */}
+            <div className="space-y-2">
+              <Label>Attachment</Label>
+              <div
+                className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${
+                  isDraggingActionFile ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50"
+                }`}
+                onDragOver={handleActionFileDragOver}
+                onDragLeave={handleActionFileDragLeave}
+                onDrop={handleActionFileDrop}
+                onClick={() => actionFileInputRef.current?.click()}
+              >
+                {actionFile ? (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <File className="h-5 w-5 text-muted-foreground" />
+                      <span className="text-sm font-medium truncate max-w-[200px]">{actionFile.name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        ({(actionFile.size / 1024).toFixed(1)} KB)
+                      </span>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActionFile(null);
+                      }}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-2 py-2">
+                    <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">
+                      Drag and drop a file here, or click to browse
+                    </p>
+                  </div>
+                )}
+                <input
+                  ref={actionFileInputRef}
+                  type="file"
+                  className="hidden"
+                  onChange={handleActionFileChange}
+                />
+              </div>
             </div>
           </div>
           <DialogFooter>
@@ -3158,6 +3275,46 @@ export default function ContextPage() {
                     </div>
                   </div>
                   <p className="text-sm mb-2">{action.description}</p>
+                  {/* File Attachment Display */}
+                  {action.fileName && action.filePath && (
+                    <div className="flex items-center justify-between p-2 bg-muted rounded-lg mb-2">
+                      <div className="flex items-center gap-2">
+                        {action.fileType?.match(/^(jpg|jpeg|png|gif|bmp|webp)$/i) ? (
+                          <FileImage className="h-5 w-5 text-blue-500" />
+                        ) : action.fileType?.match(/^(xls|xlsx|csv)$/i) ? (
+                          <FileSpreadsheet className="h-5 w-5 text-green-600" />
+                        ) : action.fileType?.match(/^(doc|docx|txt|pdf)$/i) ? (
+                          <FileText className="h-5 w-5 text-red-500" />
+                        ) : (
+                          <File className="h-5 w-5 text-gray-500" />
+                        )}
+                        <span className="text-sm truncate max-w-[150px]">{action.fileName}</span>
+                        {action.fileSize && (
+                          <span className="text-xs text-muted-foreground">
+                            ({(action.fileSize / 1024).toFixed(1)} KB)
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => window.open(action.filePath!, "_blank")}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          asChild
+                        >
+                          <a href={action.filePath!} download={action.fileName}>
+                            <Download className="h-4 w-4" />
+                          </a>
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                   <div className="flex justify-between text-xs text-muted-foreground">
                     <span>By: {action.createdBy.fullName}</span>
                     <span>Completion: {action.completion}%</span>
@@ -3216,6 +3373,61 @@ export default function ContextPage() {
                 <div className="space-y-2">
                   <Label>Comment</Label>
                   <p className="text-sm p-2 bg-muted rounded whitespace-pre-wrap">{selectedActionForReview.comment}</p>
+                </div>
+              )}
+              {/* Attachment Section - Only visible if file exists */}
+              {selectedActionForReview.fileName && selectedActionForReview.filePath && (
+                <div className="space-y-2">
+                  <Label>Attachment</Label>
+                  <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                    <div className="flex items-center gap-3">
+                      {/* File Type Icon */}
+                      {selectedActionForReview.fileType?.match(/^(jpg|jpeg|png|gif|bmp|webp)$/i) ? (
+                        <FileImage className="h-8 w-8 text-blue-500" />
+                      ) : selectedActionForReview.fileType?.match(/^(xls|xlsx|csv)$/i) ? (
+                        <FileSpreadsheet className="h-8 w-8 text-green-600" />
+                      ) : selectedActionForReview.fileType?.match(/^(doc|docx|txt|pdf)$/i) ? (
+                        <FileText className="h-8 w-8 text-red-500" />
+                      ) : (
+                        <File className="h-8 w-8 text-gray-500" />
+                      )}
+                      {/* File Name and Size */}
+                      <div>
+                        <p className="text-sm font-medium truncate max-w-[180px]">
+                          {selectedActionForReview.fileName}
+                        </p>
+                        {selectedActionForReview.fileSize && (
+                          <p className="text-xs text-muted-foreground">
+                            {(selectedActionForReview.fileSize / 1024).toFixed(1)} KB
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    {/* View and Download Buttons */}
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(selectedActionForReview.filePath!, "_blank")}
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        View
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        asChild
+                      >
+                        <a
+                          href={selectedActionForReview.filePath!}
+                          download={selectedActionForReview.fileName}
+                        >
+                          <Download className="h-4 w-4 mr-1" />
+                          Download
+                        </a>
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

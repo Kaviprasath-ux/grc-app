@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -54,12 +54,14 @@ interface Finding {
 export default function ViewFindingPage() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const engagementId = params.id as string;
   const findingId = params.findingId as string;
+  const editMode = searchParams.get("edit") === "true";
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(editMode);
   const [users, setUsers] = useState<User[]>([]);
 
   const [formData, setFormData] = useState<Finding | null>(null);
@@ -74,6 +76,11 @@ export default function ViewFindingPage() {
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [engagementId, findingId]);
+
+  // Update edit mode when search params change
+  useEffect(() => {
+    setIsEditing(editMode);
+  }, [editMode]);
 
   const fetchFinding = async () => {
     try {

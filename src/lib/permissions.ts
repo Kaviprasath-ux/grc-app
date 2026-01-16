@@ -161,12 +161,12 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'compliance.settings', actions: ['*'], scope: 'all' },
   ],
 
-  // Customer Administrator - Full access to organization, view access to other modules
+  // Customer Administrator - Full access to organization and all other modules (except audit)
   CustomerAdministrator: [
     { resource: 'organization.*', actions: ['*'], scope: 'all' },
-    { resource: 'compliance.*', actions: ['view'], scope: 'all' },
-    { resource: 'asset.*', actions: ['view'], scope: 'all' },
-    { resource: 'risk.*', actions: ['view'], scope: 'all' },
+    { resource: 'compliance.*', actions: ['*'], scope: 'all' },
+    { resource: 'asset.*', actions: ['*'], scope: 'all' },
+    { resource: 'risk.*', actions: ['*'], scope: 'all' },
     { resource: 'audit.risk-register', actions: ['view'], scope: 'all' },
     { resource: 'audit.settings', actions: ['view'], scope: 'all' },
   ],
@@ -287,6 +287,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
 
   // Department Reviewer - Reviews within own department (matches UAT exactly)
   // Has same pages as Reviewer but scoped to department
+  // Key workflow: Can APPROVE items submitted for approval (governance, risks, etc.)
   DepartmentReviewer: [
     // Organization - Dashboard, Context, Users, Process, Reports (NO Profile, NO Settings)
     { resource: 'organization.dashboard', actions: ['view'], scope: 'department' },
@@ -297,9 +298,9 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'compliance.dashboard', actions: ['view'], scope: 'department' },
     { resource: 'compliance.framework', actions: ['view'], scope: 'department' },
     { resource: 'compliance.controls', actions: ['view', 'approve'], scope: 'department' },
-    { resource: 'compliance.governance', actions: ['view'], scope: 'department' },
+    { resource: 'compliance.governance', actions: ['view', 'approve'], scope: 'department' },
     { resource: 'compliance.evidence', actions: ['view', 'approve'], scope: 'department' },
-    { resource: 'compliance.exceptions', actions: ['view'], scope: 'department' },
+    { resource: 'compliance.exceptions', actions: ['view', 'approve'], scope: 'department' },
     { resource: 'compliance.kpi', actions: ['view'], scope: 'department' },
     // Asset Management - Inventory, Classification, Reports (NO Settings)
     { resource: 'asset.dashboard', actions: ['view'], scope: 'department' },
@@ -309,8 +310,8 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     // Risk Management - Dashboard, Register, Assessment, Response, Reports (NO Settings)
     { resource: 'risk.dashboard', actions: ['view'], scope: 'department' },
     { resource: 'risk.register', actions: ['view', 'approve'], scope: 'department' },
-    { resource: 'risk.assessment', actions: ['view'], scope: 'department' },
-    { resource: 'risk.response', actions: ['view'], scope: 'department' },
+    { resource: 'risk.assessment', actions: ['view', 'approve'], scope: 'department' },
+    { resource: 'risk.response', actions: ['view', 'approve'], scope: 'department' },
     { resource: 'risk.reports', actions: ['view'], scope: 'department' },
     // Internal Audit - ONLY RiskRegister page (NO Settings, NO other audit pages)
     { resource: 'audit.risk-register', actions: ['view'], scope: 'department' },
