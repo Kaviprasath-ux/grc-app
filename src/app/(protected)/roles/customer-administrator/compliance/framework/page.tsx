@@ -307,9 +307,16 @@ export default function CustomerAdminFrameworkPage() {
                 {framework.name}
               </h4>
 
-              {/* Compliance Circle */}
+              {/* Compliance Circle - Clickable */}
               <div className="flex justify-center mb-4">
-                <div className="relative w-28 h-28">
+                <div
+                  className="relative w-28 h-28 cursor-pointer hover:opacity-80 transition-opacity"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    router.push(`/roles/customer-administrator/compliance/framework/${framework.id}/controls`);
+                  }}
+                  title="Click to view controls"
+                >
                   <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
                     {/* Background circle */}
                     <circle
@@ -341,10 +348,17 @@ export default function CustomerAdminFrameworkPage() {
                 </div>
               </div>
 
-              {/* Policy and Evidence Progress Bars */}
+              {/* Policy and Evidence Progress Bars - Clickable */}
               <div className="space-y-3">
-                {/* Policy */}
-                <div className="flex items-center gap-2">
+                {/* Policy - Clickable */}
+                <div
+                  className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity p-1 -m-1 rounded"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    router.push(`/roles/customer-administrator/compliance/framework/${framework.id}/policies`);
+                  }}
+                  title="Click to view policies"
+                >
                   <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-[#22c55e] rounded-full"
@@ -357,8 +371,15 @@ export default function CustomerAdminFrameworkPage() {
                   </div>
                 </div>
 
-                {/* Evidence */}
-                <div className="flex items-center gap-2">
+                {/* Evidence - Clickable */}
+                <div
+                  className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity p-1 -m-1 rounded"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    router.push(`/roles/customer-administrator/compliance/framework/${framework.id}/evidence`);
+                  }}
+                  title="Click to view evidence"
+                >
                   <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-[#22c55e] rounded-full"
