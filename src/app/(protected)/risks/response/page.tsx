@@ -25,7 +25,8 @@ import {
 import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
 import { useSession } from "next-auth/react";
-import { useUserRoles } from "@/hooks/usePermissions";
+import { useUserRoles, usePermissions } from "@/hooks/usePermissions";
+import { PermissionGate } from "@/components/ui/permission-gate";
 
 interface Risk {
   id: string;
@@ -89,6 +90,7 @@ export default function RiskResponsePage() {
   const router = useRouter();
   const { data: session } = useSession();
   const userRoles = useUserRoles();
+  const { canEdit, canApprove } = usePermissions('risk.response');
   const [risks, setRisks] = useState<Risk[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -194,6 +196,7 @@ export default function RiskResponsePage() {
   };
 
   // Get action buttons based on risk status - matching source system exactly
+  // Permission-gated: Submit for Approval requires edit, Approve requires approve permission
   const getActionButtons = (risk: Risk) => {
     const rawStatus = risk.assessmentStatus || risk.status || "Open";
     const status = normalizeStatus(rawStatus);
@@ -201,17 +204,19 @@ export default function RiskResponsePage() {
 
     switch (status) {
       case "Open":
-        // Open status: "Submit for Approval" + "View" buttons
+        // Open status: "Submit for Approval" (if canEdit) + "View" buttons
         return (
           <div className="flex gap-2">
-            <Button
-              size="sm"
-              className="bg-primary hover:bg-primary/90"
-              onClick={(e) => handleSubmitForApproval(risk, e)}
-              disabled={isLoading}
-            >
-              {isLoading ? "..." : "Submit for Approval"}
-            </Button>
+            {canEdit && (
+              <Button
+                size="sm"
+                className="bg-primary hover:bg-primary/90"
+                onClick={(e) => handleSubmitForApproval(risk, e)}
+                disabled={isLoading}
+              >
+                {isLoading ? "..." : "Submit for Approval"}
+              </Button>
+            )}
             <Button
               size="sm"
               variant="outline"
@@ -223,17 +228,19 @@ export default function RiskResponsePage() {
           </div>
         );
       case "Awaiting Approval":
-        // Awaiting Approval status: "Approve" + "View" buttons
+        // Awaiting Approval status: "Approve" (if canApprove) + "View" buttons
         return (
           <div className="flex gap-2">
-            <Button
-              size="sm"
-              className="bg-primary hover:bg-primary/90"
-              onClick={(e) => handleApprove(risk, e)}
-              disabled={isLoading}
-            >
-              {isLoading ? "..." : "Approve"}
-            </Button>
+            {canApprove && (
+              <Button
+                size="sm"
+                className="bg-primary hover:bg-primary/90"
+                onClick={(e) => handleApprove(risk, e)}
+                disabled={isLoading}
+              >
+                {isLoading ? "..." : "Approve"}
+              </Button>
+            )}
             <Button
               size="sm"
               variant="outline"
@@ -245,7 +252,7 @@ export default function RiskResponsePage() {
           </div>
         );
       case "In-Progress":
-        // In-Progress status: "Resume" button only
+        // In-Progress status: "Resume" button only (navigates to detail)
         return (
           <Button
             size="sm"
@@ -267,17 +274,19 @@ export default function RiskResponsePage() {
           </Button>
         );
       default:
-        // Default fallback - treat as Open
+        // Default fallback - treat as Open (view only unless has edit permission)
         return (
           <div className="flex gap-2">
-            <Button
-              size="sm"
-              className="bg-primary hover:bg-primary/90"
-              onClick={(e) => handleSubmitForApproval(risk, e)}
-              disabled={isLoading}
-            >
-              {isLoading ? "..." : "Submit for Approval"}
-            </Button>
+            {canEdit && (
+              <Button
+                size="sm"
+                className="bg-primary hover:bg-primary/90"
+                onClick={(e) => handleSubmitForApproval(risk, e)}
+                disabled={isLoading}
+              >
+                {isLoading ? "..." : "Submit for Approval"}
+              </Button>
+            )}
             <Button
               size="sm"
               variant="outline"
