@@ -232,12 +232,6 @@ export default function ControlsByFrameworkPage() {
     return control.assignee.fullName || control.assignee.userName || "-";
   };
 
-  // Helper to get owner display name
-  const getOwnerName = (control: Control): string => {
-    if (!control.owner) return "-";
-    return control.owner.fullName || control.owner.userName || "-";
-  };
-
   return (
     <div className="space-y-4">
       {/* Header Section */}

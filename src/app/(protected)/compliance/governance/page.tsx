@@ -2,8 +2,9 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
-import { usePermissions } from "@/hooks/usePermissions";
+import { usePermissions, useHasRole } from "@/hooks/usePermissions";
 import { PermissionGate } from "@/components/ui/permission-gate";
 import { Unauthorized } from "@/components/ui/unauthorized";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -82,6 +83,12 @@ interface User {
   id: string;
   fullName: string;
   departmentId?: string;
+  customerCode?: string;
+}
+
+interface CurrentUser {
+  id: string;
+  customerCode?: string;
 }
 
 interface Framework {
@@ -108,8 +115,11 @@ const RECURRENCE_OPTIONS = ["Weekly", "Monthly", "Quarterly", "Yearly"];
 
 export default function GovernancePage() {
   const router = useRouter();
+  const { data: session } = useSession();
   const { canView, canCreate, canEdit, canDelete, isLoading: permissionsLoading } = usePermissions('compliance.governance');
+  const isCustomerAdmin = useHasRole("CustomerAdministrator");
   const [policies, setPolicies] = useState<Policy[]>([]);
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeDocType, setActiveDocType] = useState<string>("Policy");
   const [search, setSearch] = useState("");
@@ -157,7 +167,7 @@ export default function GovernancePage() {
 
   useEffect(() => {
     fetchFilterOptions();
-  }, []);
+  }, [session?.user?.id]);
 
   useEffect(() => {
     fetchPolicies();
@@ -173,7 +183,21 @@ export default function GovernancePage() {
         fetch("/api/control-domains"),
       ]);
       if (deptRes.ok) setDepartments(await deptRes.json());
-      if (userRes.ok) setUsers(await userRes.json());
+      if (userRes.ok) {
+        const userData = await userRes.json();
+        setUsers(userData);
+
+        // Find current user to get customerCode for customer scoping
+        if (session?.user?.id) {
+          const currentUserData = userData.find((u: User) => u.id === session.user.id);
+          if (currentUserData) {
+            setCurrentUser({
+              id: currentUserData.id,
+              customerCode: currentUserData.customerCode,
+            });
+          }
+        }
+      }
       if (frameworkRes.ok) {
         const data = await frameworkRes.json();
         setFrameworks(Array.isArray(data) ? data : data.data || []);
@@ -349,10 +373,29 @@ export default function GovernancePage() {
     return matchesSearch && matchesDomain && matchesStatus;
   });
 
-  // Filter users by selected department
-  const filteredUsers = newPolicy.departmentId
-    ? users.filter((u) => u.departmentId === newPolicy.departmentId || !u.departmentId)
-    : users;
+  // Customer scoping functions for Customer Admin role
+  const getCustomerScopedUsers = () => {
+    if (!isCustomerAdmin || !currentUser?.customerCode) return users;
+    return users.filter((u) => u.customerCode === currentUser.customerCode);
+  };
+
+  const getCustomerScopedDepartments = () => {
+    if (!isCustomerAdmin || !currentUser?.customerCode) return departments;
+    // Get departments that have users from the same customer
+    const customerUserDeptIds = new Set(
+      users
+        .filter((u) => u.customerCode === currentUser.customerCode && u.departmentId)
+        .map((u) => u.departmentId)
+    );
+    return departments.filter((d) => customerUserDeptIds.has(d.id));
+  };
+
+  // Filter users by selected department (with customer scoping for Customer Admin)
+  const filteredUsers = (() => {
+    const baseUsers = getCustomerScopedUsers();
+    if (!newPolicy.departmentId) return baseUsers;
+    return baseUsers.filter((u) => u.departmentId === newPolicy.departmentId || !u.departmentId);
+  })();
 
   const handleTabChange = (tab: string) => {
     setActiveDocType(tab);
@@ -387,7 +430,8 @@ export default function GovernancePage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Governance</h1>
         <div className="flex gap-2">
-          <PermissionGate resource="compliance.governance" action="create">
+          {/* Show New Governance button for Customer Admin or users with create permission */}
+          {isCustomerAdmin ? (
             <Button onClick={() => {
               setNewPolicy({ ...newPolicy, documentType: activeDocType });
               setIsCreateDialogOpen(true);
@@ -395,7 +439,17 @@ export default function GovernancePage() {
               <Plus className="h-4 w-4 mr-2" />
               New Governance
             </Button>
-          </PermissionGate>
+          ) : (
+            <PermissionGate resource="compliance.governance" action="create">
+              <Button onClick={() => {
+                setNewPolicy({ ...newPolicy, documentType: activeDocType });
+                setIsCreateDialogOpen(true);
+              }}>
+                <Plus className="h-4 w-4 mr-2" />
+                New Governance
+              </Button>
+            </PermissionGate>
+          )}
           <PermissionGate resource="compliance.governance" action="create">
             <Button variant="outline" onClick={() => setIsImportDialogOpen(true)}>
               <Upload className="h-4 w-4 mr-2" />
@@ -629,7 +683,7 @@ export default function GovernancePage() {
                       <SelectValue placeholder="Select department" />
                     </SelectTrigger>
                     <SelectContent>
-                      {departments.map((d) => (
+                      {getCustomerScopedDepartments().map((d) => (
                         <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                       ))}
                     </SelectContent>
@@ -789,13 +843,13 @@ export default function GovernancePage() {
                   <div>
                     <Label className="text-muted-foreground text-sm">Department</Label>
                     <p className="font-medium">
-                      {departments.find((d) => d.id === newPolicy.departmentId)?.name || "-"}
+                      {getCustomerScopedDepartments().find((d) => d.id === newPolicy.departmentId)?.name || "-"}
                     </p>
                   </div>
                   <div>
                     <Label className="text-muted-foreground text-sm">Assignee</Label>
                     <p className="font-medium">
-                      {users.find((u) => u.id === newPolicy.assigneeId)?.fullName || "-"}
+                      {getCustomerScopedUsers().find((u) => u.id === newPolicy.assigneeId)?.fullName || "-"}
                     </p>
                   </div>
                   <div>
