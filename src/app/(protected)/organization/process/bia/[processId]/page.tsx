@@ -121,7 +121,7 @@ export default function BIAPage() {
   // Check user role
   const isDepartmentReviewer = userRoles.some((role) => role === "DepartmentReviewer");
   const currentUserId = session?.user?.id;
-  const currentUserName = session?.user?.name || session?.user?.fullName || "User";
+  const currentUserName = session?.user?.name || "User";
 
   const [process, setProcess] = useState<Process | null>(null);
   const [departments, setDepartments] = useState<Department[]>([]);

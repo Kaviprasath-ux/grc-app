@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, Trash2, Download, Upload, Search, Sparkles, FileText, Eye } from "lucide-react";
+import { Plus, Pencil, Trash2, Download, Upload, Search, Sparkles, FileText, Eye, BarChart3 } from "lucide-react";
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import { PageHeader, DataGrid } from "@/components/shared";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -125,6 +126,7 @@ export default function ProcessPage() {
   const [departmentFilter, setDepartmentFilter] = useState("all");
   const [ownerFilter, setOwnerFilter] = useState("all");
   const [frequencyFilter, setFrequencyFilter] = useState("all");
+  const [kpiDepartmentFilter, setKpiDepartmentFilter] = useState("all");
 
   // Dialog states
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -470,13 +472,8 @@ export default function ProcessPage() {
     }] : []),
   ];
 
-  // Performance Dashboard columns - for processes with KPI Measurement Required
+  // Performance Dashboard columns - matching UAT structure (Process Name, Department Name, Action)
   const performanceColumns: ColumnDef<Process>[] = [
-    {
-      accessorKey: "processCode",
-      header: "Reference ID",
-      cell: ({ row }) => <span className="font-mono text-sm">{row.getValue("processCode")}</span>,
-    },
     {
       accessorKey: "name",
       header: "Process Name",
@@ -484,30 +481,22 @@ export default function ProcessPage() {
     },
     {
       accessorKey: "department.name",
-      header: "Department",
+      header: "Department Name",
       cell: ({ row }) => row.original.department?.name || "-",
     },
     {
-      accessorKey: "owner.fullName",
-      header: "Process Owner",
-      cell: ({ row }) => row.original.owner?.fullName || "-",
-    },
-    {
-      accessorKey: "frequency",
-      header: "Frequency",
-      cell: ({ row }) => row.original.frequency || "-",
-    },
-    {
-      accessorKey: "status",
-      header: "Status",
-      cell: ({ row }) => {
-        const status = row.getValue("status") as string;
-        return (
-          <Badge variant={status === "Active" ? "default" : "secondary"}>
-            {status}
-          </Badge>
-        );
-      },
+      id: "actions",
+      header: "Action",
+      cell: ({ row }) => (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => router.push(`/organization/process/kpi/${row.original.id}`)}
+          title="View KPI Details"
+        >
+          <BarChart3 className="h-4 w-4" />
+        </Button>
+      ),
     },
   ];
 
@@ -663,82 +652,175 @@ export default function ProcessPage() {
           />
         </TabsContent>
 
-        {/* Performance Dashboard Tab */}
-        <TabsContent value="performance" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card>
+        {/* Performance Dashboard Tab - Matching UAT structure */}
+        <TabsContent value="performance" className="space-y-6">
+          {/* KPI Dashboard Heading */}
+          <h3 className="text-xl font-semibold text-[#1e3a5f]">KPI Dashboard</h3>
+
+          {/* Two Donut Charts Side by Side */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Status Chart */}
+            <Card className="bg-[#f8fafc]">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Total Processes
-                </CardTitle>
+                <CardTitle className="text-base font-semibold text-[#1e3a5f]">Status</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{departmentFilteredProcesses.length}</div>
+                {(() => {
+                  const kpiProcesses = departmentFilteredProcesses.filter((p) => p.kpiMeasurementRequired);
+                  const total = kpiProcesses.length || 1;
+                  // For now, show all as "Achieved" since we don't have KPI status tracking yet
+                  const statusData = [
+                    { name: "Scheduled", value: 0, color: "#3b82f6" },
+                    { name: "Missed", value: 0, color: "#f59e0b" },
+                    { name: "Overdue", value: 0, color: "#22c55e" },
+                    { name: "Achieved", value: kpiProcesses.length, color: "#1e3a5f" },
+                  ];
+                  const hasData = statusData.some(d => d.value > 0);
+
+                  return (
+                    <div className="flex flex-col items-center">
+                      <div className="h-[200px] w-full relative">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={hasData ? statusData.filter(d => d.value > 0) : [{ name: "No Data", value: 1, color: "#e5e7eb" }]}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={50}
+                              outerRadius={80}
+                              paddingAngle={2}
+                              dataKey="value"
+                              label={({ percent }) => hasData && percent ? `${(percent * 100).toFixed(0)}%` : ""}
+                              labelLine={false}
+                            >
+                              {(hasData ? statusData.filter(d => d.value > 0) : [{ name: "No Data", value: 1, color: "#e5e7eb" }]).map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} />
+                              ))}
+                            </Pie>
+                            <Tooltip />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+                      <div className="flex flex-wrap justify-center gap-4 mt-4">
+                        {statusData.map((item, index) => (
+                          <div key={index} className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: item.color }} />
+                            <span className="text-sm text-gray-600">{item.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
               </CardContent>
             </Card>
-            <Card>
+
+            {/* Department Chart */}
+            <Card className="bg-[#f8fafc]">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Active Processes
-                </CardTitle>
+                <CardTitle className="text-base font-semibold text-[#1e3a5f]">Department</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-green-600">
-                  {departmentFilteredProcesses.filter((p) => p.status === "Active").length}
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Primary Processes
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-blue-600">
-                  {departmentFilteredProcesses.filter((p) => p.processType === "Primary").length}
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  KPI Monitored
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-purple-600">
-                  {departmentFilteredProcesses.filter((p) => p.kpiMeasurementRequired).length}
-                </div>
+                {(() => {
+                  const kpiProcesses = departmentFilteredProcesses.filter((p) => p.kpiMeasurementRequired);
+                  // Group by department
+                  const deptCounts: Record<string, number> = {};
+                  kpiProcesses.forEach((p) => {
+                    const deptName = p.department?.name || "Unassigned";
+                    deptCounts[deptName] = (deptCounts[deptName] || 0) + 1;
+                  });
+                  const colors = ["#3b82f6", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#ec4899", "#84cc16"];
+                  const deptData = Object.entries(deptCounts).map(([name, value], idx) => ({
+                    name,
+                    value,
+                    color: colors[idx % colors.length],
+                  }));
+                  const hasData = deptData.length > 0;
+                  const total = kpiProcesses.length || 1;
+
+                  return (
+                    <div className="flex flex-col items-center">
+                      <div className="h-[200px] w-full relative">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={hasData ? deptData : [{ name: "No Data", value: 1, color: "#e5e7eb" }]}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={50}
+                              outerRadius={80}
+                              paddingAngle={2}
+                              dataKey="value"
+                              label={({ percent }) => hasData && percent ? `${(percent * 100).toFixed(0)}%` : ""}
+                              labelLine={false}
+                            >
+                              {(hasData ? deptData : [{ name: "No Data", value: 1, color: "#e5e7eb" }]).map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} />
+                              ))}
+                            </Pie>
+                            <Tooltip />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+                      <div className="flex flex-wrap justify-center gap-4 mt-4">
+                        {(hasData ? deptData : []).map((item, index) => (
+                          <div key={index} className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: item.color }} />
+                            <span className="text-sm text-gray-600">{item.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
               </CardContent>
             </Card>
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Process Performance Metrics</CardTitle>
-              <CardDescription>
-                Processes with KPI measurement enabled
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {departmentFilteredProcesses.filter((p) => p.kpiMeasurementRequired).length > 0 ? (
-                <DataGrid
-                  columns={performanceColumns}
-                  data={departmentFilteredProcesses.filter((p) => p.kpiMeasurementRequired)}
-                  searchPlaceholder="Search processes..."
-                />
-              ) : (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <FileText className="h-16 w-16 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium mb-2">No Performance Data</h3>
-                  <p className="text-muted-foreground">
-                    No processes have KPI measurement enabled. Enable KPI Measurement Required when adding a process to see it here.
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          {/* Department Filter and Table */}
+          <div className="flex justify-end mb-4">
+            <Select value={kpiDepartmentFilter} onValueChange={setKpiDepartmentFilter}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Department" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Department</SelectItem>
+                {departments.map((dept) => (
+                  <SelectItem key={dept.id} value={dept.id}>
+                    {dept.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* KPI Processes Table */}
+          {(() => {
+            const kpiProcesses = departmentFilteredProcesses.filter((p) => p.kpiMeasurementRequired);
+            const filteredKpiProcesses = kpiDepartmentFilter === "all"
+              ? kpiProcesses
+              : kpiProcesses.filter((p) => p.departmentId === kpiDepartmentFilter);
+
+            return filteredKpiProcesses.length > 0 ? (
+              <DataGrid
+                columns={performanceColumns}
+                data={filteredKpiProcesses}
+                searchPlaceholder="Search processes..."
+              />
+            ) : (
+              <Card>
+                <CardContent className="py-12">
+                  <div className="flex flex-col items-center justify-center text-center">
+                    <FileText className="h-16 w-16 text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-medium mb-2">No KPI Data</h3>
+                    <p className="text-muted-foreground">
+                      No processes have KPI measurement enabled. Enable KPI Measurement Required when adding a process to see it here.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })()}
         </TabsContent>
       </Tabs>
 
