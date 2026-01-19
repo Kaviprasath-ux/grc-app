@@ -470,6 +470,47 @@ export default function ProcessPage() {
     }] : []),
   ];
 
+  // Performance Dashboard columns - for processes with KPI Measurement Required
+  const performanceColumns: ColumnDef<Process>[] = [
+    {
+      accessorKey: "processCode",
+      header: "Reference ID",
+      cell: ({ row }) => <span className="font-mono text-sm">{row.getValue("processCode")}</span>,
+    },
+    {
+      accessorKey: "name",
+      header: "Process Name",
+      cell: ({ row }) => <span className="font-medium">{row.getValue("name")}</span>,
+    },
+    {
+      accessorKey: "department.name",
+      header: "Department",
+      cell: ({ row }) => row.original.department?.name || "-",
+    },
+    {
+      accessorKey: "owner.fullName",
+      header: "Process Owner",
+      cell: ({ row }) => row.original.owner?.fullName || "-",
+    },
+    {
+      accessorKey: "frequency",
+      header: "Frequency",
+      cell: ({ row }) => row.original.frequency || "-",
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => {
+        const status = row.getValue("status") as string;
+        return (
+          <Badge variant={status === "Active" ? "default" : "secondary"}>
+            {status}
+          </Badge>
+        );
+      },
+    },
+  ];
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -624,7 +665,7 @@ export default function ProcessPage() {
 
         {/* Performance Dashboard Tab */}
         <TabsContent value="performance" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -659,23 +700,43 @@ export default function ProcessPage() {
                 </div>
               </CardContent>
             </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  KPI Monitored
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-purple-600">
+                  {departmentFilteredProcesses.filter((p) => p.kpiMeasurementRequired).length}
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           <Card>
             <CardHeader>
               <CardTitle>Process Performance Metrics</CardTitle>
               <CardDescription>
-                Track and monitor key performance indicators for your processes
+                Processes with KPI measurement enabled
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <FileText className="h-16 w-16 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium mb-2">No Performance Data</h3>
-                <p className="text-muted-foreground">
-                  Performance metrics will appear here once processes are monitored
-                </p>
-              </div>
+              {departmentFilteredProcesses.filter((p) => p.kpiMeasurementRequired).length > 0 ? (
+                <DataGrid
+                  columns={performanceColumns}
+                  data={departmentFilteredProcesses.filter((p) => p.kpiMeasurementRequired)}
+                  searchPlaceholder="Search processes..."
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <FileText className="h-16 w-16 text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No Performance Data</h3>
+                  <p className="text-muted-foreground">
+                    No processes have KPI measurement enabled. Enable KPI Measurement Required when adding a process to see it here.
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
