@@ -440,30 +440,30 @@ function RiskRegisterContent() {
             <h1 className="text-2xl font-semibold text-grc-text">Risk Register</h1>
           </div>
         </div>
-      </div>
 
-      {/* Action Buttons */}
-      <div className="flex items-center gap-2">
-        <PermissionGate resource="risk.register" action="create">
-          <Button onClick={() => setWizardOpen(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            New Risk
+        {/* Action Buttons */}
+        <div className="flex items-center gap-2">
+          <PermissionGate resource="risk.register" action="create">
+            <Button onClick={() => setWizardOpen(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              New Risk
+            </Button>
+          </PermissionGate>
+          <Button variant="outline" onClick={handleExport} className="gap-2">
+            <Download className="h-4 w-4" />
+            Export
           </Button>
-        </PermissionGate>
-        <Button variant="outline" onClick={handleExport} className="gap-2">
-          <Download className="h-4 w-4" />
-          Export
-        </Button>
-        <PermissionGate resource="risk.register" action="create">
-          <Button variant="outline" onClick={() => setImportDialogOpen(true)} className="gap-2">
-            <Upload className="h-4 w-4" />
-            Import
+          <PermissionGate resource="risk.register" action="create">
+            <Button variant="outline" onClick={() => setImportDialogOpen(true)} className="gap-2">
+              <Upload className="h-4 w-4" />
+              Import
+            </Button>
+          </PermissionGate>
+          <Button variant="outline" onClick={handleActivityLogOpen} className="gap-2">
+            <Activity className="h-4 w-4" />
+            Activity Log
           </Button>
-        </PermissionGate>
-        <Button variant="outline" onClick={handleActivityLogOpen} className="gap-2">
-          <Activity className="h-4 w-4" />
-          Activity Log
-        </Button>
+        </div>
       </div>
 
       {/* Summary Cards */}
