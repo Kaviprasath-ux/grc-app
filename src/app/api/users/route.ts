@@ -69,6 +69,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Find the role in the Role table (for UserRole junction)
+    const roleRecord = role ? await prisma.role.findFirst({
+      where: { name: role }
+    }) : null;
+
     const user = await prisma.user.create({
       data: {
         userId,
@@ -86,8 +91,23 @@ export async function POST(request: NextRequest) {
         isActive: isActive ?? true,
         isBlocked: isBlocked ?? false,
         departmentId,
+        // Create UserRole entry if role exists in Role table
+        ...(roleRecord && {
+          userRoles: {
+            create: {
+              roleId: roleRecord.id,
+            },
+          },
+        }),
       },
-      include: { department: true },
+      include: {
+        department: true,
+        userRoles: {
+          include: {
+            role: true,
+          },
+        },
+      },
     });
 
     // Remove password from response

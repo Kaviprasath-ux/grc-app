@@ -24,6 +24,26 @@ export async function PUT(
       departmentId,
     } = body;
 
+    // If role is being updated, also update the UserRole junction table
+    if (role) {
+      const roleRecord = await prisma.role.findFirst({
+        where: { name: role }
+      });
+
+      if (roleRecord) {
+        // Delete existing user roles and create new one
+        await prisma.userRole.deleteMany({
+          where: { userId: id }
+        });
+        await prisma.userRole.create({
+          data: {
+            userId: id,
+            roleId: roleRecord.id,
+          }
+        });
+      }
+    }
+
     const user = await prisma.user.update({
       where: { id },
       data: {
@@ -41,7 +61,14 @@ export async function PUT(
         isBlocked,
         departmentId,
       },
-      include: { department: true },
+      include: {
+        department: true,
+        userRoles: {
+          include: {
+            role: true,
+          },
+        },
+      },
     });
 
     const { password: _, ...safeUser } = user;

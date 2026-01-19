@@ -78,8 +78,14 @@ Protected routes use route groups: `(protected)` applies the `MainLayout` wrappe
 ### Database (Prisma + SQLite)
 
 - **`prisma/schema.prisma`** - Database schema with models for RBAC, Organization, Compliance, Risk, Audit, Assets
+- **`prisma/schema.sql`** - SQL version of the schema (auto-generated)
 - **`prisma/seed.ts`** - Main seeder with sample data
 - **`src/lib/prisma.ts`** - Singleton Prisma client
+
+**IMPORTANT:** Whenever you modify `prisma/schema.prisma`, always regenerate the SQL file:
+```bash
+npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > prisma/schema.sql
+```
 
 ### UI Components
 

@@ -319,10 +319,9 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
 
   // Department Contributor - Creates/edits within own department (matches UAT exactly)
   DepartmentContributor: [
-    // Organization - Dashboard, Context, Users, Process, Reports (NO Profile, NO Settings)
+    // Organization - Dashboard, Context, Process, Reports (NO Profile, NO Users, NO Settings)
     { resource: 'organization.dashboard', actions: ['view'], scope: 'department' },
     { resource: 'organization.context', actions: ['view'], scope: 'department' },
-    { resource: 'organization.users', actions: ['view'], scope: 'department' },
     { resource: 'organization.process', actions: ['view', 'create', 'edit'], scope: 'department' },
     // Compliance - Framework, Control, Governance, Evidence, Exception, KPI, Reports (NO Domain, NO Risk Matrix, NO Settings)
     { resource: 'compliance.dashboard', actions: ['view'], scope: 'department' },
