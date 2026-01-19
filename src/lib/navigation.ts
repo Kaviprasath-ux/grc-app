@@ -296,6 +296,8 @@ const ROLE_SPECIFIC_PATHS: Record<string, string[]> = {
   // CustomerAdministrator has unique card-grid UI with subscription management
   // (vs table view for other roles) - keep as exception
   "/compliance/framework": ["CustomerAdministrator"],
+  // GRCAdministrator has separate Controls page with broader scope (all customers)
+  "/compliance/control": ["GRCAdministrator"],
 };
 
 /**
