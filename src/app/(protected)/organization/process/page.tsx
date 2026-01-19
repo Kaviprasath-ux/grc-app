@@ -109,6 +109,8 @@ export default function ProcessPage() {
 
   // Check if user is DepartmentReviewer (needs to see assigned processes and approve)
   const isDepartmentReviewer = userRoles.some((role) => role === "DepartmentReviewer");
+  // Check if user is DepartmentContributor (view-only for Repository, full actions for BIA)
+  const isDepartmentContributor = userRoles.some((role) => role === "DepartmentContributor");
   const userDepartmentId = session?.user?.departmentId;
 
   const [activeTab, setActiveTab] = useState("repository");
@@ -174,8 +176,8 @@ export default function ProcessPage() {
     setLoading(false);
   };
 
-  // Filter processes - DepartmentReviewer can only see processes in their department
-  const departmentFilteredProcesses = isDepartmentReviewer && userDepartmentId
+  // Filter processes - DepartmentReviewer and DepartmentContributor can only see processes in their department
+  const departmentFilteredProcesses = (isDepartmentReviewer || isDepartmentContributor) && userDepartmentId
     ? processes.filter((p) => p.departmentId === userDepartmentId)
     : processes;
 
@@ -439,10 +441,11 @@ export default function ProcessPage() {
         </Button>
       ),
     },
-    {
+    // Only show actions column for roles that can edit/delete (not DepartmentContributor)
+    ...(!isDepartmentContributor ? [{
       id: "actions",
       header: "Actions",
-      cell: ({ row }) => (
+      cell: ({ row }: { row: { original: Process } }) => (
         <div className="flex gap-2">
           <Button
             variant="ghost"
@@ -464,7 +467,7 @@ export default function ProcessPage() {
           </Button>
         </div>
       ),
-    },
+    }] : []),
   ];
 
   if (loading) {
@@ -540,18 +543,22 @@ export default function ProcessPage() {
               </Select>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm">
-                <Upload className="h-4 w-4 mr-2" />
-                Import
-              </Button>
+              {!isDepartmentContributor && (
+                <Button variant="outline" size="sm">
+                  <Upload className="h-4 w-4 mr-2" />
+                  Import
+                </Button>
+              )}
               <Button variant="outline" size="sm">
                 <Download className="h-4 w-4 mr-2" />
                 Export
               </Button>
-              <Button onClick={() => router.push("/organization/process/add")}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add New
-              </Button>
+              {!isDepartmentContributor && (
+                <Button onClick={() => router.push("/organization/process/add")}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add New
+                </Button>
+              )}
             </div>
           </div>
 
@@ -625,7 +632,7 @@ export default function ProcessPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{processes.length}</div>
+                <div className="text-3xl font-bold">{departmentFilteredProcesses.length}</div>
               </CardContent>
             </Card>
             <Card>
@@ -636,7 +643,7 @@ export default function ProcessPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold text-green-600">
-                  {processes.filter((p) => p.status === "Active").length}
+                  {departmentFilteredProcesses.filter((p) => p.status === "Active").length}
                 </div>
               </CardContent>
             </Card>
@@ -648,7 +655,7 @@ export default function ProcessPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold text-blue-600">
-                  {processes.filter((p) => p.processType === "Primary").length}
+                  {departmentFilteredProcesses.filter((p) => p.processType === "Primary").length}
                 </div>
               </CardContent>
             </Card>
