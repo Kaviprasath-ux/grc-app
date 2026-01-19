@@ -173,6 +173,11 @@ export default function ContextPage() {
     (role) => role === "DepartmentReviewer" || role === "DepartmentContributor"
   );
 
+  // Check if user is specifically DepartmentContributor (no Issues tab, Stakeholder as title)
+  const isDepartmentContributor = userRoles.some(
+    (role) => role === "DepartmentContributor"
+  );
+
   // Get user's department ID for department-scoped filtering
   const userDepartmentId = session?.user?.departmentId;
 
@@ -2855,14 +2860,61 @@ export default function ContextPage() {
         }}
       />
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="stakeholder">Stakeholder</TabsTrigger>
-          <TabsTrigger value="issuelist">Issue List</TabsTrigger>
-        </TabsList>
+      {/* DepartmentContributor: Show Stakeholder as title without tabs */}
+      {isDepartmentContributor ? (
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold">Stakeholder</h2>
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search stakeholders..."
+                  value={stakeholderSearch}
+                  onChange={(e) => setStakeholderSearch(e.target.value)}
+                  className="pl-10 w-[250px]"
+                />
+              </div>
+              <Select value={stakeholderTypeFilter} onValueChange={setStakeholderTypeFilter}>
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue placeholder="Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="Internal">Internal</SelectItem>
+                  <SelectItem value="External">External</SelectItem>
+                  <SelectItem value="Third Party">Third Party</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={stakeholderStatusFilter} onValueChange={setStakeholderStatusFilter}>
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="Active">Active</SelectItem>
+                  <SelectItem value="Inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
-        {/* Stakeholder Tab */}
-        <TabsContent value="stakeholder" className="space-y-4">
+          <DataGrid
+            columns={stakeholderColumns}
+            data={filteredStakeholders}
+            searchPlaceholder="Search..."
+          />
+        </div>
+      ) : (
+        /* Other roles: Show normal tabs with Stakeholder and Issue List */
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList>
+            <TabsTrigger value="stakeholder">Stakeholder</TabsTrigger>
+            <TabsTrigger value="issuelist">Issue List</TabsTrigger>
+          </TabsList>
+
+          {/* Stakeholder Tab */}
+          <TabsContent value="stakeholder" className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="relative">
@@ -3113,6 +3165,7 @@ export default function ContextPage() {
           )}
         </TabsContent>
       </Tabs>
+      )}
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
