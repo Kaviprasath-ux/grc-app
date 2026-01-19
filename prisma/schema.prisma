@@ -330,6 +330,7 @@ model Service {
 // Frameworks
 model Framework {
   id                    String                @id @default(cuid())
+  code                  String?
   name                  String                @unique
   description           String?
   version               String?
