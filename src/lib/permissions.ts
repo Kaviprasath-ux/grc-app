@@ -281,7 +281,6 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'risk.assessment', actions: ['view', 'create', 'edit'], scope: 'all' },
     { resource: 'risk.response', actions: ['view', 'create', 'edit'], scope: 'all' },
     { resource: 'asset.dashboard', actions: ['view'], scope: 'all' },
-    { resource: 'asset.inventory', actions: ['view', 'create', 'edit'], scope: 'all' },
     { resource: 'asset.classification', actions: ['view', 'create', 'edit'], scope: 'all' },
   ],
 
@@ -302,9 +301,8 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'compliance.evidence', actions: ['view', 'approve'], scope: 'department' },
     { resource: 'compliance.exceptions', actions: ['view', 'approve'], scope: 'department' },
     { resource: 'compliance.kpi', actions: ['view'], scope: 'department' },
-    // Asset Management - Inventory, Classification, Reports (NO Settings)
+    // Asset Management - Classification, Reports only (NO Inventory, NO Settings)
     { resource: 'asset.dashboard', actions: ['view'], scope: 'department' },
-    { resource: 'asset.inventory', actions: ['view', 'approve'], scope: 'department' },
     { resource: 'asset.classification', actions: ['view'], scope: 'department' },
     { resource: 'asset.reports', actions: ['view'], scope: 'department' },
     // Risk Management - Dashboard, Register, Assessment, Response, Reports (NO Settings)
@@ -331,9 +329,8 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'compliance.evidence', actions: ['view', 'create', 'edit'], scope: 'department' },
     { resource: 'compliance.exceptions', actions: ['view', 'create', 'edit'], scope: 'department' },
     { resource: 'compliance.kpi', actions: ['view'], scope: 'department' },
-    // Asset Management - Inventory, Classification, Reports (NO Settings)
+    // Asset Management - Classification, Reports only (NO Inventory, NO Settings)
     { resource: 'asset.dashboard', actions: ['view'], scope: 'department' },
-    { resource: 'asset.inventory', actions: ['view', 'create', 'edit'], scope: 'department' },
     { resource: 'asset.classification', actions: ['view'], scope: 'department' },
     { resource: 'asset.reports', actions: ['view'], scope: 'department' },
     // Risk Management - Dashboard, Register, Assessment, Response, Reports (NO Settings)

@@ -26,7 +26,7 @@ export const GET = withAuth(
       );
     }
   },
-  { resource: "organization.department", action: "view" }
+  { resource: "organization.settings.departments", action: "view" }
 );
 
 // POST create new department - with customer account assignment
@@ -70,5 +70,5 @@ export const POST = withAuth(
       );
     }
   },
-  { resource: "organization.department", action: "create" }
+  { resource: "organization.settings.departments", action: "create" }
 );

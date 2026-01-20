@@ -38,7 +38,7 @@ export const GET = withAuth(
       );
     }
   },
-  { resource: "organization.department", action: "view" }
+  { resource: "organization.settings.departments", action: "view" }
 );
 
 // PUT update department - with tenant validation
@@ -90,7 +90,7 @@ export const PUT = withAuth(
       );
     }
   },
-  { resource: "organization.department", action: "edit" }
+  { resource: "organization.settings.departments", action: "edit" }
 );
 
 // DELETE department - with tenant validation
@@ -135,5 +135,5 @@ export const DELETE = withAuth(
       );
     }
   },
-  { resource: "organization.department", action: "delete" }
+  { resource: "organization.settings.departments", action: "delete" }
 );
