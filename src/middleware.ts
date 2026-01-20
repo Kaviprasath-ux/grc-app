@@ -37,6 +37,8 @@ const ROLE_SPECIFIC_PATHS: Record<string, string[]> = {
   "/compliance/control": ["GRCAdministrator"],
   // GRCAdministrator has separate Governance page with broader scope (all customers)
   "/compliance/governance": ["GRCAdministrator"],
+  // GRCAdministrator has separate Evidence page with broader scope (all customers)
+  "/compliance/evidence": ["GRCAdministrator"],
 };
 
 /**
