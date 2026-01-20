@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { withAuth, getCustomerAccountId } from "@/lib/api-auth";
 
 // POST import internal audit risks from CSV
-export async function POST(request: NextRequest) {
-  try {
-    const formData = await request.formData();
+export const POST = withAuth(
+  async (request: NextRequest, context, session) => {
+    try {
+      const customerAccountId = getCustomerAccountId(session);
+      const formData = await request.formData();
     const file = formData.get("file") as File;
 
     if (!file) {
@@ -129,6 +132,7 @@ export async function POST(request: NextRequest) {
 
         await prisma.internalAuditRisk.create({
           data: {
+            customerAccountId,
             riskId,
             riskName: riskDescription,
             riskDescription,
@@ -162,7 +166,9 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+  },
+  { resource: "internal-audit.risks", action: "create" }
+);
 
 // Helper function to parse CSV line (handles quoted values)
 function parseCSVLine(line: string): string[] {

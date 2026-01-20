@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { withAuth } from '@/lib/api-auth';
+import { withAuth, getCustomerAccountId, getTenantFilter } from '@/lib/api-auth';
 
 // GET /api/internal-audit/engagements - Get all audit engagements
 export const GET = withAuth(
-  async (req: NextRequest) => {
+  async (req, context, session) => {
     try {
       const url = new URL(req.url);
       const departmentId = url.searchParams.get('departmentId');
@@ -12,7 +12,8 @@ export const GET = withAuth(
       const year = url.searchParams.get('year');
       const search = url.searchParams.get('search');
 
-      const whereClause: Record<string, unknown> = {};
+      const tenantFilter = getTenantFilter(session);
+      const whereClause: Record<string, unknown> = { ...tenantFilter };
       const andConditions: Record<string, unknown>[] = [];
 
       if (departmentId && departmentId !== 'all') {
@@ -92,7 +93,7 @@ export const GET = withAuth(
 
 // POST /api/internal-audit/engagements - Create a new audit engagement
 export const POST = withAuth(
-  async (req: NextRequest) => {
+  async (req, context, session) => {
     try {
       const body = await req.json();
 
@@ -113,6 +114,8 @@ export const POST = withAuth(
         tasks,
         plannedHours,
       } = body;
+
+      const customerAccountId = getCustomerAccountId(session);
 
       // Generate audit ID
       const count = await prisma.auditEngagement.count();
@@ -135,7 +138,8 @@ export const POST = withAuth(
           relatedPolicies: relatedPolicies || null,
           plannedHours: plannedHours || 0,
           actualHours: 0,
-          status: 'Planned'
+          status: 'Planned',
+          customerAccountId,
         },
         include: {
           department: {

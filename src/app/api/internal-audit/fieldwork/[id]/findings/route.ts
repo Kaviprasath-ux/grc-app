@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { withAuth } from '@/lib/api-auth';
+import { withAuth, getCustomerAccountId, getTenantFilter } from '@/lib/api-auth';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -24,13 +24,14 @@ async function generateFindingId(): Promise<string> {
 
 // GET /api/internal-audit/fieldwork/[id]/findings - Get findings for an engagement
 export const GET = withAuth(
-  async (req: NextRequest, context: RouteContext) => {
+  async (req, context: RouteContext, session) => {
     try {
       const { id: engagementId } = await context.params;
+      const tenantFilter = getTenantFilter(session);
 
       // Verify engagement exists
       const engagement = await prisma.auditEngagement.findUnique({
-        where: { id: engagementId },
+        where: { id: engagementId, ...tenantFilter },
       });
 
       if (!engagement) {
@@ -42,7 +43,7 @@ export const GET = withAuth(
 
       // Get findings for this engagement
       const findings = await prisma.internalAuditFinding.findMany({
-        where: { engagementId },
+        where: { engagementId, ...tenantFilter },
         include: {
           department: true,
         },
@@ -86,14 +87,16 @@ export const GET = withAuth(
 
 // POST /api/internal-audit/fieldwork/[id]/findings - Create a new finding
 export const POST = withAuth(
-  async (req: NextRequest, context: RouteContext) => {
+  async (req, context: RouteContext, session) => {
     try {
       const { id: engagementId } = await context.params;
       const body = await req.json();
+      const tenantFilter = getTenantFilter(session);
+      const customerAccountId = getCustomerAccountId(session);
 
       // Verify engagement exists
       const engagement = await prisma.auditEngagement.findUnique({
-        where: { id: engagementId },
+        where: { id: engagementId, ...tenantFilter },
       });
 
       if (!engagement) {
@@ -138,6 +141,7 @@ export const POST = withAuth(
           cause: body.cause || null,
           effect: body.effect || null,
           recommendation: body.recommendation || null,
+          customerAccountId,
         },
         include: {
           department: true,

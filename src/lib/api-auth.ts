@@ -2,6 +2,7 @@
  * API Route Authorization Helpers
  *
  * Provides wrappers and utilities for protecting API routes with RBAC.
+ * Includes multi-tenant data isolation helpers.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -23,6 +24,10 @@ export interface AuthenticatedRequest extends NextRequest {
     email: string;
     departmentId: string | null;
     departmentName: string | null;
+    // Multi-tenant: Customer account information
+    customerAccountId: string | null;
+    customerAccountCode: string | null;
+    customerAccountName: string | null;
     roles: string[];
     permissions: UserPermission[];
   };
@@ -97,6 +102,10 @@ export function withAuth<T extends { params?: Promise<unknown> }>(
         email: user.email || '',
         departmentId: user.departmentId || null,
         departmentName: user.departmentName || null,
+        // Multi-tenant: Include customer account
+        customerAccountId: user.customerAccountId || null,
+        customerAccountCode: user.customerAccountCode || null,
+        customerAccountName: user.customerAccountName || null,
         roles: user.roles || [],
         permissions: user.permissions || [],
       };
@@ -140,6 +149,10 @@ export function withAuthOnly<T extends { params?: Promise<unknown> }>(
         email: user.email || '',
         departmentId: user.departmentId || null,
         departmentName: user.departmentName || null,
+        // Multi-tenant: Include customer account
+        customerAccountId: user.customerAccountId || null,
+        customerAccountCode: user.customerAccountCode || null,
+        customerAccountName: user.customerAccountName || null,
         roles: user.roles || [],
         permissions: user.permissions || [],
       };
@@ -153,6 +166,89 @@ export function withAuthOnly<T extends { params?: Promise<unknown> }>(
       );
     }
   };
+}
+
+// ==================== MULTI-TENANT HELPERS ====================
+
+/**
+ * Get tenant filter for Prisma queries.
+ * Enforces data isolation by customer account.
+ *
+ * GRCAdministrators can see all data (returns empty filter).
+ * All other users are restricted to their customer account.
+ *
+ * @example
+ * const tenantFilter = getTenantFilter(session);
+ * const risks = await prisma.risk.findMany({
+ *   where: {
+ *     ...tenantFilter,
+ *     // other conditions
+ *   }
+ * });
+ */
+export function getTenantFilter(session: AuthenticatedRequest['user']): { customerAccountId?: string } {
+  // GRCAdministrators can see all data across all customers
+  if (session.roles.includes('GRCAdministrator')) {
+    return {};
+  }
+
+  // All other users are restricted to their customer account
+  if (!session.customerAccountId) {
+    // If user has no customer account, return an impossible filter
+    // This prevents data leakage if a user is misconfigured
+    return { customerAccountId: '__NO_TENANT__' };
+  }
+
+  return { customerAccountId: session.customerAccountId };
+}
+
+/**
+ * Get the customer account ID for creating new records.
+ * Throws an error if the user has no customer account (except GRCAdministrators).
+ *
+ * @example
+ * const customerAccountId = getCustomerAccountId(session);
+ * await prisma.risk.create({
+ *   data: {
+ *     customerAccountId,
+ *     name: 'New Risk',
+ *     // ...other fields
+ *   }
+ * });
+ */
+export function getCustomerAccountId(session: AuthenticatedRequest['user']): string {
+  if (!session.customerAccountId) {
+    throw new Error('User does not have a customer account assigned');
+  }
+  return session.customerAccountId;
+}
+
+/**
+ * Validate that a record belongs to the user's customer account.
+ * GRCAdministrators can access any record.
+ *
+ * @example
+ * const risk = await prisma.risk.findUnique({ where: { id } });
+ * if (!validateTenantAccess(session, risk?.customerAccountId)) {
+ *   return forbidden('Access denied to this record');
+ * }
+ */
+export function validateTenantAccess(
+  session: AuthenticatedRequest['user'],
+  recordCustomerAccountId: string | null | undefined
+): boolean {
+  // GRCAdministrators can access all records
+  if (session.roles.includes('GRCAdministrator')) {
+    return true;
+  }
+
+  // User must have a customer account
+  if (!session.customerAccountId) {
+    return false;
+  }
+
+  // Record must belong to the user's customer account
+  return recordCustomerAccountId === session.customerAccountId;
 }
 
 // ==================== DATA SCOPE HELPERS ====================
@@ -263,6 +359,10 @@ export async function getApiSession(): Promise<AuthenticatedRequest['user'] | nu
     email: user.email || '',
     departmentId: user.departmentId || null,
     departmentName: user.departmentName || null,
+    // Multi-tenant: Include customer account
+    customerAccountId: user.customerAccountId || null,
+    customerAccountCode: user.customerAccountCode || null,
+    customerAccountName: user.customerAccountName || null,
     roles: user.roles || [],
     permissions: user.permissions || [],
   };

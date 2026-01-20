@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { withAuth, getCustomerAccountId } from "@/lib/api-auth";
 
 // POST import evidences from CSV
-export async function POST(request: NextRequest) {
+export const POST = withAuth(
+  async (request: NextRequest, context, session) => {
   try {
+    const customerAccountId = getCustomerAccountId(session);
     const formData = await request.formData();
     const file = formData.get("file") as File;
 
@@ -88,9 +91,10 @@ export async function POST(request: NextRequest) {
         // Generate evidence code if not provided
         const newEvidenceCode = evidenceCode || `EVD-${Date.now()}-${i}`;
 
-        // Create evidence
+        // Create evidence with tenant isolation
         await prisma.evidence.create({
           data: {
+            customerAccountId,
             evidenceCode: newEvidenceCode,
             name,
             description: description || null,
@@ -124,7 +128,9 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+},
+{ resource: "compliance.evidence", action: "create" }
+);
 
 // Helper function to parse CSV line handling quoted values
 function parseCSVLine(line: string): string[] {

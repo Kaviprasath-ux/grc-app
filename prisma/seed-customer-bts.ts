@@ -15,6 +15,21 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("🏢 Seeding Customer Account 'bts'...");
 
+  // ==================== GET/CREATE CUSTOMER ACCOUNT ====================
+  console.log("\n🏛️ Getting Customer Account...");
+  const customerAccount = await prisma.customerAccount.upsert({
+    where: { code: "GRC_001" },
+    update: {},
+    create: {
+      id: "customer-account-1",
+      code: "GRC_001",
+      name: "Baarez Technology Solutions",
+      isActive: true,
+    },
+  });
+  const customerAccountId = customerAccount.id;
+  console.log("  ✓ Customer Account ready");
+
   // ==================== CREATE CUSTOMERADMIN USER 'bts' ====================
   console.log("\n👤 Creating CustomerAdmin user 'bts'...");
 
@@ -39,6 +54,7 @@ async function main() {
       lastName: "Customer",
       fullName: "BTS Customer Admin",
       role: "CustomerAdministrator",
+      customerAccountId,
     },
     create: {
       userId: "BTS-001",
@@ -52,6 +68,7 @@ async function main() {
       role: "CustomerAdministrator",
       function: "Administration",
       customerCode: "GRC_001",
+      customerAccountId,
     },
   });
 
@@ -79,6 +96,7 @@ async function main() {
     update: {},
     create: {
       id: "org-bts",
+      customerAccountId,
       name: "BTS Financial Services",
       email: "info@btsfinancial.com",
       phone: "+1 555 123 4567",
@@ -164,9 +182,11 @@ async function main() {
   const createdDepts: Record<string, string> = {};
   for (const dept of departmentData) {
     const created = await prisma.department.upsert({
-      where: { name: dept.name },
+      where: {
+        customerAccountId_name: { customerAccountId, name: dept.name }
+      },
       update: { description: dept.description },
-      create: dept,
+      create: { customerAccountId, ...dept },
     });
     createdDepts[dept.name] = created.id;
   }
@@ -301,6 +321,7 @@ async function main() {
       update: {},
       create: {
         id: `stakeholder-${stakeholder.name.toLowerCase().replace(/\s+/g, '-')}`,
+        customerAccountId,
         ...stakeholder,
       },
     });
@@ -412,7 +433,12 @@ async function main() {
   const createdControls: Record<string, string> = {};
   for (const control of controls) {
     const created = await prisma.control.upsert({
-      where: { controlCode: control.code },
+      where: {
+        customerAccountId_controlCode: {
+          customerAccountId,
+          controlCode: control.code,
+        },
+      },
       update: {
         name: control.name,
         description: control.description,
@@ -420,6 +446,7 @@ async function main() {
         domainId: createdDomains[control.domain],
       },
       create: {
+        customerAccountId,
         controlCode: control.code,
         name: control.name,
         description: control.description,
@@ -462,9 +489,15 @@ async function main() {
   const createdEvidences: Record<string, string> = {};
   for (const evidence of evidences) {
     const created = await prisma.evidence.upsert({
-      where: { evidenceCode: evidence.code },
+      where: {
+        customerAccountId_evidenceCode: {
+          customerAccountId,
+          evidenceCode: evidence.code,
+        },
+      },
       update: {},
       create: {
+        customerAccountId,
         evidenceCode: evidence.code,
         name: evidence.name,
         description: evidence.description,
@@ -518,9 +551,15 @@ async function main() {
 
   for (const policy of policies) {
     await prisma.policy.upsert({
-      where: { code: policy.code },
+      where: {
+        customerAccountId_code: {
+          customerAccountId,
+          code: policy.code,
+        },
+      },
       update: {},
       create: {
+        customerAccountId,
         code: policy.code,
         name: policy.name,
         documentType: policy.type,
@@ -582,9 +621,15 @@ async function main() {
     else if (riskScore >= 5) riskRating = "Medium";
 
     const created = await prisma.risk.upsert({
-      where: { riskId: risk.id },
+      where: {
+        customerAccountId_riskId: {
+          customerAccountId,
+          riskId: risk.id,
+        },
+      },
       update: {},
       create: {
+        customerAccountId,
         riskId: risk.id,
         name: risk.name,
         description: risk.description,
@@ -693,9 +738,15 @@ async function main() {
 
   for (const asset of assets) {
     await prisma.asset.upsert({
-      where: { assetId: asset.id },
+      where: {
+        customerAccountId_assetId: {
+          customerAccountId,
+          assetId: asset.id,
+        },
+      },
       update: {},
       create: {
+        customerAccountId,
         assetId: asset.id,
         name: asset.name,
         assetType: asset.category,
@@ -729,9 +780,15 @@ async function main() {
   const createdAudits: Record<string, string> = {};
   for (const audit of audits) {
     const created = await prisma.audit.upsert({
-      where: { auditId: audit.id },
+      where: {
+        customerAccountId_auditId: {
+          customerAccountId,
+          auditId: audit.id,
+        },
+      },
       update: {},
       create: {
+        customerAccountId,
         auditId: audit.id,
         name: audit.name,
         auditType: audit.type,
@@ -758,9 +815,15 @@ async function main() {
 
   for (const exception of exceptions) {
     await prisma.exception.upsert({
-      where: { exceptionCode: exception.code },
+      where: {
+        customerAccountId_exceptionCode: {
+          customerAccountId,
+          exceptionCode: exception.code,
+        },
+      },
       update: {},
       create: {
+        customerAccountId,
         exceptionCode: exception.code,
         name: exception.name,
         description: exception.description,
@@ -790,9 +853,15 @@ async function main() {
 
   for (const kpi of kpis) {
     await prisma.kPI.upsert({
-      where: { code: kpi.code },
+      where: {
+        customerAccountId_code: {
+          customerAccountId,
+          code: kpi.code,
+        },
+      },
       update: {},
       create: {
+        customerAccountId,
         code: kpi.code,
         objective: kpi.objective,
         description: kpi.description,
@@ -822,9 +891,15 @@ async function main() {
 
   for (const process of processes) {
     await prisma.process.upsert({
-      where: { processCode: process.code },
+      where: {
+        customerAccountId_processCode: {
+          customerAccountId,
+          processCode: process.code,
+        },
+      },
       update: {},
       create: {
+        customerAccountId,
         processCode: process.code,
         name: process.name,
         processType: process.type,
@@ -857,6 +932,7 @@ async function main() {
       update: {},
       create: {
         id: `svc-${service.title.toLowerCase().replace(/\s+/g, '-')}`,
+        customerAccountId,
         title: service.title,
         description: service.description,
         serviceUser: service.serviceUser,
@@ -883,6 +959,7 @@ async function main() {
       update: {},
       create: {
         id: `issue-${issue.title.toLowerCase().replace(/\s+/g, '-').slice(0, 20)}`,
+        customerAccountId,
         title: issue.title,
         domain: issue.domain,
         category: issue.category,

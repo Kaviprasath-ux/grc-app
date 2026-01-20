@@ -1,97 +1,139 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { withAuth, getTenantFilter, validateTenantAccess, forbidden } from "@/lib/api-auth";
 
-// GET single department
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const department = await prisma.department.findUnique({
-      where: { id },
-      include: {
-        users: true,
-        issues: true,
-        stakeholders: true,
-      },
-    });
-
-    if (!department) {
-      return NextResponse.json(
-        { error: "Department not found" },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json(department);
-  } catch (error) {
-    console.error("Error fetching department:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch department" },
-      { status: 500 }
-    );
-  }
+interface RouteContext {
+  params: Promise<{ id: string }>;
 }
 
-// PUT update department
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const body = await request.json();
-    const { name, description, headId } = body;
+// GET single department - filtered by customer account
+export const GET = withAuth(
+  async (req, context: RouteContext, session) => {
+    try {
+      const { id } = await context.params;
+      const tenantFilter = getTenantFilter(session);
 
-    const department = await prisma.department.update({
-      where: { id },
-      data: {
-        name,
-        description: description || null,
-        headId: headId || null,
-      },
-    });
+      const department = await prisma.department.findFirst({
+        where: { id, ...tenantFilter },
+        include: {
+          users: true,
+          issues: true,
+          stakeholders: true,
+        },
+      });
 
-    return NextResponse.json(department);
-  } catch (error: unknown) {
-    console.error("Error updating department:", error);
-    if ((error as { code?: string }).code === "P2025") {
+      if (!department) {
+        return NextResponse.json(
+          { error: "Department not found" },
+          { status: 404 }
+        );
+      }
+
+      return NextResponse.json(department);
+    } catch (error) {
+      console.error("Error fetching department:", error);
       return NextResponse.json(
-        { error: "Department not found" },
-        { status: 404 }
+        { error: "Failed to fetch department" },
+        { status: 500 }
       );
     }
-    return NextResponse.json(
-      { error: "Failed to update department" },
-      { status: 500 }
-    );
-  }
-}
+  },
+  { resource: "organization.department", action: "view" }
+);
 
-// DELETE department
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    await prisma.department.delete({
-      where: { id },
-    });
+// PUT update department - with tenant validation
+export const PUT = withAuth(
+  async (req, context: RouteContext, session) => {
+    try {
+      const { id } = await context.params;
+      const body = await req.json();
+      const { name, description, headId } = body;
 
-    return NextResponse.json({ message: "Department deleted successfully" });
-  } catch (error: unknown) {
-    console.error("Error deleting department:", error);
-    if ((error as { code?: string }).code === "P2025") {
+      // First, verify the department belongs to the user's customer account
+      const existing = await prisma.department.findUnique({
+        where: { id },
+        select: { customerAccountId: true },
+      });
+
+      if (!existing) {
+        return NextResponse.json(
+          { error: "Department not found" },
+          { status: 404 }
+        );
+      }
+
+      if (!validateTenantAccess(session, existing.customerAccountId)) {
+        return forbidden("Access denied to this department");
+      }
+
+      const department = await prisma.department.update({
+        where: { id },
+        data: {
+          name,
+          description: description || null,
+          headId: headId || null,
+        },
+      });
+
+      return NextResponse.json(department);
+    } catch (error: unknown) {
+      console.error("Error updating department:", error);
+      if ((error as { code?: string }).code === "P2025") {
+        return NextResponse.json(
+          { error: "Department not found" },
+          { status: 404 }
+        );
+      }
       return NextResponse.json(
-        { error: "Department not found" },
-        { status: 404 }
+        { error: "Failed to update department" },
+        { status: 500 }
       );
     }
-    return NextResponse.json(
-      { error: "Failed to delete department" },
-      { status: 500 }
-    );
-  }
-}
+  },
+  { resource: "organization.department", action: "edit" }
+);
+
+// DELETE department - with tenant validation
+export const DELETE = withAuth(
+  async (req, context: RouteContext, session) => {
+    try {
+      const { id } = await context.params;
+
+      // First, verify the department belongs to the user's customer account
+      const existing = await prisma.department.findUnique({
+        where: { id },
+        select: { customerAccountId: true },
+      });
+
+      if (!existing) {
+        return NextResponse.json(
+          { error: "Department not found" },
+          { status: 404 }
+        );
+      }
+
+      if (!validateTenantAccess(session, existing.customerAccountId)) {
+        return forbidden("Access denied to this department");
+      }
+
+      await prisma.department.delete({
+        where: { id },
+      });
+
+      return NextResponse.json({ message: "Department deleted successfully" });
+    } catch (error: unknown) {
+      console.error("Error deleting department:", error);
+      if ((error as { code?: string }).code === "P2025") {
+        return NextResponse.json(
+          { error: "Department not found" },
+          { status: 404 }
+        );
+      }
+      return NextResponse.json(
+        { error: "Failed to delete department" },
+        { status: 500 }
+      );
+    }
+  },
+  { resource: "organization.department", action: "delete" }
+);

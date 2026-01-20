@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { withAuth, getCustomerAccountId } from "@/lib/api-auth";
 
 // Helper function to calculate risk rating based on score
 function calculateRiskRating(score: number): string {
@@ -114,10 +115,12 @@ export async function GET() {
 }
 
 // POST import risks from data
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const { data, actor = "System" } = body;
+export const POST = withAuth(
+  async (request: NextRequest, context, session) => {
+    try {
+      const customerAccountId = getCustomerAccountId(session);
+      const body = await request.json();
+      const { data, actor = "System" } = body;
 
     if (!Array.isArray(data) || data.length === 0) {
       return NextResponse.json(
@@ -189,6 +192,7 @@ export async function POST(request: NextRequest) {
         // Create the risk
         const risk = await prisma.risk.create({
           data: {
+            customerAccountId,
             riskId,
             name,
             description,
@@ -236,4 +240,6 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+  },
+  { resource: "risk.register", action: "create" }
+);

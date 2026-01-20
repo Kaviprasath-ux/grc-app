@@ -33,6 +33,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 name: true,
               },
             },
+            customerAccount: {
+              select: {
+                id: true,
+                code: true,
+                name: true,
+              },
+            },
             userRoles: {
               include: {
                 role: {
@@ -74,6 +81,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           department: user.department?.name || '', // Legacy field
           departmentId: user.departmentId,
           departmentName: user.department?.name || null,
+          // Multi-tenant: Include customer account information
+          customerAccountId: user.customerAccountId,
+          customerAccountCode: user.customerAccount?.code || null,
+          customerAccountName: user.customerAccount?.name || null,
           roles: effectiveRoles,
           permissions: [], // Placeholder - expanded in session callback
         };
@@ -91,6 +102,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.department = user.department;
         token.departmentId = user.departmentId;
         token.departmentName = user.departmentName;
+        // Multi-tenant: Store customer account info in JWT
+        token.customerAccountId = user.customerAccountId;
+        token.customerAccountCode = user.customerAccountCode;
+        token.customerAccountName = user.customerAccountName;
         token.roles = user.roles;
         // Don't store permissions in JWT - they'll be expanded in session callback
       }
@@ -103,6 +118,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.department = token.department as string;
         session.user.departmentId = token.departmentId as string | null;
         session.user.departmentName = token.departmentName as string | null;
+        // Multi-tenant: Include customer account in session
+        session.user.customerAccountId = token.customerAccountId as string | null;
+        session.user.customerAccountCode = token.customerAccountCode as string | null;
+        session.user.customerAccountName = token.customerAccountName as string | null;
         session.user.roles = (token.roles as string[]) || [];
 
         // Expand permissions from roles here (session callback runs server-side)

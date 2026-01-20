@@ -1,69 +1,74 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { withAuth, getTenantFilter, validateTenantAccess, forbidden } from "@/lib/api-auth";
 
-// GET single evidence with all related data
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const evidence = await prisma.evidence.findUnique({
-      where: { id },
-      include: {
-        framework: true,
-        control: {
-          include: {
-            domain: true,
+interface RouteContext {
+  params: Promise<{ id: string }>;
+}
+
+// GET single evidence with all related data - filtered by customer account
+export const GET = withAuth(
+  async (req, context: RouteContext, session) => {
+    try {
+      const { id } = await context.params;
+      const tenantFilter = getTenantFilter(session);
+
+      const evidence = await prisma.evidence.findFirst({
+        where: { id, ...tenantFilter },
+        include: {
+          framework: true,
+          control: {
+            include: {
+              domain: true,
+            },
           },
-        },
-        department: true,
-        assignee: true,
-        attachments: true,
-        kpis: true,
-        evidenceControls: {
-          include: {
-            control: {
-              include: {
-                domain: true,
-                framework: true,
+          department: true,
+          assignee: true,
+          attachments: true,
+          kpis: true,
+          evidenceControls: {
+            include: {
+              control: {
+                include: {
+                  domain: true,
+                  framework: true,
+                },
               },
             },
           },
-        },
-        linkedArtifacts: {
-          include: {
-            artifact: true,
+          linkedArtifacts: {
+            include: {
+              artifact: true,
+            },
           },
         },
-      },
-    });
+      });
 
-    if (!evidence) {
+      if (!evidence) {
+        return NextResponse.json(
+          { error: "Evidence not found" },
+          { status: 404 }
+        );
+      }
+
+      return NextResponse.json(evidence);
+    } catch (error) {
+      console.error("Error fetching evidence:", error);
       return NextResponse.json(
-        { error: "Evidence not found" },
-        { status: 404 }
+        { error: "Failed to fetch evidence" },
+        { status: 500 }
       );
     }
+  },
+  { resource: "compliance.evidence", action: "view" }
+);
 
-    return NextResponse.json(evidence);
-  } catch (error) {
-    console.error("Error fetching evidence:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch evidence" },
-      { status: 500 }
-    );
-  }
-}
-
-// PUT update evidence
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const body = await request.json();
+// PUT update evidence - with tenant validation
+export const PUT = withAuth(
+  async (req, context: RouteContext, session) => {
+    try {
+      const { id } = await context.params;
+      const body = await req.json();
     const {
       name,
       description,
@@ -84,6 +89,23 @@ export async function PUT(
       kpiDescription,
       kpiCalculationFormula,
     } = body;
+
+    // First, verify the evidence belongs to the user's customer account
+    const existing = await prisma.evidence.findUnique({
+      where: { id },
+      select: { customerAccountId: true },
+    });
+
+    if (!existing) {
+      return NextResponse.json(
+        { error: "Evidence not found" },
+        { status: 404 }
+      );
+    }
+
+    if (!validateTenantAccess(session, existing.customerAccountId)) {
+      return forbidden("Access denied to this evidence");
+    }
 
     // Build update data, only including defined fields
     const updateData: Record<string, unknown> = {};
@@ -138,45 +160,65 @@ export async function PUT(
       },
     });
 
-    return NextResponse.json(evidence);
-  } catch (error: unknown) {
-    console.error("Error updating evidence:", error);
-    if ((error as { code?: string }).code === "P2025") {
+      return NextResponse.json(evidence);
+    } catch (error: unknown) {
+      console.error("Error updating evidence:", error);
+      if ((error as { code?: string }).code === "P2025") {
+        return NextResponse.json(
+          { error: "Evidence not found" },
+          { status: 404 }
+        );
+      }
       return NextResponse.json(
-        { error: "Evidence not found" },
-        { status: 404 }
+        { error: "Failed to update evidence" },
+        { status: 500 }
       );
     }
-    return NextResponse.json(
-      { error: "Failed to update evidence" },
-      { status: 500 }
-    );
-  }
-}
+  },
+  { resource: "compliance.evidence", action: "edit" }
+);
 
-// DELETE evidence
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    await prisma.evidence.delete({
-      where: { id },
-    });
+// DELETE evidence - with tenant validation
+export const DELETE = withAuth(
+  async (req, context: RouteContext, session) => {
+    try {
+      const { id } = await context.params;
 
-    return NextResponse.json({ message: "Evidence deleted successfully" });
-  } catch (error: unknown) {
-    console.error("Error deleting evidence:", error);
-    if ((error as { code?: string }).code === "P2025") {
+      // First, verify the evidence belongs to the user's customer account
+      const existing = await prisma.evidence.findUnique({
+        where: { id },
+        select: { customerAccountId: true },
+      });
+
+      if (!existing) {
+        return NextResponse.json(
+          { error: "Evidence not found" },
+          { status: 404 }
+        );
+      }
+
+      if (!validateTenantAccess(session, existing.customerAccountId)) {
+        return forbidden("Access denied to this evidence");
+      }
+
+      await prisma.evidence.delete({
+        where: { id },
+      });
+
+      return NextResponse.json({ message: "Evidence deleted successfully" });
+    } catch (error: unknown) {
+      console.error("Error deleting evidence:", error);
+      if ((error as { code?: string }).code === "P2025") {
+        return NextResponse.json(
+          { error: "Evidence not found" },
+          { status: 404 }
+        );
+      }
       return NextResponse.json(
-        { error: "Evidence not found" },
-        { status: 404 }
+        { error: "Failed to delete evidence" },
+        { status: 500 }
       );
     }
-    return NextResponse.json(
-      { error: "Failed to delete evidence" },
-      { status: 500 }
-    );
-  }
-}
+  },
+  { resource: "compliance.evidence", action: "delete" }
+);

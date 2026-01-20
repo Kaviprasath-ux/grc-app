@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { withAuth, getCustomerAccountId } from "@/lib/api-auth";
 
 // POST import controls from CSV
-export async function POST(request: NextRequest) {
+export const POST = withAuth(
+  async (request: NextRequest, context, session) => {
   try {
+    const customerAccountId = getCustomerAccountId(session);
     const formData = await request.formData();
     const file = formData.get("file") as File;
 
@@ -95,9 +98,10 @@ export async function POST(request: NextRequest) {
         // Generate control code if not provided
         const newControlCode = controlCode || `CTRL-${Date.now()}-${i}`;
 
-        // Create control
+        // Create control with tenant isolation
         await prisma.control.create({
           data: {
+            customerAccountId,
             controlCode: newControlCode,
             name,
             description: description || null,
@@ -134,7 +138,9 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+},
+{ resource: "compliance.controls", action: "create" }
+);
 
 // Helper function to parse CSV line handling quoted values
 function parseCSVLine(line: string): string[] {

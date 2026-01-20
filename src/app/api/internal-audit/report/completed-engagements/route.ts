@@ -1,19 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { withAuth } from '@/lib/api-auth';
+import { withAuth, getTenantFilter } from '@/lib/api-auth';
 
 // GET /api/internal-audit/report/completed-engagements - Get all completed engagements for reports
 export const GET = withAuth(
-  async (req: NextRequest) => {
+  async (req, context, session) => {
     try {
       const { searchParams } = new URL(req.url);
       const page = parseInt(searchParams.get('page') || '1');
       const limit = parseInt(searchParams.get('limit') || '20');
       const skip = (page - 1) * limit;
+      const tenantFilter = getTenantFilter(session);
 
       // Get total count of completed engagements (case-insensitive check)
       const total = await prisma.auditEngagement.count({
         where: {
+          ...tenantFilter,
           OR: [
             { status: 'Completed' },
             { status: 'completed' },
@@ -25,6 +27,7 @@ export const GET = withAuth(
       // Get completed engagements with relations
       const engagements = await prisma.auditEngagement.findMany({
         where: {
+          ...tenantFilter,
           OR: [
             { status: 'Completed' },
             { status: 'completed' },

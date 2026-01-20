@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { withAuth } from '@/lib/api-auth';
+import { withAuth, getCustomerAccountId, getTenantFilter } from '@/lib/api-auth';
 
 // Helper function to generate report code (format: RPT-NNN - unique serial)
 async function generateReportCode(): Promise<string> {
@@ -31,10 +31,12 @@ async function generateReportCode(): Promise<string> {
 
 // POST /api/internal-audit/report/generate - Generate a new audit report
 export const POST = withAuth(
-  async (req: NextRequest) => {
+  async (req, context, session) => {
     try {
       const body = await req.json();
       const { engagementId, overallResult } = body;
+      const tenantFilter = getTenantFilter(session);
+      const customerAccountId = getCustomerAccountId(session);
 
       if (!engagementId) {
         return NextResponse.json(
@@ -52,7 +54,7 @@ export const POST = withAuth(
 
       // Check if engagement exists and is completed
       const engagement = await prisma.auditEngagement.findUnique({
-        where: { id: engagementId },
+        where: { id: engagementId, ...tenantFilter },
         include: {
           department: true,
           assignedAuditor: true,
@@ -145,6 +147,7 @@ This audit was part of the Annual Internal Audit Plan for FY. Designed to provid
           overallResult,
           status: 'Draft',
           draftGeneratedAt: new Date(),
+          customerAccountId,
         },
       });
 

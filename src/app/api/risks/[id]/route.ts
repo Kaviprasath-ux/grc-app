@@ -1,5 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { withAuth, getTenantFilter, validateTenantAccess, forbidden } from "@/lib/api-auth";
+
+interface RouteContext {
+  params: Promise<{ id: string }>;
+}
 
 // Helper function to calculate risk rating based on score
 // Rating values matching website: Catastrophic, Very high, High, Low Risk
@@ -10,68 +15,67 @@ function calculateRiskRating(score: number): string {
   return "Low Risk";
 }
 
-// GET a single risk by ID
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
+// GET a single risk by ID - filtered by customer account
+export const GET = withAuth(
+  async (req, context: RouteContext, session) => {
+    try {
+      const { id } = await context.params;
+      const tenantFilter = getTenantFilter(session);
 
-    const risk = await prisma.risk.findUnique({
-      where: { id },
-      include: {
-        category: true,
-        type: true,
-        department: true,
-        owner: {
-          select: {
-            id: true,
-            fullName: true,
-            email: true,
+      const risk = await prisma.risk.findFirst({
+        where: { id, ...tenantFilter },
+        include: {
+          category: true,
+          type: true,
+          department: true,
+          owner: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+            },
+          },
+          threats: {
+            include: { threat: true },
+          },
+          vulnerabilities: {
+            include: { vulnerability: true },
+          },
+          causes: {
+            include: { cause: true },
+          },
+          assessments: {
+            orderBy: { assessmentDate: "desc" },
+            take: 10,
+          },
+          responses: {
+            orderBy: { createdAt: "desc" },
           },
         },
-        threats: {
-          include: { threat: true },
-        },
-        vulnerabilities: {
-          include: { vulnerability: true },
-        },
-        causes: {
-          include: { cause: true },
-        },
-        assessments: {
-          orderBy: { assessmentDate: "desc" },
-          take: 10,
-        },
-        responses: {
-          orderBy: { createdAt: "desc" },
-        },
-      },
-    });
+      });
 
-    if (!risk) {
-      return NextResponse.json({ error: "Risk not found" }, { status: 404 });
+      if (!risk) {
+        return NextResponse.json({ error: "Risk not found" }, { status: 404 });
+      }
+
+      return NextResponse.json(risk);
+    } catch (error) {
+      console.error("Error fetching risk:", error);
+      return NextResponse.json(
+        { error: "Failed to fetch risk" },
+        { status: 500 }
+      );
     }
+  },
+  { resource: "risk.register", action: "view" }
+);
 
-    return NextResponse.json(risk);
-  } catch (error) {
-    console.error("Error fetching risk:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch risk" },
-      { status: 500 }
-    );
-  }
-}
-
-// PUT update a risk
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const body = await request.json();
+// PUT update a risk - with tenant validation
+export const PUT = withAuth(
+  async (req, context: RouteContext, session) => {
+    try {
+      const { id } = await context.params;
+      const body = await req.json();
     const {
       name,
       description,
@@ -101,14 +105,21 @@ export async function PUT(
       lastAssessmentDate,
     } = body;
 
-    // Check if risk exists
-    const existingRisk = await prisma.risk.findUnique({ where: { id } });
-    if (!existingRisk) {
-      return NextResponse.json({ error: "Risk not found" }, { status: 404 });
-    }
+      // Check if risk exists and verify tenant access
+      const existingRisk = await prisma.risk.findUnique({
+        where: { id },
+        select: { customerAccountId: true, likelihood: true, impact: true },
+      });
+      if (!existingRisk) {
+        return NextResponse.json({ error: "Risk not found" }, { status: 404 });
+      }
 
-    // Calculate scores
-    const newLikelihood = likelihood ?? existingRisk.likelihood;
+      if (!validateTenantAccess(session, existingRisk.customerAccountId)) {
+        return forbidden("Access denied to this risk");
+      }
+
+      // Calculate scores
+      const newLikelihood = likelihood ?? existingRisk.likelihood;
     const newImpact = impact ?? existingRisk.impact;
     const riskScore = newLikelihood * newImpact;
     const calculatedRiskRating = calculateRiskRating(riskScore);
@@ -252,104 +263,121 @@ export async function PUT(
       });
     });
 
-    return NextResponse.json(risk);
-  } catch (error) {
-    console.error("Error updating risk:", error);
-    return NextResponse.json(
-      { error: "Failed to update risk" },
-      { status: 500 }
-    );
-  }
-}
+      return NextResponse.json(risk);
+    } catch (error) {
+      console.error("Error updating risk:", error);
+      return NextResponse.json(
+        { error: "Failed to update risk" },
+        { status: 500 }
+      );
+    }
+  },
+  { resource: "risk.register", action: "edit" }
+);
 
-// PATCH update a risk (partial update)
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const body = await request.json();
+// PATCH update a risk (partial update) - with tenant validation
+export const PATCH = withAuth(
+  async (req, context: RouteContext, session) => {
+    try {
+      const { id } = await context.params;
+      const body = await req.json();
 
-    // Check if risk exists
-    const existingRisk = await prisma.risk.findUnique({ where: { id } });
-    if (!existingRisk) {
-      return NextResponse.json({ error: "Risk not found" }, { status: 404 });
-    }
+      // Check if risk exists and verify tenant access
+      const existingRisk = await prisma.risk.findUnique({
+        where: { id },
+        select: { customerAccountId: true },
+      });
+      if (!existingRisk) {
+        return NextResponse.json({ error: "Risk not found" }, { status: 404 });
+      }
 
-    // Build update data from provided fields only
-    const updateData: Record<string, unknown> = {};
+      if (!validateTenantAccess(session, existingRisk.customerAccountId)) {
+        return forbidden("Access denied to this risk");
+      }
 
-    if (body.status !== undefined) {
-      updateData.status = body.status;
-      // Also update assessmentStatus to keep them in sync
-      updateData.assessmentStatus = body.status;
-    }
-    if (body.assessmentStatus !== undefined) {
-      updateData.assessmentStatus = body.assessmentStatus;
-    }
-    if (body.responseStrategy !== undefined) {
-      updateData.responseStrategy = body.responseStrategy;
-    }
-    if (body.treatmentPlan !== undefined) {
-      updateData.treatmentPlan = body.treatmentPlan;
-    }
-    if (body.treatmentStatus !== undefined) {
-      updateData.treatmentStatus = body.treatmentStatus;
-    }
-    if (body.treatmentDueDate !== undefined) {
-      updateData.treatmentDueDate = body.treatmentDueDate ? new Date(body.treatmentDueDate) : null;
-    }
+      // Build update data from provided fields only
+      const updateData: Record<string, unknown> = {};
 
-    // Update risk
-    const risk = await prisma.risk.update({
-      where: { id },
-      data: updateData,
-      include: {
-        category: true,
-        type: true,
-        department: true,
-        owner: {
-          select: {
-            id: true,
-            fullName: true,
-            email: true,
+      if (body.status !== undefined) {
+        updateData.status = body.status;
+        // Also update assessmentStatus to keep them in sync
+        updateData.assessmentStatus = body.status;
+      }
+      if (body.assessmentStatus !== undefined) {
+        updateData.assessmentStatus = body.assessmentStatus;
+      }
+      if (body.responseStrategy !== undefined) {
+        updateData.responseStrategy = body.responseStrategy;
+      }
+      if (body.treatmentPlan !== undefined) {
+        updateData.treatmentPlan = body.treatmentPlan;
+      }
+      if (body.treatmentStatus !== undefined) {
+        updateData.treatmentStatus = body.treatmentStatus;
+      }
+      if (body.treatmentDueDate !== undefined) {
+        updateData.treatmentDueDate = body.treatmentDueDate ? new Date(body.treatmentDueDate) : null;
+      }
+
+      // Update risk
+      const risk = await prisma.risk.update({
+        where: { id },
+        data: updateData,
+        include: {
+          category: true,
+          type: true,
+          department: true,
+          owner: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+            },
           },
         },
-      },
-    });
+      });
 
-    return NextResponse.json(risk);
-  } catch (error) {
-    console.error("Error updating risk:", error);
-    return NextResponse.json(
-      { error: "Failed to update risk" },
-      { status: 500 }
-    );
-  }
-}
-
-// DELETE a risk
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-
-    const existingRisk = await prisma.risk.findUnique({ where: { id } });
-    if (!existingRisk) {
-      return NextResponse.json({ error: "Risk not found" }, { status: 404 });
+      return NextResponse.json(risk);
+    } catch (error) {
+      console.error("Error updating risk:", error);
+      return NextResponse.json(
+        { error: "Failed to update risk" },
+        { status: 500 }
+      );
     }
+  },
+  { resource: "risk.register", action: "edit" }
+);
 
-    await prisma.risk.delete({ where: { id } });
+// DELETE a risk - with tenant validation
+export const DELETE = withAuth(
+  async (req, context: RouteContext, session) => {
+    try {
+      const { id } = await context.params;
 
-    return NextResponse.json({ message: "Risk deleted successfully" });
-  } catch (error) {
-    console.error("Error deleting risk:", error);
-    return NextResponse.json(
-      { error: "Failed to delete risk" },
-      { status: 500 }
-    );
-  }
-}
+      // Check if risk exists and verify tenant access
+      const existingRisk = await prisma.risk.findUnique({
+        where: { id },
+        select: { customerAccountId: true },
+      });
+      if (!existingRisk) {
+        return NextResponse.json({ error: "Risk not found" }, { status: 404 });
+      }
+
+      if (!validateTenantAccess(session, existingRisk.customerAccountId)) {
+        return forbidden("Access denied to this risk");
+      }
+
+      await prisma.risk.delete({ where: { id } });
+
+      return NextResponse.json({ message: "Risk deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting risk:", error);
+      return NextResponse.json(
+        { error: "Failed to delete risk" },
+        { status: 500 }
+      );
+    }
+  },
+  { resource: "risk.register", action: "delete" }
+);

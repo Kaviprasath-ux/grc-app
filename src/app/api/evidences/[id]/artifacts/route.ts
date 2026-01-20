@@ -1,61 +1,86 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { withAuth, validateTenantAccess, forbidden } from "@/lib/api-auth";
 
-// GET all artifacts linked to evidence
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
+interface RouteContext {
+  params: Promise<{ id: string }>;
+}
 
-    const evidenceArtifacts = await prisma.evidenceArtifact.findMany({
-      where: { evidenceId: id },
-      include: {
-        artifact: {
-          include: {
-            uploader: {
-              select: {
-                id: true,
-                fullName: true,
+// GET all artifacts linked to evidence - with tenant validation
+export const GET = withAuth(
+  async (req, context: RouteContext, session) => {
+    try {
+      const { id } = await context.params;
+
+      // Check if evidence belongs to user's tenant
+      const evidence = await prisma.evidence.findUnique({
+        where: { id },
+        select: { customerAccountId: true },
+      });
+
+      if (!evidence) {
+        return NextResponse.json(
+          { error: "Evidence not found" },
+          { status: 404 }
+        );
+      }
+
+      if (!validateTenantAccess(session, evidence.customerAccountId)) {
+        return forbidden("Access denied to this evidence");
+      }
+
+      const evidenceArtifacts = await prisma.evidenceArtifact.findMany({
+        where: { evidenceId: id },
+        include: {
+          artifact: {
+            include: {
+              uploader: {
+                select: {
+                  id: true,
+                  fullName: true,
+                },
               },
             },
           },
         },
-      },
-    });
+      });
 
-    return NextResponse.json(evidenceArtifacts);
-  } catch (error) {
-    console.error("Error fetching evidence artifacts:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch evidence artifacts" },
-      { status: 500 }
-    );
-  }
-}
-
-// POST link artifact to evidence
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const body = await request.json();
-    const { artifactId, artifactIds } = body;
-
-    // Check if evidence exists
-    const evidence = await prisma.evidence.findUnique({
-      where: { id },
-    });
-
-    if (!evidence) {
+      return NextResponse.json(evidenceArtifacts);
+    } catch (error) {
+      console.error("Error fetching evidence artifacts:", error);
       return NextResponse.json(
-        { error: "Evidence not found" },
-        { status: 404 }
+        { error: "Failed to fetch evidence artifacts" },
+        { status: 500 }
       );
     }
+  },
+  { resource: "compliance.evidence", action: "view" }
+);
+
+// POST link artifact to evidence - with tenant validation
+export const POST = withAuth(
+  async (req, context: RouteContext, session) => {
+    try {
+      const { id } = await context.params;
+      const body = await req.json();
+      const { artifactId, artifactIds } = body;
+
+      // Check if evidence exists and verify tenant access
+      const evidence = await prisma.evidence.findUnique({
+        where: { id },
+        select: { id: true, customerAccountId: true },
+      });
+
+      if (!evidence) {
+        return NextResponse.json(
+          { error: "Evidence not found" },
+          { status: 404 }
+        );
+      }
+
+      if (!validateTenantAccess(session, evidence.customerAccountId)) {
+        return forbidden("Access denied to this evidence");
+      }
 
     // Handle multiple artifact IDs
     const idsToLink = artifactIds || (artifactId ? [artifactId] : []);
@@ -109,66 +134,85 @@ export async function POST(
       results.push(evidenceArtifact);
     }
 
-    return NextResponse.json(results, { status: 201 });
-  } catch (error) {
-    console.error("Error linking artifact to evidence:", error);
-    return NextResponse.json(
-      { error: "Failed to link artifact" },
-      { status: 500 }
-    );
-  }
-}
-
-// DELETE unlink artifact from evidence
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-
-    let artifactId: string | null = null;
-    try {
-      const body = await request.json();
-      artifactId = body.artifactId;
-    } catch {
-      // No body provided, that's ok
+      return NextResponse.json(results, { status: 201 });
+    } catch (error) {
+      console.error("Error linking artifact to evidence:", error);
+      return NextResponse.json(
+        { error: "Failed to link artifact" },
+        { status: 500 }
+      );
     }
+  },
+  { resource: "compliance.evidence", action: "edit" }
+);
 
-    if (artifactId) {
-      // Delete specific link
-      const link = await prisma.evidenceArtifact.findFirst({
-        where: {
-          evidenceId: id,
-          artifactId,
-        },
+// DELETE unlink artifact from evidence - with tenant validation
+export const DELETE = withAuth(
+  async (req, context: RouteContext, session) => {
+    try {
+      const { id } = await context.params;
+
+      // Check if evidence exists and verify tenant access
+      const evidence = await prisma.evidence.findUnique({
+        where: { id },
+        select: { customerAccountId: true },
       });
 
-      if (!link) {
+      if (!evidence) {
         return NextResponse.json(
-          { error: "Artifact is not linked to this evidence" },
+          { error: "Evidence not found" },
           { status: 404 }
         );
       }
 
-      await prisma.evidenceArtifact.delete({
-        where: { id: link.id },
+      if (!validateTenantAccess(session, evidence.customerAccountId)) {
+        return forbidden("Access denied to this evidence");
+      }
+
+      let artifactId: string | null = null;
+      try {
+        const body = await req.json();
+        artifactId = body.artifactId;
+      } catch {
+        // No body provided, that's ok
+      }
+
+      if (artifactId) {
+        // Delete specific link
+        const link = await prisma.evidenceArtifact.findFirst({
+          where: {
+            evidenceId: id,
+            artifactId,
+          },
+        });
+
+        if (!link) {
+          return NextResponse.json(
+            { error: "Artifact is not linked to this evidence" },
+            { status: 404 }
+          );
+        }
+
+        await prisma.evidenceArtifact.delete({
+          where: { id: link.id },
+        });
+
+        return NextResponse.json({ message: "Artifact unlinked successfully" });
+      }
+
+      // Delete all links for this evidence
+      await prisma.evidenceArtifact.deleteMany({
+        where: { evidenceId: id },
       });
 
-      return NextResponse.json({ message: "Artifact unlinked successfully" });
+      return NextResponse.json({ message: "All artifacts unlinked successfully" });
+    } catch (error) {
+      console.error("Error unlinking artifact from evidence:", error);
+      return NextResponse.json(
+        { error: "Failed to unlink artifact" },
+        { status: 500 }
+      );
     }
-
-    // Delete all links for this evidence
-    await prisma.evidenceArtifact.deleteMany({
-      where: { evidenceId: id },
-    });
-
-    return NextResponse.json({ message: "All artifacts unlinked successfully" });
-  } catch (error) {
-    console.error("Error unlinking artifact from evidence:", error);
-    return NextResponse.json(
-      { error: "Failed to unlink artifact" },
-      { status: 500 }
-    );
-  }
-}
+  },
+  { resource: "compliance.evidence", action: "edit" }
+);
