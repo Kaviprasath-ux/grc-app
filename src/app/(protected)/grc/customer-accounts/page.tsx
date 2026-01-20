@@ -188,6 +188,8 @@ export default function CustomerAccountsPage() {
   const [nextCustomerCode, setNextCustomerCode] = useState("GRC_001");
   const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlan[]>([]);
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
+  const [pendingSubscriptionPlans, setPendingSubscriptionPlans] = useState<SubscriptionPlan[]>([]);
+  const [isOnboardingMode, setIsOnboardingMode] = useState(false);
 
   const [formData, setFormData] = useState({
     customerName: "",
@@ -263,6 +265,8 @@ export default function CustomerAccountsPage() {
       timeZone: "Asia/Qatar",
       logoFile: null,
     });
+    setPendingSubscriptionPlans([]);
+    setIsOnboardingMode(false);
   };
 
   const resetChangePasswordData = () => {
@@ -323,6 +327,13 @@ export default function CustomerAccountsPage() {
           language: formData.language,
           timeZone: formData.timeZone,
           role: "CustomerAdministrator",
+          subscriptionPlans: pendingSubscriptionPlans.map(plan => ({
+            startDate: plan.startDate,
+            expiryDate: plan.expiryDate,
+            maxFrameworks: plan.maxFrameworksAllowed || 0,
+            maxAccounts: plan.maxAccountsAllowed || 0,
+            status: plan.status,
+          })),
         }),
       });
 
@@ -526,6 +537,32 @@ export default function CustomerAccountsPage() {
       return;
     }
 
+    // If in onboarding mode, add to pending plans (will be saved with customer)
+    if (isOnboardingMode) {
+      const newPlan: SubscriptionPlan = {
+        id: `pending-${Date.now()}`, // Temporary ID for display
+        frameworksAvailable: newSubscriptionData.maxFrameworks,
+        accountsAvailable: newSubscriptionData.maxAccounts,
+        maxFrameworksAllowed: newSubscriptionData.maxFrameworks,
+        maxAccountsAllowed: newSubscriptionData.maxAccounts,
+        frameworksUsed: 0,
+        accountsUsed: 0,
+        startDate: newSubscriptionData.startDate,
+        expiryDate: newSubscriptionData.expiryDate,
+        status: newSubscriptionData.status,
+      };
+      setPendingSubscriptionPlans([...pendingSubscriptionPlans, newPlan]);
+      setSubscriptionPlans([...subscriptionPlans, newPlan]);
+      toast({
+        title: "Success",
+        description: "Subscription plan added successfully",
+      });
+      setShowNewSubscriptionDialog(false);
+      resetNewSubscriptionData();
+      return;
+    }
+
+    // Existing customer - save to API
     const customerId = selectedCustomer?.id;
     if (!customerId) {
       toast({
@@ -607,6 +644,17 @@ export default function CustomerAccountsPage() {
   };
 
   const handleDeleteSubscription = async (planId: string) => {
+    // If in onboarding mode, remove from pending plans
+    if (isOnboardingMode) {
+      setPendingSubscriptionPlans(pendingSubscriptionPlans.filter(p => p.id !== planId));
+      setSubscriptionPlans(subscriptionPlans.filter(p => p.id !== planId));
+      toast({
+        title: "Success",
+        description: "Subscription plan removed",
+      });
+      return;
+    }
+
     const customerId = selectedCustomer?.id;
     if (!customerId) return;
 
@@ -745,10 +793,20 @@ export default function CustomerAccountsPage() {
     setShowChangePasswordDialog(true);
   };
 
-  const openSubscriptionPlanDialog = async (customer?: CustomerAccount) => {
+  const openSubscriptionPlanDialog = async (customer?: CustomerAccount, onboardingMode: boolean = false) => {
+    setIsOnboardingMode(onboardingMode);
+
     if (customer) {
       setSelectedCustomer(customer);
     }
+
+    // If onboarding mode, show pending plans instead of fetching from API
+    if (onboardingMode) {
+      setSubscriptionPlans(pendingSubscriptionPlans);
+      setShowSubscriptionPlanDialog(true);
+      return;
+    }
+
     const customerId = customer?.id || selectedCustomer?.id;
     if (customerId) {
       // Fetch subscription plans from API
@@ -1057,9 +1115,9 @@ export default function CustomerAccountsPage() {
             <Button
               variant="outline"
               className="bg-blue-600 text-white hover:bg-blue-700"
-              onClick={() => openSubscriptionPlanDialog()}
+              onClick={() => openSubscriptionPlanDialog(undefined, true)}
             >
-              Subscription Plan
+              Subscription Plan {pendingSubscriptionPlans.length > 0 && `(${pendingSubscriptionPlans.length})`}
             </Button>
           </DialogFooter>
         </DialogContent>
