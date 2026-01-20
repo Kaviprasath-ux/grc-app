@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 
 // GET all asset sensitivities
 export async function GET() {
   try {
+    const session = await auth();
+    const userRoles = session?.user?.roles || [];
+    const isGRCAdmin = userRoles.includes("GRCAdministrator");
+    const customerAccountId = session?.user?.customerAccountId;
+    const tenantFilter = !isGRCAdmin && customerAccountId ? { customerAccountId } : {};
+
     const sensitivities = await prisma.assetSensitivity.findMany({
+      where: tenantFilter,
       include: {
         _count: {
           select: { assets: true },
@@ -25,6 +33,9 @@ export async function GET() {
 // POST create new asset sensitivity
 export async function POST(request: NextRequest) {
   try {
+    const session = await auth();
+    const customerAccountId = session?.user?.customerAccountId;
+
     const body = await request.json();
     const { name, description } = body;
 
@@ -35,10 +46,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check for duplicate within the same tenant
+    const existing = await prisma.assetSensitivity.findFirst({
+      where: {
+        name: name.trim(),
+        ...(customerAccountId ? { customerAccountId } : {}),
+      },
+    });
+
+    if (existing) {
+      return NextResponse.json(
+        { error: "Sensitivity with this name already exists" },
+        { status: 400 }
+      );
+    }
+
     const sensitivity = await prisma.assetSensitivity.create({
       data: {
         name: name.trim(),
         description: description?.trim() || null,
+        ...(customerAccountId ? { customerAccountId } : {}),
       },
       include: {
         _count: {

@@ -1,11 +1,25 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 
 // GET risk statistics for dashboard
 export async function GET() {
   try {
-    // Get all risks with related data
+    const session = await auth();
+
+    // Multi-tenant: Build filter based on customerAccountId
+    const userRoles = session?.user?.roles || [];
+    const isGRCAdmin = userRoles.includes("GRCAdministrator");
+    const customerAccountId = session?.user?.customerAccountId;
+
+    // Build tenant filter (GRCAdmin sees all, others see only their tenant)
+    const tenantFilter = !isGRCAdmin && customerAccountId
+      ? { customerAccountId }
+      : {};
+
+    // Get all risks with related data (filtered by tenant)
     const risks = await prisma.risk.findMany({
+      where: tenantFilter,
       include: {
         category: true,
       },

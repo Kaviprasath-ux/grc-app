@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 
 // GET all audit categories
 export async function GET() {
   try {
+    const session = await auth();
+    const userRoles = session?.user?.roles || [];
+    const isGRCAdmin = userRoles.includes("GRCAdministrator");
+    const customerAccountId = session?.user?.customerAccountId;
+    const tenantFilter = !isGRCAdmin && customerAccountId ? { customerAccountId } : {};
+
     const categories = await prisma.auditCategory.findMany({
+      where: tenantFilter,
       include: {
         _count: {
           select: { internalAuditRisks: true },
@@ -26,6 +34,9 @@ export async function GET() {
 // POST create a new audit category
 export async function POST(request: NextRequest) {
   try {
+    const session = await auth();
+    const customerAccountId = session?.user?.customerAccountId;
+
     const body = await request.json();
     const { name } = body;
 
@@ -36,9 +47,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check for duplicate
-    const existing = await prisma.auditCategory.findUnique({
-      where: { name },
+    // Check for duplicate within the same tenant
+    const existing = await prisma.auditCategory.findFirst({
+      where: {
+        name,
+        ...(customerAccountId ? { customerAccountId } : {}),
+      },
     });
 
     if (existing) {
@@ -49,7 +63,10 @@ export async function POST(request: NextRequest) {
     }
 
     const category = await prisma.auditCategory.create({
-      data: { name },
+      data: {
+        name,
+        ...(customerAccountId ? { customerAccountId } : {}),
+      },
     });
 
     return NextResponse.json(category, { status: 201 });

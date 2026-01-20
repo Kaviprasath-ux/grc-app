@@ -688,13 +688,52 @@ export default function CustomerAccountsPage() {
   };
 
   const handleEditSubscription = async () => {
-    const customerId = selectedCustomer?.id;
-    if (!customerId || !editSubscriptionData.id) return;
+    if (!editSubscriptionData.id) return;
 
     if (!editSubscriptionData.startDate || !editSubscriptionData.expiryDate) {
       toast({
         title: "Validation Error",
         description: "Start date and expiry date are required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // If in onboarding mode, update pending plans (will be saved with customer)
+    if (isOnboardingMode) {
+      const updatedPlan: SubscriptionPlan = {
+        id: editSubscriptionData.id,
+        frameworksAvailable: editSubscriptionData.maxFrameworks,
+        accountsAvailable: editSubscriptionData.maxAccounts,
+        maxFrameworksAllowed: editSubscriptionData.maxFrameworks,
+        maxAccountsAllowed: editSubscriptionData.maxAccounts,
+        frameworksUsed: 0,
+        accountsUsed: 0,
+        startDate: editSubscriptionData.startDate,
+        expiryDate: editSubscriptionData.expiryDate,
+        status: editSubscriptionData.status,
+      };
+      setPendingSubscriptionPlans(pendingSubscriptionPlans.map(p =>
+        p.id === editSubscriptionData.id ? updatedPlan : p
+      ));
+      setSubscriptionPlans(subscriptionPlans.map(p =>
+        p.id === editSubscriptionData.id ? updatedPlan : p
+      ));
+      toast({
+        title: "Success",
+        description: "Subscription plan updated successfully",
+      });
+      setShowEditSubscriptionDialog(false);
+      setSelectedPlan(null);
+      return;
+    }
+
+    // Existing customer - save to API
+    const customerId = selectedCustomer?.id;
+    if (!customerId) {
+      toast({
+        title: "Error",
+        description: "No customer selected",
         variant: "destructive",
       });
       return;

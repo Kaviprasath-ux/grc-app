@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 
 // GET all nature of controls
 export async function GET() {
   try {
+    const session = await auth();
+    const userRoles = session?.user?.roles || [];
+    const isGRCAdmin = userRoles.includes("GRCAdministrator");
+    const customerAccountId = session?.user?.customerAccountId;
+    const tenantFilter = !isGRCAdmin && customerAccountId ? { customerAccountId } : {};
+
     const controls = await prisma.auditNatureOfControl.findMany({
+      where: tenantFilter,
       orderBy: { label: "asc" },
     });
 
@@ -21,6 +29,9 @@ export async function GET() {
 // POST create a new nature of control
 export async function POST(request: NextRequest) {
   try {
+    const session = await auth();
+    const customerAccountId = session?.user?.customerAccountId;
+
     const body = await request.json();
     const { label } = body;
 
@@ -31,9 +42,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check for duplicate
-    const existing = await prisma.auditNatureOfControl.findUnique({
-      where: { label },
+    // Check for duplicate within the same tenant
+    const existing = await prisma.auditNatureOfControl.findFirst({
+      where: {
+        label,
+        ...(customerAccountId ? { customerAccountId } : {}),
+      },
     });
 
     if (existing) {
@@ -44,7 +58,10 @@ export async function POST(request: NextRequest) {
     }
 
     const control = await prisma.auditNatureOfControl.create({
-      data: { label },
+      data: {
+        label,
+        ...(customerAccountId ? { customerAccountId } : {}),
+      },
     });
 
     return NextResponse.json(control, { status: 201 });

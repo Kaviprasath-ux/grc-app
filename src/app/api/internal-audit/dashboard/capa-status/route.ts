@@ -1,11 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 
 // GET CAPA status overview by department
 export async function GET(request: NextRequest) {
   try {
-    // Get all CAPAs with their findings and departments
+    const session = await auth();
+
+    // Multi-tenant: Build filter based on customerAccountId
+    const userRoles = session?.user?.roles || [];
+    const isGRCAdmin = userRoles.includes("GRCAdministrator");
+    const customerAccountId = session?.user?.customerAccountId;
+
+    // Build tenant filter (GRCAdmin sees all, others see only their tenant)
+    const tenantFilter = !isGRCAdmin && customerAccountId
+      ? { customerAccountId }
+      : {};
+
+    // Get all CAPAs with their findings and departments (with tenant filter)
     const capas = await prisma.internalAuditCAPA.findMany({
+      where: tenantFilter,
       include: {
         finding: {
           include: {

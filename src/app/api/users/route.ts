@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 
 // GET all users (with optional role filter)
 export async function GET(request: NextRequest) {
   try {
+    const session = await auth();
     const { searchParams } = new URL(request.url);
     const role = searchParams.get("role");
 
-    // Build where clause for role filtering
+    // Build where clause for role filtering and multi-tenant isolation
     const where: any = {};
     if (role) {
       where.userRoles = {
@@ -17,6 +19,12 @@ export async function GET(request: NextRequest) {
           },
         },
       };
+    }
+
+    // Multi-tenant: Filter users by customerAccountId if user is not GRCAdministrator
+    const userRoles = session?.user?.roles || [];
+    if (!userRoles.includes("GRCAdministrator") && session?.user?.customerAccountId) {
+      where.customerAccountId = session.user.customerAccountId;
     }
 
     const users = await prisma.user.findMany({
@@ -43,6 +51,7 @@ export async function GET(request: NextRequest) {
 // POST create new user
 export async function POST(request: NextRequest) {
   try {
+    const session = await auth();
     const body = await request.json();
     const {
       userId,
@@ -69,10 +78,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Find the role in the Role table (for UserRole junction)
-    const roleRecord = role ? await prisma.role.findFirst({
-      where: { name: role }
-    }) : null;
+    // Find or create the role in the Role table (for UserRole junction)
+    let roleRecord = null;
+    if (role) {
+      roleRecord = await prisma.role.findFirst({
+        where: { name: role }
+      });
+
+      // If role doesn't exist, create it (this handles cases where seeding wasn't run)
+      if (!roleRecord) {
+        roleRecord = await prisma.role.create({
+          data: {
+            name: role,
+            description: `${role} role`,
+            isSystem: false,
+          },
+        });
+      }
+    }
+
+    // Multi-tenant: Get customerAccountId from session (users created by CustomerAdmin belong to same account)
+    const customerAccountId = session?.user?.customerAccountId || null;
 
     const user = await prisma.user.create({
       data: {
@@ -91,6 +117,7 @@ export async function POST(request: NextRequest) {
         isActive: isActive ?? true,
         isBlocked: isBlocked ?? false,
         departmentId,
+        customerAccountId, // Multi-tenant: Link user to same customer account as creator
         // Create UserRole entry if role exists in Role table
         ...(roleRecord && {
           userRoles: {

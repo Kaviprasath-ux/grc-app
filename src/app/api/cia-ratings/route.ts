@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 
 // GET all CIA ratings
 export async function GET() {
   try {
+    const session = await auth();
+    const userRoles = session?.user?.roles || [];
+    const isGRCAdmin = userRoles.includes("GRCAdministrator");
+    const customerAccountId = session?.user?.customerAccountId;
+    const tenantFilter = !isGRCAdmin && customerAccountId ? { customerAccountId } : {};
+
     const ratings = await prisma.cIARating.findMany({
+      where: tenantFilter,
       orderBy: [{ type: "asc" }, { value: "desc" }],
     });
     return NextResponse.json(ratings);
@@ -20,6 +28,9 @@ export async function GET() {
 // POST create new CIA rating
 export async function POST(request: NextRequest) {
   try {
+    const session = await auth();
+    const customerAccountId = session?.user?.customerAccountId;
+
     const body = await request.json();
     const { type, label, value } = body;
 
@@ -39,6 +50,7 @@ export async function POST(request: NextRequest) {
 
     const rating = await prisma.cIARating.create({
       data: {
+        ...(customerAccountId ? { customerAccountId } : {}),
         type: type.trim(),
         label: label.trim().toLowerCase(),
         value,

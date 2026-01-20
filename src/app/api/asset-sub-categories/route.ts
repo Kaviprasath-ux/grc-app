@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 
 // GET all asset sub-categories
 export async function GET() {
   try {
+    const session = await auth();
+    const userRoles = session?.user?.roles || [];
+    const isGRCAdmin = userRoles.includes("GRCAdministrator");
+    const customerAccountId = session?.user?.customerAccountId;
+    const tenantFilter = !isGRCAdmin && customerAccountId ? { customerAccountId } : {};
+
     const subCategories = await prisma.assetSubCategory.findMany({
+      where: tenantFilter,
       include: {
         category: true,
         _count: {
@@ -26,6 +34,9 @@ export async function GET() {
 // POST create new asset sub-category
 export async function POST(request: NextRequest) {
   try {
+    const session = await auth();
+    const customerAccountId = session?.user?.customerAccountId;
+
     const body = await request.json();
     const { name, description, categoryId, status } = body;
 
@@ -45,6 +56,7 @@ export async function POST(request: NextRequest) {
 
     const subCategory = await prisma.assetSubCategory.create({
       data: {
+        ...(customerAccountId ? { customerAccountId } : {}),
         name: name.trim(),
         description: description?.trim() || null,
         categoryId,

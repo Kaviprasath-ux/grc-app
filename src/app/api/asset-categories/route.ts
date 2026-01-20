@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 
 // GET all asset categories
 export async function GET() {
   try {
+    const session = await auth();
+    const userRoles = session?.user?.roles || [];
+    const isGRCAdmin = userRoles.includes("GRCAdministrator");
+    const customerAccountId = session?.user?.customerAccountId;
+    const tenantFilter = !isGRCAdmin && customerAccountId ? { customerAccountId } : {};
+
     const categories = await prisma.assetCategory.findMany({
+      where: tenantFilter,
       include: {
         subCategories: true,
         _count: {
@@ -26,6 +34,9 @@ export async function GET() {
 // POST create new asset category
 export async function POST(request: NextRequest) {
   try {
+    const session = await auth();
+    const customerAccountId = session?.user?.customerAccountId;
+
     const body = await request.json();
     const { name, description, status } = body;
 
@@ -36,11 +47,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check for duplicate within the same tenant
+    const existing = await prisma.assetCategory.findFirst({
+      where: {
+        name: name.trim(),
+        ...(customerAccountId ? { customerAccountId } : {}),
+      },
+    });
+
+    if (existing) {
+      return NextResponse.json(
+        { error: "Category with this name already exists" },
+        { status: 400 }
+      );
+    }
+
     const category = await prisma.assetCategory.create({
       data: {
         name: name.trim(),
         description: description?.trim() || null,
         status: status || "Active",
+        ...(customerAccountId ? { customerAccountId } : {}),
       },
       include: {
         subCategories: true,

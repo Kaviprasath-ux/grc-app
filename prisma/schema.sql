@@ -385,6 +385,7 @@ CREATE TABLE "RequirementException" (
 -- CreateTable
 CREATE TABLE "Regulation" (
     "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
     "name" TEXT NOT NULL,
     "version" TEXT,
     "sa1Date" TEXT,
@@ -403,6 +404,7 @@ CREATE TABLE "Regulation" (
 -- CreateTable
 CREATE TABLE "ControlDomain" (
     "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
     "code" TEXT,
     "name" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -838,6 +840,7 @@ CREATE TABLE "PolicyException" (
 -- CreateTable
 CREATE TABLE "AssetCategory" (
     "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
     "name" TEXT NOT NULL,
     "description" TEXT,
     "status" TEXT NOT NULL DEFAULT 'Active',
@@ -850,6 +853,7 @@ CREATE TABLE "AssetCategory" (
 -- CreateTable
 CREATE TABLE "AssetSubCategory" (
     "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
     "name" TEXT NOT NULL,
     "description" TEXT,
     "categoryId" TEXT NOT NULL,
@@ -863,6 +867,7 @@ CREATE TABLE "AssetSubCategory" (
 -- CreateTable
 CREATE TABLE "AssetGroup" (
     "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
     "name" TEXT NOT NULL,
     "description" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -874,6 +879,7 @@ CREATE TABLE "AssetGroup" (
 -- CreateTable
 CREATE TABLE "CIARating" (
     "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
     "type" TEXT NOT NULL,
     "label" TEXT NOT NULL,
     "value" INTEGER NOT NULL,
@@ -886,6 +892,7 @@ CREATE TABLE "CIARating" (
 -- CreateTable
 CREATE TABLE "AssetSensitivity" (
     "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
     "name" TEXT NOT NULL,
     "description" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -897,6 +904,7 @@ CREATE TABLE "AssetSensitivity" (
 -- CreateTable
 CREATE TABLE "AssetCIAClassification" (
     "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
     "subCategoryId" TEXT NOT NULL,
     "groupId" TEXT NOT NULL,
     "confidentiality" TEXT NOT NULL DEFAULT 'low',
@@ -916,6 +924,7 @@ CREATE TABLE "AssetCIAClassification" (
 -- CreateTable
 CREATE TABLE "AssetLifecycleStatus" (
     "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
     "name" TEXT NOT NULL,
     "description" TEXT,
     "order" INTEGER NOT NULL DEFAULT 0,
@@ -928,6 +937,7 @@ CREATE TABLE "AssetLifecycleStatus" (
 -- CreateTable
 CREATE TABLE "AssetClassification" (
     "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
     "name" TEXT NOT NULL,
     "description" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -967,6 +977,7 @@ CREATE TABLE "Asset" (
 -- CreateTable
 CREATE TABLE "RiskCategory" (
     "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
     "name" TEXT NOT NULL,
     "description" TEXT,
     "color" TEXT,
@@ -980,6 +991,7 @@ CREATE TABLE "RiskCategory" (
 -- CreateTable
 CREATE TABLE "RiskType" (
     "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
     "name" TEXT NOT NULL,
     "description" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -991,6 +1003,7 @@ CREATE TABLE "RiskType" (
 -- CreateTable
 CREATE TABLE "RiskThreat" (
     "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
     "threatId" TEXT,
     "name" TEXT NOT NULL,
     "description" TEXT,
@@ -1004,6 +1017,7 @@ CREATE TABLE "RiskThreat" (
 -- CreateTable
 CREATE TABLE "RiskVulnerability" (
     "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
     "vulnId" TEXT,
     "name" TEXT NOT NULL,
     "description" TEXT,
@@ -1017,6 +1031,7 @@ CREATE TABLE "RiskVulnerability" (
 -- CreateTable
 CREATE TABLE "RiskCause" (
     "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
     "name" TEXT NOT NULL,
     "description" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1160,6 +1175,7 @@ CREATE TABLE "RiskSetting" (
 -- CreateTable
 CREATE TABLE "VulnerabilityCategory" (
     "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
     "name" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -1170,6 +1186,7 @@ CREATE TABLE "VulnerabilityCategory" (
 -- CreateTable
 CREATE TABLE "ThreatCategory" (
     "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
     "name" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -1180,6 +1197,7 @@ CREATE TABLE "ThreatCategory" (
 -- CreateTable
 CREATE TABLE "ControlStrength" (
     "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
     "name" TEXT NOT NULL,
     "score" INTEGER NOT NULL DEFAULT 0,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1191,6 +1209,7 @@ CREATE TABLE "ControlStrength" (
 -- CreateTable
 CREATE TABLE "RiskLikelihood" (
     "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
     "title" TEXT NOT NULL,
     "score" INTEGER NOT NULL DEFAULT 0,
     "timeFrame" TEXT,
@@ -1204,6 +1223,7 @@ CREATE TABLE "RiskLikelihood" (
 -- CreateTable
 CREATE TABLE "ImpactCategory" (
     "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
     "name" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -1214,6 +1234,7 @@ CREATE TABLE "ImpactCategory" (
 -- CreateTable
 CREATE TABLE "ImpactRating" (
     "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
     "name" TEXT NOT NULL,
     "score" INTEGER NOT NULL DEFAULT 0,
     "description" TEXT,
@@ -1226,6 +1247,7 @@ CREATE TABLE "ImpactRating" (
 -- CreateTable
 CREATE TABLE "VulnerabilityRating" (
     "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
     "label" TEXT NOT NULL,
     "score" INTEGER NOT NULL DEFAULT 0,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1237,6 +1259,7 @@ CREATE TABLE "VulnerabilityRating" (
 -- CreateTable
 CREATE TABLE "RiskSubCategory" (
     "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
     "type" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -1247,6 +1270,7 @@ CREATE TABLE "RiskSubCategory" (
 -- CreateTable
 CREATE TABLE "RiskRange" (
     "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
     "title" TEXT NOT NULL,
     "color" TEXT,
     "lowRange" INTEGER NOT NULL DEFAULT 0,
@@ -1262,6 +1286,7 @@ CREATE TABLE "RiskRange" (
 -- CreateTable
 CREATE TABLE "RiskScoreConfig" (
     "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
     "useLikelihood" BOOLEAN NOT NULL DEFAULT true,
     "useImpact" BOOLEAN NOT NULL DEFAULT true,
     "useAssetScore" BOOLEAN NOT NULL DEFAULT false,
@@ -1342,6 +1367,7 @@ CREATE TABLE "CAPA" (
 -- CreateTable
 CREATE TABLE "AuditCategory" (
     "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
     "name" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -1352,6 +1378,7 @@ CREATE TABLE "AuditCategory" (
 -- CreateTable
 CREATE TABLE "AuditNatureOfControl" (
     "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
     "label" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -1362,6 +1389,7 @@ CREATE TABLE "AuditNatureOfControl" (
 -- CreateTable
 CREATE TABLE "AuditRiskFactor" (
     "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
     "label" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -1372,6 +1400,7 @@ CREATE TABLE "AuditRiskFactor" (
 -- CreateTable
 CREATE TABLE "AuditProbability" (
     "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
     "label" TEXT NOT NULL,
     "value" INTEGER NOT NULL DEFAULT 0,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1383,6 +1412,7 @@ CREATE TABLE "AuditProbability" (
 -- CreateTable
 CREATE TABLE "AuditImpact" (
     "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
     "label" TEXT NOT NULL,
     "value" INTEGER NOT NULL DEFAULT 0,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1394,6 +1424,7 @@ CREATE TABLE "AuditImpact" (
 -- CreateTable
 CREATE TABLE "AuditScoringRange" (
     "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
     "label" TEXT NOT NULL,
     "lowValue" INTEGER NOT NULL DEFAULT 0,
     "highValue" INTEGER,
@@ -1407,6 +1438,7 @@ CREATE TABLE "AuditScoringRange" (
 -- CreateTable
 CREATE TABLE "AuditScoringConfig" (
     "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
     "probabilityImpactCalcType" TEXT NOT NULL DEFAULT 'Product of all',
     "riskRatingCalcType" TEXT NOT NULL DEFAULT 'High of all',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1418,6 +1450,7 @@ CREATE TABLE "AuditScoringConfig" (
 -- CreateTable
 CREATE TABLE "AuditPeriodicity" (
     "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
     "interval" TEXT NOT NULL,
     "months" INTEGER NOT NULL DEFAULT 1,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1429,6 +1462,7 @@ CREATE TABLE "AuditPeriodicity" (
 -- CreateTable
 CREATE TABLE "AuditEscalationConfig" (
     "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
     "responseSubmission" INTEGER NOT NULL DEFAULT 5,
     "acknowledgement" INTEGER NOT NULL DEFAULT 1,
     "clarification" INTEGER NOT NULL DEFAULT 2,
@@ -1442,6 +1476,7 @@ CREATE TABLE "AuditEscalationConfig" (
 -- CreateTable
 CREATE TABLE "AuditType" (
     "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
     "name" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -1838,10 +1873,16 @@ CREATE INDEX "RequirementException_customerAccountId_idx" ON "RequirementExcepti
 CREATE UNIQUE INDEX "RequirementException_customerAccountId_code_key" ON "RequirementException"("customerAccountId", "code");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Regulation_name_key" ON "Regulation"("name");
+CREATE INDEX "Regulation_customerAccountId_idx" ON "Regulation"("customerAccountId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "ControlDomain_name_key" ON "ControlDomain"("name");
+CREATE UNIQUE INDEX "Regulation_customerAccountId_name_key" ON "Regulation"("customerAccountId", "name");
+
+-- CreateIndex
+CREATE INDEX "ControlDomain_customerAccountId_idx" ON "ControlDomain"("customerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ControlDomain_customerAccountId_name_key" ON "ControlDomain"("customerAccountId", "name");
 
 -- CreateIndex
 CREATE INDEX "Control_customerAccountId_idx" ON "Control"("customerAccountId");
@@ -1919,28 +1960,52 @@ CREATE UNIQUE INDEX "ControlRisk_controlId_riskId_key" ON "ControlRisk"("control
 CREATE UNIQUE INDEX "PolicyException_policyId_exceptionId_key" ON "PolicyException"("policyId", "exceptionId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "AssetCategory_name_key" ON "AssetCategory"("name");
+CREATE INDEX "AssetCategory_customerAccountId_idx" ON "AssetCategory"("customerAccountId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "AssetSubCategory_name_categoryId_key" ON "AssetSubCategory"("name", "categoryId");
+CREATE UNIQUE INDEX "AssetCategory_customerAccountId_name_key" ON "AssetCategory"("customerAccountId", "name");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "AssetGroup_name_key" ON "AssetGroup"("name");
+CREATE INDEX "AssetSubCategory_customerAccountId_idx" ON "AssetSubCategory"("customerAccountId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "CIARating_type_label_key" ON "CIARating"("type", "label");
+CREATE UNIQUE INDEX "AssetSubCategory_customerAccountId_name_categoryId_key" ON "AssetSubCategory"("customerAccountId", "name", "categoryId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "AssetSensitivity_name_key" ON "AssetSensitivity"("name");
+CREATE INDEX "AssetGroup_customerAccountId_idx" ON "AssetGroup"("customerAccountId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "AssetCIAClassification_subCategoryId_groupId_key" ON "AssetCIAClassification"("subCategoryId", "groupId");
+CREATE UNIQUE INDEX "AssetGroup_customerAccountId_name_key" ON "AssetGroup"("customerAccountId", "name");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "AssetLifecycleStatus_name_key" ON "AssetLifecycleStatus"("name");
+CREATE INDEX "CIARating_customerAccountId_idx" ON "CIARating"("customerAccountId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "AssetClassification_name_key" ON "AssetClassification"("name");
+CREATE UNIQUE INDEX "CIARating_customerAccountId_type_label_key" ON "CIARating"("customerAccountId", "type", "label");
+
+-- CreateIndex
+CREATE INDEX "AssetSensitivity_customerAccountId_idx" ON "AssetSensitivity"("customerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "AssetSensitivity_customerAccountId_name_key" ON "AssetSensitivity"("customerAccountId", "name");
+
+-- CreateIndex
+CREATE INDEX "AssetCIAClassification_customerAccountId_idx" ON "AssetCIAClassification"("customerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "AssetCIAClassification_customerAccountId_subCategoryId_grou_key" ON "AssetCIAClassification"("customerAccountId", "subCategoryId", "groupId");
+
+-- CreateIndex
+CREATE INDEX "AssetLifecycleStatus_customerAccountId_idx" ON "AssetLifecycleStatus"("customerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "AssetLifecycleStatus_customerAccountId_name_key" ON "AssetLifecycleStatus"("customerAccountId", "name");
+
+-- CreateIndex
+CREATE INDEX "AssetClassification_customerAccountId_idx" ON "AssetClassification"("customerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "AssetClassification_customerAccountId_name_key" ON "AssetClassification"("customerAccountId", "name");
 
 -- CreateIndex
 CREATE INDEX "Asset_customerAccountId_idx" ON "Asset"("customerAccountId");
@@ -1949,25 +2014,40 @@ CREATE INDEX "Asset_customerAccountId_idx" ON "Asset"("customerAccountId");
 CREATE UNIQUE INDEX "Asset_customerAccountId_assetId_key" ON "Asset"("customerAccountId", "assetId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "RiskCategory_name_key" ON "RiskCategory"("name");
+CREATE INDEX "RiskCategory_customerAccountId_idx" ON "RiskCategory"("customerAccountId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "RiskType_name_key" ON "RiskType"("name");
+CREATE UNIQUE INDEX "RiskCategory_customerAccountId_name_key" ON "RiskCategory"("customerAccountId", "name");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "RiskThreat_threatId_key" ON "RiskThreat"("threatId");
+CREATE INDEX "RiskType_customerAccountId_idx" ON "RiskType"("customerAccountId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "RiskThreat_name_key" ON "RiskThreat"("name");
+CREATE UNIQUE INDEX "RiskType_customerAccountId_name_key" ON "RiskType"("customerAccountId", "name");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "RiskVulnerability_vulnId_key" ON "RiskVulnerability"("vulnId");
+CREATE INDEX "RiskThreat_customerAccountId_idx" ON "RiskThreat"("customerAccountId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "RiskVulnerability_name_key" ON "RiskVulnerability"("name");
+CREATE UNIQUE INDEX "RiskThreat_customerAccountId_name_key" ON "RiskThreat"("customerAccountId", "name");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "RiskCause_name_key" ON "RiskCause"("name");
+CREATE UNIQUE INDEX "RiskThreat_customerAccountId_threatId_key" ON "RiskThreat"("customerAccountId", "threatId");
+
+-- CreateIndex
+CREATE INDEX "RiskVulnerability_customerAccountId_idx" ON "RiskVulnerability"("customerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "RiskVulnerability_customerAccountId_name_key" ON "RiskVulnerability"("customerAccountId", "name");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "RiskVulnerability_customerAccountId_vulnId_key" ON "RiskVulnerability"("customerAccountId", "vulnId");
+
+-- CreateIndex
+CREATE INDEX "RiskCause_customerAccountId_idx" ON "RiskCause"("customerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "RiskCause_customerAccountId_name_key" ON "RiskCause"("customerAccountId", "name");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "RiskThreatMapping_riskId_threatId_key" ON "RiskThreatMapping"("riskId", "threatId");
@@ -2000,31 +2080,61 @@ CREATE UNIQUE INDEX "RiskResponse_customerAccountId_responseId_key" ON "RiskResp
 CREATE UNIQUE INDEX "RiskSetting_category_key_key" ON "RiskSetting"("category", "key");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "VulnerabilityCategory_name_key" ON "VulnerabilityCategory"("name");
+CREATE INDEX "VulnerabilityCategory_customerAccountId_idx" ON "VulnerabilityCategory"("customerAccountId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "ThreatCategory_name_key" ON "ThreatCategory"("name");
+CREATE UNIQUE INDEX "VulnerabilityCategory_customerAccountId_name_key" ON "VulnerabilityCategory"("customerAccountId", "name");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "ControlStrength_name_key" ON "ControlStrength"("name");
+CREATE INDEX "ThreatCategory_customerAccountId_idx" ON "ThreatCategory"("customerAccountId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "RiskLikelihood_title_key" ON "RiskLikelihood"("title");
+CREATE UNIQUE INDEX "ThreatCategory_customerAccountId_name_key" ON "ThreatCategory"("customerAccountId", "name");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "ImpactCategory_name_key" ON "ImpactCategory"("name");
+CREATE INDEX "ControlStrength_customerAccountId_idx" ON "ControlStrength"("customerAccountId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "ImpactRating_name_key" ON "ImpactRating"("name");
+CREATE UNIQUE INDEX "ControlStrength_customerAccountId_name_key" ON "ControlStrength"("customerAccountId", "name");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "VulnerabilityRating_label_key" ON "VulnerabilityRating"("label");
+CREATE INDEX "RiskLikelihood_customerAccountId_idx" ON "RiskLikelihood"("customerAccountId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "RiskSubCategory_type_key" ON "RiskSubCategory"("type");
+CREATE UNIQUE INDEX "RiskLikelihood_customerAccountId_title_key" ON "RiskLikelihood"("customerAccountId", "title");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "RiskRange_title_key" ON "RiskRange"("title");
+CREATE INDEX "ImpactCategory_customerAccountId_idx" ON "ImpactCategory"("customerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ImpactCategory_customerAccountId_name_key" ON "ImpactCategory"("customerAccountId", "name");
+
+-- CreateIndex
+CREATE INDEX "ImpactRating_customerAccountId_idx" ON "ImpactRating"("customerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ImpactRating_customerAccountId_name_key" ON "ImpactRating"("customerAccountId", "name");
+
+-- CreateIndex
+CREATE INDEX "VulnerabilityRating_customerAccountId_idx" ON "VulnerabilityRating"("customerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "VulnerabilityRating_customerAccountId_label_key" ON "VulnerabilityRating"("customerAccountId", "label");
+
+-- CreateIndex
+CREATE INDEX "RiskSubCategory_customerAccountId_idx" ON "RiskSubCategory"("customerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "RiskSubCategory_customerAccountId_type_key" ON "RiskSubCategory"("customerAccountId", "type");
+
+-- CreateIndex
+CREATE INDEX "RiskRange_customerAccountId_idx" ON "RiskRange"("customerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "RiskRange_customerAccountId_title_key" ON "RiskRange"("customerAccountId", "title");
+
+-- CreateIndex
+CREATE INDEX "RiskScoreConfig_customerAccountId_idx" ON "RiskScoreConfig"("customerAccountId");
 
 -- CreateIndex
 CREATE INDEX "Audit_customerAccountId_idx" ON "Audit"("customerAccountId");
@@ -2045,28 +2155,58 @@ CREATE INDEX "CAPA_customerAccountId_idx" ON "CAPA"("customerAccountId");
 CREATE UNIQUE INDEX "CAPA_customerAccountId_capaId_key" ON "CAPA"("customerAccountId", "capaId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "AuditCategory_name_key" ON "AuditCategory"("name");
+CREATE INDEX "AuditCategory_customerAccountId_idx" ON "AuditCategory"("customerAccountId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "AuditNatureOfControl_label_key" ON "AuditNatureOfControl"("label");
+CREATE UNIQUE INDEX "AuditCategory_customerAccountId_name_key" ON "AuditCategory"("customerAccountId", "name");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "AuditRiskFactor_label_key" ON "AuditRiskFactor"("label");
+CREATE INDEX "AuditNatureOfControl_customerAccountId_idx" ON "AuditNatureOfControl"("customerAccountId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "AuditProbability_label_key" ON "AuditProbability"("label");
+CREATE UNIQUE INDEX "AuditNatureOfControl_customerAccountId_label_key" ON "AuditNatureOfControl"("customerAccountId", "label");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "AuditImpact_label_key" ON "AuditImpact"("label");
+CREATE INDEX "AuditRiskFactor_customerAccountId_idx" ON "AuditRiskFactor"("customerAccountId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "AuditScoringRange_label_calculationType_key" ON "AuditScoringRange"("label", "calculationType");
+CREATE UNIQUE INDEX "AuditRiskFactor_customerAccountId_label_key" ON "AuditRiskFactor"("customerAccountId", "label");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "AuditPeriodicity_interval_key" ON "AuditPeriodicity"("interval");
+CREATE INDEX "AuditProbability_customerAccountId_idx" ON "AuditProbability"("customerAccountId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "AuditType_name_key" ON "AuditType"("name");
+CREATE UNIQUE INDEX "AuditProbability_customerAccountId_label_key" ON "AuditProbability"("customerAccountId", "label");
+
+-- CreateIndex
+CREATE INDEX "AuditImpact_customerAccountId_idx" ON "AuditImpact"("customerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "AuditImpact_customerAccountId_label_key" ON "AuditImpact"("customerAccountId", "label");
+
+-- CreateIndex
+CREATE INDEX "AuditScoringRange_customerAccountId_idx" ON "AuditScoringRange"("customerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "AuditScoringRange_customerAccountId_label_calculationType_key" ON "AuditScoringRange"("customerAccountId", "label", "calculationType");
+
+-- CreateIndex
+CREATE INDEX "AuditScoringConfig_customerAccountId_idx" ON "AuditScoringConfig"("customerAccountId");
+
+-- CreateIndex
+CREATE INDEX "AuditPeriodicity_customerAccountId_idx" ON "AuditPeriodicity"("customerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "AuditPeriodicity_customerAccountId_interval_key" ON "AuditPeriodicity"("customerAccountId", "interval");
+
+-- CreateIndex
+CREATE INDEX "AuditEscalationConfig_customerAccountId_idx" ON "AuditEscalationConfig"("customerAccountId");
+
+-- CreateIndex
+CREATE INDEX "AuditType_customerAccountId_idx" ON "AuditType"("customerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "AuditType_customerAccountId_name_key" ON "AuditType"("customerAccountId", "name");
 
 -- CreateIndex
 CREATE INDEX "InternalAuditRisk_customerAccountId_idx" ON "InternalAuditRisk"("customerAccountId");
@@ -2237,6 +2377,12 @@ ALTER TABLE "RequirementException" ADD CONSTRAINT "RequirementException_requirem
 ALTER TABLE "RequirementException" ADD CONSTRAINT "RequirementException_departmentId_fkey" FOREIGN KEY ("departmentId") REFERENCES "Department"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "Regulation" ADD CONSTRAINT "Regulation_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ControlDomain" ADD CONSTRAINT "ControlDomain_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "Control" ADD CONSTRAINT "Control_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -2393,13 +2539,37 @@ ALTER TABLE "PolicyException" ADD CONSTRAINT "PolicyException_policyId_fkey" FOR
 ALTER TABLE "PolicyException" ADD CONSTRAINT "PolicyException_exceptionId_fkey" FOREIGN KEY ("exceptionId") REFERENCES "Exception"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "AssetCategory" ADD CONSTRAINT "AssetCategory_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AssetSubCategory" ADD CONSTRAINT "AssetSubCategory_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "AssetSubCategory" ADD CONSTRAINT "AssetSubCategory_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "AssetCategory"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AssetGroup" ADD CONSTRAINT "AssetGroup_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CIARating" ADD CONSTRAINT "CIARating_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AssetSensitivity" ADD CONSTRAINT "AssetSensitivity_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AssetCIAClassification" ADD CONSTRAINT "AssetCIAClassification_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "AssetCIAClassification" ADD CONSTRAINT "AssetCIAClassification_subCategoryId_fkey" FOREIGN KEY ("subCategoryId") REFERENCES "AssetSubCategory"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "AssetCIAClassification" ADD CONSTRAINT "AssetCIAClassification_groupId_fkey" FOREIGN KEY ("groupId") REFERENCES "AssetGroup"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AssetLifecycleStatus" ADD CONSTRAINT "AssetLifecycleStatus_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AssetClassification" ADD CONSTRAINT "AssetClassification_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Asset" ADD CONSTRAINT "Asset_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -2432,10 +2602,25 @@ ALTER TABLE "Asset" ADD CONSTRAINT "Asset_sensitivityId_fkey" FOREIGN KEY ("sens
 ALTER TABLE "Asset" ADD CONSTRAINT "Asset_lifecycleStatusId_fkey" FOREIGN KEY ("lifecycleStatusId") REFERENCES "AssetLifecycleStatus"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "RiskCategory" ADD CONSTRAINT "RiskCategory_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RiskType" ADD CONSTRAINT "RiskType_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RiskThreat" ADD CONSTRAINT "RiskThreat_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "RiskThreat" ADD CONSTRAINT "RiskThreat_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "ThreatCategory"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "RiskVulnerability" ADD CONSTRAINT "RiskVulnerability_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "RiskVulnerability" ADD CONSTRAINT "RiskVulnerability_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "VulnerabilityCategory"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RiskCause" ADD CONSTRAINT "RiskCause_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "RiskThreatMapping" ADD CONSTRAINT "RiskThreatMapping_riskId_fkey" FOREIGN KEY ("riskId") REFERENCES "Risk"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -2483,6 +2668,36 @@ ALTER TABLE "RiskResponse" ADD CONSTRAINT "RiskResponse_customerAccountId_fkey" 
 ALTER TABLE "RiskResponse" ADD CONSTRAINT "RiskResponse_riskId_fkey" FOREIGN KEY ("riskId") REFERENCES "Risk"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "VulnerabilityCategory" ADD CONSTRAINT "VulnerabilityCategory_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ThreatCategory" ADD CONSTRAINT "ThreatCategory_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ControlStrength" ADD CONSTRAINT "ControlStrength_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RiskLikelihood" ADD CONSTRAINT "RiskLikelihood_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ImpactCategory" ADD CONSTRAINT "ImpactCategory_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ImpactRating" ADD CONSTRAINT "ImpactRating_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "VulnerabilityRating" ADD CONSTRAINT "VulnerabilityRating_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RiskSubCategory" ADD CONSTRAINT "RiskSubCategory_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RiskRange" ADD CONSTRAINT "RiskRange_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RiskScoreConfig" ADD CONSTRAINT "RiskScoreConfig_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "RiskActivityLog" ADD CONSTRAINT "RiskActivityLog_riskId_fkey" FOREIGN KEY ("riskId") REFERENCES "Risk"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -2505,6 +2720,36 @@ ALTER TABLE "CAPA" ADD CONSTRAINT "CAPA_customerAccountId_fkey" FOREIGN KEY ("cu
 
 -- AddForeignKey
 ALTER TABLE "CAPA" ADD CONSTRAINT "CAPA_findingId_fkey" FOREIGN KEY ("findingId") REFERENCES "AuditFinding"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AuditCategory" ADD CONSTRAINT "AuditCategory_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AuditNatureOfControl" ADD CONSTRAINT "AuditNatureOfControl_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AuditRiskFactor" ADD CONSTRAINT "AuditRiskFactor_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AuditProbability" ADD CONSTRAINT "AuditProbability_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AuditImpact" ADD CONSTRAINT "AuditImpact_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AuditScoringRange" ADD CONSTRAINT "AuditScoringRange_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AuditScoringConfig" ADD CONSTRAINT "AuditScoringConfig_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AuditPeriodicity" ADD CONSTRAINT "AuditPeriodicity_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AuditEscalationConfig" ADD CONSTRAINT "AuditEscalationConfig_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AuditType" ADD CONSTRAINT "AuditType_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "InternalAuditRisk" ADD CONSTRAINT "InternalAuditRisk_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

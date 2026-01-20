@@ -10,18 +10,30 @@ export const GET = withAuth(
                         !session.roles.includes('AuditHead') &&
                         !session.roles.includes('Auditor');
 
-      // Base filters for auditee
-      const auditeeFilter = isAuditee ? { auditeeId: session.id } : {};
+      // Multi-tenant: Build filter based on customerAccountId
+      const isGRCAdmin = session.roles.includes("GRCAdministrator");
+      const customerAccountId = session.customerAccountId;
+
+      // Build tenant filter (GRCAdmin sees all, others see only their tenant)
+      const tenantFilter = !isGRCAdmin && customerAccountId
+        ? { customerAccountId }
+        : {};
+
+      // Base filters for auditee (combined with tenant filter)
+      const auditeeFilter = isAuditee
+        ? { ...tenantFilter, auditeeId: session.id }
+        : tenantFilter;
       const capaFilter = isAuditee ? {
+        ...tenantFilter,
         finding: {
           OR: [
             { responsiblePersonId: session.id },
             { department: { id: session.departmentId || '' } }
           ]
         }
-      } : {};
+      } : tenantFilter;
 
-      // Get risk register stats
+      // Get risk register stats (with tenant filter)
       const [
         totalRisks,
         extremeRisks,
@@ -29,22 +41,22 @@ export const GET = withAuth(
         mediumRisks,
         lowRisks,
       ] = await Promise.all([
-        prisma.internalAuditRisk.count(),
-        prisma.internalAuditRisk.count({ where: { riskLevel: 'Extreme' } }),
-        prisma.internalAuditRisk.count({ where: { riskLevel: 'High' } }),
-        prisma.internalAuditRisk.count({ where: { riskLevel: 'Medium' } }),
-        prisma.internalAuditRisk.count({ where: { riskLevel: 'Low' } }),
+        prisma.internalAuditRisk.count({ where: tenantFilter }),
+        prisma.internalAuditRisk.count({ where: { ...tenantFilter, riskLevel: 'Extreme' } }),
+        prisma.internalAuditRisk.count({ where: { ...tenantFilter, riskLevel: 'High' } }),
+        prisma.internalAuditRisk.count({ where: { ...tenantFilter, riskLevel: 'Medium' } }),
+        prisma.internalAuditRisk.count({ where: { ...tenantFilter, riskLevel: 'Low' } }),
       ]);
 
-      // Get audit engagement stats
+      // Get audit engagement stats (with tenant filter)
       const [
         ongoingAudits,
         completedAudits,
         plannedAudits,
       ] = await Promise.all([
-        prisma.auditEngagement.count({ where: { status: 'In Progress' } }),
-        prisma.auditEngagement.count({ where: { status: 'Completed' } }),
-        prisma.auditEngagement.count({ where: { status: 'Planned' } }),
+        prisma.auditEngagement.count({ where: { ...tenantFilter, status: 'In Progress' } }),
+        prisma.auditEngagement.count({ where: { ...tenantFilter, status: 'Completed' } }),
+        prisma.auditEngagement.count({ where: { ...tenantFilter, status: 'Planned' } }),
       ]);
 
       // Get CAPA stats by department and severity
@@ -95,10 +107,11 @@ export const GET = withAuth(
 
       const capaStatusByDepartment = Object.values(departmentCAPAMap);
 
-      // Get annual audit plan for current year
+      // Get annual audit plan for current year (with tenant filter)
       const currentYear = new Date().getFullYear();
       const annualAuditPlan = await prisma.auditEngagement.findMany({
         where: {
+          ...tenantFilter,
           OR: [
             { startDate: { gte: new Date(`${currentYear}-01-01`), lte: new Date(`${currentYear}-12-31`) } },
             { endDate: { gte: new Date(`${currentYear}-01-01`), lte: new Date(`${currentYear}-12-31`) } }
@@ -130,9 +143,10 @@ export const GET = withAuth(
         };
       });
 
-      // Get auditor schedule for current year
+      // Get auditor schedule for current year (with tenant filter)
       const engagementsWithAuditors = await prisma.auditEngagement.findMany({
         where: {
+          ...tenantFilter,
           year: currentYear,
         },
         include: {

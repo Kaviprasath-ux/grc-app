@@ -1,12 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 
 // GET risk counts by rating
 export async function GET(request: NextRequest) {
   try {
-    // Get risk counts grouped by risk level
+    const session = await auth();
+
+    // Multi-tenant: Build filter based on customerAccountId
+    const userRoles = session?.user?.roles || [];
+    const isGRCAdmin = userRoles.includes("GRCAdministrator");
+    const customerAccountId = session?.user?.customerAccountId;
+
+    // Build tenant filter (GRCAdmin sees all, others see only their tenant)
+    const tenantFilter = !isGRCAdmin && customerAccountId
+      ? { customerAccountId }
+      : {};
+
+    // Get risk counts grouped by risk level (with tenant filter)
     const risks = await prisma.internalAuditRisk.groupBy({
       by: ["riskLevel"],
+      where: tenantFilter,
       _count: {
         id: true,
       },

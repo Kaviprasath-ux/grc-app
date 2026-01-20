@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 
 // GET all asset CIA classifications
 export async function GET() {
   try {
+    const session = await auth();
+    const userRoles = session?.user?.roles || [];
+    const isGRCAdmin = userRoles.includes("GRCAdministrator");
+    const customerAccountId = session?.user?.customerAccountId;
+    const tenantFilter = !isGRCAdmin && customerAccountId ? { customerAccountId } : {};
+
     const classifications = await prisma.assetCIAClassification.findMany({
+      where: tenantFilter,
       include: {
         subCategory: {
           include: {
@@ -28,6 +36,9 @@ export async function GET() {
 // POST create new asset CIA classification
 export async function POST(request: NextRequest) {
   try {
+    const session = await auth();
+    const customerAccountId = session?.user?.customerAccountId;
+
     const body = await request.json();
     const {
       subCategoryId,
@@ -61,6 +72,7 @@ export async function POST(request: NextRequest) {
 
     const classification = await prisma.assetCIAClassification.create({
       data: {
+        ...(customerAccountId ? { customerAccountId } : {}),
         subCategoryId,
         groupId,
         confidentiality: confidentiality || "low",

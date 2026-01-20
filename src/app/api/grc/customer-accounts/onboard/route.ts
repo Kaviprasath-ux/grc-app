@@ -39,16 +39,29 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    // Generate next customer code
-    const lastCustomerAccount = await prisma.customerAccount.findFirst({
-      orderBy: { code: "desc" },
+    // Generate next customer code - find an available code
+    const allCustomerAccounts = await prisma.customerAccount.findMany({
       select: { code: true },
     });
 
-    let nextCode = "GRC_001";
-    if (lastCustomerAccount?.code) {
-      const num = parseInt(lastCustomerAccount.code.replace("GRC_", "")) || 0;
-      nextCode = `GRC_${String(num + 1).padStart(3, "0")}`;
+    const existingCodes = new Set(allCustomerAccounts.map(a => a.code));
+
+    let maxNum = 0;
+    for (const account of allCustomerAccounts) {
+      const num = parseInt(account.code.replace("GRC_", "")) || 0;
+      if (num > maxNum) {
+        maxNum = num;
+      }
+    }
+
+    // Find the next available code (handles gaps in sequence)
+    let nextNum = maxNum + 1;
+    let nextCode = `GRC_${String(nextNum).padStart(3, "0")}`;
+
+    // Safety check: if code exists, keep incrementing until we find an available one
+    while (existingCodes.has(nextCode)) {
+      nextNum++;
+      nextCode = `GRC_${String(nextNum).padStart(3, "0")}`;
     }
 
     // Check if username already exists
@@ -69,13 +82,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Email already exists" }, { status: 400 });
     }
 
-    // Get the CustomerAdministrator role (FIXED - cannot be changed)
-    const customerAdminRole = await prisma.role.findUnique({
+    // Get or create the CustomerAdministrator role (FIXED - cannot be changed)
+    let customerAdminRole = await prisma.role.findUnique({
       where: { name: "CustomerAdministrator" },
     });
 
+    // Auto-create the role if it doesn't exist (handles cases where seeding wasn't run)
     if (!customerAdminRole) {
-      return NextResponse.json({ error: "CustomerAdministrator role not found. Please run RBAC seed first." }, { status: 500 });
+      customerAdminRole = await prisma.role.create({
+        data: {
+          name: "CustomerAdministrator",
+          description: "Organization-level admin, manages users and settings",
+          isSystem: true,
+        },
+      });
     }
 
     // Use a transaction to create CustomerAccount, User, and SubscriptionPlans together
@@ -161,8 +181,31 @@ export async function POST(req: NextRequest) {
       },
       subscriptionPlans: result.createdPlans.length,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error onboarding customer:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+
+    // Handle Prisma unique constraint errors
+    if ((error as { code?: string }).code === "P2002") {
+      const target = (error as { meta?: { target?: string[] } }).meta?.target;
+      console.error("Unique constraint violation on fields:", target);
+
+      if (target?.includes("userName")) {
+        return NextResponse.json({ error: "Username already exists" }, { status: 400 });
+      }
+      if (target?.includes("email")) {
+        return NextResponse.json({ error: "Email already exists" }, { status: 400 });
+      }
+      if (target?.includes("code")) {
+        return NextResponse.json({ error: "Customer code already exists. Please try again." }, { status: 400 });
+      }
+      if (target?.includes("userId")) {
+        return NextResponse.json({ error: "User ID collision. Please try again." }, { status: 400 });
+      }
+      return NextResponse.json({ error: `A record with this value already exists: ${target?.join(", ") || "unknown field"}` }, { status: 400 });
+    }
+
+    // Return the actual error message in development for debugging
+    const errorMessage = error instanceof Error ? error.message : "Internal server error";
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

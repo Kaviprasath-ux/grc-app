@@ -1,10 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 
-// GET all risk categories
+// GET all risk categories (filtered by tenant)
 export async function GET() {
   try {
+    const session = await auth();
+
+    // Multi-tenant: Build filter based on customerAccountId
+    const userRoles = session?.user?.roles || [];
+    const isGRCAdmin = userRoles.includes("GRCAdministrator");
+    const customerAccountId = session?.user?.customerAccountId;
+
+    // Build tenant filter (GRCAdmin sees all, others see only their tenant)
+    const tenantFilter = !isGRCAdmin && customerAccountId
+      ? { customerAccountId }
+      : {};
+
     const categories = await prisma.riskCategory.findMany({
+      where: tenantFilter,
       include: {
         _count: {
           select: { risks: true },
@@ -23,9 +37,12 @@ export async function GET() {
   }
 }
 
-// POST create a new risk category
+// POST create a new risk category (with tenant assignment)
 export async function POST(request: NextRequest) {
   try {
+    const session = await auth();
+    const customerAccountId = session?.user?.customerAccountId;
+
     const body = await request.json();
     const { name, description, color } = body;
 
@@ -36,9 +53,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check for duplicate
-    const existing = await prisma.riskCategory.findUnique({
-      where: { name },
+    // Check for duplicate within tenant
+    const existing = await prisma.riskCategory.findFirst({
+      where: {
+        customerAccountId: customerAccountId || null,
+        name,
+      },
     });
 
     if (existing) {
@@ -50,6 +70,7 @@ export async function POST(request: NextRequest) {
 
     const category = await prisma.riskCategory.create({
       data: {
+        customerAccountId,
         name,
         description,
         color,

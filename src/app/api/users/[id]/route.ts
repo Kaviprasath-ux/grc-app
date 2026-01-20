@@ -26,22 +26,31 @@ export async function PUT(
 
     // If role is being updated, also update the UserRole junction table
     if (role) {
-      const roleRecord = await prisma.role.findFirst({
+      let roleRecord = await prisma.role.findFirst({
         where: { name: role }
       });
 
-      if (roleRecord) {
-        // Delete existing user roles and create new one
-        await prisma.userRole.deleteMany({
-          where: { userId: id }
-        });
-        await prisma.userRole.create({
+      // If role doesn't exist, create it (this handles cases where seeding wasn't run)
+      if (!roleRecord) {
+        roleRecord = await prisma.role.create({
           data: {
-            userId: id,
-            roleId: roleRecord.id,
-          }
+            name: role,
+            description: `${role} role`,
+            isSystem: false,
+          },
         });
       }
+
+      // Delete existing user roles and create new one
+      await prisma.userRole.deleteMany({
+        where: { userId: id }
+      });
+      await prisma.userRole.create({
+        data: {
+          userId: id,
+          roleId: roleRecord.id,
+        }
+      });
     }
 
     const user = await prisma.user.update({
