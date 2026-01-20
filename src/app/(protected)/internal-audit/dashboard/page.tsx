@@ -68,6 +68,17 @@ interface DashboardData {
     startMonth: number;
     endMonth: number;
   }>;
+  auditorSchedule: Array<{
+    id: string;
+    name: string;
+    assignments: Array<{
+      auditId: string;
+      engagementTitle: string;
+      startMonth: number;
+      endMonth: number;
+      durationDays: number;
+    }>;
+  }>;
   currentYear: number;
   stats: {
     evidenceRequests: {
@@ -433,6 +444,62 @@ export default function InternalAuditDashboard() {
                   <TableRow>
                     <TableCell colSpan={13} className="text-center py-8 text-gray-500">
                       No audit plans for this year
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Auditor Schedule Chart */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold text-blue-900">
+            Auditor Schedule - {data?.currentYear || new Date().getFullYear()}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="min-w-[200px]">Auditor Name</TableHead>
+                  {MONTHS.map((month) => (
+                    <TableHead key={month} className="text-center min-w-[60px]">{month}</TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data?.auditorSchedule && data.auditorSchedule.length > 0 ? (
+                  data.auditorSchedule.map((auditor) => (
+                    <TableRow key={auditor.id}>
+                      <TableCell className="font-medium">{auditor.name}</TableCell>
+                      {MONTHS.map((month, monthIndex) => {
+                        // Find if auditor has any assignment in this month
+                        const assignment = auditor.assignments.find(
+                          (a) => monthIndex >= a.startMonth && monthIndex <= a.endMonth
+                        );
+                        const isStart = assignment && monthIndex === assignment.startMonth;
+                        return (
+                          <TableCell key={month} className="p-1">
+                            {isStart ? (
+                              <Badge className="bg-blue-500 text-white text-xs whitespace-nowrap">
+                                {assignment.durationDays} Days
+                              </Badge>
+                            ) : assignment ? (
+                              <div className="h-6 bg-blue-200 rounded-sm"></div>
+                            ) : null}
+                          </TableCell>
+                        );
+                      })}
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={13} className="text-center py-8 text-gray-500">
+                      No auditor schedules for this year
                     </TableCell>
                   </TableRow>
                 )}

@@ -95,7 +95,7 @@ export async function PUT(
       where: { processId },
     });
 
-    let processBIA;
+    let processBIA: Awaited<ReturnType<typeof prisma.processBIA.create>> | null = null;
     if (existingBIA) {
       // Update existing BIA
       processBIA = await prisma.processBIA.update({
@@ -117,16 +117,17 @@ export async function PUT(
       });
 
       // Update category ratings if provided
-      if (categoryRatings) {
+      if (categoryRatings && processBIA) {
+        const biaId = processBIA.id;
         // Delete existing ratings
         await prisma.processBIARating.deleteMany({
-          where: { processBIAId: processBIA.id },
+          where: { processBIAId: biaId },
         });
 
         // Create new ratings
         await prisma.processBIARating.createMany({
           data: categoryRatings.map((rating: { categoryName: string; rating: string; ratingScore: number; description: string }) => ({
-            processBIAId: processBIA.id,
+            processBIAId: biaId,
             categoryName: rating.categoryName,
             rating: rating.rating,
             ratingScore: rating.ratingScore,

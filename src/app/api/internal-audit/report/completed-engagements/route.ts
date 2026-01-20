@@ -38,7 +38,7 @@ export const GET = withAuth(
           assignedAuditor: {
             select: { id: true, firstName: true, lastName: true },
           },
-          auditReport: {
+          report: {
             select: { id: true },
           },
         },
@@ -58,8 +58,8 @@ export const GET = withAuth(
           ? `${engagement.assignedAuditor.firstName} ${engagement.assignedAuditor.lastName}`
           : '-',
         status: engagement.status,
-        hasReport: !!engagement.auditReport,
-        reportId: engagement.auditReport?.id || null,
+        hasReport: !!engagement.report,
+        reportId: engagement.report?.id || null,
       }));
 
       return NextResponse.json({

@@ -1848,7 +1848,7 @@ model InternalAuditDocument {
   documentCode String   @unique
   name         String
   description  String?
-  category     String   @default("Policy") // Policy, Regulation, Previous Report
+  category     String   @default("Policy") // Policy, Regulation, PreviousReport
   fileName     String
   fileType     String?
   fileSize     Int?
@@ -1857,6 +1857,16 @@ model InternalAuditDocument {
   uploadedAt   DateTime @default(now())
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+}
+
+// Document Library Search History
+model DocumentSearch {
+  id        String   @id @default(cuid())
+  query     String
+  result    String?  // AI response text
+  status    String   @default("Satisfactory") // Satisfactory, Unsatisfactory
+  userId    String?
+  createdAt DateTime @default(now())
 }
 
 // ==================== GOVERNANCE TEMPLATES ====================

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, use } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,7 +26,6 @@ import {
   ChevronUp,
   Plus,
   Trash2,
-  Upload,
   FileText,
   X,
   Loader2,
@@ -69,6 +68,10 @@ interface UploadedFile {
   type: string;
 }
 
+interface PageProps {
+  params: Promise<{ id: string }>;
+}
+
 const defaultTasks: AuditTask[] = [
   { id: "1", task: "Audit Preparation & Update", done: false, plannedHours: "", actualHours: "", auditorId: "", comments: "" },
   { id: "2", task: "Documentation Review", done: false, plannedHours: "", actualHours: "", auditorId: "", comments: "" },
@@ -78,7 +81,8 @@ const defaultTasks: AuditTask[] = [
   { id: "6", task: "Related Procedures", done: false, plannedHours: "", actualHours: "", auditorId: "", comments: "" },
 ];
 
-export default function AddEngagementPage() {
+export default function EditEngagementPage({ params }: PageProps) {
+  const { id: engagementId } = use(params);
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -138,9 +142,10 @@ export default function AddEngagementPage() {
 
   const fetchReferenceData = async () => {
     try {
-      const [deptRes, usersRes] = await Promise.all([
+      const [deptRes, usersRes, engagementRes] = await Promise.all([
         fetch("/api/departments"),
         fetch("/api/users"),
+        fetch(`/api/internal-audit/engagements/${engagementId}`),
       ]);
 
       if (deptRes.ok) setDepartments(await deptRes.json());
@@ -148,8 +153,32 @@ export default function AddEngagementPage() {
         const usersData = await usersRes.json();
         setUsers(usersData.users || usersData || []);
       }
+
+      if (engagementRes.ok) {
+        const engagement = await engagementRes.json();
+        setFormData({
+          engagementTitle: engagement.engagementTitle || "",
+          engagementObjective: engagement.engagementObjective || "",
+          engagementScope: engagement.engagementScope || "",
+          departmentId: engagement.departmentId || "",
+          linkedRiskIds: engagement.linkedRiskIds || [],
+          auditRating: engagement.auditRating || "",
+          auditType: engagement.auditType || "",
+          auditorId: engagement.assignedAuditorId || "",
+          auditeeId: engagement.auditeeId || "",
+          startDate: engagement.plannedStartDate ? engagement.plannedStartDate.split("T")[0] : "",
+          targetDate: engagement.plannedEndDate ? engagement.plannedEndDate.split("T")[0] : "",
+          initialObservation: engagement.initialObservation || "",
+          relatedPolicies: engagement.relatedPolicies || "",
+        });
+
+      } else {
+        toast.error("Failed to load engagement");
+        router.push("/internal-audit/audit-planning");
+      }
     } catch (error) {
-      console.error("Failed to fetch reference data:", error);
+      console.error("Failed to fetch data:", error);
+      toast.error("Failed to load data");
     } finally {
       setLoading(false);
     }
@@ -289,8 +318,8 @@ export default function AddEngagementPage() {
 
     setSaving(true);
     try {
-      const response = await fetch("/api/internal-audit/engagements", {
-        method: "POST",
+      const response = await fetch(`/api/internal-audit/engagements/${engagementId}`, {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
@@ -300,15 +329,15 @@ export default function AddEngagementPage() {
       });
 
       if (response.ok) {
-        toast.success("Engagement created successfully");
+        toast.success("Engagement updated successfully");
         router.push("/internal-audit/audit-planning");
       } else {
         const error = await response.json();
-        toast.error(error.error || "Failed to create engagement");
+        toast.error(error.error || "Failed to update engagement");
       }
     } catch (error) {
-      console.error("Failed to create engagement:", error);
-      toast.error("Failed to create engagement");
+      console.error("Failed to update engagement:", error);
+      toast.error("Failed to update engagement");
     } finally {
       setSaving(false);
     }
@@ -323,7 +352,7 @@ export default function AddEngagementPage() {
             Back
           </Button>
           <div className="text-sm text-muted-foreground">Audit Plan</div>
-          <h1 className="text-xl font-semibold text-blue-900">New Audit Plan</h1>
+          <h1 className="text-xl font-semibold text-blue-900">Edit Audit Plan</h1>
         </div>
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
@@ -341,7 +370,7 @@ export default function AddEngagementPage() {
           Back
         </Button>
         <div className="text-sm text-muted-foreground">Audit Plan</div>
-        <h1 className="text-xl font-semibold text-blue-900">New Audit Plan</h1>
+        <h1 className="text-xl font-semibold text-blue-900">Edit Audit Plan</h1>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -790,7 +819,7 @@ export default function AddEngagementPage() {
             Cancel
           </Button>
           <Button type="submit" disabled={saving} className="bg-blue-600 hover:bg-blue-700">
-            {saving ? "Saving..." : "Save"}
+            {saving ? "Saving..." : "Update"}
           </Button>
         </div>
       </form>

@@ -13,7 +13,13 @@ export const GET = withAuth(
         include: {
           department: {
             select: { id: true, name: true }
-          }
+          },
+          assignedAuditor: {
+            select: { id: true, firstName: true, lastName: true }
+          },
+          auditee: {
+            select: { id: true, firstName: true, lastName: true }
+          },
         }
       });
 
@@ -45,28 +51,52 @@ export const PUT = withAuth(
 
       const {
         engagementTitle,
+        engagementObjective,
+        engagementScope,
         departmentId,
         auditType,
+        auditRating,
+        auditorId,
+        auditeeId,
         startDate,
-        endDate,
+        targetDate,
         plannedHours,
-        status
+        initialObservation,
+        relatedPolicies,
+        status,
+        tasks
       } = body;
+
+      // Build update data
+      const updateData: Record<string, unknown> = {};
+
+      if (engagementTitle !== undefined) updateData.engagementTitle = engagementTitle;
+      if (engagementObjective !== undefined) updateData.engagementObjective = engagementObjective;
+      if (engagementScope !== undefined) updateData.engagementScope = engagementScope;
+      if (departmentId !== undefined) updateData.departmentId = departmentId || null;
+      if (auditType !== undefined) updateData.auditType = auditType;
+      if (auditRating !== undefined) updateData.auditRating = auditRating;
+      if (auditorId !== undefined) updateData.assignedAuditorId = auditorId || null;
+      if (auditeeId !== undefined) updateData.auditeeId = auditeeId || null;
+      if (startDate !== undefined) updateData.plannedStartDate = startDate ? new Date(startDate) : null;
+      if (targetDate !== undefined) updateData.plannedEndDate = targetDate ? new Date(targetDate) : null;
+      if (plannedHours !== undefined) updateData.plannedHours = plannedHours || 0;
+      if (initialObservation !== undefined) updateData.initialObservation = initialObservation;
+      if (relatedPolicies !== undefined) updateData.relatedPolicies = relatedPolicies;
+      if (status !== undefined) updateData.status = status;
 
       const engagement = await prisma.auditEngagement.update({
         where: { id },
-        data: {
-          engagementTitle,
-          departmentId: departmentId || null,
-          auditType,
-          startDate: startDate ? new Date(startDate) : null,
-          endDate: endDate ? new Date(endDate) : null,
-          plannedHours: plannedHours || 0,
-          status: status || undefined
-        },
+        data: updateData,
         include: {
           department: {
             select: { id: true, name: true }
+          },
+          assignedAuditor: {
+            select: { id: true, firstName: true, lastName: true }
+          },
+          auditee: {
+            select: { id: true, firstName: true, lastName: true }
           }
         }
       });

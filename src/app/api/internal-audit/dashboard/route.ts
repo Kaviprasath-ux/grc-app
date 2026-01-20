@@ -130,6 +130,69 @@ export const GET = withAuth(
         };
       });
 
+      // Get auditor schedule for current year
+      const engagementsWithAuditors = await prisma.auditEngagement.findMany({
+        where: {
+          year: currentYear,
+        },
+        include: {
+          assignedAuditor: {
+            select: { id: true, firstName: true, lastName: true, fullName: true }
+          },
+        },
+      });
+
+      // Group by auditor for schedule
+      const auditorMap = new Map<string, {
+        id: string;
+        name: string;
+        assignments: Array<{
+          auditId: string;
+          engagementTitle: string;
+          startMonth: number;
+          endMonth: number;
+          durationDays: number;
+        }>;
+      }>();
+
+      engagementsWithAuditors.forEach((engagement) => {
+        if (!engagement.assignedAuditor) return;
+
+        const auditorId = engagement.assignedAuditor.id;
+        const auditorName = engagement.assignedAuditor.fullName ||
+          `${engagement.assignedAuditor.firstName || ''} ${engagement.assignedAuditor.lastName || ''}`.trim() ||
+          'Unknown';
+
+        if (!auditorMap.has(auditorId)) {
+          auditorMap.set(auditorId, {
+            id: auditorId,
+            name: auditorName,
+            assignments: [],
+          });
+        }
+
+        const auditor = auditorMap.get(auditorId)!;
+
+        if (engagement.plannedStartDate || engagement.startDate) {
+          const startDate = engagement.plannedStartDate || engagement.startDate;
+          const endDate = engagement.plannedEndDate || engagement.endDate || startDate;
+
+          const start = new Date(startDate!);
+          const end = new Date(endDate!);
+          const durationDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+
+          auditor.assignments.push({
+            auditId: engagement.auditId,
+            engagementTitle: engagement.engagementTitle,
+            startMonth: start.getMonth(),
+            endMonth: end.getMonth(),
+            durationDays: Math.max(durationDays, 1),
+          });
+        }
+      });
+
+      const auditorSchedule = Array.from(auditorMap.values());
+
       // Get evidence request stats (for auditee view)
       const [
         pendingEvidenceRequests,
@@ -250,6 +313,7 @@ export const GET = withAuth(
         },
         capaStatusByDepartment,
         annualAuditPlan: auditPlanWithDuration,
+        auditorSchedule,
         currentYear,
 
         // Auditee-specific stats

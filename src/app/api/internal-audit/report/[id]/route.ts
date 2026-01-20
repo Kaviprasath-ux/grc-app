@@ -17,12 +17,34 @@ export const GET = withAuth(
         where: { engagementId },
         include: {
           engagement: {
-            include: {
+            select: {
+              id: true,
+              auditId: true,
+              engagementTitle: true,
+              engagementObjective: true,
+              engagementScope: true,
+              plannedStartDate: true,
+              plannedEndDate: true,
+              actualStartDate: true,
+              actualEndDate: true,
               department: {
                 select: { id: true, name: true },
               },
               assignedAuditor: {
                 select: { id: true, firstName: true, lastName: true },
+              },
+              auditee: {
+                select: { id: true, firstName: true, lastName: true },
+              },
+              findings: {
+                select: {
+                  id: true,
+                  findingId: true,
+                  finding: true,
+                  description: true,
+                  severity: true,
+                  status: true,
+                },
               },
             },
           },
@@ -62,7 +84,10 @@ export const PATCH = withAuth(
         scope,
         recommendations,
         conclusion,
+        managementResponse,
         auditeeComment,
+        auditeeId,
+        auditeeName,
       } = body;
 
       // Find report by engagement ID
@@ -86,7 +111,10 @@ export const PATCH = withAuth(
       if (scope !== undefined) updateData.scope = scope;
       if (recommendations !== undefined) updateData.recommendations = recommendations;
       if (conclusion !== undefined) updateData.conclusion = conclusion;
+      if (managementResponse !== undefined) updateData.managementResponse = managementResponse;
       if (auditeeComment !== undefined) updateData.auditeeComment = auditeeComment;
+      if (auditeeId !== undefined) updateData.auditeeId = auditeeId;
+      if (auditeeName !== undefined) updateData.auditeeName = auditeeName;
 
       // Update the report
       const updatedReport = await prisma.auditReport.update({
@@ -94,12 +122,34 @@ export const PATCH = withAuth(
         data: updateData,
         include: {
           engagement: {
-            include: {
+            select: {
+              id: true,
+              auditId: true,
+              engagementTitle: true,
+              engagementObjective: true,
+              engagementScope: true,
+              plannedStartDate: true,
+              plannedEndDate: true,
+              actualStartDate: true,
+              actualEndDate: true,
               department: {
                 select: { id: true, name: true },
               },
               assignedAuditor: {
                 select: { id: true, firstName: true, lastName: true },
+              },
+              auditee: {
+                select: { id: true, firstName: true, lastName: true },
+              },
+              findings: {
+                select: {
+                  id: true,
+                  findingId: true,
+                  finding: true,
+                  description: true,
+                  severity: true,
+                  status: true,
+                },
               },
             },
           },

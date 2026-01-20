@@ -72,6 +72,7 @@ export default function AuditPlanningPage() {
   const { data: session } = useSession();
   const [engagements, setEngagements] = useState<Engagement[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [availableYears, setAvailableYears] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Filters
@@ -84,28 +85,19 @@ export default function AuditPlanningPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<Engagement | null>(null);
 
-  // Add/Edit engagement dialog
-  const [engagementDialogOpen, setEngagementDialogOpen] = useState(false);
-  const [editingEngagement, setEditingEngagement] = useState<Engagement | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [formData, setFormData] = useState({
-    engagementTitle: "",
-    departmentId: "",
-    auditType: "",
-    startDate: "",
-    endDate: "",
-    plannedHours: "",
-  });
+  // Report generation dialog
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const [reportFilterType, setReportFilterType] = useState("");
+  const [reportYear, setReportYear] = useState("");
+  const [reportStartDate, setReportStartDate] = useState("");
+  const [reportEndDate, setReportEndDate] = useState("");
 
   const isAuditHead = session?.user?.roles?.includes("AuditHead");
-
-  // Generate year options
-  const currentYear = new Date().getFullYear();
-  const yearOptions = Array.from({ length: 6 }, (_, i) => currentYear - i + 1);
 
   useEffect(() => {
     fetchDepartments();
     fetchEngagements();
+    fetchAvailableYears();
   }, []);
 
   useEffect(() => {
@@ -121,6 +113,18 @@ export default function AuditPlanningPage() {
       }
     } catch (error) {
       console.error("Failed to fetch departments:", error);
+    }
+  };
+
+  const fetchAvailableYears = async () => {
+    try {
+      const response = await fetch("/api/internal-audit/engagements/years");
+      if (response.ok) {
+        const data = await response.json();
+        setAvailableYears(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch available years:", error);
     }
   };
 
@@ -206,74 +210,47 @@ export default function AuditPlanningPage() {
     }
   };
 
-  const handleGenerateReport = () => {
-    toast.info("Annual plan report generation coming soon");
+  const openReportDialog = () => {
+    setReportFilterType("");
+    setReportYear("");
+    setReportStartDate("");
+    setReportEndDate("");
+    setReportDialogOpen(true);
   };
 
-  const openAddDialog = () => {
-    setEditingEngagement(null);
-    setFormData({
-      engagementTitle: "",
-      departmentId: "",
-      auditType: "",
-      startDate: "",
-      endDate: "",
-      plannedHours: "",
-    });
-    setEngagementDialogOpen(true);
-  };
-
-  const openEditDialog = (engagement: Engagement) => {
-    setEditingEngagement(engagement);
-    setFormData({
-      engagementTitle: engagement.engagementTitle,
-      departmentId: engagement.department?.id || "",
-      auditType: engagement.auditType || "",
-      startDate: engagement.startDate ? engagement.startDate.split("T")[0] : "",
-      endDate: engagement.endDate ? engagement.endDate.split("T")[0] : "",
-      plannedHours: "",
-    });
-    setEngagementDialogOpen(true);
-  };
-
-  const handleSaveEngagement = async () => {
-    if (!formData.engagementTitle.trim()) {
-      toast.error("Engagement title is required");
+  const handleShowReport = () => {
+    if (!reportFilterType) {
+      toast.error("Please select a filter type");
       return;
     }
-
-    setSaving(true);
-    try {
-      const url = editingEngagement
-        ? `/api/internal-audit/engagements/${editingEngagement.id}`
-        : "/api/internal-audit/engagements";
-
-      const method = editingEngagement ? "PUT" : "POST";
-
-      const response = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...formData,
-          departmentId: formData.departmentId || null,
-          plannedHours: formData.plannedHours ? parseInt(formData.plannedHours) : 0,
-        }),
-      });
-
-      if (response.ok) {
-        toast.success(editingEngagement ? "Engagement updated successfully" : "Engagement created successfully");
-        setEngagementDialogOpen(false);
-        fetchEngagements();
-      } else {
-        toast.error("Failed to save engagement");
+    if (reportFilterType === "Year" && !reportYear) {
+      toast.error("Please select a year");
+      return;
+    }
+    if (reportFilterType === "DateRange") {
+      if (!reportStartDate) {
+        toast.error("Please select a start date");
+        return;
       }
-    } catch (error) {
-      console.error("Failed to save:", error);
-      toast.error("Failed to save engagement");
-    } finally {
-      setSaving(false);
+      if (!reportEndDate) {
+        toast.error("Please select an end date");
+        return;
+      }
+      if (new Date(reportStartDate) > new Date(reportEndDate)) {
+        toast.error("Start date cannot be after end date");
+        return;
+      }
+    }
+
+    setReportDialogOpen(false);
+
+    if (reportFilterType === "Year") {
+      router.push(`/internal-audit/audit-planning/report-preview?filterType=Year&year=${reportYear}`);
+    } else {
+      router.push(`/internal-audit/audit-planning/report-preview?filterType=DateRange&startDate=${reportStartDate}&endDate=${reportEndDate}`);
     }
   };
+
 
   if (loading) {
     return (
@@ -302,7 +279,7 @@ export default function AuditPlanningPage() {
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>
-          <Button variant="default" className="bg-blue-600 hover:bg-blue-700" onClick={handleGenerateReport}>
+          <Button variant="default" className="bg-blue-600 hover:bg-blue-700" onClick={openReportDialog}>
             <FileText className="h-4 w-4 mr-2" />
             Generate Annual Plan Report
           </Button>
@@ -356,7 +333,7 @@ export default function AuditPlanningPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Years</SelectItem>
-            {yearOptions.map((year) => (
+            {availableYears.map((year) => (
               <SelectItem key={year} value={year.toString()}>
                 {year}
               </SelectItem>
@@ -398,7 +375,7 @@ export default function AuditPlanningPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => openEditDialog(engagement)}
+                        onClick={() => router.push(`/internal-audit/audit-planning/${engagement.id}/edit`)}
                         title="Edit"
                       >
                         <Pencil className="h-4 w-4" />
@@ -443,109 +420,80 @@ export default function AuditPlanningPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Add/Edit Engagement Dialog */}
-      <Dialog open={engagementDialogOpen} onOpenChange={setEngagementDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+      {/* Report Selection Dialog */}
+      <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle className="text-blue-900">
-              {editingEngagement ? "Edit Engagement" : "Add Engagement"}
-            </DialogTitle>
+            <DialogTitle>Select Year</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="engagementTitle">Engagement Title *</Label>
-              <Input
-                id="engagementTitle"
-                value={formData.engagementTitle}
-                onChange={(e) => setFormData({ ...formData, engagementTitle: e.target.value })}
-                placeholder="Enter engagement title"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="departmentId">Department</Label>
-              <Select
-                value={formData.departmentId}
-                onValueChange={(value) => setFormData({ ...formData, departmentId: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select department" />
+              <Label htmlFor="filterType">Filter Type</Label>
+              <Select value={reportFilterType} onValueChange={setReportFilterType}>
+                <SelectTrigger id="filterType">
+                  <SelectValue placeholder="Select filter type" />
                 </SelectTrigger>
                 <SelectContent>
-                  {departments.map((dept) => (
-                    <SelectItem key={dept.id} value={dept.id}>
-                      {dept.name}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="Year">Year</SelectItem>
+                  <SelectItem value="DateRange">DateRange</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="auditType">Audit Type</Label>
-              <Select
-                value={formData.auditType}
-                onValueChange={(value) => setFormData({ ...formData, auditType: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select audit type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Internal Audit">Internal Audit</SelectItem>
-                  <SelectItem value="Compliance Audit">Compliance Audit</SelectItem>
-                  <SelectItem value="Financial Audit">Financial Audit</SelectItem>
-                  <SelectItem value="Operational Audit">Operational Audit</SelectItem>
-                  <SelectItem value="IT Audit">IT Audit</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="startDate">Start Date</Label>
-                <Input
-                  id="startDate"
-                  type="date"
-                  value={formData.startDate}
-                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="endDate">End Date</Label>
-                <Input
-                  id="endDate"
-                  type="date"
-                  value={formData.endDate}
-                  onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="plannedHours">Planned Hours</Label>
-              <Input
-                id="plannedHours"
-                type="number"
-                value={formData.plannedHours}
-                onChange={(e) => setFormData({ ...formData, plannedHours: e.target.value })}
-                placeholder="Enter planned hours"
-              />
             </div>
 
-            <div className="flex justify-end gap-2 pt-4">
-              <Button
-                variant="outline"
-                onClick={() => setEngagementDialogOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleSaveEngagement}
-                disabled={saving}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                {saving ? "Saving..." : "Save"}
-              </Button>
-            </div>
+            {reportFilterType === "Year" && (
+              <div className="space-y-2">
+                <Label htmlFor="year">Year</Label>
+                <Select value={reportYear} onValueChange={setReportYear}>
+                  <SelectTrigger id="year">
+                    <SelectValue placeholder="Select year" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableYears.map((year) => (
+                      <SelectItem key={year} value={year.toString()}>
+                        {year}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {reportFilterType === "DateRange" && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="startDate">Start Date</Label>
+                  <Input
+                    id="startDate"
+                    type="date"
+                    value={reportStartDate}
+                    onChange={(e) => setReportStartDate(e.target.value)}
+                    placeholder="dd/mm/yyyy"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="endDate">End Date</Label>
+                  <Input
+                    id="endDate"
+                    type="date"
+                    value={reportEndDate}
+                    onChange={(e) => setReportEndDate(e.target.value)}
+                    placeholder="dd/mm/yyyy"
+                  />
+                </div>
+              </>
+            )}
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button onClick={handleShowReport} className="bg-blue-600 hover:bg-blue-700">
+              Show Report
+            </Button>
+            <Button variant="outline" onClick={() => setReportDialogOpen(false)}>
+              Close
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
+
     </div>
   );
 }

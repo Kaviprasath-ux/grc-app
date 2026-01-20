@@ -2,20 +2,31 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth } from '@/lib/api-auth';
 
-// Helper function to generate report code
+// Helper function to generate report code (format: RPT-NNN - unique serial)
 async function generateReportCode(): Promise<string> {
-  const lastReport = await prisma.auditReport.findFirst({
-    orderBy: { reportCode: 'desc' },
+  // Get all reports to find the highest number
+  const reports = await prisma.auditReport.findMany({
     select: { reportCode: true },
   });
 
-  if (!lastReport) {
-    return 'RPT001';
+  if (reports.length === 0) {
+    return 'RPT-0001';
   }
 
-  const lastNumber = parseInt(lastReport.reportCode.replace('RPT', ''), 10);
-  const nextNumber = lastNumber + 1;
-  return `RPT${nextNumber.toString().padStart(3, '0')}`;
+  // Extract numbers from all report codes and find max
+  let maxNumber = 0;
+  for (const report of reports) {
+    // Handle both old format (RPT-YYYY-NNN) and new format (RPT-NNN)
+    const parts = report.reportCode.split('-');
+    const lastPart = parts[parts.length - 1];
+    const num = parseInt(lastPart, 10) || 0;
+    if (num > maxNumber) {
+      maxNumber = num;
+    }
+  }
+
+  const nextNumber = maxNumber + 1;
+  return `RPT-${nextNumber.toString().padStart(4, '0')}`;
 }
 
 // POST /api/internal-audit/report/generate - Generate a new audit report
@@ -45,7 +56,7 @@ export const POST = withAuth(
         include: {
           department: true,
           assignedAuditor: true,
-          auditReport: true,
+          report: true,
           findings: {
             select: {
               id: true,
@@ -73,7 +84,7 @@ export const POST = withAuth(
       }
 
       // Check if report already exists
-      if (engagement.auditReport) {
+      if (engagement.report) {
         return NextResponse.json(
           { error: 'Report already exists for this engagement' },
           { status: 400 }

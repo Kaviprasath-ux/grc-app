@@ -1,30 +1,36 @@
 import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
 // GET recent document searches
 export async function GET(request: NextRequest) {
   try {
-    // Placeholder: In production, this would fetch from a search history table
-    // For now, return sample recent searches
-    const recentSearches = [
-      {
-        id: "1",
-        query: "What is the principle of Demonstrating integrity",
-        result: null,
-        timestamp: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-      },
-      {
-        id: "2",
-        query: "Audit",
-        result: null,
-        timestamp: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
-      },
-    ];
+    const { searchParams } = new URL(request.url);
+    const limit = parseInt(searchParams.get("limit") || "10");
+
+    const recentSearches = await prisma.documentSearch.findMany({
+      orderBy: { createdAt: "desc" },
+      take: limit,
+    });
 
     return NextResponse.json(recentSearches);
   } catch (error) {
     console.error("Error fetching recent searches:", error);
     return NextResponse.json(
       { error: "Failed to fetch recent searches" },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE - Clear search history
+export async function DELETE(request: NextRequest) {
+  try {
+    await prisma.documentSearch.deleteMany({});
+    return NextResponse.json({ message: "Search history cleared" });
+  } catch (error) {
+    console.error("Error clearing search history:", error);
+    return NextResponse.json(
+      { error: "Failed to clear search history" },
       { status: 500 }
     );
   }

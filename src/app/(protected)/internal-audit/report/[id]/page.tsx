@@ -4,12 +4,26 @@ import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import { Loader2, ArrowLeft, Download, Pencil } from "lucide-react";
 import { useHasRole } from "@/hooks/usePermissions";
+
+interface Finding {
+  id: string;
+  findingId: string;
+  finding: string;
+  description: string | null;
+  severity: string;
+  status: string;
+}
 
 interface AuditReportData {
   id: string;
@@ -21,23 +35,37 @@ interface AuditReportData {
   methodology: string | null;
   observations: string | null;
   recommendations: string | null;
-  managementResponse: string | null;
+  managementResponse: string | null; // Used for Summary section
   conclusion: string | null;
   overallResult: string | null;
+  auditeeId: string | null;
+  auditeeName: string | null;
   auditeeComment: string | null;
   status: string;
   draftGeneratedAt: string | null;
+  updatedAt: string;
   engagement: {
     id: string;
     auditId: string;
     engagementTitle: string;
+    engagementObjective: string | null;
+    engagementScope: string | null;
     plannedStartDate: string | null;
     plannedEndDate: string | null;
     actualStartDate: string | null;
     actualEndDate: string | null;
     department: { id: string; name: string } | null;
     assignedAuditor: { id: string; firstName: string; lastName: string } | null;
+    auditee: { id: string; firstName: string; lastName: string } | null;
+    findings: Finding[];
   };
+}
+
+interface UserOption {
+  id: string;
+  firstName: string;
+  lastName: string;
+  fullName: string;
 }
 
 interface PageProps {
@@ -56,16 +84,19 @@ export default function AuditReportViewPage({ params }: PageProps) {
   const [isEditingAuditeeComment, setIsEditingAuditeeComment] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savingAuditeeComment, setSavingAuditeeComment] = useState(false);
+  const [users, setUsers] = useState<UserOption[]>([]);
 
   // Edit form state (for AuditHead)
   const [editForm, setEditForm] = useState({
     executiveSummary: "",
-    observations: "",
-    methodology: "",
-    objectives: "",
+    summary: "",
+    overallResultText: "",
+    background: "",
+    objective: "",
     scope: "",
     recommendations: "",
     conclusion: "",
+    auditeeId: "",
   });
 
   // Auditee comment state
@@ -73,6 +104,7 @@ export default function AuditReportViewPage({ params }: PageProps) {
 
   useEffect(() => {
     fetchReport();
+    fetchUsers();
   }, [engagementId]);
 
   const fetchReport = async () => {
@@ -82,14 +114,26 @@ export default function AuditReportViewPage({ params }: PageProps) {
       if (response.ok) {
         const data = await response.json();
         setReport(data);
+        // Static template defaults (Objective and Scope default from engagement)
+        const defaultExecutiveSummary = `This report presents the results of the internal audit conducted for ${data.title}. The audit was performed to assess the adequacy and effectiveness of internal controls, compliance with policies and procedures, and the efficiency of operations. Key findings and recommendations are detailed in the sections below.`;
+        const defaultSummary = "This section summarizes the key findings and conclusions from the internal audit conducted for the period indicated above. The audit was performed to evaluate the adequacy and effectiveness of the organization's internal controls, governance processes, and risk management practices.";
+        const defaultOverallResultText = "Based on our audit procedures and findings, the overall audit result is {RESULT}. The controls tested during the audit period were found to be operating as designed, with appropriate documentation and oversight in place to manage identified risks effectively.";
+        const defaultBackground = "The internal audit function is an independent and objective assurance activity designed to add value and improve the organization's operations. This audit was conducted in accordance with the International Standards for the Professional Practice of Internal Auditing and the organization's internal audit charter.";
+        const defaultObjective = "The objective of this audit was to evaluate the adequacy and effectiveness of internal controls, assess compliance with applicable policies and regulations, and identify opportunities for process improvements.";
+        const defaultScope = "The scope of this audit covered the review of relevant documentation, interviews with key personnel, testing of controls, and analysis of processes for the period specified in this report.";
+        const defaultRecommendations = "Based on our audit findings, we recommend that management implement the corrective actions identified in the detailed findings section above. These recommendations are designed to strengthen internal controls and improve operational efficiency.";
+        const defaultConclusion = "In conclusion, this audit has provided valuable insights into the current state of internal controls and compliance within the audited area. We appreciate the cooperation of all personnel involved in this audit and look forward to working with management to address the identified findings.";
+
         setEditForm({
-          executiveSummary: data.executiveSummary || "",
-          observations: data.observations || "",
-          methodology: data.methodology || "",
-          objectives: data.objectives || "",
-          scope: data.scope || "",
-          recommendations: data.recommendations || "",
-          conclusion: data.conclusion || "",
+          executiveSummary: data.executiveSummary || defaultExecutiveSummary,
+          summary: data.managementResponse || defaultSummary,
+          overallResultText: data.observations || defaultOverallResultText,
+          background: data.methodology || defaultBackground,
+          objective: data.objectives || data.engagement.engagementObjective || defaultObjective,
+          scope: data.scope || data.engagement.engagementScope || defaultScope,
+          recommendations: data.recommendations || defaultRecommendations,
+          conclusion: data.conclusion || defaultConclusion,
+          auditeeId: data.auditeeId || "",
         });
         setAuditeeComment(data.auditeeComment || "");
       } else {
@@ -104,15 +148,45 @@ export default function AuditReportViewPage({ params }: PageProps) {
     }
   };
 
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch("/api/users");
+      if (response.ok) {
+        const data = await response.json();
+        setUsers(data);
+      }
+    } catch (error) {
+      console.error("Error fetching users:", error);
+    }
+  };
+
   const handleSave = async () => {
     if (!report) return;
 
     setSaving(true);
     try {
+      // Find selected auditee name
+      const selectedUser = users.find((u) => u.id === editForm.auditeeId);
+      const auditeeName = selectedUser ? `${selectedUser.firstName} ${selectedUser.lastName}` : "";
+
+      // Map form fields to API fields
+      const payload = {
+        executiveSummary: editForm.executiveSummary,
+        managementResponse: editForm.summary,
+        observations: editForm.overallResultText,
+        methodology: editForm.background,
+        objectives: editForm.objective,
+        scope: editForm.scope,
+        recommendations: editForm.recommendations,
+        conclusion: editForm.conclusion,
+        auditeeId: editForm.auditeeId,
+        auditeeName,
+      };
+
       const response = await fetch(`/api/internal-audit/report/${engagementId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editForm),
+        body: JSON.stringify(payload),
       });
 
       if (response.ok) {
@@ -208,7 +282,7 @@ export default function AuditReportViewPage({ params }: PageProps) {
   }
 
   const fieldworkPeriod = `${formatDate(report.engagement.actualStartDate || report.engagement.plannedStartDate)} to ${formatDate(report.engagement.actualEndDate || report.engagement.plannedEndDate)}`;
-  const reportDate = formatDate(report.draftGeneratedAt);
+  const reportDate = formatDate(report.updatedAt);
   const distribution = "Audit Committee, CFO, Controller, IT Head";
 
   return (
@@ -249,14 +323,26 @@ export default function AuditReportViewPage({ params }: PageProps) {
                     variant="outline"
                     onClick={() => {
                       setIsEditing(false);
+                      // Static template defaults
+                      const defaultExecutiveSummary = `This report presents the results of the internal audit conducted for ${report.title}. The audit was performed to assess the adequacy and effectiveness of internal controls, compliance with policies and procedures, and the efficiency of operations. Key findings and recommendations are detailed in the sections below.`;
+                      const defaultSummary = "This section summarizes the key findings and conclusions from the internal audit conducted for the period indicated above. The audit was performed to evaluate the adequacy and effectiveness of the organization's internal controls, governance processes, and risk management practices.";
+                      const defaultOverallResultText = "Based on our audit procedures and findings, the overall audit result is {RESULT}. The controls tested during the audit period were found to be operating as designed, with appropriate documentation and oversight in place to manage identified risks effectively.";
+                      const defaultBackground = "The internal audit function is an independent and objective assurance activity designed to add value and improve the organization's operations. This audit was conducted in accordance with the International Standards for the Professional Practice of Internal Auditing and the organization's internal audit charter.";
+                      const defaultObjective = "The objective of this audit was to evaluate the adequacy and effectiveness of internal controls, assess compliance with applicable policies and regulations, and identify opportunities for process improvements.";
+                      const defaultScope = "The scope of this audit covered the review of relevant documentation, interviews with key personnel, testing of controls, and analysis of processes for the period specified in this report.";
+                      const defaultRecommendations = "Based on our audit findings, we recommend that management implement the corrective actions identified in the detailed findings section above. These recommendations are designed to strengthen internal controls and improve operational efficiency.";
+                      const defaultConclusion = "In conclusion, this audit has provided valuable insights into the current state of internal controls and compliance within the audited area. We appreciate the cooperation of all personnel involved in this audit and look forward to working with management to address the identified findings.";
+
                       setEditForm({
-                        executiveSummary: report.executiveSummary || "",
-                        observations: report.observations || "",
-                        methodology: report.methodology || "",
-                        objectives: report.objectives || "",
-                        scope: report.scope || "",
-                        recommendations: report.recommendations || "",
-                        conclusion: report.conclusion || "",
+                        executiveSummary: report.executiveSummary || defaultExecutiveSummary,
+                        summary: report.managementResponse || defaultSummary,
+                        overallResultText: report.observations || defaultOverallResultText,
+                        background: report.methodology || defaultBackground,
+                        objective: report.objectives || report.engagement.engagementObjective || defaultObjective,
+                        scope: report.scope || report.engagement.engagementScope || defaultScope,
+                        recommendations: report.recommendations || defaultRecommendations,
+                        conclusion: report.conclusion || defaultConclusion,
+                        auditeeId: report.auditeeId || "",
                       });
                     }}
                   >
@@ -320,6 +406,33 @@ export default function AuditReportViewPage({ params }: PageProps) {
             <span className="font-semibold w-40">Distribution:</span>
             <span className="text-blue-600">{distribution}</span>
           </div>
+          <div className="flex items-center">
+            <span className="font-semibold w-40">Auditee:</span>
+            {isEditing ? (
+              <Select
+                value={editForm.auditeeId}
+                onValueChange={(value) => setEditForm((prev) => ({ ...prev, auditeeId: value }))}
+              >
+                <SelectTrigger className="w-64">
+                  <SelectValue placeholder="Select Auditee" />
+                </SelectTrigger>
+                <SelectContent>
+                  {users.map((user) => (
+                    <SelectItem key={user.id} value={user.id}>
+                      {user.firstName} {user.lastName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <span className="text-blue-600">
+                {report.auditeeName ||
+                  (report.engagement.auditee
+                    ? `${report.engagement.auditee.firstName} ${report.engagement.auditee.lastName}`
+                    : "")}
+              </span>
+            )}
+          </div>
         </div>
 
         <hr className="border-gray-300" />
@@ -331,11 +444,32 @@ export default function AuditReportViewPage({ params }: PageProps) {
             <Textarea
               value={editForm.executiveSummary}
               onChange={(e) => setEditForm((prev) => ({ ...prev, executiveSummary: e.target.value }))}
-              rows={6}
+              rows={5}
               className="w-full"
             />
           ) : (
-            <p className="text-sm whitespace-pre-wrap">{report.executiveSummary}</p>
+            <p className="text-sm whitespace-pre-wrap">
+              {report.executiveSummary || `This report presents the results of the internal audit conducted for ${report.title}. The audit was performed to assess the adequacy and effectiveness of internal controls, compliance with policies and procedures, and the efficiency of operations. Key findings and recommendations are detailed in the sections below.`}
+            </p>
+          )}
+        </div>
+
+        <hr className="border-gray-300" />
+
+        {/* Summary */}
+        <div>
+          <h2 className="font-bold text-base mb-2">Summary</h2>
+          {isEditing ? (
+            <Textarea
+              value={editForm.summary}
+              onChange={(e) => setEditForm((prev) => ({ ...prev, summary: e.target.value }))}
+              rows={4}
+              className="w-full"
+            />
+          ) : (
+            <p className="text-sm whitespace-pre-wrap">
+              {report.managementResponse || "This section summarizes the key findings and conclusions from the internal audit conducted for the period indicated above. The audit was performed to evaluate the adequacy and effectiveness of the organization's internal controls, governance processes, and risk management practices."}
+            </p>
           )}
         </div>
 
@@ -345,15 +479,30 @@ export default function AuditReportViewPage({ params }: PageProps) {
         <div>
           <h2 className="font-bold text-base mb-2">Overall Result</h2>
           {isEditing ? (
-            <Textarea
-              value={editForm.observations}
-              onChange={(e) => setEditForm((prev) => ({ ...prev, observations: e.target.value }))}
-              rows={4}
-              className="w-full"
-            />
+            <div className="space-y-2">
+              <p className="text-xs text-gray-500">Use {"{RESULT}"} placeholder for dynamic Pass/Fail value</p>
+              <Textarea
+                value={editForm.overallResultText}
+                onChange={(e) => setEditForm((prev) => ({ ...prev, overallResultText: e.target.value }))}
+                rows={4}
+                className="w-full"
+              />
+            </div>
           ) : (
             <p className="text-sm whitespace-pre-wrap">
-              {report.observations?.replace("{Auditor's overall audit result}", report.overallResult || "Pass")}
+              {(report.observations || "Based on our audit procedures and findings, the overall audit result is {RESULT}. The controls tested during the audit period were found to be operating as designed, with appropriate documentation and oversight in place to manage identified risks effectively.")
+                .replace(/{RESULT}/g, report.overallResult || "Pass")
+                .split(report.overallResult || "Pass")
+                .map((part, index, arr) => (
+                  <span key={index}>
+                    {part}
+                    {index < arr.length - 1 && (
+                      <span className={`font-semibold ${report.overallResult === "Pass" ? "text-green-700" : "text-red-700"}`}>
+                        {report.overallResult || "Pass"}
+                      </span>
+                    )}
+                  </span>
+                ))}
             </p>
           )}
         </div>
@@ -365,13 +514,15 @@ export default function AuditReportViewPage({ params }: PageProps) {
           <h2 className="font-bold text-base mb-2">Background</h2>
           {isEditing ? (
             <Textarea
-              value={editForm.methodology}
-              onChange={(e) => setEditForm((prev) => ({ ...prev, methodology: e.target.value }))}
+              value={editForm.background}
+              onChange={(e) => setEditForm((prev) => ({ ...prev, background: e.target.value }))}
               rows={4}
               className="w-full"
             />
           ) : (
-            <p className="text-sm whitespace-pre-wrap">{report.methodology}</p>
+            <p className="text-sm whitespace-pre-wrap">
+              {report.methodology || "The internal audit function is an independent and objective assurance activity designed to add value and improve the organization's operations. This audit was conducted in accordance with the International Standards for the Professional Practice of Internal Auditing and the organization's internal audit charter."}
+            </p>
           )}
         </div>
 
@@ -382,13 +533,15 @@ export default function AuditReportViewPage({ params }: PageProps) {
           <h2 className="font-bold text-base mb-2">Objective</h2>
           {isEditing ? (
             <Textarea
-              value={editForm.objectives}
-              onChange={(e) => setEditForm((prev) => ({ ...prev, objectives: e.target.value }))}
-              rows={2}
+              value={editForm.objective}
+              onChange={(e) => setEditForm((prev) => ({ ...prev, objective: e.target.value }))}
+              rows={3}
               className="w-full"
             />
           ) : (
-            <p className="text-sm whitespace-pre-wrap">{report.objectives}</p>
+            <p className="text-sm whitespace-pre-wrap">
+              {report.objectives || report.engagement.engagementObjective || "The objective of this audit was to evaluate the adequacy and effectiveness of internal controls, assess compliance with applicable policies and regulations, and identify opportunities for process improvements."}
+            </p>
           )}
         </div>
 
@@ -401,53 +554,119 @@ export default function AuditReportViewPage({ params }: PageProps) {
             <Textarea
               value={editForm.scope}
               onChange={(e) => setEditForm((prev) => ({ ...prev, scope: e.target.value }))}
-              rows={2}
+              rows={3}
               className="w-full"
             />
           ) : (
-            <p className="text-sm whitespace-pre-wrap">{report.scope}</p>
+            <p className="text-sm whitespace-pre-wrap">
+              {report.scope || report.engagement.engagementScope || "The scope of this audit covered the review of relevant documentation, interviews with key personnel, testing of controls, and analysis of processes for the period specified in this report."}
+            </p>
           )}
         </div>
 
-        {/* Recommendations (if exists) */}
-        {(report.recommendations || isEditing) && (
-          <>
-            <hr className="border-gray-300" />
-            <div>
-              <h2 className="font-bold text-base mb-2">Recommendations</h2>
-              {isEditing ? (
-                <Textarea
-                  value={editForm.recommendations}
-                  onChange={(e) => setEditForm((prev) => ({ ...prev, recommendations: e.target.value }))}
-                  rows={4}
-                  className="w-full"
-                />
-              ) : (
-                <p className="text-sm whitespace-pre-wrap">{report.recommendations}</p>
-              )}
-            </div>
-          </>
-        )}
+        <hr className="border-gray-300" />
 
-        {/* Conclusion (if exists) */}
-        {(report.conclusion || isEditing) && (
-          <>
-            <hr className="border-gray-300" />
-            <div>
-              <h2 className="font-bold text-base mb-2">Conclusion</h2>
-              {isEditing ? (
-                <Textarea
-                  value={editForm.conclusion}
-                  onChange={(e) => setEditForm((prev) => ({ ...prev, conclusion: e.target.value }))}
-                  rows={4}
-                  className="w-full"
-                />
-              ) : (
-                <p className="text-sm whitespace-pre-wrap">{report.conclusion}</p>
-              )}
-            </div>
-          </>
-        )}
+        {/* Recommendations */}
+        <div>
+          <h2 className="font-bold text-base mb-2">Recommendations</h2>
+          {isEditing ? (
+            <Textarea
+              value={editForm.recommendations}
+              onChange={(e) => setEditForm((prev) => ({ ...prev, recommendations: e.target.value }))}
+              rows={4}
+              className="w-full"
+            />
+          ) : (
+            <p className="text-sm whitespace-pre-wrap">
+              {report.recommendations || "Based on our audit findings, we recommend that management implement the corrective actions identified in the detailed findings section above. These recommendations are designed to strengthen internal controls and improve operational efficiency."}
+            </p>
+          )}
+        </div>
+
+        <hr className="border-gray-300" />
+
+        {/* Conclusion */}
+        <div>
+          <h2 className="font-bold text-base mb-2">Conclusion</h2>
+          {isEditing ? (
+            <Textarea
+              value={editForm.conclusion}
+              onChange={(e) => setEditForm((prev) => ({ ...prev, conclusion: e.target.value }))}
+              rows={4}
+              className="w-full"
+            />
+          ) : (
+            <p className="text-sm whitespace-pre-wrap">
+              {report.conclusion || "In conclusion, this audit has provided valuable insights into the current state of internal controls and compliance within the audited area. We appreciate the cooperation of all personnel involved in this audit and look forward to working with management to address the identified findings."}
+            </p>
+          )}
+        </div>
+
+        {/* Detail Findings */}
+        <hr className="border-gray-300" />
+        <div>
+          <h2 className="font-bold text-base mb-4">Detail Findings</h2>
+
+          {/* Static template text - not editable, only Pass/Fail is dynamic */}
+          <p className="text-sm mb-4">
+            The controls tested were found to be{" "}
+            <span className={`font-semibold ${report.overallResult === "Pass" ? "text-green-700" : "text-red-700"}`}>
+              {report.overallResult || "Pass"}
+            </span>, providing adequate assurance over financial reporting and operational integrity.
+          </p>
+
+          {/* Summary of Observation */}
+          <h3 className="font-bold text-sm mb-3">Summary of Observation</h3>
+          <p className="text-sm mb-3">
+            The following table summarizes the observations identified during the audit, categorized by severity level.
+          </p>
+
+          {/* Summary Table */}
+          <div className="border rounded-lg overflow-hidden mb-4">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="px-4 py-2 text-left font-semibold border-b">Severity</th>
+                  <th className="px-4 py-2 text-left font-semibold border-b">Findings</th>
+                  <th className="px-4 py-2 text-left font-semibold border-b">Recommendations</th>
+                  <th className="px-4 py-2 text-left font-semibold border-b">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {report.engagement.findings && report.engagement.findings.length > 0 ? (
+                  report.engagement.findings.map((finding) => (
+                    <tr key={finding.id} className="border-b last:border-b-0">
+                      <td className="px-4 py-2">
+                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                          finding.severity === "Critical" ? "bg-red-100 text-red-700" :
+                          finding.severity === "High" ? "bg-orange-100 text-orange-700" :
+                          finding.severity === "Medium" ? "bg-yellow-100 text-yellow-700" :
+                          "bg-green-100 text-green-700"
+                        }`}>
+                          {finding.severity}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2">{finding.finding}</td>
+                      <td className="px-4 py-2">{finding.description || "-"}</td>
+                      <td className="px-4 py-2">{finding.status}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={4} className="px-4 py-4 text-center text-gray-500 italic">
+                      No observations recorded
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Total Findings */}
+          <div className="text-sm font-semibold">
+            Total Findings: {report.engagement.findings?.length || 0}
+          </div>
+        </div>
 
         {/* Auditee Comment Section */}
         <hr className="border-gray-300" />
