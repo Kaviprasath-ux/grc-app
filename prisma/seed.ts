@@ -258,6 +258,42 @@ async function main() {
   }
   console.log("✅ User roles assigned");
 
+  // Create Superadmin user (GRCAdministrator)
+  const superadminUser = await prisma.user.upsert({
+    where: { userName: "superadmin" },
+    update: {},
+    create: {
+      userId: "SUPERADMIN-001",
+      userName: "superadmin",
+      email: "superadmin@baarez.com",
+      password: "Baarez@2025",
+      firstName: "Super",
+      lastName: "Admin",
+      fullName: "Super Admin",
+      designation: "System Administrator",
+      role: "GRCAdministrator",
+      function: "Administration",
+      isActive: true,
+      isBlocked: false,
+    },
+  });
+
+  // Assign GRCAdministrator role to superadmin
+  await prisma.userRole.upsert({
+    where: {
+      userId_roleId: {
+        userId: superadminUser.id,
+        roleId: createdRoles["GRCAdministrator"],
+      },
+    },
+    update: {},
+    create: {
+      userId: superadminUser.id,
+      roleId: createdRoles["GRCAdministrator"],
+    },
+  });
+  console.log("✅ Superadmin user created (superadmin / Baarez@2025)");
+
   // Create Stakeholders
   const stakeholders = [
     { name: "John Smith", email: "john.smith@example.com", type: "Internal", status: "Active" },

@@ -54,6 +54,23 @@ model CustomerAccount {
   internalAuditFindings  InternalAuditFinding[]
   internalAuditCAPAs     InternalAuditCAPA[]
   auditReports           AuditReport[]
+  subscriptionPlans      SubscriptionPlan[]
+}
+
+// Subscription Plan for Customer Accounts
+model SubscriptionPlan {
+  id                  String          @id @default(cuid())
+  customerAccountId   String
+  customerAccount     CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+  startDate           DateTime
+  expiryDate          DateTime
+  maxFrameworksAllowed Int            @default(0)
+  maxAccountsAllowed   Int            @default(0)
+  frameworksUsed      Int             @default(0)
+  accountsUsed        Int             @default(0)
+  status              String          @default("Active") // Active, Inactive, Expired
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
 }
 
 // ==================== ROLE-BASED ACCESS CONTROL (RBAC) ====================

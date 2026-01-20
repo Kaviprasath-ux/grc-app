@@ -12,6 +12,23 @@ CREATE TABLE "CustomerAccount" (
 );
 
 -- CreateTable
+CREATE TABLE "SubscriptionPlan" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "startDate" TIMESTAMP(3) NOT NULL,
+    "expiryDate" TIMESTAMP(3) NOT NULL,
+    "maxFrameworksAllowed" INTEGER NOT NULL DEFAULT 0,
+    "maxAccountsAllowed" INTEGER NOT NULL DEFAULT 0,
+    "frameworksUsed" INTEGER NOT NULL DEFAULT 0,
+    "accountsUsed" INTEGER NOT NULL DEFAULT 0,
+    "status" TEXT NOT NULL DEFAULT 'Active',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "SubscriptionPlan_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "Role" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -1695,6 +1712,18 @@ CREATE TABLE "InternalAuditDocument" (
 );
 
 -- CreateTable
+CREATE TABLE "DocumentSearch" (
+    "id" TEXT NOT NULL,
+    "query" TEXT NOT NULL,
+    "result" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'Satisfactory',
+    "userId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "DocumentSearch_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "GovernanceTemplate" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -2089,6 +2118,9 @@ CREATE UNIQUE INDEX "_EngagementTeamMembers_AB_unique" ON "_EngagementTeamMember
 
 -- CreateIndex
 CREATE INDEX "_EngagementTeamMembers_B_index" ON "_EngagementTeamMembers"("B");
+
+-- AddForeignKey
+ALTER TABLE "SubscriptionPlan" ADD CONSTRAINT "SubscriptionPlan_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "RolePermission" ADD CONSTRAINT "RolePermission_roleId_fkey" FOREIGN KEY ("roleId") REFERENCES "Role"("id") ON DELETE CASCADE ON UPDATE CASCADE;
