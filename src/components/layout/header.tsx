@@ -139,18 +139,27 @@ export function Header({ onMenuClick }: HeaderProps) {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Organization Name */}
-        <span className="hidden lg:block text-sm font-semibold text-gray-800">
-          Baarez Technology Solutions
-        </span>
+        {/* User Name and Avatar */}
+        <div className="hidden lg:flex items-center gap-2">
+          <span className="text-sm font-semibold text-gray-800">
+            {session?.user?.name || "User"}
+          </span>
+        </div>
 
         {/* User Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-9 w-9 rounded-full">
               <Avatar className="h-9 w-9">
-                <AvatarFallback className="bg-gray-300 text-gray-600">
-                  BT
+                <AvatarFallback className="bg-blue-600 text-white">
+                  {session?.user?.name
+                    ? session.user.name
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")
+                        .toUpperCase()
+                        .slice(0, 2)
+                    : "U"}
                 </AvatarFallback>
               </Avatar>
             </Button>
@@ -158,8 +167,11 @@ export function Header({ onMenuClick }: HeaderProps) {
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium">BTS Admin</p>
-                <p className="text-xs text-muted-foreground">admin@baarez.com</p>
+                <p className="text-sm font-medium">{session?.user?.name || "User"}</p>
+                <p className="text-xs text-muted-foreground">{session?.user?.email || ""}</p>
+                {session?.user?.customerAccountName && (
+                  <p className="text-xs text-blue-600">{session.user.customerAccountName}</p>
+                )}
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
