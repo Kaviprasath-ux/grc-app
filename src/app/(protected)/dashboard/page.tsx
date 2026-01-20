@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { StatsCard } from "@/components/shared";
@@ -18,10 +18,24 @@ import {
   governanceStatusData,
   exceptionStatusData,
 } from "@/data/dashboard";
+import { getDashboardStats } from "@/actions/dashboard";
 
 export default function DashboardPage() {
   const { data: session } = useSession();
   const router = useRouter();
+  const [stats, setStats] = useState(dashboardStats);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const data = await getDashboardStats();
+        setStats(data);
+      } catch (error) {
+        console.error("Failed to load dashboard stats", error);
+      }
+    };
+    fetchStats();
+  }, []);
 
   // Redirect users based on their role to appropriate landing pages
   useEffect(() => {
@@ -30,8 +44,8 @@ export default function DashboardPage() {
     } else if (session?.user?.roles?.includes("AuditHead")) {
       router.replace("/internal-audit/dashboard");
     } else if (session?.user?.roles?.includes("Auditee") &&
-               !session?.user?.roles?.includes("AuditHead") &&
-               !session?.user?.roles?.includes("Auditor")) {
+      !session?.user?.roles?.includes("AuditHead") &&
+      !session?.user?.roles?.includes("Auditor")) {
       // Auditee can only access Fieldwork, CAPA Tracking, and Reports (NO Dashboard)
       router.replace("/internal-audit/fieldwork");
     }
@@ -51,32 +65,32 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <StatsCard
           label="Departments"
-          value={dashboardStats.departments}
+          value={stats.departments}
           href="/organization/profile?tab=departments"
         />
         <StatsCard
           label="Stakeholders"
-          value={dashboardStats.stakeholders}
+          value={stats.stakeholders}
           href="/organization/context"
         />
         <StatsCard
           label="Regulations"
-          value={dashboardStats.regulations}
+          value={stats.regulations}
           href="/organization/profile?tab=regulations"
         />
         <StatsCard
           label="Issues"
-          value={dashboardStats.issues}
+          value={stats.issues}
           href="/organization/context"
         />
         <StatsCard
           label="Risks"
-          value={dashboardStats.risks}
+          value={stats.risks}
           href="/risks/register"
         />
         <StatsCard
           label="Exceptions"
-          value={dashboardStats.exceptions}
+          value={stats.exceptions}
           href="/compliance/exception"
         />
       </div>

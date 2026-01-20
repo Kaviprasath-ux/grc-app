@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, Trash2, Download, Upload, Search, Sparkles, FileText, Eye } from "lucide-react";
+import { Plus, Pencil, Trash2, Download, Upload, Search, Sparkles, FileText, Eye, Loader2, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { PageHeader, DataGrid } from "@/components/shared";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -29,6 +30,11 @@ import { ColumnDef } from "@tanstack/react-table";
 import { useToast } from "@/hooks/use-toast";
 import { useSession } from "next-auth/react";
 import { useUserRoles } from "@/hooks/usePermissions";
+import {
+  startRiskGenerationJob,
+  checkRiskGenerationStatus,
+  getRiskGenerationResult
+} from "@/actions/risk-generation";
 
 interface Department {
   id: string;
@@ -142,6 +148,150 @@ export default function ProcessPage() {
   const [rto, setRto] = useState("0");
   const [rpo, setRpo] = useState("0");
 
+  // AI Risk Evaluation State
+  const [aiJobStatus, setAiJobStatus] = useState<"idle" | "generating" | "completed" | "error">("idle");
+  const [aiJobId, setAiJobId] = useState<string | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [generatedRisks, setGeneratedRisks] = useState<any[]>([]);
+  const [selectedRisks, setSelectedRisks] = useState<Set<number>>(new Set());
+
+  // AI Polling Effect
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (aiJobStatus === "generating" && aiJobId) {
+      interval = setInterval(async () => {
+        try {
+          // Poll Status
+          const statusData = await checkRiskGenerationStatus(aiJobId);
+
+          if (statusData.status === "COMPLETED" || statusData.status === "completed") {
+            // Fetch Result
+            const resultData = await getRiskGenerationResult(aiJobId);
+            const rawRisks = resultData.Risks || resultData.generated_risks || [];
+
+            const mappedRisks = rawRisks.map((r: any) => ({
+              name: r.Risk_Name || r.RiskName || "Unnamed Risk",
+              description: r.Risk_Description || r.description || "No description provided.",
+              impact: r.Inherent_risk_rating || "Medium",
+              likelihood: "Medium" // AI might not provide this in V2 yet, default
+            }));
+
+            setGeneratedRisks(mappedRisks);
+            setAiJobStatus("completed");
+            setSelectedRisks(new Set(mappedRisks.map((_: any, i: number) => i)));
+            clearInterval(interval);
+
+          } else if (statusData.status === "FAILED" || statusData.status === "failed") {
+            setAiJobStatus("error");
+            toast({
+              title: "AI Generation Failed",
+              description: statusData.error || "Unknown error",
+              variant: "destructive",
+            });
+            clearInterval(interval);
+          }
+        } catch (error) {
+          console.error("Polling error:", error);
+          setAiJobStatus("error"); // Stop polling on hard error?
+          clearInterval(interval);
+        }
+      }, 3000);
+    }
+    return () => clearInterval(interval);
+  }, [aiJobStatus, aiJobId, toast]);
+
+  const handleGenerateRisks = async () => {
+    if (!evaluatingProcess) return;
+    setAiJobStatus("generating");
+    setGeneratedRisks([]);
+    setAiJobId(null);
+    try {
+      const { jobId } = await startRiskGenerationJob({
+        Process_Details: `Process Name: ${evaluatingProcess.name}. Description: ${evaluatingProcess.description || "N/A"}. Type: ${evaluatingProcess.processType}.`
+      });
+
+      if (jobId) {
+        setAiJobId(jobId);
+      } else {
+        throw new Error("No Job ID returned");
+      }
+    } catch (error) {
+      console.error("Error starting AI job:", error);
+      setAiJobStatus("error");
+      toast({ title: "Error", description: "Failed to start AI job", variant: "destructive" });
+    }
+  };
+
+  const handleSaveRisks = async () => {
+    if (!evaluatingProcess) return;
+
+    // Convert Set to Array for iteration
+    const selectedIndices = Array.from(selectedRisks);
+    if (selectedIndices.length === 0) {
+      toast({ title: "No risks selected", description: "Please select at least one risk to save." });
+      return;
+    }
+
+    setAiJobStatus("generating"); // Re-use generating state or "saving" UI essentially
+    // Actually, let's keep it "completed" but show saving spinner on button.
+
+    let successCount = 0;
+
+    for (const index of selectedIndices) {
+      const risk = generatedRisks[index];
+      // Map Likelihood/Impact. AI might return strings or numbers.
+      // Simple mapping: 1-5 direct, strings mapped. Default 1.
+      const mapRating = (val: any) => {
+        if (typeof val === 'number') return Math.min(Math.max(val, 1), 5);
+        const str = String(val).toLowerCase();
+        if (str.includes("high")) return 4; // or 5
+        if (str.includes("medium")) return 3;
+        if (str.includes("low")) return 2;
+        return 1;
+      };
+
+      const payload = {
+        name: risk.name || risk.risk_name || "AI Generated Risk",
+        description: risk.description || risk.risk_description || "",
+        // Use riskSources to link to Process
+        riskSources: `Process: ${evaluatingProcess.name} (${evaluatingProcess.processCode})`,
+        category: "Operational", // Default or map if AI provides
+        departmentId: evaluatingProcess.departmentId,
+        likelihood: mapRating(risk.likelihood),
+        impact: mapRating(risk.impact),
+        status: "Open",
+        actor: "AI Assistant",
+      };
+
+      try {
+        const res = await fetch("/api/risks", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (res.ok) successCount++;
+      } catch (error) {
+        console.error("Error saving risk", error);
+      }
+    }
+
+    toast({
+      title: "Risks Saved",
+      description: `Successfully saved ${successCount} risks to the Risk Register.`,
+    });
+    setIsAIEvaluationOpen(false);
+    setAiJobStatus("idle");
+  };
+
+  const toggleRiskSelection = (index: number) => {
+    const newSet = new Set(selectedRisks);
+    if (newSet.has(index)) {
+      newSet.delete(index);
+    } else {
+      newSet.add(index);
+    }
+    setSelectedRisks(newSet);
+  };
   useEffect(() => {
     fetchData();
   }, []);
@@ -427,12 +577,17 @@ export default function ProcessPage() {
     {
       id: "aiRisk",
       header: "AI Risk",
-      cell: () => (
+      cell: ({ row }) => (
         <Button
           variant="outline"
           size="sm"
-          className="text-purple-600 border-purple-200 opacity-50 cursor-not-allowed"
-          disabled
+          className="text-purple-600 border-purple-200 hover:bg-purple-50"
+          onClick={() => {
+            setEvaluatingProcess(row.original);
+            setIsAIEvaluationOpen(true);
+            setAiJobStatus("idle");
+            setGeneratedRisks([]);
+          }}
         >
           <Sparkles className="h-4 w-4 mr-1" />
           AI Risk Evaluation
@@ -694,9 +849,8 @@ export default function ProcessPage() {
         </DialogContent>
       </Dialog>
 
-      {/* AI Risk Evaluation Dialog */}
       <Dialog open={isAIEvaluationOpen} onOpenChange={setIsAIEvaluationOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-purple-600" />
@@ -706,42 +860,102 @@ export default function ProcessPage() {
               AI-powered risk assessment for process: {evaluatingProcess?.name}
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
-            <div className="space-y-4">
-              <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
-                <h4 className="font-medium text-purple-900 mb-2">Risk Assessment Summary</h4>
-                <p className="text-sm text-purple-700">
-                  Based on the process characteristics and historical data, the AI has identified
-                  the following risk factors:
+
+          <div className="py-4 space-y-4">
+
+            {/* IDLE STATE */}
+            {aiJobStatus === "idle" && (
+              <div className="flex flex-col items-center justify-center p-8 bg-purple-50 rounded-lg border border-purple-100 text-center">
+                <Sparkles className="h-12 w-12 text-purple-300 mb-4" />
+                <h3 className="text-lg font-medium text-purple-900 mb-2">Ready to Assess Risks</h3>
+                <p className="text-sm text-purple-700 max-w-md mb-6">
+                  The AI will analyze your process details, including description, type, and complexity, to identify potential risks.
                 </p>
+                <Button onClick={handleGenerateRisks} className="bg-purple-600 hover:bg-purple-700">
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Generate Risks
+                </Button>
               </div>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                  <span className="text-sm">Operational Risk</span>
-                  <Badge variant="secondary">Medium</Badge>
+            )}
+
+            {/* GENERATING STATE */}
+            {aiJobStatus === "generating" && (
+              <div className="flex flex-col items-center justify-center p-12 space-y-4">
+                <Loader2 className="h-10 w-10 text-purple-600 animate-spin" />
+                <p className="font-medium text-purple-900">Analyzing Process...</p>
+                <p className="text-xs text-muted-foreground">This may take up to 30 seconds.</p>
+              </div>
+            )}
+
+            {/* ERROR STATE */}
+            {aiJobStatus === "error" && (
+              <div className="flex flex-col items-center justify-center p-8 bg-red-50 rounded-lg border border-red-100 text-center">
+                <AlertTriangle className="h-10 w-10 text-red-500 mb-4" />
+                <h3 className="text-lg font-medium text-red-900 mb-2">Analysis Failed</h3>
+                <p className="text-sm text-red-700 mb-6">
+                  Something went wrong while communicating with the AI service. Please try again.
+                </p>
+                <Button variant="outline" onClick={() => setAiJobStatus("idle")}>
+                  Try Again
+                </Button>
+              </div>
+            )}
+
+            {/* COMPLETED STATE */}
+            {aiJobStatus === "completed" && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium">Identified Risks ({generatedRisks.length})</h4>
+                  <p className="text-xs text-muted-foreground">Select risks to add to your register.</p>
                 </div>
-                <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                  <span className="text-sm">Compliance Risk</span>
-                  <Badge variant="outline">Low</Badge>
-                </div>
-                <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                  <span className="text-sm">Security Risk</span>
-                  <Badge variant="secondary">Medium</Badge>
+
+                <div className="border rounded-md divide-y max-h-[400px] overflow-y-auto">
+                  {generatedRisks.length === 0 ? (
+                    <div className="p-8 text-center text-muted-foreground">No risks identified.</div>
+                  ) : (
+                    generatedRisks.map((risk, idx) => (
+                      <div key={idx} className="flex items-start gap-3 p-3 hover:bg-gray-50">
+                        <Checkbox
+                          id={`risk-${idx}`}
+                          checked={selectedRisks.has(idx)}
+                          onCheckedChange={() => toggleRiskSelection(idx)}
+                          className="mt-1"
+                        />
+                        <div className="flex-1 space-y-1">
+                          <div className="flex items-center justify-between">
+                            <Label htmlFor={`risk-${idx}`} className="font-medium cursor-pointer">
+                              {risk.name || risk.risk_name || "Unnamed Risk"}
+                            </Label>
+                            <div className="flex gap-2 text-xs">
+                              {risk.likelihood && <Badge variant="outline">L: {risk.likelihood}</Badge>}
+                              {risk.impact && <Badge variant="outline">I: {risk.impact}</Badge>}
+                            </div>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            {risk.description || risk.risk_description || "No description provided."}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground">
-                * This is a simulated AI evaluation. In production, this would connect to an AI service
-                for real-time risk assessment.
-              </p>
-            </div>
+            )}
+
           </div>
+
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAIEvaluationOpen(false)}>
-              Close
-            </Button>
-            <Button>
-              Generate Full Report
-            </Button>
+            {aiJobStatus === "completed" ? (
+              <>
+                <Button variant="outline" onClick={() => setIsAIEvaluationOpen(false)}>Cancel</Button>
+                <Button onClick={handleSaveRisks} className="bg-purple-600 hover:bg-purple-700">
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  Save Selected Risks
+                </Button>
+              </>
+            ) : (
+              <Button variant="outline" onClick={() => setIsAIEvaluationOpen(false)}>Close</Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

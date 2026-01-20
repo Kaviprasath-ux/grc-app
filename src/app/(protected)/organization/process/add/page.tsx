@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 
+
 interface Department {
   id: string;
   name: string;
@@ -143,13 +144,12 @@ export default function AddProcessPage() {
             <div key={item.step} className="flex items-center flex-1">
               <div className="flex flex-col items-center">
                 <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium border-2 ${
-                    currentStep > item.step
-                      ? "bg-green-600 border-green-600 text-white"
-                      : currentStep === item.step
+                  className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium border-2 ${currentStep > item.step
+                    ? "bg-green-600 border-green-600 text-white"
+                    : currentStep === item.step
                       ? "bg-blue-600 border-blue-600 text-white"
                       : "bg-white border-gray-300 text-gray-500"
-                  }`}
+                    }`}
                 >
                   {currentStep > item.step ? <Check className="h-5 w-5" /> : item.step}
                 </div>
@@ -300,6 +300,8 @@ export default function AddProcessPage() {
             </div>
           </div>
         )}
+
+        import {extractProcessControls} from "@/actions/control-extraction";
 
         {/* Step 2: Process Flow */}
         {currentStep === 2 && (
