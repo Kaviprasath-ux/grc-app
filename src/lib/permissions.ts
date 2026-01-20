@@ -32,6 +32,7 @@ export const RESOURCES = {
   'organization.profile': '/organization/profile',
   'organization.context': '/organization/context',
   'organization.users': '/organization/users',
+  'organization.department': '/organization/department',
   'organization.process': '/organization/process',
   'organization.settings': '/organization/settings',
   'organization.settings.departments': '/organization/settings/departments',
