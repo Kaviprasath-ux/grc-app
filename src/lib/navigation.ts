@@ -298,6 +298,12 @@ const ROLE_SPECIFIC_PATHS: Record<string, string[]> = {
   "/compliance/framework": ["CustomerAdministrator"],
   // GRCAdministrator has separate Controls page with broader scope (all customers)
   "/compliance/control": ["GRCAdministrator"],
+  // GRCAdministrator has separate Governance page with broader scope (all customers)
+  "/compliance/governance": ["GRCAdministrator"],
+  // GRCAdministrator has separate Evidence page with broader scope (all customers)
+  "/compliance/evidence": ["GRCAdministrator"],
+  // GRCAdministrator has separate Master Data page with GRC-specific card routes
+  "/compliance/master-data": ["GRCAdministrator"],
 };
 
 /**
