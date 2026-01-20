@@ -48,6 +48,24 @@ next-env.d.ts
 # Claude Code configuration
 .claude/
 
-#database
+# Database
+*.db
+*.sqlite
+*.sqlite3
 prisma/dev.db
+prisma/dev.db-journal
+prisma/*.db
+prisma/*.sqlite
+
+# Prisma migrations (local database specific)
+prisma/migrations/
+
+# Temp files
+tmpclaude-*
 nul
+backup-local-files/
+
+# Playwright test files
+.playwright-mcp/
+playwright-report/
+test-results/
