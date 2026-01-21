@@ -30,6 +30,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { useToast } from "@/hooks/use-toast";
 import { useSession } from "next-auth/react";
 import { useUserRoles } from "@/hooks/usePermissions";
+import { RiskGenerationResponse } from "@/types/ai-types";
 
 interface Department {
   id: string;
@@ -133,6 +134,9 @@ export default function ProcessPage() {
   const [deletingProcessId, setDeletingProcessId] = useState<string | null>(null);
   const [isAIEvaluationOpen, setIsAIEvaluationOpen] = useState(false);
   const [evaluatingProcess, setEvaluatingProcess] = useState<Process | null>(null);
+  const [aiRiskLoading, setAiRiskLoading] = useState(false);
+  const [aiRiskResults, setAiRiskResults] = useState<RiskGenerationResponse | null>(null);
+  const [aiRiskError, setAiRiskError] = useState<string | null>(null);
   const [isBIAFormOpen, setIsBIAFormOpen] = useState(false);
   const [biaProcess, setBiaProcess] = useState<Process | null>(null);
   const [biaRatings, setBiaRatings] = useState<BIARating[]>([
@@ -276,6 +280,64 @@ export default function ProcessPage() {
     ));
     setIsBIAFormOpen(false);
     setBiaProcess(null);
+  };
+
+  // AI Risk Evaluation functions
+  const handleOpenAIEvaluation = (process: Process) => {
+    setEvaluatingProcess(process);
+    setAiRiskResults(null);
+    setAiRiskError(null);
+    setIsAIEvaluationOpen(true);
+
+    // Automatically trigger risk generation when dialog opens
+    handleGenerateRisks(process);
+  };
+
+  const handleGenerateRisks = async (process: Process) => {
+    setAiRiskLoading(true);
+    setAiRiskError(null);
+    setAiRiskResults(null);
+
+    try {
+      const response = await fetch('/api/ai/risk-evaluation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          Process_Details: {
+            Process_name: process.name,
+            Process_description: process.description || `Business process: ${process.name}. Department: ${process.department?.name || 'General'}. Type: ${process.processType || 'Standard'}.`,
+            Department: process.department?.name || 'General',
+          },
+          // Note: API requires EITHER Process_Details OR Assets_Details, not both
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to generate risks');
+      }
+
+      const data = await response.json();
+      setAiRiskResults(data);
+
+      toast({
+        title: 'Success',
+        description: `Generated ${(data.risks || data.generated_risks || []).length} risk${(data.risks || data.generated_risks || []).length !== 1 ? 's' : ''} for ${process.name}`,
+      });
+    } catch (error: any) {
+      console.error('Error generating risks:', error);
+      setAiRiskError(error.message || 'Failed to generate risk evaluation');
+
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to generate risk evaluation',
+        variant: 'destructive',
+      });
+    } finally {
+      setAiRiskLoading(false);
+    }
   };
 
   // Helper function to get BIA status for a process
@@ -431,12 +493,12 @@ export default function ProcessPage() {
     {
       id: "aiRisk",
       header: "AI Risk",
-      cell: () => (
+      cell: ({ row }) => (
         <Button
           variant="outline"
           size="sm"
-          className="text-purple-600 border-purple-200 opacity-50 cursor-not-allowed"
-          disabled
+          className="text-purple-600 border-purple-200 hover:bg-purple-50"
+          onClick={() => handleOpenAIEvaluation(row.original)}
         >
           <Sparkles className="h-4 w-4 mr-1" />
           AI Risk Evaluation
@@ -857,41 +919,85 @@ export default function ProcessPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            <div className="space-y-4">
-              <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
-                <h4 className="font-medium text-purple-900 mb-2">Risk Assessment Summary</h4>
-                <p className="text-sm text-purple-700">
-                  Based on the process characteristics and historical data, the AI has identified
-                  the following risk factors:
-                </p>
+            {aiRiskLoading && (
+              <div className="flex flex-col items-center justify-center py-8 space-y-4">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+                <p className="text-sm text-muted-foreground">Generating AI risk assessment...</p>
               </div>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                  <span className="text-sm">Operational Risk</span>
-                  <Badge variant="secondary">Medium</Badge>
+            )}
+
+            {aiRiskError && !aiRiskLoading && (
+              <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+                <h4 className="font-medium text-red-900 mb-2">Error</h4>
+                <p className="text-sm text-red-700">{aiRiskError}</p>
+              </div>
+            )}
+
+            {aiRiskResults && !aiRiskLoading && !aiRiskError && (
+              <div className="space-y-4">
+                <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+                  <h4 className="font-medium text-purple-900 mb-2">Risk Assessment Summary</h4>
+                  <p className="text-sm text-purple-700">
+                    Generated {(aiRiskResults.risks || aiRiskResults.generated_risks || []).length} risk{((aiRiskResults.risks || aiRiskResults.generated_risks || []).length) !== 1 ? 's' : ''} for {evaluatingProcess?.name}
+                  </p>
+                  {aiRiskResults.department && (
+                    <p className="text-xs text-purple-600 mt-1">Department: {aiRiskResults.department}</p>
+                  )}
                 </div>
-                <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                  <span className="text-sm">Compliance Risk</span>
-                  <Badge variant="outline">Low</Badge>
-                </div>
-                <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                  <span className="text-sm">Security Risk</span>
-                  <Badge variant="secondary">Medium</Badge>
+
+                <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                  {(aiRiskResults.risks || aiRiskResults.generated_risks || []).map((risk, index) => (
+                    <div key={index} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                      <div className="flex justify-between items-start mb-2">
+                        <h5 className="font-medium text-sm">{risk.Risk_name || risk.title}</h5>
+                        <Badge
+                          variant={
+                            (risk.Inherent_risk_rating || risk.level) === 'High' || (risk.Inherent_risk_rating || risk.level) === 'Critical'
+                              ? 'destructive'
+                              : (risk.Inherent_risk_rating || risk.level) === 'Medium'
+                                ? 'secondary'
+                                : 'outline'
+                          }
+                        >
+                          {risk.Inherent_risk_rating || risk.level}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-2">{risk.Risk_description || risk.description}</p>
+                      {risk.Risk_category && (
+                        <div className="text-xs mt-2">
+                          <span className="font-medium">Category:</span> {risk.Risk_category}
+                        </div>
+                      )}
+                      {(risk.inherent_likelihood || risk.inherent_impact) && (
+                        <div className="grid grid-cols-2 gap-2 text-xs mt-2">
+                          {risk.inherent_likelihood && (
+                            <div>
+                              <span className="font-medium">Likelihood:</span> {risk.inherent_likelihood}
+                            </div>
+                          )}
+                          {risk.inherent_impact && (
+                            <div>
+                              <span className="font-medium">Impact:</span> {risk.inherent_impact}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground">
-                * This is a simulated AI evaluation. In production, this would connect to an AI service
-                for real-time risk assessment.
-              </p>
-            </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAIEvaluationOpen(false)}>
               Close
             </Button>
-            <Button>
-              Generate Full Report
-            </Button>
+            {aiRiskResults && !aiRiskLoading && (
+              <Button onClick={() => handleGenerateRisks(evaluatingProcess!)}>
+                <Sparkles className="h-4 w-4 mr-2" />
+                Regenerate
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
