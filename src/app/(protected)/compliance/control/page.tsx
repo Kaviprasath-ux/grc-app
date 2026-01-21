@@ -376,6 +376,7 @@ export default function ControlListPage() {
         body: JSON.stringify(newControl),
       });
       if (response.ok) {
+        toast({ title: "Success", description: "Control created successfully" });
         setIsCreateDialogOpen(false);
         setCreateStep(1);
         setNewControl({
@@ -389,9 +390,21 @@ export default function ControlListPage() {
           assigneeId: "",
         });
         fetchControls();
+      } else {
+        const errorData = await response.json();
+        toast({
+          title: "Error",
+          description: errorData.error || "Failed to create control",
+          variant: "destructive"
+        });
       }
     } catch (error) {
       console.error("Error creating control:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create control",
+        variant: "destructive"
+      });
     }
   };
 
