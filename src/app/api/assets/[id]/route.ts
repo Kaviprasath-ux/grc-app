@@ -50,7 +50,7 @@ export const GET = withAuth(
       );
     }
   },
-  { resource: "assets.inventory", action: "view" }
+  { resource: "asset.inventory", action: "view" }
 );
 
 // PUT update asset - with tenant validation
@@ -148,7 +148,7 @@ export const PUT = withAuth(
       );
     }
   },
-  { resource: "assets.inventory", action: "edit" }
+  { resource: "asset.inventory", action: "edit" }
 );
 
 // DELETE asset - with tenant validation
@@ -187,5 +187,5 @@ export const DELETE = withAuth(
       );
     }
   },
-  { resource: "assets.inventory", action: "delete" }
+  { resource: "asset.inventory", action: "delete" }
 );

@@ -1927,6 +1927,119 @@ export default function AssetSettingsPage() {
           data={filteredData}
           hideSearch={true}
         />
+
+        {/* Add Lifecycle Status Dialog */}
+        <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add Lifecycle Status</DialogTitle>
+              <DialogDescription>
+                Enter the details for the new lifecycle status
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Name *</Label>
+                <Input
+                  value={lifecycleForm.name}
+                  onChange={(e) => setLifecycleForm({ ...lifecycleForm, name: e.target.value })}
+                  placeholder="e.g., Active, In Use, Retired"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Description</Label>
+                <textarea
+                  value={lifecycleForm.description}
+                  onChange={(e) => setLifecycleForm({ ...lifecycleForm, description: e.target.value })}
+                  placeholder="Enter description"
+                  className="w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Order</Label>
+                <Input
+                  type="number"
+                  value={lifecycleForm.order}
+                  onChange={(e) => setLifecycleForm({ ...lifecycleForm, order: parseInt(e.target.value) || 0 })}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsAddOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleAddLifecycle}>
+                Save
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Lifecycle Status Dialog */}
+        <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Lifecycle Status</DialogTitle>
+              <DialogDescription>
+                Update the lifecycle status details
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Name *</Label>
+                <Input
+                  value={lifecycleForm.name}
+                  onChange={(e) => setLifecycleForm({ ...lifecycleForm, name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Description</Label>
+                <textarea
+                  value={lifecycleForm.description}
+                  onChange={(e) => setLifecycleForm({ ...lifecycleForm, description: e.target.value })}
+                  placeholder="Enter description"
+                  className="w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Order</Label>
+                <Input
+                  type="number"
+                  value={lifecycleForm.order}
+                  onChange={(e) => setLifecycleForm({ ...lifecycleForm, order: parseInt(e.target.value) || 0 })}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsEditOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleEditLifecycle}>
+                Save
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Lifecycle Status Dialog */}
+        <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete Lifecycle Status</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete this lifecycle status? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={handleDeleteLifecycle}>
+                Delete
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
@@ -2425,6 +2538,98 @@ export default function AssetSettingsPage() {
                 Cancel
               </Button>
               <Button variant="destructive" onClick={handleDeleteScoringConfig}>Delete</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* CIA Rating Add Dialog */}
+        <Dialog open={isCiaAddOpen} onOpenChange={setIsCiaAddOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>New {ciaRatingType}</DialogTitle>
+              <DialogDescription>
+                Add a new {ciaRatingType.toLowerCase()} rating level
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Label *</Label>
+                <Input
+                  value={ciaRatingForm.label}
+                  onChange={(e) => setCiaRatingForm({ ...ciaRatingForm, label: e.target.value })}
+                  placeholder="e.g., high, medium, low"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Value *</Label>
+                <Input
+                  type="number"
+                  value={ciaRatingForm.value}
+                  onChange={(e) => setCiaRatingForm({ ...ciaRatingForm, value: parseInt(e.target.value) || 0 })}
+                  placeholder="e.g., 10, 5, 1"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsCiaAddOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleAddCiaRating}>Add</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* CIA Rating Edit Dialog */}
+        <Dialog open={isCiaEditOpen} onOpenChange={setIsCiaEditOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Rating</DialogTitle>
+              <DialogDescription>
+                Update the rating details
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Label *</Label>
+                <Input
+                  value={ciaRatingForm.label}
+                  onChange={(e) => setCiaRatingForm({ ...ciaRatingForm, label: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Value *</Label>
+                <Input
+                  type="number"
+                  value={ciaRatingForm.value}
+                  onChange={(e) => setCiaRatingForm({ ...ciaRatingForm, value: parseInt(e.target.value) || 0 })}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsCiaEditOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleEditCiaRating}>Save Changes</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* CIA Rating Delete Dialog */}
+        <Dialog open={isCiaDeleteOpen} onOpenChange={setIsCiaDeleteOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Confirm Delete</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete this rating? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsCiaDeleteOpen(false)}>
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={handleDeleteCiaRating}>
+                Delete
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

@@ -118,6 +118,7 @@ export const navigation: NavItem[] = [
     permission: "asset.dashboard:view",
     children: [
       { name: "Asset Inventory", href: "/assets/inventory", icon: Package, permission: "asset.inventory:view" },
+      { name: "Asset Inventory", href: "/assets/my-inventory", icon: Package, permission: "asset.my-inventory:view" },
       { name: "Asset Classification", href: "/assets/classification", icon: Layers, permission: "asset.classification:view" },
       { name: "Asset Settings", href: "/assets/settings", icon: Settings2, permission: "asset.settings:view" },
       { name: "Reports", href: "/assets/reports", icon: FileText, permission: "asset.reports:view" },

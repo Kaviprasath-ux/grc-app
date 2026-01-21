@@ -57,6 +57,7 @@ export const RESOURCES = {
   // Asset Management Module
   'asset.dashboard': '/asset-management',
   'asset.inventory': '/asset-management/inventory',
+  'asset.my-inventory': '/asset-management/my-inventory',
   'asset.classification': '/asset-management/classification',
   'asset.settings': '/asset-management/settings',
   'asset.reports': '/asset-management/reports',
@@ -164,10 +165,16 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
 
   // Customer Administrator - Full access to organization and all other modules (except audit)
   // NOTE: Per UAT, Customer Admin does NOT have approve capability for Risk Response
+  // Note: asset.my-inventory is excluded - it's only for DepartmentReviewer/DepartmentContributor
   CustomerAdministrator: [
     { resource: 'organization.*', actions: ['*'], scope: 'all' },
     { resource: 'compliance.*', actions: ['*'], scope: 'all' },
-    { resource: 'asset.*', actions: ['*'], scope: 'all' },
+    // Asset Management - explicit resources (excluding asset.my-inventory)
+    { resource: 'asset.dashboard', actions: ['*'], scope: 'all' },
+    { resource: 'asset.inventory', actions: ['*'], scope: 'all' },
+    { resource: 'asset.classification', actions: ['*'], scope: 'all' },
+    { resource: 'asset.settings', actions: ['*'], scope: 'all' },
+    { resource: 'asset.reports', actions: ['*'], scope: 'all' },
     // Risk Management - all actions EXCEPT approve (per UAT: only Reviewers can approve)
     { resource: 'risk.dashboard', actions: ['view'], scope: 'all' },
     { resource: 'risk.register', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
@@ -311,8 +318,9 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'compliance.evidence', actions: ['view', 'approve'], scope: 'department' },
     { resource: 'compliance.exceptions', actions: ['view', 'approve'], scope: 'department' },
     { resource: 'compliance.kpi', actions: ['view'], scope: 'department' },
-    // Asset Management - Classification, Reports only (NO Inventory, NO Settings)
+    // Asset Management - My Inventory, Classification, Reports only (NO full Inventory, NO Settings)
     { resource: 'asset.dashboard', actions: ['view'], scope: 'department' },
+    { resource: 'asset.my-inventory', actions: ['view', 'create', 'edit', 'delete'], scope: 'own' },
     { resource: 'asset.classification', actions: ['view'], scope: 'department' },
     { resource: 'asset.reports', actions: ['view'], scope: 'department' },
     // Risk Management - Dashboard, Register, Assessment, Response, Reports (NO Settings)
@@ -340,8 +348,9 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'compliance.evidence', actions: ['view', 'create', 'edit'], scope: 'department' },
     { resource: 'compliance.exceptions', actions: ['view', 'create', 'edit'], scope: 'department' },
     { resource: 'compliance.kpi', actions: ['view'], scope: 'department' },
-    // Asset Management - Classification, Reports only (NO Inventory, NO Settings)
+    // Asset Management - My Inventory, Classification, Reports only (NO full Inventory, NO Settings)
     { resource: 'asset.dashboard', actions: ['view'], scope: 'department' },
+    { resource: 'asset.my-inventory', actions: ['view', 'create', 'edit', 'delete'], scope: 'own' },
     { resource: 'asset.classification', actions: ['view'], scope: 'department' },
     { resource: 'asset.reports', actions: ['view'], scope: 'department' },
     // Risk Management - Dashboard, Register, Assessment, Response, Reports (NO Settings)
@@ -491,6 +500,9 @@ export function hasPermission(
           if (options.userId === options.resourceOwnerId) {
             return true;
           }
+        } else {
+          // If no ownership context provided, allow access (for navigation filtering)
+          return true;
         }
         break;
     }

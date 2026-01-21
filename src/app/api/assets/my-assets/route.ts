@@ -2,14 +2,18 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
 
-// GET all assets - filtered by customer account
+// GET assets owned by the current user
 export const GET = withAuth(
   async (req, context, session) => {
     try {
       const tenantFilter = getTenantFilter(session);
+      const currentUserId = session.id;
 
       const assets = await prisma.asset.findMany({
-        where: tenantFilter,
+        where: {
+          ...tenantFilter,
+          ownerId: currentUserId, // Only return assets owned by the current user
+        },
         include: {
           category: true,
           subCategory: {
@@ -29,17 +33,17 @@ export const GET = withAuth(
       });
       return NextResponse.json(assets);
     } catch (error) {
-      console.error("Error fetching assets:", error);
+      console.error("Error fetching my assets:", error);
       return NextResponse.json(
         { error: "Failed to fetch assets" },
         { status: 500 }
       );
     }
   },
-  { resource: "asset.inventory", action: "view" }
+  { resource: "asset.my-inventory", action: "view" }
 );
 
-// POST create new asset - with customer account assignment
+// POST create new asset owned by current user
 export const POST = withAuth(
   async (req, context, session) => {
     try {
@@ -53,7 +57,6 @@ export const POST = withAuth(
         subCategoryId,
         groupId,
         departmentId,
-        ownerId,
         custodianId,
         classificationId,
         sensitivityId,
@@ -65,32 +68,64 @@ export const POST = withAuth(
         nextReviewDate,
       } = body;
 
-      if (!assetId || !name) {
+      if (!name) {
         return NextResponse.json(
-          { error: "Asset ID and name are required" },
+          { error: "Asset name is required" },
           { status: 400 }
         );
       }
 
       // Get customer account ID for the new record
       const customerAccountId = getCustomerAccountId(session);
+      const currentUserId = session.id;
 
-      // Check if asset ID already exists within the tenant
-      const existingAsset = await prisma.asset.findFirst({
-        where: { assetId, customerAccountId },
-      });
+      // Generate unique asset ID if not provided or if it already exists
+      let finalAssetId = assetId;
+      if (finalAssetId) {
+        // Check if asset ID already exists within the tenant
+        const existingAsset = await prisma.asset.findFirst({
+          where: { assetId: finalAssetId, customerAccountId },
+        });
 
-      if (existingAsset) {
-        return NextResponse.json(
-          { error: "Asset ID already exists" },
-          { status: 400 }
-        );
+        if (existingAsset) {
+          // Generate a new unique ID
+          finalAssetId = null;
+        }
+      }
+
+      if (!finalAssetId) {
+        // Generate next sequential asset ID
+        const lastAsset = await prisma.asset.findFirst({
+          where: { customerAccountId },
+          orderBy: { assetId: 'desc' },
+        });
+
+        let nextNum = 1;
+        if (lastAsset?.assetId) {
+          const match = lastAsset.assetId.match(/ASSET(\d+)/);
+          if (match) {
+            nextNum = parseInt(match[1]) + 1;
+          }
+        }
+        finalAssetId = `ASSET${String(nextNum).padStart(4, "0")}`;
+
+        // Ensure uniqueness by checking again
+        let exists = await prisma.asset.findFirst({
+          where: { assetId: finalAssetId, customerAccountId },
+        });
+        while (exists) {
+          nextNum++;
+          finalAssetId = `ASSET${String(nextNum).padStart(4, "0")}`;
+          exists = await prisma.asset.findFirst({
+            where: { assetId: finalAssetId, customerAccountId },
+          });
+        }
       }
 
       const asset = await prisma.asset.create({
         data: {
           customerAccountId,
-          assetId,
+          assetId: finalAssetId,
           name,
           description: description || null,
           assetType: assetType || null,
@@ -98,7 +133,7 @@ export const POST = withAuth(
           subCategoryId: subCategoryId || null,
           groupId: groupId || null,
           departmentId: departmentId || null,
-          ownerId: ownerId || null,
+          ownerId: currentUserId, // Always set owner to current user
           custodianId: custodianId || null,
           classificationId: classificationId || null,
           sensitivityId: sensitivityId || null,
@@ -135,5 +170,5 @@ export const POST = withAuth(
       );
     }
   },
-  { resource: "asset.inventory", action: "create" }
+  { resource: "asset.my-inventory", action: "create" }
 );
