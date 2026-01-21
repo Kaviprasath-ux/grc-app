@@ -1082,6 +1082,8 @@ CREATE TABLE "Risk" (
     "typeId" TEXT,
     "departmentId" TEXT,
     "ownerId" TEXT,
+    "impactedAssetId" TEXT,
+    "impactedProcessId" TEXT,
     "likelihood" INTEGER NOT NULL DEFAULT 1,
     "impact" INTEGER NOT NULL DEFAULT 1,
     "riskScore" INTEGER NOT NULL DEFAULT 1,
@@ -2654,6 +2656,12 @@ ALTER TABLE "Risk" ADD CONSTRAINT "Risk_departmentId_fkey" FOREIGN KEY ("departm
 
 -- AddForeignKey
 ALTER TABLE "Risk" ADD CONSTRAINT "Risk_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Risk" ADD CONSTRAINT "Risk_impactedAssetId_fkey" FOREIGN KEY ("impactedAssetId") REFERENCES "Asset"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Risk" ADD CONSTRAINT "Risk_impactedProcessId_fkey" FOREIGN KEY ("impactedProcessId") REFERENCES "Process"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "RiskAssessment" ADD CONSTRAINT "RiskAssessment_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

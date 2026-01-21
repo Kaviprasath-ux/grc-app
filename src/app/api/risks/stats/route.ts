@@ -1,29 +1,27 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { withAuth, getTenantFilter, getDataScopeFilter } from "@/lib/api-auth";
 
-// GET risk statistics for dashboard
-export async function GET() {
-  try {
-    const session = await auth();
+// GET risk statistics for dashboard - filtered by customer account and department scope
+export const GET = withAuth(
+  async (req, context, session) => {
+    try {
+      // Get tenant filter for multi-tenant isolation
+      const tenantFilter = getTenantFilter(session);
 
-    // Multi-tenant: Build filter based on customerAccountId
-    const userRoles = session?.user?.roles || [];
-    const isGRCAdmin = userRoles.includes("GRCAdministrator");
-    const customerAccountId = session?.user?.customerAccountId;
+      // Get department scope filter for DepartmentContributor/DepartmentReviewer roles
+      const scopeFilter = getDataScopeFilter(session, "risk.register", "view");
 
-    // Build tenant filter (GRCAdmin sees all, others see only their tenant)
-    const tenantFilter = !isGRCAdmin && customerAccountId
-      ? { customerAccountId }
-      : {};
-
-    // Get all risks with related data (filtered by tenant)
-    const risks = await prisma.risk.findMany({
-      where: tenantFilter,
-      include: {
-        category: true,
-      },
-    });
+      // Get all risks with related data (filtered by tenant and scope)
+      const risks = await prisma.risk.findMany({
+        where: {
+          ...tenantFilter,
+          ...scopeFilter,
+        },
+        include: {
+          category: true,
+        },
+      });
 
     // Total counts (matching website: Total, Open, In Progress, Closed)
     const totalRisks = risks.length;
@@ -189,11 +187,13 @@ export async function GET() {
         riskMatrix: matrixData,
       },
     });
-  } catch (error) {
-    console.error("Error fetching risk stats:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch risk statistics" },
-      { status: 500 }
-    );
-  }
-}
+    } catch (error) {
+      console.error("Error fetching risk stats:", error);
+      return NextResponse.json(
+        { error: "Failed to fetch risk statistics" },
+        { status: 500 }
+      );
+    }
+  },
+  { resource: "risk.register", action: "view" }
+);

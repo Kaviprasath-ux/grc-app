@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
+import { withAuth, getTenantFilter, getCustomerAccountId, canAccessRecord, forbidden } from "@/lib/api-auth";
 
 // Helper function to calculate risk rating based on score
 // Rating values matching website: Catastrophic, Very high, High, Low Risk
@@ -17,7 +17,7 @@ async function generateAssessmentId(): Promise<string> {
   return `RA-${String(count + 1).padStart(4, "0")}`;
 }
 
-// GET all risk assessments - filtered by customer account
+// GET all risk assessments - filtered by customer account and department scope
 export const GET = withAuth(
   async (req, context, session) => {
     try {
@@ -32,6 +32,15 @@ export const GET = withAuth(
       if (riskId) where.riskId = riskId;
       if (status) where.status = status;
 
+      // Apply department scope filtering via the related risk
+      // Department-scoped roles only see assessments for risks in their department
+      const isDepartmentRole = session.roles.some(
+        (role) => role === "DepartmentReviewer" || role === "DepartmentContributor"
+      );
+      if (isDepartmentRole && session.departmentId) {
+        where.risk = { departmentId: session.departmentId };
+      }
+
       const [assessments, total] = await Promise.all([
         prisma.riskAssessment.findMany({
           where,
@@ -41,6 +50,7 @@ export const GET = withAuth(
                 id: true,
                 riskId: true,
                 name: true,
+                departmentId: true,
               },
             },
           },
@@ -91,7 +101,8 @@ export const POST = withAuth(
         causesIdentified,
         recommendations,
         notes,
-        status = "Draft",
+        // Per UAT: Assessment status flow is Open → In-Progress → Completed (no approval)
+        status = "Open",
       } = body;
 
       if (!riskId) {
@@ -101,10 +112,21 @@ export const POST = withAuth(
         );
       }
 
-      // Check if risk exists
-      const risk = await prisma.risk.findUnique({ where: { id: riskId } });
+      // Check if risk exists and get department info
+      const risk = await prisma.risk.findUnique({
+        where: { id: riskId },
+        select: { id: true, departmentId: true, ownerId: true, customerAccountId: true },
+      });
       if (!risk) {
         return NextResponse.json({ error: "Risk not found" }, { status: 404 });
+      }
+
+      // Check department scope access for creating assessment on this risk
+      if (!canAccessRecord(session, "risk.assessment", "create", {
+        departmentId: risk.departmentId,
+        ownerId: risk.ownerId,
+      })) {
+        return forbidden("Access denied - this risk belongs to a different department");
       }
 
       // Get customer account ID for the new record
@@ -151,8 +173,8 @@ export const POST = withAuth(
         },
       });
 
-      // Update the risk with the latest assessment scores if status is Approved
-      if (status === "Approved") {
+      // Update the risk with the latest assessment scores if status is Completed (per UAT)
+      if (status === "Completed") {
         await prisma.risk.update({
           where: { id: riskId },
           data: {

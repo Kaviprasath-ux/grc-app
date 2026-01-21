@@ -9,11 +9,16 @@ export async function GET() {
     const userRoles = session?.user?.roles || [];
     const isGRCAdmin = userRoles.includes("GRCAdministrator");
     const customerAccountId = session?.user?.customerAccountId;
-    const tenantFilter = !isGRCAdmin && customerAccountId ? { customerAccountId } : {};
+
+    // Build tenant filter: show customer-specific OR shared (null) data
+    const tenantFilter = !isGRCAdmin && customerAccountId
+      ? { OR: [{ customerAccountId }, { customerAccountId: null }] }
+      : {};
 
     const vulnerabilities = await prisma.riskVulnerability.findMany({
       where: tenantFilter,
       include: {
+        category: true,
         _count: {
           select: { risks: true },
         },

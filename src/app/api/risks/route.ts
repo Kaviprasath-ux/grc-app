@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
+import { withAuth, getTenantFilter, getCustomerAccountId, getDataScopeFilter } from "@/lib/api-auth";
 
 // Helper function to calculate risk rating based on score
 // Rating values matching website: Catastrophic, Very high, High, Low Risk
@@ -54,8 +54,12 @@ export const GET = withAuth(
       // Get tenant filter for multi-tenant isolation
       const tenantFilter = getTenantFilter(session);
 
+      // Get department scope filter for DepartmentContributor/DepartmentReviewer roles
+      const scopeFilter = getDataScopeFilter(session, "risk.register", "view");
+
       const where: Record<string, unknown> = {
         ...tenantFilter,
+        ...scopeFilter,
       };
 
       if (search) {
@@ -146,6 +150,8 @@ export const POST = withAuth(
         typeId,
         departmentId,
         ownerId,
+        impactedAssetId,
+        impactedProcessId,
         likelihood = 1,
         impact = 1,
         inherentLikelihood,
@@ -162,6 +168,7 @@ export const POST = withAuth(
         threats = [],
         vulnerabilities = [],
         causes = [],
+        controls = [],
         actor = "System",
       } = body;
 

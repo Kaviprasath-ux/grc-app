@@ -1557,6 +1557,229 @@ async function main() {
 
   // ==================== RISK MANAGEMENT MODULE ====================
 
+  // ==================== RISK SETTINGS ====================
+
+  // Create Vulnerability Categories
+  const vulnerabilityCategories = [
+    { name: "Technical" },
+    { name: "Operational" },
+    { name: "Physical" },
+    { name: "Administrative" },
+    { name: "Environmental" },
+  ];
+  const createdVulnCategories: { [key: string]: string } = {};
+
+  for (const cat of vulnerabilityCategories) {
+    const existing = await prisma.vulnerabilityCategory.findFirst({
+      where: { name: cat.name, customerAccountId: null },
+    });
+    if (existing) {
+      createdVulnCategories[cat.name] = existing.id;
+    } else {
+      const created = await prisma.vulnerabilityCategory.create({
+        data: { ...cat },
+      });
+      createdVulnCategories[cat.name] = created.id;
+    }
+  }
+  console.log("✅ Vulnerability Categories created");
+
+  // Create Threat Categories
+  const threatCategories = [
+    { name: "Cyber Threats" },
+    { name: "Physical Threats" },
+    { name: "Environmental Threats" },
+    { name: "Human Threats" },
+    { name: "Technical Threats" },
+  ];
+  const createdThreatCategories: { [key: string]: string } = {};
+
+  for (const cat of threatCategories) {
+    const existing = await prisma.threatCategory.findFirst({
+      where: { name: cat.name, customerAccountId: null },
+    });
+    if (existing) {
+      createdThreatCategories[cat.name] = existing.id;
+    } else {
+      const created = await prisma.threatCategory.create({
+        data: { ...cat },
+      });
+      createdThreatCategories[cat.name] = created.id;
+    }
+  }
+  console.log("✅ Threat Categories created");
+
+  // Create Control Strength
+  const controlStrengths = [
+    { name: "None", score: 0 },
+    { name: "Weak", score: 1 },
+    { name: "Moderate", score: 2 },
+    { name: "Strong", score: 3 },
+    { name: "Very Strong", score: 4 },
+  ];
+
+  for (const cs of controlStrengths) {
+    const existing = await prisma.controlStrength.findFirst({
+      where: { name: cs.name, customerAccountId: null },
+    });
+    if (!existing) {
+      await prisma.controlStrength.create({
+        data: { ...cs },
+      });
+    }
+  }
+  console.log("✅ Control Strengths created");
+
+  // Create Risk Likelihood
+  const riskLikelihoods = [
+    { title: "Rare", score: 1, timeFrame: "Once in 10+ years", probability: "<5%" },
+    { title: "Unlikely", score: 2, timeFrame: "Once in 5-10 years", probability: "5-20%" },
+    { title: "Possible", score: 3, timeFrame: "Once in 2-5 years", probability: "20-50%" },
+    { title: "Likely", score: 4, timeFrame: "Once in 1-2 years", probability: "50-80%" },
+    { title: "Almost Certain", score: 5, timeFrame: "Within 1 year", probability: ">80%" },
+  ];
+
+  for (const likelihood of riskLikelihoods) {
+    const existing = await prisma.riskLikelihood.findFirst({
+      where: { title: likelihood.title, customerAccountId: null },
+    });
+    if (!existing) {
+      await prisma.riskLikelihood.create({
+        data: { ...likelihood },
+      });
+    }
+  }
+  console.log("✅ Risk Likelihoods created");
+
+  // Create Impact Categories
+  const impactCategories = [
+    { name: "Financial" },
+    { name: "Operational" },
+    { name: "Reputational" },
+    { name: "Legal/Regulatory" },
+    { name: "Safety" },
+    { name: "Strategic" },
+  ];
+
+  for (const cat of impactCategories) {
+    const existing = await prisma.impactCategory.findFirst({
+      where: { name: cat.name, customerAccountId: null },
+    });
+    if (!existing) {
+      await prisma.impactCategory.create({
+        data: { ...cat },
+      });
+    }
+  }
+  console.log("✅ Impact Categories created");
+
+  // Create Impact Ratings
+  const impactRatings = [
+    { name: "Negligible", score: 1, description: "Minimal impact on operations, finances, or reputation" },
+    { name: "Minor", score: 2, description: "Limited impact with minor disruption or loss" },
+    { name: "Moderate", score: 3, description: "Noticeable impact requiring management attention" },
+    { name: "Major", score: 4, description: "Significant impact affecting business objectives" },
+    { name: "Catastrophic", score: 5, description: "Severe impact threatening business viability" },
+  ];
+
+  for (const rating of impactRatings) {
+    const existing = await prisma.impactRating.findFirst({
+      where: { name: rating.name, customerAccountId: null },
+    });
+    if (!existing) {
+      await prisma.impactRating.create({
+        data: { ...rating },
+      });
+    }
+  }
+  console.log("✅ Impact Ratings created");
+
+  // Create Vulnerability Ratings
+  const vulnerabilityRatings = [
+    { label: "Very Low", score: 1 },
+    { label: "Low", score: 2 },
+    { label: "Medium", score: 3 },
+    { label: "High", score: 4 },
+    { label: "Critical", score: 5 },
+  ];
+
+  for (const rating of vulnerabilityRatings) {
+    const existing = await prisma.vulnerabilityRating.findFirst({
+      where: { label: rating.label, customerAccountId: null },
+    });
+    if (!existing) {
+      await prisma.vulnerabilityRating.create({
+        data: { ...rating },
+      });
+    }
+  }
+  console.log("✅ Vulnerability Ratings created");
+
+  // Create Risk Sub Categories
+  const riskSubCategories = [
+    { type: "Information Security" },
+    { type: "Business Continuity" },
+    { type: "Vendor Management" },
+    { type: "Data Privacy" },
+    { type: "Infrastructure" },
+    { type: "Application Security" },
+    { type: "Network Security" },
+    { type: "Physical Security" },
+    { type: "Human Resources" },
+    { type: "Legal & Compliance" },
+  ];
+
+  for (const subCat of riskSubCategories) {
+    const existing = await prisma.riskSubCategory.findFirst({
+      where: { type: subCat.type, customerAccountId: null },
+    });
+    if (!existing) {
+      await prisma.riskSubCategory.create({
+        data: { ...subCat },
+      });
+    }
+  }
+  console.log("✅ Risk Sub Categories created");
+
+  // Create Risk Ranges (for Risk Methodology)
+  const riskRanges = [
+    { title: "Low", color: "#22c55e", lowRange: 1, highRange: 4, timelineDays: 90, description: "Low risk - monitor and manage as part of routine operations" },
+    { title: "Medium", color: "#f59e0b", lowRange: 5, highRange: 9, timelineDays: 60, description: "Medium risk - requires attention and planned mitigation actions" },
+    { title: "High", color: "#f97316", lowRange: 10, highRange: 16, timelineDays: 30, description: "High risk - requires priority attention and immediate action planning" },
+    { title: "Critical", color: "#ef4444", lowRange: 17, highRange: 25, timelineDays: 7, description: "Critical risk - requires immediate executive attention and urgent action" },
+  ];
+
+  for (const range of riskRanges) {
+    const existing = await prisma.riskRange.findFirst({
+      where: { title: range.title, customerAccountId: null },
+    });
+    if (!existing) {
+      await prisma.riskRange.create({
+        data: { ...range },
+      });
+    }
+  }
+  console.log("✅ Risk Ranges created");
+
+  // Create Risk Score Config (default configuration)
+  const existingConfig = await prisma.riskScoreConfig.findFirst({
+    where: { customerAccountId: null },
+  });
+  if (!existingConfig) {
+    await prisma.riskScoreConfig.create({
+      data: {
+        useLikelihood: true,
+        useImpact: true,
+        useAssetScore: false,
+        useVulnerabilityScore: false,
+        riskTolerance: 10,
+      },
+    });
+  }
+  console.log("✅ Risk Score Config created");
+
+  // ==================== END RISK SETTINGS ====================
+
   // Create Risk Categories
   const riskCategories = [
     { name: "Strategic", description: "Risks affecting strategic objectives", color: "#3b82f6" },
@@ -1584,38 +1807,46 @@ async function main() {
   }
   console.log("✅ Risk Categories created");
 
-  // Create Risk Types
-  const riskTypes = ["Inherent", "Residual", "Target"];
+  // Create Risk Types (static: Asset Risk and Process Risk)
+  const riskTypes = [
+    { name: "Asset Risk", description: "Risk associated with impacted assets from Asset Inventory" },
+    { name: "Process Risk", description: "Risk associated with impacted processes from Process Repository" },
+  ];
   const createdRiskTypes: { [key: string]: string } = {};
 
-  for (const name of riskTypes) {
+  for (const type of riskTypes) {
     // RiskType is shared master data (no customerAccountId)
     const existing = await prisma.riskType.findFirst({
-      where: { name },
+      where: { name: type.name },
     });
     if (existing) {
-      createdRiskTypes[name] = existing.id;
+      createdRiskTypes[type.name] = existing.id;
     } else {
-      const type = await prisma.riskType.create({
-        data: { name, description: `${name} risk assessment type` },
+      const created = await prisma.riskType.create({
+        data: { name: type.name, description: type.description },
       });
-      createdRiskTypes[name] = type.id;
+      createdRiskTypes[type.name] = created.id;
     }
   }
   console.log("✅ Risk Types created");
 
-  // Create Risk Threats
+  // Create Risk Threats (with category linking)
   const threats = [
-    { name: "Cyber Attack", description: "Malicious cyber intrusion or attack" },
-    { name: "Natural Disaster", description: "Earthquakes, floods, hurricanes, etc." },
-    { name: "Human Error", description: "Mistakes or negligence by employees" },
-    { name: "System Failure", description: "Hardware or software malfunction" },
-    { name: "Third-Party Failure", description: "Vendor or partner service disruption" },
-    { name: "Data Theft", description: "Unauthorized access to sensitive data" },
-    { name: "Malware", description: "Viruses, ransomware, and other malicious software" },
-    { name: "Phishing", description: "Social engineering attacks via email" },
-    { name: "Insider Threat", description: "Malicious actions by internal actors" },
-    { name: "Supply Chain Attack", description: "Compromise through supply chain" },
+    { name: "Cyber Attack", description: "Malicious cyber intrusion or attack", category: "Cyber Threats" },
+    { name: "Natural Disaster", description: "Earthquakes, floods, hurricanes, etc.", category: "Environmental Threats" },
+    { name: "Human Error", description: "Mistakes or negligence by employees", category: "Human Threats" },
+    { name: "System Failure", description: "Hardware or software malfunction", category: "Technical Threats" },
+    { name: "Third-Party Failure", description: "Vendor or partner service disruption", category: "Technical Threats" },
+    { name: "Data Theft", description: "Unauthorized access to sensitive data", category: "Cyber Threats" },
+    { name: "Malware", description: "Viruses, ransomware, and other malicious software", category: "Cyber Threats" },
+    { name: "Phishing", description: "Social engineering attacks via email", category: "Cyber Threats" },
+    { name: "Insider Threat", description: "Malicious actions by internal actors", category: "Human Threats" },
+    { name: "Supply Chain Attack", description: "Compromise through supply chain", category: "Cyber Threats" },
+    { name: "Fire", description: "Fire damage to facilities or equipment", category: "Physical Threats" },
+    { name: "Theft", description: "Physical theft of assets or equipment", category: "Physical Threats" },
+    { name: "Power Outage", description: "Loss of electrical power", category: "Environmental Threats" },
+    { name: "Vandalism", description: "Intentional damage to property", category: "Physical Threats" },
+    { name: "Social Engineering", description: "Manipulation of individuals to gain access", category: "Human Threats" },
   ];
   const createdThreats: { [key: string]: string } = {};
 
@@ -1628,25 +1859,36 @@ async function main() {
       createdThreats[threat.name] = existing.id;
     } else {
       const created = await prisma.riskThreat.create({
-        data: { ...threat },
+        data: {
+          name: threat.name,
+          description: threat.description,
+          categoryId: createdThreatCategories[threat.category],
+        },
       });
       createdThreats[threat.name] = created.id;
     }
   }
   console.log("✅ Risk Threats created");
 
-  // Create Risk Vulnerabilities
+  // Create Risk Vulnerabilities (with category linking)
   const vulnerabilities = [
-    { name: "Weak Authentication", description: "Insufficient password policies or MFA" },
-    { name: "Unpatched Systems", description: "Systems without latest security patches" },
-    { name: "Misconfiguration", description: "Incorrectly configured systems or services" },
-    { name: "Lack of Encryption", description: "Data not encrypted at rest or in transit" },
-    { name: "Poor Access Controls", description: "Excessive or improper access rights" },
-    { name: "Inadequate Logging", description: "Insufficient audit trails and monitoring" },
-    { name: "Legacy Systems", description: "Outdated systems lacking security updates" },
-    { name: "Missing Backups", description: "Insufficient or untested backup procedures" },
-    { name: "Untrained Staff", description: "Employees lacking security awareness" },
-    { name: "Shadow IT", description: "Unauthorized technology usage" },
+    { name: "Weak Authentication", description: "Insufficient password policies or MFA", category: "Technical" },
+    { name: "Unpatched Systems", description: "Systems without latest security patches", category: "Technical" },
+    { name: "Misconfiguration", description: "Incorrectly configured systems or services", category: "Technical" },
+    { name: "Lack of Encryption", description: "Data not encrypted at rest or in transit", category: "Technical" },
+    { name: "Poor Access Controls", description: "Excessive or improper access rights", category: "Administrative" },
+    { name: "Inadequate Logging", description: "Insufficient audit trails and monitoring", category: "Operational" },
+    { name: "Legacy Systems", description: "Outdated systems lacking security updates", category: "Technical" },
+    { name: "Missing Backups", description: "Insufficient or untested backup procedures", category: "Operational" },
+    { name: "Untrained Staff", description: "Employees lacking security awareness", category: "Administrative" },
+    { name: "Shadow IT", description: "Unauthorized technology usage", category: "Operational" },
+    { name: "Inadequate Physical Security", description: "Insufficient physical access controls", category: "Physical" },
+    { name: "No Disaster Recovery Plan", description: "Missing or untested disaster recovery procedures", category: "Operational" },
+    { name: "Single Point of Failure", description: "Critical systems without redundancy", category: "Technical" },
+    { name: "Lack of Segmentation", description: "Network without proper segmentation", category: "Technical" },
+    { name: "Insufficient Monitoring", description: "Lack of real-time security monitoring", category: "Operational" },
+    { name: "Environmental Exposure", description: "Exposure to environmental hazards", category: "Environmental" },
+    { name: "Outdated Policies", description: "Security policies not updated regularly", category: "Administrative" },
   ];
   const createdVulnerabilities: { [key: string]: string } = {};
 
@@ -1659,7 +1901,11 @@ async function main() {
       createdVulnerabilities[vuln.name] = existing.id;
     } else {
       const created = await prisma.riskVulnerability.create({
-        data: { ...vuln },
+        data: {
+          name: vuln.name,
+          description: vuln.description,
+          categoryId: createdVulnCategories[vuln.category],
+        },
       });
       createdVulnerabilities[vuln.name] = created.id;
     }

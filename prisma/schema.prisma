@@ -703,6 +703,8 @@ model Process {
   biaAssessment          ProcessBIA?
   // Issue Relation
   issues                 IssueProcess[]
+  // Risks impacted by this process
+  impactedByRisks        Risk[]          @relation("RiskImpactedProcess")
 
   @@unique([customerAccountId, processCode])
   @@index([customerAccountId])
@@ -1318,6 +1320,8 @@ model Asset {
   // Timestamps
   createdAt         DateTime              @default(now())
   updatedAt         DateTime              @updatedAt
+  // Risks impacted by this asset
+  impactedByRisks   Risk[]                @relation("RiskImpactedAsset")
 
   @@unique([customerAccountId, assetId])
   @@index([customerAccountId])
@@ -1469,6 +1473,11 @@ model Risk {
   department          Department?     @relation(fields: [departmentId], references: [id])
   ownerId             String?
   owner               User?           @relation("RiskOwner", fields: [ownerId], references: [id])
+  // Impacted Asset or Process (based on Risk Type selection)
+  impactedAssetId     String?
+  impactedAsset       Asset?          @relation("RiskImpactedAsset", fields: [impactedAssetId], references: [id])
+  impactedProcessId   String?
+  impactedProcess     Process?        @relation("RiskImpactedProcess", fields: [impactedProcessId], references: [id])
   // Assessment scores
   likelihood          Int             @default(1) // 1-5 scale
   impact              Int             @default(1) // 1-5 scale

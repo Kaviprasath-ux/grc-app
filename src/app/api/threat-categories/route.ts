@@ -9,7 +9,11 @@ export async function GET() {
     const userRoles = session?.user?.roles || [];
     const isGRCAdmin = userRoles.includes("GRCAdministrator");
     const customerAccountId = session?.user?.customerAccountId;
-    const tenantFilter = !isGRCAdmin && customerAccountId ? { customerAccountId } : {};
+
+    // Build tenant filter: show customer-specific OR shared (null) data
+    const tenantFilter = !isGRCAdmin && customerAccountId
+      ? { OR: [{ customerAccountId }, { customerAccountId: null }] }
+      : {};
 
     const categories = await prisma.threatCategory.findMany({
       where: tenantFilter,

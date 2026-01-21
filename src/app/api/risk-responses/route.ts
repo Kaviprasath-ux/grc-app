@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
+import { withAuth, getTenantFilter, getCustomerAccountId, canAccessRecord, forbidden } from "@/lib/api-auth";
 
 // Helper function to generate response ID
 async function generateResponseId(): Promise<string> {
@@ -8,7 +8,7 @@ async function generateResponseId(): Promise<string> {
   return `RR-${String(count + 1).padStart(4, "0")}`;
 }
 
-// GET all risk responses - filtered by customer account
+// GET all risk responses - filtered by customer account and department scope
 export const GET = withAuth(
   async (req, context, session) => {
     try {
@@ -25,6 +25,15 @@ export const GET = withAuth(
       if (status) where.status = status;
       if (responseType) where.responseType = responseType;
 
+      // Apply department scope filtering via the related risk
+      // Department-scoped roles only see responses for risks in their department
+      const isDepartmentRole = session.roles.some(
+        (role) => role === "DepartmentReviewer" || role === "DepartmentContributor"
+      );
+      if (isDepartmentRole && session.departmentId) {
+        where.risk = { departmentId: session.departmentId };
+      }
+
       const [responses, total] = await Promise.all([
         prisma.riskResponse.findMany({
           where,
@@ -35,6 +44,7 @@ export const GET = withAuth(
                 riskId: true,
                 name: true,
                 riskRating: true,
+                departmentId: true,
               },
             },
           },
@@ -97,10 +107,27 @@ export const POST = withAuth(
         );
       }
 
-      // Check if risk exists
-      const risk = await prisma.risk.findUnique({ where: { id: riskId } });
+      // Check if risk exists and get department info
+      const risk = await prisma.risk.findUnique({
+        where: { id: riskId },
+        select: {
+          id: true,
+          departmentId: true,
+          ownerId: true,
+          customerAccountId: true,
+          responseStrategy: true,
+        },
+      });
       if (!risk) {
         return NextResponse.json({ error: "Risk not found" }, { status: 404 });
+      }
+
+      // Check department scope access for creating response on this risk
+      if (!canAccessRecord(session, "risk.response", "create", {
+        departmentId: risk.departmentId,
+        ownerId: risk.ownerId,
+      })) {
+        return forbidden("Access denied - this risk belongs to a different department");
       }
 
       // Get customer account ID for the new record

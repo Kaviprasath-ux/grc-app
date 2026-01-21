@@ -163,11 +163,19 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
   ],
 
   // Customer Administrator - Full access to organization and all other modules (except audit)
+  // NOTE: Per UAT, Customer Admin does NOT have approve capability for Risk Response
   CustomerAdministrator: [
     { resource: 'organization.*', actions: ['*'], scope: 'all' },
     { resource: 'compliance.*', actions: ['*'], scope: 'all' },
     { resource: 'asset.*', actions: ['*'], scope: 'all' },
-    { resource: 'risk.*', actions: ['*'], scope: 'all' },
+    // Risk Management - all actions EXCEPT approve (per UAT: only Reviewers can approve)
+    { resource: 'risk.dashboard', actions: ['view'], scope: 'all' },
+    { resource: 'risk.register', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
+    { resource: 'risk.assessment', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
+    { resource: 'risk.response', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
+    { resource: 'risk.risk-matrix', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
+    { resource: 'risk.settings', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
+    { resource: 'risk.reports', actions: ['view'], scope: 'all' },
     { resource: 'audit.risk-register', actions: ['view'], scope: 'all' },
     { resource: 'audit.settings', actions: ['view'], scope: 'all' },
   ],
@@ -255,11 +263,12 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'asset.inventory', actions: ['view'], scope: 'all' },
     { resource: 'asset.classification', actions: ['view'], scope: 'all' },
     { resource: 'asset.reports', actions: ['view'], scope: 'all' },
-    // Risk Management - view only (NO settings)
+    // Risk Management - view only, EXCEPT approve for risk.response (per UAT)
+    // Per UAT: Approval workflow exists ONLY in Risk Response Strategy, NOT in Risk Assessment
     { resource: 'risk.dashboard', actions: ['view'], scope: 'all' },
     { resource: 'risk.register', actions: ['view'], scope: 'all' },
     { resource: 'risk.assessment', actions: ['view'], scope: 'all' },
-    { resource: 'risk.response', actions: ['view'], scope: 'all' },
+    { resource: 'risk.response', actions: ['view', 'approve'], scope: 'all' },
     { resource: 'risk.reports', actions: ['view'], scope: 'all' },
     // Internal Audit - NO ACCESS (entire module excluded)
   ],
@@ -307,9 +316,10 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'asset.classification', actions: ['view'], scope: 'department' },
     { resource: 'asset.reports', actions: ['view'], scope: 'department' },
     // Risk Management - Dashboard, Register, Assessment, Response, Reports (NO Settings)
+    // Per UAT: Approval workflow exists ONLY in Risk Response Strategy, NOT in Risk Assessment
     { resource: 'risk.dashboard', actions: ['view'], scope: 'department' },
-    { resource: 'risk.register', actions: ['view', 'approve'], scope: 'department' },
-    { resource: 'risk.assessment', actions: ['view', 'approve'], scope: 'department' },
+    { resource: 'risk.register', actions: ['view', 'create', 'edit', 'delete'], scope: 'department' },
+    { resource: 'risk.assessment', actions: ['view', 'create', 'edit', 'delete'], scope: 'department' },
     { resource: 'risk.response', actions: ['view', 'approve'], scope: 'department' },
     { resource: 'risk.reports', actions: ['view'], scope: 'department' },
     // Internal Audit - ONLY RiskRegister page (NO Settings, NO other audit pages)

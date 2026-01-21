@@ -1,10 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 
 // GET all risk types
 export async function GET() {
   try {
+    const session = await auth();
+    const userRoles = session?.user?.roles || [];
+    const isGRCAdmin = userRoles.includes("GRCAdministrator");
+    const customerAccountId = session?.user?.customerAccountId;
+
+    // Build tenant filter: show customer-specific OR shared (null) data
+    const tenantFilter = !isGRCAdmin && customerAccountId
+      ? { OR: [{ customerAccountId }, { customerAccountId: null }] }
+      : {};
+
     const types = await prisma.riskType.findMany({
+      where: tenantFilter,
       include: {
         _count: {
           select: { risks: true },

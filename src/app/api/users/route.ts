@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 
-// GET all users (with optional role filter)
+// GET all users (with optional role and department filters)
 export async function GET(request: NextRequest) {
   try {
     const session = await auth();
     const { searchParams } = new URL(request.url);
     const role = searchParams.get("role");
+    const departmentId = searchParams.get("departmentId");
 
     // Build where clause for role filtering and multi-tenant isolation
     const where: any = {};
@@ -19,6 +20,11 @@ export async function GET(request: NextRequest) {
           },
         },
       };
+    }
+
+    // Filter by department if provided
+    if (departmentId) {
+      where.departmentId = departmentId;
     }
 
     // Multi-tenant: Filter users by customerAccountId if user is not GRCAdministrator

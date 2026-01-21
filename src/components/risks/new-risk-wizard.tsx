@@ -18,9 +18,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import { ChevronLeft, ChevronRight, X, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, Plus, Search, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 
 interface Category {
   id: string;
@@ -55,6 +57,26 @@ interface Vulnerability {
 interface Cause {
   id: string;
   name: string;
+}
+
+interface Asset {
+  id: string;
+  assetId: string;
+  name: string;
+}
+
+interface Process {
+  id: string;
+  processCode: string;
+  name: string;
+}
+
+interface Control {
+  id: string;
+  controlCode: string;
+  name: string;
+  description: string | null;
+  domain: { id: string; name: string } | null;
 }
 
 interface EditRiskData {
@@ -101,8 +123,13 @@ export function NewRiskWizard({
   const [threats, setThreats] = useState<Threat[]>([]);
   const [vulnerabilities, setVulnerabilities] = useState<Vulnerability[]>([]);
   const [causes, setCauses] = useState<Cause[]>([]);
+  const [assets, setAssets] = useState<Asset[]>([]);
+  const [processes, setProcesses] = useState<Process[]>([]);
+  const [controls, setControls] = useState<Control[]>([]);
   const [loading, setLoading] = useState(false);
   const [generatedRiskId, setGeneratedRiskId] = useState("");
+  const [linkControlDialogOpen, setLinkControlDialogOpen] = useState(false);
+  const [controlSearch, setControlSearch] = useState("");
 
   // Form state
   const [formData, setFormData] = useState({
@@ -113,22 +140,32 @@ export function NewRiskWizard({
     typeId: "",
     departmentId: "",
     ownerId: "",
+    impactedAssetId: "",
+    impactedProcessId: "",
     selectedThreats: [] as string[],
     selectedVulnerabilities: [] as string[],
     selectedCauses: [] as string[],
+    selectedControls: [] as string[],
   });
 
   useEffect(() => {
     if (open) {
-      fetchUsers();
       fetchRiskTypes();
       fetchThreats();
       fetchVulnerabilities();
       fetchCauses();
+      fetchAssets();
+      fetchProcesses();
+      fetchControls();
 
       if (isEditMode && editData) {
         // Pre-fill form with edit data
         setGeneratedRiskId(editData.riskId);
+        const extendedEditData = editData as EditRiskData & {
+          impactedAsset?: { id: string };
+          impactedProcess?: { id: string };
+          controlRisks?: { control: { id: string } }[];
+        };
         setFormData({
           name: editData.name || "",
           description: editData.description || "",
@@ -137,12 +174,22 @@ export function NewRiskWizard({
           typeId: editData.type?.id || "",
           departmentId: editData.department?.id || "",
           ownerId: editData.owner?.id || "",
+          impactedAssetId: extendedEditData?.impactedAsset?.id || "",
+          impactedProcessId: extendedEditData?.impactedProcess?.id || "",
           selectedThreats: editData.threats?.map(t => t.threat.id) || [],
           selectedVulnerabilities: editData.vulnerabilities?.map(v => v.vulnerability.id) || [],
           selectedCauses: editData.causes?.map(c => c.cause.id) || [],
+          selectedControls: extendedEditData?.controlRisks?.map(cr => cr.control.id) || [],
         });
+        // Fetch DepartmentReviewers for the existing department (if editing)
+        if (editData.department?.id) {
+          fetchUsers(editData.department.id);
+        } else {
+          setUsers([]);
+        }
       } else {
         generateRiskId();
+        setUsers([]); // Clear users until department is selected
       }
     }
   }, [open, editData, isEditMode]);
@@ -166,9 +213,14 @@ export function NewRiskWizard({
     }
   };
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (departmentId?: string) => {
     try {
-      const response = await fetch("/api/users");
+      // If departmentId is provided, fetch only DepartmentReviewers for that department
+      let url = "/api/users";
+      if (departmentId) {
+        url = `/api/users?role=DepartmentReviewer&departmentId=${departmentId}`;
+      }
+      const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
         setUsers(data);
@@ -226,8 +278,64 @@ export function NewRiskWizard({
     }
   };
 
+  const fetchAssets = async () => {
+    try {
+      const response = await fetch("/api/assets");
+      if (response.ok) {
+        const data = await response.json();
+        setAssets(data.data || data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch assets:", error);
+    }
+  };
+
+  const fetchProcesses = async () => {
+    try {
+      const response = await fetch("/api/processes");
+      if (response.ok) {
+        const data = await response.json();
+        setProcesses(data.data || data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch processes:", error);
+    }
+  };
+
+  const fetchControls = async () => {
+    try {
+      const response = await fetch("/api/controls");
+      if (response.ok) {
+        const data = await response.json();
+        setControls(data.data || data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch controls:", error);
+    }
+  };
+
   const handleInputChange = (field: string, value: string | string[]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+
+    // When department changes, fetch DepartmentReviewers for that department and clear owner
+    if (field === "departmentId" && typeof value === "string") {
+      setFormData((prev) => ({ ...prev, ownerId: "" })); // Clear owner selection
+      if (value) {
+        fetchUsers(value); // Fetch DepartmentReviewers for selected department
+      } else {
+        setUsers([]); // Clear users if no department selected
+      }
+    }
+
+    // When risk type changes, clear the opposite impacted field
+    if (field === "typeId" && typeof value === "string") {
+      const selectedType = riskTypes.find(t => t.id === value);
+      if (selectedType?.name === "Asset Risk") {
+        setFormData((prev) => ({ ...prev, impactedProcessId: "" }));
+      } else if (selectedType?.name === "Process Risk") {
+        setFormData((prev) => ({ ...prev, impactedAssetId: "" }));
+      }
+    }
   };
 
   const addToSelection = (field: string, value: string) => {
@@ -285,19 +393,27 @@ export function NewRiskWizard({
           typeId: formData.typeId || null,
           departmentId: formData.departmentId || null,
           ownerId: formData.ownerId || null,
+          impactedAssetId: formData.impactedAssetId || null,
+          impactedProcessId: formData.impactedProcessId || null,
           threats: formData.selectedThreats,
           vulnerabilities: formData.selectedVulnerabilities,
           causes: formData.selectedCauses,
+          controls: formData.selectedControls,
           actor: "System",
         }),
       });
 
       if (response.ok) {
+        toast.success(isEditMode ? "Risk updated successfully" : "Risk created successfully");
         resetForm();
         onSuccess();
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || `Failed to ${isEditMode ? 'update' : 'create'} risk`);
       }
     } catch (error) {
       console.error(`Failed to ${isEditMode ? 'update' : 'create'} risk:`, error);
+      toast.error(`Failed to ${isEditMode ? 'update' : 'create'} risk`);
     } finally {
       setLoading(false);
     }
@@ -313,10 +429,14 @@ export function NewRiskWizard({
       typeId: "",
       departmentId: "",
       ownerId: "",
+      impactedAssetId: "",
+      impactedProcessId: "",
       selectedThreats: [],
       selectedVulnerabilities: [],
       selectedCauses: [],
+      selectedControls: [],
     });
+    setControlSearch("");
   };
 
   const handleClose = () => {
@@ -462,16 +582,23 @@ export function NewRiskWizard({
                   <Select
                     value={formData.ownerId}
                     onValueChange={(value) => handleInputChange("ownerId", value)}
+                    disabled={!formData.departmentId}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select Owner" />
+                      <SelectValue placeholder={formData.departmentId ? "Select Owner" : "Select Department first"} />
                     </SelectTrigger>
                     <SelectContent>
-                      {users.map((user) => (
-                        <SelectItem key={user.id} value={user.id}>
-                          {user.fullName}
-                        </SelectItem>
-                      ))}
+                      {users.length === 0 ? (
+                        <div className="py-2 px-3 text-sm text-muted-foreground">
+                          No Department Reviewers found
+                        </div>
+                      ) : (
+                        users.map((user) => (
+                          <SelectItem key={user.id} value={user.id}>
+                            {user.fullName}
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -531,17 +658,60 @@ export function NewRiskWizard({
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
-                  <Label>Impacted Asset Groups</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select asset groups" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Assets</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                {/* Conditional dropdown based on Risk Type selection */}
+                {riskTypes.find(t => t.id === formData.typeId)?.name === "Asset Risk" && (
+                  <div>
+                    <Label>Impacted Asset</Label>
+                    <Select
+                      value={formData.impactedAssetId}
+                      onValueChange={(value) => handleInputChange("impactedAssetId", value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select impacted asset" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {assets.map((asset) => (
+                          <SelectItem key={asset.id} value={asset.id}>
+                            {asset.assetId} - {asset.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                {riskTypes.find(t => t.id === formData.typeId)?.name === "Process Risk" && (
+                  <div>
+                    <Label>Impacted Process</Label>
+                    <Select
+                      value={formData.impactedProcessId}
+                      onValueChange={(value) => handleInputChange("impactedProcessId", value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select impacted process" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {processes.map((process) => (
+                          <SelectItem key={process.id} value={process.id}>
+                            {process.processCode} - {process.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                {!formData.typeId && (
+                  <div>
+                    <Label className="text-muted-foreground">Impacted Asset/Process</Label>
+                    <Select disabled>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Risk Type first" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Select Risk Type first</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -674,18 +844,120 @@ export function NewRiskWizard({
             <div className="space-y-4">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold">Controls</h3>
-                <Button variant="outline">
+                <Button variant="outline" onClick={() => setLinkControlDialogOpen(true)}>
                   <Plus className="h-4 w-4 mr-2" />
                   Link Control
                 </Button>
               </div>
 
-              <div className="border rounded-lg p-8 text-center text-muted-foreground">
-                <p>No controls linked yet.</p>
-                <p className="text-sm mt-2">
-                  Click &quot;Link Control&quot; to associate controls with this risk.
-                </p>
-              </div>
+              {formData.selectedControls.length > 0 ? (
+                <div className="border rounded-lg overflow-hidden">
+                  <table className="w-full">
+                    <thead className="bg-muted">
+                      <tr>
+                        <th className="text-left p-3 text-sm font-medium">Control Code</th>
+                        <th className="text-left p-3 text-sm font-medium">Name</th>
+                        <th className="text-left p-3 text-sm font-medium">Domain</th>
+                        <th className="text-right p-3 text-sm font-medium">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {formData.selectedControls.map((controlId) => {
+                        const control = controls.find(c => c.id === controlId);
+                        if (!control) return null;
+                        return (
+                          <tr key={controlId} className="border-t">
+                            <td className="p-3 text-sm">{control.controlCode}</td>
+                            <td className="p-3 text-sm">{control.name}</td>
+                            <td className="p-3 text-sm">{control.domain?.name || "-"}</td>
+                            <td className="p-3 text-right">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeFromSelection("selectedControls", controlId)}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="border rounded-lg p-8 text-center text-muted-foreground">
+                  <p>No controls linked yet.</p>
+                  <p className="text-sm mt-2">
+                    Click &quot;Link Control&quot; to associate controls with this risk.
+                  </p>
+                </div>
+              )}
+
+              {/* Link Control Dialog */}
+              <Dialog open={linkControlDialogOpen} onOpenChange={setLinkControlDialogOpen}>
+                <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+                  <DialogHeader>
+                    <DialogTitle>Link Controls</DialogTitle>
+                  </DialogHeader>
+                  <div className="relative mb-4">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search controls..."
+                      value={controlSearch}
+                      onChange={(e) => setControlSearch(e.target.value)}
+                      className="pl-9"
+                    />
+                  </div>
+                  <div className="flex-1 overflow-auto border rounded-lg">
+                    <table className="w-full">
+                      <thead className="bg-muted sticky top-0">
+                        <tr>
+                          <th className="w-10 p-3"></th>
+                          <th className="text-left p-3 text-sm font-medium">Control Code</th>
+                          <th className="text-left p-3 text-sm font-medium">Name</th>
+                          <th className="text-left p-3 text-sm font-medium">Domain</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {controls
+                          .filter(control =>
+                            control.name.toLowerCase().includes(controlSearch.toLowerCase()) ||
+                            control.controlCode.toLowerCase().includes(controlSearch.toLowerCase()) ||
+                            (control.domain?.name || "").toLowerCase().includes(controlSearch.toLowerCase())
+                          )
+                          .map((control) => (
+                            <tr key={control.id} className="border-t hover:bg-muted/50">
+                              <td className="p-3">
+                                <Checkbox
+                                  checked={formData.selectedControls.includes(control.id)}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      addToSelection("selectedControls", control.id);
+                                    } else {
+                                      removeFromSelection("selectedControls", control.id);
+                                    }
+                                  }}
+                                />
+                              </td>
+                              <td className="p-3 text-sm">{control.controlCode}</td>
+                              <td className="p-3 text-sm">{control.name}</td>
+                              <td className="p-3 text-sm">{control.domain?.name || "-"}</td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="flex justify-between items-center mt-4 pt-4 border-t">
+                    <span className="text-sm text-muted-foreground">
+                      {formData.selectedControls.length} control(s) selected
+                    </span>
+                    <Button onClick={() => setLinkControlDialogOpen(false)}>
+                      Done
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
           )}
         </div>

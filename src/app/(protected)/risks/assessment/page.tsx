@@ -4,8 +4,9 @@ import { useEffect, useState, useCallback } from "react";
 import { PageHeader } from "@/components/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { usePermissions } from "@/hooks/usePermissions";
+import { usePermissions, useUserRoles } from "@/hooks/usePermissions";
 import { Unauthorized } from "@/components/ui/unauthorized";
+import { PermissionGate } from "@/components/ui/permission-gate";
 import {
   Select,
   SelectContent,
@@ -136,7 +137,13 @@ const impactCategories = [
 ];
 
 export default function RiskAssessmentPage() {
-  const { canView, isLoading: permissionsLoading } = usePermissions('risk.assessment');
+  const { canView, canCreate, canEdit, isLoading: permissionsLoading } = usePermissions('risk.assessment');
+  const userRoles = useUserRoles();
+
+  // Check if user can approve assessments (Reviewer, DepartmentReviewer, CustomerAdministrator, GRCAdministrator)
+  const canApprove = userRoles.some(role =>
+    ['Reviewer', 'DepartmentReviewer', 'CustomerAdministrator', 'GRCAdministrator'].includes(role)
+  );
   const [risks, setRisks] = useState<Risk[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [riskTypes, setRiskTypes] = useState<RiskType[]>([]);
@@ -299,24 +306,92 @@ export default function RiskAssessmentPage() {
   const getActionButton = (risk: Risk) => {
     const status = risk.assessmentStatus || "Open";
     switch (status) {
-      case "Completed":
-        return (
+      case "Approved":
+        // Only users with create permission can re-assess approved risks
+        return canCreate ? (
           <Button size="sm" variant="outline" onClick={() => openAssessment(risk)}>
             Re-assess
           </Button>
+        ) : null;
+      case "Submitted":
+        // Reviewers can approve/reject, contributors can view
+        return canApprove ? (
+          <div className="flex gap-1">
+            <Button size="sm" variant="default" onClick={() => handleApprove(risk.id)}>
+              Approve
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => handleReject(risk.id)}>
+              Reject
+            </Button>
+          </div>
+        ) : (
+          <span className="text-xs text-muted-foreground">Awaiting Approval</span>
         );
+      case "Rejected":
+        // Users with edit permission can revise rejected assessments
+        return canEdit ? (
+          <Button size="sm" variant="outline" onClick={() => openAssessment(risk)}>
+            Revise
+          </Button>
+        ) : null;
+      case "Draft":
       case "In-Progress":
-        return (
+        // Users with edit permission can continue working
+        return canEdit ? (
           <Button size="sm" variant="outline" onClick={() => openAssessment(risk)}>
             Resume
           </Button>
-        );
+        ) : null;
       default:
-        return (
+        // Open status - users with create permission can initiate
+        return canCreate ? (
           <Button size="sm" onClick={() => openAssessment(risk)}>
             Initiate
           </Button>
-        );
+        ) : null;
+    }
+  };
+
+  const handleApprove = async (riskId: string) => {
+    try {
+      // Find the latest assessment for this risk and approve it
+      const response = await fetch(`/api/risks/${riskId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          assessmentStatus: "Approved",
+        }),
+      });
+
+      if (response.ok) {
+        fetchData();
+      } else {
+        const error = await response.json();
+        console.error("Failed to approve:", error);
+      }
+    } catch (error) {
+      console.error("Failed to approve assessment:", error);
+    }
+  };
+
+  const handleReject = async (riskId: string) => {
+    try {
+      const response = await fetch(`/api/risks/${riskId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          assessmentStatus: "Rejected",
+        }),
+      });
+
+      if (response.ok) {
+        fetchData();
+      } else {
+        const error = await response.json();
+        console.error("Failed to reject:", error);
+      }
+    } catch (error) {
+      console.error("Failed to reject assessment:", error);
     }
   };
 
@@ -342,7 +417,7 @@ export default function RiskAssessmentPage() {
     }
   };
 
-  const handleSave = async () => {
+  const handleSave = async (submitForApproval: boolean = false) => {
     if (!selectedRisk) return;
 
     // Calculate scores
@@ -366,18 +441,32 @@ export default function RiskAssessmentPage() {
     const riskScore = avgLikelihood * maxImpact * (avgVulnerability / 10);
     const riskRating = getRiskRatingFromScore(riskScore);
 
+    // Determine the new status based on workflow
+    // Draft -> can save as Draft or Submit for Approval
+    // Submitted -> waiting for approval (no save, handled by approve/reject)
+    // Approved -> completed
+    // Rejected -> can save as Draft or Submit again
+    const newStatus = submitForApproval ? "Submitted" : "Draft";
+
     try {
       // Update risk with assessment data
-      await fetch(`/api/risks/${selectedRisk.id}`, {
+      const response = await fetch(`/api/risks/${selectedRisk.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           likelihood: Math.round(avgLikelihood),
           impact: Math.round(maxImpact),
           riskRating,
-          assessmentStatus: "Completed",
+          assessmentStatus: newStatus,
+          lastAssessmentDate: new Date().toISOString(),
         }),
       });
+
+      if (!response.ok) {
+        const error = await response.json();
+        console.error("Failed to save:", error);
+        return;
+      }
 
       setWizardOpen(false);
       fetchData();
@@ -565,7 +654,10 @@ export default function RiskAssessmentPage() {
                   <TableCell>
                     <span className={cn(
                       "px-2 py-1 rounded text-xs font-medium",
-                      (risk.assessmentStatus || "Open") === "Completed" && "bg-green-100 text-green-800",
+                      (risk.assessmentStatus || "Open") === "Approved" && "bg-green-100 text-green-800",
+                      (risk.assessmentStatus || "Open") === "Submitted" && "bg-purple-100 text-purple-800",
+                      (risk.assessmentStatus || "Open") === "Draft" && "bg-gray-100 text-gray-800",
+                      (risk.assessmentStatus || "Open") === "Rejected" && "bg-red-100 text-red-800",
                       (risk.assessmentStatus || "Open") === "In-Progress" && "bg-yellow-100 text-yellow-800",
                       (risk.assessmentStatus || "Open") === "Open" && "bg-blue-100 text-blue-800"
                     )}>
@@ -926,9 +1018,18 @@ export default function RiskAssessmentPage() {
                   Next
                 </Button>
               ) : (
-                <Button onClick={handleSave}>
-                  Save
-                </Button>
+                <>
+                  {(canCreate || canEdit) && (
+                    <Button variant="outline" onClick={() => handleSave(false)}>
+                      Save as Draft
+                    </Button>
+                  )}
+                  {(canCreate || canEdit) && (
+                    <Button onClick={() => handleSave(true)}>
+                      Submit for Approval
+                    </Button>
+                  )}
+                </>
               )}
             </div>
           </div>

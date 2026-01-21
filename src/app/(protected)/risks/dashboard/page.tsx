@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { DonutChart, HorizontalBarChart } from "@/components/charts";
+import { usePermissions } from "@/hooks/usePermissions";
+import { Unauthorized } from "@/components/ui/unauthorized";
 
 interface RiskStats {
   summary: {
@@ -16,6 +18,7 @@ interface RiskStats {
 }
 
 export default function RiskDashboardPage() {
+  const { canView, isLoading: permissionsLoading } = usePermissions('risk.register');
   const [stats, setStats] = useState<RiskStats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -37,12 +40,16 @@ export default function RiskDashboardPage() {
     fetchStats();
   }, []);
 
-  if (loading) {
+  if (permissionsLoading || loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-grc-primary"></div>
       </div>
     );
+  }
+
+  if (!canView) {
+    return <Unauthorized description="You don't have permission to access the Risk Dashboard." />;
   }
 
   const totalRisks = stats?.summary?.totalRisks || 0;

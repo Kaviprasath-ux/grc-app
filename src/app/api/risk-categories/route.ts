@@ -12,9 +12,9 @@ export async function GET() {
     const isGRCAdmin = userRoles.includes("GRCAdministrator");
     const customerAccountId = session?.user?.customerAccountId;
 
-    // Build tenant filter (GRCAdmin sees all, others see only their tenant)
+    // Build tenant filter: show customer-specific OR shared (null) data
     const tenantFilter = !isGRCAdmin && customerAccountId
-      ? { customerAccountId }
+      ? { OR: [{ customerAccountId }, { customerAccountId: null }] }
       : {};
 
     const categories = await prisma.riskCategory.findMany({

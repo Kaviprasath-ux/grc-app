@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { withAuth, getTenantFilter, validateTenantAccess, forbidden } from "@/lib/api-auth";
+import { withAuth, getTenantFilter, validateTenantAccess, forbidden, canAccessRecord } from "@/lib/api-auth";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -58,6 +58,14 @@ export const GET = withAuth(
         return NextResponse.json({ error: "Risk not found" }, { status: 404 });
       }
 
+      // Check department scope access
+      if (!canAccessRecord(session, "risk.register", "view", {
+        departmentId: risk.departmentId,
+        ownerId: risk.ownerId,
+      })) {
+        return forbidden("Access denied - this risk belongs to a different department");
+      }
+
       return NextResponse.json(risk);
     } catch (error) {
       console.error("Error fetching risk:", error);
@@ -101,6 +109,7 @@ export const PUT = withAuth(
       threats,
       vulnerabilities,
       causes,
+      controls,
       riskRating,
       lastAssessmentDate,
     } = body;
@@ -108,7 +117,7 @@ export const PUT = withAuth(
       // Check if risk exists and verify tenant access
       const existingRisk = await prisma.risk.findUnique({
         where: { id },
-        select: { customerAccountId: true, likelihood: true, impact: true },
+        select: { customerAccountId: true, likelihood: true, impact: true, departmentId: true, ownerId: true },
       });
       if (!existingRisk) {
         return NextResponse.json({ error: "Risk not found" }, { status: 404 });
@@ -116,6 +125,14 @@ export const PUT = withAuth(
 
       if (!validateTenantAccess(session, existingRisk.customerAccountId)) {
         return forbidden("Access denied to this risk");
+      }
+
+      // Check department scope access for edit
+      if (!canAccessRecord(session, "risk.register", "edit", {
+        departmentId: existingRisk.departmentId,
+        ownerId: existingRisk.ownerId,
+      })) {
+        return forbidden("Access denied - this risk belongs to a different department");
       }
 
       // Calculate scores
@@ -235,6 +252,19 @@ export const PUT = withAuth(
         }
       }
 
+      // Update control mappings if provided
+      if (controls !== undefined) {
+        await tx.controlRisk.deleteMany({ where: { riskId: id } });
+        if (controls.length > 0) {
+          await tx.controlRisk.createMany({
+            data: controls.map((controlId: string) => ({
+              riskId: id,
+              controlId,
+            })),
+          });
+        }
+      }
+
       // Update risk
       return tx.risk.update({
         where: { id },
@@ -275,7 +305,7 @@ export const PUT = withAuth(
   { resource: "risk.register", action: "edit" }
 );
 
-// PATCH update a risk (partial update) - with tenant validation
+// PATCH update a risk (partial update) - with tenant and department validation
 export const PATCH = withAuth(
   async (req, context: RouteContext, session) => {
     try {
@@ -285,7 +315,7 @@ export const PATCH = withAuth(
       // Check if risk exists and verify tenant access
       const existingRisk = await prisma.risk.findUnique({
         where: { id },
-        select: { customerAccountId: true },
+        select: { customerAccountId: true, departmentId: true, ownerId: true },
       });
       if (!existingRisk) {
         return NextResponse.json({ error: "Risk not found" }, { status: 404 });
@@ -293,6 +323,14 @@ export const PATCH = withAuth(
 
       if (!validateTenantAccess(session, existingRisk.customerAccountId)) {
         return forbidden("Access denied to this risk");
+      }
+
+      // Check department scope access for edit
+      if (!canAccessRecord(session, "risk.register", "edit", {
+        departmentId: existingRisk.departmentId,
+        ownerId: existingRisk.ownerId,
+      })) {
+        return forbidden("Access denied - this risk belongs to a different department");
       }
 
       // Build update data from provided fields only
@@ -349,7 +387,7 @@ export const PATCH = withAuth(
   { resource: "risk.register", action: "edit" }
 );
 
-// DELETE a risk - with tenant validation
+// DELETE a risk - with tenant and department validation
 export const DELETE = withAuth(
   async (req, context: RouteContext, session) => {
     try {
@@ -358,7 +396,7 @@ export const DELETE = withAuth(
       // Check if risk exists and verify tenant access
       const existingRisk = await prisma.risk.findUnique({
         where: { id },
-        select: { customerAccountId: true },
+        select: { customerAccountId: true, departmentId: true, ownerId: true },
       });
       if (!existingRisk) {
         return NextResponse.json({ error: "Risk not found" }, { status: 404 });
@@ -366,6 +404,14 @@ export const DELETE = withAuth(
 
       if (!validateTenantAccess(session, existingRisk.customerAccountId)) {
         return forbidden("Access denied to this risk");
+      }
+
+      // Check department scope access for delete
+      if (!canAccessRecord(session, "risk.register", "delete", {
+        departmentId: existingRisk.departmentId,
+        ownerId: existingRisk.ownerId,
+      })) {
+        return forbidden("Access denied - this risk belongs to a different department");
       }
 
       await prisma.risk.delete({ where: { id } });

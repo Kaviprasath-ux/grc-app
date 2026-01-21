@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { withAuth, getTenantFilter, validateTenantAccess, forbidden } from "@/lib/api-auth";
+import { withAuth, getTenantFilter, validateTenantAccess, forbidden, canAccessRecord } from "@/lib/api-auth";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -15,7 +15,7 @@ function calculateRiskRating(score: number): string {
   return "Low Risk";
 }
 
-// GET a single risk assessment - filtered by customer account
+// GET a single risk assessment - filtered by customer account and department scope
 export const GET = withAuth(
   async (req, context: RouteContext, session) => {
     try {
@@ -32,12 +32,14 @@ export const GET = withAuth(
               name: true,
               category: true,
               department: true,
+              departmentId: true,
               owner: {
                 select: {
                   id: true,
                   fullName: true,
                 },
               },
+              ownerId: true,
             },
           },
         },
@@ -48,6 +50,14 @@ export const GET = withAuth(
           { error: "Risk assessment not found" },
           { status: 404 }
         );
+      }
+
+      // Check department scope access
+      if (!canAccessRecord(session, "risk.assessment", "view", {
+        departmentId: assessment.risk?.departmentId,
+        ownerId: assessment.risk?.ownerId,
+      })) {
+        return forbidden("Access denied - this record belongs to a different department");
       }
 
       return NextResponse.json(assessment);
@@ -62,7 +72,7 @@ export const GET = withAuth(
   { resource: "risk.assessment", action: "view" }
 );
 
-// PUT update a risk assessment - with tenant validation
+// PUT update a risk assessment - with tenant validation and approval workflow
 export const PUT = withAuth(
   async (req, context: RouteContext, session) => {
     try {
@@ -85,7 +95,11 @@ export const PUT = withAuth(
 
       const existing = await prisma.riskAssessment.findUnique({
         where: { id },
-        select: { customerAccountId: true, likelihood: true, impact: true, status: true, riskId: true },
+        include: {
+          risk: {
+            select: { departmentId: true, ownerId: true },
+          },
+        },
       });
       if (!existing) {
         return NextResponse.json(
@@ -96,6 +110,33 @@ export const PUT = withAuth(
 
       if (!validateTenantAccess(session, existing.customerAccountId)) {
         return forbidden("Access denied to this risk assessment");
+      }
+
+      // Check department scope access for edit
+      if (!canAccessRecord(session, "risk.assessment", "edit", {
+        departmentId: existing.risk?.departmentId,
+        ownerId: existing.risk?.ownerId,
+      })) {
+        return forbidden("Access denied - this record belongs to a different department");
+      }
+
+      // Per UAT: Assessment has NO approval workflow
+      // Status flow is: Open → In-Progress → Completed
+      // No approve/reject actions in Assessment (approval is in Risk Response Strategy)
+      const validTransitions: Record<string, string[]> = {
+        "Open": ["In-Progress"],
+        "In-Progress": ["Completed", "Open"], // Can go back to Open (like Re-assess in UAT)
+        "Completed": ["In-Progress"], // Can re-assess (Resume button in UAT)
+      };
+
+      if (status && status !== existing.status) {
+        const allowedNextStates = validTransitions[existing.status] || [];
+        if (!allowedNextStates.includes(status)) {
+          return NextResponse.json(
+            { error: `Invalid status transition from ${existing.status} to ${status}` },
+            { status: 400 }
+          );
+        }
       }
 
       const newLikelihood = likelihood ?? existing.likelihood;
@@ -138,8 +179,8 @@ export const PUT = withAuth(
         },
       });
 
-      // Update the risk with the latest assessment scores if status changed to Approved
-      if (status === "Approved" && existing.status !== "Approved") {
+      // Update the risk with the latest assessment scores if status changed to Completed (per UAT)
+      if (status === "Completed" && existing.status !== "Completed") {
         await prisma.risk.update({
           where: { id: existing.riskId },
           data: {
@@ -164,7 +205,7 @@ export const PUT = withAuth(
   { resource: "risk.assessment", action: "edit" }
 );
 
-// DELETE a risk assessment - with tenant validation
+// DELETE a risk assessment - with tenant validation and department scope
 export const DELETE = withAuth(
   async (req, context: RouteContext, session) => {
     try {
@@ -172,7 +213,11 @@ export const DELETE = withAuth(
 
       const existing = await prisma.riskAssessment.findUnique({
         where: { id },
-        select: { customerAccountId: true },
+        include: {
+          risk: {
+            select: { departmentId: true, ownerId: true },
+          },
+        },
       });
       if (!existing) {
         return NextResponse.json(
@@ -183,6 +228,22 @@ export const DELETE = withAuth(
 
       if (!validateTenantAccess(session, existing.customerAccountId)) {
         return forbidden("Access denied to this risk assessment");
+      }
+
+      // Check department scope access for delete
+      if (!canAccessRecord(session, "risk.assessment", "delete", {
+        departmentId: existing.risk?.departmentId,
+        ownerId: existing.risk?.ownerId,
+      })) {
+        return forbidden("Access denied - this record belongs to a different department");
+      }
+
+      // Only allow deleting Open assessments (per UAT status flow)
+      if (existing.status !== "Open") {
+        return NextResponse.json(
+          { error: "Only open assessments can be deleted" },
+          { status: 400 }
+        );
       }
 
       await prisma.riskAssessment.delete({ where: { id } });
