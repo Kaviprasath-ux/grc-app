@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Plus, Pencil, Trash2, Upload, X, ArrowLeft } from "lucide-react";
+import { Plus, Pencil, Trash2, Upload, X, ArrowLeft, Sparkles } from "lucide-react";
 import { PageHeader, DataGrid } from "@/components/shared";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ColumnDef } from "@tanstack/react-table";
 import { EditProfileWizard } from "@/components/profile/edit-profile-wizard";
+import { syncMendixData } from "@/actions/mendix";
 
 interface Branch {
   id?: string;
@@ -616,6 +617,22 @@ function ProfilePageContent() {
                   New Profile
                 </Button>
               )}
+              <Button variant="secondary" size="sm" className="ml-2" onClick={async () => {
+                try {
+                  const res = await syncMendixData();
+                  if (res.success) {
+                    // Using alert or toast if available in this scope? Page has no toast hook usage shown but likely available
+                    // Actually ProfilePageContent has no `toast` defined.
+                    alert("Mendix Sync Triggered Successfully");
+                  }
+                } catch (e) {
+                  console.error(e);
+                  alert("Failed to sync Mendix data");
+                }
+              }}>
+                <Sparkles className="h-4 w-4 mr-2" />
+                Sync Mendix Data
+              </Button>
             </CardHeader>
             <CardContent>
               {organization ? (
