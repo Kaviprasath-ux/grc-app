@@ -371,5 +371,5 @@ export const POST = withAuth(
     );
   }
   },
-  { resource: "compliance.frameworks", action: "create" }
+  { resource: "compliance.framework", action: "create" }
 );

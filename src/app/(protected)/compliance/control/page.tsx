@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { usePermissions, useHasRole } from "@/hooks/usePermissions";
@@ -112,6 +112,7 @@ const ITEMS_PER_PAGE = 20;
 
 export default function ControlListPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: session } = useSession();
   const { toast } = useToast();
   const { canView, canCreate, canDelete, isLoading: permissionsLoading } = usePermissions('compliance.controls');
@@ -124,8 +125,10 @@ export default function ControlListPage() {
   const [sortField, setSortField] = useState<string>("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
-  // Filters
-  const [integratedFrameworkFilter, setIntegratedFrameworkFilter] = useState<string>("all");
+  // Filters - initialize from URL query parameter
+  const [integratedFrameworkFilter, setIntegratedFrameworkFilter] = useState<string>(
+    searchParams.get("frameworkId") || "all"
+  );
 
   // Column visibility
   const [visibleColumns, setVisibleColumns] = useState({
