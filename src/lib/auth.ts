@@ -12,7 +12,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
+        console.log('[AUTH] Login attempt:', credentials?.username);
+
         if (!credentials?.username || !credentials?.password) {
+          console.log('[AUTH] Missing credentials');
           return null;
         }
 
@@ -54,13 +57,19 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         });
 
         if (!user) {
+          console.log('[AUTH] User not found');
           return null;
         }
 
+        console.log('[AUTH] User found:', user.userName, 'isActive:', user.isActive, 'isBlocked:', user.isBlocked);
+
         // Simple password check (in production, use bcrypt)
         if (user.password !== credentials.password) {
+          console.log('[AUTH] Password mismatch');
           return null;
         }
+
+        console.log('[AUTH] Login successful for:', user.userName);
 
         // Extract role names from userRoles
         const roleNames = user.userRoles.map(ur => ur.role.name);

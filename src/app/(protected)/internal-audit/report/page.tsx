@@ -47,6 +47,11 @@ interface Pagination {
 export default function ReportsPage() {
   const router = useRouter();
   const isAuditHead = useHasRole("AuditHead");
+  const isAuditManager = useHasRole("AuditManager");
+  const isAuditor = useHasRole("Auditor");
+  const isAuditee = useHasRole("Auditee");
+  const isAuditTeam = isAuditHead || isAuditManager || isAuditor;
+  const isAuditeeOnly = isAuditee && !isAuditTeam;
 
   const [loading, setLoading] = useState(true);
   const [engagements, setEngagements] = useState<CompletedEngagement[]>([]);
@@ -92,7 +97,8 @@ export default function ReportsPage() {
     if (engagement.hasReport) {
       // If report already exists, navigate to view it
       router.push(`/internal-audit/report/${engagement.id}`);
-    } else {
+    } else if (!isAuditeeOnly) {
+      // Only non-auditee can generate reports
       // Open dialog to select Pass/Fail
       setSelectedEngagement(engagement);
       setOverallResult("Pass");
@@ -173,12 +179,26 @@ export default function ReportsPage() {
                   <TableCell>{engagement.assignedAuditorName}</TableCell>
                   <TableCell>{engagement.status}</TableCell>
                   <TableCell>
-                    <Button
-                      className="bg-[#1e3a5f] hover:bg-[#2e4a6f] text-white text-sm"
-                      onClick={() => handleGenerateReport(engagement)}
-                    >
-                      {engagement.hasReport ? "View Report" : "Generate Draft Report"}
-                    </Button>
+                    {/* Auditee can only view existing reports, not generate new ones */}
+                    {isAuditeeOnly ? (
+                      engagement.hasReport ? (
+                        <Button
+                          className="bg-[#1e3a5f] hover:bg-[#2e4a6f] text-white text-sm"
+                          onClick={() => router.push(`/internal-audit/report/${engagement.id}`)}
+                        >
+                          View Report
+                        </Button>
+                      ) : (
+                        <span className="text-gray-400 text-sm">No report</span>
+                      )
+                    ) : (
+                      <Button
+                        className="bg-[#1e3a5f] hover:bg-[#2e4a6f] text-white text-sm"
+                        onClick={() => handleGenerateReport(engagement)}
+                      >
+                        {engagement.hasReport ? "View Report" : "Generate Draft Report"}
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               ))

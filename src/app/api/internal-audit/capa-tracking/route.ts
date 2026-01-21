@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth } from '@/lib/api-auth';
+import { Session } from 'next-auth';
 
 // GET /api/internal-audit/capa-tracking - Get all findings for CAPA tracking
 export const GET = withAuth(
-  async (req: NextRequest) => {
+  async (req: NextRequest, context: unknown, session: Session) => {
     try {
       const { searchParams } = new URL(req.url);
       const departmentId = searchParams.get('departmentId');
@@ -13,8 +14,22 @@ export const GET = withAuth(
       const limit = parseInt(searchParams.get('limit') || '20');
       const skip = (page - 1) * limit;
 
+      // Check if user is auditee only (has Auditee role but not AuditHead/AuditManager/Auditor)
+      const userRoles = session.user?.roles || [];
+      const isAuditTeam = userRoles.some((role: string) =>
+        ['AuditHead', 'AuditManager', 'Auditor'].includes(role)
+      );
+      const isAuditee = userRoles.includes('Auditee');
+      const isAuditeeOnly = isAuditee && !isAuditTeam;
+
       // Build where clause
       const where: Record<string, unknown> = {};
+
+      // For auditee-only users, filter to show only their assigned findings
+      if (isAuditeeOnly && session.user?.id) {
+        where.responsiblePersonId = session.user.id;
+      }
+
       if (departmentId) {
         where.departmentId = departmentId;
       }
@@ -40,6 +55,9 @@ export const GET = withAuth(
               id: true,
               name: true,
             },
+          },
+          attachments: {
+            orderBy: { uploadedAt: 'desc' },
           },
         },
         orderBy: { createdAt: 'desc' },
@@ -71,6 +89,8 @@ export const GET = withAuth(
         effect: finding.effect,
         recommendation: finding.recommendation,
         auditeeComment: finding.description, // Map description to auditeeComment for now
+        // Attachments
+        attachments: finding.attachments || [],
       }));
 
       return NextResponse.json({

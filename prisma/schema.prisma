@@ -289,6 +289,10 @@ model User {
   lastLogin           DateTime?        // Last login timestamp
   departmentId        String?
   department          Department?      @relation(fields: [departmentId], references: [id])
+  // Audit Head assignment - links auditee to their audit head
+  auditHeadId         String?
+  auditHead           User?            @relation("AuditHeadAuditees", fields: [auditHeadId], references: [id])
+  managedAuditees     User[]           @relation("AuditHeadAuditees")
   createdAt           DateTime    @default(now())
   updatedAt           DateTime    @updatedAt
   // Relations
@@ -2182,6 +2186,12 @@ model FieldworkEvidenceRequest {
   // Auditee assignment (assigned by Audit Head)
   auditeeId       String?
   auditeeName     String?
+  // Clarification request fields (sent by Audit Head to Auditee)
+  clarificationComment      String?
+  clarificationDocumentName String?
+  clarificationByUserId     String?
+  clarificationByUserName   String?
+  clarificationSentAt       DateTime?
   createdAt       DateTime                       @default(now())
   updatedAt       DateTime                       @updatedAt
   attachments     FieldworkEvidenceAttachment[]
@@ -2282,9 +2292,25 @@ model InternalAuditFinding {
   updatedAt           DateTime              @updatedAt
   // Relations
   capas               InternalAuditCAPA[]
+  attachments         FindingAttachment[]
 
   @@unique([customerAccountId, findingId])
   @@index([customerAccountId])
+}
+
+// Finding Attachment (for auditee uploads in CAPA tracking)
+model FindingAttachment {
+  id          String               @id @default(cuid())
+  findingId   String
+  finding     InternalAuditFinding @relation(fields: [findingId], references: [id], onDelete: Cascade)
+  fileName    String
+  fileType    String?
+  fileSize    Int?
+  filePath    String
+  uploadedBy  String?
+  uploadedAt  DateTime             @default(now())
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
 }
 
 // Internal Audit CAPA (Corrective and Preventive Actions for internal audit findings)

@@ -61,6 +61,7 @@ export const PATCH = withAuth(
         status,
         targetDate,
         auditeeComment,
+        isAuditeeSubmission, // Flag to indicate auditee submission
       } = body;
 
       // Find the existing finding
@@ -88,7 +89,11 @@ export const PATCH = withAuth(
       if (recommendation !== undefined) updateData.recommendation = recommendation;
       if (targetDate !== undefined) updateData.targetDate = targetDate ? new Date(targetDate) : null;
       if (auditeeComment !== undefined) updateData.description = auditeeComment; // Map auditeeComment to description
-      if (status !== undefined) {
+
+      // Handle status - auditee submission automatically sets "Under Review"
+      if (isAuditeeSubmission) {
+        updateData.status = 'Under Review';
+      } else if (status !== undefined) {
         updateData.status = status;
         updateData.closedDate = status === 'Closed' ? new Date() : null;
       }

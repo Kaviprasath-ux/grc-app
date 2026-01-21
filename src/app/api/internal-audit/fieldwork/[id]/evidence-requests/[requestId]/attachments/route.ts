@@ -130,5 +130,5 @@ export const POST = withAuth(
       );
     }
   },
-  { resource: 'audit.fieldwork', action: 'create' }
+  { resource: 'audit.fieldwork', action: 'edit' }
 );

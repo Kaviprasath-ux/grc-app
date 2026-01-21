@@ -53,8 +53,12 @@ import {
   Pencil,
   Trash2,
   Save,
+  Paperclip,
+  Check,
+  AlertCircle,
 } from "lucide-react";
 import { useHasRole } from "@/hooks/usePermissions";
+import { useSession } from "next-auth/react";
 
 interface Department {
   id: string;
@@ -112,6 +116,15 @@ interface TaskItem {
   comments: string;
 }
 
+interface EvidenceAttachment {
+  id: string;
+  fileName: string;
+  fileType: string | null;
+  fileSize: number | null;
+  filePath: string;
+  uploadedAt: string;
+}
+
 interface EvidenceRequest {
   id: string;
   title: string;
@@ -121,6 +134,12 @@ interface EvidenceRequest {
   auditee: string;
   auditeeId?: string | null;
   numberOfSamples?: string | null;
+  aiReviewStatus?: string | null;
+  clarificationComment?: string | null;
+  clarificationDocumentName?: string | null;
+  clarificationByUserName?: string | null;
+  clarificationSentAt?: string | null;
+  attachments?: EvidenceAttachment[];
 }
 
 interface Finding {
@@ -149,7 +168,17 @@ export default function FieldworkDetailsPage() {
   const router = useRouter();
   const params = useParams();
   const engagementId = params.id as string;
+  const { data: session } = useSession();
+  const currentUserId = session?.user?.id;
   const isAuditHead = useHasRole("AuditHead");
+  const isAuditManager = useHasRole("AuditManager");
+  const isAuditor = useHasRole("Auditor");
+  const isAuditee = useHasRole("Auditee");
+
+  // Check if user is part of the audit team (not just an auditee)
+  const isAuditTeam = isAuditHead || isAuditManager || isAuditor;
+  // Check if user is ONLY an auditee (not also part of audit team)
+  const isAuditeeOnly = isAuditee && !isAuditTeam;
 
   const [loading, setLoading] = useState(true);
   const [engagement, setEngagement] = useState<Engagement | null>(null);
@@ -170,10 +199,11 @@ export default function FieldworkDetailsPage() {
   const [evidenceRequests, setEvidenceRequests] = useState<EvidenceRequest[]>([]);
   const [otherDocuments, setOtherDocuments] = useState<Workpaper[]>([]);
   const [findings, setFindings] = useState<Finding[]>([]);
-  const [users, setUsers] = useState<{ id: string; fullName: string }[]>([]);
+  const [auditees, setAuditees] = useState<{ id: string; fullName: string; department?: { name: string } | null }[]>([]);
 
   // Upload states
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const attachmentFileInputRef = useRef<HTMLInputElement>(null);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const [uploadCategory, setUploadCategory] = useState("workpapers");
@@ -221,8 +251,10 @@ export default function FieldworkDetailsPage() {
     title: "",
     description: "",
     auditee: "",
+    auditeeId: "",
     dueDate: "",
     status: "",
+    numberOfSamples: "",
   });
   const [savingEvidence, setSavingEvidence] = useState(false);
   const [deleteEvidenceDialogOpen, setDeleteEvidenceDialogOpen] = useState(false);
@@ -237,6 +269,23 @@ export default function FieldworkDetailsPage() {
   const [generatingAIReview, setGeneratingAIReview] = useState(false);
   const [aiReviewDialogOpen, setAiReviewDialogOpen] = useState(false);
   const [aiReviewResult, setAiReviewResult] = useState<string>("");
+
+  // Need Clarification dialog states (Audit Head sends)
+  const [clarificationDialogOpen, setClarificationDialogOpen] = useState(false);
+  const [clarificationEvidence, setClarificationEvidence] = useState<EvidenceRequest | null>(null);
+  const [clarificationDocument, setClarificationDocument] = useState<string>("");
+  const [clarificationComment, setClarificationComment] = useState<string>("");
+  const [sendingClarification, setSendingClarification] = useState(false);
+
+  // Auditee view clarification popup states
+  const [auditeeClariDialogOpen, setAuditeeClariDialogOpen] = useState(false);
+  const [auditeeClariEvidence, setAuditeeClariEvidence] = useState<EvidenceRequest | null>(null);
+
+  // Auditee Respond dialog states
+  const [respondDialogOpen, setRespondDialogOpen] = useState(false);
+  const [respondComment, setRespondComment] = useState<string>("");
+  const [respondFiles, setRespondFiles] = useState<File[]>([]);
+  const [sendingResponse, setSendingResponse] = useState(false);
 
   // Workpaper delete states
   const [deleteWorkpaperDialogOpen, setDeleteWorkpaperDialogOpen] = useState(false);
@@ -277,21 +326,27 @@ export default function FieldworkDetailsPage() {
     title: "",
     description: "",
     auditee: "",
+    auditeeId: "",
     dueDate: "",
+    numberOfSamples: "",
   });
 
   useEffect(() => {
     if (engagementId) {
       fetchEngagementDetails();
-      fetchWorkpapers();
-      fetchAIWorkpapers();
-      fetchTaskList();
       fetchEvidenceRequests();
-      fetchOtherDocuments();
       fetchFindings();
-      fetchUsers();
+
+      // Only fetch audit team data if not an auditee-only user
+      if (!isAuditeeOnly) {
+        fetchWorkpapers();
+        fetchAIWorkpapers();
+        fetchTaskList();
+        fetchOtherDocuments();
+        fetchAuditees();
+      }
     }
-  }, [engagementId]);
+  }, [engagementId, isAuditeeOnly]);
 
   const fetchEngagementDetails = async () => {
     try {
@@ -380,19 +435,20 @@ export default function FieldworkDetailsPage() {
     }
   };
 
-  const fetchUsers = async () => {
+  const fetchAuditees = async () => {
     try {
-      const response = await fetch("/api/users");
+      const response = await fetch("/api/users/my-auditees");
       if (response.ok) {
         const data = await response.json();
-        const userList = Array.isArray(data) ? data : [];
-        setUsers(userList.map((u: { id: string; fullName: string }) => ({
+        const auditeeList = data.auditees || [];
+        setAuditees(auditeeList.map((u: { id: string; fullName: string; department?: { name: string } | null }) => ({
           id: u.id,
           fullName: u.fullName,
+          department: u.department,
         })));
       }
     } catch (error) {
-      console.error("Failed to fetch users:", error);
+      console.error("Failed to fetch auditees:", error);
     }
   };
 
@@ -412,6 +468,11 @@ export default function FieldworkDetailsPage() {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
+
+  // Filter evidence requests for auditees - they only see requests assigned to them
+  const filteredEvidenceRequests = isAuditee && !isAuditHead
+    ? evidenceRequests.filter(er => er.auditeeId === currentUserId)
+    : evidenceRequests;
 
   const getAuditorName = () => {
     if (!engagement) return "-";
@@ -873,8 +934,10 @@ export default function FieldworkDetailsPage() {
       title: er.title || "",
       description: er.description || "",
       auditee: er.auditee || "",
+      auditeeId: er.auditeeId || "",
       dueDate: er.dueDate ? new Date(er.dueDate).toISOString().split("T")[0] : "",
       status: er.status || "Pending",
+      numberOfSamples: er.numberOfSamples || "",
     });
     setIsEditingEvidence(editMode);
     setViewEditEvidenceDialogOpen(true);
@@ -898,8 +961,10 @@ export default function FieldworkDetailsPage() {
             title: editEvidence.title,
             description: editEvidence.description,
             auditee: editEvidence.auditee,
+            auditeeId: editEvidence.auditeeId || null,
             dueDate: editEvidence.dueDate || null,
             status: editEvidence.status,
+            numberOfSamples: editEvidence.numberOfSamples || null,
           }),
         }
       );
@@ -994,6 +1059,140 @@ export default function FieldworkDetailsPage() {
     }
   };
 
+  // Evidence Request Approval handlers
+  const handleApproveEvidence = async (evidenceId: string) => {
+    try {
+      const response = await fetch(
+        `/api/internal-audit/fieldwork/${engagementId}/evidence-requests/${evidenceId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            status: "Reviewed",
+            aiReviewStatus: "Satisfactory",
+          }),
+        }
+      );
+
+      if (response.ok) {
+        toast.success("Evidence request approved");
+        fetchEvidenceRequests();
+      } else {
+        toast.error("Failed to approve evidence request");
+      }
+    } catch (error) {
+      console.error("Error approving evidence:", error);
+      toast.error("Failed to approve evidence request");
+    }
+  };
+
+  // Open clarification dialog
+  const handleOpenClarificationDialog = (evidence: EvidenceRequest) => {
+    setClarificationEvidence(evidence);
+    setClarificationDocument(evidence.attachments?.[0]?.fileName || "");
+    setClarificationComment("");
+    setClarificationDialogOpen(true);
+  };
+
+  // Send clarification request
+  const handleSendClarification = async () => {
+    if (!clarificationEvidence) return;
+
+    setSendingClarification(true);
+    try {
+      const response = await fetch(
+        `/api/internal-audit/fieldwork/${engagementId}/evidence-requests/${clarificationEvidence.id}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            status: "Pending",
+            aiReviewStatus: "Needs Attention",
+            clarificationComment: clarificationComment,
+            clarificationDocumentName: clarificationDocument,
+            clarificationByUserId: session?.user?.id,
+            clarificationByUserName: session?.user?.name,
+            clarificationSentAt: new Date().toISOString(),
+          }),
+        }
+      );
+
+      if (response.ok) {
+        toast.success("The document has been returned for clarification");
+        setClarificationDialogOpen(false);
+        setClarificationEvidence(null);
+        setClarificationDocument("");
+        setClarificationComment("");
+        setViewEditEvidenceDialogOpen(false);
+        setSelectedEvidence(null);
+        fetchEvidenceRequests();
+      } else {
+        toast.error("Failed to request clarification");
+      }
+    } catch (error) {
+      console.error("Error requesting clarification:", error);
+      toast.error("Failed to request clarification");
+    } finally {
+      setSendingClarification(false);
+    }
+  };
+
+  // Auditee Send Response handler
+  const handleSendResponse = async () => {
+    if (!auditeeClariEvidence) return;
+
+    setSendingResponse(true);
+    try {
+      // Upload file if provided
+      if (respondFiles.length > 0) {
+        const formData = new FormData();
+        respondFiles.forEach((file) => {
+          formData.append("files", file);
+        });
+
+        await fetch(
+          `/api/internal-audit/fieldwork/${engagementId}/evidence-requests/${auditeeClariEvidence.id}/attachments`,
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
+      }
+
+      // Update status to Submitted and clear clarification
+      await fetch(
+        `/api/internal-audit/fieldwork/${engagementId}/evidence-requests/${auditeeClariEvidence.id}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            status: "Submitted",
+            clarificationComment: null,
+            clarificationDocumentName: null,
+            clarificationByUserId: null,
+            clarificationByUserName: null,
+            clarificationSentAt: null,
+          }),
+        }
+      );
+
+      toast.success("Response submitted successfully");
+      setRespondDialogOpen(false);
+      setAuditeeClariDialogOpen(false);
+      setAuditeeClariEvidence(null);
+      setRespondComment("");
+      setRespondFiles([]);
+      setViewEditEvidenceDialogOpen(false);
+      setSelectedEvidence(null);
+      fetchEvidenceRequests();
+    } catch (error) {
+      console.error("Error sending response:", error);
+      toast.error("Failed to send response");
+    } finally {
+      setSendingResponse(false);
+    }
+  };
+
   // AI Review handlers
   const handleSelectEvidence = (id: string, checked: boolean) => {
     if (checked) {
@@ -1005,7 +1204,7 @@ export default function FieldworkDetailsPage() {
 
   const handleSelectAllEvidence = (checked: boolean) => {
     if (checked) {
-      setSelectedEvidenceIds(evidenceRequests.map((er) => er.id));
+      setSelectedEvidenceIds(filteredEvidenceRequests.map((er) => er.id));
     } else {
       setSelectedEvidenceIds([]);
     }
@@ -1170,16 +1369,26 @@ export default function FieldworkDetailsPage() {
     }
 
     try {
+      const payload = {
+        title: newEvidence.title,
+        description: newEvidence.description,
+        auditee: newEvidence.auditee,
+        auditeeId: newEvidence.auditeeId || null,
+        dueDate: newEvidence.dueDate,
+        numberOfSamples: newEvidence.numberOfSamples || null,
+        status: "Pending",
+      };
+
       const response = await fetch(`/api/internal-audit/fieldwork/${engagementId}/evidence-requests`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...newEvidence, status: "Pending" }),
+        body: JSON.stringify(payload),
       });
 
       if (response.ok) {
         toast.success("Evidence request added successfully");
         setAddEvidenceDialogOpen(false);
-        setNewEvidence({ title: "", description: "", auditee: "", dueDate: "" });
+        setNewEvidence({ title: "", description: "", auditee: "", auditeeId: "", dueDate: "", numberOfSamples: "" });
         fetchEvidenceRequests();
       } else {
         toast.error("Failed to add evidence request");
@@ -1308,6 +1517,8 @@ export default function FieldworkDetailsPage() {
         onToggle={() => setEngagementDetailsOpen(!engagementDetailsOpen)}
         headerAction={
           <div className="flex items-center gap-2">
+            {/* Hide Comments button for auditees */}
+            {!isAuditeeOnly && (
             <Button
               variant="outline"
               size="sm"
@@ -1318,7 +1529,9 @@ export default function FieldworkDetailsPage() {
             >
               Comments
             </Button>
-            {engagement.status !== "Completed" && (
+            )}
+            {/* Hide Mark as Completed button for auditees */}
+            {engagement.status !== "Completed" && !isAuditeeOnly && (
               <Button
                 size="sm"
                 className="bg-[#1e3a5f] hover:bg-[#2d4a6f] text-white"
@@ -1371,7 +1584,8 @@ export default function FieldworkDetailsPage() {
         </div>
       </CollapsibleSection>
 
-      {/* Workpapers Section */}
+      {/* Workpapers Section - Hidden for auditees */}
+      {!isAuditeeOnly && (
       <CollapsibleSection
         title="Workpapers"
         isOpen={workpapersOpen}
@@ -1453,8 +1667,10 @@ export default function FieldworkDetailsPage() {
           )}
         </div>
       </CollapsibleSection>
+      )}
 
-      {/* AI-Generated Workpapers Section */}
+      {/* AI-Generated Workpapers Section - Hidden for auditees */}
+      {!isAuditeeOnly && (
       <CollapsibleSection
         title="AI-Generated Workpapers"
         isOpen={aiWorkpapersOpen}
@@ -1560,8 +1776,10 @@ export default function FieldworkDetailsPage() {
           )}
         </div>
       </CollapsibleSection>
+      )}
 
-      {/* Audit Engagement Task List Section */}
+      {/* Audit Engagement Task List Section - Hidden for auditees */}
+      {!isAuditeeOnly && (
       <CollapsibleSection
         title="Audit Engagement Task List"
         isOpen={taskListOpen}
@@ -1729,104 +1947,216 @@ export default function FieldworkDetailsPage() {
           </Table>
         </div>
       </CollapsibleSection>
+      )}
 
-      {/* Evidence Request Section */}
+      {/* Evidence Request Section - Visible for auditees */}
       <CollapsibleSection
         title="Evidence Request"
         isOpen={evidenceRequestOpen}
         onToggle={() => setEvidenceRequestOpen(!evidenceRequestOpen)}
       >
         <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <div>
-              {isAuditHead && selectedEvidenceIds.length > 0 && (
+          {/* Header with buttons - only for audit team */}
+          {!isAuditeeOnly && (
+            <div className="flex justify-between items-center">
+              <div>
+                {isAuditHead && selectedEvidenceIds.length > 0 && (
+                  <Button
+                    size="sm"
+                    className="bg-green-600 hover:bg-green-700"
+                    onClick={handleAIReview}
+                    disabled={generatingAIReview}
+                  >
+                    {generatingAIReview ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <MessageSquare className="h-4 w-4 mr-2" />
+                        AI Review ({selectedEvidenceIds.length})
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
+              {isAuditHead && (
                 <Button
                   size="sm"
-                  className="bg-green-600 hover:bg-green-700"
-                  onClick={handleAIReview}
-                  disabled={generatingAIReview}
+                  className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
+                  onClick={() => setAddEvidenceDialogOpen(true)}
                 >
-                  {generatingAIReview ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <MessageSquare className="h-4 w-4 mr-2" />
-                      AI Review ({selectedEvidenceIds.length})
-                    </>
-                  )}
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Evidence Request
                 </Button>
               )}
             </div>
-            <Button
-              size="sm"
-              className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
-              onClick={() => setAddEvidenceDialogOpen(true)}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Evidence Request
-            </Button>
-          </div>
-          {evidenceRequests.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-[#1e3a5f] hover:bg-[#1e3a5f]">
-                  {isAuditHead && (
-                    <TableHead className="text-white w-[50px]">
-                      <Checkbox
-                        checked={selectedEvidenceIds.length === evidenceRequests.length && evidenceRequests.length > 0}
-                        onCheckedChange={(checked) => handleSelectAllEvidence(checked === true)}
-                        className="border-white data-[state=checked]:bg-white data-[state=checked]:text-[#1e3a5f]"
-                      />
-                    </TableHead>
-                  )}
-                  <TableHead className="text-white">Title</TableHead>
-                  <TableHead className="text-white">Description</TableHead>
-                  <TableHead className="text-white">Auditee</TableHead>
-                  <TableHead className="text-white">Due Date</TableHead>
-                  <TableHead className="text-white">Status</TableHead>
-                  <TableHead className="text-white">Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {evidenceRequests.map((er) => (
-                  <TableRow key={er.id} className="hover:bg-gray-50">
-                    {isAuditHead && (
-                      <TableCell>
+          )}
+
+          {/* Card-based UI for Auditees (like VerifAI) */}
+          {isAuditeeOnly ? (
+            filteredEvidenceRequests.length > 0 ? (
+              <div className="space-y-4">
+                {filteredEvidenceRequests.map((er) => (
+                  <div key={er.id} className="bg-[#f8fafc] rounded-lg border border-gray-200 p-4">
+                    <div className="flex items-start gap-4">
+                      {/* Checkbox */}
+                      <div className="pt-1">
                         <Checkbox
                           checked={selectedEvidenceIds.includes(er.id)}
                           onCheckedChange={(checked) => handleSelectEvidence(er.id, checked === true)}
+                          className="border-[#1e3a5f] data-[state=checked]:bg-[#1e3a5f] data-[state=checked]:text-white"
                         />
-                      </TableCell>
-                    )}
-                    <TableCell className="font-medium">{er.title}</TableCell>
-                    <TableCell className="max-w-[200px] truncate">{er.description}</TableCell>
-                    <TableCell>{er.auditee || "-"}</TableCell>
-                    <TableCell>{formatDate(er.dueDate)}</TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        er.status === 'Reviewed' ? 'bg-green-100 text-green-800' :
-                        er.status === 'Submitted' ? 'bg-blue-100 text-blue-800' :
-                        er.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {er.status}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
+                      </div>
+
+                      {/* Left side - Title & Description */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[#1e3a5f] font-semibold">
+                            Title : {er.title}
+                          </span>
+                          <span className="text-gray-400">|</span>
+                          <span className="text-[#1e3a5f] font-semibold">
+                            Sample Size : {er.numberOfSamples || "-"}
+                          </span>
+                        </div>
+                        <p className="text-gray-500 text-sm">
+                          Description: {er.description || "-"}
+                        </p>
+                        {/* Uploaded files info */}
+                        {er.attachments && er.attachments.length > 0 && (
+                          <div className="mt-2 flex items-center gap-2 text-sm text-green-600">
+                            <FileText className="h-4 w-4" />
+                            <span>{er.attachments.length} file(s) uploaded</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Middle - AI Review Section */}
+                      <div className="flex-shrink-0 w-[280px]">
+                        <div className="flex items-center gap-2 mb-1">
+                          <MessageSquare className="h-4 w-4 text-gray-500" />
+                          <span className="text-sm font-medium text-gray-700">AI Review</span>
+                        </div>
+                        <div className="flex items-center gap-1 mb-1">
+                          {er.status === 'Reviewed' ? (
+                            <>
+                              <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center">
+                                <span className="text-white text-xs">✓</span>
+                              </div>
+                              <span className="text-sm text-green-600 font-medium">Satisfactory</span>
+                            </>
+                          ) : (
+                            <>
+                              <div className="w-4 h-4 rounded-full bg-red-500 flex items-center justify-center">
+                                <span className="text-white text-xs">✕</span>
+                              </div>
+                              <span className="text-sm text-red-600 font-medium">
+                                {er.status === 'Pending' ? 'Pending Review' : 'Unsatisfactory'}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                        <p className="text-xs text-amber-600 line-clamp-2">
+                          {er.status === 'Pending'
+                            ? 'Waiting for document upload and review.'
+                            : er.status === 'Submitted'
+                            ? 'Document submitted. Awaiting AI review.'
+                            : 'Review completed.'}
+                        </p>
+                      </div>
+
+                      {/* Right side - Action Icons */}
+                      <div className="flex items-center gap-1 flex-shrink-0">
                         <Button
                           variant="ghost"
                           size="icon"
-                          title="View"
+                          title="View Details"
                           onClick={() => handleOpenViewEvidence(er, false)}
+                          className="h-8 w-8"
                         >
-                          <Eye className="h-4 w-4 text-gray-600" />
+                          <Eye className="h-5 w-5 text-[#1e3a5f]" />
                         </Button>
-                        {isAuditHead && (
-                          <>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Add Attachment"
+                          onClick={() => handleOpenAttachmentDialog(er)}
+                          className="h-8 w-8"
+                        >
+                          <Paperclip className="h-5 w-5 text-[#1e3a5f]" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">No evidence requests found</div>
+            )
+          ) : (
+            /* Table-based UI for Audit Team */
+            filteredEvidenceRequests.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-[#1e3a5f] hover:bg-[#1e3a5f]">
+                    {isAuditHead && (
+                      <TableHead className="text-white w-[50px]">
+                        <Checkbox
+                          checked={selectedEvidenceIds.length === filteredEvidenceRequests.length && filteredEvidenceRequests.length > 0}
+                          onCheckedChange={(checked) => handleSelectAllEvidence(checked === true)}
+                          className="border-white data-[state=checked]:bg-white data-[state=checked]:text-[#1e3a5f]"
+                        />
+                      </TableHead>
+                    )}
+                    <TableHead className="text-white">Title</TableHead>
+                    <TableHead className="text-white">Description</TableHead>
+                    <TableHead className="text-white">Auditee</TableHead>
+                    <TableHead className="text-white">Samples</TableHead>
+                    <TableHead className="text-white">Due Date</TableHead>
+                    <TableHead className="text-white">Status</TableHead>
+                    <TableHead className="text-white">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredEvidenceRequests.map((er) => (
+                    <TableRow key={er.id} className="hover:bg-gray-50">
+                      {isAuditHead && (
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedEvidenceIds.includes(er.id)}
+                            onCheckedChange={(checked) => handleSelectEvidence(er.id, checked === true)}
+                          />
+                        </TableCell>
+                      )}
+                      <TableCell className="font-medium">{er.title}</TableCell>
+                      <TableCell className="max-w-[200px] truncate">{er.description}</TableCell>
+                      <TableCell>{er.auditee || "-"}</TableCell>
+                      <TableCell>{er.numberOfSamples || "-"}</TableCell>
+                      <TableCell>{formatDate(er.dueDate)}</TableCell>
+                      <TableCell>
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                          er.status === 'Reviewed' ? 'bg-green-100 text-green-800' :
+                          er.status === 'Submitted' ? 'bg-blue-100 text-blue-800' :
+                          er.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {er.status}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="View"
+                            onClick={() => handleOpenViewEvidence(er, false)}
+                          >
+                            <Eye className="h-4 w-4 text-gray-600" />
+                          </Button>
+                          {/* Auditees can upload attachments to their own evidence requests */}
+                          {(isAuditHead || (isAuditee && er.auditeeId === currentUserId)) && (
                             <Button
                               variant="ghost"
                               size="icon"
@@ -1835,40 +2165,46 @@ export default function FieldworkDetailsPage() {
                             >
                               <Upload className="h-4 w-4 text-green-600" />
                             </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              title="Edit"
-                              onClick={() => handleOpenViewEvidence(er, true)}
-                            >
-                              <Pencil className="h-4 w-4 text-blue-600" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              title="Delete"
-                              onClick={() => {
-                                setEvidenceToDelete(er);
-                                setDeleteEvidenceDialogOpen(true);
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4 text-red-600" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <div className="text-center py-8 text-gray-500">No evidence requests found</div>
+                          )}
+                          {/* Only Audit Heads can edit and delete */}
+                          {isAuditHead && (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title="Edit"
+                                onClick={() => handleOpenViewEvidence(er, true)}
+                              >
+                                <Pencil className="h-4 w-4 text-blue-600" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title="Delete"
+                                onClick={() => {
+                                  setEvidenceToDelete(er);
+                                  setDeleteEvidenceDialogOpen(true);
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4 text-red-600" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <div className="text-center py-8 text-gray-500">No evidence requests found</div>
+            )
           )}
         </div>
       </CollapsibleSection>
 
-      {/* Other Documents Section */}
+      {/* Other Documents Section - Hidden for auditees */}
+      {!isAuditeeOnly && (
       <CollapsibleSection
         title="Other Documents"
         isOpen={otherDocsOpen}
@@ -1959,14 +2295,17 @@ export default function FieldworkDetailsPage() {
           )}
         </div>
       </CollapsibleSection>
+      )}
 
-      {/* Findings Section */}
+      {/* Findings Section - Visible for auditees */}
       <CollapsibleSection
         title="Findings"
         isOpen={findingsOpen}
         onToggle={() => setFindingsOpen(!findingsOpen)}
       >
         <div className="space-y-4">
+          {/* Hide Add Finding buttons for auditees - they can only view findings */}
+          {!isAuditeeOnly && (
           <div className="flex justify-end gap-2">
             {!isAuditHead && (
               <Button
@@ -1987,6 +2326,7 @@ export default function FieldworkDetailsPage() {
               Add Finding (Full Form)
             </Button>
           </div>
+          )}
           {findings.length > 0 ? (
             <Table>
               <TableHeader>
@@ -2264,22 +2604,39 @@ export default function FieldworkDetailsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Auditee</Label>
+              <Label>Auditee *</Label>
               <Select
-                value={newEvidence.auditee}
-                onValueChange={(value) => setNewEvidence({ ...newEvidence, auditee: value })}
+                value={newEvidence.auditeeId}
+                onValueChange={(value) => {
+                  const selectedAuditee = auditees.find(a => a.id === value);
+                  setNewEvidence({
+                    ...newEvidence,
+                    auditeeId: value,
+                    auditee: selectedAuditee?.fullName || ""
+                  });
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select auditee" />
                 </SelectTrigger>
                 <SelectContent>
-                  {users.map((user) => (
-                    <SelectItem key={user.id} value={user.fullName}>
-                      {user.fullName}
+                  {auditees.map((auditee) => (
+                    <SelectItem key={auditee.id} value={auditee.id}>
+                      {auditee.fullName} {auditee.department?.name ? `(${auditee.department.name})` : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Number of Samples</Label>
+              <Input
+                type="number"
+                min="1"
+                value={newEvidence.numberOfSamples}
+                onChange={(e) => setNewEvidence({ ...newEvidence, numberOfSamples: e.target.value })}
+                placeholder="Enter number of samples required"
+              />
             </div>
             <div className="space-y-2">
               <Label>Due Date</Label>
@@ -2858,11 +3215,12 @@ export default function FieldworkDetailsPage() {
       <Dialog open={viewEditEvidenceDialogOpen} onOpenChange={setViewEditEvidenceDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>{isEditingEvidence ? "Edit Evidence Request" : "Evidence Request Details"}</DialogTitle>
+            <DialogTitle>{isEditingEvidence ? "Edit Evidence Request" : "View Evidence Request"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            {/* Request Title */}
             <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">Title *</Label>
+              <Label className="text-[#1e3a5f] font-medium">Request Title <span className="text-red-500">*</span></Label>
               {isEditingEvidence ? (
                 <Input
                   value={editEvidence.title}
@@ -2875,35 +3233,38 @@ export default function FieldworkDetailsPage() {
                 </div>
               )}
             </div>
-            <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">Description</Label>
-              {isEditingEvidence ? (
-                <Textarea
-                  value={editEvidence.description}
-                  onChange={(e) => setEditEvidence({ ...editEvidence, description: e.target.value })}
-                  placeholder="Enter description"
-                  rows={3}
-                />
-              ) : (
-                <div className="p-3 bg-gray-50 rounded-md border min-h-[80px]">
-                  {selectedEvidence?.description || "-"}
-                </div>
-              )}
-            </div>
+            {/* Auditee */}
             <div className="space-y-2">
               <Label className="text-[#1e3a5f] font-medium">Auditee</Label>
               {isEditingEvidence ? (
                 <Select
-                  value={editEvidence.auditee}
-                  onValueChange={(value) => setEditEvidence({ ...editEvidence, auditee: value })}
+                  value={editEvidence.auditeeId}
+                  onValueChange={(value) => {
+                    const selectedAuditee = auditees.find(a => a.id === value);
+                    setEditEvidence({
+                      ...editEvidence,
+                      auditeeId: value,
+                      auditee: selectedAuditee?.fullName || ""
+                    });
+                  }}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select auditee" />
+                    <SelectValue placeholder="Select auditee">
+                      {editEvidence.auditee && (
+                        <span className="inline-flex items-center gap-1 bg-gray-100 px-2 py-1 rounded text-sm">
+                          {editEvidence.auditee}
+                          <X className="h-3 w-3 cursor-pointer" onClick={(e) => {
+                            e.stopPropagation();
+                            setEditEvidence({ ...editEvidence, auditeeId: "", auditee: "" });
+                          }} />
+                        </span>
+                      )}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    {users.map((user) => (
-                      <SelectItem key={user.id} value={user.fullName}>
-                        {user.fullName}
+                    {auditees.map((auditee) => (
+                      <SelectItem key={auditee.id} value={auditee.id}>
+                        {auditee.fullName} {auditee.department?.name ? `(${auditee.department.name})` : ""}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -2914,50 +3275,167 @@ export default function FieldworkDetailsPage() {
                 </div>
               )}
             </div>
+            {/* Number of Samples */}
             <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">Due Date</Label>
+              <Label className="text-[#1e3a5f] font-medium">Number of Samples</Label>
               {isEditingEvidence ? (
                 <Input
-                  type="date"
-                  value={editEvidence.dueDate}
-                  onChange={(e) => setEditEvidence({ ...editEvidence, dueDate: e.target.value })}
+                  type="number"
+                  min="1"
+                  value={editEvidence.numberOfSamples}
+                  onChange={(e) => setEditEvidence({ ...editEvidence, numberOfSamples: e.target.value })}
+                  placeholder="Enter number of samples"
                 />
               ) : (
                 <div className="p-3 bg-gray-50 rounded-md border">
-                  {selectedEvidence?.dueDate ? formatDate(selectedEvidence.dueDate) : "-"}
+                  {selectedEvidence?.numberOfSamples || "-"}
                 </div>
               )}
             </div>
+            {/* Description */}
             <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">Status</Label>
+              <Label className="text-[#1e3a5f] font-medium">Description</Label>
               {isEditingEvidence ? (
-                <Select
-                  value={editEvidence.status}
-                  onValueChange={(value) => setEditEvidence({ ...editEvidence, status: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Pending">Pending</SelectItem>
-                    <SelectItem value="Submitted">Submitted</SelectItem>
-                    <SelectItem value="Reviewed">Reviewed</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Textarea
+                  value={editEvidence.description}
+                  onChange={(e) => setEditEvidence({ ...editEvidence, description: e.target.value })}
+                  placeholder="Enter description"
+                  rows={4}
+                />
               ) : (
-                <div className="p-3 bg-gray-50 rounded-md border">
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${
-                    selectedEvidence?.status === 'Reviewed' ? 'bg-green-100 text-green-800' :
-                    selectedEvidence?.status === 'Submitted' ? 'bg-blue-100 text-blue-800' :
-                    'bg-yellow-100 text-yellow-800'
-                  }`}>
+                <div className="p-3 bg-gray-50 rounded-md border min-h-[80px]">
+                  {selectedEvidence?.description || "-"}
+                </div>
+              )}
+            </div>
+            {/* Attachments in Edit Mode */}
+            {isEditingEvidence && selectedEvidence?.attachments && selectedEvidence.attachments.length > 0 && (
+              <div className="space-y-2">
+                {selectedEvidence.attachments.map((att) => (
+                  <div key={att.id} className="flex items-center justify-between py-2 border-b">
+                    <div className="flex items-center gap-3">
+                      {att.fileType?.includes('image') ? (
+                        <div className="w-10 h-10 bg-blue-100 rounded flex items-center justify-center">
+                          <FileText className="h-5 w-5 text-blue-600" />
+                        </div>
+                      ) : att.fileName?.endsWith('.docx') || att.fileName?.endsWith('.doc') ? (
+                        <div className="w-10 h-10 bg-blue-100 rounded flex items-center justify-center">
+                          <FileSpreadsheet className="h-5 w-5 text-blue-800" />
+                        </div>
+                      ) : (
+                        <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center">
+                          <FileText className="h-5 w-5 text-gray-600" />
+                        </div>
+                      )}
+                      <span className="text-sm text-blue-600">{att.fileName}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <a
+                        href={`/api${att.filePath}`}
+                        download
+                        className="p-1 hover:bg-gray-100 rounded"
+                        title="Download"
+                      >
+                        <Download className="h-4 w-4 text-gray-600" />
+                      </a>
+                      <a
+                        href={`/api${att.filePath}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-1 hover:bg-gray-100 rounded"
+                        title="View"
+                      >
+                        <Eye className="h-4 w-4 text-gray-600" />
+                      </a>
+                      <button
+                        className="p-1 hover:bg-red-50 rounded"
+                        title="Delete"
+                        onClick={() => {
+                          // TODO: Implement delete attachment
+                          toast.info("Delete attachment functionality coming soon");
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {/* View mode fields */}
+            {!isEditingEvidence && (
+              <>
+                <div className="space-y-2">
+                  <Label className="text-[#1e3a5f] font-medium">Due Date</Label>
+                  <div className="p-3 bg-gray-50 rounded-md border">
+                    {selectedEvidence?.dueDate ? formatDate(selectedEvidence.dueDate) : "-"}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[#1e3a5f] font-medium">Status</Label>
+                  <div className="p-3 bg-gray-50 rounded-md border">
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${
+                      selectedEvidence?.status === 'Reviewed' ? 'bg-green-100 text-green-800' :
+                      selectedEvidence?.status === 'Submitted' ? 'bg-blue-100 text-blue-800' :
+                      'bg-yellow-100 text-yellow-800'
+                    }`}>
                     {selectedEvidence?.status || "-"}
                   </span>
                 </div>
-              )}
-            </div>
+              </div>
+              </>
+            )}
+            {/* Attachments section - only show in view mode */}
+            {!isEditingEvidence && selectedEvidence?.attachments && selectedEvidence.attachments.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-[#1e3a5f] font-medium">Uploaded Attachments</Label>
+                <div className="p-3 bg-gray-50 rounded-md border space-y-2">
+                  {selectedEvidence.attachments.map((att) => (
+                    <div key={att.id} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-blue-600" />
+                        <span className="text-sm">{att.fileName}</span>
+                        <span className="text-xs text-gray-400">({formatFileSize(att.fileSize)})</span>
+                      </div>
+                      <a
+                        href={`/api${att.filePath}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline text-sm flex items-center gap-1"
+                      >
+                        <Download className="h-3 w-3" />
+                        Download
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {!isEditingEvidence && (!selectedEvidence?.attachments || selectedEvidence.attachments.length === 0) && (
+              <div className="space-y-2">
+                <Label className="text-[#1e3a5f] font-medium">Uploaded Attachments</Label>
+                <div className="p-3 bg-gray-50 rounded-md border text-gray-500 text-sm">
+                  No attachments uploaded yet
+                </div>
+              </div>
+            )}
+            {/* Comments button for auditee when there's a clarification request */}
+            {!isEditingEvidence && isAuditeeOnly && selectedEvidence?.clarificationComment && (
+              <div className="flex justify-end mt-4">
+                <Button
+                  className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
+                  onClick={() => {
+                    setAuditeeClariEvidence(selectedEvidence);
+                    setAuditeeClariDialogOpen(true);
+                  }}
+                >
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Comments
+                </Button>
+              </div>
+            )}
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex justify-between sm:justify-between">
             <Button
               variant="outline"
               onClick={() => {
@@ -2968,22 +3446,227 @@ export default function FieldworkDetailsPage() {
             >
               {isEditingEvidence ? "Cancel" : "Close"}
             </Button>
-            {isEditingEvidence && (
+            <div className="flex gap-2">
+              {/* Approve/Need Clarification buttons for Audit Head when evidence has attachments */}
+              {!isEditingEvidence && isAuditHead && selectedEvidence?.attachments && selectedEvidence.attachments.length > 0 && selectedEvidence.status !== 'Reviewed' && (
+                <>
+                  <Button
+                    variant="outline"
+                    className="border-amber-500 text-amber-600 hover:bg-amber-50"
+                    onClick={() => {
+                      if (selectedEvidence) {
+                        handleOpenClarificationDialog(selectedEvidence);
+                      }
+                    }}
+                  >
+                    <AlertCircle className="h-4 w-4 mr-2" />
+                    Need Clarification
+                  </Button>
+                  <Button
+                    className="bg-green-600 hover:bg-green-700"
+                    onClick={() => {
+                      if (selectedEvidence) {
+                        handleApproveEvidence(selectedEvidence.id);
+                        setViewEditEvidenceDialogOpen(false);
+                        setSelectedEvidence(null);
+                      }
+                    }}
+                  >
+                    <Check className="h-4 w-4 mr-2" />
+                    Approve
+                  </Button>
+                </>
+              )}
+              {isEditingEvidence && (
+                <Button
+                  className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
+                  onClick={handleUpdateEvidence}
+                  disabled={savingEvidence}
+                >
+                  {savingEvidence ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    "Save"
+                  )}
+                </Button>
+              )}
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Need Clarification Dialog */}
+      <Dialog open={clarificationDialogOpen} onOpenChange={setClarificationDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-[#1e3a5f]">Need Clarification</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-[#1e3a5f] font-medium">
+                Select the document that requires clarification
+              </Label>
+              <Select
+                value={clarificationDocument}
+                onValueChange={setClarificationDocument}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select document" />
+                </SelectTrigger>
+                <SelectContent>
+                  {clarificationEvidence?.attachments?.map((att) => (
+                    <SelectItem key={att.id} value={att.fileName}>
+                      {att.fileName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[#1e3a5f] font-medium">Comment</Label>
+              <Textarea
+                value={clarificationComment}
+                onChange={(e) => setClarificationComment(e.target.value)}
+                placeholder="Enter your clarification request..."
+                rows={5}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[#1e3a5f] font-medium">Previous Comments</Label>
+              <div className="p-3 bg-gray-50 rounded-md border text-gray-500 text-sm text-center">
+                No items found
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
+              onClick={handleSendClarification}
+              disabled={sendingClarification || !clarificationDocument}
+            >
+              {sendingClarification ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                "Send"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Auditee Clarification View Popup */}
+      <Dialog open={auditeeClariDialogOpen} onOpenChange={setAuditeeClariDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-[#1e3a5f]">Need Clarification</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex items-start justify-between">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-gray-700">Document that requires clarification</p>
+                <p className="text-sm text-gray-900">{auditeeClariEvidence?.clarificationDocumentName || "-"}</p>
+              </div>
               <Button
                 className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
-                onClick={handleUpdateEvidence}
-                disabled={savingEvidence}
+                onClick={() => {
+                  setRespondComment("");
+                  setRespondFiles([]);
+                  setRespondDialogOpen(true);
+                }}
               >
-                {savingEvidence ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  "Save"
-                )}
+                Respond
               </Button>
-            )}
+            </div>
+            <div className="border-t pt-3">
+              <p className="text-sm text-gray-900">{auditeeClariEvidence?.clarificationComment || "-"}</p>
+              <p className="text-sm text-gray-500 mt-1">
+                ~ {auditeeClariEvidence?.clarificationByUserName || "Unknown"}
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                {auditeeClariEvidence?.clarificationSentAt
+                  ? new Date(auditeeClariEvidence.clarificationSentAt).toLocaleString()
+                  : "-"}
+              </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Auditee Respond Dialog */}
+      <Dialog open={respondDialogOpen} onOpenChange={setRespondDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-[#1e3a5f]">Respond</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-[#1e3a5f] font-medium">Comment</Label>
+              <Textarea
+                value={respondComment}
+                onChange={(e) => setRespondComment(e.target.value)}
+                placeholder="Enter your response..."
+                rows={5}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[#1e3a5f] font-medium">Attach File</Label>
+              <div
+                className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-gray-400 transition-colors"
+                onClick={() => {
+                  const input = document.createElement("input");
+                  input.type = "file";
+                  input.multiple = true;
+                  input.onchange = (e) => {
+                    const files = (e.target as HTMLInputElement).files;
+                    if (files) {
+                      setRespondFiles(Array.from(files));
+                    }
+                  };
+                  input.click();
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const files = e.dataTransfer.files;
+                  if (files) {
+                    setRespondFiles(Array.from(files));
+                  }
+                }}
+              >
+                <p className="text-gray-500">Drag and drop or select file.</p>
+                {respondFiles.length > 0 && (
+                  <div className="mt-2 text-sm text-green-600">
+                    {respondFiles.map((f) => f.name).join(", ")}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
+              onClick={handleSendResponse}
+              disabled={sendingResponse}
+            >
+              {sendingResponse ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                "Send Response"
+              )}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -3086,11 +3769,11 @@ export default function FieldworkDetailsPage() {
                 }}
                 onDragLeave={() => setIsDragOver(false)}
                 onDrop={handleFileDrop}
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => attachmentFileInputRef.current?.click()}
               >
                 <p className="text-gray-600">Click here, or drop files here to upload.</p>
                 <input
-                  ref={fileInputRef}
+                  ref={attachmentFileInputRef}
                   type="file"
                   className="hidden"
                   accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"

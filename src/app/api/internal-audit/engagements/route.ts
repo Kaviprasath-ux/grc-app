@@ -16,6 +16,45 @@ export const GET = withAuth(
       const whereClause: Record<string, unknown> = { ...tenantFilter };
       const andConditions: Record<string, unknown>[] = [];
 
+      // Check if user is an Auditee (and not also an Audit Head or other audit role)
+      const userRoles = session.roles || [];
+      const isAuditee = userRoles.includes('Auditee');
+      const isAuditHead = userRoles.includes('AuditHead');
+      const isAuditManager = userRoles.includes('AuditManager');
+      const isAuditor = userRoles.includes('Auditor');
+      const hasAuditRole = isAuditHead || isAuditManager || isAuditor;
+
+      // If user is only an Auditee, filter to show only engagements where they have evidence requests
+      if (isAuditee && !hasAuditRole) {
+        const userId = session.id;
+        console.log('[ENGAGEMENTS API] Auditee user filtering - userId:', userId);
+
+        // Find engagements where this user has evidence requests assigned
+        const engagementsWithUserRequests = await prisma.fieldworkEvidenceRequest.findMany({
+          where: {
+            auditeeId: userId,
+          },
+          select: {
+            engagementId: true,
+            auditeeId: true,
+            auditeeName: true,
+          },
+          distinct: ['engagementId'],
+        });
+
+        console.log('[ENGAGEMENTS API] Found evidence requests for auditee:', engagementsWithUserRequests);
+
+        const engagementIds = engagementsWithUserRequests.map(er => er.engagementId);
+
+        if (engagementIds.length === 0) {
+          // No engagements for this auditee
+          console.log('[ENGAGEMENTS API] No engagements found for auditee');
+          return NextResponse.json([]);
+        }
+
+        whereClause.id = { in: engagementIds };
+      }
+
       if (departmentId && departmentId !== 'all') {
         whereClause.departmentId = departmentId;
       }
@@ -88,7 +127,8 @@ export const GET = withAuth(
       );
     }
   },
-  { resource: 'audit.planning', action: 'view' }
+  // Use audit.fieldwork:view to allow auditees to list engagements they have evidence requests in
+  { resource: 'audit.fieldwork', action: 'view' }
 );
 
 // POST /api/internal-audit/engagements - Create a new audit engagement

@@ -30,8 +30,19 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
-import { Loader2, Trash2, Eye, Pencil } from "lucide-react";
+import { Loader2, Trash2, Eye, Pencil, Upload, Download, FileText } from "lucide-react";
 import { useHasRole } from "@/hooks/usePermissions";
+import { useRef } from "react";
+
+interface FindingAttachment {
+  id: string;
+  fileName: string;
+  fileType: string | null;
+  fileSize: number | null;
+  filePath: string;
+  uploadedBy: string | null;
+  uploadedAt: string;
+}
 
 interface Finding {
   id: string;
@@ -56,6 +67,7 @@ interface Finding {
   effect: string | null;
   recommendation: string | null;
   auditeeComment: string | null;
+  attachments?: FindingAttachment[];
 }
 
 interface Department {
@@ -77,6 +89,14 @@ interface Pagination {
 
 export default function CAPATrackingPage() {
   const isAuditHead = useHasRole("AuditHead");
+  const isAuditManager = useHasRole("AuditManager");
+  const isAuditor = useHasRole("Auditor");
+  const isAuditee = useHasRole("Auditee");
+  const isAuditTeam = isAuditHead || isAuditManager || isAuditor;
+  const isAuditeeOnly = isAuditee && !isAuditTeam;
+
+  // Show actions column for audit team (full actions) or auditee (edit only)
+  const showActions = isAuditHead || isAuditeeOnly;
 
   const [loading, setLoading] = useState(true);
   const [findings, setFindings] = useState<Finding[]>([]);
@@ -118,6 +138,12 @@ export default function CAPATrackingPage() {
   });
   const [saving, setSaving] = useState(false);
   const [auditEngagements, setAuditEngagements] = useState<AuditEngagement[]>([]);
+
+  // File upload for Edit CAPA
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [existingAttachments, setExistingAttachments] = useState<FindingAttachment[]>([]);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     fetchDepartments();
@@ -217,7 +243,81 @@ export default function CAPATrackingPage() {
       targetDate: finding.targetDate ? finding.targetDate.split("T")[0] : "",
       auditeeComment: finding.auditeeComment || "",
     });
+    setUploadedFiles([]);
+    setExistingAttachments(finding.attachments || []);
     setEditDialogOpen(true);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setUploadedFiles(Array.from(e.target.files));
+    }
+  };
+
+  const handleFileDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    if (e.dataTransfer.files) {
+      setUploadedFiles(Array.from(e.dataTransfer.files));
+    }
+  };
+
+  const handleUploadFiles = async (findingId: string): Promise<boolean> => {
+    if (uploadedFiles.length === 0) return true;
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      uploadedFiles.forEach((file) => {
+        formData.append('files', file);
+      });
+
+      const response = await fetch(
+        `/api/internal-audit/capa-tracking/${findingId}/attachments`,
+        {
+          method: 'POST',
+          body: formData,
+        }
+      );
+
+      if (response.ok) {
+        const newAttachments = await response.json();
+        setExistingAttachments((prev) => [...newAttachments, ...prev]);
+        setUploadedFiles([]);
+        return true;
+      } else {
+        toast.error('Failed to upload files');
+        return false;
+      }
+    } catch (error) {
+      console.error('Error uploading files:', error);
+      toast.error('Failed to upload files');
+      return false;
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDeleteAttachment = async (attachmentId: string) => {
+    if (!findingToEdit) return;
+
+    try {
+      const response = await fetch(
+        `/api/internal-audit/capa-tracking/${findingToEdit.id}/attachments/${attachmentId}`,
+        { method: 'DELETE' }
+      );
+
+      if (response.ok) {
+        setExistingAttachments((prev) =>
+          prev.filter((att) => att.id !== attachmentId)
+        );
+        toast.success('Attachment deleted');
+      } else {
+        toast.error('Failed to delete attachment');
+      }
+    } catch (error) {
+      console.error('Error deleting attachment:', error);
+      toast.error('Failed to delete attachment');
+    }
   };
 
   const handleSaveEdit = async () => {
@@ -225,17 +325,34 @@ export default function CAPATrackingPage() {
 
     setSaving(true);
     try {
+      // First, upload any new files
+      if (uploadedFiles.length > 0) {
+        const uploadSuccess = await handleUploadFiles(findingToEdit.id);
+        if (!uploadSuccess) {
+          setSaving(false);
+          return;
+        }
+      }
+
+      // For auditee, only send auditeeComment and isAuditeeSubmission flag
+      const payload = isAuditeeOnly
+        ? {
+            auditeeComment: editForm.auditeeComment,
+            isAuditeeSubmission: true, // This will set status to "Under Review"
+          }
+        : editForm;
+
       const response = await fetch(
         `/api/internal-audit/capa-tracking/${findingToEdit.id}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(editForm),
+          body: JSON.stringify(payload),
         }
       );
 
       if (response.ok) {
-        toast.success("Finding updated successfully");
+        toast.success(isAuditeeOnly ? "CAPA submitted for review" : "Finding updated successfully");
         setEditDialogOpen(false);
         setFindingToEdit(null);
         fetchFindings();
@@ -338,7 +455,7 @@ export default function CAPATrackingPage() {
               <TableHead className="text-[#1e3a5f] font-semibold">Responsible Person</TableHead>
               <TableHead className="text-[#1e3a5f] font-semibold">Target date</TableHead>
               <TableHead className="text-[#1e3a5f] font-semibold">Status</TableHead>
-              {isAuditHead && (
+              {showActions && (
                 <TableHead className="text-[#1e3a5f] font-semibold">Actions</TableHead>
               )}
             </TableRow>
@@ -346,7 +463,7 @@ export default function CAPATrackingPage() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={isAuditHead ? 9 : 8} className="text-center py-8">
+                <TableCell colSpan={showActions ? 9 : 8} className="text-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin mx-auto text-[#1e3a5f]" />
                 </TableCell>
               </TableRow>
@@ -373,7 +490,7 @@ export default function CAPATrackingPage() {
                       {finding.status}
                     </span>
                   </TableCell>
-                  {isAuditHead && (
+                  {showActions && (
                     <TableCell>
                       <div className="flex items-center gap-1">
                         {finding.status.toLowerCase() === "closed" ? (
@@ -398,17 +515,20 @@ export default function CAPATrackingPage() {
                             >
                               <Pencil className="h-4 w-4 text-blue-500" />
                             </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              title="Delete"
-                              onClick={() => {
-                                setFindingToDelete(finding);
-                                setDeleteDialogOpen(true);
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4 text-red-500" />
-                            </Button>
+                            {/* Delete only for Audit Head, not Auditee */}
+                            {isAuditHead && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title="Delete"
+                                onClick={() => {
+                                  setFindingToDelete(finding);
+                                  setDeleteDialogOpen(true);
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4 text-red-500" />
+                              </Button>
+                            )}
                           </>
                         )}
                       </div>
@@ -418,7 +538,7 @@ export default function CAPATrackingPage() {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={isAuditHead ? 9 : 8} className="text-center py-8 text-gray-500">
+                <TableCell colSpan={showActions ? 9 : 8} className="text-center py-8 text-gray-500">
                   No findings found
                 </TableCell>
               </TableRow>
@@ -632,8 +752,9 @@ export default function CAPATrackingPage() {
                 onValueChange={(value) =>
                   setEditForm((prev) => ({ ...prev, engagementId: value }))
                 }
+                disabled={isAuditeeOnly}
               >
-                <SelectTrigger>
+                <SelectTrigger className={isAuditeeOnly ? "bg-gray-50" : ""}>
                   <SelectValue placeholder="Select audit plan" />
                 </SelectTrigger>
                 <SelectContent>
@@ -654,6 +775,8 @@ export default function CAPATrackingPage() {
                 onChange={(e) =>
                   setEditForm((prev) => ({ ...prev, finding: e.target.value }))
                 }
+                disabled={isAuditeeOnly}
+                className={isAuditeeOnly ? "bg-gray-50" : ""}
               />
             </div>
 
@@ -666,17 +789,18 @@ export default function CAPATrackingPage() {
                   setEditForm((prev) => ({ ...prev, severity: value }))
                 }
                 className="flex gap-6"
+                disabled={isAuditeeOnly}
               >
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="Low" id="severity-low" />
+                  <RadioGroupItem value="Low" id="severity-low" disabled={isAuditeeOnly} />
                   <Label htmlFor="severity-low" className="font-normal cursor-pointer">Low</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="Medium" id="severity-medium" />
+                  <RadioGroupItem value="Medium" id="severity-medium" disabled={isAuditeeOnly} />
                   <Label htmlFor="severity-medium" className="font-normal cursor-pointer">Medium</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="High" id="severity-high" />
+                  <RadioGroupItem value="High" id="severity-high" disabled={isAuditeeOnly} />
                   <Label htmlFor="severity-high" className="font-normal cursor-pointer">High</Label>
                 </div>
               </RadioGroup>
@@ -690,6 +814,8 @@ export default function CAPATrackingPage() {
                 onChange={(e) =>
                   setEditForm((prev) => ({ ...prev, criteria: e.target.value }))
                 }
+                disabled={isAuditeeOnly}
+                className={isAuditeeOnly ? "bg-gray-50" : ""}
               />
             </div>
 
@@ -701,6 +827,8 @@ export default function CAPATrackingPage() {
                 onChange={(e) =>
                   setEditForm((prev) => ({ ...prev, condition: e.target.value }))
                 }
+                disabled={isAuditeeOnly}
+                className={isAuditeeOnly ? "bg-gray-50" : ""}
               />
             </div>
 
@@ -712,6 +840,8 @@ export default function CAPATrackingPage() {
                 onChange={(e) =>
                   setEditForm((prev) => ({ ...prev, cause: e.target.value }))
                 }
+                disabled={isAuditeeOnly}
+                className={isAuditeeOnly ? "bg-gray-50" : ""}
               />
             </div>
 
@@ -723,6 +853,8 @@ export default function CAPATrackingPage() {
                 onChange={(e) =>
                   setEditForm((prev) => ({ ...prev, effect: e.target.value }))
                 }
+                disabled={isAuditeeOnly}
+                className={isAuditeeOnly ? "bg-gray-50" : ""}
               />
             </div>
 
@@ -734,6 +866,8 @@ export default function CAPATrackingPage() {
                 onChange={(e) =>
                   setEditForm((prev) => ({ ...prev, recommendation: e.target.value }))
                 }
+                disabled={isAuditeeOnly}
+                className={isAuditeeOnly ? "bg-gray-50" : ""}
               />
             </div>
 
@@ -746,17 +880,18 @@ export default function CAPATrackingPage() {
                   setEditForm((prev) => ({ ...prev, status: value }))
                 }
                 className="flex gap-6"
+                disabled={isAuditeeOnly}
               >
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="Open" id="status-open" />
+                  <RadioGroupItem value="Open" id="status-open" disabled={isAuditeeOnly} />
                   <Label htmlFor="status-open" className="font-normal cursor-pointer">Open</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="Closed" id="status-closed" />
+                  <RadioGroupItem value="Closed" id="status-closed" disabled={isAuditeeOnly} />
                   <Label htmlFor="status-closed" className="font-normal cursor-pointer">Closed</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="Under Review" id="status-review" />
+                  <RadioGroupItem value="Under Review" id="status-review" disabled={isAuditeeOnly} />
                   <Label htmlFor="status-review" className="font-normal cursor-pointer">Under Review</Label>
                 </div>
               </RadioGroup>
@@ -771,12 +906,14 @@ export default function CAPATrackingPage() {
                 onChange={(e) =>
                   setEditForm((prev) => ({ ...prev, targetDate: e.target.value }))
                 }
+                disabled={isAuditeeOnly}
+                className={isAuditeeOnly ? "bg-gray-50" : ""}
               />
             </div>
 
-            {/* Auditee Comment */}
+            {/* Auditee's comments - EDITABLE for auditee */}
             <div className="grid grid-cols-[140px_1fr] items-start gap-4">
-              <Label className="text-[#1e3a5f] font-medium pt-2">Auditee Comment</Label>
+              <Label className="text-[#1e3a5f] font-medium pt-2">Auditee<br/>Comment</Label>
               <Textarea
                 value={editForm.auditeeComment}
                 onChange={(e) =>
@@ -785,32 +922,133 @@ export default function CAPATrackingPage() {
                 rows={3}
               />
             </div>
+
+            {/* Existing Attachments */}
+            {existingAttachments.length > 0 && (
+              <div className="grid grid-cols-[140px_1fr] items-start gap-4">
+                <Label className="text-[#1e3a5f] font-medium pt-2">Attachments</Label>
+                <div className="space-y-2">
+                  {existingAttachments.map((att) => (
+                    <div key={att.id} className="flex items-center gap-2">
+                      <FileText className="h-5 w-5 text-blue-600" />
+                      <span className="text-blue-600 text-sm flex-1">{att.fileName}</span>
+                      <div className="flex items-center gap-1">
+                        <a
+                          href={att.filePath}
+                          download={att.fileName}
+                          className="text-gray-500 hover:text-blue-600 p-1"
+                          title="Download"
+                        >
+                          <Download className="h-4 w-4" />
+                        </a>
+                        <a
+                          href={att.filePath}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-gray-500 hover:text-blue-600 p-1"
+                          title="View"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </a>
+                        {/* Delete only for Audit Head, not Auditee */}
+                        {!isAuditeeOnly && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 text-red-500 hover:text-red-700"
+                            onClick={() => handleDeleteAttachment(att.id)}
+                            title="Delete"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* File Upload - EDITABLE for auditee */}
+            <div className="grid grid-cols-[140px_1fr] items-start gap-4">
+              <Label className="text-[#1e3a5f] font-medium pt-2"></Label>
+              <div
+                className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-gray-400 transition-colors"
+                onClick={() => fileInputRef.current?.click()}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={handleFileDrop}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  className="hidden"
+                  onChange={handleFileSelect}
+                />
+                <p className="text-gray-500">
+                  Click here, or drop files here to upload.
+                </p>
+                {uploadedFiles.length > 0 && (
+                  <div className="mt-2 space-y-1">
+                    {uploadedFiles.map((file, index) => (
+                      <div key={index} className="flex items-center justify-center gap-2 text-sm text-green-600">
+                        <FileText className="h-4 w-4" />
+                        <span>{file.name}</span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setUploadedFiles((prev) => prev.filter((_, i) => i !== index));
+                          }}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
-          <div className="flex gap-2 pt-4 border-t">
+          {/* Footer with AI Review and Save/Cancel buttons */}
+          <div className="flex justify-between items-center pt-4 border-t">
             <Button
-              className="bg-[#1e3a5f] hover:bg-[#2e4a6f]"
-              onClick={handleSaveEdit}
-              disabled={saving}
+              variant="ghost"
+              className="text-red-500 hover:text-red-600 hover:bg-red-50"
             >
-              {saving ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                "Save"
-              )}
+              <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2"/>
+                <path d="M8 12L11 15L16 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              AI Review
             </Button>
-            <Button
-              className="bg-[#1e3a5f] hover:bg-[#2e4a6f]"
-              onClick={() => {
-                setEditDialogOpen(false);
-                setFindingToEdit(null);
-              }}
-            >
-              Cancel
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                className="bg-[#1e3a5f] hover:bg-[#2e4a6f]"
+                onClick={handleSaveEdit}
+                disabled={saving || uploading}
+              >
+                {saving || uploading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    {uploading ? "Uploading..." : "Saving..."}
+                  </>
+                ) : (
+                  "Save"
+                )}
+              </Button>
+              <Button
+                className="bg-[#1e3a5f] hover:bg-[#2e4a6f]"
+                onClick={() => {
+                  setEditDialogOpen(false);
+                  setFindingToEdit(null);
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

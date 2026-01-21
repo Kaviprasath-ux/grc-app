@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { withAuth } from '@/lib/api-auth';
 
 // GET /api/internal-audit/engagements/[id] - Get a single engagement
+// Uses audit.fieldwork:view to allow auditees to view engagement details
 export const GET = withAuth(
   async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     try {
@@ -39,7 +40,7 @@ export const GET = withAuth(
       );
     }
   },
-  { resource: 'audit.planning', action: 'view' }
+  { resource: 'audit.fieldwork', action: 'view' }
 );
 
 // PUT /api/internal-audit/engagements/[id] - Update an engagement

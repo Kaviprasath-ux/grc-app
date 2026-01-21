@@ -43,6 +43,19 @@ export const GET = withAuth(
         auditee: er.auditeeName || '',
         auditeeId: er.auditeeId || null,
         numberOfSamples: er.sampleSize || null,
+        aiReviewStatus: er.aiReviewStatus || null,
+        clarificationComment: er.clarificationComment || null,
+        clarificationDocumentName: er.clarificationDocumentName || null,
+        clarificationByUserName: er.clarificationByUserName || null,
+        clarificationSentAt: er.clarificationSentAt?.toISOString() || null,
+        attachments: er.attachments.map(att => ({
+          id: att.id,
+          fileName: att.fileName,
+          fileType: att.fileType,
+          fileSize: att.fileSize,
+          filePath: att.filePath,
+          uploadedAt: att.uploadedAt.toISOString(),
+        })),
       }));
 
       return NextResponse.json(transformed);

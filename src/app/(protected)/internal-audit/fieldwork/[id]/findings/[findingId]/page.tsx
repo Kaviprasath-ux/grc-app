@@ -102,13 +102,14 @@ export default function ViewFindingPage() {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch("/api/users");
+      // Fetch only auditees associated with the current audit head
+      const response = await fetch("/api/users/my-auditees");
       if (response.ok) {
         const data = await response.json();
-        setUsers(data.users || data || []);
+        setUsers(data.auditees || data || []);
       }
     } catch (error) {
-      console.error("Failed to fetch users:", error);
+      console.error("Failed to fetch auditees:", error);
     }
   };
 

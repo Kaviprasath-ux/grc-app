@@ -240,7 +240,9 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
   // NO access to: Dashboard, Audit Universe, Risk Identification, Risk Register,
   //               Audit Planning, Document Library, Settings, Risk Universe,
   //               or any other modules (Organization, Compliance, Asset, Risk)
+  // Note: organization.department:view is needed for department name lookups in UI
   Auditee: [
+    { resource: 'organization.department', actions: ['view'], scope: 'department' },
     { resource: 'audit.fieldwork', actions: ['view', 'edit'], scope: 'department' },
     { resource: 'audit.reports', actions: ['view'], scope: 'department' },
     { resource: 'audit.capa', actions: ['view', 'edit'], scope: 'department' },

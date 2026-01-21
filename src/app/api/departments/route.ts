@@ -3,6 +3,8 @@ import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
 
 // GET all departments - filtered by customer account
+// Uses organization.department (basic view) instead of organization.settings.departments (admin)
+// This allows roles like Auditee to see department names for display purposes
 export const GET = withAuth(
   async (req, context, session) => {
     try {
@@ -26,7 +28,7 @@ export const GET = withAuth(
       );
     }
   },
-  { resource: "organization.settings.departments", action: "view" }
+  { resource: "organization.department", action: "view" }
 );
 
 // POST create new department - with customer account assignment

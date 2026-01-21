@@ -35,6 +35,11 @@ export const GET = withAuth(
         auditee: evidenceRequest.auditeeName || '',
         auditeeId: evidenceRequest.auditeeId || null,
         numberOfSamples: evidenceRequest.sampleSize || null,
+        aiReviewStatus: evidenceRequest.aiReviewStatus || null,
+        clarificationComment: evidenceRequest.clarificationComment || null,
+        clarificationDocumentName: evidenceRequest.clarificationDocumentName || null,
+        clarificationByUserName: evidenceRequest.clarificationByUserName || null,
+        clarificationSentAt: evidenceRequest.clarificationSentAt?.toISOString() || null,
         attachments: evidenceRequest.attachments.map(att => ({
           id: att.id,
           fileName: att.fileName,
@@ -73,6 +78,18 @@ export const PATCH = withAuth(
         );
       }
 
+      // Get auditee name if auditeeId provided
+      let auditeeName = body.auditee;
+      if (body.auditeeId) {
+        const auditee = await prisma.user.findUnique({
+          where: { id: body.auditeeId },
+          select: { firstName: true, lastName: true },
+        });
+        if (auditee) {
+          auditeeName = `${auditee.firstName} ${auditee.lastName}`;
+        }
+      }
+
       const updatedRequest = await prisma.fieldworkEvidenceRequest.update({
         where: { id: requestId },
         data: {
@@ -80,7 +97,16 @@ export const PATCH = withAuth(
           description: body.description !== undefined ? body.description : undefined,
           status: body.status !== undefined ? body.status : undefined,
           dueDate: body.dueDate !== undefined ? (body.dueDate ? new Date(body.dueDate) : null) : undefined,
-          auditeeName: body.auditee !== undefined ? body.auditee : undefined,
+          auditeeId: body.auditeeId !== undefined ? body.auditeeId : undefined,
+          auditeeName: auditeeName !== undefined ? auditeeName : undefined,
+          sampleSize: body.numberOfSamples !== undefined ? (body.numberOfSamples ? String(body.numberOfSamples) : null) : undefined,
+          aiReviewStatus: body.aiReviewStatus !== undefined ? body.aiReviewStatus : undefined,
+          // Clarification fields
+          clarificationComment: body.clarificationComment !== undefined ? body.clarificationComment : undefined,
+          clarificationDocumentName: body.clarificationDocumentName !== undefined ? body.clarificationDocumentName : undefined,
+          clarificationByUserId: body.clarificationByUserId !== undefined ? body.clarificationByUserId : undefined,
+          clarificationByUserName: body.clarificationByUserName !== undefined ? body.clarificationByUserName : undefined,
+          clarificationSentAt: body.clarificationSentAt !== undefined ? (body.clarificationSentAt ? new Date(body.clarificationSentAt) : null) : undefined,
         },
       });
 
@@ -93,6 +119,11 @@ export const PATCH = withAuth(
         auditee: updatedRequest.auditeeName || '',
         auditeeId: updatedRequest.auditeeId || null,
         numberOfSamples: updatedRequest.sampleSize || null,
+        aiReviewStatus: updatedRequest.aiReviewStatus || null,
+        clarificationComment: updatedRequest.clarificationComment || null,
+        clarificationDocumentName: updatedRequest.clarificationDocumentName || null,
+        clarificationByUserName: updatedRequest.clarificationByUserName || null,
+        clarificationSentAt: updatedRequest.clarificationSentAt?.toISOString() || null,
       });
     } catch (error) {
       console.error('Error updating evidence request:', error);

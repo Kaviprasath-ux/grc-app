@@ -99,10 +99,12 @@ async function main() {
     "john.doe": ["CustomerAdministrator", "Reviewer"],
     // sarah.smith - lead auditor
     "sarah.smith": ["AuditHead"],
+    // abhishek - Audit Head (main audit head)
+    "abhishek": ["AuditHead"],
     // mike.wilson - risk analyst
     "mike.wilson": ["Contributor", "Reviewer"],
-    // Gauri - HR Manager (department level access)
-    "Gauri": ["DepartmentContributor", "Auditee"],
+    // Gauri - Auditee only
+    "Gauri": ["Auditee"],
     // david.jones - IT Support
     "david.jones": ["DepartmentContributor", "Auditee"],
     // lisa.taylor - Product Manager
@@ -142,6 +144,34 @@ async function main() {
   }
 
   console.log("✅ User roles assigned");
+
+  // ==================== LINK AUDITEES TO AUDIT HEAD ====================
+  // Find the Audit Head user (abhishek - main audit head)
+  const auditHeadUser = await prisma.user.findFirst({
+    where: { userName: "abhishek" },
+  });
+
+  if (auditHeadUser) {
+    // Find all users with Auditee role and link them to the Audit Head
+    const auditeeUsernames = ["Gauri", "david.jones", "james.anderson"];
+
+    for (const username of auditeeUsernames) {
+      const auditeeUser = await prisma.user.findFirst({
+        where: { userName: username },
+      });
+
+      if (auditeeUser) {
+        await prisma.user.update({
+          where: { id: auditeeUser.id },
+          data: { auditHeadId: auditHeadUser.id },
+        });
+        console.log(`  ✓ Linked auditee ${username} to Audit Head ${auditHeadUser.userName}`);
+      }
+    }
+    console.log("✅ Auditees linked to Audit Head");
+  } else {
+    console.log("⚠️ Audit Head user (abhishek) not found, skipping auditee linking");
+  }
 
   // ==================== CREATE TEST USERS FOR EACH ROLE ====================
   // Create additional test users with specific roles for testing
