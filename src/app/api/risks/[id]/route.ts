@@ -51,6 +51,10 @@ export const GET = withAuth(
           responses: {
             orderBy: { createdAt: "desc" },
           },
+          activityLogs: {
+            where: { activity: "Sent Back" },
+            orderBy: { createdAt: "desc" },
+          },
         },
       });
 
@@ -350,6 +354,10 @@ export const PATCH = withAuth(
       if (body.assessmentStatus !== undefined) {
         updateData.assessmentStatus = body.assessmentStatus;
       }
+      // Handle responseStatus separately (for Risk Response Strategy workflow)
+      if (body.responseStatus !== undefined) {
+        updateData.responseStatus = body.responseStatus;
+      }
       if (body.responseStrategy !== undefined) {
         updateData.responseStrategy = body.responseStrategy;
       }
@@ -368,22 +376,53 @@ export const PATCH = withAuth(
         return NextResponse.json({ error: "No fields to update" }, { status: 400 });
       }
 
-      // Update risk
-      const risk = await prisma.risk.update({
-        where: { id },
-        data: updateData,
-        include: {
-          category: true,
-          type: true,
-          department: true,
-          owner: {
-            select: {
-              id: true,
-              fullName: true,
-              email: true,
+      // Update risk and optionally create activity log for send back
+      const risk = await prisma.$transaction(async (tx) => {
+        // Update the risk
+        const updatedRisk = await tx.risk.update({
+          where: { id },
+          data: updateData,
+          include: {
+            category: true,
+            type: true,
+            department: true,
+            owner: {
+              select: {
+                id: true,
+                fullName: true,
+                email: true,
+              },
             },
           },
-        },
+        });
+
+        // If responseStatus is "Sent Back" and there's a comment, create activity log
+        if (body.responseStatus === "Sent Back" && body.responseComment) {
+          await tx.riskActivityLog.create({
+            data: {
+              riskId: id,
+              activity: "Sent Back",
+              description: body.responseComment,
+              actor: body.responseCommentBy || "Reviewer",
+              actorId: session?.user?.id || null,
+            },
+          });
+        }
+
+        // Create activity log for responseStatus change (Risk Response Strategy workflow)
+        if (body.responseStatus && body.responseStatus !== "Sent Back") {
+          await tx.riskActivityLog.create({
+            data: {
+              riskId: id,
+              activity: `Response Status Changed to ${body.responseStatus}`,
+              description: `Risk response strategy status changed to ${body.responseStatus}`,
+              actor: session?.user?.name || "User",
+              actorId: session?.user?.id || null,
+            },
+          });
+        }
+
+        return updatedRisk;
       });
 
       return NextResponse.json(risk);

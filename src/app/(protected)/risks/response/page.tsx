@@ -42,6 +42,7 @@ interface Risk {
   impact: number;
   owner: { fullName: string } | null;
   assessmentStatus?: string;
+  responseStatus?: string; // Separate status for Risk Response Strategy workflow
   department?: { id: string; name: string } | null;
 }
 
@@ -135,6 +136,35 @@ export default function RiskResponsePage() {
     router.push(`/risks/response/${risk.id}`);
   };
 
+  // Handle Respond action - changes responseStatus from Open to In-Progress
+  const handleRespond = async (risk: Risk, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setActionLoading(risk.id);
+    try {
+      const response = await fetch(`/api/risks/${risk.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ responseStatus: "In-Progress" }),
+      });
+      if (response.ok) {
+        // Update local state and navigate to detail
+        setRisks(prev => prev.map(r =>
+          r.id === risk.id ? { ...r, responseStatus: "In-Progress" } : r
+        ));
+        router.push(`/risks/response/${risk.id}`);
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        console.error("PATCH failed:", response.status, errorData);
+        alert(`Failed to update: ${errorData.error || response.statusText}`);
+      }
+    } catch (error) {
+      console.error("Failed to respond:", error);
+      alert("Network error: Failed to respond");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   // Handle Submit for Approval action
   const handleSubmitForApproval = async (risk: Risk, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -143,14 +173,14 @@ export default function RiskResponsePage() {
       const response = await fetch(`/api/risks/${risk.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "Awaiting Approval" }),
+        body: JSON.stringify({ responseStatus: "Awaiting Approval" }),
       });
       if (response.ok) {
         setSuccessMessage("Risk Submit for Approval Successfully !");
         setSuccessDialogOpen(true);
         // Update local state
         setRisks(prev => prev.map(r =>
-          r.id === risk.id ? { ...r, status: "Awaiting Approval", assessmentStatus: "Awaiting Approval" } : r
+          r.id === risk.id ? { ...r, responseStatus: "Awaiting Approval" } : r
         ));
       }
     } catch (error) {
@@ -168,14 +198,14 @@ export default function RiskResponsePage() {
       const response = await fetch(`/api/risks/${risk.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "Completed" }),
+        body: JSON.stringify({ responseStatus: "Completed" }),
       });
       if (response.ok) {
         setSuccessMessage("Risk Approved Successfully !");
         setSuccessDialogOpen(true);
         // Update local state
         setRisks(prev => prev.map(r =>
-          r.id === risk.id ? { ...r, status: "Completed", assessmentStatus: "Completed" } : r
+          r.id === risk.id ? { ...r, responseStatus: "Completed" } : r
         ));
       }
     } catch (error) {
@@ -191,20 +221,43 @@ export default function RiskResponsePage() {
     if (normalized === 'in-progress') return 'In-Progress';
     if (normalized === 'awaiting-approval') return 'Awaiting Approval';
     if (normalized === 'completed' || normalized === 'closed') return 'Completed';
+    if (normalized === 'sent-back') return 'Sent Back';
     if (normalized === 'open') return 'Open';
     return status;
   };
 
-  // Get action buttons based on risk status - matching source system exactly
+  // Get action buttons based on risk responseStatus - matching source system exactly
   // Permission-gated: Submit for Approval requires edit, Approve requires approve permission
   const getActionButtons = (risk: Risk) => {
-    const rawStatus = risk.assessmentStatus || risk.status || "Open";
+    // Use responseStatus for Risk Response Strategy workflow (separate from assessmentStatus)
+    const rawStatus = risk.responseStatus || "Open";
     const status = normalizeStatus(rawStatus);
     const isLoading = actionLoading === risk.id;
 
     switch (status) {
       case "Open":
-        // Open status: "Submit for Approval" (if canEdit) + "View" buttons
+        // Open status: "Respond" button (changes status to In-Progress)
+        return canEdit ? (
+          <Button
+            size="sm"
+            className="bg-primary hover:bg-primary/90"
+            onClick={(e) => handleRespond(risk, e)}
+            disabled={isLoading}
+          >
+            {isLoading ? "..." : "Respond"}
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-primary text-primary hover:bg-primary/10"
+            onClick={() => openDetail(risk)}
+          >
+            View
+          </Button>
+        );
+      case "In-Progress":
+        // In-Progress status: "Submit for Approval" (if canEdit) + "Resume" buttons
         return (
           <div className="flex gap-2">
             {canEdit && (
@@ -223,9 +276,29 @@ export default function RiskResponsePage() {
               className="border-primary text-primary hover:bg-primary/10"
               onClick={() => openDetail(risk)}
             >
-              View
+              Resume
             </Button>
           </div>
+        );
+      case "Sent Back":
+        // Sent Back status: "Resume" button to view and resubmit (if canEdit)
+        return canEdit ? (
+          <Button
+            size="sm"
+            className="bg-orange-500 hover:bg-orange-600"
+            onClick={() => openDetail(risk)}
+          >
+            Resume
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-primary text-primary hover:bg-primary/10"
+            onClick={() => openDetail(risk)}
+          >
+            View
+          </Button>
         );
       case "Awaiting Approval":
         // Awaiting Approval status: "Approve" (if canApprove) + "View" buttons
@@ -251,17 +324,6 @@ export default function RiskResponsePage() {
             </Button>
           </div>
         );
-      case "In-Progress":
-        // In-Progress status: "Resume" button only (navigates to detail)
-        return (
-          <Button
-            size="sm"
-            className="bg-primary hover:bg-primary/90"
-            onClick={() => openDetail(risk)}
-          >
-            Resume
-          </Button>
-        );
       case "Completed":
         // Completed status: "View" button only
         return (
@@ -274,28 +336,25 @@ export default function RiskResponsePage() {
           </Button>
         );
       default:
-        // Default fallback - treat as Open (view only unless has edit permission)
-        return (
-          <div className="flex gap-2">
-            {canEdit && (
-              <Button
-                size="sm"
-                className="bg-primary hover:bg-primary/90"
-                onClick={(e) => handleSubmitForApproval(risk, e)}
-                disabled={isLoading}
-              >
-                {isLoading ? "..." : "Submit for Approval"}
-              </Button>
-            )}
-            <Button
-              size="sm"
-              variant="outline"
-              className="border-primary text-primary hover:bg-primary/10"
-              onClick={() => openDetail(risk)}
-            >
-              View
-            </Button>
-          </div>
+        // Default fallback - treat as Open
+        return canEdit ? (
+          <Button
+            size="sm"
+            className="bg-primary hover:bg-primary/90"
+            onClick={(e) => handleRespond(risk, e)}
+            disabled={isLoading}
+          >
+            {isLoading ? "..." : "Respond"}
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-primary text-primary hover:bg-primary/10"
+            onClick={() => openDetail(risk)}
+          >
+            View
+          </Button>
         );
     }
   };
@@ -308,9 +367,9 @@ export default function RiskResponsePage() {
 
   const filteredByStrategy = departmentFilteredRisks.filter((risk) => risk.responseStrategy === strategyFilter);
 
-  // Get normalized status for a risk
+  // Get normalized responseStatus for a risk (for Risk Response Strategy workflow)
   const getRiskStatus = (risk: Risk) => {
-    const rawStatus = risk.assessmentStatus || risk.status || "Open";
+    const rawStatus = risk.responseStatus || "Open";
     return normalizeStatus(rawStatus);
   };
 
@@ -342,6 +401,7 @@ export default function RiskResponsePage() {
       case "In-Progress": return "InProgress";
       case "Completed": return "Completed";
       case "Awaiting Approval": return "Awaiting Approval";
+      case "Sent Back": return "Sent Back";
       default: return progressFilter;
     }
   };
@@ -419,6 +479,7 @@ export default function RiskResponsePage() {
                     <SelectItem value="In-Progress">In-Progress</SelectItem>
                     <SelectItem value="Completed">Completed</SelectItem>
                     <SelectItem value="Awaiting Approval">Awaiting Approval</SelectItem>
+                    <SelectItem value="Sent Back">Sent Back</SelectItem>
                   </SelectContent>
                 </Select>
                 <Button
@@ -488,9 +549,9 @@ export default function RiskResponsePage() {
                     </p>
                   </div>
                   <div>
-                    <p className="text-muted-foreground">Risk Status</p>
+                    <p className="text-muted-foreground">Response Status</p>
                     <span className="text-sm font-medium">
-                      {risk.assessmentStatus || risk.status || "Open"}
+                      {risk.responseStatus || "Open"}
                     </span>
                   </div>
                 </div>

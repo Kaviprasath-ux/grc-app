@@ -4,12 +4,21 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { ChevronDown, ChevronLeft, Plus } from "lucide-react";
 import { AddControlDialog } from "@/components/risks/add-control-dialog";
@@ -25,6 +34,15 @@ import {
 } from "@/components/ui/alert-dialog";
 import { usePermissions } from "@/hooks/usePermissions";
 import { PermissionGate } from "@/components/ui/permission-gate";
+import { useSession } from "next-auth/react";
+
+interface ActivityLog {
+  id: string;
+  activity: string;
+  description: string | null;
+  actor: string;
+  createdAt: string;
+}
 
 interface Risk {
   id: string;
@@ -40,6 +58,8 @@ interface Risk {
   impact: number;
   owner: { fullName: string } | null;
   assessmentStatus?: string;
+  responseStatus?: string; // Separate status for Risk Response Strategy workflow
+  activityLogs?: ActivityLog[];
 }
 
 interface Control {
@@ -62,7 +82,8 @@ interface PlannedControl {
 export default function RiskViewPage() {
   const params = useParams();
   const router = useRouter();
-  const { canEdit } = usePermissions('risk.response');
+  const { data: session } = useSession();
+  const { canEdit, canApprove } = usePermissions('risk.response');
   const [risk, setRisk] = useState<Risk | null>(null);
   const [loading, setLoading] = useState(true);
   const [controls, setControls] = useState<Control[]>([]);
@@ -73,6 +94,14 @@ export default function RiskViewPage() {
   const [chooseControlOpen, setChooseControlOpen] = useState(false);
   const [successDialogOpen, setSuccessDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  // Send Back dialog states
+  const [showSendBackDialog, setShowSendBackDialog] = useState(false);
+  const [sendBackComment, setSendBackComment] = useState("");
+  const [processingSendBack, setProcessingSendBack] = useState(false);
+
+  // Approve state
+  const [approving, setApproving] = useState(false);
 
   useEffect(() => {
     if (params.id) {
@@ -112,20 +141,108 @@ export default function RiskViewPage() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          status: "Awaiting Approval",
+          responseStatus: "Awaiting Approval",
         }),
       });
 
       if (response.ok) {
         setSuccessDialogOpen(true);
         // Update local state
-        setRisk(prev => prev ? { ...prev, status: "Awaiting Approval" } : null);
+        setRisk(prev => prev ? { ...prev, responseStatus: "Awaiting Approval" } : null);
       }
     } catch (error) {
       console.error("Failed to submit for approval:", error);
     } finally {
       setSubmitting(false);
     }
+  };
+
+  // Handle Approve action
+  const handleApprove = async () => {
+    if (!risk) return;
+
+    setApproving(true);
+    try {
+      const response = await fetch(`/api/risks/${risk.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          responseStatus: "Completed",
+        }),
+      });
+
+      if (response.ok) {
+        setSuccessDialogOpen(true);
+        // Update local state
+        setRisk(prev => prev ? { ...prev, responseStatus: "Completed" } : null);
+      }
+    } catch (error) {
+      console.error("Failed to approve:", error);
+    } finally {
+      setApproving(false);
+    }
+  };
+
+  // Handle Send Back action
+  const handleSendBack = async () => {
+    if (!risk || !sendBackComment.trim()) return;
+
+    setProcessingSendBack(true);
+    try {
+      const response = await fetch(`/api/risks/${risk.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          responseStatus: "Sent Back",
+          responseComment: sendBackComment,
+          responseCommentBy: session?.user?.name || "Reviewer",
+        }),
+      });
+
+      if (response.ok) {
+        setShowSendBackDialog(false);
+        setSendBackComment("");
+        // Update local state with the new activity log
+        setRisk(prev => prev ? {
+          ...prev,
+          responseStatus: "Sent Back",
+          activityLogs: [
+            {
+              id: Date.now().toString(),
+              activity: "Sent Back",
+              description: sendBackComment,
+              actor: session?.user?.name || "Reviewer",
+              createdAt: new Date().toISOString(),
+            },
+            ...(prev.activityLogs || []),
+          ]
+        } : null);
+        // Show success message
+        setSuccessDialogOpen(true);
+      }
+    } catch (error) {
+      console.error("Failed to send back:", error);
+    } finally {
+      setProcessingSendBack(false);
+    }
+  };
+
+  // Normalize status for display and logic
+  const normalizeStatus = (status: string): string => {
+    const normalized = status.toLowerCase().replace(/\s+/g, '-');
+    if (normalized === 'in-progress') return 'In-Progress';
+    if (normalized === 'awaiting-approval') return 'Awaiting Approval';
+    if (normalized === 'completed' || normalized === 'closed') return 'Completed';
+    if (normalized === 'sent-back') return 'Sent Back';
+    if (normalized === 'open') return 'Open';
+    return status;
+  };
+
+  // Get the current risk responseStatus (for Risk Response Strategy workflow)
+  const getRiskStatus = () => {
+    if (!risk) return 'Open';
+    const rawStatus = risk.responseStatus || 'Open';
+    return normalizeStatus(rawStatus);
   };
 
   const fetchRisk = async (id: string) => {
@@ -222,6 +339,53 @@ export default function RiskViewPage() {
   }
 
   const daysRemaining = getDaysRemaining(risk.treatmentDueDate);
+  const currentStatus = getRiskStatus();
+
+  // Render action buttons based on current status
+  const renderActionButtons = () => {
+    switch (currentStatus) {
+      case "Open":
+        // No action buttons in detail view for Open status
+        return null;
+      case "In-Progress":
+      case "Sent Back":
+        // Show Submit for Approval button for users with edit permission
+        return canEdit ? (
+          <Button
+            className="bg-primary hover:bg-primary/90"
+            onClick={handleSubmitForApproval}
+            disabled={submitting}
+          >
+            {submitting ? "Submitting..." : "Submit for Approval"}
+          </Button>
+        ) : null;
+      case "Awaiting Approval":
+        // Show Approve and Send Back buttons for users with approve permission
+        return canApprove ? (
+          <div className="flex gap-2">
+            <Button
+              className="bg-primary hover:bg-primary/90"
+              onClick={handleApprove}
+              disabled={approving}
+            >
+              {approving ? "Approving..." : "Approve"}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => setShowSendBackDialog(true)}
+              disabled={processingSendBack}
+            >
+              Send Back
+            </Button>
+          </div>
+        ) : null;
+      case "Completed":
+        // No action buttons for completed status
+        return null;
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -234,16 +398,19 @@ export default function RiskViewPage() {
           </Button>
           <span className="text-muted-foreground">|</span>
           <span className="font-semibold text-primary text-lg">Risk View</span>
+          {/* Show current status badge */}
+          <span className={cn(
+            "ml-2 px-2 py-1 rounded text-xs font-medium",
+            currentStatus === "Open" && "bg-blue-100 text-blue-800",
+            currentStatus === "In-Progress" && "bg-yellow-100 text-yellow-800",
+            currentStatus === "Awaiting Approval" && "bg-purple-100 text-purple-800",
+            currentStatus === "Sent Back" && "bg-red-100 text-red-800",
+            currentStatus === "Completed" && "bg-green-100 text-green-800"
+          )}>
+            {currentStatus}
+          </span>
         </div>
-        {canEdit && (
-          <Button
-            className="bg-primary hover:bg-primary/90"
-            onClick={handleSubmitForApproval}
-            disabled={submitting || risk?.status === "Awaiting Approval"}
-          >
-            {submitting ? "Submitting..." : "Submit for Approval"}
-          </Button>
-        )}
+        {renderActionButtons()}
       </div>
 
       {/* Charts - 2x2 Grid Layout */}
@@ -583,7 +750,10 @@ export default function RiskViewPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Information</AlertDialogTitle>
             <AlertDialogDescription>
-              Risk Submit for Approval Successfully!
+              {currentStatus === "Completed" && "Risk Approved Successfully!"}
+              {currentStatus === "Awaiting Approval" && "Risk Submitted for Approval Successfully!"}
+              {currentStatus === "Sent Back" && "Risk Sent Back Successfully!"}
+              {!["Completed", "Awaiting Approval", "Sent Back"].includes(currentStatus) && "Action completed successfully!"}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -593,6 +763,63 @@ export default function RiskViewPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Send Back Dialog */}
+      <Dialog open={showSendBackDialog} onOpenChange={(open) => {
+        setShowSendBackDialog(open);
+        if (!open) setSendBackComment("");
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Send Back Risk Response</DialogTitle>
+            <DialogDescription>
+              Add a comment explaining why this risk response is being sent back
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="sendBackComment">Comment *</Label>
+              <textarea
+                id="sendBackComment"
+                className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                placeholder="Enter your feedback..."
+                value={sendBackComment}
+                onChange={(e) => setSendBackComment(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSendBackDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSendBack} disabled={processingSendBack || !sendBackComment.trim()}>
+              {processingSendBack ? "Sending..." : "Send Back"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Show Comments Section if Sent Back */}
+      {currentStatus === "Sent Back" && risk.activityLogs && risk.activityLogs.length > 0 && (
+        <Card className="border-red-200 bg-red-50">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base text-red-800">Reviewer Comments</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {risk.activityLogs.map((log) => (
+                <div key={log.id} className="bg-white p-3 rounded-md border">
+                  <p className="text-sm whitespace-pre-wrap">{log.description}</p>
+                  <div className="flex justify-between text-xs text-muted-foreground mt-2">
+                    <span>By: {log.actor}</span>
+                    <span>{new Date(log.createdAt).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

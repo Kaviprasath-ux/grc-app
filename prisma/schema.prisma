@@ -1500,6 +1500,7 @@ model Risk {
   // Response
   status              String          @default("Open") // Awaiting Approval, Pending Assessment, Open, In Progress, Closed
   assessmentStatus    String          @default("Open") // Open, In-Progress, Draft, Submitted, Approved, Rejected, Completed
+  responseStatus      String          @default("Open") // Open, In-Progress, Awaiting Approval, Sent Back, Completed (for Risk Response Strategy)
   responseStrategy    String?         // Treat, Transfer, Avoid, Accept
   treatmentPlan       String?
   treatmentDueDate    DateTime?
