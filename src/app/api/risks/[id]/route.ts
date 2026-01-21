@@ -112,6 +112,7 @@ export const PUT = withAuth(
       controls,
       riskRating,
       lastAssessmentDate,
+      assessmentFormData,
     } = body;
 
       // Check if risk exists and verify tenant access
@@ -159,6 +160,11 @@ export const PUT = withAuth(
       treatmentPlan,
       treatmentStatus,
     };
+
+    // Handle assessmentFormData (JSON string)
+    if (assessmentFormData !== undefined) {
+      updateData.assessmentFormData = assessmentFormData;
+    }
 
     // Handle optional date fields
     if (treatmentDueDate !== undefined) {
@@ -357,6 +363,11 @@ export const PATCH = withAuth(
         updateData.treatmentDueDate = body.treatmentDueDate ? new Date(body.treatmentDueDate) : null;
       }
 
+      // Only update if there's data to update
+      if (Object.keys(updateData).length === 0) {
+        return NextResponse.json({ error: "No fields to update" }, { status: 400 });
+      }
+
       // Update risk
       const risk = await prisma.risk.update({
         where: { id },
@@ -379,7 +390,7 @@ export const PATCH = withAuth(
     } catch (error) {
       console.error("Error updating risk:", error);
       return NextResponse.json(
-        { error: "Failed to update risk" },
+        { error: "Failed to update risk", details: error instanceof Error ? error.message : "Unknown error" },
         { status: 500 }
       );
     }

@@ -1099,6 +1099,7 @@ CREATE TABLE "Risk" (
     "targetImpact" INTEGER,
     "targetRiskScore" INTEGER,
     "status" TEXT NOT NULL DEFAULT 'Open',
+    "assessmentStatus" TEXT NOT NULL DEFAULT 'Open',
     "responseStrategy" TEXT,
     "treatmentPlan" TEXT,
     "treatmentDueDate" TIMESTAMP(3),

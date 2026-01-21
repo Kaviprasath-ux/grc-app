@@ -1499,10 +1499,13 @@ model Risk {
   targetRiskScore     Int?
   // Response
   status              String          @default("Open") // Awaiting Approval, Pending Assessment, Open, In Progress, Closed
+  assessmentStatus    String          @default("Open") // Open, In-Progress, Draft, Submitted, Approved, Rejected, Completed
   responseStrategy    String?         // Treat, Transfer, Avoid, Accept
   treatmentPlan       String?
   treatmentDueDate    DateTime?
   treatmentStatus     String?         // Not Started, In Progress, Completed
+  // Assessment form data (JSON) - stores per-threat likelihoods, impacts, and per-vulnerability ratings
+  assessmentFormData  String?         // JSON: { threatLikelihoods: {}, threatImpacts: {}, vulnerabilityRatings: {} }
   // Timestamps
   identifiedDate      DateTime        @default(now())
   lastAssessmentDate  DateTime?
