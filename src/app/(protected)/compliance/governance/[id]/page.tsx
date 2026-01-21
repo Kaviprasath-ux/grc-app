@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { usePermissions } from "@/hooks/usePermissions";
+import { usePermissions, useHasRole } from "@/hooks/usePermissions";
 import { PermissionGate } from "@/components/ui/permission-gate";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -86,6 +86,7 @@ interface Policy {
     fileName: string;
     fileType: string;
     fileSize: number;
+    filePath: string;
     uploadedAt: string;
   }>;
   policyExceptions?: Array<{
@@ -174,6 +175,7 @@ export default function GovernanceDetailPage() {
   const router = useRouter();
   const id = params.id as string;
   const { canEdit, canApprove, canDelete, isLoading: permissionsLoading } = usePermissions('compliance.governance');
+  const isCustomerAdmin = useHasRole('CustomerAdministrator');
 
   const [policy, setPolicy] = useState<Policy | null>(null);
   const [loading, setLoading] = useState(true);
@@ -182,6 +184,10 @@ export default function GovernanceDetailPage() {
   const [linkControlDialogOpen, setLinkControlDialogOpen] = useState(false);
   const [assigneeDialogOpen, setAssigneeDialogOpen] = useState(false);
   const [approverDialogOpen, setApproverDialogOpen] = useState(false);
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [publishDialogOpen, setPublishDialogOpen] = useState(false);
 
   // Edit form state
   const [editForm, setEditForm] = useState({
@@ -425,6 +431,72 @@ export default function GovernanceDetailPage() {
   const handleSaveApprover = async () => {
     await handleInlineUpdate("approverId", selectedApproverId);
     setApproverDialogOpen(false);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setUploadFile(file);
+    }
+  };
+
+  const handleUploadAttachment = async () => {
+    if (!uploadFile) return;
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", uploadFile);
+
+      const response = await fetch(`/api/policies/${id}/attachments`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (response.ok) {
+        setUploadDialogOpen(false);
+        setUploadFile(null);
+        fetchPolicy(); // Refresh policy data including attachments
+      } else {
+        const error = await response.json();
+        console.error("Upload failed:", error);
+      }
+    } catch (error) {
+      console.error("Error uploading attachment:", error);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDeleteAttachment = async (attachmentId: string) => {
+    try {
+      const response = await fetch(`/api/policies/${id}/attachments?attachmentId=${attachmentId}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        fetchPolicy(); // Refresh policy data
+      }
+    } catch (error) {
+      console.error("Error deleting attachment:", error);
+    }
+  };
+
+  const handlePublish = async () => {
+    try {
+      const response = await fetch(`/api/policies/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "Published" }),
+      });
+
+      if (response.ok) {
+        setPublishDialogOpen(false);
+        fetchPolicy();
+      }
+    } catch (error) {
+      console.error("Error publishing policy:", error);
+    }
   };
 
   if (loading) {
@@ -727,7 +799,22 @@ export default function GovernanceDetailPage() {
               return (
                 <div key={step.key} className="flex items-center flex-1">
                   <button
-                    onClick={() => canEdit && handleStatusChange(step.key)}
+                    onClick={() => {
+                      if (!canEdit) return;
+                      // Customer Admin only: Upload step opens dialog, Publish step opens dialog
+                      if (isCustomerAdmin) {
+                        if (step.key === "Not Uploaded" && policy.status === "Not Uploaded") {
+                          setUploadDialogOpen(true);
+                        } else if (step.key === "Published" && policy.status === "Draft") {
+                          setPublishDialogOpen(true);
+                        } else {
+                          handleStatusChange(step.key);
+                        }
+                      } else {
+                        // GRC Admin / other roles: original behavior - direct status change
+                        handleStatusChange(step.key);
+                      }
+                    }}
                     disabled={!canEdit}
                     className={`flex flex-col items-center gap-2 p-3 rounded-lg transition-colors ${
                       isActive
@@ -749,6 +836,15 @@ export default function GovernanceDetailPage() {
               );
             })}
           </div>
+          {/* Show Publish button when in Draft status - Customer Admin only */}
+          {policy.status === "Draft" && canEdit && isCustomerAdmin && (
+            <div className="mt-4 flex justify-end">
+              <Button onClick={() => setPublishDialogOpen(true)}>
+                <Check className="h-4 w-4 mr-2" />
+                Publish
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -987,10 +1083,75 @@ export default function GovernanceDetailPage() {
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Attachments</CardTitle>
           <PermissionGate resource="compliance.governance" action="edit">
-            <Button size="sm">
-              <Upload className="h-4 w-4 mr-2" />
-              Upload
-            </Button>
+            {isCustomerAdmin ? (
+              /* Customer Admin: Upload dialog with full functionality */
+              <Dialog open={uploadDialogOpen} onOpenChange={(open) => {
+                setUploadDialogOpen(open);
+                if (!open) setUploadFile(null);
+              }}>
+                <DialogTrigger asChild>
+                  <Button size="sm">
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Upload Document</DialogTitle>
+                  </DialogHeader>
+                  <div className="py-4 space-y-4">
+                    <div>
+                      <Label>Select File</Label>
+                      <Input
+                        type="file"
+                        onChange={handleFileSelect}
+                        className="mt-2"
+                        accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
+                      />
+                    </div>
+                    {uploadFile && (
+                      <div className="p-3 bg-muted rounded-lg">
+                        <p className="text-sm font-medium">{uploadFile.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {(uploadFile.size / 1024).toFixed(2)} KB
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setUploadDialogOpen(false);
+                        setUploadFile(null);
+                      }}
+                      disabled={uploading}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleUploadAttachment}
+                      disabled={!uploadFile || uploading}
+                    >
+                      {uploading ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                          Uploading...
+                        </>
+                      ) : (
+                        "Upload"
+                      )}
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            ) : (
+              /* GRC Admin / Other roles: Original simple button (no functionality) */
+              <Button size="sm">
+                <Upload className="h-4 w-4 mr-2" />
+                Upload
+              </Button>
+            )}
           </PermissionGate>
         </CardHeader>
         <CardContent>
@@ -1017,13 +1178,38 @@ export default function GovernanceDetailPage() {
                     <TableCell>{new Date(att.uploadedAt).toLocaleDateString()}</TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        <Button variant="ghost" size="icon">
-                          <Download className="h-4 w-4" />
-                        </Button>
-                        <PermissionGate resource="compliance.governance" action="delete">
-                          <Button variant="ghost" size="icon">
-                            <Trash2 className="h-4 w-4 text-red-500" />
+                        {isCustomerAdmin ? (
+                          /* Customer Admin: Functional download button */
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => window.open(att.filePath, "_blank")}
+                            title="Download"
+                          >
+                            <Download className="h-4 w-4" />
                           </Button>
+                        ) : (
+                          /* GRC Admin / Other: Original button (no functionality) */
+                          <Button variant="ghost" size="icon">
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        )}
+                        <PermissionGate resource="compliance.governance" action="delete">
+                          {isCustomerAdmin ? (
+                            /* Customer Admin: Functional delete button */
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDeleteAttachment(att.id)}
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                          ) : (
+                            /* GRC Admin / Other: Original button (no functionality) */
+                            <Button variant="ghost" size="icon">
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                          )}
                         </PermissionGate>
                       </div>
                     </TableCell>
@@ -1034,6 +1220,31 @@ export default function GovernanceDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Publish Confirmation Dialog - Customer Admin only */}
+      {isCustomerAdmin && (
+        <Dialog open={publishDialogOpen} onOpenChange={setPublishDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Publish {typeLabels[policy.type] || "Document"}</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <p>Are you sure you want to publish this {(policy.type || "document").toLowerCase()}?</p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Once published, this document will be available to all authorized users.
+              </p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setPublishDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handlePublish}>
+                Publish
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Tabs */}
       <div className="border-b">
