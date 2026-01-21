@@ -47,6 +47,7 @@ import {
   ChevronsRight,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Unauthorized } from "@/components/ui/unauthorized";
 
 interface Framework {
   id: string;
@@ -1203,6 +1204,16 @@ export default function CustomerAdminFrameworkDetailPage({
 
   if (!framework) {
     return <div className="text-center py-12">Framework not found</div>;
+  }
+
+  // Block access to not-subscribed frameworks
+  if (framework.status !== "Subscribed") {
+    return (
+      <Unauthorized
+        title="Framework Not Subscribed"
+        description="You do not have access to this framework. Please subscribe to view its contents."
+      />
+    );
   }
 
   // Use dummy data if no requirements from API

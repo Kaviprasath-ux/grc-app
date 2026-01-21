@@ -23,6 +23,34 @@ async function main() {
   // Store customerAccountId for use in all entity creations
   const customerAccountId = defaultCustomerAccount.id;
 
+  // Create CustomerAccount for GRC Administrator (for GRC Admin data isolation)
+  const grcAdminCustomerAccount = await prisma.customerAccount.upsert({
+    where: { code: "GRC_ADMIN_001" },
+    update: {},
+    create: {
+      id: "grc-admin-account-1",
+      code: "GRC_ADMIN_001",
+      name: "GRC Administrator Account",
+      isActive: true,
+    },
+  });
+  console.log("✅ GRC Admin Customer Account created");
+  const grcAdminCustomerAccountId = grcAdminCustomerAccount.id;
+
+  // Create Second CustomerAccount for testing GRC Admin data isolation
+  const grcAdmin2CustomerAccount = await prisma.customerAccount.upsert({
+    where: { code: "GRC_ADMIN_002" },
+    update: {},
+    create: {
+      id: "grc-admin-account-2",
+      code: "GRC_ADMIN_002",
+      name: "GRC Administrator 2 Account",
+      isActive: true,
+    },
+  });
+  console.log("✅ GRC Admin 2 Customer Account created");
+  const grcAdmin2CustomerAccountId = grcAdmin2CustomerAccount.id;
+
   // ==================== ORGANIZATION MODULE ====================
 
   // Create Organization with complete profile data
@@ -258,10 +286,12 @@ async function main() {
   }
   console.log("✅ User roles assigned");
 
-  // Create Superadmin user (GRCAdministrator)
+  // Create Superadmin user (GRCAdministrator) with their own CustomerAccount for data isolation
   const superadminUser = await prisma.user.upsert({
     where: { userName: "superadmin" },
-    update: {},
+    update: {
+      customerAccountId: grcAdminCustomerAccountId, // Ensure existing superadmin gets the account
+    },
     create: {
       userId: "SUPERADMIN-001",
       userName: "superadmin",
@@ -275,6 +305,7 @@ async function main() {
       function: "Administration",
       isActive: true,
       isBlocked: false,
+      customerAccountId: grcAdminCustomerAccountId, // GRC Admin data isolation
     },
   });
 
@@ -293,6 +324,45 @@ async function main() {
     },
   });
   console.log("✅ Superadmin user created (superadmin / Baarez@2025)");
+
+  // Create Second GRC Admin user for testing data isolation
+  const grcAdmin2User = await prisma.user.upsert({
+    where: { userName: "grcadmin2" },
+    update: {
+      customerAccountId: grcAdmin2CustomerAccountId,
+    },
+    create: {
+      userId: "GRCADMIN2-001",
+      userName: "grcadmin2",
+      email: "grcadmin2@baarez.com",
+      password: "Baarez@2025",
+      firstName: "GRC",
+      lastName: "Admin2",
+      fullName: "GRC Admin 2",
+      designation: "GRC Administrator",
+      role: "GRCAdministrator",
+      function: "Administration",
+      isActive: true,
+      isBlocked: false,
+      customerAccountId: grcAdmin2CustomerAccountId,
+    },
+  });
+
+  // Assign GRCAdministrator role to grcadmin2
+  await prisma.userRole.upsert({
+    where: {
+      userId_roleId: {
+        userId: grcAdmin2User.id,
+        roleId: createdRoles["GRCAdministrator"],
+      },
+    },
+    update: {},
+    create: {
+      userId: grcAdmin2User.id,
+      roleId: createdRoles["GRCAdministrator"],
+    },
+  });
+  console.log("✅ GRC Admin 2 user created (grcadmin2 / Baarez@2025)");
 
   // Create Stakeholders
   const stakeholders = [

@@ -23,6 +23,7 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  Lock,
   Sparkles,
   Upload,
 } from "lucide-react";
@@ -154,6 +155,10 @@ export default function CustomerAdminFrameworkPage() {
   };
 
   const handleFrameworkClick = (framework: Framework) => {
+    // Prevent navigation for not-subscribed frameworks
+    if (framework.status !== "Subscribed") {
+      return;
+    }
     router.push(`/roles/customer-administrator/compliance/framework/${framework.id}`);
   };
 
@@ -294,28 +299,36 @@ export default function CustomerAdminFrameworkPage() {
             No frameworks found.
           </div>
         ) : (
-          currentFrameworks.map((framework) => (
+          currentFrameworks.map((framework) => {
+            const isLocked = framework.status !== "Subscribed";
+            return (
             <div
               key={framework.id}
-              className={`bg-white rounded-lg shadow-sm border p-4 cursor-pointer hover:shadow-md transition-shadow ${
+              className={`bg-white rounded-lg shadow-sm border p-4 transition-shadow ${
                 framework.isCustom ? "border-l-4 border-l-gray-400" : ""
-              }`}
+              } ${isLocked ? "opacity-60 cursor-not-allowed" : "cursor-pointer hover:shadow-md"}`}
               onClick={() => handleFrameworkClick(framework)}
             >
-              {/* Framework Name */}
-              <h4 className="text-base font-semibold text-[#1e3a5f] mb-4 truncate">
-                {framework.name}
-              </h4>
+              {/* Framework Name with Lock Icon */}
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="text-base font-semibold text-[#1e3a5f] truncate flex-1">
+                  {framework.name}
+                </h4>
+                {isLocked && (
+                  <Lock className="h-5 w-5 text-gray-400 ml-2 flex-shrink-0" />
+                )}
+              </div>
 
-              {/* Compliance Circle - Clickable */}
+              {/* Compliance Circle - Clickable only if subscribed */}
               <div className="flex justify-center mb-4">
                 <div
-                  className="relative w-28 h-28 cursor-pointer hover:opacity-80 transition-opacity"
+                  className={`relative w-28 h-28 transition-opacity ${isLocked ? "cursor-not-allowed" : "cursor-pointer hover:opacity-80"}`}
                   onClick={(e) => {
                     e.stopPropagation();
+                    if (isLocked) return;
                     router.push(`/roles/customer-administrator/compliance/framework/${framework.id}/controls`);
                   }}
-                  title="Click to view controls"
+                  title={isLocked ? "Framework not subscribed" : "Click to view controls"}
                 >
                   <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
                     {/* Background circle */}
@@ -348,16 +361,17 @@ export default function CustomerAdminFrameworkPage() {
                 </div>
               </div>
 
-              {/* Policy and Evidence Progress Bars - Clickable */}
+              {/* Policy and Evidence Progress Bars - Clickable only if subscribed */}
               <div className="space-y-3">
-                {/* Policy - Clickable */}
+                {/* Policy - Clickable only if subscribed */}
                 <div
-                  className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity p-1 -m-1 rounded"
+                  className={`flex items-center gap-2 transition-opacity p-1 -m-1 rounded ${isLocked ? "cursor-not-allowed" : "cursor-pointer hover:opacity-80"}`}
                   onClick={(e) => {
                     e.stopPropagation();
+                    if (isLocked) return;
                     router.push(`/roles/customer-administrator/compliance/framework/${framework.id}/policies`);
                   }}
-                  title="Click to view policies"
+                  title={isLocked ? "Framework not subscribed" : "Click to view policies"}
                 >
                   <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
                     <div
@@ -371,14 +385,15 @@ export default function CustomerAdminFrameworkPage() {
                   </div>
                 </div>
 
-                {/* Evidence - Clickable */}
+                {/* Evidence - Clickable only if subscribed */}
                 <div
-                  className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity p-1 -m-1 rounded"
+                  className={`flex items-center gap-2 transition-opacity p-1 -m-1 rounded ${isLocked ? "cursor-not-allowed" : "cursor-pointer hover:opacity-80"}`}
                   onClick={(e) => {
                     e.stopPropagation();
+                    if (isLocked) return;
                     router.push(`/roles/customer-administrator/compliance/framework/${framework.id}/evidence`);
                   }}
-                  title="Click to view evidence"
+                  title={isLocked ? "Framework not subscribed" : "Click to view evidence"}
                 >
                   <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
                     <div
@@ -393,7 +408,8 @@ export default function CustomerAdminFrameworkPage() {
                 </div>
               </div>
             </div>
-          ))
+          );
+          })
         )}
       </div>
 
