@@ -71,7 +71,7 @@ export const GET = withAuth(
       );
     }
   },
-  { resource: "compliance.control", action: "view" }
+  { resource: "compliance.controls", action: "view" }
 );
 
 // POST create new control - with customer account assignment
@@ -150,11 +150,12 @@ export const POST = withAuth(
           wellDefined,
           quantitativelyControlled,
           continuouslyImproving,
-          domainId,
-          frameworkId,
-          departmentId,
-          ownerId,
-          assigneeId,
+          // Only include optional foreign keys if they have valid values
+          ...(domainId ? { domainId } : {}),
+          ...(frameworkId ? { frameworkId } : {}),
+          ...(departmentId ? { departmentId } : {}),
+          ...(ownerId ? { ownerId } : {}),
+          ...(assigneeId ? { assigneeId } : {}),
         },
         include: {
           domain: true,
@@ -180,5 +181,5 @@ export const POST = withAuth(
       );
     }
   },
-  { resource: "compliance.control", action: "create" }
+  { resource: "compliance.controls", action: "create" }
 );

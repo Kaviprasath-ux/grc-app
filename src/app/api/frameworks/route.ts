@@ -10,13 +10,42 @@ export const GET = withAuth(
       const status = searchParams.get("status");
       const type = searchParams.get("type");
 
-      const tenantFilter = getTenantFilter(session);
-      const where: Record<string, unknown> = { ...tenantFilter };
-      if (status) where.status = status;
-      if (type) where.type = type;
+      const isGRCAdmin = session.roles.includes("GRCAdministrator");
 
-      const frameworks = await prisma.framework.findMany({
-        where,
+      // For GRC Administrator: return only their own frameworks
+      if (isGRCAdmin) {
+        const tenantFilter = getTenantFilter(session);
+        const where: Record<string, unknown> = { ...tenantFilter };
+        if (status) where.status = status;
+        if (type) where.type = type;
+
+        const frameworks = await prisma.framework.findMany({
+          where,
+          include: {
+            _count: {
+              select: { controls: true, evidences: true, requirements: true },
+            },
+          },
+          orderBy: { name: "asc" },
+        });
+        return NextResponse.json(frameworks);
+      }
+
+      // For Customer Admin and other roles:
+      // 1. Fetch their own frameworks (subscribed)
+      // 2. Fetch master frameworks from GRC Admin accounts (for "Not Subscribed" filter)
+
+      const customerAccountId = session.customerAccountId;
+      if (!customerAccountId) {
+        return NextResponse.json([]);
+      }
+
+      // Get customer's own frameworks
+      const customerWhere: Record<string, unknown> = { customerAccountId };
+      if (type) customerWhere.type = type;
+
+      const customerFrameworks = await prisma.framework.findMany({
+        where: customerWhere,
         include: {
           _count: {
             select: { controls: true, evidences: true, requirements: true },
@@ -24,7 +53,69 @@ export const GET = withAuth(
         },
         orderBy: { name: "asc" },
       });
-      return NextResponse.json(frameworks);
+
+      // Get GRC Admin accounts (master framework sources)
+      const grcAdminAccounts = await prisma.customerAccount.findMany({
+        where: {
+          code: { startsWith: "GRC_ADMIN_" },
+        },
+        select: { id: true },
+      });
+
+      const grcAdminAccountIds = grcAdminAccounts.map((a) => a.id);
+
+      // Get master frameworks from GRC Admin accounts
+      const masterWhere: Record<string, unknown> = {
+        customerAccountId: { in: grcAdminAccountIds },
+      };
+      if (type) masterWhere.type = type;
+
+      const masterFrameworks = await prisma.framework.findMany({
+        where: masterWhere,
+        include: {
+          _count: {
+            select: { controls: true, evidences: true, requirements: true },
+          },
+        },
+        orderBy: { name: "asc" },
+      });
+
+      // Build a set of subscribed framework names/codes for comparison
+      const subscribedNames = new Set(
+        customerFrameworks.map((f) => f.name.toLowerCase())
+      );
+      const subscribedCodes = new Set(
+        customerFrameworks.filter((f) => f.code).map((f) => f.code!.toLowerCase())
+      );
+
+      // Combine: customer frameworks + master frameworks (marked as "Not Subscribed")
+      const allFrameworks = [...customerFrameworks];
+
+      for (const master of masterFrameworks) {
+        // Check if customer already has this framework (by name or code)
+        const isSubscribed =
+          subscribedNames.has(master.name.toLowerCase()) ||
+          (master.code && subscribedCodes.has(master.code.toLowerCase()));
+
+        if (!isSubscribed) {
+          // Add master framework as "Not Subscribed" for customer view
+          allFrameworks.push({
+            ...master,
+            status: "Not Subscribed",
+          });
+        }
+      }
+
+      // Apply status filter if provided
+      let filteredFrameworks = allFrameworks;
+      if (status) {
+        filteredFrameworks = allFrameworks.filter((f) => f.status === status);
+      }
+
+      // Sort by name
+      filteredFrameworks.sort((a, b) => a.name.localeCompare(b.name));
+
+      return NextResponse.json(filteredFrameworks);
     } catch (error) {
       console.error("Error fetching frameworks:", error);
       return NextResponse.json(

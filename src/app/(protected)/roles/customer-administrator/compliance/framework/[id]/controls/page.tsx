@@ -27,6 +27,7 @@ import {
   Settings2,
   ArrowLeft,
 } from "lucide-react";
+import { Unauthorized } from "@/components/ui/unauthorized";
 
 interface Control {
   id: string;
@@ -80,7 +81,7 @@ export default function ControlsByFrameworkPage() {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   // Framework info
-  const [framework, setFramework] = useState<{ id: string; name: string } | null>(null);
+  const [framework, setFramework] = useState<{ id: string; name: string; status: string } | null>(null);
 
   // Column visibility
   const [visibleColumns, setVisibleColumns] = useState({
@@ -116,8 +117,8 @@ export default function ControlsByFrameworkPage() {
 
         const frameworkData: FrameworkData = await response.json();
 
-        // Store framework info
-        setFramework({ id: frameworkData.id, name: frameworkData.name });
+        // Store framework info including status for access control
+        setFramework({ id: frameworkData.id, name: frameworkData.name, status: (frameworkData as { status?: string }).status || "Subscribed" });
 
         // Step 2: Extract Controls from all Requirements
         // Data path: framework.requirements[].controls[].control
@@ -231,6 +232,16 @@ export default function ControlsByFrameworkPage() {
     if (!control.assignee) return "-";
     return control.assignee.fullName || control.assignee.userName || "-";
   };
+
+  // Block access to not-subscribed frameworks
+  if (!loading && framework && framework.status !== "Subscribed") {
+    return (
+      <Unauthorized
+        title="Framework Not Subscribed"
+        description="You do not have access to this framework. Please subscribe to view its contents."
+      />
+    );
+  }
 
   return (
     <div className="space-y-4">

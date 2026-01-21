@@ -143,6 +143,22 @@ const statusColors: Record<string, string> = {
 const recurrenceOptions = ["Yearly", "Half-yearly", "Quarterly", "Monthly"];
 const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec"];
 
+// Helper function to get period labels based on recurrence value
+const getPeriodsForRecurrence = (recurrence: string | null): string[] => {
+  switch (recurrence) {
+    case "Monthly":
+      return ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    case "Quarterly":
+      return ["Jan–Mar", "Apr–Jun", "Jul–Sep", "Oct–Dec"];
+    case "Half-yearly":
+      return ["Jan–Jun", "Jul–Dec"];
+    case "Yearly":
+      return ["Jan–Dec"];
+    default:
+      return ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  }
+};
+
 export default function EvidenceDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -150,6 +166,7 @@ export default function EvidenceDetailPage() {
   const id = params.id as string;
 
   const isGRCAdmin = session?.user?.roles?.includes("GRCAdministrator");
+  const isCustomerAdmin = session?.user?.roles?.includes("CustomerAdministrator");
 
   const [evidence, setEvidence] = useState<Evidence | null>(null);
   const [loading, setLoading] = useState(true);
@@ -183,6 +200,11 @@ export default function EvidenceDetailPage() {
 
   // Delete state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+  // Upload attachment state (Customer Admin)
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   const fetchEvidence = useCallback(async () => {
     try {
@@ -239,6 +261,16 @@ export default function EvidenceDetailPage() {
     fetchEvidence();
     fetchReferenceData();
   }, [fetchEvidence, fetchReferenceData]);
+
+  // Set default selected period to first chip for Customer Admin
+  useEffect(() => {
+    if (isCustomerAdmin && evidence && !selectedMonth) {
+      const periods = getPeriodsForRecurrence(evidence.recurrence);
+      if (periods.length > 0) {
+        setSelectedMonth(periods[0]);
+      }
+    }
+  }, [isCustomerAdmin, evidence, selectedMonth]);
 
   const handleInlineUpdate = async (field: string, value: string | boolean | number | null) => {
     try {
@@ -376,6 +408,88 @@ export default function EvidenceDetailPage() {
       console.error("Error deleting evidence:", error);
     }
   };
+
+  // Upload attachment handler (Customer Admin)
+  const handleUploadAttachment = async () => {
+    if (!selectedFile) return;
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+
+      const response = await fetch(`/api/evidences/${id}/attachments`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (response.ok) {
+        setSelectedFile(null);
+        setUploadDialogOpen(false);
+        fetchEvidence();
+      } else {
+        const error = await response.json();
+        console.error("Upload failed:", error);
+        alert("Failed to upload attachment");
+      }
+    } catch (error) {
+      console.error("Error uploading attachment:", error);
+      alert("Failed to upload attachment");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // Delete attachment handler (Customer Admin)
+  const handleDeleteAttachment = async (attachmentId: string) => {
+    try {
+      const response = await fetch(`/api/evidences/${id}/attachments?attachmentId=${attachmentId}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        fetchEvidence();
+      }
+    } catch (error) {
+      console.error("Error deleting attachment:", error);
+    }
+  };
+
+  // Helper: Get month index from upload date
+  const getMonthFromDate = (dateStr: string): number => {
+    const date = new Date(dateStr);
+    return date.getMonth(); // 0-11
+  };
+
+  // Helper: Map month index to period based on recurrence
+  const getMonthPeriod = (monthIndex: number, recurrence: string | null): string => {
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+    switch (recurrence) {
+      case "Monthly":
+        return monthNames[monthIndex];
+      case "Quarterly":
+        if (monthIndex <= 2) return "Jan–Mar";
+        if (monthIndex <= 5) return "Apr–Jun";
+        if (monthIndex <= 8) return "Jul–Sep";
+        return "Oct–Dec";
+      case "Half-yearly":
+        if (monthIndex <= 5) return "Jan–Jun";
+        return "Jul–Dec";
+      case "Yearly":
+        return "Jan–Dec";
+      default:
+        return monthNames[monthIndex];
+    }
+  };
+
+  // Filter attachments by selected period
+  const filteredAttachments = evidence?.attachments?.filter((att) => {
+    if (!selectedMonth) return true; // Show all if no period selected
+    const monthIndex = getMonthFromDate(att.uploadedAt);
+    const period = getMonthPeriod(monthIndex, evidence.recurrence);
+    return period === selectedMonth;
+  }) || [];
 
   const getStatusStep = (status: string) => {
     switch (status) {
@@ -1109,10 +1223,17 @@ export default function EvidenceDetailPage() {
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Attachments</CardTitle>
               <div className="flex gap-2">
-                <Button size="sm" variant="outline">
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add Attachment
-                </Button>
+                {isCustomerAdmin ? (
+                  <Button size="sm" variant="outline" onClick={() => setUploadDialogOpen(true)}>
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Attachment
+                  </Button>
+                ) : (
+                  <Button size="sm" variant="outline">
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Attachment
+                  </Button>
+                )}
                 <Button size="sm" variant="outline">
                   <Link2 className="h-4 w-4 mr-1" />
                   Link Artifacts
@@ -1120,25 +1241,25 @@ export default function EvidenceDetailPage() {
               </div>
             </CardHeader>
             <CardContent>
-              {/* Month Buttons */}
+              {/* Period Buttons - Dynamic based on recurrence for Customer Admin */}
               <div className="flex flex-wrap gap-2 mb-4">
-                {months.map((month) => (
+                {(isCustomerAdmin ? getPeriodsForRecurrence(evidence.recurrence) : months).map((period) => (
                   <Button
-                    key={month}
-                    variant={selectedMonth === month ? "default" : "outline"}
+                    key={period}
+                    variant={selectedMonth === period ? "default" : "outline"}
                     size="sm"
-                    onClick={() => setSelectedMonth(selectedMonth === month ? null : month)}
+                    onClick={() => setSelectedMonth(selectedMonth === period ? null : period)}
                     className="text-xs"
                   >
                     <FileText className="h-3 w-3 mr-1" />
-                    {month}
+                    {period}
                   </Button>
                 ))}
               </div>
 
-              {/* Attachments List */}
+              {/* Attachments List - Filtered by selected period for Customer Admin */}
               <div className="space-y-2">
-                {evidence.attachments?.map((att) => (
+                {(isCustomerAdmin ? filteredAttachments : evidence.attachments)?.map((att) => (
                   <div
                     key={att.id}
                     className="flex items-center justify-between p-2 border rounded hover:bg-gray-50"
@@ -1151,14 +1272,23 @@ export default function EvidenceDetailPage() {
                       <Button variant="ghost" size="icon" className="h-7 w-7">
                         <Download className="h-3 w-3" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7">
-                        <Trash2 className="h-3 w-3 text-red-500" />
-                      </Button>
+                      {isCustomerAdmin && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() => handleDeleteAttachment(att.id)}
+                        >
+                          <Trash2 className="h-3 w-3 text-red-500" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 ))}
-                {(!evidence.attachments || evidence.attachments.length === 0) && (
-                  <p className="text-center text-gray-500 text-sm py-4">No attachments</p>
+                {(isCustomerAdmin ? filteredAttachments.length === 0 : (!evidence.attachments || evidence.attachments.length === 0)) && (
+                  <p className="text-center text-gray-500 text-sm py-4">
+                    {isCustomerAdmin && selectedMonth ? `No attachments for ${selectedMonth}` : "No attachments"}
+                  </p>
                 )}
               </div>
             </CardContent>
@@ -1295,6 +1425,59 @@ export default function EvidenceDetailPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Upload Attachment Dialog (Customer Admin) */}
+      {isCustomerAdmin && (
+        <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Upload Attachment</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Select File</Label>
+                <Input
+                  type="file"
+                  onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.txt,.csv"
+                />
+                {selectedFile && (
+                  <p className="text-sm text-gray-500">
+                    Selected: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)
+                  </p>
+                )}
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSelectedFile(null);
+                    setUploadDialogOpen(false);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleUploadAttachment}
+                  disabled={!selectedFile || uploading}
+                >
+                  {uploading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-4 w-4 mr-2" />
+                      Upload
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

@@ -23,9 +23,12 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  Lock,
+  Loader2,
   Sparkles,
   Upload,
 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 
 interface Framework {
@@ -55,9 +58,11 @@ const ITEMS_PER_PAGE = 6;
 
 export default function CustomerAdminFrameworkPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [frameworks, setFrameworks] = useState<Framework[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
+  const [subscribingId, setSubscribingId] = useState<string | null>(null);
 
   // Filter states
   const [subscriptionFilter, setSubscriptionFilter] = useState<string>("Subscribed");
@@ -154,7 +159,256 @@ export default function CustomerAdminFrameworkPage() {
   };
 
   const handleFrameworkClick = (framework: Framework) => {
+    // Prevent navigation for not-subscribed frameworks
+    if (framework.status !== "Subscribed") {
+      return;
+    }
     router.push(`/roles/customer-administrator/compliance/framework/${framework.id}`);
+  };
+
+  // Subscribe to a master framework (clone it to customer account)
+  const handleSubscribe = async (masterFrameworkId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    if (subscribingId) return; // Prevent double clicks
+
+    setSubscribingId(masterFrameworkId);
+
+    try {
+      // Step 1: Check if already subscribed (by name)
+      const masterFramework = frameworks.find(f => f.id === masterFrameworkId);
+      if (!masterFramework) {
+        throw new Error("Framework not found");
+      }
+
+      const existingSubscribed = frameworks.find(
+        f => f.status === "Subscribed" && f.name.toLowerCase() === masterFramework.name.toLowerCase()
+      );
+
+      if (existingSubscribed) {
+        toast({
+          title: "Already Subscribed",
+          description: `You are already subscribed to "${masterFramework.name}"`,
+          variant: "default",
+        });
+        setSubscribingId(null);
+        return;
+      }
+
+      // Step 2: Fetch full master framework details
+      const detailResponse = await fetch(`/api/frameworks/${masterFrameworkId}`);
+      if (!detailResponse.ok) {
+        throw new Error("Failed to fetch framework details");
+      }
+      const masterData = await detailResponse.json();
+
+      // Step 3: Create customer framework copy
+      const frameworkResponse = await fetch("/api/frameworks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: masterData.name,
+          description: masterData.description,
+          version: masterData.version,
+          type: masterData.type || "Framework",
+          status: "Subscribed",
+          country: masterData.country,
+          industry: masterData.industry,
+          isCustom: false,
+          logo: masterData.logo,
+          supportDocumentUrl: masterData.supportDocumentUrl,
+        }),
+      });
+
+      if (!frameworkResponse.ok) {
+        const error = await frameworkResponse.json();
+        if (error.error?.includes("already exists")) {
+          toast({
+            title: "Already Subscribed",
+            description: `Framework "${masterData.name}" already exists in your account`,
+            variant: "default",
+          });
+          setSubscribingId(null);
+          await fetchFrameworks();
+          return;
+        }
+        throw new Error(error.error || "Failed to create framework");
+      }
+
+      const newFramework = await frameworkResponse.json();
+      const newFrameworkId = newFramework.id;
+
+      // Step 4: Collect ALL unique controls from both direct framework controls AND requirement-linked controls
+      const controlIdMap: Record<string, string> = {};
+      const allControlsMap: Record<string, unknown> = {};
+
+      // Collect controls directly linked to framework
+      if (masterData.controls && masterData.controls.length > 0) {
+        for (const control of masterData.controls) {
+          allControlsMap[control.id] = control;
+        }
+      }
+
+      // Collect controls linked through requirements (via RequirementControl)
+      if (masterData.requirements && masterData.requirements.length > 0) {
+        for (const requirement of masterData.requirements) {
+          if (requirement.controls && requirement.controls.length > 0) {
+            for (const rc of requirement.controls) {
+              // rc is RequirementControl with { controlId, control }
+              if (rc.control && rc.control.id && !allControlsMap[rc.control.id]) {
+                allControlsMap[rc.control.id] = rc.control;
+              }
+            }
+          }
+        }
+      }
+
+      // Clone all unique controls
+      const allControls = Object.values(allControlsMap) as Array<{
+        id: string;
+        controlCode: string;
+        name: string;
+        description?: string;
+        controlQuestion?: string;
+        functionalGrouping?: string;
+        entities?: string;
+        isControlList?: boolean;
+        relativeControlWeighting?: number;
+        scope?: string;
+        notPerformed?: string;
+        performedInformally?: string;
+        plannedAndTracked?: string;
+        wellDefined?: string;
+        quantitativelyControlled?: string;
+        continuouslyImproving?: string;
+      }>;
+
+      for (const control of allControls) {
+        try {
+          const controlResponse = await fetch("/api/controls", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              controlCode: control.controlCode,
+              name: control.name,
+              description: control.description,
+              controlQuestion: control.controlQuestion || control.name, // Use name as fallback
+              functionalGrouping: control.functionalGrouping || "Govern",
+              status: "Non Compliant", // Reset status for customer
+              entities: control.entities,
+              isControlList: control.isControlList,
+              relativeControlWeighting: control.relativeControlWeighting,
+              scope: control.scope,
+              notPerformed: control.notPerformed,
+              performedInformally: control.performedInformally,
+              plannedAndTracked: control.plannedAndTracked,
+              wellDefined: control.wellDefined,
+              quantitativelyControlled: control.quantitativelyControlled,
+              continuouslyImproving: control.continuouslyImproving,
+              frameworkId: newFrameworkId,
+            }),
+          });
+
+          if (controlResponse.ok) {
+            const newControl = await controlResponse.json();
+            controlIdMap[control.id] = newControl.id;
+          }
+        } catch (err) {
+          console.error("Error cloning control:", err);
+        }
+      }
+
+      // Step 5: Clone requirements and create control mappings
+      // Note: RequirementCategories are not cloned since no API exists; requirements will be linked directly to framework
+      const requirementIdMap: Record<string, string> = {};
+
+      if (masterData.requirements && masterData.requirements.length > 0) {
+        // Sort requirements by level to handle parent-child relationships
+        const sortedRequirements = [...masterData.requirements].sort(
+          (a: { level: number }, b: { level: number }) => (a.level || 1) - (b.level || 1)
+        );
+
+        for (const requirement of sortedRequirements) {
+          try {
+            // Determine parent ID (if any)
+            let newParentId = null;
+            if (requirement.parentId && requirementIdMap[requirement.parentId]) {
+              newParentId = requirementIdMap[requirement.parentId];
+            }
+
+            const reqResponse = await fetch("/api/requirements", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                code: requirement.code,
+                name: requirement.name,
+                description: requirement.description,
+                frameworkId: newFrameworkId,
+                parentId: newParentId,
+                sortOrder: requirement.sortOrder,
+                requirementType: requirement.requirementType,
+                chapterType: requirement.chapterType,
+                level: requirement.level,
+                applicability: requirement.applicability,
+                justification: requirement.justification,
+                implementationStatus: requirement.implementationStatus,
+              }),
+            });
+
+            if (reqResponse.ok) {
+              const newRequirement = await reqResponse.json();
+              requirementIdMap[requirement.id] = newRequirement.id;
+
+              // Step 7: Create requirement-control mappings
+              if (requirement.controls && requirement.controls.length > 0) {
+                const newControlIds = requirement.controls
+                  .map((rc: { controlId: string }) => controlIdMap[rc.controlId])
+                  .filter((id: string | undefined): id is string => !!id);
+
+                if (newControlIds.length > 0) {
+                  try {
+                    const linkResponse = await fetch(`/api/requirements/${newRequirement.id}/controls`, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ controlIds: newControlIds }),
+                    });
+                    if (!linkResponse.ok) {
+                      console.error(`Failed to link controls to requirement ${requirement.code}:`, await linkResponse.text());
+                    }
+                  } catch (err) {
+                    console.error("Error linking controls to requirement:", err);
+                  }
+                }
+              }
+            }
+          } catch (err) {
+            console.error("Error cloning requirement:", err);
+          }
+        }
+      }
+
+      // Build summary message
+      const clonedControlsCount = Object.keys(controlIdMap).length;
+      const clonedRequirementsCount = Object.keys(requirementIdMap).length;
+
+      toast({
+        title: "Subscribed Successfully",
+        description: `Subscribed to "${masterData.name}" with ${clonedRequirementsCount} requirements and ${clonedControlsCount} controls`,
+      });
+
+      // Refresh frameworks list
+      await fetchFrameworks();
+
+    } catch (error) {
+      console.error("Error subscribing to framework:", error);
+      toast({
+        title: "Subscription Failed",
+        description: error instanceof Error ? error.message : "Failed to subscribe to framework",
+        variant: "destructive",
+      });
+    } finally {
+      setSubscribingId(null);
+    }
   };
 
   // File upload handlers
@@ -294,28 +548,54 @@ export default function CustomerAdminFrameworkPage() {
             No frameworks found.
           </div>
         ) : (
-          currentFrameworks.map((framework) => (
+          currentFrameworks.map((framework) => {
+            const isLocked = framework.status !== "Subscribed";
+            return (
             <div
               key={framework.id}
-              className={`bg-white rounded-lg shadow-sm border p-4 cursor-pointer hover:shadow-md transition-shadow ${
+              className={`bg-white rounded-lg shadow-sm border p-4 transition-shadow ${
                 framework.isCustom ? "border-l-4 border-l-gray-400" : ""
-              }`}
+              } ${isLocked ? "opacity-60 cursor-not-allowed" : "cursor-pointer hover:shadow-md"}`}
               onClick={() => handleFrameworkClick(framework)}
             >
-              {/* Framework Name */}
-              <h4 className="text-base font-semibold text-[#1e3a5f] mb-4 truncate">
-                {framework.name}
-              </h4>
+              {/* Framework Name with Lock Icon and Subscribe Button */}
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="text-base font-semibold text-[#1e3a5f] truncate flex-1">
+                  {framework.name}
+                </h4>
+                {isLocked && (
+                  <div className="flex items-center gap-2 ml-2 flex-shrink-0">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 px-2 text-xs bg-[#1e3a5f] text-white hover:bg-[#2d4a6f] hover:text-white border-[#1e3a5f]"
+                      onClick={(e) => handleSubscribe(framework.id, e)}
+                      disabled={subscribingId === framework.id}
+                    >
+                      {subscribingId === framework.id ? (
+                        <>
+                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                          Subscribing...
+                        </>
+                      ) : (
+                        "Subscribe"
+                      )}
+                    </Button>
+                    <Lock className="h-5 w-5 text-gray-400" />
+                  </div>
+                )}
+              </div>
 
-              {/* Compliance Circle - Clickable */}
+              {/* Compliance Circle - Clickable only if subscribed */}
               <div className="flex justify-center mb-4">
                 <div
-                  className="relative w-28 h-28 cursor-pointer hover:opacity-80 transition-opacity"
+                  className={`relative w-28 h-28 transition-opacity ${isLocked ? "cursor-not-allowed" : "cursor-pointer hover:opacity-80"}`}
                   onClick={(e) => {
                     e.stopPropagation();
+                    if (isLocked) return;
                     router.push(`/roles/customer-administrator/compliance/framework/${framework.id}/controls`);
                   }}
-                  title="Click to view controls"
+                  title={isLocked ? "Framework not subscribed" : "Click to view controls"}
                 >
                   <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
                     {/* Background circle */}
@@ -348,16 +628,17 @@ export default function CustomerAdminFrameworkPage() {
                 </div>
               </div>
 
-              {/* Policy and Evidence Progress Bars - Clickable */}
+              {/* Policy and Evidence Progress Bars - Clickable only if subscribed */}
               <div className="space-y-3">
-                {/* Policy - Clickable */}
+                {/* Policy - Clickable only if subscribed */}
                 <div
-                  className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity p-1 -m-1 rounded"
+                  className={`flex items-center gap-2 transition-opacity p-1 -m-1 rounded ${isLocked ? "cursor-not-allowed" : "cursor-pointer hover:opacity-80"}`}
                   onClick={(e) => {
                     e.stopPropagation();
+                    if (isLocked) return;
                     router.push(`/roles/customer-administrator/compliance/framework/${framework.id}/policies`);
                   }}
-                  title="Click to view policies"
+                  title={isLocked ? "Framework not subscribed" : "Click to view policies"}
                 >
                   <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
                     <div
@@ -371,14 +652,15 @@ export default function CustomerAdminFrameworkPage() {
                   </div>
                 </div>
 
-                {/* Evidence - Clickable */}
+                {/* Evidence - Clickable only if subscribed */}
                 <div
-                  className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity p-1 -m-1 rounded"
+                  className={`flex items-center gap-2 transition-opacity p-1 -m-1 rounded ${isLocked ? "cursor-not-allowed" : "cursor-pointer hover:opacity-80"}`}
                   onClick={(e) => {
                     e.stopPropagation();
+                    if (isLocked) return;
                     router.push(`/roles/customer-administrator/compliance/framework/${framework.id}/evidence`);
                   }}
-                  title="Click to view evidence"
+                  title={isLocked ? "Framework not subscribed" : "Click to view evidence"}
                 >
                   <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
                     <div
@@ -393,7 +675,8 @@ export default function CustomerAdminFrameworkPage() {
                 </div>
               </div>
             </div>
-          ))
+          );
+          })
         )}
       </div>
 

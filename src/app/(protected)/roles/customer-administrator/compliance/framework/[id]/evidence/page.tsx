@@ -21,6 +21,7 @@ import {
   ChevronsRight,
   ArrowLeft,
 } from "lucide-react";
+import { Unauthorized } from "@/components/ui/unauthorized";
 
 interface EvidenceControl {
   id: string;
@@ -104,7 +105,7 @@ export default function EvidenceByFrameworkPage() {
   const [currentPage, setCurrentPage] = useState(1);
 
   // Framework info
-  const [framework, setFramework] = useState<{ id: string; name: string } | null>(null);
+  const [framework, setFramework] = useState<{ id: string; name: string; status: string } | null>(null);
 
   // Fetch framework to get control IDs, then fetch all evidences and filter by control linkage
   useEffect(() => {
@@ -127,7 +128,7 @@ export default function EvidenceByFrameworkPage() {
         }
 
         const frameworkData: FrameworkData = await frameworkResponse.json();
-        setFramework({ id: frameworkData.id, name: frameworkData.name });
+        setFramework({ id: frameworkData.id, name: frameworkData.name, status: (frameworkData as { status?: string }).status || "Subscribed" });
 
         // Step 2: Extract unique Control IDs from all Requirements
         const controlIdsSet = new Set<string>();
@@ -225,6 +226,16 @@ export default function EvidenceByFrameworkPage() {
   const handleSearch = () => {
     setCurrentPage(1);
   };
+
+  // Block access to not-subscribed frameworks
+  if (!loading && framework && framework.status !== "Subscribed") {
+    return (
+      <Unauthorized
+        title="Framework Not Subscribed"
+        description="You do not have access to this framework. Please subscribe to view its contents."
+      />
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">

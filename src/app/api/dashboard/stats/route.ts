@@ -143,15 +143,15 @@ export async function GET() {
       })
     );
 
-    // Fetch exceptions by type
+    // Fetch exceptions by category
     const exceptions = await prisma.exception.findMany({
       where: tenantFilter,
-      select: { exceptionType: true },
+      select: { category: true, status: true },
     });
 
     const exceptionTypeMap = new Map<string, number>();
     exceptions.forEach((exc) => {
-      const type = exc.exceptionType || "Other";
+      const type = exc.category || "Other";
       exceptionTypeMap.set(type, (exceptionTypeMap.get(type) || 0) + 1);
     });
 
@@ -185,14 +185,14 @@ export async function GET() {
     // Fetch exception status
     const exceptionTypes = ["Control", "Compliance", "Policy"];
     const exceptionStatusData = exceptionTypes.map((type) => {
-      const typeExceptions = exceptions.filter((e) => e.exceptionType === type);
+      const typeExceptions = exceptions.filter((e) => e.category === type);
       return {
         type,
-        pending: typeExceptions.filter((e) => e.exceptionType === type).length, // Placeholder
-        approved: 0,
-        authorized: 0,
-        closed: 0,
-        overdue: 0,
+        pending: typeExceptions.filter((e) => e.status === "Pending").length,
+        approved: typeExceptions.filter((e) => e.status === "Approved").length,
+        authorized: typeExceptions.filter((e) => e.status === "Authorised").length,
+        closed: typeExceptions.filter((e) => e.status === "Closed").length,
+        overdue: typeExceptions.filter((e) => e.status === "Overdue").length,
       };
     });
 

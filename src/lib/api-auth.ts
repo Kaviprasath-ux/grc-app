@@ -186,9 +186,20 @@ export function withAuthOnly<T extends { params?: Promise<unknown> }>(
  *   }
  * });
  */
-export function getTenantFilter(session: AuthenticatedRequest['user']): { customerAccountId?: string } {
-  // GRCAdministrators can see all data across all customers
+export function getTenantFilter(session: AuthenticatedRequest['user'], options?: { globalAccess?: boolean }): { customerAccountId?: string } {
+  // GRCAdministrators:
+  // - If globalAccess option is true, return empty filter (see all data)
+  // - Otherwise, filter by their own customerAccountId for data isolation
   if (session.roles.includes('GRCAdministrator')) {
+    // Allow global access for specific use cases (e.g., customer management pages)
+    if (options?.globalAccess) {
+      return {};
+    }
+    // GRC Admin data isolation: filter by their own customerAccountId
+    if (session.customerAccountId) {
+      return { customerAccountId: session.customerAccountId };
+    }
+    // Fallback: empty filter if no customerAccountId (legacy behavior)
     return {};
   }
 
