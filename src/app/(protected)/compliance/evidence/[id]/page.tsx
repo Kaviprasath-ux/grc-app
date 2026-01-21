@@ -143,6 +143,22 @@ const statusColors: Record<string, string> = {
 const recurrenceOptions = ["Yearly", "Half-yearly", "Quarterly", "Monthly"];
 const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec"];
 
+// Helper function to get period labels based on recurrence value
+const getPeriodsForRecurrence = (recurrence: string | null): string[] => {
+  switch (recurrence) {
+    case "Monthly":
+      return ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    case "Quarterly":
+      return ["Jan–Mar", "Apr–Jun", "Jul–Sep", "Oct–Dec"];
+    case "Half-yearly":
+      return ["Jan–Jun", "Jul–Dec"];
+    case "Yearly":
+      return ["Jan–Dec"];
+    default:
+      return ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  }
+};
+
 export default function EvidenceDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -150,6 +166,7 @@ export default function EvidenceDetailPage() {
   const id = params.id as string;
 
   const isGRCAdmin = session?.user?.roles?.includes("GRCAdministrator");
+  const isCustomerAdmin = session?.user?.roles?.includes("CustomerAdministrator");
 
   const [evidence, setEvidence] = useState<Evidence | null>(null);
   const [loading, setLoading] = useState(true);
@@ -1120,18 +1137,18 @@ export default function EvidenceDetailPage() {
               </div>
             </CardHeader>
             <CardContent>
-              {/* Month Buttons */}
+              {/* Period Buttons - Dynamic based on recurrence for Customer Admin */}
               <div className="flex flex-wrap gap-2 mb-4">
-                {months.map((month) => (
+                {(isCustomerAdmin ? getPeriodsForRecurrence(evidence.recurrence) : months).map((period) => (
                   <Button
-                    key={month}
-                    variant={selectedMonth === month ? "default" : "outline"}
+                    key={period}
+                    variant={selectedMonth === period ? "default" : "outline"}
                     size="sm"
-                    onClick={() => setSelectedMonth(selectedMonth === month ? null : month)}
+                    onClick={() => setSelectedMonth(selectedMonth === period ? null : period)}
                     className="text-xs"
                   >
                     <FileText className="h-3 w-3 mr-1" />
-                    {month}
+                    {period}
                   </Button>
                 ))}
               </div>
