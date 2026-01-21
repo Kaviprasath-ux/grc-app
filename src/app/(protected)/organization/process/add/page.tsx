@@ -15,6 +15,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useSession } from "next-auth/react";
+import { useUserRoles } from "@/hooks/usePermissions";
 
 interface Department {
   id: string;
@@ -41,6 +43,13 @@ const steps = [
 export default function AddProcessPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { data: session } = useSession();
+  const userRoles = useUserRoles();
+
+  // Check if user is DepartmentContributor - they can only add processes in their department
+  const isDepartmentContributor = userRoles.some((role) => role === "DepartmentContributor");
+  const userDepartmentId = session?.user?.departmentId;
+
   const [currentStep, setCurrentStep] = useState(1);
   const [saving, setSaving] = useState(false);
 
@@ -85,6 +94,13 @@ export default function AddProcessPage() {
     };
     fetchData();
   }, []);
+
+  // Auto-select department for DepartmentContributor
+  useEffect(() => {
+    if (isDepartmentContributor && userDepartmentId && !formData.departmentId) {
+      setFormData((prev) => ({ ...prev, departmentId: userDepartmentId }));
+    }
+  }, [isDepartmentContributor, userDepartmentId, formData.departmentId]);
 
   const handleSave = async () => {
     if (!formData.processCode.trim() || !formData.name.trim()) {
@@ -208,6 +224,7 @@ export default function AddProcessPage() {
                 <Select
                   value={formData.departmentId}
                   onValueChange={(value) => setFormData({ ...formData, departmentId: value })}
+                  disabled={isDepartmentContributor}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select Department" />

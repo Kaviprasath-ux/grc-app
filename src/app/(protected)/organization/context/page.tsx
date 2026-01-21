@@ -3464,38 +3464,42 @@ export default function ContextPage() {
                   </div>
                   <p className="text-sm mb-2">{action.description}</p>
 
-                  {/* File Upload Dropzone */}
-                  <div className="space-y-2 mb-2">
-                    <div
-                      className={`border-2 border-dashed rounded-lg p-3 text-center cursor-pointer transition-colors ${
-                        isDraggingViewActionFile === action.id ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50"
-                      } ${uploadingActionId === action.id ? "opacity-50 pointer-events-none" : ""}`}
-                      onDragOver={(e) => handleViewActionFileDragOver(e, action.id)}
-                      onDragLeave={handleViewActionFileDragLeave}
-                      onDrop={(e) => handleViewActionFileDrop(e, action)}
-                      onClick={() => {
-                        if (viewActionFileInputRef.current) {
-                          viewActionFileInputRef.current.setAttribute("data-action-id", action.id);
-                          viewActionFileInputRef.current.setAttribute("data-issue-id", action.issueId);
-                          viewActionFileInputRef.current.click();
-                        }
-                      }}
-                    >
-                      {uploadingActionId === action.id ? (
-                        <div className="flex items-center justify-center gap-2 py-1">
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-                          <span className="text-sm text-muted-foreground">Uploading...</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-center gap-2 py-1">
-                          <Upload className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm text-muted-foreground">Drop file here or click to upload</span>
-                        </div>
-                      )}
+                  {/* File Upload Dropzone - Only show when action is NOT resolved */}
+                  {action.status !== "Resolved" && (
+                    <div className="space-y-2 mb-2">
+                      <div
+                        className={`border-2 border-dashed rounded-lg p-3 text-center cursor-pointer transition-colors ${
+                          isDraggingViewActionFile === action.id ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50"
+                        } ${uploadingActionId === action.id ? "opacity-50 pointer-events-none" : ""}`}
+                        onDragOver={(e) => handleViewActionFileDragOver(e, action.id)}
+                        onDragLeave={handleViewActionFileDragLeave}
+                        onDrop={(e) => handleViewActionFileDrop(e, action)}
+                        onClick={() => {
+                          if (viewActionFileInputRef.current) {
+                            viewActionFileInputRef.current.setAttribute("data-action-id", action.id);
+                            viewActionFileInputRef.current.setAttribute("data-issue-id", action.issueId);
+                            viewActionFileInputRef.current.click();
+                          }
+                        }}
+                      >
+                        {uploadingActionId === action.id ? (
+                          <div className="flex items-center justify-center gap-2 py-1">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                            <span className="text-sm text-muted-foreground">Uploading...</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-center gap-2 py-1">
+                            <Upload className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm text-muted-foreground">Drop file here or click to upload</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
+                  )}
 
-                    {/* File List */}
-                    {action.fileName && action.filePath && (
+                  {/* File Display Section */}
+                  {action.fileName && action.filePath && (
+                    <div className="space-y-2 mb-2">
                       <div className="flex items-center justify-between p-2 bg-muted rounded-lg">
                         <div className="flex items-center gap-2">
                           {action.fileType?.match(/^(jpg|jpeg|png|gif|bmp|webp)$/i) ? (
@@ -3533,20 +3537,23 @@ export default function ContextPage() {
                               <Download className="h-4 w-4" />
                             </a>
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteActionFile(action)}
-                            disabled={uploadingActionId === action.id}
-                            title="Delete"
-                            className="text-red-500 hover:text-red-700"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          {/* Delete button - Only show when action is NOT resolved */}
+                          {action.status !== "Resolved" && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteActionFile(action)}
+                              disabled={uploadingActionId === action.id}
+                              title="Delete"
+                              className="text-red-500 hover:text-red-700"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
 
                   <div className="flex justify-between text-xs text-muted-foreground">
                     <span>By: {action.createdBy.fullName}</span>

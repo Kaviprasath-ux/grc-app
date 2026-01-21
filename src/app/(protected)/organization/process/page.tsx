@@ -110,8 +110,13 @@ export default function ProcessPage() {
 
   // Check if user is DepartmentReviewer (needs to see assigned processes and approve)
   const isDepartmentReviewer = userRoles.some((role) => role === "DepartmentReviewer");
-  // Check if user is DepartmentContributor (view-only for Repository, full actions for BIA)
+  // Check if user is DepartmentContributor (can add processes with their department pre-selected)
   const isDepartmentContributor = userRoles.some((role) => role === "DepartmentContributor");
+  // Check if user has roles that can add new processes
+  const isCustomerAdministrator = userRoles.some((role) => role === "CustomerAdministrator");
+  const isContributor = userRoles.some((role) => role === "Contributor");
+  // Only these roles can add new processes
+  const canAddProcess = isCustomerAdministrator || isContributor || isDepartmentContributor;
   const userDepartmentId = session?.user?.departmentId;
 
   const [activeTab, setActiveTab] = useState("repository");
@@ -583,7 +588,7 @@ export default function ProcessPage() {
                 <Download className="h-4 w-4 mr-2" />
                 Export
               </Button>
-              {!isDepartmentContributor && (
+              {canAddProcess && (
                 <Button onClick={() => router.push("/organization/process/add")}>
                   <Plus className="h-4 w-4 mr-2" />
                   Add New
