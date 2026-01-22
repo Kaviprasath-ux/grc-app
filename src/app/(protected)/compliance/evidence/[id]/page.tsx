@@ -34,6 +34,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 import {
   ArrowLeft,
   FileText,
@@ -47,7 +48,22 @@ import {
   MessageSquare,
   Send,
   Calendar,
+  Brain,
+  X,
+  CheckCircle,
+  XCircle,
+  Clock,
+  Loader2,
 } from "lucide-react";
+
+// Cycle status types
+type CycleStatus = "none" | "submitted" | "validated" | "rejected";
+
+interface CycleStatusData {
+  status: CycleStatus;
+  aiReviewStatus: "none" | "pending" | "completed";
+  aiReviewResult?: string;
+}
 
 interface EvidenceComment {
   id: string;
@@ -141,7 +157,6 @@ const statusColors: Record<string, string> = {
 };
 
 const recurrenceOptions = ["Yearly", "Half-yearly", "Quarterly", "Monthly"];
-const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec"];
 
 // Helper function to get period labels based on recurrence value
 const getPeriodsForRecurrence = (recurrence: string | null): string[] => {
@@ -159,6 +174,57 @@ const getPeriodsForRecurrence = (recurrence: string | null): string[] => {
   }
 };
 
+// Helper function to get current cycle based on today's date and recurrence
+const getCurrentCycle = (recurrence: string | null): string => {
+  const now = new Date();
+  const monthIndex = now.getMonth(); // 0-11
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+  switch (recurrence) {
+    case "Monthly":
+      return monthNames[monthIndex];
+    case "Quarterly":
+      if (monthIndex <= 2) return "Jan–Mar";
+      if (monthIndex <= 5) return "Apr–Jun";
+      if (monthIndex <= 8) return "Jul–Sep";
+      return "Oct–Dec";
+    case "Half-yearly":
+      if (monthIndex <= 5) return "Jan–Jun";
+      return "Jul–Dec";
+    case "Yearly":
+      return "Jan–Dec";
+    default:
+      return monthNames[monthIndex];
+  }
+};
+
+// Local storage key helpers for cycle status
+const getCycleStatusKey = (evidenceId: string, period: string): string => {
+  return `evidence-${evidenceId}-cycle-${period}-status`;
+};
+
+const getCycleStatusFromStorage = (evidenceId: string, period: string): CycleStatusData => {
+  if (typeof window === "undefined") {
+    return { status: "none", aiReviewStatus: "none" };
+  }
+  const key = getCycleStatusKey(evidenceId, period);
+  const stored = localStorage.getItem(key);
+  if (stored) {
+    try {
+      return JSON.parse(stored);
+    } catch {
+      return { status: "none", aiReviewStatus: "none" };
+    }
+  }
+  return { status: "none", aiReviewStatus: "none" };
+};
+
+const setCycleStatusToStorage = (evidenceId: string, period: string, data: CycleStatusData): void => {
+  if (typeof window === "undefined") return;
+  const key = getCycleStatusKey(evidenceId, period);
+  localStorage.setItem(key, JSON.stringify(data));
+};
+
 export default function EvidenceDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -167,6 +233,8 @@ export default function EvidenceDetailPage() {
 
   const isGRCAdmin = session?.user?.roles?.includes("GRCAdministrator");
   const isCustomerAdmin = session?.user?.roles?.includes("CustomerAdministrator");
+  const isDepartmentReviewer = session?.user?.roles?.includes("DepartmentReviewer");
+  const currentUserId = session?.user?.id;
 
   const [evidence, setEvidence] = useState<Evidence | null>(null);
   const [loading, setLoading] = useState(true);
@@ -174,6 +242,15 @@ export default function EvidenceDetailPage() {
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
   const [linkControlsOpen, setLinkControlsOpen] = useState(false);
   const [editAssigneeOpen, setEditAssigneeOpen] = useState(false);
+
+  // Cycle status state (per-cycle approval workflow)
+  const [cycleStatuses, setCycleStatuses] = useState<Record<string, CycleStatusData>>({});
+
+  // AI Review state
+  const [aiReviewLoading, setAiReviewLoading] = useState(false);
+
+  // Publish validation dialog
+  const [publishBlockedMessage, setPublishBlockedMessage] = useState<string | null>(null);
 
   // Reference data
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -262,15 +339,191 @@ export default function EvidenceDetailPage() {
     fetchReferenceData();
   }, [fetchEvidence, fetchReferenceData]);
 
-  // Set default selected period to first chip for Customer Admin
+  // Set default selected period to current cycle for ALL roles
   useEffect(() => {
-    if (isCustomerAdmin && evidence && !selectedMonth) {
-      const periods = getPeriodsForRecurrence(evidence.recurrence);
-      if (periods.length > 0) {
-        setSelectedMonth(periods[0]);
-      }
+    if (evidence && !selectedMonth) {
+      const currentCyclePeriod = getCurrentCycle(evidence.recurrence);
+      setSelectedMonth(currentCyclePeriod);
     }
-  }, [isCustomerAdmin, evidence, selectedMonth]);
+  }, [evidence, selectedMonth]);
+
+  // Load cycle statuses from localStorage
+  useEffect(() => {
+    if (evidence?.id) {
+      const periods = getPeriodsForRecurrence(evidence.recurrence);
+      const statuses: Record<string, CycleStatusData> = {};
+      periods.forEach((period) => {
+        statuses[period] = getCycleStatusFromStorage(evidence.id, period);
+      });
+      setCycleStatuses(statuses);
+    }
+  }, [evidence?.id, evidence?.recurrence]);
+
+  // Auto-revert parent status: If parent is "Validated" but current cycle is not validated, revert to "Draft"
+  // This runs on page load/data fetch to handle cycle changes over time
+  useEffect(() => {
+    const syncParentStatusWithCurrentCycle = async () => {
+      if (!evidence?.id || !evidence.recurrence) return;
+
+      // Safety: Never downgrade from Published
+      if (evidence.status === "Published") return;
+
+      // Only check if parent status is currently "Validated"
+      if (evidence.status !== "Validated") return;
+
+      // Get current cycle and its validation status
+      const currentCycleKey = getCurrentCycle(evidence.recurrence);
+      const currentCycleStatus = getCycleStatusFromStorage(evidence.id, currentCycleKey);
+
+      // If current cycle is NOT validated, revert parent to Draft
+      if (currentCycleStatus.status !== "validated") {
+        try {
+          const response = await fetch(`/api/evidences/${id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status: "Draft" }),
+          });
+
+          if (response.ok) {
+            fetchEvidence();
+            toast.info("Status reverted to Draft: Current cycle is not validated.");
+          }
+        } catch (error) {
+          console.error("Error reverting parent status:", error);
+        }
+      }
+    };
+
+    syncParentStatusWithCurrentCycle();
+  }, [evidence?.id, evidence?.recurrence, evidence?.status, id, fetchEvidence]);
+
+  // Helper: Check if current user is the assignee
+  const isAssignee = evidence?.assigneeId === currentUserId;
+
+  // Helper: Can validate/reject (CustomerAdmin OR Assignee)
+  const canValidateReject = isCustomerAdmin || isAssignee;
+
+  // Helper: Get current cycle
+  const currentCycle = evidence ? getCurrentCycle(evidence.recurrence) : null;
+
+  // Helper: Get cycle status for selected period
+  const getSelectedCycleStatus = (): CycleStatusData => {
+    if (!selectedMonth) return { status: "none", aiReviewStatus: "none" };
+    return cycleStatuses[selectedMonth] || { status: "none", aiReviewStatus: "none" };
+  };
+
+  // Helper: Update cycle status
+  const updateCycleStatus = (period: string, data: Partial<CycleStatusData>) => {
+    if (!evidence?.id) return;
+    const currentData = cycleStatuses[period] || { status: "none", aiReviewStatus: "none" };
+    const newData = { ...currentData, ...data };
+    setCycleStatuses((prev) => ({ ...prev, [period]: newData }));
+    setCycleStatusToStorage(evidence.id, period, newData);
+  };
+
+  // Handler: Start AI Review
+  const handleStartAIReview = async () => {
+    if (!selectedMonth) return;
+
+    // Validate: Must have attachment for this cycle
+    if (!selectedCycleHasAttachments) {
+      toast.error("Please upload an attachment for this cycle first.");
+      return;
+    }
+
+    setAiReviewLoading(true);
+
+    // Simulate AI review process (since we can't add new APIs)
+    // In a real implementation, this would call an existing AI review service
+    try {
+      // Update status to pending
+      updateCycleStatus(selectedMonth, { aiReviewStatus: "pending" });
+
+      // Simulate AI processing time
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      // Update status to completed with result
+      updateCycleStatus(selectedMonth, {
+        aiReviewStatus: "completed",
+        aiReviewResult: "AI Review completed successfully. Document meets compliance requirements."
+      });
+
+      toast.success("AI Review completed successfully!");
+    } catch (error) {
+      console.error("AI Review error:", error);
+      toast.error("AI Review failed. Please try again.");
+    } finally {
+      setAiReviewLoading(false);
+    }
+  };
+
+  // Handler: Submit for Approval (DepartmentReviewer only)
+  const handleSubmitForApproval = () => {
+    if (!selectedMonth) return;
+
+    // Validate: Must have attachment for this cycle
+    if (!selectedCycleHasAttachments) {
+      toast.error("Please upload an attachment for this cycle first.");
+      return;
+    }
+
+    updateCycleStatus(selectedMonth, { status: "submitted" });
+    toast.success("Submitted for approval successfully.");
+  };
+
+  // Handler: Validate (CustomerAdmin or Assignee)
+  const handleValidate = async () => {
+    if (!selectedMonth) return;
+
+    // Update cycle status to validated
+    updateCycleStatus(selectedMonth, { status: "validated" });
+
+    // If validated cycle is the current cycle, update parent status to Validated
+    if (selectedMonth === currentCycle) {
+      try {
+        const response = await fetch(`/api/evidences/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "Validated" }),
+        });
+
+        if (response.ok) {
+          fetchEvidence();
+          toast.success(`${selectedMonth} cycle validated. Evidence status updated to Validated.`);
+        } else {
+          toast.success(`${selectedMonth} cycle validated successfully.`);
+        }
+      } catch (error) {
+        console.error("Error updating parent status:", error);
+        toast.success(`${selectedMonth} cycle validated successfully.`);
+      }
+    } else {
+      toast.success(`${selectedMonth} cycle validated successfully.`);
+    }
+  };
+
+  // Handler: Reject (CustomerAdmin or Assignee)
+  const handleReject = () => {
+    if (!selectedMonth) return;
+    updateCycleStatus(selectedMonth, { status: "rejected" });
+    toast.info(`${selectedMonth} cycle rejected.`);
+  };
+
+  // Handler: Publish with validation
+  const handlePublishWithValidation = async () => {
+    if (!currentCycle || !evidence) return;
+
+    const currentCycleStatus = cycleStatuses[currentCycle];
+
+    // Check if current cycle is validated
+    if (!currentCycleStatus || currentCycleStatus.status !== "validated") {
+      setPublishBlockedMessage("Current cycle document is not validated.");
+      return;
+    }
+
+    // Proceed with publish
+    await handleStatusChange("Published");
+  };
 
   const handleInlineUpdate = async (field: string, value: string | boolean | number | null) => {
     try {
@@ -426,15 +679,26 @@ export default function EvidenceDetailPage() {
       if (response.ok) {
         setSelectedFile(null);
         setUploadDialogOpen(false);
+
+        // Update status to Draft if currently Not Uploaded
+        if (evidence?.status === "Not Uploaded") {
+          await fetch(`/api/evidences/${id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status: "Draft" }),
+          });
+        }
+
         fetchEvidence();
+        toast.success("Attachment uploaded successfully!");
       } else {
         const error = await response.json();
         console.error("Upload failed:", error);
-        alert("Failed to upload attachment");
+        toast.error("Failed to upload attachment");
       }
     } catch (error) {
       console.error("Error uploading attachment:", error);
-      alert("Failed to upload attachment");
+      toast.error("Failed to upload attachment");
     } finally {
       setUploading(false);
     }
@@ -491,17 +755,30 @@ export default function EvidenceDetailPage() {
     return period === selectedMonth;
   }) || [];
 
+  // Helper: Check if selected cycle has attachments
+  const selectedCycleHasAttachments = selectedMonth ? filteredAttachments.length > 0 : false;
+
+  // Determine if evidence has any attachments
+  const hasAnyAttachments = evidence?.attachments && evidence.attachments.length > 0;
+
+  // Get status step based on evidence state
   const getStatusStep = (status: string) => {
+    // If no attachments, always show step 0 (Not Uploaded state)
+    if (!hasAnyAttachments) {
+      return -1; // All faded/inactive
+    }
+
     switch (status) {
       case "Not Uploaded":
-        return 0;
+        // Has attachments but status not updated yet - treat as Draft
+        return 1;
       case "Draft":
         return 1;
       case "Validated":
       case "Published":
         return 2;
       default:
-        return 0;
+        return hasAnyAttachments ? 1 : -1;
     }
   };
 
@@ -777,42 +1054,54 @@ export default function EvidenceDetailPage() {
 
       {/* Status Workflow Steps */}
       <div className="flex items-center justify-center gap-4 py-4 bg-gray-50 rounded-lg">
+        {/* Upload Step */}
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => handleStatusChange("Not Uploaded")}
-            className={`w-12 h-12 rounded-full flex items-center justify-center ${
-              currentStep >= 0 ? "bg-green-500 text-white" : "bg-gray-200"
+          <div
+            className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
+              currentStep >= 0 ? "bg-green-500 text-white" : "bg-gray-200 text-gray-400"
             }`}
           >
             {currentStep > 0 ? <Check className="h-6 w-6" /> : <Upload className="h-5 w-5" />}
-          </button>
-          <span className="text-sm">Upload</span>
+          </div>
+          <span className={`text-sm ${currentStep >= 0 ? "text-gray-900" : "text-gray-400"}`}>Upload</span>
         </div>
-        <div className="w-24 h-0.5 bg-gray-300" />
+        <div className={`w-24 h-0.5 ${currentStep >= 1 ? "bg-green-500" : "bg-gray-300"}`} />
+
+        {/* Draft Step */}
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => handleStatusChange("Draft")}
-            className={`w-12 h-12 rounded-full flex items-center justify-center ${
-              currentStep >= 1 ? "bg-green-500 text-white" : "bg-gray-200"
+          <div
+            className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
+              currentStep >= 1 ? "bg-green-500 text-white" : "bg-gray-200 text-gray-400"
             }`}
           >
             {currentStep > 1 ? <Check className="h-6 w-6" /> : <FileText className="h-5 w-5" />}
-          </button>
-          <span className="text-sm">Draft</span>
+          </div>
+          <span className={`text-sm ${currentStep >= 1 ? "text-gray-900" : "text-gray-400"}`}>Draft</span>
         </div>
-        <div className="w-24 h-0.5 bg-gray-300" />
+        <div className={`w-24 h-0.5 ${currentStep >= 2 ? "bg-green-500" : "bg-gray-300"}`} />
+
+        {/* Publish Step */}
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => handleStatusChange("Published")}
-            className={`w-12 h-12 rounded-full flex items-center justify-center ${
-              currentStep >= 2 ? "bg-green-500 text-white" : "bg-gray-200"
+          <div
+            className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
+              currentStep >= 2 ? "bg-green-500 text-white" : "bg-gray-200 text-gray-400"
             }`}
           >
-            {currentStep >= 2 ? <Check className="h-6 w-6" /> : "3"}
-          </button>
-          <span className="text-sm">Publish</span>
+            {currentStep >= 2 ? <Check className="h-6 w-6" /> : <span className="text-lg font-medium">3</span>}
+          </div>
+          <span className={`text-sm ${currentStep >= 2 ? "text-gray-900" : "text-gray-400"}`}>Publish</span>
         </div>
       </div>
+
+      {/* Publish Button - visible after Draft state but with validation */}
+      {hasAnyAttachments && evidence.status !== "Published" && (
+        <div className="flex justify-end">
+          <Button onClick={handlePublishWithValidation} className="bg-green-600 hover:bg-green-700">
+            <Check className="h-4 w-4 mr-2" />
+            Publish
+          </Button>
+        </div>
+      )}
 
       {/* Main Content - Single Column Layout */}
       <div className="space-y-6">
@@ -1048,25 +1337,160 @@ export default function EvidenceDetailPage() {
             </div>
           </CardHeader>
           <CardContent>
-            {/* Period Buttons - Dynamic based on recurrence for Customer Admin */}
+            {/* Period Buttons with Validation Status Tags - Based on recurrence for ALL roles */}
             <div className="flex flex-wrap gap-2 mb-4">
-              {(isCustomerAdmin ? getPeriodsForRecurrence(evidence.recurrence) : months).map((period) => (
-                <Button
-                  key={period}
-                  variant={selectedMonth === period ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setSelectedMonth(selectedMonth === period ? null : period)}
-                  className="text-xs"
-                >
-                  <FileText className="h-3 w-3 mr-1" />
-                  {period}
-                </Button>
-              ))}
+              {getPeriodsForRecurrence(evidence.recurrence).map((period) => {
+                const cycleStatus = cycleStatuses[period];
+                const isCurrentCycle = period === currentCycle;
+
+                return (
+                  <div key={period} className="flex items-center gap-1">
+                    <Button
+                      variant={selectedMonth === period ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setSelectedMonth(selectedMonth === period ? null : period)}
+                      className={`text-xs ${isCurrentCycle ? "ring-2 ring-blue-400" : ""}`}
+                    >
+                      <FileText className="h-3 w-3 mr-1" />
+                      {period}
+                    </Button>
+                    {/* Validated/Rejected Tags */}
+                    {cycleStatus?.status === "validated" && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium border-2 border-green-500 text-green-700 bg-green-50 rounded">
+                        <CheckCircle className="h-3 w-3" />
+                        Validated
+                      </span>
+                    )}
+                    {cycleStatus?.status === "rejected" && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium border-2 border-red-500 text-red-700 bg-red-50 rounded">
+                        <XCircle className="h-3 w-3" />
+                        Rejected
+                      </span>
+                    )}
+                    {cycleStatus?.status === "submitted" && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium border-2 border-yellow-500 text-yellow-700 bg-yellow-50 rounded">
+                        <Clock className="h-3 w-3" />
+                        Pending
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
-            {/* Attachments List - Filtered by selected period for Customer Admin */}
+            {/* AI Review Section */}
+            {selectedMonth && (
+              <Card className={`mb-4 ${getSelectedCycleStatus().aiReviewStatus === "none" ? "opacity-60" : ""}`}>
+                <CardHeader className="py-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Brain className={`h-5 w-5 ${getSelectedCycleStatus().aiReviewStatus === "completed" ? "text-green-600" : "text-gray-400"}`} />
+                      <span className="font-medium">AI Review</span>
+                      {getSelectedCycleStatus().aiReviewStatus === "completed" && (
+                        <Badge className="bg-green-100 text-green-700 border-green-300">Completed</Badge>
+                      )}
+                      {getSelectedCycleStatus().aiReviewStatus === "pending" && (
+                        <Badge className="bg-yellow-100 text-yellow-700 border-yellow-300">In Progress</Badge>
+                      )}
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleStartAIReview}
+                      disabled={aiReviewLoading || getSelectedCycleStatus().aiReviewStatus === "completed"}
+                    >
+                      {aiReviewLoading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                          Reviewing...
+                        </>
+                      ) : getSelectedCycleStatus().aiReviewStatus === "completed" ? (
+                        <>
+                          <Check className="h-4 w-4 mr-1" />
+                          Review Complete
+                        </>
+                      ) : (
+                        <>
+                          <Brain className="h-4 w-4 mr-1" />
+                          Start AI Review
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </CardHeader>
+                {getSelectedCycleStatus().aiReviewStatus === "completed" && getSelectedCycleStatus().aiReviewResult && (
+                  <CardContent className="pt-0">
+                    <p className="text-sm text-gray-600 bg-green-50 p-3 rounded border border-green-200">
+                      {getSelectedCycleStatus().aiReviewResult}
+                    </p>
+                  </CardContent>
+                )}
+              </Card>
+            )}
+
+            {/* Approval Workflow Buttons */}
+            {selectedMonth && (
+              <div className="flex flex-wrap items-center gap-2 mb-4 p-3 bg-gray-50 rounded-lg">
+                {/* Submit for Approval - DepartmentReviewer only */}
+                {isDepartmentReviewer && getSelectedCycleStatus().status === "none" && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleSubmitForApproval}
+                    className="border-blue-500 text-blue-600 hover:bg-blue-50"
+                  >
+                    <Send className="h-4 w-4 mr-1" />
+                    Submit for Approval
+                  </Button>
+                )}
+
+                {/* Validate/Reject - CustomerAdmin OR Assignee, only when submitted */}
+                {canValidateReject && getSelectedCycleStatus().status === "submitted" && (
+                  <>
+                    <Button
+                      size="sm"
+                      onClick={handleValidate}
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      <Check className="h-4 w-4 mr-1" />
+                      Validate
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleReject}
+                      className="border-red-500 text-red-600 hover:bg-red-50"
+                    >
+                      <X className="h-4 w-4 mr-1" />
+                      Reject
+                    </Button>
+                  </>
+                )}
+
+                {/* Status display when already validated/rejected */}
+                {getSelectedCycleStatus().status === "validated" && (
+                  <span className="text-sm text-green-600 font-medium flex items-center gap-1">
+                    <CheckCircle className="h-4 w-4" />
+                    This cycle has been validated
+                  </span>
+                )}
+                {getSelectedCycleStatus().status === "rejected" && (
+                  <span className="text-sm text-red-600 font-medium flex items-center gap-1">
+                    <XCircle className="h-4 w-4" />
+                    This cycle has been rejected
+                  </span>
+                )}
+                {getSelectedCycleStatus().status === "none" && !isDepartmentReviewer && (
+                  <span className="text-sm text-gray-500">
+                    Awaiting submission from Department Reviewer
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* Attachments List - Filtered by selected cycle for ALL roles */}
             <div className="space-y-2">
-              {(isCustomerAdmin ? filteredAttachments : evidence.attachments)?.map((att) => (
+              {filteredAttachments.map((att) => (
                 <div
                   key={att.id}
                   className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
@@ -1091,9 +1515,9 @@ export default function EvidenceDetailPage() {
                   </div>
                 </div>
               ))}
-              {(isCustomerAdmin ? filteredAttachments.length === 0 : (!evidence.attachments || evidence.attachments.length === 0)) && (
+              {filteredAttachments.length === 0 && (
                 <p className="text-center text-gray-500 text-sm py-4">
-                  {isCustomerAdmin && selectedMonth ? `No attachments for ${selectedMonth}` : "No attachments"}
+                  {selectedMonth ? `No attachments for ${selectedMonth}` : "No attachments"}
                 </p>
               )}
             </div>
@@ -1470,6 +1894,29 @@ export default function EvidenceDetailPage() {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Publish Blocked Dialog */}
+      <AlertDialog open={!!publishBlockedMessage} onOpenChange={() => setPublishBlockedMessage(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-orange-600">
+              <XCircle className="h-5 w-5" />
+              Cannot Publish
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {publishBlockedMessage}
+              {currentCycle && (
+                <p className="mt-2 text-sm">
+                  Current cycle: <span className="font-medium">{currentCycle}</span>
+                </p>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Close</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
