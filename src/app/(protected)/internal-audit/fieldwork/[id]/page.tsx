@@ -2720,11 +2720,12 @@ export default function FieldworkDetailsPage() {
                   <SelectValue placeholder="Select document type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Policy">Policy</SelectItem>
-                  <SelectItem value="Procedure">Procedure</SelectItem>
-                  <SelectItem value="Report">Report</SelectItem>
-                  <SelectItem value="Evidence">Evidence</SelectItem>
-                  <SelectItem value="Memo">Memo</SelectItem>
+                  <SelectItem value="Minutes of Meeting">Minutes of Meeting</SelectItem>
+                  <SelectItem value="Approval Document">Approval Document</SelectItem>
+                  <SelectItem value="Email Communication">Email Communication</SelectItem>
+                  <SelectItem value="Contract">Contract</SelectItem>
+                  <SelectItem value="Invoice">Invoice</SelectItem>
+                  <SelectItem value="Policy Document">Policy Document</SelectItem>
                   <SelectItem value="Other">Other</SelectItem>
                 </SelectContent>
               </Select>
@@ -3123,11 +3124,12 @@ export default function FieldworkDetailsPage() {
                     <SelectValue placeholder="Select document type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Policy">Policy</SelectItem>
-                    <SelectItem value="Procedure">Procedure</SelectItem>
-                    <SelectItem value="Report">Report</SelectItem>
-                    <SelectItem value="Evidence">Evidence</SelectItem>
-                    <SelectItem value="Memo">Memo</SelectItem>
+                    <SelectItem value="Minutes of Meeting">Minutes of Meeting</SelectItem>
+                    <SelectItem value="Approval Document">Approval Document</SelectItem>
+                    <SelectItem value="Email Communication">Email Communication</SelectItem>
+                    <SelectItem value="Contract">Contract</SelectItem>
+                    <SelectItem value="Invoice">Invoice</SelectItem>
+                    <SelectItem value="Policy Document">Policy Document</SelectItem>
                     <SelectItem value="Other">Other</SelectItem>
                   </SelectContent>
                 </Select>
