@@ -107,14 +107,41 @@ export const GET = withAuth(
 
       const capaStatusByDepartment = Object.values(departmentCAPAMap);
 
-      // Get annual audit plan for current year (with tenant filter)
+      // Get annual audit plan - determine the best year to show
       const currentYear = new Date().getFullYear();
-      const annualAuditPlan = await prisma.auditEngagement.findMany({
+
+      // First, check if there's data in the current year
+      let targetYear = currentYear;
+      const currentYearCount = await prisma.auditEngagement.count({
         where: {
           ...tenantFilter,
           OR: [
             { startDate: { gte: new Date(`${currentYear}-01-01`), lte: new Date(`${currentYear}-12-31`) } },
-            { endDate: { gte: new Date(`${currentYear}-01-01`), lte: new Date(`${currentYear}-12-31`) } }
+            { endDate: { gte: new Date(`${currentYear}-01-01`), lte: new Date(`${currentYear}-12-31`) } },
+            { year: currentYear }
+          ]
+        }
+      });
+
+      // If no data in current year, find the most recent year with data
+      if (currentYearCount === 0) {
+        const mostRecentEngagement = await prisma.auditEngagement.findFirst({
+          where: tenantFilter,
+          orderBy: { startDate: 'desc' },
+          select: { startDate: true, year: true }
+        });
+        if (mostRecentEngagement) {
+          targetYear = mostRecentEngagement.year || (mostRecentEngagement.startDate ? new Date(mostRecentEngagement.startDate).getFullYear() : currentYear);
+        }
+      }
+
+      const annualAuditPlan = await prisma.auditEngagement.findMany({
+        where: {
+          ...tenantFilter,
+          OR: [
+            { startDate: { gte: new Date(`${targetYear}-01-01`), lte: new Date(`${targetYear}-12-31`) } },
+            { endDate: { gte: new Date(`${targetYear}-01-01`), lte: new Date(`${targetYear}-12-31`) } },
+            { year: targetYear }
           ]
         },
         select: {
@@ -143,11 +170,15 @@ export const GET = withAuth(
         };
       });
 
-      // Get auditor schedule for current year (with tenant filter)
+      // Get auditor schedule for target year (with tenant filter)
       const engagementsWithAuditors = await prisma.auditEngagement.findMany({
         where: {
           ...tenantFilter,
-          year: currentYear,
+          OR: [
+            { year: targetYear },
+            { startDate: { gte: new Date(`${targetYear}-01-01`), lte: new Date(`${targetYear}-12-31`) } },
+            { endDate: { gte: new Date(`${targetYear}-01-01`), lte: new Date(`${targetYear}-12-31`) } }
+          ]
         },
         include: {
           assignedAuditor: {
@@ -328,7 +359,7 @@ export const GET = withAuth(
         capaStatusByDepartment,
         annualAuditPlan: auditPlanWithDuration,
         auditorSchedule,
-        currentYear,
+        currentYear: targetYear,
 
         // Auditee-specific stats
         stats: {
@@ -360,5 +391,5 @@ export const GET = withAuth(
       );
     }
   },
-  { resource: 'audit.fieldwork', action: 'view' }
+  { resource: 'audit.dashboard', action: 'view' }
 );
