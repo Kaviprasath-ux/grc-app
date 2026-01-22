@@ -330,7 +330,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'compliance.controls', actions: ['view', 'approve'], scope: 'department' },
     { resource: 'compliance.governance', actions: ['view', 'approve'], scope: 'department' },
     { resource: 'compliance.evidence', actions: ['view', 'approve'], scope: 'department' },
-    { resource: 'compliance.exceptions', actions: ['view', 'approve'], scope: 'department' },
+    { resource: 'compliance.exceptions', actions: ['view', 'edit', 'approve'], scope: 'department' },
     { resource: 'compliance.kpi', actions: ['view'], scope: 'department' },
     // Asset Management - My Inventory, Classification, Reports only (NO full Inventory, NO Settings)
     { resource: 'asset.dashboard', actions: ['view'], scope: 'department' },
