@@ -237,7 +237,8 @@ export const GET = withAuth(
           startDate: true,
           endDate: true,
           status: true,
-          department: { select: { name: true } }
+          department: { select: { name: true } },
+          assignedAuditor: { select: { id: true, fullName: true, firstName: true, lastName: true } }
         },
         orderBy: { startDate: 'asc' }
       });
@@ -252,8 +253,16 @@ export const GET = withAuth(
         const end = audit.endDate ? new Date(audit.endDate) : defaultEnd;
         const durationDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
 
+        // Get auditor name
+        const auditorName = audit.assignedAuditor
+          ? audit.assignedAuditor.fullName ||
+            `${audit.assignedAuditor.firstName || ''} ${audit.assignedAuditor.lastName || ''}`.trim() ||
+            null
+          : null;
+
         return {
           ...audit,
+          auditorName,
           durationDays: Math.max(durationDays, 30), // Minimum 30 days for visibility
           startMonth: start.getMonth(), // 0-11
           endMonth: end.getMonth()

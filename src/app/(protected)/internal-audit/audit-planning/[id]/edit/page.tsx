@@ -168,6 +168,8 @@ export default function EditEngagementPage({ params }: PageProps) {
 
       if (engagementRes.ok) {
         const engagement = await engagementRes.json();
+        console.log("Loaded engagement:", engagement);
+
         setFormData({
           engagementTitle: engagement.engagementTitle || "",
           engagementObjective: engagement.engagementObjective || "",
@@ -185,7 +187,9 @@ export default function EditEngagementPage({ params }: PageProps) {
         });
 
       } else {
-        toast.error("Failed to load engagement");
+        const errorData = await engagementRes.json();
+        console.error("Failed to load engagement:", errorData);
+        toast.error(errorData.error || "Failed to load engagement");
         router.push("/internal-audit/audit-planning");
       }
     } catch (error) {
@@ -298,6 +302,9 @@ export default function EditEngagementPage({ params }: PageProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    console.log("Form submission - formData:", formData);
+    console.log("Form submission - auditors available:", auditors.length);
 
     if (!formData.engagementTitle.trim()) {
       toast.error("Engagement Title is required");

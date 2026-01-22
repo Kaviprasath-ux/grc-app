@@ -2,17 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ChevronLeft, Loader2 } from "lucide-react";
 
 interface RiskItem {
   id: string;
   riskId: string;
   riskName: string;
-  riskLevel: string | null;
-  inherentScore: number | null;
-  residualScore: number | null;
+  riskLevel: string;
 }
 
 interface DepartmentData {
@@ -31,7 +28,6 @@ export default function RiskUniversePage() {
   const router = useRouter();
   const [data, setData] = useState<RiskUniverseData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [hoveredRisk, setHoveredRisk] = useState<RiskItem | null>(null);
 
   useEffect(() => {
     fetchRiskUniverse();
@@ -51,30 +47,35 @@ export default function RiskUniversePage() {
     }
   };
 
-  const getRiskLevelColor = (level: string | null) => {
-    switch (level?.toLowerCase()) {
-      case "extreme":
-        return "bg-red-500";
-      case "high":
-        return "bg-orange-500";
-      case "medium":
-        return "bg-yellow-500";
-      case "low":
-        return "bg-green-500";
+  const getRiskLevelStyles = (level: string) => {
+    switch (level) {
+      case "Extreme":
+        return "bg-red-600 text-white";
+      case "High":
+        return "bg-orange-500 text-white";
+      case "Medium":
+        return "bg-yellow-400 text-gray-900";
+      case "Low":
+        return "bg-green-500 text-white";
       default:
-        return "bg-gray-400";
+        return "bg-gray-400 text-white";
     }
   };
 
   if (loading) {
     return (
       <div className="p-6">
-        <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" size="sm" onClick={() => router.back()}>
-            <ArrowLeft className="h-4 w-4 mr-1" />
+        <div className="flex items-center gap-2 mb-6">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => router.back()}
+            className="text-blue-600 hover:text-blue-700 p-0"
+          >
+            <ChevronLeft className="h-5 w-5" />
             Back
           </Button>
-          <h1 className="text-2xl font-bold text-blue-900">Risk Universe</h1>
+          <h1 className="text-xl font-semibold text-blue-800">Risk Universe</h1>
         </div>
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
@@ -83,126 +84,116 @@ export default function RiskUniversePage() {
     );
   }
 
+  // Find the maximum number of risks in any department for grid alignment
+  const maxRisks = data?.departments.reduce(
+    (max, dept) => Math.max(max, dept.risks.length),
+    0
+  ) || 0;
+
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" onClick={() => router.back()}>
-          <ArrowLeft className="h-4 w-4 mr-1" />
+      <div className="flex items-center gap-2 mb-8">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => router.back()}
+          className="text-blue-600 hover:text-blue-700 p-0"
+        >
+          <ChevronLeft className="h-5 w-5" />
           Back
         </Button>
-        <h1 className="text-2xl font-bold text-blue-900">Risk Universe</h1>
+        <h1 className="text-xl font-semibold text-blue-800">Risk Universe</h1>
       </div>
 
-      <Card>
-        <CardContent className="pt-6">
-          <div className="relative overflow-x-auto">
-            {/* Root Node */}
-            <div className="flex justify-center mb-8">
-              <div className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold shadow-md">
-                Risk Universe
-              </div>
+      {/* Tree Structure */}
+      <div className="overflow-x-auto pb-8">
+        <div className="min-w-max">
+          {/* Root Node - Risk Universe */}
+          <div className="flex justify-center mb-4">
+            <div className="bg-blue-700 text-white px-6 py-3 rounded-lg font-medium shadow-md">
+              Risk Universe
             </div>
+          </div>
 
-            {/* Connection line from root */}
-            <div className="flex justify-center mb-4">
-              <div className="w-0.5 h-8 bg-gray-300"></div>
+          {/* Vertical line from root */}
+          <div className="flex justify-center">
+            <div className="w-px h-6 bg-gray-400"></div>
+          </div>
+
+          {/* Horizontal line connecting departments */}
+          {data?.departments && data.departments.length > 0 && (
+            <div className="flex justify-center">
+              <div
+                className="h-px bg-gray-400"
+                style={{
+                  width: `${(data.departments.length - 1) * 140 + 100}px`,
+                }}
+              ></div>
             </div>
+          )}
 
-            {/* Horizontal line connecting all departments */}
-            {data?.departments && data.departments.length > 0 && (
-              <div className="flex justify-center mb-4">
-                <div className="h-0.5 bg-gray-300" style={{ width: `${Math.min(data.departments.length * 150, 1200)}px` }}></div>
-              </div>
-            )}
+          {/* Departments and Risks Grid */}
+          {data?.departments && data.departments.length > 0 ? (
+            <div className="flex justify-center">
+              <div className="flex gap-2">
+                {data.departments.map((dept, deptIndex) => (
+                  <div
+                    key={dept.id}
+                    className="flex flex-col items-center"
+                    style={{ width: "130px" }}
+                  >
+                    {/* Vertical line to department */}
+                    <div className="w-px h-4 bg-gray-400"></div>
 
-            {/* Department branches */}
-            <div className="flex flex-wrap justify-center gap-4">
-              {data?.departments.map((dept) => (
-                <div key={dept.id} className="flex flex-col items-center">
-                  {/* Vertical line to department */}
-                  <div className="w-0.5 h-4 bg-gray-300"></div>
+                    {/* Department Box */}
+                    <div className="border border-gray-300 rounded px-3 py-2 bg-white mb-3 w-full text-center shadow-sm">
+                      <span className="text-sm font-medium text-gray-800 leading-tight block">
+                        {dept.name}
+                      </span>
+                    </div>
 
-                  {/* Department box */}
-                  <div className="border border-gray-300 rounded px-4 py-2 bg-white mb-4 min-w-[120px] text-center">
-                    <span className="text-sm font-medium">{dept.name}</span>
-                  </div>
-
-                  {/* Risk items */}
-                  <div className="flex flex-col items-center gap-2">
-                    {dept.risks.map((risk) => (
-                      <div key={risk.id} className="flex flex-col items-center relative">
-                        {/* Connection line */}
-                        <div className="w-0.5 h-3 bg-gray-300"></div>
-
-                        {/* Risk card */}
+                    {/* Risk Items Column */}
+                    <div className="flex flex-col gap-2 w-full">
+                      {dept.risks.map((risk) => (
                         <div
-                          className={`${getRiskLevelColor(risk.riskLevel)} text-white rounded px-3 py-2 min-w-[90px] text-center shadow cursor-pointer`}
-                          onMouseEnter={() => setHoveredRisk(risk)}
-                          onMouseLeave={() => setHoveredRisk(null)}
+                          key={risk.id}
+                          className={`${getRiskLevelStyles(
+                            risk.riskLevel
+                          )} rounded px-3 py-2 text-center shadow-sm cursor-pointer hover:opacity-90 transition-opacity`}
+                          title={risk.riskName}
+                          onClick={() =>
+                            router.push(`/internal-audit/risk-register`)
+                          }
                         >
-                          <div className="font-semibold text-sm">{risk.riskId}</div>
-                          {risk.riskLevel && (
-                            <div className="text-xs mt-1">{risk.riskLevel}</div>
-                          )}
-                        </div>
-
-                        {/* Tooltip on hover */}
-                        {hoveredRisk?.id === risk.id && (
-                          <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 z-50 bg-white border rounded-lg shadow-lg p-3 min-w-[200px]">
-                            <p className="font-semibold text-gray-800">{risk.riskName}</p>
-                            <p className="text-sm text-gray-600 mt-1">
-                              Risk Level: <span className="font-medium">{risk.riskLevel || "-"}</span>
-                            </p>
-                            <p className="text-sm text-gray-600">
-                              Risk Score: <span className="font-medium">{risk.residualScore || risk.inherentScore || "-"}</span>
-                            </p>
+                          <div className="font-semibold text-sm">
+                            {risk.riskId}
                           </div>
-                        )}
-                      </div>
-                    ))}
+                          <div className="text-xs mt-0.5">{risk.riskLevel}</div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Empty state */}
-            {(!data?.departments || data.departments.length === 0) && (
-              <div className="text-center py-12 text-gray-500">
-                <p>No risks in the universe yet</p>
-                <p className="text-sm mt-2">Risks will appear here once identified and assessed</p>
+                ))}
               </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Legend */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-medium">Risk Level Legend</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-6 flex-wrap">
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-red-500 rounded"></div>
-              <span className="text-sm">Extreme</span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-orange-500 rounded"></div>
-              <span className="text-sm">High</span>
+          ) : (
+            <div className="text-center py-12 text-gray-500">
+              <p>No risks in the risk register yet</p>
+              <p className="text-sm mt-2">
+                Add risks to the Risk Register to see them here
+              </p>
+              <Button
+                variant="outline"
+                className="mt-4"
+                onClick={() => router.push("/internal-audit/risk-register")}
+              >
+                Go to Risk Register
+              </Button>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-yellow-500 rounded"></div>
-              <span className="text-sm">Medium</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-green-500 rounded"></div>
-              <span className="text-sm">Low</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

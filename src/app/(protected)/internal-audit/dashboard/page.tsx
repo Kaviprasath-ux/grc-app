@@ -64,6 +64,7 @@ interface DashboardData {
     endDate: string | null;
     status: string;
     department: { name: string } | null;
+    auditorName: string | null;
     durationDays: number;
     startMonth: number;
     endMonth: number;
@@ -413,6 +414,7 @@ export default function InternalAuditDashboard() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="min-w-[200px]">Audit Name</TableHead>
+                  <TableHead className="min-w-[150px]">Auditor</TableHead>
                   {MONTHS.map((month) => (
                     <TableHead key={month} className="text-center min-w-[60px]">{month}</TableHead>
                   ))}
@@ -423,6 +425,7 @@ export default function InternalAuditDashboard() {
                   data.annualAuditPlan.map((audit) => (
                     <TableRow key={audit.id}>
                       <TableCell className="font-medium">{audit.engagementTitle || audit.auditId}</TableCell>
+                      <TableCell className="text-gray-700">{audit.auditorName || '-'}</TableCell>
                       {MONTHS.map((month, monthIndex) => {
                         const isInRange = monthIndex >= audit.startMonth && monthIndex <= audit.endMonth;
                         const isStart = monthIndex === audit.startMonth;
@@ -442,7 +445,7 @@ export default function InternalAuditDashboard() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={13} className="text-center py-8 text-gray-500">
+                    <TableCell colSpan={14} className="text-center py-8 text-gray-500">
                       No audit plans for this year
                     </TableCell>
                   </TableRow>

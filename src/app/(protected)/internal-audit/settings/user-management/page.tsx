@@ -61,10 +61,11 @@ interface Department {
   name: string;
 }
 
-// For Audit function, only show these three roles
+// For Audit function, show these audit roles
 const AUDIT_ROLES = [
   "AuditHead",
   "AuditManager",
+  "Auditor",
   "Auditee",
 ];
 
@@ -115,8 +116,9 @@ export default function UserManagementPage() {
 
   const fetchData = async () => {
     try {
+      // Use Internal Audit specific API for users
       const [usersRes, departmentsRes] = await Promise.all([
-        fetch("/api/users"),
+        fetch("/api/internal-audit/users"),
         fetch("/api/departments"),
       ]);
 
@@ -132,6 +134,8 @@ export default function UserManagementPage() {
           return max;
         }, 0);
         setNextUserId(`BA${String(maxId + 1).padStart(4, "0")}`);
+      } else {
+        console.error("Failed to fetch users:", await usersRes.text());
       }
 
       if (departmentsRes.ok) {
@@ -206,7 +210,8 @@ export default function UserManagementPage() {
 
     setChangingPassword(true);
     try {
-      const response = await fetch(`/api/users/${editItem.id}/change-password`, {
+      // Use Internal Audit specific API
+      const response = await fetch(`/api/internal-audit/users/${editItem.id}/change-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password: passwordForm.newPassword }),
@@ -244,7 +249,8 @@ export default function UserManagementPage() {
 
     setSaving(true);
     try {
-      const url = editItem ? `/api/users/${editItem.id}` : "/api/users";
+      // Use Internal Audit specific API
+      const url = editItem ? `/api/internal-audit/users/${editItem.id}` : "/api/internal-audit/users";
       const method = editItem ? "PUT" : "POST";
 
       const generatedUserName = formData.userName || nextUserId;
@@ -300,15 +306,20 @@ export default function UserManagementPage() {
     if (!itemToDelete) return;
 
     try {
-      const response = await fetch(`/api/users/${itemToDelete.id}`, {
+      // Use Internal Audit specific API
+      const response = await fetch(`/api/internal-audit/users/${itemToDelete.id}`, {
         method: "DELETE",
       });
 
       if (response.ok) {
         fetchData();
+        toast({ title: "Success", description: "User deleted successfully!" });
+      } else {
+        toast({ title: "Error", description: "Failed to delete user", variant: "destructive" });
       }
     } catch (error) {
       console.error("Failed to delete:", error);
+      toast({ title: "Error", description: "Failed to delete user", variant: "destructive" });
     } finally {
       setDeleteDialogOpen(false);
       setItemToDelete(null);

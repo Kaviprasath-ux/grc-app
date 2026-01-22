@@ -68,12 +68,11 @@ export default function EscalationConfigPage() {
       });
 
       if (response.ok) {
-        const updated = await response.json();
-        setConfig(updated);
         toast({
           title: "Success",
           description: "Escalation configuration saved successfully.",
         });
+        router.push("/internal-audit/settings");
       }
     } catch (error) {
       console.error("Failed to save:", error);

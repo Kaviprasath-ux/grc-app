@@ -184,6 +184,8 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'risk.settings', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
     { resource: 'risk.reports', actions: ['view'], scope: 'all' },
     { resource: 'audit.risk-register', actions: ['view'], scope: 'all' },
+    // CustomerAdmin can view the settings page but NOT access internal pages (User Management, etc.)
+    // Only AuditHead has full access to audit.settings internal pages
     { resource: 'audit.settings', actions: ['view'], scope: 'all' },
   ],
 

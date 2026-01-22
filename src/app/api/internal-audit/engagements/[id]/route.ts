@@ -1,25 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { withAuth } from '@/lib/api-auth';
+import { withAuth, getTenantFilter } from '@/lib/api-auth';
 
 // GET /api/internal-audit/engagements/[id] - Get a single engagement
 // Uses audit.fieldwork:view to allow auditees to view engagement details
 export const GET = withAuth(
-  async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+  async (req: NextRequest, { params }: { params: Promise<{ id: string }> }, session) => {
     try {
       const { id } = await params;
+      const tenantFilter = getTenantFilter(session);
 
-      const engagement = await prisma.auditEngagement.findUnique({
-        where: { id },
+      const engagement = await prisma.auditEngagement.findFirst({
+        where: { id, ...tenantFilter },
         include: {
           department: {
             select: { id: true, name: true }
           },
           assignedAuditor: {
-            select: { id: true, firstName: true, lastName: true }
+            select: { id: true, firstName: true, lastName: true, fullName: true }
           },
           auditee: {
-            select: { id: true, firstName: true, lastName: true }
+            select: { id: true, firstName: true, lastName: true, fullName: true }
           },
         }
       });
@@ -45,10 +46,27 @@ export const GET = withAuth(
 
 // PUT /api/internal-audit/engagements/[id] - Update an engagement
 export const PUT = withAuth(
-  async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+  async (req: NextRequest, { params }: { params: Promise<{ id: string }> }, session) => {
     try {
       const { id } = await params;
       const body = await req.json();
+      const tenantFilter = getTenantFilter(session);
+
+      console.log('PUT engagement - id:', id, 'tenantFilter:', tenantFilter, 'body:', JSON.stringify(body, null, 2));
+
+      // Verify engagement exists and belongs to tenant
+      const existingEngagement = await prisma.auditEngagement.findFirst({
+        where: { id, ...tenantFilter },
+      });
+
+      console.log('PUT engagement - existingEngagement:', existingEngagement ? 'found' : 'not found');
+
+      if (!existingEngagement) {
+        return NextResponse.json(
+          { error: 'Engagement not found' },
+          { status: 404 }
+        );
+      }
 
       const {
         engagementTitle,
@@ -94,10 +112,10 @@ export const PUT = withAuth(
             select: { id: true, name: true }
           },
           assignedAuditor: {
-            select: { id: true, firstName: true, lastName: true }
+            select: { id: true, firstName: true, lastName: true, fullName: true }
           },
           auditee: {
-            select: { id: true, firstName: true, lastName: true }
+            select: { id: true, firstName: true, lastName: true, fullName: true }
           }
         }
       });
@@ -116,10 +134,23 @@ export const PUT = withAuth(
 
 // PATCH /api/internal-audit/engagements/[id] - Partial update an engagement (e.g., status change)
 export const PATCH = withAuth(
-  async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+  async (req: NextRequest, { params }: { params: Promise<{ id: string }> }, session) => {
     try {
       const { id } = await params;
       const body = await req.json();
+      const tenantFilter = getTenantFilter(session);
+
+      // Verify engagement exists and belongs to tenant
+      const existingEngagement = await prisma.auditEngagement.findFirst({
+        where: { id, ...tenantFilter },
+      });
+
+      if (!existingEngagement) {
+        return NextResponse.json(
+          { error: 'Engagement not found' },
+          { status: 404 }
+        );
+      }
 
       // Only allow specific fields to be updated via PATCH
       const updateData: Record<string, unknown> = {};
@@ -160,9 +191,22 @@ export const PATCH = withAuth(
 
 // DELETE /api/internal-audit/engagements/[id] - Delete an engagement
 export const DELETE = withAuth(
-  async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+  async (req: NextRequest, { params }: { params: Promise<{ id: string }> }, session) => {
     try {
       const { id } = await params;
+      const tenantFilter = getTenantFilter(session);
+
+      // Verify engagement exists and belongs to tenant
+      const existingEngagement = await prisma.auditEngagement.findFirst({
+        where: { id, ...tenantFilter },
+      });
+
+      if (!existingEngagement) {
+        return NextResponse.json(
+          { error: 'Engagement not found' },
+          { status: 404 }
+        );
+      }
 
       await prisma.auditEngagement.delete({
         where: { id }

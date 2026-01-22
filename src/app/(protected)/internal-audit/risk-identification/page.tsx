@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -12,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Sparkles, Send } from "lucide-react";
+import { Loader2, Send, Check } from "lucide-react";
 import { toast } from "sonner";
 
 interface Department {
@@ -20,11 +21,11 @@ interface Department {
   name: string;
 }
 
-interface RecentSearch {
+interface SuggestedRisk {
   id: string;
-  query: string;
-  timestamp: Date;
-  result?: string;
+  description: string;
+  severity: "High" | "Medium" | "Low";
+  category?: string;
 }
 
 export default function RiskIdentificationPage() {
@@ -34,15 +35,12 @@ export default function RiskIdentificationPage() {
   const [auditFocus, setAuditFocus] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
-  const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
+  const [suggestedRisks, setSuggestedRisks] = useState<SuggestedRisk[]>([]);
+  const [addedRisks, setAddedRisks] = useState<Set<string>>(new Set());
+  const [addingRisk, setAddingRisk] = useState<string | null>(null);
 
   useEffect(() => {
     fetchDepartments();
-    // Load recent searches from localStorage
-    const saved = localStorage.getItem("riskIdentificationSearches");
-    if (saved) {
-      setRecentSearches(JSON.parse(saved));
-    }
   }, []);
 
   const fetchDepartments = async () => {
@@ -66,23 +64,61 @@ export default function RiskIdentificationPage() {
     }
 
     setLoading(true);
+    setSuggestedRisks([]);
+    setAddedRisks(new Set());
+
     try {
       // Simulate AI risk suggestion (in a real app, this would call an AI API)
       await new Promise(resolve => setTimeout(resolve, 2000));
 
       const deptName = departments.find(d => d.id === selectedDepartment)?.name || "Unknown";
-      const newSearch: RecentSearch = {
-        id: Date.now().toString(),
-        query: `${deptName}${auditFocus ? ` - ${auditFocus}` : ""}`,
-        timestamp: new Date(),
-        result: `AI analysis for ${deptName}. Based on industry standards and common risk patterns, suggested risks include: compliance risk, operational risk, and strategic risk.`
-      };
 
-      const updatedSearches = [newSearch, ...recentSearches].slice(0, 10);
-      setRecentSearches(updatedSearches);
-      localStorage.setItem("riskIdentificationSearches", JSON.stringify(updatedSearches));
+      // Generate AI-suggested risks based on department
+      const aiSuggestedRisks: SuggestedRisk[] = [
+        {
+          id: `risk-${Date.now()}-1`,
+          description: `Inadequate access controls for ${deptName} systems may lead to unauthorized data access or modification, potentially resulting in data breaches or compliance violations.`,
+          severity: "High",
+          category: "Information Security"
+        },
+        {
+          id: `risk-${Date.now()}-2`,
+          description: `Insufficient documentation of ${deptName} processes and procedures could result in operational inconsistencies, knowledge gaps during staff turnover, and audit findings.`,
+          severity: "Medium",
+          category: "Operational"
+        },
+        {
+          id: `risk-${Date.now()}-3`,
+          description: `Lack of regular compliance monitoring in ${deptName} may result in regulatory non-compliance and potential penalties or legal issues.`,
+          severity: "High",
+          category: "Compliance"
+        },
+        {
+          id: `risk-${Date.now()}-4`,
+          description: `Inadequate segregation of duties within ${deptName} could lead to fraud, errors going undetected, or conflicts of interest in critical business processes.`,
+          severity: "High",
+          category: "Control Environment"
+        },
+        {
+          id: `risk-${Date.now()}-5`,
+          description: `Absence of business continuity planning for ${deptName} operations may result in extended downtime and financial losses during disruptions.`,
+          severity: "Medium",
+          category: "Business Continuity"
+        }
+      ];
 
-      toast.success("Risk suggestions generated successfully");
+      // Add focus-specific risks if audit focus is provided
+      if (auditFocus) {
+        aiSuggestedRisks.push({
+          id: `risk-${Date.now()}-6`,
+          description: `Based on the audit focus "${auditFocus}": There may be control gaps or process inefficiencies that require detailed assessment and remediation.`,
+          severity: "Medium",
+          category: "Process Specific"
+        });
+      }
+
+      setSuggestedRisks(aiSuggestedRisks);
+      toast.success(`${aiSuggestedRisks.length} risk suggestions generated successfully`);
     } catch (error) {
       toast.error("Failed to generate risk suggestions");
     } finally {
@@ -90,15 +126,48 @@ export default function RiskIdentificationPage() {
     }
   };
 
-  const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString("en-US", {
-      month: "2-digit",
-      day: "2-digit",
-      year: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true
-    });
+  const handleAddToRegister = async (risk: SuggestedRisk) => {
+    setAddingRisk(risk.id);
+
+    try {
+      // Map severity to risk level
+      let riskLevel = "Low";
+      let residualScore = 25;
+      if (risk.severity === "High") {
+        riskLevel = "High";
+        residualScore = 100;
+      } else if (risk.severity === "Medium") {
+        riskLevel = "Medium";
+        residualScore = 50;
+      }
+
+      const response = await fetch("/api/internal-audit/risks", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          riskName: risk.description.substring(0, 100),
+          riskDescription: risk.description,
+          departmentId: selectedDepartment,
+          riskLevel,
+          residualScore,
+          status: "Open",
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to add risk to register");
+      }
+
+      setAddedRisks(prev => new Set([...prev, risk.id]));
+      toast.success("Risk added to register successfully");
+    } catch (error) {
+      console.error("Error adding risk:", error);
+      toast.error("Failed to add risk to register");
+    } finally {
+      setAddingRisk(null);
+    }
   };
 
   if (pageLoading) {
@@ -122,7 +191,6 @@ export default function RiskIdentificationPage() {
           className="text-blue-600"
           onClick={() => router.push("/internal-audit/risk-register")}
         >
-          <Sparkles className="h-4 w-4 mr-2" />
           AI-Powered Risk Assessment
         </Button>
       </div>
@@ -195,36 +263,80 @@ export default function RiskIdentificationPage() {
         </CardContent>
       </Card>
 
-      {/* Recent Searches */}
-      {recentSearches.length > 0 && (
-        <Card>
-          <CardContent className="pt-6">
-            <h3 className="text-sm font-medium text-blue-800 mb-4">Recent Searches</h3>
-            <div className="space-y-3">
-              {recentSearches.map((search) => (
-                <div key={search.id} className="border rounded-lg p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center">
-                      <Sparkles className="h-4 w-4 text-gray-400" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <p className="font-medium">{search.query}</p>
-                        <span className="text-xs text-gray-500">
-                          {formatDate(search.timestamp)}
-                        </span>
-                      </div>
-                      {search.result && (
-                        <p className="text-sm text-gray-600 mt-2">{search.result}</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
+      {/* AI Suggested Risks */}
+      {suggestedRisks.length > 0 && (
+        <div className="space-y-0">
+          {suggestedRisks.map((risk, index) => (
+            <div
+              key={risk.id}
+              className={`flex items-center justify-between gap-4 p-4 bg-white ${
+                index !== suggestedRisks.length - 1 ? "border-b" : ""
+              }`}
+            >
+              {/* Risk Description */}
+              <div className="flex-1">
+                <p className="text-sm text-gray-800 leading-relaxed">
+                  {risk.description}
+                </p>
+              </div>
+
+              {/* Severity Badge */}
+              <div className="flex-shrink-0">
+                <Badge
+                  className={
+                    risk.severity === "High"
+                      ? "bg-red-500 text-white hover:bg-red-500 rounded-full px-3"
+                      : risk.severity === "Medium"
+                      ? "bg-yellow-500 text-white hover:bg-yellow-500 rounded-full px-3"
+                      : "bg-green-500 text-white hover:bg-green-500 rounded-full px-3"
+                  }
+                >
+                  {risk.severity}
+                </Badge>
+              </div>
+
+              {/* Green Tick + Add to Register Button */}
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {addedRisks.has(risk.id) && (
+                  <Check className="h-5 w-5 text-green-500" />
+                )}
+                <Button
+                  size="sm"
+                  onClick={() => handleAddToRegister(risk)}
+                  disabled={addingRisk === risk.id || addedRisks.has(risk.id)}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  {addingRisk === risk.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    "Add to Register"
+                  )}
+                </Button>
+              </div>
             </div>
-          </CardContent>
-        </Card>
+          ))}
+
+          {/* Summary when all risks are added */}
+          {addedRisks.size === suggestedRisks.length && suggestedRisks.length > 0 && (
+            <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+              <div className="flex items-center gap-2 text-green-700">
+                <Check className="h-5 w-5" />
+                <span className="font-medium">
+                  All {suggestedRisks.length} risks have been added to the register
+                </span>
+              </div>
+              <Button
+                variant="link"
+                className="text-green-700 p-0 mt-2"
+                onClick={() => router.push("/internal-audit/risk-register")}
+              >
+                View Risk Register &rarr;
+              </Button>
+            </div>
+          )}
+        </div>
       )}
+
     </div>
   );
 }
