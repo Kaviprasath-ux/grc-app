@@ -38,7 +38,7 @@ export const GET = withAuth(
       );
     }
   },
-  { resource: "internal-audit.risk-register", action: "view" }
+  { resource: "audit.risk-register", action: "view" }
 );
 
 // PUT update internal audit risk - with tenant validation
@@ -127,7 +127,7 @@ export const PUT = withAuth(
       );
     }
   },
-  { resource: "internal-audit.risk-register", action: "edit" }
+  { resource: "audit.risk-register", action: "edit" }
 );
 
 // DELETE internal audit risk - with tenant validation
@@ -166,5 +166,5 @@ export const DELETE = withAuth(
       );
     }
   },
-  { resource: "internal-audit.risk-register", action: "delete" }
+  { resource: "audit.risk-register", action: "delete" }
 );

@@ -167,7 +167,7 @@ export const POST = withAuth(
     );
   }
   },
-  { resource: "internal-audit.risks", action: "create" }
+  { resource: "audit.risk-register", action: "create" }
 );
 
 // Helper function to parse CSV line (handles quoted values)

@@ -56,7 +56,7 @@ export const GET = withAuth(
       );
     }
   },
-  { resource: "internal-audit.risk-register", action: "view" }
+  { resource: "audit.risk-register", action: "view" }
 );
 
 // POST create a new internal audit risk - with customer account assignment
@@ -147,5 +147,5 @@ export const POST = withAuth(
       );
     }
   },
-  { resource: "internal-audit.risk-register", action: "create" }
+  { resource: "audit.risk-register", action: "create" }
 );

@@ -17,8 +17,19 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronRight, Link2, Unlink } from "lucide-react";
-import { usePermissions } from "@/hooks/usePermissions";
+import { ChevronDown, ChevronRight, Link2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { usePermissions, useHasRole } from "@/hooks/usePermissions";
 import { Unauthorized } from "@/components/ui/unauthorized";
 
 interface LinkedControl {
@@ -75,12 +86,14 @@ const riskStatusColors: Record<string, string> = {
 
 export default function RiskControlMatrixPage() {
   const { canView, isLoading: permissionsLoading } = usePermissions('risk.risk-matrix');
+  const isCustomerAdmin = useHasRole('CustomerAdministrator');
   const [risks, setRisks] = useState<Risk[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedRisks, setExpandedRisks] = useState<Set<string>>(new Set());
   const [expandedControls, setExpandedControls] = useState<Set<string>>(new Set());
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const pageSize = 10;
 
   const fetchRisks = useCallback(async (pageNum: number, append: boolean = false) => {
@@ -146,17 +159,45 @@ export default function RiskControlMatrixPage() {
     });
   };
 
-  const handleUnlinkControl = async (riskId: string, controlId: string) => {
+  const handleDeleteControl = async (riskId: string, controlId: string) => {
+    setDeleting(`${riskId}-${controlId}`);
     try {
       const response = await fetch(`/api/risks/${riskId}/controls/${controlId}`, {
         method: "DELETE",
       });
       if (response.ok) {
-        // Refresh risks to update linked controls
-        fetchRisks(1);
+        // Update local state to remove the deleted control
+        setRisks(prev => prev.map(risk => {
+          if (risk.id === riskId) {
+            return {
+              ...risk,
+              controlRisks: risk.controlRisks?.filter(cr => cr.control.id !== controlId) || []
+            };
+          }
+          return risk;
+        }));
       }
     } catch (error) {
-      console.error("Error unlinking control:", error);
+      console.error("Error deleting control link:", error);
+    } finally {
+      setDeleting(null);
+    }
+  };
+
+  const handleDeleteRisk = async (riskId: string) => {
+    setDeleting(`risk-${riskId}`);
+    try {
+      const response = await fetch(`/api/risks/${riskId}`, {
+        method: "DELETE",
+      });
+      if (response.ok) {
+        // Remove the risk from local state
+        setRisks(prev => prev.filter(risk => risk.id !== riskId));
+      }
+    } catch (error) {
+      console.error("Error deleting risk:", error);
+    } finally {
+      setDeleting(null);
     }
   };
 
@@ -174,14 +215,63 @@ export default function RiskControlMatrixPage() {
     return <Unauthorized description="You don't have permission to access Risk Control Matrix." />;
   }
 
+  const handleDeleteAllRisks = async () => {
+    setDeleting("all-risks");
+    try {
+      for (const risk of risks) {
+        await fetch(`/api/risks/${risk.id}`, {
+          method: "DELETE",
+        });
+      }
+      setRisks([]);
+    } catch (error) {
+      console.error("Error deleting all risks:", error);
+    } finally {
+      setDeleting(null);
+    }
+  };
+
   return (
     <div className="space-y-4 p-6">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Risk Control Matrix</h1>
-        <p className="text-gray-600">
-          View and manage risks with their linked controls
-        </p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Risk Control Matrix</h1>
+          <p className="text-gray-600">
+            View and manage risks with their linked controls
+          </p>
+        </div>
+        {isCustomerAdmin && risks.length > 0 && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-red-500 border-red-300 hover:bg-red-50 hover:text-red-700"
+                disabled={deleting === "all-risks"}
+              >
+                {deleting === "all-risks" ? "Deleting..." : "Delete All"}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete All Risks?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently delete all {risks.length} risk(s) from the Risk Control Matrix. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-red-500 hover:bg-red-600"
+                  onClick={handleDeleteAllRisks}
+                >
+                  Delete All
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
       </div>
 
       {/* Risk Accordion List */}
@@ -200,9 +290,9 @@ export default function RiskControlMatrixPage() {
                 open={expandedRisks.has(risk.id)}
                 onOpenChange={() => toggleRisk(risk.id)}
               >
-                <CollapsibleTrigger asChild>
-                  <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 border-b">
-                    <div className="flex items-center gap-3">
+                <div className="flex items-center justify-between p-4 border-b">
+                  <CollapsibleTrigger asChild>
+                    <div className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 flex-1">
                       {expandedRisks.has(risk.id) ? (
                         <ChevronDown className="h-5 w-5 text-gray-500" />
                       ) : (
@@ -211,8 +301,40 @@ export default function RiskControlMatrixPage() {
                       <span className="font-medium text-blue-600">{risk.riskId}</span>
                       <span className="font-medium">{risk.name}</span>
                     </div>
-                  </div>
-                </CollapsibleTrigger>
+                  </CollapsibleTrigger>
+                  {isCustomerAdmin && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="link"
+                          size="sm"
+                          className="text-red-500 hover:text-red-700 p-0 h-auto"
+                          disabled={deleting === `risk-${risk.id}`}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {deleting === `risk-${risk.id}` ? "Deleting..." : "Delete"}
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Risk?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This will permanently delete risk {risk.riskId} ({risk.name}). This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            className="bg-red-500 hover:bg-red-600"
+                            onClick={() => handleDeleteRisk(risk.id)}
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+                </div>
 
                 <CollapsibleContent>
                   <CardContent className="pt-4">
@@ -272,20 +394,23 @@ export default function RiskControlMatrixPage() {
                         open={expandedControls.has(risk.id)}
                         onOpenChange={() => toggleControls(risk.id)}
                       >
-                        <CollapsibleTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            className="flex items-center gap-2 p-0 h-auto font-medium text-blue-600 hover:text-blue-800"
-                          >
-                            <Link2 className="h-4 w-4" />
-                            Linked Controls ({risk.controlRisks?.length || 0})
-                            {expandedControls.has(risk.id) ? (
-                              <ChevronDown className="h-4 w-4" />
-                            ) : (
-                              <ChevronRight className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </CollapsibleTrigger>
+                        <div className="flex items-center justify-between">
+                          <CollapsibleTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              className="flex items-center gap-2 p-0 h-auto font-medium text-blue-600 hover:text-blue-800"
+                            >
+                              <Link2 className="h-4 w-4" />
+                              Linked Controls ({risk.controlRisks?.length || 0})
+                              {expandedControls.has(risk.id) ? (
+                                <ChevronDown className="h-4 w-4" />
+                              ) : (
+                                <ChevronRight className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </CollapsibleTrigger>
+
+                        </div>
 
                         <CollapsibleContent className="mt-3">
                           {risk.controlRisks && risk.controlRisks.length > 0 ? (
@@ -311,14 +436,37 @@ export default function RiskControlMatrixPage() {
                                       </Badge>
                                     </TableCell>
                                     <TableCell>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                                        onClick={() => handleUnlinkControl(risk.id, cr.control.id)}
-                                      >
-                                        <Unlink className="h-4 w-4" />
-                                      </Button>
+                                      {isCustomerAdmin && (
+                                        <AlertDialog>
+                                          <AlertDialogTrigger asChild>
+                                            <Button
+                                              variant="link"
+                                              size="sm"
+                                              className="text-red-500 hover:text-red-700 p-0 h-auto"
+                                              disabled={deleting === `${risk.id}-${cr.control.id}`}
+                                            >
+                                              {deleting === `${risk.id}-${cr.control.id}` ? "Unlinking..." : "Unlink"}
+                                            </Button>
+                                          </AlertDialogTrigger>
+                                          <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                              <AlertDialogTitle>Unlink Control?</AlertDialogTitle>
+                                              <AlertDialogDescription>
+                                                This will remove the link between control {cr.control.controlCode} and risk {risk.riskId}. This action cannot be undone.
+                                              </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                              <AlertDialogAction
+                                                className="bg-red-500 hover:bg-red-600"
+                                                onClick={() => handleDeleteControl(risk.id, cr.control.id)}
+                                              >
+                                                Unlink
+                                              </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                          </AlertDialogContent>
+                                        </AlertDialog>
+                                      )}
                                     </TableCell>
                                   </TableRow>
                                 ))}
