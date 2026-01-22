@@ -371,12 +371,11 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'asset.my-inventory', actions: ['view', 'create', 'edit', 'delete'], scope: 'own' },
     { resource: 'asset.classification', actions: ['view'], scope: 'department' },
     { resource: 'asset.reports', actions: ['view'], scope: 'department' },
-    // Risk Management - Dashboard, Register, Assessment, Response, Reports (NO Settings)
+    // Risk Management - Same as CustomerAdmin but scoped to department (NO Risk Control Matrix, NO Settings)
     { resource: 'risk.dashboard', actions: ['view'], scope: 'department' },
-    { resource: 'risk.register', actions: ['view', 'create', 'edit'], scope: 'department' },
-    { resource: 'risk.assessment', actions: ['view', 'create', 'edit'], scope: 'department' },
-    { resource: 'risk.response', actions: ['view', 'create', 'edit'], scope: 'department' },
-    { resource: 'risk.risk-matrix', actions: ['view', 'create', 'edit'], scope: 'department' },
+    { resource: 'risk.register', actions: ['view', 'create', 'edit', 'delete'], scope: 'department' },
+    { resource: 'risk.assessment', actions: ['view', 'create', 'edit', 'delete'], scope: 'department' },
+    { resource: 'risk.response', actions: ['view', 'create', 'edit', 'delete'], scope: 'department' },
     { resource: 'risk.reports', actions: ['view'], scope: 'department' },
     // Internal Audit - ONLY RiskRegister (NO Settings)
     { resource: 'audit.risk-register', actions: ['view'], scope: 'department' },

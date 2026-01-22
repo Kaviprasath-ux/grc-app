@@ -24,9 +24,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { usePermissions } from "@/hooks/usePermissions";
+import { usePermissions, useUserRoles } from "@/hooks/usePermissions";
 import { Unauthorized } from "@/components/ui/unauthorized";
 import { Card, CardContent } from "@/components/ui/card";
+import { useSession } from "next-auth/react";
 
 interface Category {
   id: string;
@@ -109,7 +110,14 @@ const steps = [
 export default function EditRiskPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
+  const { data: session } = useSession();
+  const userRoles = useUserRoles();
   const { canEdit, isLoading: permissionsLoading } = usePermissions('risk.register');
+
+  // Check if user is DepartmentContributor or DepartmentReviewer
+  const isDepartmentRole = userRoles.some(
+    (role) => role === "DepartmentReviewer" || role === "DepartmentContributor"
+  );
 
   const [currentStep, setCurrentStep] = useState(1);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -566,6 +574,7 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
                     <Select
                       value={formData.departmentId}
                       onValueChange={(value) => handleInputChange("departmentId", value)}
+                      disabled={isDepartmentRole}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select Department" />
