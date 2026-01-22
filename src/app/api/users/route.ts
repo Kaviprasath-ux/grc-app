@@ -42,8 +42,7 @@ export async function GET(request: NextRequest) {
 
       if (isAuditHead) {
         if (forAuditHead === "auditees") {
-          // Get auditees managed by this audit head
-          where.auditHeadId = currentUserId;
+          // Get all auditees in the same customer account
           where.userRoles = {
             some: {
               role: {
@@ -52,12 +51,12 @@ export async function GET(request: NextRequest) {
             },
           };
         } else if (forAuditHead === "auditors") {
-          // Get audit managers associated with this audit head
-          // AuditManagers are typically in the same customer account
+          // Get audit team members (AuditHead, AuditManager, Auditor) in the same customer account
+          // This allows Audit Head to assign themselves or any audit team member
           where.userRoles = {
             some: {
               role: {
-                name: { in: ["AuditManager", "Auditor"] },
+                name: { in: ["AuditHead", "AuditManager", "Auditor"] },
               },
             },
           };
