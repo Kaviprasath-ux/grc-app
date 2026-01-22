@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { Eye, EyeOff } from "lucide-react";
@@ -18,6 +18,18 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Bootstrap superadmin user on page load
+  useEffect(() => {
+    const bootstrap = async () => {
+      try {
+        await fetch("/api/bootstrap", { method: "POST" });
+      } catch (error) {
+        console.error("Bootstrap failed:", error);
+      }
+    };
+    bootstrap();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
