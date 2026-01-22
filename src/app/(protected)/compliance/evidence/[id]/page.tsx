@@ -814,12 +814,9 @@ export default function EvidenceDetailPage() {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left Column - Evidence Details Form */}
-        <div className="space-y-6">
-
-          {/* Evidence Details */}
+      {/* Main Content - Single Column Layout */}
+      <div className="space-y-6">
+        {/* Evidence Details */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Evidence Details</CardTitle>
@@ -1028,325 +1025,320 @@ export default function EvidenceDetailPage() {
             </Card>
           )}
 
-          {/* Tabs: Linked Controls / Linked Artifacts */}
-          <div>
-            <div className="flex border-b">
-              <button
-                onClick={() => setActiveTab("controls")}
-                className={`px-4 py-2 ${
-                  activeTab === "controls"
-                    ? "border-b-2 border-blue-600 text-blue-600"
-                    : "text-gray-500"
-                }`}
-              >
-                Linked Controls
-              </button>
-              <button
-                onClick={() => setActiveTab("artifacts")}
-                className={`px-4 py-2 ${
-                  activeTab === "artifacts"
-                    ? "border-b-2 border-blue-600 text-blue-600"
-                    : "text-gray-500"
-                }`}
-              >
-                Linked Artifacts
-              </button>
+        {/* Attachments Card */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Attachments</CardTitle>
+            <div className="flex gap-2">
+              {isCustomerAdmin ? (
+                <Button size="sm" variant="outline" onClick={() => setUploadDialogOpen(true)}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add Attachment
+                </Button>
+              ) : (
+                <Button size="sm" variant="outline">
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add Attachment
+                </Button>
+              )}
+              <Button size="sm" variant="outline">
+                <Link2 className="h-4 w-4 mr-1" />
+                Link Artifacts
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {/* Period Buttons - Dynamic based on recurrence for Customer Admin */}
+            <div className="flex flex-wrap gap-2 mb-4">
+              {(isCustomerAdmin ? getPeriodsForRecurrence(evidence.recurrence) : months).map((period) => (
+                <Button
+                  key={period}
+                  variant={selectedMonth === period ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedMonth(selectedMonth === period ? null : period)}
+                  className="text-xs"
+                >
+                  <FileText className="h-3 w-3 mr-1" />
+                  {period}
+                </Button>
+              ))}
             </div>
 
-            {activeTab === "controls" && (
-              <Card className="mt-4">
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle>Controls</CardTitle>
-                  <Dialog open={linkControlsOpen} onOpenChange={setLinkControlsOpen}>
-                    <DialogTrigger asChild>
-                      <Button size="sm">Link Controls</Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                      <DialogHeader>
-                        <DialogTitle>Link Controls</DialogTitle>
-                      </DialogHeader>
-                      <div className="py-4 space-y-4">
-                        <div className="border rounded-lg max-h-[400px] overflow-y-auto">
-                          {availableControls.map((control) => (
-                            <div
-                              key={control.id}
-                              className={`flex items-start gap-3 p-3 border-b last:border-b-0 cursor-pointer hover:bg-gray-50 ${
-                                selectedControlIds.includes(control.id) ? "bg-blue-50" : ""
-                              }`}
-                              onClick={() => {
+            {/* Attachments List - Filtered by selected period for Customer Admin */}
+            <div className="space-y-2">
+              {(isCustomerAdmin ? filteredAttachments : evidence.attachments)?.map((att) => (
+                <div
+                  key={att.id}
+                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
+                >
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-blue-600" />
+                    <span className="text-sm">{att.fileName}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="icon">
+                      <Download className="h-4 w-4" />
+                    </Button>
+                    {isCustomerAdmin && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteAttachment(att.id)}
+                      >
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {(isCustomerAdmin ? filteredAttachments.length === 0 : (!evidence.attachments || evidence.attachments.length === 0)) && (
+                <p className="text-center text-gray-500 text-sm py-4">
+                  {isCustomerAdmin && selectedMonth ? `No attachments for ${selectedMonth}` : "No attachments"}
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Recent Comments Card */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Recent Comments</CardTitle>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCommentDialogOpen(true)}
+              >
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Add Comment
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {evidence.comments && evidence.comments.length > 0 ? (
+              <div className="space-y-3">
+                {evidence.comments.slice(0, 3).map((comment) => (
+                  <div
+                    key={comment.id}
+                    className="p-3 bg-gray-50 rounded-lg"
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-medium text-sm">
+                        {comment.userName || "Unknown User"}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {new Date(comment.createdAt).toLocaleDateString(
+                          "en-GB"
+                        )}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-700">{comment.content}</p>
+                  </div>
+                ))}
+                {evidence.comments.length > 3 && (
+                  <Button
+                    variant="link"
+                    className="w-full"
+                    onClick={() => setCommentDialogOpen(true)}
+                  >
+                    View all {evidence.comments.length} comments
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <p className="text-gray-500 text-center py-4">
+                No comments yet
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Linked Section - Tabs: Linked Controls / Linked Artifacts */}
+        <div>
+          <div className="flex border-b">
+            <button
+              onClick={() => setActiveTab("controls")}
+              className={`px-4 py-2 ${
+                activeTab === "controls"
+                  ? "border-b-2 border-blue-600 text-blue-600"
+                  : "text-gray-500"
+              }`}
+            >
+              Linked Controls
+            </button>
+            <button
+              onClick={() => setActiveTab("artifacts")}
+              className={`px-4 py-2 ${
+                activeTab === "artifacts"
+                  ? "border-b-2 border-blue-600 text-blue-600"
+                  : "text-gray-500"
+              }`}
+            >
+              Linked Artifacts
+            </button>
+          </div>
+
+          {activeTab === "controls" && (
+            <Card className="mt-4">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Controls</CardTitle>
+                <Dialog open={linkControlsOpen} onOpenChange={setLinkControlsOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm">Link Controls</Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Link Controls</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4 space-y-4">
+                      <div className="border rounded-lg max-h-[400px] overflow-y-auto">
+                        {availableControls.map((control) => (
+                          <div
+                            key={control.id}
+                            className={`flex items-start gap-3 p-3 border-b last:border-b-0 cursor-pointer hover:bg-gray-50 ${
+                              selectedControlIds.includes(control.id) ? "bg-blue-50" : ""
+                            }`}
+                            onClick={() => {
+                              setSelectedControlIds((prev) =>
+                                prev.includes(control.id)
+                                  ? prev.filter((id) => id !== control.id)
+                                  : [...prev, control.id]
+                              );
+                            }}
+                          >
+                            <Checkbox
+                              checked={selectedControlIds.includes(control.id)}
+                              onCheckedChange={() => {
                                 setSelectedControlIds((prev) =>
                                   prev.includes(control.id)
                                     ? prev.filter((id) => id !== control.id)
                                     : [...prev, control.id]
                                 );
                               }}
-                            >
-                              <Checkbox
-                                checked={selectedControlIds.includes(control.id)}
-                                onCheckedChange={() => {
-                                  setSelectedControlIds((prev) =>
-                                    prev.includes(control.id)
-                                      ? prev.filter((id) => id !== control.id)
-                                      : [...prev, control.id]
-                                  );
-                                }}
-                              />
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-medium">{control.controlCode}</span>
-                                  <span className="text-gray-600">: {control.name}</span>
-                                </div>
-                                <Badge variant="secondary" className="mt-1">
-                                  {control.entities}
-                                </Badge>
-                                {control.description && (
-                                  <p className="text-sm text-gray-500 mt-1">{control.description}</p>
-                                )}
+                            />
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">{control.controlCode}</span>
+                                <span className="text-gray-600">: {control.name}</span>
                               </div>
+                              <Badge variant="secondary" className="mt-1">
+                                {control.entities}
+                              </Badge>
+                              {control.description && (
+                                <p className="text-sm text-gray-500 mt-1">{control.description}</p>
+                              )}
                             </div>
-                          ))}
-                          {availableControls.length === 0 && (
-                            <div className="p-4 text-center text-gray-500">
-                              No available controls to link
-                            </div>
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-600">
-                          {selectedControlIds.length} control(s) selected
-                        </p>
-                        <div className="flex justify-end gap-2">
-                          <Button variant="outline" onClick={() => setLinkControlsOpen(false)}>
-                            Cancel
-                          </Button>
-                          <Button onClick={handleLinkControls} disabled={selectedControlIds.length === 0}>
-                            Link Controls
-                          </Button>
-                        </div>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {evidence.evidenceControls?.map((ec) => (
-                      <div
-                        key={ec.id}
-                        className="flex items-start justify-between p-3 border rounded-lg hover:bg-gray-50"
-                      >
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">"{ec.control.controlCode}</span>
-                            <span>: {ec.control.name}"</span>
                           </div>
-                          {ec.control.description && (
-                            <p className="text-sm text-gray-500 mt-1">{ec.control.description}</p>
-                          )}
-                          <Badge variant="secondary" className="mt-2">
-                            {ec.control.entities}
-                          </Badge>
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleUnlinkControl(ec.control.id)}
-                        >
-                          Unlink
+                        ))}
+                        {availableControls.length === 0 && (
+                          <div className="p-4 text-center text-gray-500">
+                            No available controls to link
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        {selectedControlIds.length} control(s) selected
+                      </p>
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" onClick={() => setLinkControlsOpen(false)}>
+                          Cancel
+                        </Button>
+                        <Button onClick={handleLinkControls} disabled={selectedControlIds.length === 0}>
+                          Link Controls
                         </Button>
                       </div>
-                    ))}
-                    {(!evidence.evidenceControls || evidence.evidenceControls.length === 0) && (
-                      <div className="text-center py-8 text-gray-500">
-                        <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                        <p>No controls linked to this evidence</p>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {activeTab === "artifacts" && (
-              <Card className="mt-4">
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle>Linked Artifacts</CardTitle>
-                  <Button size="sm">
-                    <Link2 className="h-4 w-4 mr-1" />
-                    Link Artifacts
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {evidence.linkedArtifacts?.map((la) => (
-                      <div
-                        key={la.id}
-                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
-                      >
-                        <div className="flex items-center gap-3">
-                          <FileText className="h-8 w-8 text-blue-600" />
-                          <div>
-                            <p className="font-medium">
-                              {la.artifact.artifactCode} : {la.artifact.name}
-                            </p>
-                            <p className="text-sm text-gray-500">{la.artifact.fileName}</p>
-                          </div>
-                        </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {evidence.evidenceControls?.map((ec) => (
+                    <div
+                      key={ec.id}
+                      className="flex items-start justify-between p-3 border rounded-lg hover:bg-gray-50"
+                    >
+                      <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <Button variant="ghost" size="icon">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon">
-                            <Download className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon">
-                            <Trash2 className="h-4 w-4 text-red-500" />
-                          </Button>
+                          <span className="font-medium">"{ec.control.controlCode}</span>
+                          <span>: {ec.control.name}"</span>
                         </div>
+                        {ec.control.description && (
+                          <p className="text-sm text-gray-500 mt-1">{ec.control.description}</p>
+                        )}
+                        <Badge variant="secondary" className="mt-2">
+                          {ec.control.entities}
+                        </Badge>
                       </div>
-                    ))}
-                    {(!evidence.linkedArtifacts || evidence.linkedArtifacts.length === 0) && (
-                      <div className="text-center py-8 text-gray-500">
-                        <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                        <p>No artifacts linked to this evidence</p>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleUnlinkControl(ec.control.id)}
+                      >
+                        Unlink
+                      </Button>
+                    </div>
+                  ))}
+                  {(!evidence.evidenceControls || evidence.evidenceControls.length === 0) && (
+                    <div className="text-center py-8 text-gray-500">
+                      <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                      <p>No controls linked to this evidence</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
-        {/* Right Column - Attachments & Comments */}
-        <div className="space-y-6">
-          {/* Attachments Card */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Attachments</CardTitle>
-              <div className="flex gap-2">
-                {isCustomerAdmin ? (
-                  <Button size="sm" variant="outline" onClick={() => setUploadDialogOpen(true)}>
-                    <Plus className="h-4 w-4 mr-1" />
-                    Add Attachment
-                  </Button>
-                ) : (
-                  <Button size="sm" variant="outline">
-                    <Plus className="h-4 w-4 mr-1" />
-                    Add Attachment
-                  </Button>
-                )}
-                <Button size="sm" variant="outline">
+          {activeTab === "artifacts" && (
+            <Card className="mt-4">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Linked Artifacts</CardTitle>
+                <Button size="sm">
                   <Link2 className="h-4 w-4 mr-1" />
                   Link Artifacts
                 </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {/* Period Buttons - Dynamic based on recurrence for Customer Admin */}
-              <div className="flex flex-wrap gap-2 mb-4">
-                {(isCustomerAdmin ? getPeriodsForRecurrence(evidence.recurrence) : months).map((period) => (
-                  <Button
-                    key={period}
-                    variant={selectedMonth === period ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setSelectedMonth(selectedMonth === period ? null : period)}
-                    className="text-xs"
-                  >
-                    <FileText className="h-3 w-3 mr-1" />
-                    {period}
-                  </Button>
-                ))}
-              </div>
-
-              {/* Attachments List - Filtered by selected period for Customer Admin */}
-              <div className="space-y-2">
-                {(isCustomerAdmin ? filteredAttachments : evidence.attachments)?.map((att) => (
-                  <div
-                    key={att.id}
-                    className="flex items-center justify-between p-2 border rounded hover:bg-gray-50"
-                  >
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-5 w-5 text-blue-600" />
-                      <span className="text-sm truncate max-w-[150px]">{att.fileName}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="icon" className="h-7 w-7">
-                        <Download className="h-3 w-3" />
-                      </Button>
-                      {isCustomerAdmin && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7"
-                          onClick={() => handleDeleteAttachment(att.id)}
-                        >
-                          <Trash2 className="h-3 w-3 text-red-500" />
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-                {(isCustomerAdmin ? filteredAttachments.length === 0 : (!evidence.attachments || evidence.attachments.length === 0)) && (
-                  <p className="text-center text-gray-500 text-sm py-4">
-                    {isCustomerAdmin && selectedMonth ? `No attachments for ${selectedMonth}` : "No attachments"}
-                  </p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Recent Comments Card */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Recent Comments</CardTitle>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCommentDialogOpen(true)}
-                >
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  Add Comment
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {evidence.comments && evidence.comments.length > 0 ? (
-                <div className="space-y-3">
-                  {evidence.comments.slice(0, 3).map((comment) => (
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {evidence.linkedArtifacts?.map((la) => (
                     <div
-                      key={comment.id}
-                      className="p-3 bg-gray-50 rounded-lg"
+                      key={la.id}
+                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
                     >
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-medium text-sm">
-                          {comment.userName || "Unknown User"}
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          {new Date(comment.createdAt).toLocaleDateString(
-                            "en-GB"
-                          )}
-                        </span>
+                      <div className="flex items-center gap-3">
+                        <FileText className="h-8 w-8 text-blue-600" />
+                        <div>
+                          <p className="font-medium">
+                            {la.artifact.artifactCode} : {la.artifact.name}
+                          </p>
+                          <p className="text-sm text-gray-500">{la.artifact.fileName}</p>
+                        </div>
                       </div>
-                      <p className="text-sm text-gray-700">{comment.content}</p>
+                      <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="icon">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon">
+                          <Download className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon">
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      </div>
                     </div>
                   ))}
-                  {evidence.comments.length > 3 && (
-                    <Button
-                      variant="link"
-                      className="w-full"
-                      onClick={() => setCommentDialogOpen(true)}
-                    >
-                      View all {evidence.comments.length} comments
-                    </Button>
+                  {(!evidence.linkedArtifacts || evidence.linkedArtifacts.length === 0) && (
+                    <div className="text-center py-8 text-gray-500">
+                      <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                      <p>No artifacts linked to this evidence</p>
+                    </div>
                   )}
                 </div>
-              ) : (
-                <p className="text-gray-500 text-center py-4">
-                  No comments yet
-                </p>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
 
