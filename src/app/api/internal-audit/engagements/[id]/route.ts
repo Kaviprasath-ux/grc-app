@@ -52,14 +52,10 @@ export const PUT = withAuth(
       const body = await req.json();
       const tenantFilter = getTenantFilter(session);
 
-      console.log('PUT engagement - id:', id, 'tenantFilter:', tenantFilter, 'body:', JSON.stringify(body, null, 2));
-
       // Verify engagement exists and belongs to tenant
       const existingEngagement = await prisma.auditEngagement.findFirst({
         where: { id, ...tenantFilter },
       });
-
-      console.log('PUT engagement - existingEngagement:', existingEngagement ? 'found' : 'not found');
 
       if (!existingEngagement) {
         return NextResponse.json(
@@ -124,7 +120,7 @@ export const PUT = withAuth(
     } catch (error) {
       console.error('Error updating engagement:', error);
       return NextResponse.json(
-        { error: 'Failed to update engagement' },
+        { error: 'Failed to update engagement', details: String(error) },
         { status: 500 }
       );
     }

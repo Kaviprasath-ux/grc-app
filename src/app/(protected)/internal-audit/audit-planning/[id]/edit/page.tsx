@@ -19,7 +19,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { Checkbox } from "@/components/ui/checkbox";
-import { toast } from "sonner";
+import { useToast } from "@/hooks/use-toast";
 import {
   ArrowLeft,
   ChevronDown,
@@ -84,6 +84,7 @@ const defaultTasks: AuditTask[] = [
 export default function EditEngagementPage({ params }: PageProps) {
   const { id: engagementId } = use(params);
   const router = useRouter();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -189,12 +190,12 @@ export default function EditEngagementPage({ params }: PageProps) {
       } else {
         const errorData = await engagementRes.json();
         console.error("Failed to load engagement:", errorData);
-        toast.error(errorData.error || "Failed to load engagement");
+        toast({ title: "Error", description: errorData.error || "Failed to load engagement", variant: "destructive" });
         router.push("/internal-audit/audit-planning");
       }
     } catch (error) {
       console.error("Failed to fetch data:", error);
-      toast.error("Failed to load data");
+      toast({ title: "Error", description: "Failed to load data", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -303,60 +304,54 @@ export default function EditEngagementPage({ params }: PageProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    console.log("Form submission - formData:", formData);
-    console.log("Form submission - auditors available:", auditors.length);
-
     if (!formData.engagementTitle.trim()) {
-      toast.error("Engagement Title is required");
+      toast({ title: "Error", description: "Engagement Title is required", variant: "destructive" });
       return;
     }
     if (!formData.engagementObjective.trim()) {
-      toast.error("Engagement Objective is required");
+      toast({ title: "Error", description: "Engagement Objective is required", variant: "destructive" });
       return;
     }
     if (!formData.engagementScope.trim()) {
-      toast.error("Engagement Scope is required");
+      toast({ title: "Error", description: "Engagement Scope is required", variant: "destructive" });
       return;
     }
     if (!formData.departmentId) {
-      toast.error("Department is required");
-      return;
-    }
-    if (!formData.auditorId) {
-      toast.error("Auditor is required");
+      toast({ title: "Error", description: "Department is required", variant: "destructive" });
       return;
     }
     if (!formData.startDate) {
-      toast.error("Start Date is required");
+      toast({ title: "Error", description: "Start Date is required", variant: "destructive" });
       return;
     }
     if (!formData.targetDate) {
-      toast.error("Target Date is required");
+      toast({ title: "Error", description: "Target Date is required", variant: "destructive" });
       return;
     }
 
     setSaving(true);
     try {
+      const payload = {
+        ...formData,
+        tasks,
+        plannedHours: calculateTotalHours("plannedHours"),
+      };
+
       const response = await fetch(`/api/internal-audit/engagements/${engagementId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...formData,
-          tasks,
-          plannedHours: calculateTotalHours("plannedHours"),
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (response.ok) {
-        toast.success("Engagement updated successfully");
+        toast({ title: "Success", description: "Engagement updated successfully" });
         router.push("/internal-audit/audit-planning");
       } else {
         const error = await response.json();
-        toast.error(error.error || "Failed to update engagement");
+        toast({ title: "Error", description: error.error || "Failed to update engagement", variant: "destructive" });
       }
     } catch (error) {
-      console.error("Failed to update engagement:", error);
-      toast.error("Failed to update engagement");
+      toast({ title: "Error", description: "Failed to update engagement", variant: "destructive" });
     } finally {
       setSaving(false);
     }
