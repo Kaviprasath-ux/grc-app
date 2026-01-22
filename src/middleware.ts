@@ -31,8 +31,8 @@ const ROLE_PATH_MAP: Record<string, string> = {
  */
 const ROLE_SPECIFIC_PATHS: Record<string, string[]> = {
   // CustomerAdministrator has unique card-grid UI with subscription management
-  // (vs table view for other roles) - keep as exception
-  "/compliance/framework": ["CustomerAdministrator"],
+  // DepartmentReviewer and GRCReviewer also use this page (with restricted UI)
+  "/compliance/framework": ["CustomerAdministrator", "DepartmentReviewer", "GRCReviewer"],
   // GRCAdministrator has separate Controls page with broader scope (all customers)
   "/compliance/control": ["GRCAdministrator"],
   // GRCAdministrator has separate Governance page with broader scope (all customers)
@@ -41,6 +41,17 @@ const ROLE_SPECIFIC_PATHS: Record<string, string[]> = {
   "/compliance/evidence": ["GRCAdministrator"],
   // GRCAdministrator has separate Master Data page with GRC-specific card routes
   "/compliance/master-data": ["GRCAdministrator"],
+};
+
+/**
+ * Role redirects for specific paths - maps a role to use another role's page
+ * Format: { "path": { "sourceRole": "targetRolePath" } }
+ */
+const ROLE_PATH_REDIRECTS: Record<string, Record<string, string>> = {
+  "/compliance/framework": {
+    DepartmentReviewer: "customer-administrator",
+    GRCReviewer: "customer-administrator",
+  },
 };
 
 /**
@@ -94,16 +105,30 @@ function shouldRedirectToRolePath(pathname: string): string | null {
  */
 function hasAccessToRolePath(pathname: string, userRoles: string[]): boolean {
   // Extract role from path like /roles/auditor/internal-audit/...
-  const match = pathname.match(/^\/roles\/([^\/]+)/);
+  const match = pathname.match(/^\/roles\/([^\/]+)(\/.*)?$/);
   if (!match) return true;
 
   const pathRole = match[1];
+  const subPath = match[2] || "";
 
   // Find the role that matches this path
   for (const [role, kebabRole] of Object.entries(ROLE_PATH_MAP)) {
     if (kebabRole === pathRole) {
-      // Check if user has this role
-      return userRoles.includes(role);
+      // Check if user has this role directly
+      if (userRoles.includes(role)) return true;
+
+      // Check if user has a role that redirects to this path
+      // Look for redirect mappings that point to this role's path
+      for (const [basePath, redirects] of Object.entries(ROLE_PATH_REDIRECTS)) {
+        // Check if the current pathname matches this redirect pattern
+        if (subPath === basePath || subPath.startsWith(basePath + "/")) {
+          for (const [sourceRole, targetPath] of Object.entries(redirects)) {
+            if (targetPath === kebabRole && userRoles.includes(sourceRole)) {
+              return true;
+            }
+          }
+        }
+      }
     }
   }
 
@@ -185,6 +210,13 @@ export default auth((request) => {
 
     // Only redirect if user's primary role has a role-specific version
     if (allowedRoles.includes(primaryRole)) {
+      // Check if this role should be redirected to another role's page
+      const redirects = ROLE_PATH_REDIRECTS[basePath];
+      if (redirects && redirects[primaryRole]) {
+        const newPath = `/roles/${redirects[primaryRole]}${pathname}`;
+        return NextResponse.redirect(new URL(newPath, request.url));
+      }
+
       const rolePath = ROLE_PATH_MAP[primaryRole];
       if (rolePath) {
         // Construct the new path

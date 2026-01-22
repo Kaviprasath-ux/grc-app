@@ -36,6 +36,7 @@ import {
   X,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useHasRole } from "@/hooks/usePermissions";
 import { useRouter } from "next/navigation";
 
 interface Framework {
@@ -84,6 +85,9 @@ const TEMPLATE_COLUMNS = [
 export default function CustomerAdminFrameworkPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const isGRCReviewer = useHasRole("GRCReviewer");
+  const isDepartmentReviewer = useHasRole("DepartmentReviewer");
+  const isReviewerRole = isGRCReviewer || isDepartmentReviewer;
   const [frameworks, setFrameworks] = useState<Framework[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
@@ -704,32 +708,38 @@ export default function CustomerAdminFrameworkPage() {
         <div className="flex items-center justify-between">
           <h3 className="text-xl font-semibold text-[#1e3a5f]">Integrated Frameworks</h3>
           <div className="flex items-center gap-3">
-            <Button
-              onClick={openAICreateDialog}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              <Sparkles className="h-4 w-4 mr-2" />
-              New Integrated Framework (AI)
-            </Button>
-            <Button
-              onClick={openCreateDialog}
-              className="bg-green-600 hover:bg-green-700 text-white"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              New Integrated Framework
-            </Button>
+            {!isReviewerRole && (
+              <>
+                <Button
+                  onClick={openAICreateDialog}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  New Integrated Framework (AI)
+                </Button>
+                <Button
+                  onClick={openCreateDialog}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  New Integrated Framework
+                </Button>
+              </>
+            )}
 
-            {/* Subscription Type Filter */}
-            <Select value={subscriptionFilter} onValueChange={setSubscriptionFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Subscription Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Subscription Type</SelectItem>
-                <SelectItem value="Subscribed">Subscribed</SelectItem>
-                <SelectItem value="Not Subscribed">Not Subscribed</SelectItem>
-              </SelectContent>
-            </Select>
+            {/* Subscription Type Filter - hidden for GRC Reviewer */}
+            {!isReviewerRole && (
+              <Select value={subscriptionFilter} onValueChange={setSubscriptionFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Subscription Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Subscription Type</SelectItem>
+                  <SelectItem value="Subscribed">Subscribed</SelectItem>
+                  <SelectItem value="Not Subscribed">Not Subscribed</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
 
             {/* Type Filter */}
             <Select value={typeFilter} onValueChange={setTypeFilter}>

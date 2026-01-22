@@ -56,6 +56,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
+import { useHasRole } from "@/hooks/usePermissions";
 
 interface Framework {
   id: string;
@@ -103,6 +104,9 @@ const TEMPLATE_COLUMNS = [
 export default function FrameworkOverviewPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const isGRCReviewer = useHasRole("GRCReviewer");
+  const isDepartmentReviewer = useHasRole("DepartmentReviewer");
+  const isReviewerRole = isGRCReviewer || isDepartmentReviewer;
   const [frameworks, setFrameworks] = useState<Framework[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
@@ -498,24 +502,26 @@ export default function FrameworkOverviewPage() {
       <div className="bg-white rounded-lg shadow-sm border p-4">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold text-gray-900">Frameworks</h3>
-          <div className="flex items-center gap-2">
-            <Button
-              onClick={() => openCreateDialog(true)}
-              variant="outline"
-              className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
-            >
-              <Sparkles className="h-4 w-4 mr-2" />
-              New Integrated Framework (AI)
-            </Button>
-            <Button
-              onClick={() => openCreateDialog(false)}
-              variant="outline"
-              className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              New Integrated Framework
-            </Button>
-          </div>
+          {!isReviewerRole && (
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={() => openCreateDialog(true)}
+                variant="outline"
+                className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
+              >
+                <Sparkles className="h-4 w-4 mr-2" />
+                New Integrated Framework (AI)
+              </Button>
+              <Button
+                onClick={() => openCreateDialog(false)}
+                variant="outline"
+                className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                New Integrated Framework
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -554,13 +560,15 @@ export default function FrameworkOverviewPage() {
                   <ArrowUpDown className="ml-2 h-4 w-4" />
                 </Button>
               </TableHead>
-              <TableHead className="w-[100px] text-center">Action</TableHead>
+              {!isReviewerRole && (
+                <TableHead className="w-[100px] text-center">Action</TableHead>
+              )}
             </TableRow>
           </TableHeader>
           <TableBody>
             {currentFrameworks.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={isReviewerRole ? 3 : 4} className="text-center py-8 text-muted-foreground">
                   No frameworks found.
                 </TableCell>
               </TableRow>
@@ -576,26 +584,28 @@ export default function FrameworkOverviewPage() {
                   <TableCell className="text-gray-600 truncate max-w-[400px]">
                     {framework.description || "-"}
                   </TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => openEditDialog(framework)}
-                        className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => openDeleteDialog(framework)}
-                        className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+                  {!isReviewerRole && (
+                    <TableCell>
+                      <div className="flex items-center justify-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openEditDialog(framework)}
+                          className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openDeleteDialog(framework)}
+                          className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  )}
                 </TableRow>
               ))
             )}
