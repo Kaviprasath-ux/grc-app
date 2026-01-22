@@ -2,13 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 
-// GET all users (with optional role and department filters)
+// GET all users (with optional role, department, and auditHeadId filters)
 export async function GET(request: NextRequest) {
   try {
     const session = await auth();
     const { searchParams } = new URL(request.url);
     const role = searchParams.get("role");
     const departmentId = searchParams.get("departmentId");
+    const auditHeadId = searchParams.get("auditHeadId");
+    const forAuditHead = searchParams.get("forAuditHead"); // 'auditees' or 'auditors'
 
     // Build where clause for role filtering and multi-tenant isolation
     const where: any = {};
@@ -25,6 +27,42 @@ export async function GET(request: NextRequest) {
     // Filter by department if provided
     if (departmentId) {
       where.departmentId = departmentId;
+    }
+
+    // Filter by auditHeadId - get users managed by this audit head
+    if (auditHeadId) {
+      where.auditHeadId = auditHeadId;
+    }
+
+    // Special filter for Audit Head: get auditees or auditors associated with them
+    if (forAuditHead && session?.user?.id) {
+      const currentUserId = session.user.id;
+      const currentUserRoles = session.user.roles || [];
+      const isAuditHead = currentUserRoles.includes("AuditHead");
+
+      if (isAuditHead) {
+        if (forAuditHead === "auditees") {
+          // Get auditees managed by this audit head
+          where.auditHeadId = currentUserId;
+          where.userRoles = {
+            some: {
+              role: {
+                name: "Auditee",
+              },
+            },
+          };
+        } else if (forAuditHead === "auditors") {
+          // Get audit managers associated with this audit head
+          // AuditManagers are typically in the same customer account
+          where.userRoles = {
+            some: {
+              role: {
+                name: { in: ["AuditManager", "Auditor"] },
+              },
+            },
+          };
+        }
+      }
     }
 
     // Multi-tenant: Filter users by customerAccountId if user is not GRCAdministrator
