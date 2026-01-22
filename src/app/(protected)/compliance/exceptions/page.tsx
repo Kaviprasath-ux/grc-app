@@ -59,8 +59,11 @@ interface Department {
 
 interface User {
   id: string;
-  name: string;
+  name?: string;
   fullName?: string;
+  userName?: string;
+  firstName?: string;
+  lastName?: string;
   email: string | null;
   departmentId?: string;
   userRoles?: Array<{
@@ -722,7 +725,7 @@ export default function ExceptionsPage() {
                       className="cursor-pointer hover:bg-gray-100"
                       onDoubleClick={() => handleSelectApprover(user)}
                     >
-                      <TableCell>{user.name}</TableCell>
+                      <TableCell>{user.fullName || user.userName || user.name || "-"}</TableCell>
                       <TableCell>{user.email || "-"}</TableCell>
                     </TableRow>
                   ))}
@@ -962,7 +965,12 @@ export default function ExceptionsPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>{getReference(exception)}</TableCell>
-                    <TableCell>{exception.requester?.name || "-"}</TableCell>
+                    <TableCell>
+                      {exception.requester?.fullName ||
+                        exception.requester?.userName ||
+                        exception.requester?.name ||
+                        "-"}
+                    </TableCell>
                     <TableCell>
                       {exception.endDate
                         ? new Date(exception.endDate).toLocaleDateString(
@@ -1064,7 +1072,7 @@ export default function ExceptionsPage() {
                   <SelectContent>
                     {users.map((u) => (
                       <SelectItem key={u.id} value={u.id}>
-                        {u.name}
+                        {u.fullName || u.userName || u.name || "-"}
                       </SelectItem>
                     ))}
                   </SelectContent>

@@ -29,8 +29,26 @@ export const GET = withAuth(
               category: true,
             },
           },
-          requester: true,
-          approver: true,
+          requester: {
+            select: {
+              id: true,
+              userName: true,
+              fullName: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+          approver: {
+            select: {
+              id: true,
+              userName: true,
+              fullName: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
           comments: {
             orderBy: { createdAt: "desc" },
           },
@@ -100,19 +118,22 @@ export const PUT = withAuth(
         return forbidden("Access denied to this exception");
       }
 
-      // Build update data based on category
-      const updateData: Record<string, unknown> = {
-        name,
-        description,
-        departmentId: departmentId || null,
-        requesterId: requesterId || null,
-        approverId: approverId || null,
-        status,
-        endDate: endDate ? new Date(endDate) : null,
-      };
+      // Build update data - only include fields that are explicitly provided
+      const updateData: Record<string, unknown> = {};
+
+      // Only update fields that are explicitly provided in the request body
+      if (name !== undefined) updateData.name = name;
+      if (description !== undefined) updateData.description = description;
+      if (status !== undefined) updateData.status = status;
+      if (departmentId !== undefined) updateData.departmentId = departmentId || null;
+      if (requesterId !== undefined) updateData.requesterId = requesterId || null;
+      if (approverId !== undefined) updateData.approverId = approverId || null;
+      if (endDate !== undefined) updateData.endDate = endDate ? new Date(endDate) : null;
+      if (approvedBy !== undefined) updateData.approvedBy = approvedBy;
+      if (approvedDate !== undefined) updateData.approvedDate = approvedDate ? new Date(approvedDate) : null;
 
       // Only update category if provided
-      if (category) {
+      if (category !== undefined) {
         updateData.category = category;
         // Clear old references and set new one based on category
         updateData.controlId = null;
@@ -128,12 +149,6 @@ export const PUT = withAuth(
         }
       }
 
-      // Set approval info if status is being changed to Approved
-      if (status === "Approved" && approvedBy) {
-        updateData.approvedBy = approvedBy;
-        updateData.approvedDate = approvedDate ? new Date(approvedDate) : new Date();
-      }
-
       const exception = await prisma.exception.update({
         where: { id },
         data: updateData,
@@ -142,8 +157,26 @@ export const PUT = withAuth(
           control: true,
           policy: true,
           risk: true,
-          requester: true,
-          approver: true,
+          requester: {
+            select: {
+              id: true,
+              userName: true,
+              fullName: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+          approver: {
+            select: {
+              id: true,
+              userName: true,
+              fullName: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
           comments: {
             orderBy: { createdAt: "desc" },
           },

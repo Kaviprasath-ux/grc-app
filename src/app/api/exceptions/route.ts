@@ -43,8 +43,26 @@ export const GET = withAuth(
             control: true,
             policy: true,
             risk: true,
-            requester: true,
-            approver: true,
+            requester: {
+              select: {
+                id: true,
+                userName: true,
+                fullName: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
+            },
+            approver: {
+              select: {
+                id: true,
+                userName: true,
+                fullName: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
+            },
             comments: {
               orderBy: { createdAt: "desc" },
             },
@@ -152,8 +170,26 @@ export const POST = withAuth(
           control: true,
           policy: true,
           risk: true,
-          requester: true,
-          approver: true,
+          requester: {
+            select: {
+              id: true,
+              userName: true,
+              fullName: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+          approver: {
+            select: {
+              id: true,
+              userName: true,
+              fullName: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
           comments: true,
         },
       });
