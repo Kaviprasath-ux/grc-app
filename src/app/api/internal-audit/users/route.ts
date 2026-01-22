@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
 
-// Audit-related roles that can be assigned in Internal Audit user management
-const AUDIT_ROLES = ["AuditHead", "AuditManager", "Auditor", "Auditee"];
+// Audit-related roles that can be assigned by AuditHead in Internal Audit user management
+// AuditHead can only manage AuditManager and Auditee roles
+const AUDIT_ROLES = ["AuditManager", "Auditee"];
 
 // GET all audit users - filtered by tenant and audit roles
 // Requires 'edit' action so only AuditHead can access (CustomerAdmin has only 'view')
@@ -12,23 +13,18 @@ export const GET = withAuth(
     try {
       const tenantFilter = getTenantFilter(session);
 
-      // Get users that have audit-related roles
+      // Get users that have AuditManager or Auditee roles only
       const users = await prisma.user.findMany({
         where: {
           ...tenantFilter,
-          // Only get users with audit-related functions or roles
-          OR: [
-            { function: "Audit" },
-            {
-              userRoles: {
-                some: {
-                  role: {
-                    name: { in: AUDIT_ROLES },
-                  },
-                },
+          // Only show users with AuditManager or Auditee roles
+          userRoles: {
+            some: {
+              role: {
+                name: { in: AUDIT_ROLES },
               },
             },
-          ],
+          },
         },
         include: {
           department: {

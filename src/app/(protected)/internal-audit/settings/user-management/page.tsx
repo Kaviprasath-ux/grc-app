@@ -61,11 +61,9 @@ interface Department {
   name: string;
 }
 
-// For Audit function, show these audit roles
+// For Audit function, show these audit roles (AuditHead manages AuditManager and Auditee only)
 const AUDIT_ROLES = [
-  "AuditHead",
   "AuditManager",
-  "Auditor",
   "Auditee",
 ];
 
