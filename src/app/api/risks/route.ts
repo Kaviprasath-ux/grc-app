@@ -48,6 +48,7 @@ export const GET = withAuth(
       const riskRating = searchParams.get("riskRating");
       const departmentId = searchParams.get("departmentId");
       const ownerId = searchParams.get("ownerId");
+      const includeControls = searchParams.get("includeControls") === "true";
       const limit = parseInt(searchParams.get("limit") || "50");
       const offset = parseInt(searchParams.get("offset") || "0");
 
@@ -107,6 +108,21 @@ export const GET = withAuth(
                 responses: true,
               },
             },
+            // Include linked controls when requested
+            ...(includeControls && {
+              controlRisks: {
+                include: {
+                  control: {
+                    select: {
+                      id: true,
+                      controlCode: true,
+                      name: true,
+                      status: true,
+                    },
+                  },
+                },
+              },
+            }),
           },
           orderBy: { createdAt: "desc" },
           take: limit,
