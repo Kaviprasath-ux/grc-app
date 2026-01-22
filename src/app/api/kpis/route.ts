@@ -32,7 +32,11 @@ export const GET = withAuth(
           where,
           include: {
             department: true,
-            evidence: true,
+            evidence: {
+              include: {
+                department: true,
+              },
+            },
             reviews: {
               orderBy: { reviewDate: "desc" },
             },
@@ -61,7 +65,7 @@ export const GET = withAuth(
       );
     }
   },
-  { resource: "compliance.kpis", action: "view" }
+  { resource: "compliance.kpi", action: "view" }
 );
 
 // POST create new KPI - with customer account assignment
@@ -122,7 +126,11 @@ export const POST = withAuth(
         },
         include: {
           department: true,
-          evidence: true,
+          evidence: {
+            include: {
+              department: true,
+            },
+          },
           reviews: true,
         },
       });
@@ -142,5 +150,5 @@ export const POST = withAuth(
       );
     }
   },
-  { resource: "compliance.kpis", action: "create" }
+  { resource: "compliance.kpi", action: "create" }
 );

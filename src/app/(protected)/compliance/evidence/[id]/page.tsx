@@ -73,6 +73,21 @@ interface EvidenceComment {
   createdAt: string;
 }
 
+interface LinkedKPI {
+  id: string;
+  code: string;
+  objective: string | null;
+  description: string | null;
+  dataSource: string | null;
+  calculationFormula: string | null;
+  expectedScore: number | null;
+  actualScore: number | null;
+  reviewDate: string | null;
+  status: string;
+  departmentId: string | null;
+  evidenceId: string | null;
+}
+
 interface Evidence {
   id: string;
   evidenceCode: string;
@@ -122,6 +137,7 @@ interface Evidence {
   }>;
   comments?: EvidenceComment[];
   frameworks?: Array<{ id: string; name: string }>;
+  kpis?: LinkedKPI[];
 }
 
 interface Department {
@@ -269,6 +285,8 @@ export default function EvidenceDetailPage() {
     kpiDescription: "",
     kpiCalculationFormula: "",
   });
+  const [kpiEditMode, setKpiEditMode] = useState(false);
+  const [kpiSaving, setKpiSaving] = useState(false);
 
   // Comment state
   const [commentDialogOpen, setCommentDialogOpen] = useState(false);
@@ -289,13 +307,30 @@ export default function EvidenceDetailPage() {
       if (response.ok) {
         const data = await response.json();
         setEvidence(data);
-        setKpiForm({
-          kpiObjective: data.kpiObjective || "",
-          kpiDataSource: data.kpiDataSource || "",
-          kpiExpectedScore: data.kpiExpectedScore?.toString() || "",
-          kpiDescription: data.kpiDescription || "",
-          kpiCalculationFormula: data.kpiCalculationFormula || "",
-        });
+
+        // If a linked KPI exists, prefer its data; otherwise use evidence KPI fields
+        const linkedKpi = data.kpis?.[0];
+        if (linkedKpi) {
+          setKpiForm({
+            kpiObjective: linkedKpi.objective || data.kpiObjective || "",
+            kpiDataSource: linkedKpi.dataSource || data.kpiDataSource || "",
+            kpiExpectedScore: linkedKpi.expectedScore?.toString() || data.kpiExpectedScore?.toString() || "",
+            kpiDescription: linkedKpi.description || data.kpiDescription || "",
+            kpiCalculationFormula: linkedKpi.calculationFormula || data.kpiCalculationFormula || "",
+          });
+          // KPI exists, so show view mode (Edit button)
+          setKpiEditMode(false);
+        } else {
+          setKpiForm({
+            kpiObjective: data.kpiObjective || "",
+            kpiDataSource: data.kpiDataSource || "",
+            kpiExpectedScore: data.kpiExpectedScore?.toString() || "",
+            kpiDescription: data.kpiDescription || "",
+            kpiCalculationFormula: data.kpiCalculationFormula || "",
+          });
+          // No KPI exists yet, so show edit mode (Save button)
+          setKpiEditMode(true);
+        }
       }
     } catch (error) {
       console.error("Error fetching evidence:", error);
@@ -567,8 +602,16 @@ export default function EvidenceDetailPage() {
   };
 
   const handleSaveKpi = async () => {
+    // Validate required fields
+    if (!kpiForm.kpiObjective?.trim()) {
+      toast.error("KPI Objective is required");
+      return;
+    }
+
+    setKpiSaving(true);
     try {
-      const response = await fetch(`/api/evidences/${id}`, {
+      // First, save KPI fields to Evidence record
+      const evidenceResponse = await fetch(`/api/evidences/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -580,11 +623,60 @@ export default function EvidenceDetailPage() {
         }),
       });
 
-      if (response.ok) {
-        fetchEvidence();
+      if (!evidenceResponse.ok) {
+        toast.error("Failed to save KPI details to evidence");
+        return;
+      }
+
+      // Check if a KPI already exists for this evidence
+      const existingKpi = evidence?.kpis?.[0];
+
+      // Prepare KPI data
+      const kpiData = {
+        objective: kpiForm.kpiObjective || null,
+        description: kpiForm.kpiDescription || null,
+        dataSource: kpiForm.kpiDataSource || null,
+        calculationFormula: kpiForm.kpiCalculationFormula || null,
+        expectedScore: kpiForm.kpiExpectedScore ? parseFloat(kpiForm.kpiExpectedScore) : null,
+        departmentId: evidence?.departmentId || null,
+        reviewDate: evidence?.reviewDate || null,
+        evidenceId: id,
+        status: "Scheduled",
+      };
+
+      let kpiResponse;
+      if (existingKpi) {
+        // Update existing KPI
+        kpiResponse = await fetch(`/api/kpis/${existingKpi.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(kpiData),
+        });
+      } else {
+        // Create new KPI - use evidence code as the KPI code
+        kpiResponse = await fetch("/api/kpis", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...kpiData,
+            code: evidence?.evidenceCode || undefined, // Use evidence code as KPI code
+          }),
+        });
+      }
+
+      if (kpiResponse.ok) {
+        toast.success(existingKpi ? "KPI updated successfully!" : "KPI created successfully!");
+        setKpiEditMode(false); // Switch to view mode (show Edit button)
+        await fetchEvidence();
+      } else {
+        const errorData = await kpiResponse.json();
+        toast.error(errorData.error || "Failed to save KPI");
       }
     } catch (error) {
       console.error("Error saving KPI:", error);
+      toast.error("Failed to save KPI");
+    } finally {
+      setKpiSaving(false);
     }
   };
 
@@ -1227,17 +1319,23 @@ export default function EvidenceDetailPage() {
           {/* KPI Details - Show if KPI Required */}
           {evidence.kpiRequired && (
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>KPI Details</CardTitle>
+                {!kpiEditMode && evidence.kpis && evidence.kpis.length > 0 && (
+                  <Button variant="outline" size="sm" onClick={() => setKpiEditMode(true)}>
+                    Edit
+                  </Button>
+                )}
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label className="font-medium">KPI Objective</Label>
+                    <Label className="font-medium">KPI Objective <span className="text-red-500">*</span></Label>
                     <Input
                       placeholder="Enter Objective"
                       value={kpiForm.kpiObjective}
                       onChange={(e) => setKpiForm({ ...kpiForm, kpiObjective: e.target.value })}
+                      disabled={!kpiEditMode}
                     />
                   </div>
                   <div className="space-y-2">
@@ -1246,6 +1344,7 @@ export default function EvidenceDetailPage() {
                       placeholder="Enter Data Source"
                       value={kpiForm.kpiDataSource}
                       onChange={(e) => setKpiForm({ ...kpiForm, kpiDataSource: e.target.value })}
+                      disabled={!kpiEditMode}
                     />
                   </div>
                   <div className="space-y-2">
@@ -1255,6 +1354,7 @@ export default function EvidenceDetailPage() {
                       placeholder="Enter expected score"
                       value={kpiForm.kpiExpectedScore}
                       onChange={(e) => setKpiForm({ ...kpiForm, kpiExpectedScore: e.target.value })}
+                      disabled={!kpiEditMode}
                     />
                   </div>
                 </div>
@@ -1265,6 +1365,7 @@ export default function EvidenceDetailPage() {
                       placeholder="Enter KPI Description"
                       value={kpiForm.kpiDescription}
                       onChange={(e) => setKpiForm({ ...kpiForm, kpiDescription: e.target.value })}
+                      disabled={!kpiEditMode}
                     />
                   </div>
                   <div className="space-y-2">
@@ -1273,10 +1374,29 @@ export default function EvidenceDetailPage() {
                       placeholder="Enter the KPI Calculation Formula"
                       value={kpiForm.kpiCalculationFormula}
                       onChange={(e) => setKpiForm({ ...kpiForm, kpiCalculationFormula: e.target.value })}
+                      disabled={!kpiEditMode}
                     />
                   </div>
                 </div>
-                <Button onClick={handleSaveKpi}>Save</Button>
+                {kpiEditMode && (
+                  <div className="flex gap-2">
+                    <Button onClick={handleSaveKpi} disabled={kpiSaving}>
+                      {kpiSaving ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        "Save"
+                      )}
+                    </Button>
+                    {evidence.kpis && evidence.kpis.length > 0 && (
+                      <Button variant="outline" onClick={() => setKpiEditMode(false)} disabled={kpiSaving}>
+                        Cancel
+                      </Button>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}

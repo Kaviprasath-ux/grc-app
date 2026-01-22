@@ -349,9 +349,14 @@ async function main() {
   const createdDomains: Record<string, string> = {};
   for (const domain of domains) {
     const created = await prisma.controlDomain.upsert({
-      where: { name: domain.name },
+      where: {
+        customerAccountId_name: {
+          customerAccountId,
+          name: domain.name,
+        },
+      },
       update: { code: domain.code },
-      create: domain,
+      create: { ...domain, customerAccountId },
     });
     createdDomains[domain.name] = created.id;
   }
@@ -591,9 +596,14 @@ async function main() {
   const createdRiskCategories: Record<string, string> = {};
   for (const cat of riskCategories) {
     const created = await prisma.riskCategory.upsert({
-      where: { name: cat.name },
+      where: {
+        customerAccountId_name: {
+          customerAccountId,
+          name: cat.name,
+        },
+      },
       update: {},
-      create: cat,
+      create: { ...cat, customerAccountId },
     });
     createdRiskCategories[cat.name] = created.id;
   }
@@ -663,9 +673,14 @@ async function main() {
   const createdAssetCategories: Record<string, string> = {};
   for (const cat of assetCategories) {
     const created = await prisma.assetCategory.upsert({
-      where: { name: cat.name },
+      where: {
+        customerAccountId_name: {
+          customerAccountId,
+          name: cat.name,
+        },
+      },
       update: {},
-      create: cat,
+      create: { ...cat, customerAccountId },
     });
     createdAssetCategories[cat.name] = created.id;
   }
@@ -690,13 +705,15 @@ async function main() {
     const key = `${subCat.category}-${subCat.name}`;
     const created = await prisma.assetSubCategory.upsert({
       where: {
-        name_categoryId: {
+        customerAccountId_name_categoryId: {
+          customerAccountId,
           name: subCat.name,
           categoryId: createdAssetCategories[subCat.category],
         },
       },
       update: {},
       create: {
+        customerAccountId,
         name: subCat.name,
         categoryId: createdAssetCategories[subCat.category],
       },
@@ -716,9 +733,14 @@ async function main() {
   const createdAssetGroups: Record<string, string> = {};
   for (const group of assetGroups) {
     const created = await prisma.assetGroup.upsert({
-      where: { name: group.name },
+      where: {
+        customerAccountId_name: {
+          customerAccountId,
+          name: group.name,
+        },
+      },
       update: {},
-      create: group,
+      create: { ...group, customerAccountId },
     });
     createdAssetGroups[group.name] = created.id;
   }
@@ -844,11 +866,60 @@ async function main() {
   console.log("\n📊 Creating KPIs...");
 
   const kpis = [
-    { code: "KPI-001", objective: "Patch Compliance Rate", description: "Percentage of systems patched within SLA", expectedScore: 95, actualScore: 87, status: "Missed" },
-    { code: "KPI-002", objective: "Security Awareness Training Completion", description: "Percentage of employees completing training", expectedScore: 100, actualScore: 98, status: "Achieved" },
-    { code: "KPI-003", objective: "Incident Response Time", description: "Average time to respond to security incidents", expectedScore: 100, actualScore: 95, status: "Achieved" },
-    { code: "KPI-004", objective: "Access Review Completion", description: "Percentage of access reviews completed on time", expectedScore: 100, actualScore: 100, status: "Achieved" },
-    { code: "KPI-005", objective: "Vulnerability Remediation Rate", description: "Critical vulnerabilities remediated within SLA", expectedScore: 90, actualScore: 82, status: "Missed" },
+    // Information Security KPIs
+    { code: "KPI-001", objective: "Patch Compliance Rate", description: "Percentage of systems patched within SLA", dataSource: "Vulnerability Scanner", calculationFormula: "(Patched Systems / Total Systems) x 100", expectedScore: 95, actualScore: 87, status: "Missed", department: "Information Security" },
+    { code: "KPI-002", objective: "Security Awareness Training Completion", description: "Percentage of employees completing annual security training", dataSource: "LMS System", calculationFormula: "(Completed Training / Total Employees) x 100", expectedScore: 100, actualScore: 98, status: "Achieved", department: "Information Security" },
+    { code: "KPI-003", objective: "Mean Time to Detect (MTTD)", description: "Average time to detect security incidents", dataSource: "SIEM", calculationFormula: "Sum(Detection Time) / Number of Incidents", expectedScore: 100, actualScore: 95, status: "Achieved", department: "Information Security" },
+    { code: "KPI-004", objective: "Mean Time to Respond (MTTR)", description: "Average time to respond to security incidents", dataSource: "SIEM", calculationFormula: "Sum(Response Time) / Number of Incidents", expectedScore: 100, actualScore: 92, status: "Achieved", department: "Information Security" },
+    { code: "KPI-005", objective: "Vulnerability Remediation Rate", description: "Critical vulnerabilities remediated within SLA (30 days)", dataSource: "Vulnerability Scanner", calculationFormula: "(Remediated within SLA / Total Critical Vulns) x 100", expectedScore: 90, actualScore: 82, status: "Missed", department: "Information Security" },
+    { code: "KPI-006", objective: "Phishing Click Rate", description: "Percentage of employees clicking phishing simulation links", dataSource: "Phishing Simulation Tool", calculationFormula: "(Clicks / Total Recipients) x 100 (Lower is better)", expectedScore: 5, actualScore: 8, status: "Missed", department: "Information Security" },
+
+    // IT Operations KPIs
+    { code: "KPI-007", objective: "System Availability", description: "Uptime percentage of critical systems", dataSource: "Monitoring System", calculationFormula: "(Uptime Hours / Total Hours) x 100", expectedScore: 99.9, actualScore: 99.95, status: "Achieved", department: "Information Technology" },
+    { code: "KPI-008", objective: "Backup Success Rate", description: "Percentage of successful backup completions", dataSource: "Backup System", calculationFormula: "(Successful Backups / Total Backups) x 100", expectedScore: 99, actualScore: 99.5, status: "Achieved", department: "Information Technology" },
+    { code: "KPI-009", objective: "Change Success Rate", description: "Percentage of changes implemented without incidents", dataSource: "ITSM System", calculationFormula: "(Successful Changes / Total Changes) x 100", expectedScore: 95, actualScore: 93, status: "Missed", department: "Information Technology" },
+    { code: "KPI-010", objective: "Incident Resolution Time", description: "Average time to resolve P1/P2 incidents", dataSource: "ITSM System", calculationFormula: "Sum(Resolution Time) / Number of Incidents", expectedScore: 100, actualScore: 88, status: "Missed", department: "Information Technology" },
+
+    // Compliance KPIs
+    { code: "KPI-011", objective: "Policy Review Completion", description: "Percentage of policies reviewed annually", dataSource: "GRC System", calculationFormula: "(Reviewed Policies / Total Policies) x 100", expectedScore: 100, actualScore: 100, status: "Achieved", department: "Compliance" },
+    { code: "KPI-012", objective: "Regulatory Finding Closure Rate", description: "Percentage of regulatory findings closed within SLA", dataSource: "GRC System", calculationFormula: "(Closed Findings / Total Findings) x 100", expectedScore: 95, actualScore: 90, status: "Missed", department: "Compliance" },
+    { code: "KPI-013", objective: "Control Testing Completion", description: "Percentage of controls tested per schedule", dataSource: "GRC System", calculationFormula: "(Tested Controls / Scheduled Tests) x 100", expectedScore: 100, actualScore: 95, status: "Achieved", department: "Compliance" },
+    { code: "KPI-014", objective: "Exception Management", description: "Percentage of exceptions with valid approvals", dataSource: "GRC System", calculationFormula: "(Approved Exceptions / Total Exceptions) x 100", expectedScore: 100, actualScore: 100, status: "Achieved", department: "Compliance" },
+
+    // Risk Management KPIs
+    { code: "KPI-015", objective: "Risk Assessment Coverage", description: "Percentage of business units with completed risk assessments", dataSource: "GRC System", calculationFormula: "(Assessed Units / Total Units) x 100", expectedScore: 100, actualScore: 85, status: "Missed", department: "Risk Management" },
+    { code: "KPI-016", objective: "Risk Treatment Plan Implementation", description: "Percentage of risk treatment plans on track", dataSource: "GRC System", calculationFormula: "(On-Track Plans / Total Plans) x 100", expectedScore: 90, actualScore: 78, status: "Missed", department: "Risk Management" },
+    { code: "KPI-017", objective: "Risk Register Currency", description: "Percentage of risks reviewed in last 90 days", dataSource: "GRC System", calculationFormula: "(Updated Risks / Total Risks) x 100", expectedScore: 95, actualScore: 92, status: "Achieved", department: "Risk Management" },
+
+    // Internal Audit KPIs
+    { code: "KPI-018", objective: "Audit Plan Completion", description: "Percentage of planned audits completed", dataSource: "Audit Management System", calculationFormula: "(Completed Audits / Planned Audits) x 100", expectedScore: 95, actualScore: 100, status: "Achieved", department: "Internal Audit" },
+    { code: "KPI-019", objective: "Finding Closure Rate", description: "Percentage of audit findings closed within agreed timeline", dataSource: "Audit Management System", calculationFormula: "(Closed Findings / Total Findings) x 100", expectedScore: 90, actualScore: 85, status: "Missed", department: "Internal Audit" },
+    { code: "KPI-020", objective: "CAPA Effectiveness", description: "Percentage of corrective actions that prevented recurrence", dataSource: "Audit Management System", calculationFormula: "(Effective CAPAs / Total CAPAs) x 100", expectedScore: 85, actualScore: 90, status: "Achieved", department: "Internal Audit" },
+
+    // Vendor Management KPIs
+    { code: "KPI-021", objective: "Vendor Risk Assessment Completion", description: "Percentage of critical vendors assessed annually", dataSource: "Vendor Management System", calculationFormula: "(Assessed Vendors / Critical Vendors) x 100", expectedScore: 100, actualScore: 95, status: "Achieved", department: "Compliance" },
+    { code: "KPI-022", objective: "Vendor Contract Compliance", description: "Percentage of vendors meeting SLA requirements", dataSource: "Vendor Management System", calculationFormula: "(Compliant Vendors / Total Vendors) x 100", expectedScore: 95, actualScore: 88, status: "Missed", department: "Compliance" },
+
+    // Business Continuity KPIs
+    { code: "KPI-023", objective: "BCP Test Completion", description: "Percentage of BCP tests completed per schedule", dataSource: "BCP System", calculationFormula: "(Completed Tests / Scheduled Tests) x 100", expectedScore: 100, actualScore: 100, status: "Achieved", department: "Risk Management" },
+    { code: "KPI-024", objective: "Recovery Time Achievement", description: "Percentage of systems meeting RTO during tests", dataSource: "BCP System", calculationFormula: "(Systems Meeting RTO / Total Systems) x 100", expectedScore: 95, actualScore: 90, status: "Missed", department: "Risk Management" },
+
+    // Access Management KPIs
+    { code: "KPI-025", objective: "Access Review Completion", description: "Percentage of access reviews completed on time", dataSource: "IAM System", calculationFormula: "(Completed Reviews / Required Reviews) x 100", expectedScore: 100, actualScore: 100, status: "Achieved", department: "Information Security" },
+    { code: "KPI-026", objective: "Privileged Account Review", description: "Percentage of privileged accounts reviewed quarterly", dataSource: "PAM System", calculationFormula: "(Reviewed Accounts / Privileged Accounts) x 100", expectedScore: 100, actualScore: 100, status: "Achieved", department: "Information Security" },
+    { code: "KPI-027", objective: "Orphan Account Detection", description: "Percentage of orphan accounts detected and disabled", dataSource: "IAM System", calculationFormula: "(Disabled Orphan Accounts / Detected Orphan Accounts) x 100", expectedScore: 100, actualScore: 95, status: "Achieved", department: "Information Security" },
+
+    // Data Protection KPIs
+    { code: "KPI-028", objective: "Data Classification Compliance", description: "Percentage of data assets properly classified", dataSource: "DLP System", calculationFormula: "(Classified Assets / Total Data Assets) x 100", expectedScore: 95, actualScore: 88, status: "Missed", department: "Information Security" },
+    { code: "KPI-029", objective: "Encryption Compliance", description: "Percentage of sensitive data encrypted at rest", dataSource: "DLP System", calculationFormula: "(Encrypted Data / Sensitive Data) x 100", expectedScore: 100, actualScore: 98, status: "Achieved", department: "Information Security" },
+    { code: "KPI-030", objective: "Data Retention Compliance", description: "Percentage of data disposed per retention policy", dataSource: "Data Management System", calculationFormula: "(Disposed Data / Due for Disposal) x 100", expectedScore: 95, actualScore: 85, status: "Missed", department: "Compliance" },
+
+    // Scheduled/Overdue KPIs for variety
+    { code: "KPI-031", objective: "Q2 Penetration Test", description: "Quarterly penetration testing of external perimeter", dataSource: "Security Assessment", calculationFormula: "Pass/Fail based on critical findings", expectedScore: 100, actualScore: null, status: "Scheduled", department: "Information Security" },
+    { code: "KPI-032", objective: "Annual SOC 2 Audit", description: "SOC 2 Type II audit completion", dataSource: "External Audit", calculationFormula: "Audit completion status", expectedScore: 100, actualScore: null, status: "Scheduled", department: "Compliance" },
+    { code: "KPI-033", objective: "Q1 DR Test", description: "Quarterly disaster recovery test - overdue from Q1", dataSource: "BCP System", calculationFormula: "Test completion and RTO achievement", expectedScore: 100, actualScore: null, status: "Overdue", department: "Information Technology" },
+    { code: "KPI-034", objective: "Security Architecture Review", description: "Annual security architecture review - overdue", dataSource: "Architecture Review", calculationFormula: "Review completion status", expectedScore: 100, actualScore: null, status: "Overdue", department: "Information Security" },
+    { code: "KPI-035", objective: "Vendor Security Assessment Batch", description: "Q2 batch of vendor security assessments", dataSource: "Vendor Management System", calculationFormula: "(Completed Assessments / Planned) x 100", expectedScore: 100, actualScore: null, status: "Scheduled", department: "Compliance" },
   ];
 
   for (const kpi of kpis) {
@@ -859,17 +930,30 @@ async function main() {
           code: kpi.code,
         },
       },
-      update: {},
+      update: {
+        objective: kpi.objective,
+        description: kpi.description,
+        dataSource: kpi.dataSource,
+        calculationFormula: kpi.calculationFormula,
+        expectedScore: kpi.expectedScore,
+        actualScore: kpi.actualScore,
+        status: kpi.status,
+        departmentId: createdDepts[kpi.department],
+      },
       create: {
         customerAccountId,
         code: kpi.code,
         objective: kpi.objective,
         description: kpi.description,
+        dataSource: kpi.dataSource,
+        calculationFormula: kpi.calculationFormula,
         expectedScore: kpi.expectedScore,
         actualScore: kpi.actualScore,
         status: kpi.status,
-        reviewDate: new Date(),
-        departmentId: createdDepts["Compliance"],
+        reviewDate: kpi.status === "Scheduled" ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) :
+                    kpi.status === "Overdue" ? new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) :
+                    new Date(),
+        departmentId: createdDepts[kpi.department],
       },
     });
   }

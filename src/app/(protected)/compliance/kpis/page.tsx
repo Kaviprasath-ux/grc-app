@@ -30,7 +30,13 @@ interface KPI {
   reviewDate: string | null;
   status: string;
   department?: { id: string; name: string } | null;
-  evidence?: { id: string; evidenceCode: string; name: string } | null;
+  evidence?: {
+    id: string;
+    evidenceCode: string;
+    name: string;
+    reviewDate: string | null;
+    department?: { id: string; name: string } | null;
+  } | null;
 }
 
 const statusColors: Record<string, string> = {
@@ -79,9 +85,9 @@ export default function KPIsPage() {
     achieved: kpis.filter((k) => k.status === "Achieved").length,
   };
 
-  // Department counts
+  // Department counts - use evidence department if KPI department is not set
   const departmentCounts = kpis.reduce((acc, kpi) => {
-    const deptName = kpi.department?.name || "Unassigned";
+    const deptName = kpi.department?.name || kpi.evidence?.department?.name || "Unassigned";
     acc[deptName] = (acc[deptName] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
@@ -229,35 +235,44 @@ export default function KPIsPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                kpis.map((kpi) => (
-                  <TableRow
-                    key={kpi.id}
-                    className="cursor-pointer hover:bg-gray-50"
-                    onClick={() => router.push(`/compliance/kpis/${kpi.id}`)}
-                  >
-                    <TableCell className="font-medium">{kpi.code}</TableCell>
-                    <TableCell>
-                      <span className="line-clamp-1">{kpi.objective || "-"}</span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="line-clamp-1 max-w-[200px]">
-                        {kpi.description || "-"}
-                      </span>
-                    </TableCell>
-                    <TableCell>{kpi.expectedScore ?? "-"}</TableCell>
-                    <TableCell>
-                      {kpi.reviewDate
-                        ? new Date(kpi.reviewDate).toLocaleDateString("en-GB")
-                        : "-"}
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={statusColors[kpi.status] || "bg-gray-100"}>
-                        {kpi.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{kpi.department?.name || "-"}</TableCell>
-                  </TableRow>
-                ))
+                kpis.map((kpi) => {
+                  // Use evidence code if KPI is linked to evidence, otherwise use KPI code
+                  const displayCode = kpi.evidence?.evidenceCode || kpi.code;
+                  // Use evidence department if KPI department is not set
+                  const displayDepartment = kpi.department?.name || kpi.evidence?.department?.name || "-";
+                  // Use evidence reviewDate if KPI reviewDate is not set
+                  const displayReviewDate = kpi.reviewDate || kpi.evidence?.reviewDate;
+
+                  return (
+                    <TableRow
+                      key={kpi.id}
+                      className="cursor-pointer hover:bg-gray-50"
+                      onClick={() => router.push(`/compliance/kpis/${kpi.id}`)}
+                    >
+                      <TableCell className="font-medium">{displayCode}</TableCell>
+                      <TableCell>
+                        <span className="line-clamp-1">{kpi.objective || "-"}</span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="line-clamp-1 max-w-[200px]">
+                          {kpi.description || "-"}
+                        </span>
+                      </TableCell>
+                      <TableCell>{kpi.expectedScore ?? "-"}</TableCell>
+                      <TableCell>
+                        {displayReviewDate
+                          ? new Date(displayReviewDate).toLocaleDateString("en-GB")
+                          : "-"}
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={statusColors[kpi.status] || "bg-gray-100"}>
+                          {kpi.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{displayDepartment}</TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>

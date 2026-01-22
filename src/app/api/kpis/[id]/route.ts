@@ -21,6 +21,7 @@ export const GET = withAuth(
             include: {
               control: true,
               attachments: true,
+              department: true,
             },
           },
           reviews: {
@@ -50,7 +51,7 @@ export const GET = withAuth(
       );
     }
   },
-  { resource: "compliance.kpis", action: "view" }
+  { resource: "compliance.kpi", action: "view" }
 );
 
 // PUT update KPI - with tenant validation
@@ -105,7 +106,11 @@ export const PUT = withAuth(
         },
         include: {
           department: true,
-          evidence: true,
+          evidence: {
+            include: {
+              department: true,
+            },
+          },
           reviews: {
             orderBy: { reviewDate: "desc" },
           },
@@ -127,7 +132,7 @@ export const PUT = withAuth(
       );
     }
   },
-  { resource: "compliance.kpis", action: "edit" }
+  { resource: "compliance.kpi", action: "edit" }
 );
 
 // DELETE KPI - with tenant validation
@@ -172,5 +177,5 @@ export const DELETE = withAuth(
       );
     }
   },
-  { resource: "compliance.kpis", action: "delete" }
+  { resource: "compliance.kpi", action: "delete" }
 );
