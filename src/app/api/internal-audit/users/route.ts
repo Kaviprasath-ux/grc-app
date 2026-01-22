@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
 
-// Audit-related roles that can be assigned by AuditHead in Internal Audit user management
-// AuditHead can only manage AuditManager and Auditee roles
-const AUDIT_ROLES = ["AuditManager", "Auditee"];
+// Audit-related roles that can be assigned in Internal Audit user management
+// Auditor role is removed - only AuditHead, AuditManager, and Auditee are available
+const AUDIT_ROLES = ["AuditHead", "AuditManager", "Auditee"];
 
 // GET all audit users - filtered by tenant and audit roles
 // Requires 'edit' action so only AuditHead can access (CustomerAdmin has only 'view')
