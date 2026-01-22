@@ -91,32 +91,29 @@ export const GET = withAuth(
         include: {
           department: {
             select: { id: true, name: true }
+          },
+          assignedAuditor: {
+            select: { id: true, fullName: true, firstName: true, lastName: true }
           }
         },
         orderBy: { createdAt: 'desc' }
       });
 
-      // Get assigned auditors for each engagement
-      const engagementsWithAuditors = await Promise.all(
-        engagements.map(async (engagement) => {
-          const fieldworkItems = await prisma.fieldworkEvidenceRequest.findMany({
-            where: { engagementId: engagement.id },
-            select: {
-              auditeeName: true
-            },
-            distinct: ['auditeeName']
-          });
+      // Map engagements with assigned auditors
+      const engagementsWithAuditors = engagements.map((engagement) => {
+        const auditors: string[] = [];
 
-          const auditors = fieldworkItems
-            .map(item => item.auditeeName)
-            .filter(Boolean);
+        // Add the main assigned auditor if present
+        if (engagement.assignedAuditor) {
+          auditors.push(engagement.assignedAuditor.fullName ||
+            `${engagement.assignedAuditor.firstName} ${engagement.assignedAuditor.lastName}`);
+        }
 
-          return {
-            ...engagement,
-            assignedAuditors: auditors
-          };
-        })
-      );
+        return {
+          ...engagement,
+          assignedAuditors: auditors
+        };
+      });
 
       return NextResponse.json(engagementsWithAuditors);
     } catch (error) {
