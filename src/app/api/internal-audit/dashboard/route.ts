@@ -331,6 +331,11 @@ export const GET = withAuth(
       const auditorSchedule = Array.from(auditorMap.values());
 
       // Get evidence request stats (for auditee view)
+      // FieldworkEvidenceRequest doesn't have customerAccountId, filter through engagement relation
+      const evidenceRequestTenantFilter = isAuditee
+        ? { engagement: { ...tenantFilter }, auditeeId: session.id }
+        : { engagement: { ...tenantFilter } };
+
       const [
         pendingEvidenceRequests,
         inProgressEvidenceRequests,
@@ -339,20 +344,20 @@ export const GET = withAuth(
         overdueEvidenceRequests,
       ] = await Promise.all([
         prisma.fieldworkEvidenceRequest.count({
-          where: { ...auditeeFilter, status: 'Pending' }
+          where: { ...evidenceRequestTenantFilter, status: 'Pending' }
         }),
         prisma.fieldworkEvidenceRequest.count({
-          where: { ...auditeeFilter, status: 'In Progress' }
+          where: { ...evidenceRequestTenantFilter, status: 'In Progress' }
         }),
         prisma.fieldworkEvidenceRequest.count({
-          where: { ...auditeeFilter, status: 'Submitted' }
+          where: { ...evidenceRequestTenantFilter, status: 'Submitted' }
         }),
         prisma.fieldworkEvidenceRequest.count({
-          where: { ...auditeeFilter, status: 'Reviewed' }
+          where: { ...evidenceRequestTenantFilter, status: 'Reviewed' }
         }),
         prisma.fieldworkEvidenceRequest.count({
           where: {
-            ...auditeeFilter,
+            ...evidenceRequestTenantFilter,
             status: { in: ['Pending', 'In Progress'] },
             dueDate: { lt: new Date() }
           }
@@ -384,9 +389,9 @@ export const GET = withAuth(
         }),
       ]);
 
-      // Get recent evidence requests
+      // Get recent evidence requests (filter through engagement relation)
       const recentEvidenceRequests = await prisma.fieldworkEvidenceRequest.findMany({
-        where: auditeeFilter,
+        where: evidenceRequestTenantFilter,
         include: {
           engagement: {
             select: {
@@ -418,10 +423,10 @@ export const GET = withAuth(
         take: 5
       });
 
-      // Get upcoming due dates
+      // Get upcoming due dates (filter through engagement relation)
       const upcomingDueDates = await prisma.fieldworkEvidenceRequest.findMany({
         where: {
-          ...auditeeFilter,
+          ...evidenceRequestTenantFilter,
           status: { in: ['Pending', 'In Progress'] },
           dueDate: { gte: new Date() }
         },
