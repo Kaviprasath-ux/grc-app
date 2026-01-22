@@ -32,7 +32,6 @@ import {
   ChevronsRight,
   ArrowLeft,
 } from "lucide-react";
-import { NewRiskWizard } from "@/components/risks/new-risk-wizard";
 import { RiskDetailDialog } from "@/components/risks/risk-detail-dialog";
 import {
   AlertDialog,
@@ -142,11 +141,9 @@ function RiskRegisterContent() {
   const [statusFilter, setStatusFilter] = useState(initialStatus || "");
 
   // Dialog states
-  const [wizardOpen, setWizardOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedRisk, setSelectedRisk] = useState<Risk | null>(null);
   const [editMode, setEditMode] = useState(false);
-  const [editRiskData, setEditRiskData] = useState<Risk | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [riskToDelete, setRiskToDelete] = useState<Risk | null>(null);
   const [activityLogOpen, setActivityLogOpen] = useState(false);
@@ -251,8 +248,7 @@ function RiskRegisterContent() {
   };
 
   const handleEditRisk = (risk: Risk) => {
-    setEditRiskData(risk);
-    setWizardOpen(true);
+    router.push(`/risks/register/${risk.id}/edit`);
   };
 
   const handleDeleteClick = (risk: Risk) => {
@@ -444,7 +440,7 @@ function RiskRegisterContent() {
         {/* Action Buttons */}
         <div className="flex items-center gap-2">
           <PermissionGate resource="risk.register" action="create">
-            <Button onClick={() => setWizardOpen(true)} className="gap-2">
+            <Button onClick={() => router.push("/risks/register/new")} className="gap-2">
               <Plus className="h-4 w-4" />
               New Risk
             </Button>
@@ -571,24 +567,6 @@ function RiskRegisterContent() {
           pageSize={20}
         />
       )}
-
-      {/* New/Edit Risk Wizard */}
-      <NewRiskWizard
-        open={wizardOpen}
-        onOpenChange={(open) => {
-          setWizardOpen(open);
-          if (!open) setEditRiskData(null);
-        }}
-        onSuccess={() => {
-          setWizardOpen(false);
-          setEditRiskData(null);
-          fetchRisks();
-          fetchStats();
-        }}
-        categories={categories}
-        departments={departments}
-        editData={editRiskData}
-      />
 
       {/* Risk Detail Dialog */}
       <RiskDetailDialog

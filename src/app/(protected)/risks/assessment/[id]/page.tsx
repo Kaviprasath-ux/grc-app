@@ -25,6 +25,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { Unauthorized } from "@/components/ui/unauthorized";
 import { cn } from "@/lib/utils";
 import { Check, ArrowLeft } from "lucide-react";
+import { toast } from "sonner";
 import Link from "next/link";
 
 interface Risk {
@@ -549,8 +550,10 @@ export default function RiskAssessmentWizardPage() {
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        console.error("Failed to create risk response:", error);
+        const errorData = await response.json();
+        const errorMessage = errorData.error || 'Unknown error';
+        console.error("Failed to create risk response:", errorMessage);
+        toast.error(`Failed to create risk response: ${errorMessage}`);
         return;
       }
 

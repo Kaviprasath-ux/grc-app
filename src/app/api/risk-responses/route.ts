@@ -27,10 +27,15 @@ export const GET = withAuth(
 
       // Apply department scope filtering via the related risk
       // Department-scoped roles only see responses for risks in their department
-      const isDepartmentRole = session.roles.some(
-        (role) => role === "DepartmentReviewer" || role === "DepartmentContributor"
-      );
-      if (isDepartmentRole && session.departmentId) {
+      const isDepartmentReviewer = session.roles.includes("DepartmentReviewer");
+      const isDepartmentContributor = session.roles.includes("DepartmentContributor");
+
+      if (isDepartmentReviewer && session.departmentId) {
+        // DepartmentReviewer only sees responses that are submitted for approval, sent back, or completed
+        where.risk = { departmentId: session.departmentId };
+        where.status = { in: ["Awaiting Approval", "Sent Back", "Completed"] };
+      } else if (isDepartmentContributor && session.departmentId) {
+        // DepartmentContributor sees all responses in their department
         where.risk = { departmentId: session.departmentId };
       }
 

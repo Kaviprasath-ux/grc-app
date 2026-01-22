@@ -320,6 +320,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'organization.dashboard', actions: ['view'], scope: 'department' },
     { resource: 'organization.context', actions: ['view'], scope: 'department' },
     { resource: 'organization.users', actions: ['view'], scope: 'department' },
+    { resource: 'organization.department', actions: ['view'], scope: 'all' }, // Needed for department dropdowns
     { resource: 'organization.process', actions: ['view', 'approve'], scope: 'department' },
     // Compliance - Framework, Control, Governance, Evidence, Exception, KPI, Reports (NO Domain, NO Settings/Master Data, NO Risk Matrix)
     { resource: 'compliance.dashboard', actions: ['view'], scope: 'department' },
@@ -339,7 +340,9 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'risk.dashboard', actions: ['view'], scope: 'department' },
     { resource: 'risk.register', actions: ['view', 'create', 'edit', 'delete'], scope: 'department' },
     { resource: 'risk.assessment', actions: ['view', 'create', 'edit', 'delete'], scope: 'department' },
-    { resource: 'risk.response', actions: ['view', 'approve'], scope: 'department' },
+    // DepartmentReviewer can create risk responses since they can create/edit assessments
+    // When completing an assessment with non-low risk, a response strategy must be provided
+    { resource: 'risk.response', actions: ['view', 'create', 'approve'], scope: 'department' },
     { resource: 'risk.risk-matrix', actions: ['view', 'create', 'edit', 'delete'], scope: 'department' },
     { resource: 'risk.reports', actions: ['view'], scope: 'department' },
     // Internal Audit - ONLY RiskRegister page (NO Settings, NO other audit pages)
@@ -351,6 +354,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     // Organization - Dashboard, Context, Process, Reports (NO Profile, NO Users, NO Settings)
     { resource: 'organization.dashboard', actions: ['view'], scope: 'department' },
     { resource: 'organization.context', actions: ['view'], scope: 'department' },
+    { resource: 'organization.department', actions: ['view'], scope: 'all' }, // Needed for department dropdowns
     { resource: 'organization.process', actions: ['view', 'create', 'edit'], scope: 'department' },
     // Compliance - Framework, Control, Governance, Evidence, Exception, KPI, Reports (NO Domain, NO Risk Matrix, NO Settings)
     { resource: 'compliance.dashboard', actions: ['view'], scope: 'department' },

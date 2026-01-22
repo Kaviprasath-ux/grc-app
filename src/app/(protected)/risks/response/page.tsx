@@ -99,6 +99,7 @@ export default function RiskResponsePage() {
   const isDepartmentRole = userRoles.some(
     (role) => role === "DepartmentReviewer" || role === "DepartmentContributor"
   );
+  const isDepartmentReviewer = userRoles.includes("DepartmentReviewer");
   const userDepartmentId = session?.user?.departmentId;
 
   // Filters - Default to first option (no "all" option per source system)
@@ -257,28 +258,16 @@ export default function RiskResponsePage() {
           </Button>
         );
       case "In-Progress":
-        // In-Progress status: "Submit for Approval" (if canEdit) + "Resume" buttons
+        // In-Progress status: "Resume" button only (Submit for Approval is in details page)
         return (
-          <div className="flex gap-2">
-            {canEdit && (
-              <Button
-                size="sm"
-                className="bg-primary hover:bg-primary/90"
-                onClick={(e) => handleSubmitForApproval(risk, e)}
-                disabled={isLoading}
-              >
-                {isLoading ? "..." : "Submit for Approval"}
-              </Button>
-            )}
-            <Button
-              size="sm"
-              variant="outline"
-              className="border-primary text-primary hover:bg-primary/10"
-              onClick={() => openDetail(risk)}
-            >
-              Resume
-            </Button>
-          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-primary text-primary hover:bg-primary/10"
+            onClick={() => openDetail(risk)}
+          >
+            Resume
+          </Button>
         );
       case "Sent Back":
         // Sent Back status: "Resume" button to view and resubmit (if canEdit)
@@ -365,7 +354,15 @@ export default function RiskResponsePage() {
     ? risks.filter((risk) => risk.department?.id === userDepartmentId)
     : risks;
 
-  const filteredByStrategy = departmentFilteredRisks.filter((risk) => risk.responseStrategy === strategyFilter);
+  // DepartmentReviewer only sees items with "Awaiting Approval", "Sent Back", or "Completed" status
+  const reviewerFilteredRisks = isDepartmentReviewer
+    ? departmentFilteredRisks.filter((risk) => {
+        const status = normalizeStatus(risk.responseStatus || "Open");
+        return status === "Awaiting Approval" || status === "Sent Back" || status === "Completed";
+      })
+    : departmentFilteredRisks;
+
+  const filteredByStrategy = reviewerFilteredRisks.filter((risk) => risk.responseStrategy === strategyFilter);
 
   // Get normalized responseStatus for a risk (for Risk Response Strategy workflow)
   const getRiskStatus = (risk: Risk) => {
