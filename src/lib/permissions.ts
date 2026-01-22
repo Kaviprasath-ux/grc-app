@@ -285,6 +285,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'risk.register', actions: ['view'], scope: 'all' },
     { resource: 'risk.assessment', actions: ['view'], scope: 'all' },
     { resource: 'risk.response', actions: ['view', 'approve'], scope: 'all' },
+    { resource: 'risk.risk-matrix', actions: ['view'], scope: 'all' },
     { resource: 'risk.reports', actions: ['view'], scope: 'all' },
     // Internal Audit - NO ACCESS (entire module excluded)
   ],
@@ -306,6 +307,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'risk.register', actions: ['view', 'create', 'edit'], scope: 'all' },
     { resource: 'risk.assessment', actions: ['view', 'create', 'edit'], scope: 'all' },
     { resource: 'risk.response', actions: ['view', 'create', 'edit'], scope: 'all' },
+    { resource: 'risk.risk-matrix', actions: ['view', 'create', 'edit'], scope: 'all' },
     { resource: 'asset.dashboard', actions: ['view'], scope: 'all' },
     { resource: 'asset.classification', actions: ['view', 'create', 'edit'], scope: 'all' },
   ],
@@ -338,6 +340,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'risk.register', actions: ['view', 'create', 'edit', 'delete'], scope: 'department' },
     { resource: 'risk.assessment', actions: ['view', 'create', 'edit', 'delete'], scope: 'department' },
     { resource: 'risk.response', actions: ['view', 'approve'], scope: 'department' },
+    { resource: 'risk.risk-matrix', actions: ['view', 'create', 'edit', 'delete'], scope: 'department' },
     { resource: 'risk.reports', actions: ['view'], scope: 'department' },
     // Internal Audit - ONLY RiskRegister page (NO Settings, NO other audit pages)
     { resource: 'audit.risk-register', actions: ['view'], scope: 'department' },
@@ -367,6 +370,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'risk.register', actions: ['view', 'create', 'edit'], scope: 'department' },
     { resource: 'risk.assessment', actions: ['view', 'create', 'edit'], scope: 'department' },
     { resource: 'risk.response', actions: ['view', 'create', 'edit'], scope: 'department' },
+    { resource: 'risk.risk-matrix', actions: ['view', 'create', 'edit'], scope: 'department' },
     { resource: 'risk.reports', actions: ['view'], scope: 'department' },
     // Internal Audit - ONLY RiskRegister (NO Settings)
     { resource: 'audit.risk-register', actions: ['view'], scope: 'department' },
