@@ -79,11 +79,18 @@ interface Department {
   name: string;
 }
 
+interface UserRole {
+  role: {
+    name: string;
+  };
+}
+
 interface User {
   id: string;
   fullName: string;
   departmentId?: string;
   customerCode?: string;
+  userRoles?: UserRole[];
 }
 
 interface CurrentUser {
@@ -390,11 +397,29 @@ export default function GovernancePage() {
     return departments.filter((d) => customerUserDeptIds.has(d.id));
   };
 
-  // Filter users by selected department (with customer scoping for Customer Admin)
+  // Filter users for Assignee dropdown (Customer Admin only sees DepartmentReviewers from selected department)
   const filteredUsers = (() => {
+    if (!isCustomerAdmin) {
+      // Non-Customer Admin: show all users filtered by department
+      const baseUsers = getCustomerScopedUsers();
+      if (!newPolicy.departmentId) return baseUsers;
+      return baseUsers.filter((u) => u.departmentId === newPolicy.departmentId || !u.departmentId);
+    }
+
+    // Customer Admin: must select department first, then show only DepartmentReviewers from that department
+    if (!newPolicy.departmentId) return [];
+
     const baseUsers = getCustomerScopedUsers();
-    if (!newPolicy.departmentId) return baseUsers;
-    return baseUsers.filter((u) => u.departmentId === newPolicy.departmentId || !u.departmentId);
+    return baseUsers.filter((u) => {
+      // Must match selected department
+      if (u.departmentId !== newPolicy.departmentId) return false;
+
+      // Must have DepartmentReviewer role
+      const hasDepartmentReviewerRole = u.userRoles?.some(
+        (ur) => ur.role?.name === "DepartmentReviewer"
+      );
+      return hasDepartmentReviewerRole;
+    });
   })();
 
   const handleTabChange = (tab: string) => {
@@ -717,14 +742,28 @@ export default function GovernancePage() {
                 </div>
                 <div>
                   <Label htmlFor="assigneeId">Assignee *</Label>
-                  <Select value={newPolicy.assigneeId} onValueChange={(v) => setNewPolicy({ ...newPolicy, assigneeId: v })}>
+                  <Select
+                    value={newPolicy.assigneeId}
+                    onValueChange={(v) => setNewPolicy({ ...newPolicy, assigneeId: v })}
+                    disabled={isCustomerAdmin && !newPolicy.departmentId}
+                  >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select assignee" />
+                      <SelectValue placeholder={
+                        isCustomerAdmin && !newPolicy.departmentId
+                          ? "Select department first"
+                          : "Select assignee"
+                      } />
                     </SelectTrigger>
                     <SelectContent>
-                      {filteredUsers.map((u) => (
-                        <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
-                      ))}
+                      {filteredUsers.length > 0 ? (
+                        filteredUsers.map((u) => (
+                          <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
+                        ))
+                      ) : (
+                        <div className="py-2 px-2 text-sm text-muted-foreground text-center">
+                          No department reviewers found
+                        </div>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>

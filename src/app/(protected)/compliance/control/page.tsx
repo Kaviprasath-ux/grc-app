@@ -94,11 +94,18 @@ interface Framework {
   name: string;
 }
 
+interface UserRole {
+  role: {
+    name: string;
+  };
+}
+
 interface User {
   id: string;
   fullName: string;
   departmentId?: string;
   customerCode?: string;
+  userRoles?: UserRole[];
 }
 
 interface CurrentUser {
@@ -425,11 +432,29 @@ export default function ControlListPage() {
     return departments.filter((d) => customerUserDeptIds.has(d.id));
   };
 
-  const getFilteredUsers = () => {
-    // Start with customer-scoped users if Customer Admin
+  // Filter users for Assignee dropdown (Customer Admin only sees DepartmentReviewers from selected department)
+  const getFilteredUsersForAssignee = () => {
+    if (!isCustomerAdmin) {
+      // Non-Customer Admin: show all users filtered by department
+      const baseUsers = getCustomerScopedUsers();
+      if (!newControl.departmentId) return baseUsers;
+      return baseUsers.filter((u) => u.departmentId === newControl.departmentId);
+    }
+
+    // Customer Admin: must select department first, then show only DepartmentReviewers from that department
+    if (!newControl.departmentId) return [];
+
     const baseUsers = getCustomerScopedUsers();
-    if (!newControl.departmentId) return baseUsers;
-    return baseUsers.filter((u) => u.departmentId === newControl.departmentId);
+    return baseUsers.filter((u) => {
+      // Must match selected department
+      if (u.departmentId !== newControl.departmentId) return false;
+
+      // Must have DepartmentReviewer role
+      const hasDepartmentReviewerRole = u.userRoles?.some(
+        (ur) => ur.role?.name === "DepartmentReviewer"
+      );
+      return hasDepartmentReviewerRole;
+    });
   };
 
   // Show loading state while permissions are being fetched
@@ -838,14 +863,28 @@ export default function ControlListPage() {
                 </div>
                 <div>
                   <Label>Assignee</Label>
-                  <Select value={newControl.assigneeId} onValueChange={(v) => setNewControl({ ...newControl, assigneeId: v })}>
+                  <Select
+                    value={newControl.assigneeId}
+                    onValueChange={(v) => setNewControl({ ...newControl, assigneeId: v })}
+                    disabled={isCustomerAdmin && !newControl.departmentId}
+                  >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select assignee" />
+                      <SelectValue placeholder={
+                        isCustomerAdmin && !newControl.departmentId
+                          ? "Select department first"
+                          : "Select assignee"
+                      } />
                     </SelectTrigger>
                     <SelectContent>
-                      {getFilteredUsers().map((u) => (
-                        <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
-                      ))}
+                      {getFilteredUsersForAssignee().length > 0 ? (
+                        getFilteredUsersForAssignee().map((u) => (
+                          <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
+                        ))
+                      ) : (
+                        <div className="py-2 px-2 text-sm text-muted-foreground text-center">
+                          No department reviewers found
+                        </div>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>

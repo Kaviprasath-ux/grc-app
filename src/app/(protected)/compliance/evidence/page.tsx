@@ -87,11 +87,18 @@ interface Department {
   name: string;
 }
 
+interface UserRole {
+  role: {
+    name: string;
+  };
+}
+
 interface User {
   id: string;
   fullName: string;
   departmentId: string | null;
   customerCode?: string;
+  userRoles?: UserRole[];
 }
 
 interface CurrentUser {
@@ -270,11 +277,29 @@ export default function EvidencePage() {
     return departments.filter((d) => customerUserDeptIds.has(d.id));
   };
 
-  // Filtered users by department (with customer scoping for Customer Admin)
+  // Filter users for Assignee dropdown (Customer Admin only sees DepartmentReviewers from selected department)
   const filteredUsers = (() => {
+    if (!isCustomerAdmin) {
+      // Non-Customer Admin: show all users filtered by department
+      const baseUsers = getCustomerScopedUsers();
+      if (!createForm.departmentId) return baseUsers;
+      return baseUsers.filter((u) => u.departmentId === createForm.departmentId);
+    }
+
+    // Customer Admin: must select department first, then show only DepartmentReviewers from that department
+    if (!createForm.departmentId) return [];
+
     const baseUsers = getCustomerScopedUsers();
-    if (!createForm.departmentId) return baseUsers;
-    return baseUsers.filter((u) => u.departmentId === createForm.departmentId);
+    return baseUsers.filter((u) => {
+      // Must match selected department
+      if (u.departmentId !== createForm.departmentId) return false;
+
+      // Must have DepartmentReviewer role
+      const hasDepartmentReviewerRole = u.userRoles?.some(
+        (ur) => ur.role?.name === "DepartmentReviewer"
+      );
+      return hasDepartmentReviewerRole;
+    });
   })();
 
   // Filtered controls for step 2
@@ -669,14 +694,28 @@ export default function EvidencePage() {
                 </div>
                 <div>
                   <Label htmlFor="assigneeId">Assignee *</Label>
-                  <Select value={createForm.assigneeId} onValueChange={(v) => setCreateForm({ ...createForm, assigneeId: v })} disabled={!createForm.departmentId}>
+                  <Select
+                    value={createForm.assigneeId}
+                    onValueChange={(v) => setCreateForm({ ...createForm, assigneeId: v })}
+                    disabled={isCustomerAdmin && !createForm.departmentId}
+                  >
                     <SelectTrigger>
-                      <SelectValue placeholder={createForm.departmentId ? "Select assignee" : "Select department first"} />
+                      <SelectValue placeholder={
+                        isCustomerAdmin && !createForm.departmentId
+                          ? "Select department first"
+                          : "Select assignee"
+                      } />
                     </SelectTrigger>
                     <SelectContent>
-                      {filteredUsers.map((u) => (
-                        <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
-                      ))}
+                      {filteredUsers.length > 0 ? (
+                        filteredUsers.map((u) => (
+                          <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
+                        ))
+                      ) : (
+                        <div className="py-2 px-2 text-sm text-muted-foreground text-center">
+                          No department reviewers found
+                        </div>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
