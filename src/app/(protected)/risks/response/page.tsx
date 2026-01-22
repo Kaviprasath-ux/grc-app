@@ -103,8 +103,9 @@ export default function RiskResponsePage() {
   const userDepartmentId = session?.user?.departmentId;
 
   // Filters - Default to first option (no "all" option per source system)
+  // DepartmentReviewer defaults to "Awaiting Approval" since they only see approval-related items
   const [strategyFilter, setStrategyFilter] = useState("Treat");
-  const [progressFilter, setProgressFilter] = useState("Completed");
+  const [progressFilter, setProgressFilter] = useState(isDepartmentReviewer ? "Awaiting Approval" : "Completed");
 
   // Dialog states
   const [successDialogOpen, setSuccessDialogOpen] = useState(false);
@@ -403,11 +404,11 @@ export default function RiskResponsePage() {
     }
   };
 
-  // Display risks filtered by strategy only (list shows all statuses for selected strategy)
-  const displayRisks = filteredByStrategy;
+  // Display risks filtered by both strategy and progress status
+  const displayRisks = filteredByProgress;
 
   const clearStrategyFilter = () => setStrategyFilter("Treat");
-  const clearProgressFilter = () => setProgressFilter("Completed");
+  const clearProgressFilter = () => setProgressFilter(isDepartmentReviewer ? "Awaiting Approval" : "Completed");
 
   if (loading) {
     return (
@@ -472,11 +473,12 @@ export default function RiskResponsePage() {
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Open">Open</SelectItem>
-                    <SelectItem value="In-Progress">In-Progress</SelectItem>
-                    <SelectItem value="Completed">Completed</SelectItem>
+                    {/* DepartmentReviewer only sees Awaiting Approval, Sent Back, and Completed */}
+                    {!isDepartmentReviewer && <SelectItem value="Open">Open</SelectItem>}
+                    {!isDepartmentReviewer && <SelectItem value="In-Progress">In-Progress</SelectItem>}
                     <SelectItem value="Awaiting Approval">Awaiting Approval</SelectItem>
                     <SelectItem value="Sent Back">Sent Back</SelectItem>
+                    <SelectItem value="Completed">Completed</SelectItem>
                   </SelectContent>
                 </Select>
                 <Button
