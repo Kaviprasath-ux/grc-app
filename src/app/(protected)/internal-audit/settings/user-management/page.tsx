@@ -61,13 +61,10 @@ interface Department {
   name: string;
 }
 
+// For Audit function, only show these three roles
 const AUDIT_ROLES = [
-  "Auditor",
   "AuditHead",
-  "AuditUser",
   "AuditManager",
-  "DepartmentReviewer",
-  "DepartmentContributor",
   "Auditee",
 ];
 
@@ -250,11 +247,13 @@ export default function UserManagementPage() {
       const url = editItem ? `/api/users/${editItem.id}` : "/api/users";
       const method = editItem ? "PUT" : "POST";
 
+      const generatedUserName = formData.userName || nextUserId;
       const body: any = {
+        userId: generatedUserName, // API requires userId
         firstName: formData.firstName,
         lastName: formData.lastName,
         fullName: formData.fullName || `${formData.firstName} ${formData.lastName}`,
-        userName: formData.userName || nextUserId,
+        userName: generatedUserName,
         email: formData.email,
         designation: formData.designation || null,
         departmentId: formData.departmentId || null,
@@ -275,9 +274,18 @@ export default function UserManagementPage() {
       if (response.ok) {
         setDialogOpen(false);
         fetchData();
+        toast({ title: "Success", description: "User saved successfully!" });
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        toast({
+          title: "Error",
+          description: errorData.error || "Failed to save user",
+          variant: "destructive"
+        });
       }
     } catch (error) {
       console.error("Failed to save:", error);
+      toast({ title: "Error", description: "Failed to save user", variant: "destructive" });
     } finally {
       setSaving(false);
     }

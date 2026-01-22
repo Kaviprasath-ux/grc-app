@@ -51,10 +51,12 @@ export default function DashboardPage() {
   useEffect(() => {
     if (session?.user?.roles?.includes("GRCAdministrator")) {
       router.replace("/grc");
-    } else if (session?.user?.roles?.includes("AuditHead")) {
+    } else if (session?.user?.roles?.includes("AuditHead") || session?.user?.roles?.includes("AuditManager")) {
+      // AuditHead and AuditManager see the Internal Audit Dashboard
       router.replace("/internal-audit/dashboard");
     } else if (session?.user?.roles?.includes("Auditee") &&
                !session?.user?.roles?.includes("AuditHead") &&
+               !session?.user?.roles?.includes("AuditManager") &&
                !session?.user?.roles?.includes("Auditor")) {
       // Auditee can only access Fieldwork, CAPA Tracking, and Reports (NO Dashboard)
       router.replace("/internal-audit/fieldwork");

@@ -200,6 +200,7 @@ async function main() {
     { userId: "USR-013", userName: "prakash.loganathan", email: "prakash.l@baarez.com", firstName: "Prakash", lastName: "L", department: "Internal Audit", designation: "IT Auditor", role: "Auditor", function: "Audit" },
     { userId: "USR-014", userName: "navita.singh", email: "navita.singh@baarez.com", firstName: "Navita", lastName: "S", department: "Internal Audit", designation: "Auditor", role: "Auditor", function: "Audit" },
     { userId: "USR-015", userName: "avinash.kumar", email: "avinash.kumar@baarez.com", firstName: "Avinash", lastName: "Kumar", department: "Internal Audit", designation: "Junior Auditor", role: "Auditor", function: "Audit" },
+    { userId: "USR-016", userName: "auditm", email: "auditm@baarez.com", firstName: "Audit", lastName: "Manager", department: "Internal Audit", designation: "Audit Manager", role: "AuditManager", function: "Audit" },
   ];
 
   const createdUsers: { [key: string]: string } = {};
@@ -259,6 +260,7 @@ async function main() {
     "Administrator": "CustomerAdministrator",
     "GRC Admin": "GRCAdministrator",
     "AuditHead": "AuditHead",
+    "AuditManager": "AuditManager",
     "Auditor": "Auditor",
     "Risk Manager": "Contributor",
     "User": "Contributor",

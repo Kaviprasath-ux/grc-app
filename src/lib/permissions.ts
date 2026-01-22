@@ -188,21 +188,27 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
   ],
 
   // Audit Head - Full access to Internal Audit module ONLY
+  // Also needs organization.department:view to see department dropdowns in CAPA, Fieldwork, etc.
   AuditHead: [
     { resource: 'audit.*', actions: ['*'], scope: 'all' },
+    { resource: 'organization.department', actions: ['view'], scope: 'all' },
   ],
 
-  // Audit Manager - Manage audits (NO Settings access per UAT)
+  // Audit Manager - Same access as AuditHead EXCEPT Settings
+  // Can see all sections and data that AuditHead sees, but cannot access Settings/User Management
   AuditManager: [
-    { resource: 'audit.dashboard', actions: ['view'], scope: 'all' },
-    { resource: 'audit.auditables', actions: ['view', 'create', 'edit'], scope: 'all' },
-    { resource: 'audit.risk-identification', actions: ['view', 'create', 'edit'], scope: 'all' },
-    { resource: 'audit.risk-register', actions: ['view', 'create', 'edit'], scope: 'all' },
+    { resource: 'audit.dashboard', actions: ['*'], scope: 'all' },
+    { resource: 'audit.auditables', actions: ['*'], scope: 'all' },
+    { resource: 'audit.risk-identification', actions: ['*'], scope: 'all' },
+    { resource: 'audit.risk-register', actions: ['*'], scope: 'all' },
     { resource: 'audit.planning', actions: ['*'], scope: 'all' },
-    { resource: 'audit.fieldwork', actions: ['view', 'create', 'edit', 'approve'], scope: 'all' },
+    { resource: 'audit.fieldwork', actions: ['*'], scope: 'all' },
     { resource: 'audit.reports', actions: ['*'], scope: 'all' },
     { resource: 'audit.capa', actions: ['*'], scope: 'all' },
-    { resource: 'audit.documents', actions: ['view', 'create', 'edit'], scope: 'all' },
+    { resource: 'audit.documents', actions: ['*'], scope: 'all' },
+    { resource: 'audit.risk-universe', actions: ['*'], scope: 'all' },
+    // NO audit.settings - AuditManager cannot access Settings/User Management
+    { resource: 'organization.department', actions: ['view'], scope: 'all' },
   ],
 
   // Audit User - Basic audit access (view-only, NO Settings/Risk Universe per UAT)
@@ -232,6 +238,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'audit.documents', actions: ['view', 'create'], scope: 'all' },
     { resource: 'organization.dashboard', actions: ['view'], scope: 'all' },
     { resource: 'organization.process', actions: ['view'], scope: 'all' },
+    { resource: 'organization.department', actions: ['view'], scope: 'all' },
     { resource: 'compliance.controls', actions: ['view'], scope: 'all' },
   ],
 
