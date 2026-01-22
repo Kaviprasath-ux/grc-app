@@ -17,7 +17,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronRight, Link2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Link2, RefreshCw } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { usePermissions, useHasRole } from "@/hooks/usePermissions";
 import { Unauthorized } from "@/components/ui/unauthorized";
+import { useToast } from "@/hooks/use-toast";
 
 interface LinkedControl {
   id: string;
@@ -42,25 +43,30 @@ interface LinkedControl {
   };
 }
 
-interface Risk {
+interface MatrixEntry {
   id: string;
-  riskId: string;
+  matrixEntryId: string;
+  riskCode: string;
   name: string;
   description: string | null;
-  likelihood: number;
-  impact: number;
   riskRating: string | null;
-  residualLikelihood: number | null;
-  residualImpact: number | null;
   residualRiskRating: string | null;
   status: string;
-  owner: { id: string; fullName: string } | null;
-  controlRisks?: LinkedControl[];
+  ownerName: string | null;
+  riskId: string | null; // Reference to original risk (may be null if risk was deleted)
+  risk: {
+    id: string;
+    riskId: string;
+    name: string;
+    status: string;
+  } | null;
+  linkedControls: LinkedControl[];
 }
 
 const riskRatingColors: Record<string, string> = {
   Catastrophic: "bg-red-600 text-white",
   "Very High": "bg-red-500 text-white",
+  "Very high": "bg-red-500 text-white",
   High: "bg-orange-500 text-white",
   Medium: "bg-yellow-500 text-black",
   Low: "bg-green-500 text-white",
@@ -85,30 +91,32 @@ const riskStatusColors: Record<string, string> = {
 };
 
 export default function RiskControlMatrixPage() {
-  const { canView, isLoading: permissionsLoading } = usePermissions('risk.risk-matrix');
+  const { canView, canCreate, canDelete, isLoading: permissionsLoading } = usePermissions('risk.risk-matrix');
   const isCustomerAdmin = useHasRole('CustomerAdministrator');
-  const [risks, setRisks] = useState<Risk[]>([]);
+  const [entries, setEntries] = useState<MatrixEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [expandedRisks, setExpandedRisks] = useState<Set<string>>(new Set());
+  const [expandedEntries, setExpandedEntries] = useState<Set<string>>(new Set());
   const [expandedControls, setExpandedControls] = useState<Set<string>>(new Set());
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
+  const { toast } = useToast();
   const pageSize = 10;
 
-  const fetchRisks = useCallback(async (pageNum: number, append: boolean = false) => {
+  const fetchEntries = useCallback(async (pageNum: number, append: boolean = false) => {
     try {
-      const response = await fetch(`/api/risks?page=${pageNum}&limit=${pageSize}&includeControls=true`);
+      const response = await fetch(`/api/risk-control-matrix?page=${pageNum}&limit=${pageSize}`);
       if (response.ok) {
         const result = await response.json();
         const data = Array.isArray(result) ? result : result.data || [];
 
         if (append) {
-          setRisks(prev => [...prev, ...data]);
+          setEntries(prev => [...prev, ...data]);
         } else {
-          setRisks(data);
-          // Expand all risks by default
-          setExpandedRisks(new Set(data.map((r: Risk) => r.id)));
+          setEntries(data);
+          // Expand all entries by default
+          setExpandedEntries(new Set(data.map((e: MatrixEntry) => e.id)));
         }
 
         // Check if there are more items
@@ -119,85 +127,172 @@ export default function RiskControlMatrixPage() {
         }
       }
     } catch (error) {
-      console.error("Error fetching risks:", error);
+      console.error("Error fetching matrix entries:", error);
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchRisks(1);
-  }, [fetchRisks]);
+    fetchEntries(1);
+  }, [fetchEntries]);
 
   const handleLoadMore = () => {
     const nextPage = page + 1;
     setPage(nextPage);
-    fetchRisks(nextPage, true);
+    fetchEntries(nextPage, true);
   };
 
-  const toggleRisk = (riskId: string) => {
-    setExpandedRisks(prev => {
+  const toggleEntry = (entryId: string) => {
+    setExpandedEntries(prev => {
       const next = new Set(prev);
-      if (next.has(riskId)) {
-        next.delete(riskId);
+      if (next.has(entryId)) {
+        next.delete(entryId);
       } else {
-        next.add(riskId);
+        next.add(entryId);
       }
       return next;
     });
   };
 
-  const toggleControls = (riskId: string) => {
+  const toggleControls = (entryId: string) => {
     setExpandedControls(prev => {
       const next = new Set(prev);
-      if (next.has(riskId)) {
-        next.delete(riskId);
+      if (next.has(entryId)) {
+        next.delete(entryId);
       } else {
-        next.add(riskId);
+        next.add(entryId);
       }
       return next;
     });
   };
 
-  const handleDeleteControl = async (riskId: string, controlId: string) => {
-    setDeleting(`${riskId}-${controlId}`);
+  // Unlink control from matrix entry (does NOT delete the control)
+  const handleUnlinkControl = async (entryId: string, controlId: string) => {
+    setDeleting(`${entryId}-${controlId}`);
     try {
-      const response = await fetch(`/api/risks/${riskId}/controls/${controlId}`, {
+      const response = await fetch(`/api/risk-control-matrix/${entryId}/controls/${controlId}`, {
         method: "DELETE",
       });
       if (response.ok) {
-        // Update local state to remove the deleted control
-        setRisks(prev => prev.map(risk => {
-          if (risk.id === riskId) {
+        // Update local state to remove the unlinked control
+        setEntries(prev => prev.map(entry => {
+          if (entry.id === entryId) {
             return {
-              ...risk,
-              controlRisks: risk.controlRisks?.filter(cr => cr.control.id !== controlId) || []
+              ...entry,
+              linkedControls: entry.linkedControls.filter(lc => lc.control.id !== controlId)
             };
           }
-          return risk;
+          return entry;
         }));
+        toast({
+          title: "Control unlinked",
+          description: "The control has been unlinked from this matrix entry.",
+        });
       }
     } catch (error) {
-      console.error("Error deleting control link:", error);
+      console.error("Error unlinking control:", error);
+      toast({
+        title: "Error",
+        description: "Failed to unlink control.",
+        variant: "destructive",
+      });
     } finally {
       setDeleting(null);
     }
   };
 
-  const handleDeleteRisk = async (riskId: string) => {
-    setDeleting(`risk-${riskId}`);
+  // Delete matrix entry (does NOT delete the underlying risk)
+  const handleDeleteEntry = async (entryId: string) => {
+    setDeleting(`entry-${entryId}`);
     try {
-      const response = await fetch(`/api/risks/${riskId}`, {
+      const response = await fetch(`/api/risk-control-matrix/${entryId}`, {
         method: "DELETE",
       });
       if (response.ok) {
-        // Remove the risk from local state
-        setRisks(prev => prev.filter(risk => risk.id !== riskId));
+        // Remove the entry from local state
+        setEntries(prev => prev.filter(entry => entry.id !== entryId));
+        toast({
+          title: "Entry deleted",
+          description: "The matrix entry has been removed. The underlying risk is NOT affected.",
+        });
       }
     } catch (error) {
-      console.error("Error deleting risk:", error);
+      console.error("Error deleting matrix entry:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete matrix entry.",
+        variant: "destructive",
+      });
     } finally {
       setDeleting(null);
+    }
+  };
+
+  // Delete all matrix entries (does NOT delete the underlying risks)
+  const handleDeleteAllEntries = async () => {
+    setDeleting("all-entries");
+    try {
+      const response = await fetch(`/api/risk-control-matrix`, {
+        method: "DELETE",
+      });
+      if (response.ok) {
+        setEntries([]);
+        toast({
+          title: "All entries deleted",
+          description: "All matrix entries have been removed. The underlying risks are NOT affected.",
+        });
+      }
+    } catch (error) {
+      console.error("Error deleting all matrix entries:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete matrix entries.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeleting(null);
+    }
+  };
+
+  // Import risks to the matrix (creates matrix entries from existing risks)
+  const handleImportRisks = async () => {
+    setImporting(true);
+    try {
+      const response = await fetch(`/api/risk-control-matrix/import`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ includeControls: true }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        toast({
+          title: "Import completed",
+          description: `Imported ${result.imported} risks to the matrix. ${result.skipped} already existed.`,
+        });
+        // Refresh the list
+        setPage(1);
+        fetchEntries(1);
+      } else {
+        const error = await response.json();
+        toast({
+          title: "Import failed",
+          description: error.error || "Failed to import risks.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error importing risks:", error);
+      toast({
+        title: "Error",
+        description: "Failed to import risks to matrix.",
+        variant: "destructive",
+      });
+    } finally {
+      setImporting(false);
     }
   };
 
@@ -215,22 +310,6 @@ export default function RiskControlMatrixPage() {
     return <Unauthorized description="You don't have permission to access Risk Control Matrix." />;
   }
 
-  const handleDeleteAllRisks = async () => {
-    setDeleting("all-risks");
-    try {
-      for (const risk of risks) {
-        await fetch(`/api/risks/${risk.id}`, {
-          method: "DELETE",
-        });
-      }
-      setRisks([]);
-    } catch (error) {
-      console.error("Error deleting all risks:", error);
-    } finally {
-      setDeleting(null);
-    }
-  };
-
   return (
     <div className="space-y-4 p-6">
       {/* Header */}
@@ -241,92 +320,126 @@ export default function RiskControlMatrixPage() {
             View and manage risks with their linked controls
           </p>
         </div>
-        {isCustomerAdmin && risks.length > 0 && (
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-red-500 border-red-300 hover:bg-red-50 hover:text-red-700"
-                disabled={deleting === "all-risks"}
-              >
-                {deleting === "all-risks" ? "Deleting..." : "Delete All"}
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete All Risks?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This will permanently delete all {risks.length} risk(s) from the Risk Control Matrix. This action cannot be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  className="bg-red-500 hover:bg-red-600"
-                  onClick={handleDeleteAllRisks}
+        <div className="flex gap-2">
+          {/* Import from Risks button */}
+          {canCreate && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleImportRisks}
+              disabled={importing}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${importing ? 'animate-spin' : ''}`} />
+              {importing ? "Importing..." : "Sync from Risks"}
+            </Button>
+          )}
+
+          {/* Delete All button (CustomerAdmin only) */}
+          {isCustomerAdmin && canDelete && entries.length > 0 && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-red-500 border-red-300 hover:bg-red-50 hover:text-red-700"
+                  disabled={deleting === "all-entries"}
                 >
-                  Delete All
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        )}
+                  {deleting === "all-entries" ? "Deleting..." : "Delete All"}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete All Matrix Entries?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will remove all {entries.length} entry(ies) from the Risk Control Matrix.
+                    <strong className="block mt-2 text-green-600">The underlying Risk records will NOT be deleted.</strong>
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-red-500 hover:bg-red-600"
+                    onClick={handleDeleteAllEntries}
+                  >
+                    Delete All
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+        </div>
       </div>
 
-      {/* Risk Accordion List */}
+      {/* Matrix Entry Accordion List */}
       <div className="space-y-3">
-        {risks.length === 0 ? (
+        {entries.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
-              <p className="text-gray-500">No risks found</p>
+              <p className="text-gray-500 mb-4">No entries in the Risk Control Matrix</p>
+              {canCreate && (
+                <Button
+                  variant="outline"
+                  onClick={handleImportRisks}
+                  disabled={importing}
+                >
+                  <RefreshCw className={`h-4 w-4 mr-2 ${importing ? 'animate-spin' : ''}`} />
+                  {importing ? "Importing..." : "Import Risks"}
+                </Button>
+              )}
             </CardContent>
           </Card>
         ) : (
-          risks.map((risk) => (
-            <Card key={risk.id} className="overflow-hidden">
-              {/* Risk Header - Collapsible Trigger */}
+          entries.map((entry) => (
+            <Card key={entry.id} className="overflow-hidden">
+              {/* Entry Header - Collapsible Trigger */}
               <Collapsible
-                open={expandedRisks.has(risk.id)}
-                onOpenChange={() => toggleRisk(risk.id)}
+                open={expandedEntries.has(entry.id)}
+                onOpenChange={() => toggleEntry(entry.id)}
               >
                 <div className="flex items-center justify-between p-4 border-b">
                   <CollapsibleTrigger asChild>
                     <div className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 flex-1">
-                      {expandedRisks.has(risk.id) ? (
+                      {expandedEntries.has(entry.id) ? (
                         <ChevronDown className="h-5 w-5 text-gray-500" />
                       ) : (
                         <ChevronRight className="h-5 w-5 text-gray-500" />
                       )}
-                      <span className="font-medium text-blue-600">{risk.riskId}</span>
-                      <span className="font-medium">{risk.name}</span>
+                      <span className="font-medium text-blue-600">{entry.riskCode}</span>
+                      <span className="font-medium">{entry.name}</span>
+                      {/* Show if original risk still exists */}
+                      {!entry.riskId && (
+                        <Badge variant="outline" className="text-gray-500 text-xs">
+                          Original risk deleted
+                        </Badge>
+                      )}
                     </div>
                   </CollapsibleTrigger>
-                  {isCustomerAdmin && (
+                  {isCustomerAdmin && canDelete && (
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button
                           variant="link"
                           size="sm"
                           className="text-red-500 hover:text-red-700 p-0 h-auto"
-                          disabled={deleting === `risk-${risk.id}`}
+                          disabled={deleting === `entry-${entry.id}`}
                           onClick={(e) => e.stopPropagation()}
                         >
-                          {deleting === `risk-${risk.id}` ? "Deleting..." : "Delete"}
+                          {deleting === `entry-${entry.id}` ? "Deleting..." : "Delete"}
                         </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>Delete Risk?</AlertDialogTitle>
+                          <AlertDialogTitle>Delete Matrix Entry?</AlertDialogTitle>
                           <AlertDialogDescription>
-                            This will permanently delete risk {risk.riskId} ({risk.name}). This action cannot be undone.
+                            This will remove entry {entry.riskCode} ({entry.name}) from the Risk Control Matrix.
+                            <strong className="block mt-2 text-green-600">The underlying Risk record will NOT be deleted.</strong>
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
                           <AlertDialogAction
                             className="bg-red-500 hover:bg-red-600"
-                            onClick={() => handleDeleteRisk(risk.id)}
+                            onClick={() => handleDeleteEntry(entry.id)}
                           >
                             Delete
                           </AlertDialogAction>
@@ -338,12 +451,12 @@ export default function RiskControlMatrixPage() {
 
                 <CollapsibleContent>
                   <CardContent className="pt-4">
-                    {/* Risk Details Grid */}
+                    {/* Entry Details Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                       {/* Description */}
                       <div className="md:col-span-2">
                         <p className="text-sm font-medium text-gray-500 mb-1">Description</p>
-                        <p className="text-sm">{risk.description || "-"}</p>
+                        <p className="text-sm">{entry.description || "-"}</p>
                       </div>
 
                       {/* Risk Ratings and Status Row */}
@@ -351,9 +464,9 @@ export default function RiskControlMatrixPage() {
                         {/* Inherent Risk Rating */}
                         <div>
                           <p className="text-sm font-medium text-gray-500 mb-1">Inherent Risk Rating</p>
-                          {risk.riskRating ? (
-                            <Badge className={riskRatingColors[risk.riskRating] || "bg-gray-100"}>
-                              {risk.riskRating}
+                          {entry.riskRating ? (
+                            <Badge className={riskRatingColors[entry.riskRating] || "bg-gray-100"}>
+                              {entry.riskRating}
                             </Badge>
                           ) : (
                             <span className="text-sm text-gray-400">-</span>
@@ -363,9 +476,9 @@ export default function RiskControlMatrixPage() {
                         {/* Residual Risk Rating */}
                         <div>
                           <p className="text-sm font-medium text-gray-500 mb-1">Residual Risk Rating</p>
-                          {risk.residualRiskRating ? (
-                            <Badge className={riskRatingColors[risk.residualRiskRating] || "bg-gray-100"}>
-                              {risk.residualRiskRating}
+                          {entry.residualRiskRating ? (
+                            <Badge className={riskRatingColors[entry.residualRiskRating] || "bg-gray-100"}>
+                              {entry.residualRiskRating}
                             </Badge>
                           ) : (
                             <span className="text-sm text-gray-400">-</span>
@@ -375,8 +488,8 @@ export default function RiskControlMatrixPage() {
                         {/* Status */}
                         <div>
                           <p className="text-sm font-medium text-gray-500 mb-1">Status</p>
-                          <Badge className={riskStatusColors[risk.status] || "bg-gray-100"}>
-                            {risk.status}
+                          <Badge className={riskStatusColors[entry.status] || "bg-gray-100"}>
+                            {entry.status}
                           </Badge>
                         </div>
                       </div>
@@ -384,15 +497,15 @@ export default function RiskControlMatrixPage() {
                       {/* Risk Owner */}
                       <div className="md:col-span-2">
                         <p className="text-sm font-medium text-gray-500 mb-1">Risk Owner</p>
-                        <p className="text-sm">{risk.owner?.fullName || "No items found"}</p>
+                        <p className="text-sm">{entry.ownerName || "No items found"}</p>
                       </div>
                     </div>
 
                     {/* Linked Controls Section */}
                     <div className="border-t pt-4">
                       <Collapsible
-                        open={expandedControls.has(risk.id)}
-                        onOpenChange={() => toggleControls(risk.id)}
+                        open={expandedControls.has(entry.id)}
+                        onOpenChange={() => toggleControls(entry.id)}
                       >
                         <div className="flex items-center justify-between">
                           <CollapsibleTrigger asChild>
@@ -401,8 +514,8 @@ export default function RiskControlMatrixPage() {
                               className="flex items-center gap-2 p-0 h-auto font-medium text-blue-600 hover:text-blue-800"
                             >
                               <Link2 className="h-4 w-4" />
-                              Linked Controls ({risk.controlRisks?.length || 0})
-                              {expandedControls.has(risk.id) ? (
+                              Linked Controls ({entry.linkedControls?.length || 0})
+                              {expandedControls.has(entry.id) ? (
                                 <ChevronDown className="h-4 w-4" />
                               ) : (
                                 <ChevronRight className="h-4 w-4" />
@@ -413,7 +526,7 @@ export default function RiskControlMatrixPage() {
                         </div>
 
                         <CollapsibleContent className="mt-3">
-                          {risk.controlRisks && risk.controlRisks.length > 0 ? (
+                          {entry.linkedControls && entry.linkedControls.length > 0 ? (
                             <Table>
                               <TableHeader>
                                 <TableRow>
@@ -424,15 +537,15 @@ export default function RiskControlMatrixPage() {
                                 </TableRow>
                               </TableHeader>
                               <TableBody>
-                                {risk.controlRisks.map((cr) => (
-                                  <TableRow key={cr.id}>
+                                {entry.linkedControls.map((lc) => (
+                                  <TableRow key={lc.id}>
                                     <TableCell className="font-medium text-blue-600">
-                                      {cr.control.controlCode}
+                                      {lc.control.controlCode}
                                     </TableCell>
-                                    <TableCell>{cr.control.name}</TableCell>
+                                    <TableCell>{lc.control.name}</TableCell>
                                     <TableCell>
-                                      <Badge className={controlStatusColors[cr.control.status] || "bg-gray-100"}>
-                                        {cr.control.status}
+                                      <Badge className={controlStatusColors[lc.control.status] || "bg-gray-100"}>
+                                        {lc.control.status}
                                       </Badge>
                                     </TableCell>
                                     <TableCell>
@@ -443,23 +556,24 @@ export default function RiskControlMatrixPage() {
                                               variant="link"
                                               size="sm"
                                               className="text-red-500 hover:text-red-700 p-0 h-auto"
-                                              disabled={deleting === `${risk.id}-${cr.control.id}`}
+                                              disabled={deleting === `${entry.id}-${lc.control.id}`}
                                             >
-                                              {deleting === `${risk.id}-${cr.control.id}` ? "Unlinking..." : "Unlink"}
+                                              {deleting === `${entry.id}-${lc.control.id}` ? "Unlinking..." : "Unlink"}
                                             </Button>
                                           </AlertDialogTrigger>
                                           <AlertDialogContent>
                                             <AlertDialogHeader>
                                               <AlertDialogTitle>Unlink Control?</AlertDialogTitle>
                                               <AlertDialogDescription>
-                                                This will remove the link between control {cr.control.controlCode} and risk {risk.riskId}. This action cannot be undone.
+                                                This will remove the link between control {lc.control.controlCode} and this matrix entry.
+                                                <strong className="block mt-2 text-green-600">The control itself will NOT be deleted.</strong>
                                               </AlertDialogDescription>
                                             </AlertDialogHeader>
                                             <AlertDialogFooter>
                                               <AlertDialogCancel>Cancel</AlertDialogCancel>
                                               <AlertDialogAction
                                                 className="bg-red-500 hover:bg-red-600"
-                                                onClick={() => handleDeleteControl(risk.id, cr.control.id)}
+                                                onClick={() => handleUnlinkControl(entry.id, lc.control.id)}
                                               >
                                                 Unlink
                                               </AlertDialogAction>
@@ -487,7 +601,7 @@ export default function RiskControlMatrixPage() {
       </div>
 
       {/* Load More */}
-      {hasMore && risks.length > 0 && (
+      {hasMore && entries.length > 0 && (
         <div className="flex justify-center pt-4">
           <Button
             variant="link"

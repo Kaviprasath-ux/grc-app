@@ -1100,10 +1100,12 @@ CREATE TABLE "Risk" (
     "targetRiskScore" INTEGER,
     "status" TEXT NOT NULL DEFAULT 'Open',
     "assessmentStatus" TEXT NOT NULL DEFAULT 'Open',
+    "responseStatus" TEXT NOT NULL DEFAULT 'Open',
     "responseStrategy" TEXT,
     "treatmentPlan" TEXT,
     "treatmentDueDate" TIMESTAMP(3),
     "treatmentStatus" TEXT,
+    "assessmentFormData" TEXT,
     "identifiedDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "lastAssessmentDate" TIMESTAMP(3),
     "nextReviewDate" TIMESTAMP(3),
@@ -1111,6 +1113,35 @@ CREATE TABLE "Risk" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Risk_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "RiskControlMatrixEntry" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "riskId" TEXT,
+    "matrixEntryId" TEXT NOT NULL,
+    "riskCode" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "riskRating" TEXT,
+    "residualRiskRating" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'Open',
+    "ownerName" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "RiskControlMatrixEntry_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "RiskControlMatrixControl" (
+    "id" TEXT NOT NULL,
+    "riskControlMatrixEntryId" TEXT NOT NULL,
+    "controlId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "RiskControlMatrixControl_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -2090,6 +2121,15 @@ CREATE INDEX "Risk_customerAccountId_idx" ON "Risk"("customerAccountId");
 CREATE UNIQUE INDEX "Risk_customerAccountId_riskId_key" ON "Risk"("customerAccountId", "riskId");
 
 -- CreateIndex
+CREATE INDEX "RiskControlMatrixEntry_customerAccountId_idx" ON "RiskControlMatrixEntry"("customerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "RiskControlMatrixEntry_customerAccountId_matrixEntryId_key" ON "RiskControlMatrixEntry"("customerAccountId", "matrixEntryId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "RiskControlMatrixControl_riskControlMatrixEntryId_controlId_key" ON "RiskControlMatrixControl"("riskControlMatrixEntryId", "controlId");
+
+-- CreateIndex
 CREATE INDEX "RiskAssessment_customerAccountId_idx" ON "RiskAssessment"("customerAccountId");
 
 -- CreateIndex
@@ -2688,6 +2728,18 @@ ALTER TABLE "Risk" ADD CONSTRAINT "Risk_impactedAssetId_fkey" FOREIGN KEY ("impa
 
 -- AddForeignKey
 ALTER TABLE "Risk" ADD CONSTRAINT "Risk_impactedProcessId_fkey" FOREIGN KEY ("impactedProcessId") REFERENCES "Process"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RiskControlMatrixEntry" ADD CONSTRAINT "RiskControlMatrixEntry_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RiskControlMatrixEntry" ADD CONSTRAINT "RiskControlMatrixEntry_riskId_fkey" FOREIGN KEY ("riskId") REFERENCES "Risk"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RiskControlMatrixControl" ADD CONSTRAINT "RiskControlMatrixControl_riskControlMatrixEntryId_fkey" FOREIGN KEY ("riskControlMatrixEntryId") REFERENCES "RiskControlMatrixEntry"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RiskControlMatrixControl" ADD CONSTRAINT "RiskControlMatrixControl_controlId_fkey" FOREIGN KEY ("controlId") REFERENCES "Control"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "RiskAssessment" ADD CONSTRAINT "RiskAssessment_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
