@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -59,7 +60,14 @@ interface Department {
 interface User {
   id: string;
   name: string;
+  fullName?: string;
   email: string | null;
+  departmentId?: string;
+  userRoles?: Array<{
+    role: {
+      name: string;
+    };
+  }>;
 }
 
 interface Control {
@@ -126,6 +134,7 @@ const statuses = [
 
 export default function ExceptionsPage() {
   const router = useRouter();
+  const { data: session } = useSession();
   const { canView, canCreate, canEdit, canDelete, isLoading: permissionsLoading } = usePermissions('compliance.exceptions');
   const [exceptions, setExceptions] = useState<Exception[]>([]);
   const [loading, setLoading] = useState(true);
@@ -135,6 +144,10 @@ export default function ExceptionsPage() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedException, setSelectedException] = useState<Exception | null>(null);
+
+  // Current user from session
+  const currentUserId = session?.user?.id as string | undefined;
+  const currentUserName = session?.user?.name || session?.user?.fullName || "Current User";
 
   // Filters
   const [filters, setFilters] = useState({
@@ -253,7 +266,7 @@ export default function ExceptionsPage() {
           policyId:
             createForm.category === "Policy" ? createForm.policyId : null,
           riskId: createForm.category === "Risk" ? createForm.riskId : null,
-          requesterId: createForm.requesterId || null,
+          requesterId: currentUserId || null, // Always use current user
           approverId: createForm.approverId || null,
           endDate: createForm.endDate || null,
           status: "Pending",
@@ -470,23 +483,11 @@ export default function ExceptionsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="font-medium">Requested By</Label>
-                  <Select
-                    value={createForm.requesterId}
-                    onValueChange={(value) =>
-                      setCreateForm({ ...createForm, requesterId: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select requester" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {users.map((u) => (
-                        <SelectItem key={u.id} value={u.id}>
-                          {u.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Input
+                    value={currentUserName}
+                    disabled
+                    className="bg-gray-100"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label className="font-medium">Category *</Label>
@@ -607,7 +608,7 @@ export default function ExceptionsPage() {
                   <Select
                     value={createForm.departmentId}
                     onValueChange={(value) =>
-                      setCreateForm({ ...createForm, departmentId: value })
+                      setCreateForm({ ...createForm, departmentId: value, approverId: "" })
                     }
                   >
                     <SelectTrigger>
@@ -624,25 +625,37 @@ export default function ExceptionsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label className="font-medium">Select Approver</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      value={
-                        users.find((u) => u.id === createForm.approverId)
-                          ?.name || ""
-                      }
-                      readOnly
-                      placeholder="Click to select"
-                      className="flex-1"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      onClick={() => setApproverDialogOpen(true)}
-                    >
-                      <Search className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  <Select
+                    value={createForm.approverId}
+                    onValueChange={(value) =>
+                      setCreateForm({ ...createForm, approverId: value })
+                    }
+                    disabled={!createForm.departmentId}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={createForm.departmentId ? "Select approver" : "Select department first"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {users
+                        .filter((u) =>
+                          u.departmentId === createForm.departmentId &&
+                          u.userRoles?.some((ur) => ur.role.name === "DepartmentReviewer")
+                        )
+                        .map((u) => (
+                          <SelectItem key={u.id} value={u.id}>
+                            {u.fullName || u.name}
+                          </SelectItem>
+                        ))}
+                      {users.filter((u) =>
+                        u.departmentId === createForm.departmentId &&
+                        u.userRoles?.some((ur) => ur.role.name === "DepartmentReviewer")
+                      ).length === 0 && createForm.departmentId && (
+                        <div className="px-2 py-1.5 text-sm text-gray-500">
+                          No department reviewers found
+                        </div>
+                      )}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
@@ -1176,7 +1189,7 @@ export default function ExceptionsPage() {
                 <Select
                   value={editForm.departmentId}
                   onValueChange={(value) =>
-                    setEditForm({ ...editForm, departmentId: value })
+                    setEditForm({ ...editForm, departmentId: value, approverId: "" })
                   }
                 >
                   <SelectTrigger>
@@ -1193,24 +1206,37 @@ export default function ExceptionsPage() {
               </div>
               <div className="space-y-2">
                 <Label className="font-medium">Select Approver</Label>
-                <div className="flex gap-2">
-                  <Input
-                    value={
-                      users.find((u) => u.id === editForm.approverId)?.name || ""
-                    }
-                    readOnly
-                    placeholder="Click to select"
-                    className="flex-1"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setApproverDialogOpen(true)}
-                  >
-                    <Search className="h-4 w-4" />
-                  </Button>
-                </div>
+                <Select
+                  value={editForm.approverId}
+                  onValueChange={(value) =>
+                    setEditForm({ ...editForm, approverId: value })
+                  }
+                  disabled={!editForm.departmentId}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={editForm.departmentId ? "Select approver" : "Select department first"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {users
+                      .filter((u) =>
+                        u.departmentId === editForm.departmentId &&
+                        u.userRoles?.some((ur) => ur.role.name === "DepartmentReviewer")
+                      )
+                      .map((u) => (
+                        <SelectItem key={u.id} value={u.id}>
+                          {u.fullName || u.name}
+                        </SelectItem>
+                      ))}
+                    {users.filter((u) =>
+                      u.departmentId === editForm.departmentId &&
+                      u.userRoles?.some((ur) => ur.role.name === "DepartmentReviewer")
+                    ).length === 0 && editForm.departmentId && (
+                      <div className="px-2 py-1.5 text-sm text-gray-500">
+                        No department reviewers found
+                      </div>
+                    )}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
