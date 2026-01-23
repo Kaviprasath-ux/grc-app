@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ColumnDef } from "@tanstack/react-table";
 import { EditProfileWizard } from "@/components/profile/edit-profile-wizard";
+import { OrgChart } from "@/components/organization/org-chart";
 
 interface Branch {
   id?: string;
@@ -773,40 +774,8 @@ function ProfilePageContent() {
         {/* Organization Chart Tab */}
         <TabsContent value="orgchart" className="space-y-6">
           <Card>
-            <CardContent className="py-12">
-              <div className="flex flex-col items-center">
-                {/* CEO */}
-                <div className="bg-grc-primary text-white px-6 py-3 rounded-lg text-center">
-                  <p className="font-medium">CEO</p>
-                  <p className="text-sm">John Doe</p>
-                </div>
-                {/* Connection line */}
-                <div className="w-px h-8 bg-border" />
-                {/* Second level */}
-                <div className="flex gap-8">
-                  <div className="flex flex-col items-center">
-                    <div className="bg-grc-bg border px-4 py-2 rounded-lg text-center">
-                      <p className="font-medium text-sm">CTO</p>
-                      <p className="text-xs text-muted-foreground">Tech Lead</p>
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <div className="bg-grc-bg border px-4 py-2 rounded-lg text-center">
-                      <p className="font-medium text-sm">CFO</p>
-                      <p className="text-xs text-muted-foreground">Finance Lead</p>
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <div className="bg-grc-bg border px-4 py-2 rounded-lg text-center">
-                      <p className="font-medium text-sm">COO</p>
-                      <p className="text-xs text-muted-foreground">Operations Lead</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <p className="text-center text-muted-foreground mt-8">
-                Full organization chart visualization coming soon...
-              </p>
+            <CardContent className="py-6">
+              <OrgChart />
             </CardContent>
           </Card>
         </TabsContent>

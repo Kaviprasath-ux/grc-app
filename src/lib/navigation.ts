@@ -84,7 +84,6 @@ export const navigation: NavItem[] = [
       { name: "Profile", href: "/organization/profile", icon: User, permission: "organization.profile:view" },
       { name: "Context", href: "/organization/context", icon: Briefcase, permission: "organization.context:view" },
       { name: "Users", href: "/organization/users", icon: Users, permission: "organization.users:view" },
-      { name: "Organization Chart", href: "/organization/org-chart", icon: Network, permission: "organization.users:view" },
       { name: "Process", href: "/organization/process", icon: GitBranch, permission: "organization.process:view" },
       { name: "Organization Settings", href: "/organization/settings", icon: Settings, permission: "organization.settings:view" },
       { name: "Reports", href: "/organization/reports", icon: FileText, permission: "organization.dashboard:view" },
