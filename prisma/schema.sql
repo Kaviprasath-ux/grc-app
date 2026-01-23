@@ -174,6 +174,7 @@ CREATE TABLE "User" (
     "lastLogin" TIMESTAMP(3),
     "departmentId" TEXT,
     "auditHeadId" TEXT,
+    "reportingManagerId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -2362,6 +2363,9 @@ ALTER TABLE "User" ADD CONSTRAINT "User_departmentId_fkey" FOREIGN KEY ("departm
 
 -- AddForeignKey
 ALTER TABLE "User" ADD CONSTRAINT "User_auditHeadId_fkey" FOREIGN KEY ("auditHeadId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "User" ADD CONSTRAINT "User_reportingManagerId_fkey" FOREIGN KEY ("reportingManagerId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Stakeholder" ADD CONSTRAINT "Stakeholder_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

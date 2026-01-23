@@ -61,6 +61,12 @@ interface Department {
   name: string;
 }
 
+interface ReportingManager {
+  id: string;
+  fullName: string;
+  designation?: string;
+}
+
 interface User {
   id: string;
   userName: string;
@@ -77,6 +83,8 @@ interface User {
   isBlocked: boolean;
   departmentId?: string;
   department?: Department;
+  reportingManagerId?: string;
+  reportingManager?: ReportingManager;
 }
 
 // RBAC roles mapped by function
@@ -108,6 +116,7 @@ export default function UsersPage() {
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [reportingManagers, setReportingManagers] = useState<ReportingManager[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Check if user is DeptReviewer or DeptContributor (read-only department view)
@@ -161,6 +170,7 @@ export default function UsersPage() {
     isActive: true,
     isBlocked: false,
     departmentId: "",
+    reportingManagerId: "",
   });
 
   // Fetch data on mount
@@ -182,6 +192,18 @@ export default function UsersPage() {
       console.error("Error fetching data:", error);
     }
     setLoading(false);
+  };
+
+  // Fetch reporting managers based on user's function
+  const fetchReportingManagers = async (userFunction: string) => {
+    try {
+      const res = await fetch(`/api/users/reporting-managers?function=${userFunction}`);
+      if (res.ok) {
+        setReportingManagers(await res.json());
+      }
+    } catch (error) {
+      console.error("Error fetching reporting managers:", error);
+    }
   };
 
   // User CRUD
@@ -218,6 +240,7 @@ export default function UsersPage() {
           isActive: userForm.isActive,
           isBlocked: userForm.isBlocked,
           departmentId: userForm.departmentId || undefined,
+          reportingManagerId: userForm.reportingManagerId || undefined,
         }),
       });
 
@@ -364,7 +387,9 @@ export default function UsersPage() {
       isActive: true,
       isBlocked: false,
       departmentId: "",
+      reportingManagerId: "",
     });
+    setReportingManagers([]);
   };
 
   // Export users to CSV
@@ -559,6 +584,9 @@ export default function UsersPage() {
             <DropdownMenuItem
               onClick={() => {
                 setEditingUser(row.original);
+                if (row.original.function) {
+                  fetchReportingManagers(row.original.function);
+                }
                 setIsEditUserOpen(true);
               }}
             >
@@ -618,7 +646,7 @@ export default function UsersPage() {
     {
       id: "reportingManager",
       header: "Reporting Manager",
-      cell: () => "-",
+      cell: ({ row }) => row.original.reportingManager?.fullName || "-",
     },
     {
       accessorKey: "email",
@@ -745,7 +773,7 @@ export default function UsersPage() {
                             <tr key={user.id} className="border-b hover:bg-muted/30">
                               <td className="p-3">{user.fullName}</td>
                               <td className="p-3">{user.designation || "-"}</td>
-                              <td className="p-3">-</td>
+                              <td className="p-3">{user.reportingManager?.fullName || "-"}</td>
                               <td className="p-3">{user.email}</td>
                               <td className="p-3">-</td>
                               <td className="p-3">
@@ -756,6 +784,9 @@ export default function UsersPage() {
                                     className="h-8 w-8 text-muted-foreground hover:text-primary"
                                     onClick={() => {
                                       setEditingUser(user);
+                                      if (user.function) {
+                                        fetchReportingManagers(user.function);
+                                      }
                                       setIsEditUserOpen(true);
                                     }}
                                   >
@@ -887,7 +918,10 @@ export default function UsersPage() {
                 <Label htmlFor="function">Function *</Label>
                 <Select
                   value={userForm.function}
-                  onValueChange={(value) => setUserForm({ ...userForm, function: value, role: "" })}
+                  onValueChange={(value) => {
+                    setUserForm({ ...userForm, function: value, role: "", reportingManagerId: "" });
+                    fetchReportingManagers(value);
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select function" />
@@ -959,6 +993,39 @@ export default function UsersPage() {
                   placeholder="Enter designation"
                   autoComplete="off"
                 />
+              </div>
+              {/* Reporting Manager */}
+              <div className="space-y-2 col-span-2">
+                <Label htmlFor="reportingManager">Reporting Manager</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div>
+                        <Select
+                          value={userForm.reportingManagerId}
+                          onValueChange={(value) => setUserForm({ ...userForm, reportingManagerId: value })}
+                          disabled={!userForm.function}
+                        >
+                          <SelectTrigger className={!userForm.function ? "cursor-not-allowed opacity-50" : ""}>
+                            <SelectValue placeholder={userForm.function ? "Select reporting manager" : "Select function first"} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {reportingManagers.map((manager) => (
+                              <SelectItem key={manager.id} value={manager.id}>
+                                {manager.fullName} {manager.designation ? `(${manager.designation})` : ""}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </TooltipTrigger>
+                    {!userForm.function && (
+                      <TooltipContent>
+                        <p>Please select a function first</p>
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                </TooltipProvider>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="language">Language</Label>
@@ -1193,9 +1260,10 @@ export default function UsersPage() {
                 <Label htmlFor="editFunction" className="text-right">Function</Label>
                 <Select
                   value={editingUser.function || ""}
-                  onValueChange={(value) =>
-                    setEditingUser({ ...editingUser, function: value })
-                  }
+                  onValueChange={(value) => {
+                    setEditingUser({ ...editingUser, function: value, reportingManagerId: "" });
+                    fetchReportingManagers(value);
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select function" />
@@ -1275,6 +1343,28 @@ export default function UsersPage() {
                     <SelectItem value="Senior Manager">Senior Manager</SelectItem>
                     <SelectItem value="Software Engineer">Software Engineer</SelectItem>
                     <SelectItem value="Team Lead">Team Lead</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Reporting Manager */}
+              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                <Label htmlFor="editReportingManager" className="text-right">Reporting Manager</Label>
+                <Select
+                  value={editingUser.reportingManagerId || ""}
+                  onValueChange={(value) =>
+                    setEditingUser({ ...editingUser, reportingManagerId: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select reporting manager" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {reportingManagers.map((manager) => (
+                      <SelectItem key={manager.id} value={manager.id}>
+                        {manager.fullName} {manager.designation ? `(${manager.designation})` : ""}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

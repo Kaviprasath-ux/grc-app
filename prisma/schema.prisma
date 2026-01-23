@@ -294,6 +294,10 @@ model User {
   auditHeadId         String?
   auditHead           User?            @relation("AuditHeadAuditees", fields: [auditHeadId], references: [id])
   managedAuditees     User[]           @relation("AuditHeadAuditees")
+  // Reporting Manager - for organization hierarchy
+  reportingManagerId  String?
+  reportingManager    User?            @relation("ReportingManagerReports", fields: [reportingManagerId], references: [id])
+  directReports       User[]           @relation("ReportingManagerReports")
   createdAt           DateTime    @default(now())
   updatedAt           DateTime    @updatedAt
   // Relations

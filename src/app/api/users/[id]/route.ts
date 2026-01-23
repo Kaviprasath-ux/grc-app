@@ -22,6 +22,7 @@ export async function PUT(
       isActive,
       isBlocked,
       departmentId,
+      reportingManagerId,
     } = body;
 
     // If role is being updated, also update the UserRole junction table
@@ -69,12 +70,20 @@ export async function PUT(
         isActive,
         isBlocked,
         departmentId,
+        reportingManagerId: reportingManagerId !== undefined ? (reportingManagerId || null) : undefined,
       },
       include: {
         department: true,
         userRoles: {
           include: {
             role: true,
+          },
+        },
+        reportingManager: {
+          select: {
+            id: true,
+            fullName: true,
+            designation: true,
           },
         },
       },

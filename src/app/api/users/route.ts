@@ -79,6 +79,13 @@ export async function GET(request: NextRequest) {
             role: true,
           },
         },
+        reportingManager: {
+          select: {
+            id: true,
+            fullName: true,
+            designation: true,
+          },
+        },
       },
       orderBy: { fullName: "asc" },
     });
@@ -112,6 +119,7 @@ export async function POST(request: NextRequest) {
       isActive,
       isBlocked,
       departmentId,
+      reportingManagerId,
     } = body;
 
     if (!userId || !userName || !email || !password || !firstName || !lastName || !fullName) {
@@ -160,6 +168,7 @@ export async function POST(request: NextRequest) {
         isActive: isActive ?? true,
         isBlocked: isBlocked ?? false,
         departmentId,
+        reportingManagerId: reportingManagerId || null,
         customerAccountId, // Multi-tenant: Link user to same customer account as creator
         // Create UserRole entry if role exists in Role table
         ...(roleRecord && {
@@ -175,6 +184,13 @@ export async function POST(request: NextRequest) {
         userRoles: {
           include: {
             role: true,
+          },
+        },
+        reportingManager: {
+          select: {
+            id: true,
+            fullName: true,
+            designation: true,
           },
         },
       },
