@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { FileText, Download, Shield, AlertTriangle, CheckCircle, TrendingUp, FileWarning, BarChart3, ClipboardList, Scale } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { FileText, Download, Shield, AlertTriangle, CheckCircle, TrendingUp, FileWarning, BarChart3, ClipboardList, Scale, X } from "lucide-react";
 import { PageHeader } from "@/components/shared";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,7 +22,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
+
+interface Framework {
+  id: string;
+  name: string;
+  code?: string;
+  status: string;
+}
 
 // Report types grouped by category
 const reportTypes = [
@@ -112,12 +121,44 @@ const reportTypes = [
 ];
 
 export default function ReportsPage() {
+  const router = useRouter();
   const { toast } = useToast();
   const [selectedReport, setSelectedReport] = useState<string | null>(null);
   const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false);
   const [isManagementReportOpen, setIsManagementReportOpen] = useState(false);
   const [reportFormat, setReportFormat] = useState("pdf");
   const [isGenerating, setIsGenerating] = useState(false);
+
+  // Management Report Parameters - matching UAT checkboxes
+  const [overallCompliance, setOverallCompliance] = useState(true);
+  const [frameworkCompliance, setFrameworkCompliance] = useState(true);
+  const [controlRequirementsByFramework, setControlRequirementsByFramework] = useState(true);
+  const [controlImplementationsByFramework, setControlImplementationsByFramework] = useState(true);
+  const [complianceRequirementsExceptions, setComplianceRequirementsExceptions] = useState(true);
+  const [controlExceptions, setControlExceptions] = useState(true);
+  const [frameworkWithGovernanceData, setFrameworkWithGovernanceData] = useState(true);
+  const [complianceIssues, setComplianceIssues] = useState(true);
+  const [domainBasedProgressCompliance, setDomainBasedProgressCompliance] = useState(true);
+
+  // Framework selection
+  const [frameworks, setFrameworks] = useState<Framework[]>([]);
+  const [selectedFrameworkId, setSelectedFrameworkId] = useState<string>("");
+
+  // Fetch frameworks on mount
+  useEffect(() => {
+    async function fetchFrameworks() {
+      try {
+        const response = await fetch("/api/frameworks?status=Subscribed");
+        if (response.ok) {
+          const data = await response.json();
+          setFrameworks(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch frameworks:", error);
+      }
+    }
+    fetchFrameworks();
+  }, []);
 
   const handleGenerateReport = () => {
     setIsGenerating(true);
@@ -129,14 +170,22 @@ export default function ReportsPage() {
     }, 1500);
   };
 
-  const handleManagementReport = () => {
-    setIsGenerating(true);
-    // Simulate report generation
-    setTimeout(() => {
-      setIsGenerating(false);
-      setIsManagementReportOpen(false);
-      toast({ title: "Success", description: "Compliance Management Report generated successfully!" });
-    }, 2000);
+  const handleShowManagementReport = () => {
+    // Build query params from selected options
+    const params = new URLSearchParams();
+    if (overallCompliance) params.append("overallCompliance", "true");
+    if (frameworkCompliance) params.append("frameworkCompliance", "true");
+    if (controlRequirementsByFramework) params.append("controlRequirementsByFramework", "true");
+    if (controlImplementationsByFramework) params.append("controlImplementationsByFramework", "true");
+    if (complianceRequirementsExceptions) params.append("complianceRequirementsExceptions", "true");
+    if (controlExceptions) params.append("controlExceptions", "true");
+    if (frameworkWithGovernanceData) params.append("frameworkWithGovernanceData", "true");
+    if (complianceIssues) params.append("complianceIssues", "true");
+    if (domainBasedProgressCompliance) params.append("domainBasedProgressCompliance", "true");
+    if (selectedFrameworkId) params.append("frameworkId", selectedFrameworkId);
+
+    setIsManagementReportOpen(false);
+    router.push(`/compliance/reports/management?${params.toString()}`);
   };
 
   // Group reports by category
@@ -399,55 +448,144 @@ export default function ReportsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Management Report Dialog */}
+      {/* Management Report Dialog - Matching UAT "Compliance Report Parameters" */}
       <Dialog open={isManagementReportOpen} onOpenChange={setIsManagementReportOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Generate Management Report</DialogTitle>
-            <DialogDescription>
-              Generate a comprehensive compliance management report with key metrics and insights
-            </DialogDescription>
+            <DialogTitle>Compliance Report Parameters</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>Report Format</Label>
-              <Select value={reportFormat} onValueChange={setReportFormat}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pdf">PDF Document</SelectItem>
-                  <SelectItem value="excel">Excel Spreadsheet</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <h4 className="font-medium text-blue-900 mb-2">Report Contents</h4>
-              <ul className="text-sm text-blue-700 space-y-1">
-                <li>• Executive Summary</li>
-                <li>• Framework Compliance Status</li>
-                <li>• Control Implementation Progress</li>
-                <li>• Risk Assessment Overview</li>
-                <li>• Evidence Collection Status</li>
-                <li>• KPI Performance Metrics</li>
-                <li>• Exception Summary</li>
-                <li>• Recommendations</li>
-              </ul>
+          <div className="py-4">
+            {/* Checkbox grid - 2 columns, 5 rows matching UAT layout */}
+            <div className="grid grid-cols-2 gap-x-8 gap-y-4">
+              {/* Row 1 */}
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="overallCompliance"
+                  checked={overallCompliance}
+                  onCheckedChange={(checked) => setOverallCompliance(checked === true)}
+                />
+                <label htmlFor="overallCompliance" className="text-sm cursor-pointer">
+                  Overall Compliance
+                </label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="frameworkCompliance"
+                  checked={frameworkCompliance}
+                  onCheckedChange={(checked) => setFrameworkCompliance(checked === true)}
+                />
+                <label htmlFor="frameworkCompliance" className="text-sm cursor-pointer">
+                  Framework Compliance
+                </label>
+              </div>
+
+              {/* Row 2 */}
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="controlRequirementsByFramework"
+                  checked={controlRequirementsByFramework}
+                  onCheckedChange={(checked) => setControlRequirementsByFramework(checked === true)}
+                />
+                <label htmlFor="controlRequirementsByFramework" className="text-sm cursor-pointer">
+                  Control Requirements by Framework
+                </label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="controlImplementationsByFramework"
+                  checked={controlImplementationsByFramework}
+                  onCheckedChange={(checked) => setControlImplementationsByFramework(checked === true)}
+                />
+                <label htmlFor="controlImplementationsByFramework" className="text-sm cursor-pointer">
+                  Control Implementations by Framework
+                </label>
+              </div>
+
+              {/* Row 3 */}
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="complianceRequirementsExceptions"
+                  checked={complianceRequirementsExceptions}
+                  onCheckedChange={(checked) => setComplianceRequirementsExceptions(checked === true)}
+                />
+                <label htmlFor="complianceRequirementsExceptions" className="text-sm cursor-pointer">
+                  Compliance Requirements Exceptions
+                </label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="controlExceptions"
+                  checked={controlExceptions}
+                  onCheckedChange={(checked) => setControlExceptions(checked === true)}
+                />
+                <label htmlFor="controlExceptions" className="text-sm cursor-pointer">
+                  Control Exceptions
+                </label>
+              </div>
+
+              {/* Row 4 */}
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="frameworkWithGovernanceData"
+                  checked={frameworkWithGovernanceData}
+                  onCheckedChange={(checked) => setFrameworkWithGovernanceData(checked === true)}
+                />
+                <label htmlFor="frameworkWithGovernanceData" className="text-sm cursor-pointer">
+                  Framework along with Governance Data
+                </label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="complianceIssues"
+                  checked={complianceIssues}
+                  onCheckedChange={(checked) => setComplianceIssues(checked === true)}
+                />
+                <label htmlFor="complianceIssues" className="text-sm cursor-pointer">
+                  Compliance Issues
+                </label>
+              </div>
+
+              {/* Row 5 */}
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="domainBasedProgressCompliance"
+                  checked={domainBasedProgressCompliance}
+                  onCheckedChange={(checked) => setDomainBasedProgressCompliance(checked === true)}
+                />
+                <label htmlFor="domainBasedProgressCompliance" className="text-sm cursor-pointer">
+                  Domain based Progress Compliance (Self-Assessment model)
+                </label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="relative flex-1">
+                  <Select value={selectedFrameworkId} onValueChange={setSelectedFrameworkId}>
+                    <SelectTrigger className="pr-8">
+                      <SelectValue placeholder="Framework" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {frameworks.map((framework) => (
+                        <SelectItem key={framework.id} value={framework.id}>
+                          {framework.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {selectedFrameworkId && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedFrameworkId("")}
+                      className="absolute right-8 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsManagementReportOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleManagementReport} disabled={isGenerating}>
-              {isGenerating ? (
-                <>Generating Report...</>
-              ) : (
-                <>
-                  <FileText className="h-4 w-4 mr-2" />
-                  Generate Report
-                </>
-              )}
+            <Button onClick={handleShowManagementReport}>
+              Show Report
             </Button>
           </DialogFooter>
         </DialogContent>
