@@ -76,44 +76,84 @@ function OrgChartNode({ node, isRoot = false }: { node: TreeNode; isRoot?: boole
   );
 }
 
-// Recursive tree rendering
+// Recursive tree rendering with curved connectors
 function OrgChartTree({ nodes, level = 0 }: { nodes: TreeNode[]; level?: number }) {
   if (nodes.length === 0) return null;
+
+  const lineColor = "#94a3b8"; // slate-400 for better visibility
 
   return (
     <div className="flex flex-col items-center">
       {/* Current level nodes */}
-      <div className="flex justify-center gap-4">
-        {nodes.map((node, index) => (
+      <div className="flex justify-center gap-6">
+        {nodes.map((node) => (
           <div key={node.id} className="flex flex-col items-center">
             <OrgChartNode node={node} isRoot={level === 0} />
 
             {/* Connector line to children */}
             {node.children.length > 0 && (
               <div className="flex flex-col items-center">
-                <div className="w-px h-6 bg-gray-300" />
+                {/* Vertical line from parent */}
+                <div
+                  className="w-0.5 h-6"
+                  style={{ backgroundColor: lineColor }}
+                />
 
-                {/* Horizontal line for multiple children */}
+                {/* Horizontal connector with rounded corners for multiple children */}
                 {node.children.length > 1 && (
-                  <div
-                    className="h-px bg-gray-300"
-                    style={{
-                      width: `${(node.children.length - 1) * 180}px`,
-                    }}
-                  />
+                  <div className="relative flex justify-center">
+                    <div
+                      className="h-0.5 rounded-full"
+                      style={{
+                        backgroundColor: lineColor,
+                        width: `${(node.children.length - 1) * 190}px`,
+                      }}
+                    />
+                  </div>
                 )}
 
-                {/* Children */}
+                {/* Children with curved corner connectors */}
                 <div className="flex justify-center">
-                  {node.children.map((child, childIndex) => (
-                    <div key={child.id} className="flex flex-col items-center px-2">
-                      {/* Vertical connector from horizontal line */}
-                      {node.children.length > 1 && (
-                        <div className="w-px h-4 bg-gray-300" />
-                      )}
-                      <OrgChartTree nodes={[child]} level={level + 1} />
-                    </div>
-                  ))}
+                  {node.children.map((child, childIndex) => {
+                    const isFirst = childIndex === 0;
+                    const isLast = childIndex === node.children.length - 1;
+                    const isOnly = node.children.length === 1;
+
+                    return (
+                      <div key={child.id} className="flex flex-col items-center px-3">
+                        {/* Curved corner connector from horizontal line */}
+                        {!isOnly && (
+                          <div className="relative h-5 w-5 flex items-start justify-center">
+                            {/* Vertical part */}
+                            <div
+                              className="absolute top-0 w-0.5 h-5"
+                              style={{ backgroundColor: lineColor }}
+                            />
+                            {/* Curved corner effect using border */}
+                            {isFirst && (
+                              <div
+                                className="absolute top-0 left-1/2 w-3 h-3 border-l-2 border-t-2 rounded-tl-lg"
+                                style={{ borderColor: lineColor }}
+                              />
+                            )}
+                            {isLast && (
+                              <div
+                                className="absolute top-0 right-1/2 w-3 h-3 border-r-2 border-t-2 rounded-tr-lg"
+                                style={{ borderColor: lineColor }}
+                              />
+                            )}
+                            {!isFirst && !isLast && (
+                              <div
+                                className="absolute top-0 w-0.5 h-0.5"
+                                style={{ backgroundColor: lineColor }}
+                              />
+                            )}
+                          </div>
+                        )}
+                        <OrgChartTree nodes={[child]} level={level + 1} />
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
