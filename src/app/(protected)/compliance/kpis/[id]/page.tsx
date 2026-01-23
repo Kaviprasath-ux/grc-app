@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, use } from "react";
+import { useState, useEffect, useCallback, use, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,6 +40,18 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ArrowLeft, Pencil, Trash2, Upload, Plus, Calendar } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { toast } from "@/hooks/use-toast";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  ReferenceLine,
+} from "recharts";
 
 interface KPIActionPlan {
   id: string;
@@ -60,6 +72,15 @@ interface KPIReview {
   actionPlans: KPIActionPlan[];
 }
 
+interface Evidence {
+  id: string;
+  evidenceCode: string;
+  name: string;
+  reviewDate: string | null;
+  recurrence: string | null;
+  kpiExpectedScore: number | null;
+}
+
 interface KPI {
   id: string;
   code: string;
@@ -72,7 +93,7 @@ interface KPI {
   reviewDate: string | null;
   status: string;
   department?: { id: string; name: string } | null;
-  evidence?: { id: string; evidenceCode: string; name: string } | null;
+  evidence?: Evidence | null;
   reviews: KPIReview[];
 }
 
@@ -83,7 +104,55 @@ const statusColors: Record<string, string> = {
   Achieved: "bg-green-100 text-green-800",
 };
 
-const years = ["2028", "2027", "2026", "2025", "2024", "2023", "2022"];
+// Generate years dynamically (current year + 2 years ahead and 5 years back)
+const currentYear = new Date().getFullYear();
+const years = Array.from({ length: 8 }, (_, i) => String(currentYear + 2 - i));
+
+/**
+ * Calculate next review date based on recurrence type
+ * @param currentDate - The current review date
+ * @param recurrence - Recurrence type: Weekly, Monthly, Quarterly, Half-yearly, Yearly
+ * @returns Next review date
+ */
+function calculateNextReviewDate(currentDate: Date, recurrence: string | null): Date {
+  const next = new Date(currentDate);
+
+  switch (recurrence) {
+    case "Weekly":
+      next.setDate(next.getDate() + 7);
+      break;
+    case "Monthly":
+      next.setMonth(next.getMonth() + 1);
+      break;
+    case "Quarterly":
+      next.setMonth(next.getMonth() + 3);
+      break;
+    case "Half-yearly":
+      next.setMonth(next.getMonth() + 6);
+      break;
+    case "Yearly":
+      next.setFullYear(next.getFullYear() + 1);
+      break;
+    default:
+      // Default to monthly if no recurrence specified
+      next.setMonth(next.getMonth() + 1);
+  }
+
+  return next;
+}
+
+/**
+ * Calculate status based on actual vs expected score
+ * @param actualScore - The actual score entered
+ * @param expectedScore - The expected score target
+ * @returns "Achieved" if actual >= expected, "Missed" otherwise
+ */
+function calculateStatus(actualScore: number | null, expectedScore: number | null): string {
+  if (actualScore === null || expectedScore === null) {
+    return "Scheduled";
+  }
+  return actualScore >= expectedScore ? "Achieved" : "Missed";
+}
 
 export default function KPIDetailPage({
   params,
@@ -95,7 +164,7 @@ export default function KPIDetailPage({
   const [kpi, setKpi] = useState<KPI | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [selectedYear, setSelectedYear] = useState("");
+  const [selectedYear, setSelectedYear] = useState(String(currentYear));
 
   // Form state
   const [formData, setFormData] = useState({
@@ -129,6 +198,13 @@ export default function KPIDetailPage({
     status: "In-Progress",
   });
 
+  // Add Actual Score dialog state
+  const [addScoreDialogOpen, setAddScoreDialogOpen] = useState(false);
+  const [addScoreForm, setAddScoreForm] = useState({
+    actualScore: "",
+  });
+  const [addingScore, setAddingScore] = useState(false);
+
   const fetchKPI = useCallback(async () => {
     try {
       const response = await fetch(`/api/kpis/${id}`);
@@ -154,6 +230,119 @@ export default function KPIDetailPage({
   useEffect(() => {
     fetchKPI();
   }, [fetchKPI]);
+
+  // Calculate next due review date based on Evidence review date + recurrence
+  const nextDueReviewDate = useMemo(() => {
+    if (!kpi) return null;
+
+    // Get the initial review date from Evidence
+    const evidenceReviewDate = kpi.evidence?.reviewDate
+      ? new Date(kpi.evidence.reviewDate)
+      : null;
+
+    // If no reviews yet, use the Evidence review date as the first due date
+    if (kpi.reviews.length === 0) {
+      return evidenceReviewDate;
+    }
+
+    // Sort reviews by date ascending to get the latest one
+    const sortedReviews = [...kpi.reviews].sort(
+      (a, b) => new Date(a.reviewDate).getTime() - new Date(b.reviewDate).getTime()
+    );
+    const lastReview = sortedReviews[sortedReviews.length - 1];
+    const lastReviewDate = new Date(lastReview.reviewDate);
+
+    // Calculate next date based on recurrence
+    const recurrence = kpi.evidence?.recurrence || "Monthly";
+    return calculateNextReviewDate(lastReviewDate, recurrence);
+  }, [kpi]);
+
+  // Get expected score from KPI or Evidence
+  const expectedScore = useMemo(() => {
+    if (!kpi) return null;
+    return kpi.expectedScore ?? kpi.evidence?.kpiExpectedScore ?? null;
+  }, [kpi]);
+
+  // Filter reviews by selected year and sort ascending by date
+  const filteredReviews = useMemo(() => {
+    if (!kpi) return [];
+
+    let reviews = [...kpi.reviews];
+
+    // Filter by year if selected
+    if (selectedYear) {
+      reviews = reviews.filter((review) => {
+        const reviewYear = new Date(review.reviewDate).getFullYear();
+        return reviewYear === parseInt(selectedYear);
+      });
+    }
+
+    // Sort ascending by review date (chronological order)
+    return reviews.sort(
+      (a, b) => new Date(a.reviewDate).getTime() - new Date(b.reviewDate).getTime()
+    );
+  }, [kpi, selectedYear]);
+
+  // Generate chart data from filtered reviews
+  const chartData = useMemo(() => {
+    if (!filteredReviews.length) return [];
+
+    return filteredReviews.map((review) => {
+      const date = new Date(review.reviewDate);
+      return {
+        date: date.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }),
+        fullDate: review.reviewDate,
+        actualScore: review.actualScore,
+        expectedScore: expectedScore,
+      };
+    });
+  }, [filteredReviews, expectedScore]);
+
+  // Handle adding new actual score entry
+  const handleAddActualScore = async () => {
+    if (!nextDueReviewDate || !addScoreForm.actualScore) return;
+
+    setAddingScore(true);
+    try {
+      const actualScoreValue = parseFloat(addScoreForm.actualScore);
+      const calculatedStatus = calculateStatus(actualScoreValue, expectedScore);
+
+      const response = await fetch(`/api/kpis/${id}/reviews`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reviewDate: nextDueReviewDate.toISOString(),
+          actualScore: actualScoreValue,
+          status: calculatedStatus,
+        }),
+      });
+
+      if (response.ok) {
+        setAddScoreDialogOpen(false);
+        setAddScoreForm({ actualScore: "" });
+        toast({
+          title: "Success",
+          description: "KPI actual score saved successfully.",
+        });
+        fetchKPI();
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to save KPI actual score.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error adding actual score:", error);
+      toast({
+        title: "Error",
+        description: "An error occurred while saving.",
+        variant: "destructive",
+      });
+    } finally {
+      setAddingScore(false);
+    }
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -195,25 +384,44 @@ export default function KPIDetailPage({
 
   const handleUpdateReview = async () => {
     try {
+      const actualScoreValue = updateForm.actualScore
+        ? parseFloat(updateForm.actualScore)
+        : null;
+      const calculatedStatus = calculateStatus(actualScoreValue, expectedScore);
+
       const response = await fetch(
         `/api/kpis/${id}/reviews/${updateForm.reviewId}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            actualScore: updateForm.actualScore
-              ? parseFloat(updateForm.actualScore)
-              : null,
+            actualScore: actualScoreValue,
+            status: calculatedStatus,
           }),
         }
       );
 
       if (response.ok) {
         setUpdateDialogOpen(false);
+        toast({
+          title: "Success",
+          description: "Review updated successfully.",
+        });
         fetchKPI();
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to update review.",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Error updating review:", error);
+      toast({
+        title: "Error",
+        description: "An error occurred while updating.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -340,12 +548,61 @@ export default function KPIDetailPage({
               </div>
             </CardHeader>
             <CardContent>
-              {/* Chart placeholder - shows monthly data */}
-              <div className="h-48 bg-gray-50 rounded-lg flex items-center justify-center border">
-                <div className="text-center text-gray-500">
-                  <p className="text-sm">Monthly KPI Chart</p>
-                  <p className="text-xs">Actual Score vs Expected Score</p>
-                </div>
+              {/* Line Chart - Actual Score vs Expected Score */}
+              <div className="h-64">
+                {chartData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart
+                      data={chartData}
+                      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                      <YAxis domain={[0, "auto"]} tick={{ fontSize: 12 }} />
+                      <Tooltip
+                        formatter={(value: number, name: string) => [
+                          value,
+                          name === "actualScore" ? "Actual Score" : "Expected Score",
+                        ]}
+                        labelFormatter={(label) => `Review Date: ${label}`}
+                      />
+                      <Legend />
+                      {/* Expected Score as horizontal reference line */}
+                      {expectedScore !== null && (
+                        <ReferenceLine
+                          y={expectedScore}
+                          stroke="#22c55e"
+                          strokeDasharray="5 5"
+                          strokeWidth={2}
+                          label={{
+                            value: `Expected: ${expectedScore}`,
+                            fill: "#22c55e",
+                            fontSize: 12,
+                            position: "right",
+                          }}
+                        />
+                      )}
+                      {/* Actual Score line with dots */}
+                      <Line
+                        type="linear"
+                        dataKey="actualScore"
+                        name="Actual Score"
+                        stroke="#3b82f6"
+                        strokeWidth={2}
+                        dot={{ r: 6, fill: "#3b82f6", strokeWidth: 2 }}
+                        activeDot={{ r: 8 }}
+                        connectNulls
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-full bg-gray-50 rounded-lg flex items-center justify-center border">
+                    <div className="text-center text-gray-500">
+                      <p className="text-sm">No review data available</p>
+                      <p className="text-xs">Add actual scores to see the chart</p>
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="flex items-center gap-4 mt-4 text-sm">
                 <div className="flex items-center gap-2">
@@ -353,8 +610,8 @@ export default function KPIDetailPage({
                   <span>Actual Score</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-green-500 rounded" />
-                  <span>Expected Score</span>
+                  <div className="w-3 h-0.5 bg-green-500" style={{ borderStyle: "dashed" }} />
+                  <span>Expected Score ({expectedScore ?? "-"})</span>
                 </div>
               </div>
             </CardContent>
@@ -444,6 +701,36 @@ export default function KPIDetailPage({
         {/* Right Column - Review History */}
         <Card>
           <CardContent className="pt-6">
+            {/* Next Due Review Date Info and Add Button */}
+            <div className="flex items-center justify-between mb-4 p-3 bg-gray-50 rounded-lg border">
+              <div>
+                <p className="text-sm font-medium text-gray-700">
+                  Next Due Review Date
+                </p>
+                <p className="text-lg font-semibold text-gray-900">
+                  {nextDueReviewDate
+                    ? nextDueReviewDate.toLocaleDateString("en-GB", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })
+                    : "Not scheduled"}
+                </p>
+                {kpi.evidence?.recurrence && (
+                  <p className="text-xs text-gray-500">
+                    Recurrence: {kpi.evidence.recurrence}
+                  </p>
+                )}
+              </div>
+              <Button
+                onClick={() => setAddScoreDialogOpen(true)}
+                disabled={!nextDueReviewDate}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Actual Score
+              </Button>
+            </div>
+
             <Table>
               <TableHeader>
                 <TableRow>
@@ -455,14 +742,14 @@ export default function KPIDetailPage({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {kpi.reviews.length === 0 ? (
+                {filteredReviews.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center py-8">
                       <p className="text-gray-500">No review history found</p>
                     </TableCell>
                   </TableRow>
                 ) : (
-                  kpi.reviews.map((review) => (
+                  filteredReviews.map((review) => (
                     <TableRow key={review.id}>
                       <TableCell>
                         {new Date(review.reviewDate).toLocaleDateString("en-GB")}
@@ -529,7 +816,8 @@ export default function KPIDetailPage({
             {/* Pagination */}
             <div className="flex items-center justify-between mt-4 text-sm text-gray-500">
               <span>
-                Currently showing 1 to {kpi.reviews.length} of {kpi.reviews.length}
+                Currently showing 1 to {filteredReviews.length} of {filteredReviews.length}
+                {selectedYear && ` (filtered by ${selectedYear})`}
               </span>
             </div>
           </CardContent>
@@ -698,6 +986,104 @@ export default function KPIDetailPage({
                 }
               >
                 Save
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Actual Score Dialog */}
+      <Dialog open={addScoreDialogOpen} onOpenChange={setAddScoreDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add KPI Actual Score</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {/* Display Review Date Context */}
+            <div className="p-3 bg-gray-50 rounded-lg border">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-gray-500">Review Date</p>
+                  <p className="font-medium">
+                    {nextDueReviewDate
+                      ? nextDueReviewDate.toLocaleDateString("en-GB", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })
+                      : "-"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Expected Score</p>
+                  <p className="font-medium">{expectedScore ?? "-"}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Recurrence</p>
+                  <p className="font-medium">
+                    {kpi?.evidence?.recurrence || "Monthly"}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Actual Score Input */}
+            <div className="space-y-2">
+              <Label className="font-medium">
+                Actual Score <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                type="number"
+                placeholder="Enter actual score"
+                value={addScoreForm.actualScore}
+                onChange={(e) =>
+                  setAddScoreForm({ actualScore: e.target.value })
+                }
+              />
+              {addScoreForm.actualScore && expectedScore !== null && (
+                <p className="text-sm">
+                  Status:{" "}
+                  <Badge
+                    className={
+                      parseFloat(addScoreForm.actualScore) >= expectedScore
+                        ? "bg-green-100 text-green-800"
+                        : "bg-red-100 text-red-800"
+                    }
+                  >
+                    {parseFloat(addScoreForm.actualScore) >= expectedScore
+                      ? "Achieved"
+                      : "Missed"}
+                  </Badge>
+                </p>
+              )}
+            </div>
+
+            {/* Upload Document (optional) */}
+            <div className="space-y-2">
+              <Label className="font-medium">Upload Document (Optional)</Label>
+              <div className="border-2 border-dashed rounded-lg p-6 text-center">
+                <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                <p className="text-sm text-gray-500">
+                  Drag and drop or select file.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setAddScoreDialogOpen(false);
+                  setAddScoreForm({ actualScore: "" });
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleAddActualScore}
+                disabled={!addScoreForm.actualScore || addingScore}
+              >
+                {addingScore ? "Saving..." : "Save"}
               </Button>
             </div>
           </div>
