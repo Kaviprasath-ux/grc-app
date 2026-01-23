@@ -27,6 +27,10 @@ import {
   Upload,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/hooks/use-toast";
+import { Progress } from "@/components/ui/progress";
+import { generateFrameworkComplete } from "@/services/ai-framework-service";
+import type { FrameworkJobStatus } from "@/types/ai-types";
 
 interface Framework {
   id: string;
@@ -55,6 +59,7 @@ const ITEMS_PER_PAGE = 6;
 
 export default function CustomerAdminFrameworkPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [frameworks, setFrameworks] = useState<Framework[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
@@ -69,6 +74,11 @@ export default function CustomerAdminFrameworkPage() {
   // File upload state
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+
+  // AI Generation state
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationProgress, setGenerationProgress] = useState(0);
+  const [generationStatus, setGenerationStatus] = useState("");
 
   // Form state
   const [formData, setFormData] = useState<NewFramework>({
@@ -133,23 +143,153 @@ export default function CustomerAdminFrameworkPage() {
 
   const handleCreate = async () => {
     try {
-      const response = await fetch("/api/frameworks", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...formData,
-          isCustom: true,
-          status: "Subscribed",
-        }),
-      });
+      // Check if AI generation should be used
+      const useAIGeneration = uploadedFile;
 
-      if (response.ok) {
+      if (useAIGeneration) {
+        // AI Generation Flow
+        console.log("[Framework Card] Starting AI generation workflow");
+
+        // Close create dialog and show progress dialog
         setIsCreateDialogOpen(false);
-        resetForm();
-        fetchFrameworks();
+        setIsGenerating(true);
+        setGenerationProgress(0);
+        setGenerationStatus("Submitting framework generation job...");
+
+        try {
+          // Call AI generation service
+          const result = await generateFrameworkComplete(
+            formData.name,
+            uploadedFile,
+            undefined,
+            (status: FrameworkJobStatus) => {
+              // Progress callback
+              console.log(`[Framework Card] Status: ${status.status}, Progress: ${status.progress}%`);
+              setGenerationProgress(status.progress || 0);
+
+              if (status.status === "queued") {
+                setGenerationStatus("Job queued, waiting to start...");
+              } else if (status.status === "processing") {
+                setGenerationStatus(`Generating framework... ${status.progress || 0}%`);
+              }
+            }
+          );
+
+          console.log(`[Framework Card] AI generation complete: ${result.total_requirements} requirements`);
+          setGenerationStatus("Saving framework to database...");
+
+          // Create framework in database
+          const frameworkResponse = await fetch("/api/frameworks", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              ...formData,
+              isCustom: true,
+              status: "Subscribed",
+            }),
+          });
+
+          if (!frameworkResponse.ok) {
+            throw new Error("Failed to create framework in database");
+          }
+
+          const newFramework = await frameworkResponse.json();
+          console.log(`[Framework Card] Framework created with ID: ${newFramework.id}`);
+
+          // Save requirements to database
+          setGenerationStatus("Saving requirements...");
+
+          const requirementsResponse = await fetch(`/api/frameworks/${newFramework.id}/import`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              requirements: result.requirements.map((req) => ({
+                category: req.requirement_category,
+                code: req.requirement_code,
+                requirement: req.requirement,
+                description: req.description,
+                controlMapping: req.control_mapping,
+                type: req.requirement_type,
+                chapterType: req.chapter_type,
+              })),
+            }),
+          });
+
+          if (!requirementsResponse.ok) {
+            console.warn("[Framework Card] Failed to save requirements, but framework created");
+          }
+
+          // Success!
+          setIsGenerating(false);
+          resetForm();
+          fetchFrameworks();
+
+          toast({
+            title: "Success",
+            description: `Framework created with ${result.total_requirements} AI-generated requirements!`,
+          });
+        } catch (error) {
+          console.error("[Framework Card] AI generation error:", error);
+          setIsGenerating(false);
+
+          // Provide specific error messages based on error type
+          let errorMessage = "AI generation failed";
+
+          if (error instanceof Error) {
+            if (error.message.includes("Job not found")) {
+              errorMessage = "The generation job could not be found. Please try again.";
+            } else if (error.message.includes("timed out")) {
+              errorMessage = "Generation is taking longer than expected. The process may still be running. Please check back in a few minutes or try again.";
+            } else if (error.message.includes("Backend error")) {
+              errorMessage = "The AI service encountered an error. Please try again in a moment.";
+            } else if (error.message.includes("Failed to submit")) {
+              errorMessage = "Could not submit the generation job. Please check your connection and try again.";
+            } else {
+              errorMessage = error.message;
+            }
+          }
+
+          toast({
+            title: "AI Generation Error",
+            description: errorMessage,
+            variant: "destructive",
+          });
+        }
+      } else {
+        // Manual Creation Flow (existing behavior)
+        const response = await fetch("/api/frameworks", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...formData,
+            isCustom: true,
+            status: "Subscribed",
+          }),
+        });
+
+        if (response.ok) {
+          setIsCreateDialogOpen(false);
+          resetForm();
+          fetchFrameworks();
+          toast({
+            title: "Success",
+            description: "Framework created successfully",
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to create framework",
+            variant: "destructive",
+          });
+        }
       }
     } catch (error) {
       console.error("Error creating framework:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create framework",
+        variant: "destructive",
+      });
     }
   };
 
@@ -297,9 +437,8 @@ export default function CustomerAdminFrameworkPage() {
           currentFrameworks.map((framework) => (
             <div
               key={framework.id}
-              className={`bg-white rounded-lg shadow-sm border p-4 cursor-pointer hover:shadow-md transition-shadow ${
-                framework.isCustom ? "border-l-4 border-l-gray-400" : ""
-              }`}
+              className={`bg-white rounded-lg shadow-sm border p-4 cursor-pointer hover:shadow-md transition-shadow ${framework.isCustom ? "border-l-4 border-l-gray-400" : ""
+                }`}
               onClick={() => handleFrameworkClick(framework)}
             >
               {/* Framework Name */}
@@ -480,11 +619,10 @@ export default function CustomerAdminFrameworkPage() {
             <div className="space-y-2">
               <Label>Upload Support Document</Label>
               <div
-                className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
-                  isDragging
-                    ? "border-primary bg-primary/5"
-                    : "border-gray-300 hover:border-gray-400"
-                }`}
+                className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${isDragging
+                  ? "border-primary bg-primary/5"
+                  : "border-gray-300 hover:border-gray-400"
+                  }`}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
@@ -535,6 +673,33 @@ export default function CustomerAdminFrameworkPage() {
               <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                 Cancel
               </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* AI Generation Progress Dialog */}
+      <Dialog open={isGenerating} onOpenChange={() => { }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-blue-600 animate-pulse" />
+              AI is generating your framework...
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <Progress value={generationProgress} className="h-2" />
+            <div className="text-center">
+              <p className="text-sm font-medium text-gray-900">
+                {generationProgress}%
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                {generationStatus}
+              </p>
+            </div>
+            <div className="text-xs text-muted-foreground text-center space-y-1">
+              <p>⏱️ This typically takes 30-90 seconds</p>
+              <p className="text-amber-600">Please keep this window open</p>
             </div>
           </div>
         </DialogContent>

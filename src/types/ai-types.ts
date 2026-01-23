@@ -184,3 +184,44 @@ export interface ApiError {
     status?: number;
     details?: unknown;
 }
+
+// ==================== FRAMEWORK GENERATION API ====================
+
+export interface FrameworkGenerationRequest {
+    framework_name: string;
+    attachment?: File;
+    library?: string;
+}
+
+export interface FrameworkJobResponse {
+    job_id: string;
+    status: 'queued';
+    message?: string;
+}
+
+export interface FrameworkJobStatus {
+    job_id: string;
+    status: 'queued' | 'processing' | 'completed' | 'error';
+    error?: string | null;  // Backend returns this field
+    progress?: number;  // Backend does NOT return this, we'll default to 0
+    message?: string;   // Backend does NOT return this
+}
+
+export interface FrameworkRequirement {
+    requirement_category: string;
+    requirement_code: string;
+    requirement: string;
+    description: string;
+    control_mapping: string;
+    requirement_type: string;
+    chapter_type: string;
+}
+
+export interface FrameworkGenerationResult {
+    job_id: string;
+    framework_name: string;
+    generated_at: string;  // ISO datetime
+    requirements: FrameworkRequirement[];
+    total_requirements: number;
+    status: 'completed';
+}
