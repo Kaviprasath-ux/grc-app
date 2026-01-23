@@ -3,6 +3,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 
+// Unified subtle color for all elements
+const THEME_COLOR = "#64748b"; // slate-500 - subtle and professional
+const LINE_COLOR = "#cbd5e1"; // slate-300 - light for lines
+
 interface UserNode {
   id: string;
   fullName: string;
@@ -20,41 +24,23 @@ interface TreeNode extends UserNode {
   children: TreeNode[];
 }
 
-// Color mapping for roles
-const getRoleColor = (role: string): string => {
-  const colors: Record<string, string> = {
-    CustomerAdministrator: "#2563eb", // Blue
-    AuditHead: "#dc2626", // Red
-    AuditManager: "#ea580c", // Orange
-    Reviewer: "#0891b2", // Cyan
-    DepartmentReviewer: "#0d9488", // Teal
-    Contributor: "#16a34a", // Green
-    DepartmentContributor: "#059669", // Emerald
-    Auditor: "#ca8a04", // Yellow
-    Auditee: "#db2777", // Pink
-    GRCAdministrator: "#7c3aed", // Purple
-  };
-  return colors[role] || "#6b7280"; // Gray default
-};
-
-// Single org chart node
+// Single org chart node with unified color
 function OrgChartNode({ node, isRoot = false }: { node: TreeNode; isRoot?: boolean }) {
   const roleName = node.userRoles?.[0]?.role?.name || node.role;
-  const color = getRoleColor(roleName);
 
   return (
     <div className="flex flex-col items-center">
       <div
         className={cn(
-          "rounded-lg shadow-md border-2 min-w-[160px] max-w-[200px] overflow-hidden",
+          "rounded-lg shadow-sm border min-w-[160px] max-w-[200px] overflow-hidden",
           isRoot && "min-w-[200px]"
         )}
-        style={{ borderColor: color }}
+        style={{ borderColor: LINE_COLOR }}
       >
         {/* Header with role/designation */}
         <div
           className="px-3 py-2 text-white text-center"
-          style={{ backgroundColor: color }}
+          style={{ backgroundColor: THEME_COLOR }}
         >
           <p className="text-xs font-medium truncate">
             {node.designation || roleName}
@@ -62,7 +48,7 @@ function OrgChartNode({ node, isRoot = false }: { node: TreeNode; isRoot?: boole
         </div>
         {/* Body with name */}
         <div className="bg-white px-3 py-2 text-center">
-          <p className="text-sm font-semibold text-gray-800 truncate">
+          <p className="text-sm font-semibold text-gray-700 truncate">
             {node.fullName}
           </p>
           {node.department?.name && (
@@ -76,16 +62,14 @@ function OrgChartNode({ node, isRoot = false }: { node: TreeNode; isRoot?: boole
   );
 }
 
-// Recursive tree rendering with curved connectors
+// Recursive tree rendering with smooth curved connectors
 function OrgChartTree({ nodes, level = 0 }: { nodes: TreeNode[]; level?: number }) {
   if (nodes.length === 0) return null;
-
-  const lineColor = "#94a3b8"; // slate-400 for better visibility
 
   return (
     <div className="flex flex-col items-center">
       {/* Current level nodes */}
-      <div className="flex justify-center gap-6">
+      <div className="flex justify-center gap-8">
         {nodes.map((node) => (
           <div key={node.id} className="flex flex-col items-center">
             <OrgChartNode node={node} isRoot={level === 0} />
@@ -95,65 +79,72 @@ function OrgChartTree({ nodes, level = 0 }: { nodes: TreeNode[]; level?: number 
               <div className="flex flex-col items-center">
                 {/* Vertical line from parent */}
                 <div
-                  className="w-0.5 h-6"
-                  style={{ backgroundColor: lineColor }}
+                  className="w-0.5 h-5"
+                  style={{ backgroundColor: LINE_COLOR }}
                 />
 
-                {/* Horizontal connector with rounded corners for multiple children */}
-                {node.children.length > 1 && (
-                  <div className="relative flex justify-center">
+                {/* Children container */}
+                <div className="relative">
+                  {/* Horizontal line spanning all children */}
+                  {node.children.length > 1 && (
                     <div
-                      className="h-0.5 rounded-full"
+                      className="absolute top-0 left-1/2 -translate-x-1/2 h-0.5"
                       style={{
-                        backgroundColor: lineColor,
-                        width: `${(node.children.length - 1) * 190}px`,
+                        backgroundColor: LINE_COLOR,
+                        width: `calc(100% - 80px)`,
                       }}
                     />
+                  )}
+
+                  {/* Children */}
+                  <div className="flex justify-center">
+                    {node.children.map((child, childIndex) => {
+                      const isOnly = node.children.length === 1;
+                      const isFirst = childIndex === 0;
+                      const isLast = childIndex === node.children.length - 1;
+                      const isMiddle = !isFirst && !isLast;
+
+                      return (
+                        <div key={child.id} className="flex flex-col items-center" style={{ minWidth: "180px" }}>
+                          {/* Vertical connector with curved corners */}
+                          {!isOnly && (
+                            <svg width="40" height="20" className="overflow-visible">
+                              {isFirst && (
+                                <path
+                                  d="M 20 0 L 20 8 Q 20 12 24 12 L 40 12"
+                                  fill="none"
+                                  stroke={LINE_COLOR}
+                                  strokeWidth="2"
+                                />
+                              )}
+                              {isLast && (
+                                <path
+                                  d="M 20 0 L 20 8 Q 20 12 16 12 L 0 12"
+                                  fill="none"
+                                  stroke={LINE_COLOR}
+                                  strokeWidth="2"
+                                />
+                              )}
+                              {isMiddle && (
+                                <line
+                                  x1="20" y1="0" x2="20" y2="12"
+                                  stroke={LINE_COLOR}
+                                  strokeWidth="2"
+                                />
+                              )}
+                              {/* Vertical line down */}
+                              <line
+                                x1="20" y1="12" x2="20" y2="20"
+                                stroke={LINE_COLOR}
+                                strokeWidth="2"
+                              />
+                            </svg>
+                          )}
+                          <OrgChartTree nodes={[child]} level={level + 1} />
+                        </div>
+                      );
+                    })}
                   </div>
-                )}
-
-                {/* Children with curved corner connectors */}
-                <div className="flex justify-center">
-                  {node.children.map((child, childIndex) => {
-                    const isFirst = childIndex === 0;
-                    const isLast = childIndex === node.children.length - 1;
-                    const isOnly = node.children.length === 1;
-
-                    return (
-                      <div key={child.id} className="flex flex-col items-center px-3">
-                        {/* Curved corner connector from horizontal line */}
-                        {!isOnly && (
-                          <div className="relative h-5 w-5 flex items-start justify-center">
-                            {/* Vertical part */}
-                            <div
-                              className="absolute top-0 w-0.5 h-5"
-                              style={{ backgroundColor: lineColor }}
-                            />
-                            {/* Curved corner effect using border */}
-                            {isFirst && (
-                              <div
-                                className="absolute top-0 left-1/2 w-3 h-3 border-l-2 border-t-2 rounded-tl-lg"
-                                style={{ borderColor: lineColor }}
-                              />
-                            )}
-                            {isLast && (
-                              <div
-                                className="absolute top-0 right-1/2 w-3 h-3 border-r-2 border-t-2 rounded-tr-lg"
-                                style={{ borderColor: lineColor }}
-                              />
-                            )}
-                            {!isFirst && !isLast && (
-                              <div
-                                className="absolute top-0 w-0.5 h-0.5"
-                                style={{ backgroundColor: lineColor }}
-                              />
-                            )}
-                          </div>
-                        )}
-                        <OrgChartTree nodes={[child]} level={level + 1} />
-                      </div>
-                    );
-                  })}
                 </div>
               </div>
             )}
@@ -305,28 +296,9 @@ export function OrgChart() {
         <OrgChartTree nodes={tree} />
       </div>
 
-      {/* Legend */}
-      <div className="mt-8 border-t pt-4">
-        <h4 className="text-sm font-medium mb-3">Role Legend</h4>
-        <div className="flex flex-wrap gap-3">
-          {[
-            { role: "CustomerAdministrator", label: "Customer Admin" },
-            { role: "AuditHead", label: "Audit Head" },
-            { role: "AuditManager", label: "Audit Manager" },
-            { role: "Reviewer", label: "Reviewer" },
-            { role: "Contributor", label: "Contributor" },
-            { role: "Auditor", label: "Auditor" },
-            { role: "Auditee", label: "Auditee" },
-          ].map(({ role, label }) => (
-            <div key={role} className="flex items-center gap-2">
-              <div
-                className="w-4 h-4 rounded"
-                style={{ backgroundColor: getRoleColor(role) }}
-              />
-              <span className="text-xs text-gray-600">{label}</span>
-            </div>
-          ))}
-        </div>
+      {/* Info text */}
+      <div className="mt-6 text-center text-sm text-gray-500">
+        Organization hierarchy based on reporting manager assignments
       </div>
     </div>
   );
