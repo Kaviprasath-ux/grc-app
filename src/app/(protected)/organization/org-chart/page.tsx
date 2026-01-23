@@ -217,7 +217,7 @@ export default function OrgChartPage() {
     return userList.filter((u) => !u.reportingManagerId);
   };
 
-  // Build tree structure from flat user list
+  // Build tree structure from flat user list with CustomerAdmin at top
   const buildTree = (userList: UserNode[]): TreeNode[] => {
     const userMap = new Map<string, TreeNode>();
 
@@ -226,20 +226,38 @@ export default function OrgChartPage() {
       userMap.set(user.id, { ...user, children: [] });
     });
 
-    const roots: TreeNode[] = [];
+    // Find CustomerAdmin users (they will be at the top)
+    const customerAdmins: TreeNode[] = [];
+    const processedIds = new Set<string>();
 
-    // Build parent-child relationships
+    // Build parent-child relationships based on reportingManagerId
     userList.forEach((user) => {
       const node = userMap.get(user.id)!;
+      const roleName = user.userRoles?.[0]?.role?.name || user.role;
+
       if (user.reportingManagerId && userMap.has(user.reportingManagerId)) {
+        // User has a reporting manager - add as child
         const parent = userMap.get(user.reportingManagerId)!;
         parent.children.push(node);
-      } else {
-        roots.push(node);
+        processedIds.add(user.id);
+      } else if (roleName === "CustomerAdministrator") {
+        // CustomerAdmin without reporting manager goes to top
+        customerAdmins.push(node);
+        processedIds.add(user.id);
       }
     });
 
-    // Sort children by role priority then by name
+    // Users without reporting manager who are not CustomerAdmin
+    // These are "unassigned" users - add them under a virtual node or show separately
+    const unassignedUsers: TreeNode[] = [];
+    userList.forEach((user) => {
+      if (!processedIds.has(user.id)) {
+        const node = userMap.get(user.id)!;
+        unassignedUsers.push(node);
+      }
+    });
+
+    // Sort function by role priority then by name
     const sortChildren = (nodes: TreeNode[]) => {
       const rolePriority: Record<string, number> = {
         CustomerAdministrator: 1,
@@ -269,7 +287,20 @@ export default function OrgChartPage() {
       });
     };
 
-    sortChildren(roots);
+    // Sort CustomerAdmins and their children
+    sortChildren(customerAdmins);
+
+    // Sort unassigned users
+    sortChildren(unassignedUsers);
+
+    // Combine: CustomerAdmins first, then unassigned users at the end
+    const roots: TreeNode[] = [...customerAdmins];
+
+    // If there are unassigned users, add them (they don't have reporting managers set)
+    if (unassignedUsers.length > 0) {
+      roots.push(...unassignedUsers);
+    }
+
     return roots;
   };
 
