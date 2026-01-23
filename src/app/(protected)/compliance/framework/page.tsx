@@ -56,7 +56,9 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
-import { useHasRole } from "@/hooks/usePermissions";
+import { Progress } from "@/components/ui/progress";
+import { generateFrameworkComplete } from "@/services/ai-framework-service";
+import type { FrameworkJobStatus } from "@/types/ai-types";
 
 interface Framework {
   id: string;
@@ -104,9 +106,6 @@ const TEMPLATE_COLUMNS = [
 export default function FrameworkOverviewPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const isGRCReviewer = useHasRole("GRCReviewer");
-  const isDepartmentReviewer = useHasRole("DepartmentReviewer");
-  const isReviewerRole = isGRCReviewer || isDepartmentReviewer;
   const [frameworks, setFrameworks] = useState<Framework[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
@@ -133,6 +132,11 @@ export default function FrameworkOverviewPage() {
   // File upload state for AI version
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+
+  // AI Generation state
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationProgress, setGenerationProgress] = useState(0);
+  const [generationStatus, setGenerationStatus] = useState("");
 
   // Form state
   const [formData, setFormData] = useState<NewFramework>({
@@ -252,33 +256,131 @@ export default function FrameworkOverviewPage() {
         }
       } else {
         // Create new framework
-        const response = await fetch("/api/frameworks", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ...formData,
-            isCustom: true,
-            status: "Subscribed",
-          }),
-        });
+        // Check if AI generation should be used
+        const useAIGeneration = isAICreate && uploadedFile;
 
-        if (response.ok) {
-          const newFramework = await response.json();
+        if (useAIGeneration) {
+          // AI Generation Flow
+          console.log("[Framework] Starting AI generation workflow");
+
+          // Close create dialog and show progress dialog
           setIsCreateDialogOpen(false);
-          resetForm();
-          fetchFrameworks();
+          setIsGenerating(true);
+          setGenerationProgress(0);
+          setGenerationStatus("Submitting framework generation job...");
 
-          // Open the import dialog for the newly created framework
-          setNewlyCreatedFrameworkId(newFramework.id);
-          resetImportState();
-          setIsImportDialogOpen(true);
+          try {
+            // Call AI generation service
+            const result = await generateFrameworkComplete(
+              formData.name,
+              uploadedFile,
+              undefined,
+              (status: FrameworkJobStatus) => {
+                // Progress callback
+                console.log(`[Framework] Status: ${status.status}, Progress: ${status.progress}%`);
+                setGenerationProgress(status.progress || 0);
+
+                if (status.status === "queued") {
+                  setGenerationStatus("Job queued, waiting to start...");
+                } else if (status.status === "processing") {
+                  setGenerationStatus(`Generating framework... ${status.progress || 0}%`);
+                }
+              }
+            );
+
+            console.log(`[Framework] AI generation complete: ${result.total_requirements} requirements`);
+            setGenerationStatus("Saving framework to database...");
+
+            // Create framework in database
+            const frameworkResponse = await fetch("/api/frameworks", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                ...formData,
+                isCustom: true,
+                status: "Subscribed",
+              }),
+            });
+
+            if (!frameworkResponse.ok) {
+              throw new Error("Failed to create framework in database");
+            }
+
+            const newFramework = await frameworkResponse.json();
+            console.log(`[Framework] Framework created with ID: ${newFramework.id}`);
+
+            // Save requirements to database
+            setGenerationStatus("Saving requirements...");
+
+            const requirementsResponse = await fetch(`/api/frameworks/${newFramework.id}/import`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                requirements: result.requirements.map((req) => ({
+                  category: req.requirement_category,
+                  code: req.requirement_code,
+                  requirement: req.requirement,
+                  description: req.description,
+                  controlMapping: req.control_mapping,
+                  type: req.requirement_type,
+                  chapterType: req.chapter_type,
+                })),
+              }),
+            });
+
+            if (!requirementsResponse.ok) {
+              console.warn("[Framework] Failed to save requirements, but framework created");
+            }
+
+            // Success!
+            setIsGenerating(false);
+            resetForm();
+            fetchFrameworks();
+
+            toast({
+              title: "Success",
+              description: `Framework created with ${result.total_requirements} AI-generated requirements!`,
+            });
+          } catch (error) {
+            console.error("[Framework] AI generation error:", error);
+            setIsGenerating(false);
+
+            toast({
+              title: "Error",
+              description: error instanceof Error ? error.message : "AI generation failed",
+              variant: "destructive",
+            });
+          }
         } else {
-          const error = await response.json();
-          toast({
-            title: "Error",
-            description: error.error || "Failed to create framework",
-            variant: "destructive",
+          // Manual Creation Flow (existing behavior)
+          const response = await fetch("/api/frameworks", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              ...formData,
+              isCustom: true,
+              status: "Subscribed",
+            }),
           });
+
+          if (response.ok) {
+            const newFramework = await response.json();
+            setIsCreateDialogOpen(false);
+            resetForm();
+            fetchFrameworks();
+
+            // Open the import dialog for the newly created framework
+            setNewlyCreatedFrameworkId(newFramework.id);
+            resetImportState();
+            setIsImportDialogOpen(true);
+          } else {
+            const error = await response.json();
+            toast({
+              title: "Error",
+              description: error.error || "Failed to create framework",
+              variant: "destructive",
+            });
+          }
         }
       }
     } catch (error) {
@@ -502,26 +604,24 @@ export default function FrameworkOverviewPage() {
       <div className="bg-white rounded-lg shadow-sm border p-4">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold text-gray-900">Frameworks</h3>
-          {!isReviewerRole && (
-            <div className="flex items-center gap-2">
-              <Button
-                onClick={() => openCreateDialog(true)}
-                variant="outline"
-                className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
-              >
-                <Sparkles className="h-4 w-4 mr-2" />
-                New Integrated Framework (AI)
-              </Button>
-              <Button
-                onClick={() => openCreateDialog(false)}
-                variant="outline"
-                className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                New Integrated Framework
-              </Button>
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => openCreateDialog(true)}
+              variant="outline"
+              className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
+            >
+              <Sparkles className="h-4 w-4 mr-2" />
+              New Integrated Framework (AI)
+            </Button>
+            <Button
+              onClick={() => openCreateDialog(false)}
+              variant="outline"
+              className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              New Integrated Framework
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -560,15 +660,13 @@ export default function FrameworkOverviewPage() {
                   <ArrowUpDown className="ml-2 h-4 w-4" />
                 </Button>
               </TableHead>
-              {!isReviewerRole && (
-                <TableHead className="w-[100px] text-center">Action</TableHead>
-              )}
+              <TableHead className="w-[100px] text-center">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {currentFrameworks.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={isReviewerRole ? 3 : 4} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
                   No frameworks found.
                 </TableCell>
               </TableRow>
@@ -584,28 +682,26 @@ export default function FrameworkOverviewPage() {
                   <TableCell className="text-gray-600 truncate max-w-[400px]">
                     {framework.description || "-"}
                   </TableCell>
-                  {!isReviewerRole && (
-                    <TableCell>
-                      <div className="flex items-center justify-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => openEditDialog(framework)}
-                          className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => openDeleteDialog(framework)}
-                          className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  )}
+                  <TableCell>
+                    <div className="flex items-center justify-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => openEditDialog(framework)}
+                        className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => openDeleteDialog(framework)}
+                        className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))
             )}
@@ -755,11 +851,10 @@ export default function FrameworkOverviewPage() {
               <div className="space-y-2">
                 <Label>Upload Support Document</Label>
                 <div
-                  className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
-                    isDragging
-                      ? "border-primary bg-primary/5"
-                      : "border-gray-300 hover:border-gray-400"
-                  }`}
+                  className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${isDragging
+                    ? "border-primary bg-primary/5"
+                    : "border-gray-300 hover:border-gray-400"
+                    }`}
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
@@ -852,13 +947,12 @@ export default function FrameworkOverviewPage() {
             <div className="space-y-2">
               <Label>Upload Document</Label>
               <div
-                className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-                  isDraggingImport
-                    ? "border-green-500 bg-green-50"
-                    : importFile
+                className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${isDraggingImport
+                  ? "border-green-500 bg-green-50"
+                  : importFile
                     ? "border-green-500 bg-green-50"
                     : "border-gray-300 hover:border-gray-400"
-                }`}
+                  }`}
                 onDragOver={handleImportDragOver}
                 onDragLeave={handleImportDragLeave}
                 onDrop={handleImportDrop}
@@ -1005,6 +1099,32 @@ export default function FrameworkOverviewPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* AI Generation Progress Dialog */}
+      <Dialog open={isGenerating} onOpenChange={() => { }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-blue-600 animate-pulse" />
+              AI is generating your framework...
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <Progress value={generationProgress} className="h-2" />
+            <div className="text-center">
+              <p className="text-sm font-medium text-gray-900">
+                {generationProgress}%
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                {generationStatus}
+              </p>
+            </div>
+            <div className="text-xs text-muted-foreground text-center">
+              This may take 30-60 seconds...
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
