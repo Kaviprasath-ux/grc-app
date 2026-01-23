@@ -62,94 +62,134 @@ function OrgChartNode({ node, isRoot = false }: { node: TreeNode; isRoot?: boole
   );
 }
 
-// Recursive tree rendering with smooth curved connectors
+// Child node width for calculating connector positions
+const CHILD_WIDTH = 200;
+const CHILD_GAP = 24;
+
+// Recursive tree rendering with proper connected lines
 function OrgChartTree({ nodes, level = 0 }: { nodes: TreeNode[]; level?: number }) {
   if (nodes.length === 0) return null;
 
   return (
     <div className="flex flex-col items-center">
       {/* Current level nodes */}
-      <div className="flex justify-center gap-8">
-        {nodes.map((node) => (
-          <div key={node.id} className="flex flex-col items-center">
-            <OrgChartNode node={node} isRoot={level === 0} />
+      <div className="flex justify-center" style={{ gap: `${CHILD_GAP}px` }}>
+        {nodes.map((node) => {
+          const childCount = node.children.length;
+          const totalChildrenWidth = childCount > 0
+            ? (childCount * CHILD_WIDTH) + ((childCount - 1) * CHILD_GAP)
+            : 0;
 
-            {/* Connector line to children */}
-            {node.children.length > 0 && (
-              <div className="flex flex-col items-center">
-                {/* Vertical line from parent */}
-                <div
-                  className="w-0.5 h-5"
-                  style={{ backgroundColor: LINE_COLOR }}
-                />
+          return (
+            <div key={node.id} className="flex flex-col items-center">
+              <OrgChartNode node={node} isRoot={level === 0} />
 
-                {/* Children container */}
-                <div className="relative">
-                  {/* Horizontal line spanning all children */}
-                  {node.children.length > 1 && (
+              {/* Connector lines to children */}
+              {childCount > 0 && (
+                <div className="flex flex-col items-center">
+                  {/* Vertical line from parent going down */}
+                  <div
+                    style={{
+                      width: "2px",
+                      height: "20px",
+                      backgroundColor: LINE_COLOR,
+                    }}
+                  />
+
+                  {/* SVG for horizontal line with curved corners */}
+                  {childCount > 1 ? (
+                    <svg
+                      width={totalChildrenWidth}
+                      height="30"
+                      style={{ overflow: "visible" }}
+                    >
+                      {/* Main horizontal line */}
+                      <line
+                        x1={CHILD_WIDTH / 2}
+                        y1="0"
+                        x2={totalChildrenWidth - CHILD_WIDTH / 2}
+                        y2="0"
+                        stroke={LINE_COLOR}
+                        strokeWidth="2"
+                      />
+
+                      {/* Curved corners and vertical drops for each child */}
+                      {node.children.map((_, idx) => {
+                        const x = (CHILD_WIDTH / 2) + (idx * (CHILD_WIDTH + CHILD_GAP));
+                        const isFirst = idx === 0;
+                        const isLast = idx === childCount - 1;
+                        const radius = 8;
+
+                        if (isFirst) {
+                          // Left corner - curved
+                          return (
+                            <path
+                              key={idx}
+                              d={`M ${x} 0
+                                  Q ${x} ${radius} ${x} ${radius}
+                                  L ${x} 30`}
+                              fill="none"
+                              stroke={LINE_COLOR}
+                              strokeWidth="2"
+                            />
+                          );
+                        } else if (isLast) {
+                          // Right corner - curved
+                          return (
+                            <path
+                              key={idx}
+                              d={`M ${x} 0
+                                  Q ${x} ${radius} ${x} ${radius}
+                                  L ${x} 30`}
+                              fill="none"
+                              stroke={LINE_COLOR}
+                              strokeWidth="2"
+                            />
+                          );
+                        } else {
+                          // Middle - straight down
+                          return (
+                            <line
+                              key={idx}
+                              x1={x}
+                              y1="0"
+                              x2={x}
+                              y2="30"
+                              stroke={LINE_COLOR}
+                              strokeWidth="2"
+                            />
+                          );
+                        }
+                      })}
+                    </svg>
+                  ) : (
+                    // Single child - just a vertical line
                     <div
-                      className="absolute top-0 left-1/2 -translate-x-1/2 h-0.5"
                       style={{
+                        width: "2px",
+                        height: "30px",
                         backgroundColor: LINE_COLOR,
-                        width: `calc(100% - 80px)`,
                       }}
                     />
                   )}
 
-                  {/* Children */}
-                  <div className="flex justify-center">
-                    {node.children.map((child, childIndex) => {
-                      const isOnly = node.children.length === 1;
-                      const isFirst = childIndex === 0;
-                      const isLast = childIndex === node.children.length - 1;
-                      const isMiddle = !isFirst && !isLast;
-
-                      return (
-                        <div key={child.id} className="flex flex-col items-center" style={{ minWidth: "180px" }}>
-                          {/* Vertical connector with curved corners */}
-                          {!isOnly && (
-                            <svg width="40" height="20" className="overflow-visible">
-                              {isFirst && (
-                                <path
-                                  d="M 20 0 L 20 8 Q 20 12 24 12 L 40 12"
-                                  fill="none"
-                                  stroke={LINE_COLOR}
-                                  strokeWidth="2"
-                                />
-                              )}
-                              {isLast && (
-                                <path
-                                  d="M 20 0 L 20 8 Q 20 12 16 12 L 0 12"
-                                  fill="none"
-                                  stroke={LINE_COLOR}
-                                  strokeWidth="2"
-                                />
-                              )}
-                              {isMiddle && (
-                                <line
-                                  x1="20" y1="0" x2="20" y2="12"
-                                  stroke={LINE_COLOR}
-                                  strokeWidth="2"
-                                />
-                              )}
-                              {/* Vertical line down */}
-                              <line
-                                x1="20" y1="12" x2="20" y2="20"
-                                stroke={LINE_COLOR}
-                                strokeWidth="2"
-                              />
-                            </svg>
-                          )}
-                          <OrgChartTree nodes={[child]} level={level + 1} />
-                        </div>
-                      );
-                    })}
+                  {/* Children nodes */}
+                  <div className="flex justify-center" style={{ gap: `${CHILD_GAP}px` }}>
+                    {node.children.map((child) => (
+                      <div
+                        key={child.id}
+                        className="flex flex-col items-center"
+                        style={{ width: `${CHILD_WIDTH}px` }}
+                      >
+                        <OrgChartTree nodes={[child]} level={level + 1} />
+                      </div>
+                    ))}
                   </div>
                 </div>
-              </div>
-            )}
-          </div>
-        ))}
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
