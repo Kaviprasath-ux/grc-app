@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { withAuth, getTenantFilter } from '@/lib/api-auth';
+import { withAuth, getTenantFilter, getAuditHeadFilter, getAuditHeadRiskFilter } from '@/lib/api-auth';
 
 // GET /api/internal-audit/dashboard - Get dashboard stats
 export const GET = withAuth(
@@ -13,11 +13,25 @@ export const GET = withAuth(
 
       // Multi-tenant: Use consistent tenant filter helper
       const tenantFilter = getTenantFilter(session);
+      const auditHeadFilter = getAuditHeadFilter(session);
+      const riskFilter = getAuditHeadRiskFilter(session);
+
+      // Debug logging
+      console.log('[DASHBOARD DEBUG] Session ID:', session.id);
+      console.log('[DASHBOARD DEBUG] Session roles:', session.roles);
+      console.log('[DASHBOARD DEBUG] Tenant filter:', JSON.stringify(tenantFilter));
+      console.log('[DASHBOARD DEBUG] AuditHead filter:', JSON.stringify(auditHeadFilter));
+
+      // Combined filters for engagement and risk queries
+      const engagementFilter = { ...tenantFilter, ...auditHeadFilter };
+      const riskQueryFilter = { ...tenantFilter, ...riskFilter };
+
+      console.log('[DASHBOARD DEBUG] Engagement filter:', JSON.stringify(engagementFilter));
 
       // Base filters for auditee (combined with tenant filter)
       const auditeeFilter = isAuditee
         ? { ...tenantFilter, auditeeId: session.id }
-        : tenantFilter;
+        : engagementFilter;
       const capaFilter = isAuditee ? {
         ...tenantFilter,
         finding: {
@@ -26,9 +40,9 @@ export const GET = withAuth(
             { department: { id: session.departmentId || '' } }
           ]
         }
-      } : tenantFilter;
+      } : { ...tenantFilter, ...riskFilter };
 
-      // Get risk register stats (with tenant filter)
+      // Get risk register stats (with tenant + audit head filter)
       // Handle different riskLevel case variations
       const [
         totalRisks,
@@ -37,10 +51,10 @@ export const GET = withAuth(
         mediumRisks,
         lowRisks,
       ] = await Promise.all([
-        prisma.internalAuditRisk.count({ where: tenantFilter }),
+        prisma.internalAuditRisk.count({ where: riskQueryFilter }),
         prisma.internalAuditRisk.count({
           where: {
-            ...tenantFilter,
+            ...riskQueryFilter,
             OR: [
               { riskLevel: 'Extreme' },
               { riskLevel: 'extreme' },
@@ -52,7 +66,7 @@ export const GET = withAuth(
         }),
         prisma.internalAuditRisk.count({
           where: {
-            ...tenantFilter,
+            ...riskQueryFilter,
             OR: [
               { riskLevel: 'High' },
               { riskLevel: 'high' },
@@ -62,7 +76,7 @@ export const GET = withAuth(
         }),
         prisma.internalAuditRisk.count({
           where: {
-            ...tenantFilter,
+            ...riskQueryFilter,
             OR: [
               { riskLevel: 'Medium' },
               { riskLevel: 'medium' },
@@ -73,7 +87,7 @@ export const GET = withAuth(
         }),
         prisma.internalAuditRisk.count({
           where: {
-            ...tenantFilter,
+            ...riskQueryFilter,
             OR: [
               { riskLevel: 'Low' },
               { riskLevel: 'low' },
@@ -83,7 +97,7 @@ export const GET = withAuth(
         }),
       ]);
 
-      // Get audit engagement stats (with tenant filter)
+      // Get audit engagement stats (with tenant + audit head filter)
       // Count by common status variations to handle different data formats
       const [
         ongoingAudits,
@@ -93,7 +107,7 @@ export const GET = withAuth(
       ] = await Promise.all([
         prisma.auditEngagement.count({
           where: {
-            ...tenantFilter,
+            ...engagementFilter,
             OR: [
               { status: 'In Progress' },
               { status: 'InProgress' },
@@ -104,7 +118,7 @@ export const GET = withAuth(
         }),
         prisma.auditEngagement.count({
           where: {
-            ...tenantFilter,
+            ...engagementFilter,
             OR: [
               { status: 'Completed' },
               { status: 'Complete' },
@@ -115,7 +129,7 @@ export const GET = withAuth(
         }),
         prisma.auditEngagement.count({
           where: {
-            ...tenantFilter,
+            ...engagementFilter,
             OR: [
               { status: 'Planned' },
               { status: 'Planning' },
@@ -124,7 +138,7 @@ export const GET = withAuth(
             ]
           }
         }),
-        prisma.auditEngagement.count({ where: tenantFilter }),
+        prisma.auditEngagement.count({ where: engagementFilter }),
       ]);
 
       // If status-based counts are 0 but total > 0, use total for "ongoing"
@@ -187,7 +201,7 @@ export const GET = withAuth(
       let targetYear = currentYear;
       const currentYearCount = await prisma.auditEngagement.count({
         where: {
-          ...tenantFilter,
+          ...engagementFilter,
           OR: [
             { startDate: { gte: new Date(`${currentYear}-01-01`), lte: new Date(`${currentYear}-12-31`) } },
             { endDate: { gte: new Date(`${currentYear}-01-01`), lte: new Date(`${currentYear}-12-31`) } },
@@ -200,14 +214,14 @@ export const GET = withAuth(
       if (currentYearCount === 0) {
         // First try to find by year field (more reliable when startDate is null)
         const mostRecentByYear = await prisma.auditEngagement.findFirst({
-          where: tenantFilter,
+          where: engagementFilter,
           orderBy: { year: 'desc' },
           select: { startDate: true, year: true }
         });
 
         // Also check by startDate in case year field is not set
         const mostRecentByDate = await prisma.auditEngagement.findFirst({
-          where: { ...tenantFilter, startDate: { not: null } },
+          where: { ...engagementFilter, startDate: { not: null } },
           orderBy: { startDate: 'desc' },
           select: { startDate: true, year: true }
         });
@@ -223,7 +237,7 @@ export const GET = withAuth(
 
       const annualAuditPlan = await prisma.auditEngagement.findMany({
         where: {
-          ...tenantFilter,
+          ...engagementFilter,
           OR: [
             { startDate: { gte: new Date(`${targetYear}-01-01`), lte: new Date(`${targetYear}-12-31`) } },
             { endDate: { gte: new Date(`${targetYear}-01-01`), lte: new Date(`${targetYear}-12-31`) } },
@@ -269,10 +283,10 @@ export const GET = withAuth(
         };
       });
 
-      // Get auditor schedule for target year (with tenant filter)
+      // Get auditor schedule for target year (with tenant + audit head filter)
       const engagementsWithAuditors = await prisma.auditEngagement.findMany({
         where: {
-          ...tenantFilter,
+          ...engagementFilter,
           OR: [
             { year: targetYear },
             { startDate: { gte: new Date(`${targetYear}-01-01`), lte: new Date(`${targetYear}-12-31`) } },

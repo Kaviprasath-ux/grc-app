@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const existing = await prisma.auditRiskFactor.findUnique({
+    const existing = await prisma.auditRiskFactor.findFirst({
       where: { label },
     });
 

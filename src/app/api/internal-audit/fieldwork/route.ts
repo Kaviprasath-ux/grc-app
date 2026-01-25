@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { withAuth, getDataScopeFilter } from '@/lib/api-auth';
+import { withAuth, getDataScopeFilter, getTenantFilter, getAuditHeadFilter } from '@/lib/api-auth';
 
 // GET /api/internal-audit/fieldwork - Get fieldwork evidence requests
 export const GET = withAuth(
@@ -12,22 +12,40 @@ export const GET = withAuth(
 
       // Build where clause based on user's scope
       const scopeFilter = getDataScopeFilter(session, 'audit.fieldwork', 'view');
+      const tenantFilter = getTenantFilter(session);
+      const auditHeadFilter = getAuditHeadFilter(session);
 
       // For Auditee role, filter by auditeeId (their user ID)
       const isAuditee = session.roles.includes('Auditee') &&
                         !session.roles.includes('AuditHead') &&
+                        !session.roles.includes('AuditManager') &&
                         !session.roles.includes('Auditor');
+
+      // Check if user has audit roles (for AuditHead filtering)
+      const hasAuditRole = session.roles.includes('AuditHead') ||
+                           session.roles.includes('AuditManager') ||
+                           session.roles.includes('Auditor');
 
       const whereClause: Record<string, unknown> = {};
 
       if (isAuditee) {
         // Auditee can only see evidence requests assigned to them
         whereClause.auditeeId = session.id;
+      } else if (hasAuditRole) {
+        // AuditHead/AuditManager/Auditor - filter through engagement
+        whereClause.engagement = {
+          ...tenantFilter,
+          ...auditHeadFilter,
+        };
       } else if (scopeFilter.departmentId) {
         // Department-scoped users see requests for their department's engagements
         whereClause.engagement = {
+          ...tenantFilter,
           departmentId: scopeFilter.departmentId
         };
+      } else {
+        // Default: filter by tenant
+        whereClause.engagement = tenantFilter;
       }
 
       if (status && status !== 'all') {

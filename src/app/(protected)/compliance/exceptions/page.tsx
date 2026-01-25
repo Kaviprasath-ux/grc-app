@@ -150,7 +150,7 @@ export default function ExceptionsPage() {
 
   // Current user from session
   const currentUserId = session?.user?.id as string | undefined;
-  const currentUserName = session?.user?.name || session?.user?.fullName || "Current User";
+  const currentUserName = session?.user?.name || "Current User";
 
   // Filters
   const [filters, setFilters] = useState({

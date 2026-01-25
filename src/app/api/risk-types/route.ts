@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const existing = await prisma.riskType.findUnique({
+    const existing = await prisma.riskType.findFirst({
       where: { name },
     });
 

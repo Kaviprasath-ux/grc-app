@@ -104,6 +104,9 @@ export default function RiskAssessmentConfigPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{ type: string; item: any } | null>(null);
 
+  // Validation error
+  const [validationError, setValidationError] = useState<string | null>(null);
+
   useEffect(() => {
     fetchAllData();
   }, []);
@@ -172,6 +175,7 @@ export default function RiskAssessmentConfigPage() {
   const openAddDialog = (type: "factor" | "probability" | "impact" | "scoringRange") => {
     setDialogType(type);
     setEditItem(null);
+    setValidationError(null);
     if (type === "factor") {
       setFormData({ label: "" });
     } else if (type === "probability" || type === "impact") {
@@ -185,6 +189,7 @@ export default function RiskAssessmentConfigPage() {
   const openEditDialog = (type: "factor" | "probability" | "impact" | "scoringRange", item: any) => {
     setDialogType(type);
     setEditItem(item);
+    setValidationError(null);
     if (type === "factor") {
       setFormData({ label: item.label });
     } else if (type === "probability" || type === "impact") {
@@ -198,6 +203,17 @@ export default function RiskAssessmentConfigPage() {
   const handleSave = async () => {
     if (!formData.label?.trim()) return;
 
+    // Validate scoring range: highest value must be greater than lowest value
+    if (dialogType === "scoringRange") {
+      const lowValue = Number(formData.lowValue) || 0;
+      const highValue = Number(formData.highValue) || 0;
+      if (highValue <= lowValue) {
+        setValidationError("Highest value must be greater than lowest value");
+        return;
+      }
+    }
+
+    setValidationError(null);
     setSaving(true);
     try {
       let url = "";
@@ -642,7 +658,10 @@ export default function RiskAssessmentConfigPage() {
                     id="lowValue"
                     type="number"
                     value={formData.lowValue || 0}
-                    onChange={(e) => setFormData({ ...formData, lowValue: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, lowValue: e.target.value });
+                      setValidationError(null);
+                    }}
                     placeholder="Enter lowest value"
                     className="mt-2"
                   />
@@ -653,11 +672,17 @@ export default function RiskAssessmentConfigPage() {
                     id="highValue"
                     type="number"
                     value={formData.highValue || 0}
-                    onChange={(e) => setFormData({ ...formData, highValue: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, highValue: e.target.value });
+                      setValidationError(null);
+                    }}
                     placeholder="Enter highest value"
                     className="mt-2"
                   />
                 </div>
+                {validationError && (
+                  <p className="text-sm text-red-500">{validationError}</p>
+                )}
               </>
             )}
           </div>

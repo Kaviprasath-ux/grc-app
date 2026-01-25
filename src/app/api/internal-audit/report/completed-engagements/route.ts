@@ -1,11 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth, getTenantFilter } from '@/lib/api-auth';
-import { Session } from 'next-auth';
 
 // GET /api/internal-audit/report/completed-engagements - Get all completed engagements for reports
 export const GET = withAuth(
-  async (req: NextRequest, context: unknown, session: Session) => {
+  async (req, _context, session) => {
     try {
       const { searchParams } = new URL(req.url);
       const page = parseInt(searchParams.get('page') || '1');

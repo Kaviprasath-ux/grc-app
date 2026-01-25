@@ -1,18 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { withAuth } from '@/lib/api-auth';
+import { withAuth, getTenantFilter, getAuditHeadFilter } from '@/lib/api-auth';
 
 // GET /api/internal-audit/audit-universe - Get audit universe data organized by department
 export const GET = withAuth(
-  async (req: NextRequest) => {
+  async (req: NextRequest, context, session) => {
     try {
-      // Get all departments
+      // Multi-tenant + AuditHead filtering
+      const tenantFilter = getTenantFilter(session);
+      const auditHeadFilter = getAuditHeadFilter(session);
+
+      // Get departments for this tenant
       const departments = await prisma.department.findMany({
+        where: tenantFilter,
         orderBy: { name: 'asc' }
       });
 
-      // Get all audit engagements with their actual and planned hours
+      // Get audit engagements with tenant and audit head filtering
       const engagements = await prisma.auditEngagement.findMany({
+        where: {
+          ...tenantFilter,
+          ...auditHeadFilter,
+        },
         include: {
           department: {
             select: { id: true, name: true }

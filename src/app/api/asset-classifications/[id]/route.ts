@@ -62,10 +62,14 @@ export async function PUT(
       );
     }
 
-    // Check if new name conflicts with another classification
+    // Check if new name conflicts with another classification in the same tenant
     if (name && name !== existingClassification.name) {
-      const conflictingClassification = await prisma.assetClassification.findUnique({
-        where: { name },
+      const conflictingClassification = await prisma.assetClassification.findFirst({
+        where: {
+          name,
+          customerAccountId: existingClassification.customerAccountId,
+          id: { not: id }
+        },
       });
       if (conflictingClassification) {
         return NextResponse.json(

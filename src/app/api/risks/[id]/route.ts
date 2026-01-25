@@ -404,7 +404,7 @@ export const PATCH = withAuth(
               activity: "Sent Back",
               description: body.responseComment,
               actor: body.responseCommentBy || "Reviewer",
-              actorId: session?.user?.id || null,
+              actorId: session?.id || null,
             },
           });
         }
@@ -416,8 +416,8 @@ export const PATCH = withAuth(
               riskId: id,
               activity: `Response Status Changed to ${body.responseStatus}`,
               description: `Risk response strategy status changed to ${body.responseStatus}`,
-              actor: session?.user?.name || "User",
-              actorId: session?.user?.id || null,
+              actor: session?.name || "User",
+              actorId: session?.id || null,
             },
           });
         }

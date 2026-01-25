@@ -262,6 +262,91 @@ export function validateTenantAccess(
   return recordCustomerAccountId === session.customerAccountId;
 }
 
+// ==================== AUDIT HEAD FILTER HELPERS ====================
+
+/**
+ * Get the auditHeadId for data filtering.
+ * - AuditHead users: their own ID
+ * - AuditManager: their own ID (they act like AuditHead for their data)
+ * - Admins: null (see all data)
+ *
+ * @example
+ * const auditHeadId = getAuditHeadId(session);
+ * if (auditHeadId) {
+ *   // Filter by this audit head
+ * }
+ */
+export function getAuditHeadId(session: AuthenticatedRequest['user']): string | null {
+  // Admin roles see all data within their tenant
+  const adminRoles = ['GRCAdministrator', 'CustomerAdministrator'];
+  if (session.roles.some(role => adminRoles.includes(role))) {
+    return null;
+  }
+
+  // AuditHead and AuditManager use their own ID
+  if (session.roles.includes('AuditHead') || session.roles.includes('AuditManager')) {
+    return session.id;
+  }
+
+  // Other roles don't filter by auditHeadId at this level
+  // (Auditors/Auditees are handled differently in specific routes)
+  return null;
+}
+
+/**
+ * Get filter for Internal Audit data isolation by AuditHead.
+ *
+ * For AuditHead/AuditManager roles, returns filter to only show data
+ * where auditHeadId matches their user ID.
+ *
+ * GRCAdministrator and CustomerAdministrator see all data within their tenant.
+ *
+ * @example
+ * const auditHeadFilter = getAuditHeadFilter(session);
+ * const engagements = await prisma.auditEngagement.findMany({
+ *   where: {
+ *     ...getTenantFilter(session),
+ *     ...auditHeadFilter,
+ *   }
+ * });
+ */
+export function getAuditHeadFilter(session: AuthenticatedRequest['user']): { auditHeadId?: string } | {} {
+  const auditHeadId = getAuditHeadId(session);
+
+  if (auditHeadId === null) {
+    // Admin roles - no additional filter
+    return {};
+  }
+
+  // Filter by auditHeadId
+  return { auditHeadId };
+}
+
+/**
+ * Get filter for Internal Audit risks by AuditHead.
+ * Directly filters by auditHeadId field on risks.
+ *
+ * @example
+ * const riskFilter = getAuditHeadRiskFilter(session);
+ * const risks = await prisma.internalAuditRisk.findMany({
+ *   where: {
+ *     ...getTenantFilter(session),
+ *     ...riskFilter,
+ *   }
+ * });
+ */
+export function getAuditHeadRiskFilter(session: AuthenticatedRequest['user']): { auditHeadId?: string } | {} {
+  const auditHeadId = getAuditHeadId(session);
+
+  if (auditHeadId === null) {
+    // Admin roles - no additional filter
+    return {};
+  }
+
+  // Filter by auditHeadId
+  return { auditHeadId };
+}
+
 // ==================== DATA SCOPE HELPERS ====================
 
 export interface DataScopeFilter {

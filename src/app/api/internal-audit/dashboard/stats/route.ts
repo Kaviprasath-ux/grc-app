@@ -1,66 +1,68 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { withAuth, getTenantFilter, getAuditHeadFilter, getAuditHeadRiskFilter } from "@/lib/api-auth";
 
 // GET dashboard statistics
-export async function GET(request: NextRequest) {
-  try {
-    const session = await auth();
+export const GET = withAuth(
+  async (request: NextRequest, context, session) => {
+    try {
+      // Multi-tenant + AuditHead filtering
+      const tenantFilter = getTenantFilter(session);
+      const auditHeadFilter = getAuditHeadFilter(session);
+      const riskFilter = getAuditHeadRiskFilter(session);
 
-    // Multi-tenant: Build filter based on customerAccountId
-    const userRoles = session?.user?.roles || [];
-    const isGRCAdmin = userRoles.includes("GRCAdministrator");
-    const customerAccountId = session?.user?.customerAccountId;
+      // Total risks identified (filtered by tenant and audit head's engagements)
+      const totalRisksIdentified = await prisma.internalAuditRisk.count({
+        where: {
+          ...tenantFilter,
+          ...riskFilter,
+        },
+      });
 
-    // Build tenant filter (GRCAdmin sees all, others see only their tenant)
-    const tenantFilter = !isGRCAdmin && customerAccountId
-      ? { customerAccountId }
-      : {};
+      // Risks with extreme severity (riskLevel = "Extreme" or very high score)
+      const risksWithExtremeSeverity = await prisma.internalAuditRisk.count({
+        where: {
+          ...tenantFilter,
+          ...riskFilter,
+          OR: [
+            { riskLevel: "Extreme" },
+            { riskLevel: "Very High" },
+            { residualScore: { gte: 250 } },
+          ],
+        },
+      });
 
-    // Total risks identified
-    const totalRisksIdentified = await prisma.internalAuditRisk.count({
-      where: tenantFilter,
-    });
+      // Ongoing audits (status = "In Progress" or "Planned")
+      const ongoingAudits = await prisma.auditEngagement.count({
+        where: {
+          ...tenantFilter,
+          ...auditHeadFilter,
+          status: { in: ["In Progress", "Planned", "InProgress"] },
+        },
+      });
 
-    // Risks with extreme severity (riskLevel = "Extreme" or very high score)
-    const risksWithExtremeSeverity = await prisma.internalAuditRisk.count({
-      where: {
-        ...tenantFilter,
-        OR: [
-          { riskLevel: "Extreme" },
-          { riskLevel: "Very High" },
-          { residualScore: { gte: 250 } },
-        ],
-      },
-    });
+      // Completed audits
+      const completedAudits = await prisma.auditEngagement.count({
+        where: {
+          ...tenantFilter,
+          ...auditHeadFilter,
+          status: "Completed",
+        },
+      });
 
-    // Ongoing audits (status = "In Progress" or "Planned")
-    const ongoingAudits = await prisma.auditEngagement.count({
-      where: {
-        ...tenantFilter,
-        status: { in: ["In Progress", "Planned", "InProgress"] },
-      },
-    });
-
-    // Completed audits
-    const completedAudits = await prisma.auditEngagement.count({
-      where: {
-        ...tenantFilter,
-        status: "Completed",
-      },
-    });
-
-    return NextResponse.json({
-      totalRisksIdentified,
-      risksWithExtremeSeverity,
-      ongoingAudits,
-      completedAudits,
-    });
-  } catch (error) {
-    console.error("Error fetching dashboard stats:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch dashboard stats" },
-      { status: 500 }
-    );
-  }
-}
+      return NextResponse.json({
+        totalRisksIdentified,
+        risksWithExtremeSeverity,
+        ongoingAudits,
+        completedAudits,
+      });
+    } catch (error) {
+      console.error("Error fetching dashboard stats:", error);
+      return NextResponse.json(
+        { error: "Failed to fetch dashboard stats" },
+        { status: 500 }
+      );
+    }
+  },
+  { resource: 'audit.dashboard', action: 'view' }
+);

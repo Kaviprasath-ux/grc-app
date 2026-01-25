@@ -64,8 +64,12 @@ export async function PUT(
 
     // Check for duplicate name if name is being changed
     if (name && name !== existing.name) {
-      const duplicate = await prisma.riskCategory.findUnique({
-        where: { name },
+      const duplicate = await prisma.riskCategory.findFirst({
+        where: {
+          name,
+          customerAccountId: existing.customerAccountId,
+          id: { not: id }
+        },
       });
       if (duplicate) {
         return NextResponse.json(

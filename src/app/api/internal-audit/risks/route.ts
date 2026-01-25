@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
+import { withAuth, getTenantFilter, getCustomerAccountId, getAuditHeadRiskFilter, getAuditHeadId } from "@/lib/api-auth";
 
-// GET all internal audit risks with filters - filtered by customer account
+// GET all internal audit risks with filters - filtered by customer account and audit head
 export const GET = withAuth(
   async (req, context, session) => {
     try {
@@ -12,7 +12,8 @@ export const GET = withAuth(
       const search = searchParams.get("search");
 
       const tenantFilter = getTenantFilter(session);
-      const where: any = { ...tenantFilter };
+      const auditHeadRiskFilter = getAuditHeadRiskFilter(session);
+      const where: any = { ...tenantFilter, ...auditHeadRiskFilter };
 
       // Filter by year
       if (year) {
@@ -65,8 +66,9 @@ export const POST = withAuth(
     try {
       const body = await req.json();
 
-      // Get customer account ID for the new record
+      // Get customer account ID and audit head ID for the new record
       const customerAccountId = getCustomerAccountId(session);
+      const auditHeadId = getAuditHeadId(session);
       const tenantFilter = getTenantFilter(session);
 
       // Generate risk ID - scoped to tenant
@@ -107,6 +109,7 @@ export const POST = withAuth(
       const risk = await prisma.internalAuditRisk.create({
         data: {
           customerAccountId,
+          auditHeadId,
           riskId,
           riskName: body.riskName,
           departmentId: body.departmentId || null,

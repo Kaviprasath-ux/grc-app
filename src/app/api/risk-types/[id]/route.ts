@@ -49,7 +49,13 @@ export async function PUT(
 
     // Check for duplicate name (excluding current type)
     if (name && name !== existingType.name) {
-      const duplicate = await prisma.riskType.findUnique({ where: { name } });
+      const duplicate = await prisma.riskType.findFirst({
+        where: {
+          name,
+          customerAccountId: existingType.customerAccountId,
+          id: { not: id }
+        }
+      });
       if (duplicate) {
         return NextResponse.json(
           { error: "Type with this name already exists" },

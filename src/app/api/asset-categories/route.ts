@@ -83,7 +83,7 @@ export const POST = withAuth(
           name: name.trim(),
           description: description?.trim() || null,
           status: status || "Active",
-        } as Record<string, unknown>,
+        },
         include: {
           subCategories: true,
           _count: {

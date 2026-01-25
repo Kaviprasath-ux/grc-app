@@ -24,7 +24,7 @@ export const GET = withAuthOnly(async (req: NextRequest, context: {}, session) =
     console.log("isAuditor:", isAuditor);
     console.log("isGRCAdmin:", isGRCAdmin);
 
-    let auditees;
+    let auditees: Awaited<ReturnType<typeof prisma.user.findMany>>;
 
     if (isGRCAdmin) {
       // GRC Admin can see all auditees

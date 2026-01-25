@@ -320,6 +320,12 @@ model User {
   assignedEngagements AuditEngagement[]   @relation("EngagementAuditor")
   auditeeEngagements  AuditEngagement[]   @relation("EngagementAuditee")
   memberOfEngagements AuditEngagement[]   @relation("EngagementTeamMembers")
+  // Audit Head owned data
+  ownedEngagements    AuditEngagement[]   @relation("AuditHeadEngagements")
+  ownedAuditRisks     InternalAuditRisk[] @relation("AuditHeadRisks")
+  ownedAuditFindings  InternalAuditFinding[] @relation("AuditHeadFindings")
+  ownedAuditCAPAs     InternalAuditCAPA[] @relation("AuditHeadCAPAs")
+  ownedAuditReports   AuditReport[]       @relation("AuditHeadReports")
   // Process RACI relations
   responsibleProcesses Process[]          @relation("ProcessResponsible")
   accountableProcesses Process[]          @relation("ProcessAccountable")
@@ -2057,6 +2063,9 @@ model InternalAuditRisk {
   // Multi-tenant: Link to customer account
   customerAccountId    String
   customerAccount      CustomerAccount  @relation(fields: [customerAccountId], references: [id])
+  // Audit Head isolation
+  auditHeadId          String?
+  auditHead            User?            @relation("AuditHeadRisks", fields: [auditHeadId], references: [id])
   riskId               String // Auto-generated RID001, RID002, etc.
   riskName             String
   departmentId         String?
@@ -2132,6 +2141,9 @@ model AuditEngagement {
   // Multi-tenant: Link to customer account
   customerAccountId   String
   customerAccount     CustomerAccount   @relation(fields: [customerAccountId], references: [id])
+  // Audit Head isolation: Link to the audit head who owns this engagement
+  auditHeadId         String?
+  auditHead           User?             @relation("AuditHeadEngagements", fields: [auditHeadId], references: [id])
   auditId             String // Auto-generated AUD001, AUD002
   engagementTitle     String
   engagementObjective String?
@@ -2275,6 +2287,9 @@ model AuditReport {
   // Multi-tenant: Link to customer account
   customerAccountId   String
   customerAccount     CustomerAccount @relation(fields: [customerAccountId], references: [id])
+  // Audit Head isolation
+  auditHeadId         String?
+  auditHead           User?           @relation("AuditHeadReports", fields: [auditHeadId], references: [id])
   reportCode          String // Auto-generated RPT001, RPT002
   engagementId        String          @unique
   engagement          AuditEngagement @relation(fields: [engagementId], references: [id], onDelete: Cascade)
@@ -2319,6 +2334,9 @@ model InternalAuditFinding {
   // Multi-tenant: Link to customer account
   customerAccountId   String
   customerAccount     CustomerAccount       @relation(fields: [customerAccountId], references: [id])
+  // Audit Head isolation
+  auditHeadId         String?
+  auditHead           User?                 @relation("AuditHeadFindings", fields: [auditHeadId], references: [id])
   findingId           String // Auto-generated FND001, FND002
   engagementId        String
   engagement          AuditEngagement       @relation(fields: [engagementId], references: [id], onDelete: Cascade)
@@ -2374,6 +2392,9 @@ model InternalAuditCAPA {
   // Multi-tenant: Link to customer account
   customerAccountId String
   customerAccount   CustomerAccount       @relation(fields: [customerAccountId], references: [id])
+  // Audit Head isolation
+  auditHeadId       String?
+  auditHead         User?                 @relation("AuditHeadCAPAs", fields: [auditHeadId], references: [id])
   capaId            String // Auto-generated CAPA001, CAPA002
   findingId         String
   finding           InternalAuditFinding  @relation(fields: [findingId], references: [id], onDelete: Cascade)

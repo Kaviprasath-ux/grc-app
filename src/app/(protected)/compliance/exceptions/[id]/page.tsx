@@ -307,7 +307,7 @@ export default function ExceptionDetailPage({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           status: "Approved",
-          approvedBy: session?.user?.name || session?.user?.fullName || "Approver",
+          approvedBy: session?.user?.name || "Approver",
           approvedDate: new Date().toISOString(),
         }),
       });
@@ -341,7 +341,7 @@ export default function ExceptionDetailPage({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           content: `[Send Back] ${sendBackComment}`,
-          userName: session?.user?.name || session?.user?.fullName || "Approver",
+          userName: session?.user?.name || "Approver",
         }),
       });
 

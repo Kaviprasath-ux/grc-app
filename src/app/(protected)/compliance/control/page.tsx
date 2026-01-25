@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
@@ -117,7 +117,7 @@ const FUNCTIONAL_GROUPINGS = ["Govern", "Identify", "Protect", "Detect", "Respon
 
 const ITEMS_PER_PAGE = 20;
 
-export default function ControlListPage() {
+function ControlListPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session } = useSession();
@@ -1044,5 +1044,13 @@ export default function ControlListPage() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+  );
+}
+
+export default function ControlListPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-96"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div></div>}>
+      <ControlListPageContent />
+    </Suspense>
   );
 }

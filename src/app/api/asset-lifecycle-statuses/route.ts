@@ -9,7 +9,7 @@ export const GET = withAuth(
       const tenantFilter = getTenantFilter(session);
 
       const statuses = await prisma.assetLifecycleStatus.findMany({
-        where: tenantFilter as Record<string, unknown>,
+        where: tenantFilter,
         include: {
           _count: {
             select: { assets: true },
@@ -64,7 +64,7 @@ export const POST = withAuth(
         where: {
           name: name.trim(),
           customerAccountId,
-        } as Record<string, unknown>,
+        },
       });
 
       if (existing) {
@@ -76,11 +76,11 @@ export const POST = withAuth(
 
       const status = await prisma.assetLifecycleStatus.create({
         data: {
-          customerAccountId,
+          ...(customerAccountId ? { customerAccount: { connect: { id: customerAccountId } } } : {}),
           name: name.trim(),
           description: description?.trim() || null,
           order: order || 0,
-        } as Record<string, unknown>,
+        },
         include: {
           _count: {
             select: { assets: true },

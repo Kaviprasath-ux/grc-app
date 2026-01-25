@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { withAuth, getCustomerAccountId, getTenantFilter } from '@/lib/api-auth';
+import { withAuth, getCustomerAccountId, getTenantFilter, getAuditHeadFilter, getAuditHeadId } from '@/lib/api-auth';
 
 // GET /api/internal-audit/engagements - Get all audit engagements
 export const GET = withAuth(
@@ -13,7 +13,8 @@ export const GET = withAuth(
       const search = url.searchParams.get('search');
 
       const tenantFilter = getTenantFilter(session);
-      const whereClause: Record<string, unknown> = { ...tenantFilter };
+      const auditHeadFilter = getAuditHeadFilter(session);
+      const whereClause: Record<string, unknown> = { ...tenantFilter, ...auditHeadFilter };
       const andConditions: Record<string, unknown>[] = [];
 
       // Check if user is an Auditee (and not also an Audit Head or other audit role)
@@ -153,6 +154,7 @@ export const POST = withAuth(
       } = body;
 
       const customerAccountId = getCustomerAccountId(session);
+      const auditHeadId = getAuditHeadId(session);
 
       // Generate audit ID
       const count = await prisma.auditEngagement.count();
@@ -177,6 +179,7 @@ export const POST = withAuth(
           actualHours: 0,
           status: 'Planned',
           customerAccountId,
+          auditHeadId,
         },
         include: {
           department: {

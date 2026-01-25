@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check for duplicate label
-    const existing = await prisma.auditImpact.findUnique({
+    const existing = await prisma.auditImpact.findFirst({
       where: { label },
     });
 

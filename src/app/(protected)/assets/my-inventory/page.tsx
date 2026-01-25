@@ -906,7 +906,7 @@ export default function MyAssetInventoryPage() {
               <div className="space-y-2">
                 <Label>Asset Owner</Label>
                 <Input
-                  value={session?.user?.fullName || session?.user?.email || "Current User"}
+                  value={session?.user?.name || session?.user?.email || "Current User"}
                   disabled
                   className="bg-muted"
                 />
@@ -1178,7 +1178,7 @@ export default function MyAssetInventoryPage() {
                 <div className="space-y-2">
                   <Label>Asset Owner</Label>
                   <Input
-                    value={editingAsset.owner?.fullName || session?.user?.fullName || session?.user?.email || "Current User"}
+                    value={editingAsset.owner?.fullName || session?.user?.name || session?.user?.email || "Current User"}
                     disabled
                     className="bg-muted"
                   />
