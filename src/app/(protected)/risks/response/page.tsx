@@ -102,10 +102,9 @@ export default function RiskResponsePage() {
   const isDepartmentReviewer = userRoles.includes("DepartmentReviewer");
   const userDepartmentId = session?.user?.departmentId;
 
-  // Filters - Default to first option (no "all" option per source system)
-  // DepartmentReviewer defaults to "Awaiting Approval" since they only see approval-related items
-  const [strategyFilter, setStrategyFilter] = useState("Treat");
-  const [progressFilter, setProgressFilter] = useState(isDepartmentReviewer ? "Awaiting Approval" : "Completed");
+  // Filters - "all" shows all items without filtering
+  const [strategyFilter, setStrategyFilter] = useState("all");
+  const [progressFilter, setProgressFilter] = useState("all");
 
   // Dialog states
   const [successDialogOpen, setSuccessDialogOpen] = useState(false);
@@ -363,7 +362,9 @@ export default function RiskResponsePage() {
       })
     : departmentFilteredRisks;
 
-  const filteredByStrategy = reviewerFilteredRisks.filter((risk) => risk.responseStrategy === strategyFilter);
+  const filteredByStrategy = strategyFilter === "all"
+    ? reviewerFilteredRisks
+    : reviewerFilteredRisks.filter((risk) => risk.responseStrategy === strategyFilter);
 
   // Get normalized responseStatus for a risk (for Risk Response Strategy workflow)
   const getRiskStatus = (risk: Risk) => {
@@ -371,11 +372,13 @@ export default function RiskResponsePage() {
     return normalizeStatus(rawStatus);
   };
 
-  // Filter risks based on progress status (no "all" option per source system)
-  const filteredByProgress = filteredByStrategy.filter((risk) => {
-    const status = getRiskStatus(risk);
-    return status === progressFilter;
-  });
+  // Filter risks based on progress status ("all" shows all items)
+  const filteredByProgress = progressFilter === "all"
+    ? filteredByStrategy
+    : filteredByStrategy.filter((risk) => {
+        const status = getRiskStatus(risk);
+        return status === progressFilter;
+      });
 
   // Calculate stats for strategy card
   // Background bar = total risks with selected strategy
@@ -395,6 +398,7 @@ export default function RiskResponsePage() {
   // Get progress label based on filter selection
   const getProgressLabel = () => {
     switch (progressFilter) {
+      case "all": return "All";
       case "Open": return "Open";
       case "In-Progress": return "InProgress";
       case "Completed": return "Completed";
@@ -407,8 +411,8 @@ export default function RiskResponsePage() {
   // Display risks filtered by both strategy and progress status
   const displayRisks = filteredByProgress;
 
-  const clearStrategyFilter = () => setStrategyFilter("Treat");
-  const clearProgressFilter = () => setProgressFilter(isDepartmentReviewer ? "Awaiting Approval" : "Completed");
+  const clearStrategyFilter = () => setStrategyFilter("all");
+  const clearProgressFilter = () => setProgressFilter("all");
 
   if (loading) {
     return (
@@ -438,6 +442,7 @@ export default function RiskResponsePage() {
                     <SelectValue placeholder="Strategy" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
                     <SelectItem value="Transfer">Transfer</SelectItem>
                     <SelectItem value="Avoid">Avoid</SelectItem>
                     <SelectItem value="Accept">Accept</SelectItem>
@@ -473,6 +478,7 @@ export default function RiskResponsePage() {
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
                     {/* DepartmentReviewer only sees Awaiting Approval, Sent Back, and Completed */}
                     {!isDepartmentReviewer && <SelectItem value="Open">Open</SelectItem>}
                     {!isDepartmentReviewer && <SelectItem value="In-Progress">In-Progress</SelectItem>}
