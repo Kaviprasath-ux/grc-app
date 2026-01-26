@@ -282,11 +282,11 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'asset.inventory', actions: ['view'], scope: 'all' },
     { resource: 'asset.classification', actions: ['view'], scope: 'all' },
     { resource: 'asset.reports', actions: ['view'], scope: 'all' },
-    // Risk Management - same as CustomerAdmin (view, create, edit, delete) plus approve for risk.response
+    // Risk Management - same as CustomerAdmin (view, create, edit, delete) - NO approve
     { resource: 'risk.dashboard', actions: ['view'], scope: 'all' },
     { resource: 'risk.register', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
     { resource: 'risk.assessment', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
-    { resource: 'risk.response', actions: ['view', 'create', 'edit', 'delete', 'approve'], scope: 'all' },
+    { resource: 'risk.response', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
     { resource: 'risk.risk-matrix', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
     { resource: 'risk.reports', actions: ['view'], scope: 'all' },
     // Internal Audit - NO ACCESS (entire module excluded)
