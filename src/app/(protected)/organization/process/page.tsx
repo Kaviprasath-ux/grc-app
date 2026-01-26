@@ -112,6 +112,8 @@ export default function ProcessPage() {
   const isDepartmentReviewer = userRoles.some((role) => role === "DepartmentReviewer");
   // Check if user is DepartmentContributor (can add processes with their department pre-selected)
   const isDepartmentContributor = userRoles.some((role) => role === "DepartmentContributor");
+  // Check if user is Reviewer (hide Actions and AI Risk columns)
+  const isReviewer = userRoles.some((role) => role === "Reviewer");
   // Check if user has roles that can add new processes
   const isCustomerAdministrator = userRoles.some((role) => role === "CustomerAdministrator");
   const isContributor = userRoles.some((role) => role === "Contributor");
@@ -336,7 +338,8 @@ export default function ProcessPage() {
         const hasComments = biaStatus && (isPendingApproval || isApproved || isSentBack);
 
         // DepartmentReviewer sees "View" button for all BIAs (they review pending ones)
-        if (isDepartmentReviewer) {
+        // Note: Reviewer role has Perform BIA access same as CustomerAdmin (not DepartmentReviewer behavior)
+        if (isDepartmentReviewer && !isReviewer) {
           return (
             <Button
               variant="outline"
@@ -433,7 +436,8 @@ export default function ProcessPage() {
       header: "Nature Of Implementation",
       cell: ({ row }) => row.original.natureOfImplementation || "-",
     },
-    {
+    // Hide AI Risk column for Reviewer role
+    ...(!isReviewer ? [{
       id: "aiRisk",
       header: "AI Risk",
       cell: () => (
@@ -447,9 +451,9 @@ export default function ProcessPage() {
           AI Risk Evaluation
         </Button>
       ),
-    },
-    // Only show actions column for roles that can edit/delete (not DepartmentContributor)
-    ...(!isDepartmentContributor ? [{
+    }] : []),
+    // Hide actions column for Reviewer and DepartmentContributor roles
+    ...(!isDepartmentContributor && !isReviewer ? [{
       id: "actions",
       header: "Actions",
       cell: ({ row }: { row: { original: Process } }) => (

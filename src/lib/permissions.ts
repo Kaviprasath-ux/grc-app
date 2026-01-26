@@ -265,6 +265,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'organization.dashboard', actions: ['view'], scope: 'all' },
     { resource: 'organization.context', actions: ['view'], scope: 'all' },
     { resource: 'organization.process', actions: ['view'], scope: 'all' },
+    { resource: 'organization.department', actions: ['view'], scope: 'all' }, // Needed for BIA department dropdown
     // Compliance - view only (NO settings/Master Data)
     { resource: 'compliance.dashboard', actions: ['view'], scope: 'all' },
     { resource: 'compliance.framework', actions: ['view'], scope: 'all' },

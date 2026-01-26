@@ -120,12 +120,14 @@ export default function BIAPage() {
 
   // Check user role
   const isDepartmentReviewer = userRoles.some((role) => role === "DepartmentReviewer");
+  const isReviewer = userRoles.some((role) => role === "Reviewer");
   const currentUserId = session?.user?.id;
   const currentUserName = session?.user?.name || "User";
 
   const [process, setProcess] = useState<Process | null>(null);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [approvers, setApprovers] = useState<User[]>([]);
+  const [filteredApprovers, setFilteredApprovers] = useState<User[]>([]); // For Reviewer role only
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -264,6 +266,34 @@ export default function BIAPage() {
       );
     }
   }, [categories, categoryRatings.length]);
+
+  // For all roles: Fetch filtered approvers when department changes
+  useEffect(() => {
+    const fetchFilteredApprovers = async () => {
+      if (!selectedDepartment) {
+        setFilteredApprovers([]);
+        setSelectedApprover("");
+        return;
+      }
+      try {
+        const res = await fetch(`/api/users?departmentId=${selectedDepartment}`);
+        if (res.ok) {
+          const deptUsers = await res.json();
+          // Filter to only Reviewer and DepartmentReviewer roles
+          const reviewerUsers = deptUsers.filter((user: User) => {
+            const roles = user.userRoles?.map((ur) => ur.role.name) || [];
+            return roles.some((r: string) => ["Reviewer", "DepartmentReviewer"].includes(r));
+          });
+          setFilteredApprovers(reviewerUsers);
+          // Reset approver when department changes
+          setSelectedApprover("");
+        }
+      } catch (error) {
+        console.error("Error fetching filtered approvers:", error);
+      }
+    };
+    fetchFilteredApprovers();
+  }, [selectedDepartment]);
 
   const handleRatingChange = (categoryName: string, ratingLabel: string) => {
     const ratingOption = ratingOptions.find((r) => r.label === ratingLabel);
@@ -547,13 +577,15 @@ export default function BIAPage() {
   };
 
   // Determine if fields should be editable
-  const isEditable = isDepartmentReviewer
+  // Reviewer role has same access as CustomerAdmin (not DepartmentReviewer behavior)
+  const isEditable = isDepartmentReviewer && !isReviewer
     ? status === "Pending Approval" // DeptReviewer can edit when pending
-    : status === "Open" || status === "Sent Back"; // Others can edit when open or sent back
+    : status === "Open" || status === "Sent Back"; // CustomerAdmin, Contributor, Reviewer can edit when open or sent back
 
   // Determine what buttons to show
-  const showApproveButtons = isDepartmentReviewer && status === "Pending Approval";
-  const showSubmitButton = !isDepartmentReviewer && (status === "Open" || status === "Sent Back");
+  // Reviewer role has same access as CustomerAdmin (shows Submit button, not Approve buttons)
+  const showApproveButtons = isDepartmentReviewer && !isReviewer && status === "Pending Approval";
+  const showSubmitButton = (!isDepartmentReviewer || isReviewer) && (status === "Open" || status === "Sent Back");
   const showCommentsIcon = biaComments.length > 0 || status === "Pending Approval" || status === "Approved" || status === "Sent Back";
 
   if (loading) {
@@ -594,7 +626,7 @@ export default function BIAPage() {
         }`}>
           {status}
         </span>
-        <Select value={selectedDepartment} onValueChange={setSelectedDepartment} disabled={!isEditable}>
+        <Select value={selectedDepartment} onValueChange={setSelectedDepartment} disabled={isReviewer ? !(status === "Open" || status === "Sent Back") : !isEditable}>
           <SelectTrigger className="w-[200px]">
             <SelectValue placeholder="Department" />
           </SelectTrigger>
@@ -606,12 +638,20 @@ export default function BIAPage() {
             ))}
           </SelectContent>
         </Select>
-        <Select value={selectedApprover} onValueChange={setSelectedApprover} disabled={!isEditable || isDepartmentReviewer}>
+        <Select
+          value={selectedApprover}
+          onValueChange={setSelectedApprover}
+          disabled={
+            !isEditable ||
+            (isDepartmentReviewer && !isReviewer) ||
+            !selectedDepartment // For all roles: disabled if no department selected
+          }
+        >
           <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Approver" />
+            <SelectValue placeholder={!selectedDepartment ? "Select Department First" : "Approver"} />
           </SelectTrigger>
           <SelectContent>
-            {approvers.map((user) => (
+            {filteredApprovers.map((user) => (
               <SelectItem key={user.id} value={user.id}>
                 {user.fullName}
               </SelectItem>
