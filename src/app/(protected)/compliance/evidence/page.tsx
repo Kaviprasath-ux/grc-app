@@ -260,45 +260,21 @@ export default function EvidencePage() {
     fetchEvidences();
   }, [fetchEvidences]);
 
-  // Customer scoping functions for Customer Admin role
-  const getCustomerScopedUsers = () => {
-    if (!isCustomerAdmin || !currentUser?.customerCode) return users;
-    return users.filter((u) => u.customerCode === currentUser.customerCode);
-  };
+  // The /api/users and /api/departments endpoints already apply tenant filtering,
+  // so data is already scoped to the user's customerAccountId.
+  const getCustomerScopedUsers = () => users;
 
-  const getCustomerScopedDepartments = () => {
-    if (!isCustomerAdmin || !currentUser?.customerCode) return departments;
-    // Get departments that have users from the same customer
-    const customerUserDeptIds = new Set(
-      users
-        .filter((u) => u.customerCode === currentUser.customerCode && u.departmentId)
-        .map((u) => u.departmentId)
-    );
-    return departments.filter((d) => customerUserDeptIds.has(d.id));
-  };
+  const getCustomerScopedDepartments = () => departments;
 
-  // Filter users for Assignee dropdown (Customer Admin only sees DepartmentReviewers from selected department)
+  // Filter users for Assignee dropdown: only DepartmentReviewers and DepartmentContributors from the selected department
   const filteredUsers = (() => {
-    if (!isCustomerAdmin) {
-      // Non-Customer Admin: show all users filtered by department
-      const baseUsers = getCustomerScopedUsers();
-      if (!createForm.departmentId) return baseUsers;
-      return baseUsers.filter((u) => u.departmentId === createForm.departmentId);
-    }
-
-    // Customer Admin: must select department first, then show only DepartmentReviewers from that department
     if (!createForm.departmentId) return [];
 
-    const baseUsers = getCustomerScopedUsers();
-    return baseUsers.filter((u) => {
-      // Must match selected department
+    return users.filter((u) => {
       if (u.departmentId !== createForm.departmentId) return false;
-
-      // Must have DepartmentReviewer role
-      const hasDepartmentReviewerRole = u.userRoles?.some(
-        (ur) => ur.role?.name === "DepartmentReviewer"
+      return u.userRoles?.some((ur) =>
+        ["DepartmentReviewer", "DepartmentContributor"].includes(ur.role?.name)
       );
-      return hasDepartmentReviewerRole;
     });
   })();
 
@@ -697,11 +673,11 @@ export default function EvidencePage() {
                   <Select
                     value={createForm.assigneeId}
                     onValueChange={(v) => setCreateForm({ ...createForm, assigneeId: v })}
-                    disabled={isCustomerAdmin && !createForm.departmentId}
+                    disabled={!createForm.departmentId}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder={
-                        isCustomerAdmin && !createForm.departmentId
+                        !createForm.departmentId
                           ? "Select department first"
                           : "Select assignee"
                       } />

@@ -415,45 +415,21 @@ function ControlListPageContent() {
     }
   };
 
-  // Customer scoping functions for Customer Admin role
-  const getCustomerScopedUsers = () => {
-    if (!isCustomerAdmin || !currentUser?.customerCode) return users;
-    return users.filter((u) => u.customerCode === currentUser.customerCode);
-  };
+  // The /api/users and /api/departments endpoints already apply tenant filtering,
+  // so data is already scoped to the user's customerAccountId.
+  const getCustomerScopedUsers = () => users;
 
-  const getCustomerScopedDepartments = () => {
-    if (!isCustomerAdmin || !currentUser?.customerCode) return departments;
-    // Get departments that have users from the same customer
-    const customerUserDeptIds = new Set(
-      users
-        .filter((u) => u.customerCode === currentUser.customerCode && u.departmentId)
-        .map((u) => u.departmentId)
-    );
-    return departments.filter((d) => customerUserDeptIds.has(d.id));
-  };
+  const getCustomerScopedDepartments = () => departments;
 
-  // Filter users for Assignee dropdown (Customer Admin only sees DepartmentReviewers from selected department)
+  // Filter users for Assignee dropdown: only DepartmentReviewers and DepartmentContributors from the selected department
   const getFilteredUsersForAssignee = () => {
-    if (!isCustomerAdmin) {
-      // Non-Customer Admin: show all users filtered by department
-      const baseUsers = getCustomerScopedUsers();
-      if (!newControl.departmentId) return baseUsers;
-      return baseUsers.filter((u) => u.departmentId === newControl.departmentId);
-    }
-
-    // Customer Admin: must select department first, then show only DepartmentReviewers from that department
     if (!newControl.departmentId) return [];
 
-    const baseUsers = getCustomerScopedUsers();
-    return baseUsers.filter((u) => {
-      // Must match selected department
+    return users.filter((u) => {
       if (u.departmentId !== newControl.departmentId) return false;
-
-      // Must have DepartmentReviewer role
-      const hasDepartmentReviewerRole = u.userRoles?.some(
-        (ur) => ur.role?.name === "DepartmentReviewer"
+      return u.userRoles?.some((ur) =>
+        ["DepartmentReviewer", "DepartmentContributor"].includes(ur.role?.name)
       );
-      return hasDepartmentReviewerRole;
     });
   };
 
@@ -866,11 +842,11 @@ function ControlListPageContent() {
                   <Select
                     value={newControl.assigneeId}
                     onValueChange={(v) => setNewControl({ ...newControl, assigneeId: v })}
-                    disabled={isCustomerAdmin && !newControl.departmentId}
+                    disabled={!newControl.departmentId}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder={
-                        isCustomerAdmin && !newControl.departmentId
+                        !newControl.departmentId
                           ? "Select department first"
                           : "Select assignee"
                       } />

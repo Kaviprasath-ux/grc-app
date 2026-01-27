@@ -50,6 +50,7 @@ interface User {
   id: string;
   fullName: string;
   departmentId: string | null;
+  userRoles: { role: { name: string } }[];
 }
 
 interface IssueActionComment {
@@ -1525,7 +1526,10 @@ export default function ContextPage() {
                       </SelectTrigger>
                       <SelectContent>
                         {users
-                          .filter((user) => !newIssue.departmentId || user.departmentId === newIssue.departmentId)
+                          .filter((user) =>
+                            (!newIssue.departmentId || user.departmentId === newIssue.departmentId) &&
+                            user.userRoles?.some((ur) => ["DepartmentReviewer", "Reviewer"].includes(ur.role.name))
+                          )
                           .map((user) => (
                             <SelectItem key={user.id} value={user.id}>
                               {user.fullName}
@@ -2246,7 +2250,10 @@ export default function ContextPage() {
                       </SelectTrigger>
                       <SelectContent>
                         {users
-                          .filter((user) => !editIssueForm.departmentId || user.departmentId === editIssueForm.departmentId)
+                          .filter((user) =>
+                            (!editIssueForm.departmentId || user.departmentId === editIssueForm.departmentId) &&
+                            user.userRoles?.some((ur) => ["DepartmentReviewer", "Reviewer"].includes(ur.role.name))
+                          )
                           .map((user) => (
                             <SelectItem key={user.id} value={user.id}>
                               {user.fullName}
