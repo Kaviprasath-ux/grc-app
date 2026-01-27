@@ -138,3 +138,65 @@ Files are stored in `uploads/` directory. API routes handle multipart form data 
 Default seeded users (from `prisma/seed.ts`):
 - GRC Admin: `grcadmin` / password (check seed file)
 - Audit Head: `abhishek` / `1`
+
+## Vercel Deployment (BA Testing Environment)
+
+### Live URL
+**https://grc-app-ba-testing.vercel.app**
+
+### Test Credentials (Cloud)
+- Superadmin: `superadmin` / `Baarez@2025`
+- GRC Admin 2: `grcadmin2` / `Baarez@2025`
+- Audit Head: `abhishek` / `1`
+
+### Infrastructure
+| Component | Service | Details |
+|-----------|---------|---------|
+| Hosting | Vercel | Free tier |
+| Database | Neon PostgreSQL | Free tier (0.5GB), Project: `grc-app-ba-testing` |
+| Region | US East | `aws-us-east-1` |
+
+### Environment Variables (configured in Vercel)
+- `DATABASE_URL` - Neon PostgreSQL connection string
+- `NEXTAUTH_SECRET` - Auto-generated auth secret
+- `NEXTAUTH_URL` - https://grc-app-ba-testing.vercel.app
+
+### Deployment Workflow
+
+**Local Development:**
+```bash
+npm run dev  # Uses local PostgreSQL (localhost:5432/grc_app)
+```
+
+**Push Changes:**
+```bash
+git add . && git commit -m "message" && git push
+```
+
+**Deploy to Vercel (when user says "deploy on vercel"):**
+```bash
+# Redeploy with latest code (uses Neon cloud database)
+vercel redeploy grc-app-ba-testing-81zs8dwgd-omjc44-8839s-projects.vercel.app
+```
+
+**If redeploy URL changes, find latest deployment:**
+```bash
+vercel ls grc-app-ba-testing --limit 1
+```
+
+### Database Management (Cloud)
+
+**Push schema changes to Neon:**
+```bash
+DATABASE_URL="postgresql://neondb_owner:npg_TESP3ed8wYvZ@ep-small-sea-ahhjbm6p.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require" npx prisma db push
+```
+
+**Reseed cloud database:**
+```bash
+DATABASE_URL="postgresql://neondb_owner:npg_TESP3ed8wYvZ@ep-small-sea-ahhjbm6p.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require" npx tsx prisma/seed.ts
+```
+
+### Key Notes
+- Local and cloud environments are **completely isolated**
+- Local changes don't affect Vercel deployment until pushed and redeployed
+- The Vercel project is linked to: `omjc44-8839s-projects/grc-app-ba-testing`
