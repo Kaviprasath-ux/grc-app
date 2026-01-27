@@ -2,10 +2,9 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Plus, Pencil, Trash2, Upload, X, ArrowLeft } from "lucide-react";
-import { PageHeader, DataGrid } from "@/components/shared";
+import { Plus, Pencil, Trash2, Upload, X, Building2, Users, MapPin, Globe, Calendar, Target, Eye, Briefcase, Scale } from "lucide-react";
+import { DataGrid } from "@/components/shared";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -497,16 +496,17 @@ function ProfilePageContent() {
     {
       accessorKey: "name",
       header: "Department Name",
-      cell: ({ row }) => <span className="font-medium">{row.getValue("name")}</span>,
+      cell: ({ row }) => <span className="font-medium text-slate-800">{row.getValue("name")}</span>,
     },
     {
       id: "actions",
       header: "Actions",
       cell: ({ row }) => (
-        <div className="flex gap-2">
+        <div className="flex gap-1">
           <Button
             variant="ghost"
             size="icon"
+            className="h-8 w-8 text-slate-400 hover:text-slate-600"
             onClick={() => {
               setEditingDepartment(row.original);
               setIsEditDepartmentOpen(true);
@@ -517,7 +517,7 @@ function ProfilePageContent() {
           <Button
             variant="ghost"
             size="icon"
-            className="text-destructive"
+            className="h-8 w-8 text-slate-400 hover:text-red-600"
             onClick={() => handleDeleteDepartment(row.original.id)}
           >
             <Trash2 className="h-4 w-4" />
@@ -532,27 +532,31 @@ function ProfilePageContent() {
     {
       accessorKey: "name",
       header: "Regulation Name",
-      cell: ({ row }) => <span className="font-medium">{row.getValue("name")}</span>,
+      cell: ({ row }) => <span className="font-medium text-slate-800">{row.getValue("name")}</span>,
     },
     {
       accessorKey: "version",
       header: "Version",
+      cell: ({ row }) => <span className="text-slate-600">{row.getValue("version")}</span>,
     },
     {
       accessorKey: "status",
       header: "Compliance Status",
       cell: ({ row }) => (
-        <span className="text-grc-primary">{row.getValue("status")}</span>
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">
+          {row.getValue("status")}
+        </span>
       ),
     },
     {
       id: "actions",
       header: "Actions",
       cell: ({ row }) => (
-        <div className="flex gap-2">
+        <div className="flex gap-1">
           <Button
             variant="ghost"
             size="icon"
+            className="h-8 w-8 text-slate-400 hover:text-slate-600"
             onClick={() => {
               setEditingRegulation(row.original);
               setIsEditRegulationOpen(true);
@@ -563,7 +567,7 @@ function ProfilePageContent() {
           <Button
             variant="ghost"
             size="icon"
-            className="text-destructive"
+            className="h-8 w-8 text-slate-400 hover:text-red-600"
             onClick={() => handleDeleteRegulation(row.original.id)}
           >
             <Trash2 className="h-4 w-4" />
@@ -575,209 +579,281 @@ function ProfilePageContent() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Loading...</p>
+      <div className="flex items-center justify-center h-[60vh]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative">
+            <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
+            <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+          </div>
+          <p className="text-sm text-slate-500 font-medium">Loading profile...</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Profile"
-        backAction={{
-          label: "",
-          icon: ArrowLeft,
-          onClick: () => router.back(),
-        }}
-      />
+      {/* Page Header */}
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold text-slate-800">Organization Profile</h1>
+        <p className="text-sm text-slate-500">
+          Manage your organization information, services, regulations, and departments.
+        </p>
+      </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="services">Services</TabsTrigger>
           <TabsTrigger value="regulations">Regulations</TabsTrigger>
           <TabsTrigger value="departments">Departments</TabsTrigger>
-          <TabsTrigger value="orgchart">Organization Chart</TabsTrigger>
+          <TabsTrigger value="orgchart">Org Chart</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
-        <TabsContent value="overview" className="space-y-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Organization Information</CardTitle>
-              {organization ? (
+        <TabsContent value="overview" className="mt-6">
+          {organization ? (
+            <div className="bg-white rounded-xl border border-slate-200">
+              {/* Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+                <h3 className="text-base font-semibold text-slate-800">Organization Information</h3>
                 <Button variant="outline" size="sm" onClick={openEditOrganization}>
                   <Pencil className="h-4 w-4 mr-2" />
                   Edit
                 </Button>
-              ) : (
-                <Button size="sm" onClick={openEditOrganization}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  New Profile
-                </Button>
-              )}
-            </CardHeader>
-            <CardContent>
-              {organization ? (
-                <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <div>
-                      <Label className="text-muted-foreground">Established Date</Label>
-                      <p className="font-medium">{organization.establishedDate || "-"}</p>
-                    </div>
-                    <div>
-                      <Label className="text-muted-foreground">Employee Count</Label>
-                      <p className="font-medium">{organization.employeeCount}</p>
-                    </div>
-                    <div>
-                      <Label className="text-muted-foreground">Branch Count</Label>
-                      <p className="font-medium">{organization.branchCount}</p>
-                    </div>
-                    <div>
-                      <Label className="text-muted-foreground">Head Office Location</Label>
-                      <p className="font-medium">{organization.headOfficeLocation || "-"}</p>
-                    </div>
-                    <div>
-                      <Label className="text-muted-foreground">Head Office Address</Label>
-                      <p className="font-medium">{organization.headOfficeAddress || "-"}</p>
-                    </div>
-                    <div>
-                      <Label className="text-muted-foreground">Website</Label>
-                      <p className="font-medium text-grc-link">{organization.website || "-"}</p>
-                    </div>
+              </div>
+
+              {/* Content */}
+              <div className="p-6">
+                {/* Basic Info Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-8 gap-y-6">
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">Organization Name</p>
+                    <p className="text-sm font-medium text-slate-800">{organization.name || "-"}</p>
                   </div>
-                  <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <Label className="text-muted-foreground font-semibold">{organization.name}</Label>
-                      <p className="text-sm mt-1">{organization.description || "-"}</p>
-                    </div>
-                    <div className="space-y-4">
-                      <div>
-                        <Label className="text-muted-foreground">Vision</Label>
-                        <p className="text-sm">{organization.vision || "-"}</p>
-                      </div>
-                      <div>
-                        <Label className="text-muted-foreground">Mission</Label>
-                        <p className="text-sm">{organization.mission || "-"}</p>
-                      </div>
-                    </div>
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">Established Date</p>
+                    <p className="text-sm font-medium text-slate-800">{organization.establishedDate || "-"}</p>
                   </div>
-                </>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <div className="rounded-full bg-muted p-6 mb-4">
-                    <Plus className="h-8 w-8 text-muted-foreground" />
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">Employee Count</p>
+                    <p className="text-sm font-medium text-slate-800">{organization.employeeCount?.toLocaleString() || "0"}</p>
                   </div>
-                  <h3 className="text-lg font-medium mb-2">No Profile Added</h3>
-                  <p className="text-muted-foreground mb-4 max-w-md">
-                    Create your organization profile to display company information, vision, mission, and more.
-                  </p>
-                  <Button onClick={openEditOrganization}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create Profile
-                  </Button>
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">Branch Count</p>
+                    <p className="text-sm font-medium text-slate-800">{organization.branchCount || "0"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">Head Office Location</p>
+                    <p className="text-sm font-medium text-slate-800">{organization.headOfficeLocation || "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">Head Office Address</p>
+                    <p className="text-sm font-medium text-slate-800">{organization.headOfficeAddress || "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">Website</p>
+                    <p className="text-sm font-medium text-primary-600">{organization.website || "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">Email</p>
+                    <p className="text-sm font-medium text-slate-800">{organization.email || "-"}</p>
+                  </div>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+
+                {/* Divider */}
+                <div className="border-t border-slate-100 my-6"></div>
+
+                {/* Description */}
+                <div className="mb-6">
+                  <p className="text-xs text-slate-500 mb-1">Description</p>
+                  <p className="text-sm text-slate-700 leading-relaxed">{organization.description || "-"}</p>
+                </div>
+
+                {/* Vision & Mission */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">Vision</p>
+                    <p className="text-sm text-slate-700 leading-relaxed">{organization.vision || "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">Mission</p>
+                    <p className="text-sm text-slate-700 leading-relaxed">{organization.mission || "-"}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
+              <div className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                <Building2 className="h-6 w-6 text-slate-400" />
+              </div>
+              <h3 className="text-base font-semibold text-slate-800 mb-1">No Profile Created</h3>
+              <p className="text-sm text-slate-500 mb-6">
+                Create your organization profile to get started.
+              </p>
+              <Button onClick={openEditOrganization}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create Profile
+              </Button>
+            </div>
+          )}
         </TabsContent>
 
         {/* Services Tab */}
-        <TabsContent value="services" className="space-y-6">
-          <div className="flex justify-between items-center">
-            <Input placeholder="Search services..." className="max-w-sm" />
-            <Button onClick={() => setIsAddServiceOpen(true)}>
+        <TabsContent value="services" className="mt-6">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-semibold text-slate-800">Services</h3>
+            <Button size="sm" onClick={() => setIsAddServiceOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
-              Add New
+              Add Service
             </Button>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {services.map((service) => (
-              <Card key={service.id}>
-                <CardHeader className="flex flex-row items-start justify-between pb-2">
-                  <div>
-                    <CardTitle className="text-base">{service.title}</CardTitle>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {service.serviceUser}
-                    </p>
-                  </div>
-                  <div className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => {
-                        setEditingService(service);
-                        setIsEditServiceOpen(true);
-                      }}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-destructive"
-                      onClick={() => handleDeleteService(service.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex gap-4 text-sm">
-                    <div>
-                      <span className="text-muted-foreground">Item: </span>
-                      <span>{service.serviceItem}</span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Category: </span>
-                      <span>{service.serviceCategory}</span>
+
+          {services.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {services.map((service) => (
+                <div key={service.id} className="bg-white rounded-xl border border-slate-200 p-5">
+                  {/* Header with actions */}
+                  <div className="flex items-start justify-between mb-3">
+                    <h4 className="text-sm font-semibold text-slate-800">{service.title}</h4>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-slate-400 hover:text-slate-600"
+                        onClick={() => {
+                          setEditingService(service);
+                          setIsEditServiceOpen(true);
+                        }}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-slate-400 hover:text-red-600"
+                        onClick={() => handleDeleteService(service.id)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+
+                  {/* Info */}
+                  <div className="space-y-2 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-500">User Type</span>
+                      <span className="font-medium text-slate-700">{service.serviceUser}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-500">Category</span>
+                      <span className="font-medium text-slate-700">{service.serviceCategory}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-500">Item</span>
+                      <span className="font-medium text-slate-700">{service.serviceItem}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
+              <div className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                <Briefcase className="h-6 w-6 text-slate-400" />
+              </div>
+              <h3 className="text-base font-semibold text-slate-800 mb-1">No Services</h3>
+              <p className="text-sm text-slate-500 mb-6">
+                Add services your organization provides.
+              </p>
+              <Button onClick={() => setIsAddServiceOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Service
+              </Button>
+            </div>
+          )}
         </TabsContent>
 
         {/* Regulations Tab */}
-        <TabsContent value="regulations" className="space-y-6">
-          <div className="flex justify-end">
-            <Button onClick={() => setIsAddRegulationOpen(true)}>
+        <TabsContent value="regulations" className="mt-6">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-semibold text-slate-800">Regulations</h3>
+            <Button size="sm" onClick={() => setIsAddRegulationOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Add Regulation
             </Button>
           </div>
-          <DataGrid
-            columns={regulationColumns}
-            data={regulations}
-            searchPlaceholder="Search by name..."
-          />
+
+          {regulations.length > 0 ? (
+            <DataGrid
+              columns={regulationColumns}
+              data={regulations}
+              searchPlaceholder="Search regulations..."
+            />
+          ) : (
+            <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
+              <div className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                <Scale className="h-6 w-6 text-slate-400" />
+              </div>
+              <h3 className="text-base font-semibold text-slate-800 mb-1">No Regulations</h3>
+              <p className="text-sm text-slate-500 mb-6">
+                Add regulations that apply to your organization.
+              </p>
+              <Button onClick={() => setIsAddRegulationOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Regulation
+              </Button>
+            </div>
+          )}
         </TabsContent>
 
         {/* Departments Tab */}
-        <TabsContent value="departments" className="space-y-6">
-          <div className="flex justify-end">
-            <Button onClick={() => setIsAddDepartmentOpen(true)}>
+        <TabsContent value="departments" className="mt-6">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-semibold text-slate-800">Departments</h3>
+            <Button size="sm" onClick={() => setIsAddDepartmentOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
-              Add New
+              Add Department
             </Button>
           </div>
-          <DataGrid
-            columns={departmentColumns}
-            data={departments}
-            searchPlaceholder="Search by name..."
-            showColumnSelector
-          />
+
+          {departments.length > 0 ? (
+            <DataGrid
+              columns={departmentColumns}
+              data={departments}
+              searchPlaceholder="Search departments..."
+            />
+          ) : (
+            <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
+              <div className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                <Users className="h-6 w-6 text-slate-400" />
+              </div>
+              <h3 className="text-base font-semibold text-slate-800 mb-1">No Departments</h3>
+              <p className="text-sm text-slate-500 mb-6">
+                Add departments to organize your team structure.
+              </p>
+              <Button onClick={() => setIsAddDepartmentOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Department
+              </Button>
+            </div>
+          )}
         </TabsContent>
 
         {/* Organization Chart Tab */}
-        <TabsContent value="orgchart" className="space-y-6">
-          <Card>
-            <CardContent className="py-6">
-              <OrgChart />
-            </CardContent>
-          </Card>
+        <TabsContent value="orgchart" className="mt-6">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-semibold text-slate-800">Organization Structure</h3>
+          </div>
+
+          <div className="bg-white rounded-xl border border-slate-200 p-6">
+            <OrgChart />
+          </div>
         </TabsContent>
       </Tabs>
 
@@ -1502,7 +1578,17 @@ function ProfilePageContent() {
 
 export default function ProfilePage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center h-64"><p className="text-muted-foreground">Loading...</p></div>}>
+    <Suspense fallback={
+      <div className="flex items-center justify-center h-[60vh]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative">
+            <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
+            <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+          </div>
+          <p className="text-sm text-slate-500 font-medium">Loading profile...</p>
+        </div>
+      </div>
+    }>
       <ProfilePageContent />
     </Suspense>
   );
