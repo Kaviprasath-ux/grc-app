@@ -517,7 +517,7 @@ function ProfilePageContent() {
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-slate-400 hover:text-red-600"
+            className="h-8 w-8 text-slate-400 hover:text-semantic-error"
             onClick={() => handleDeleteDepartment(row.original.id)}
           >
             <Trash2 className="h-4 w-4" />
@@ -543,7 +543,7 @@ function ProfilePageContent() {
       accessorKey: "status",
       header: "Compliance Status",
       cell: ({ row }) => (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-compliance-compliant-bg text-semantic-success-dark">
           {row.getValue("status")}
         </span>
       ),
@@ -567,7 +567,7 @@ function ProfilePageContent() {
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-slate-400 hover:text-red-600"
+            className="h-8 w-8 text-slate-400 hover:text-semantic-error"
             onClick={() => handleDeleteRegulation(row.original.id)}
           >
             <Trash2 className="h-4 w-4" />
@@ -733,7 +733,7 @@ function ProfilePageContent() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-7 w-7 text-slate-400 hover:text-red-600"
+                        className="h-7 w-7 text-slate-400 hover:text-semantic-error"
                         onClick={() => handleDeleteService(service.id)}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -1233,8 +1233,8 @@ function ProfilePageContent() {
                   </div>
                 ) : (
                   <label className="flex flex-col items-center cursor-pointer">
-                    <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-                    <span className="text-sm text-muted-foreground">Click here, or drop files here to upload</span>
+                    <Upload className="h-8 w-8 text-slate-400 mb-2" />
+                    <span className="text-sm text-slate-400">Click here, or drop files here to upload</span>
                     <input
                       type="file"
                       className="hidden"
@@ -1265,8 +1265,8 @@ function ProfilePageContent() {
                   </div>
                 ) : (
                   <label className="flex flex-col items-center cursor-pointer">
-                    <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-                    <span className="text-sm text-muted-foreground">Click here, or drop files here to upload</span>
+                    <Upload className="h-8 w-8 text-slate-400 mb-2" />
+                    <span className="text-sm text-slate-400">Click here, or drop files here to upload</span>
                     <input
                       type="file"
                       className="hidden"
@@ -1377,7 +1377,7 @@ function ProfilePageContent() {
                     </div>
                   ) : editingRegulation.document ? (
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Current: {editingRegulation.document.split("/").pop()}</span>
+                      <span className="text-sm text-slate-400">Current: {editingRegulation.document.split("/").pop()}</span>
                       <label className="cursor-pointer text-sm text-primary hover:underline">
                         Replace
                         <input
@@ -1393,8 +1393,8 @@ function ProfilePageContent() {
                     </div>
                   ) : (
                     <label className="flex flex-col items-center cursor-pointer">
-                      <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-                      <span className="text-sm text-muted-foreground">Click here, or drop files here to upload</span>
+                      <Upload className="h-8 w-8 text-slate-400 mb-2" />
+                      <span className="text-sm text-slate-400">Click here, or drop files here to upload</span>
                       <input
                         type="file"
                         className="hidden"
@@ -1425,7 +1425,7 @@ function ProfilePageContent() {
                     </div>
                   ) : editingRegulation.certificate ? (
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Current: {editingRegulation.certificate.split("/").pop()}</span>
+                      <span className="text-sm text-slate-400">Current: {editingRegulation.certificate.split("/").pop()}</span>
                       <label className="cursor-pointer text-sm text-primary hover:underline">
                         Replace
                         <input
@@ -1441,8 +1441,8 @@ function ProfilePageContent() {
                     </div>
                   ) : (
                     <label className="flex flex-col items-center cursor-pointer">
-                      <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-                      <span className="text-sm text-muted-foreground">Click here, or drop files here to upload</span>
+                      <Upload className="h-8 w-8 text-slate-400 mb-2" />
+                      <span className="text-sm text-slate-400">Click here, or drop files here to upload</span>
                       <input
                         type="file"
                         className="hidden"
