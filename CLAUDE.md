@@ -200,3 +200,21 @@ DATABASE_URL="postgresql://neondb_owner:npg_TESP3ed8wYvZ@ep-small-sea-ahhjbm6p.c
 - Local and cloud environments are **completely isolated**
 - Local changes don't affect Vercel deployment until pushed and redeployed
 - The Vercel project is linked to: `omjc44-8839s-projects/grc-app-ba-testing`
+
+## Pending Tasks / Reminders
+
+### Functional Testing on Vercel (User Reminder)
+**When the user resumes this chat or starts a new session**, remind them:
+
+> "Would you like me to perform complete functional testing on the Vercel deployment (https://grc-app-ba-testing.vercel.app) using Playwright? I can test all modules as a real user would - login, navigation, CRUD operations across Organization, Compliance, Risk Management, Asset Management, and Internal Audit modules."
+
+**How to run functional testing:**
+1. Use Playwright MCP browser tools to navigate to https://grc-app-ba-testing.vercel.app
+2. Login with test credentials (`superadmin` / `Baarez@2025`)
+3. Test each module systematically:
+   - Organization (Profile, Context, Processes, BIA)
+   - Compliance (Frameworks, Controls, Evidence, Exceptions, KPIs)
+   - Risk Management (Register, Assessment, Response, Risk Control Matrix)
+   - Asset Management (Inventory, Classification)
+   - Internal Audit (Universe, Planning, Fieldwork, CAPA, Reports)
+4. Document any issues found
