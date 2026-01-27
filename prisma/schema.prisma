@@ -55,6 +55,7 @@ model CustomerAccount {
   internalAuditFindings  InternalAuditFinding[]
   internalAuditCAPAs     InternalAuditCAPA[]
   auditReports           AuditReport[]
+  internalAuditDocuments InternalAuditDocument[]
   subscriptionPlans      SubscriptionPlan[]
   // Master data relations (tenant-specific)
   regulations            Regulation[]
@@ -326,6 +327,18 @@ model User {
   ownedAuditFindings  InternalAuditFinding[] @relation("AuditHeadFindings")
   ownedAuditCAPAs     InternalAuditCAPA[] @relation("AuditHeadCAPAs")
   ownedAuditReports   AuditReport[]       @relation("AuditHeadReports")
+  ownedAuditDocuments InternalAuditDocument[] @relation("AuditHeadDocuments")
+  // Audit Head owned settings (each Audit Head has their own settings)
+  ownedCategories         AuditCategory[]          @relation("AuditHeadCategories")
+  ownedNatureOfControls   AuditNatureOfControl[]   @relation("AuditHeadNatureOfControls")
+  ownedRiskFactors        AuditRiskFactor[]        @relation("AuditHeadRiskFactors")
+  ownedProbabilities      AuditProbability[]       @relation("AuditHeadProbabilities")
+  ownedImpacts            AuditImpact[]            @relation("AuditHeadImpacts")
+  ownedScoringRanges      AuditScoringRange[]      @relation("AuditHeadScoringRanges")
+  ownedScoringConfigs     AuditScoringConfig[]     @relation("AuditHeadScoringConfigs")
+  ownedPeriodicities      AuditPeriodicity[]       @relation("AuditHeadPeriodicities")
+  ownedEscalationConfigs  AuditEscalationConfig[]  @relation("AuditHeadEscalationConfigs")
+  ownedAuditTypes         AuditType[]              @relation("AuditHeadTypes")
   // Process RACI relations
   responsibleProcesses Process[]          @relation("ProcessResponsible")
   accountableProcesses Process[]          @relation("ProcessAccountable")
@@ -1910,13 +1923,17 @@ model AuditCategory {
   // Multi-tenant: Link to customer account
   customerAccountId   String?
   customerAccount     CustomerAccount?    @relation(fields: [customerAccountId], references: [id])
+  // Audit Head isolation: each Audit Head has their own settings
+  auditHeadId         String?
+  auditHead           User?               @relation("AuditHeadCategories", fields: [auditHeadId], references: [id])
   name                String
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
   internalAuditRisks  InternalAuditRisk[]
 
-  @@unique([customerAccountId, name])
+  @@unique([auditHeadId, name])
   @@index([customerAccountId])
+  @@index([auditHeadId])
 }
 
 // Nature of Controls (e.g., Preventive, Detective, Corrective)
@@ -1925,12 +1942,16 @@ model AuditNatureOfControl {
   // Multi-tenant: Link to customer account
   customerAccountId String?
   customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  // Audit Head isolation: each Audit Head has their own settings
+  auditHeadId       String?
+  auditHead         User?            @relation("AuditHeadNatureOfControls", fields: [auditHeadId], references: [id])
   label             String
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
 
-  @@unique([customerAccountId, label])
+  @@unique([auditHeadId, label])
   @@index([customerAccountId])
+  @@index([auditHeadId])
 }
 
 // Risk Factors for Internal Audit (e.g., Financial, Reputational, Regulatory)
@@ -1939,12 +1960,16 @@ model AuditRiskFactor {
   // Multi-tenant: Link to customer account
   customerAccountId String?
   customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  // Audit Head isolation: each Audit Head has their own settings
+  auditHeadId       String?
+  auditHead         User?            @relation("AuditHeadRiskFactors", fields: [auditHeadId], references: [id])
   label             String
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
 
-  @@unique([customerAccountId, label])
+  @@unique([auditHeadId, label])
   @@index([customerAccountId])
+  @@index([auditHeadId])
 }
 
 // Probability ratings (e.g., Very Low=1, Low=2, Medium=3, High=4, Very High=5)
@@ -1953,13 +1978,17 @@ model AuditProbability {
   // Multi-tenant: Link to customer account
   customerAccountId String?
   customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  // Audit Head isolation: each Audit Head has their own settings
+  auditHeadId       String?
+  auditHead         User?            @relation("AuditHeadProbabilities", fields: [auditHeadId], references: [id])
   label             String
   value             Int              @default(0)
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
 
-  @@unique([customerAccountId, label])
+  @@unique([auditHeadId, label])
   @@index([customerAccountId])
+  @@index([auditHeadId])
 }
 
 // Impact ratings (e.g., Very Low Probability=1, Low Probability=2, etc.)
@@ -1968,13 +1997,17 @@ model AuditImpact {
   // Multi-tenant: Link to customer account
   customerAccountId String?
   customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  // Audit Head isolation: each Audit Head has their own settings
+  auditHeadId       String?
+  auditHead         User?            @relation("AuditHeadImpacts", fields: [auditHeadId], references: [id])
   label             String
   value             Int              @default(0)
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
 
-  @@unique([customerAccountId, label])
+  @@unique([auditHeadId, label])
   @@index([customerAccountId])
+  @@index([auditHeadId])
 }
 
 // Scoring Range Configuration (e.g., High: 250+, Medium: 100-249, Low: 50-99)
@@ -1983,6 +2016,9 @@ model AuditScoringRange {
   // Multi-tenant: Link to customer account
   customerAccountId String?
   customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  // Audit Head isolation: each Audit Head has their own settings
+  auditHeadId       String?
+  auditHead         User?            @relation("AuditHeadScoringRanges", fields: [auditHeadId], references: [id])
   label             String
   lowValue          Int              @default(0)
   highValue         Int?
@@ -1990,8 +2026,9 @@ model AuditScoringRange {
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
 
-  @@unique([customerAccountId, label, calculationType])
+  @@unique([auditHeadId, label, calculationType])
   @@index([customerAccountId])
+  @@index([auditHeadId])
 }
 
 // Audit Scoring Configuration (stores the calculation type settings)
@@ -2000,12 +2037,16 @@ model AuditScoringConfig {
   // Multi-tenant: Link to customer account
   customerAccountId         String?
   customerAccount           CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  // Audit Head isolation: each Audit Head has their own settings
+  auditHeadId               String?
+  auditHead                 User?            @relation("AuditHeadScoringConfigs", fields: [auditHeadId], references: [id])
   probabilityImpactCalcType String           @default("Product of all") // High of all, Addition of all, Product of all
   riskRatingCalcType        String           @default("High of all") // High of all, Addition of all, Product of all
   createdAt                 DateTime         @default(now())
   updatedAt                 DateTime         @updatedAt
 
   @@index([customerAccountId])
+  @@index([auditHeadId])
 }
 
 // Periodicity (e.g., Annual=12, Semiannual=6, Monthly=1)
@@ -2014,13 +2055,17 @@ model AuditPeriodicity {
   // Multi-tenant: Link to customer account
   customerAccountId String?
   customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  // Audit Head isolation: each Audit Head has their own settings
+  auditHeadId       String?
+  auditHead         User?            @relation("AuditHeadPeriodicities", fields: [auditHeadId], references: [id])
   interval          String
   months            Int              @default(1)
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
 
-  @@unique([customerAccountId, interval])
+  @@unique([auditHeadId, interval])
   @@index([customerAccountId])
+  @@index([auditHeadId])
 }
 
 // Escalation Configuration (reminder days for various events)
@@ -2029,6 +2074,9 @@ model AuditEscalationConfig {
   // Multi-tenant: Link to customer account
   customerAccountId   String?
   customerAccount     CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  // Audit Head isolation: each Audit Head has their own settings
+  auditHeadId         String?
+  auditHead           User?            @relation("AuditHeadEscalationConfigs", fields: [auditHeadId], references: [id])
   responseSubmission  Int              @default(5)
   acknowledgement     Int              @default(1)
   clarification       Int              @default(2)
@@ -2037,6 +2085,7 @@ model AuditEscalationConfig {
   updatedAt           DateTime         @updatedAt
 
   @@index([customerAccountId])
+  @@index([auditHeadId])
 }
 
 // Audit Type (e.g., Consult, Assurance, Follow-up)
@@ -2045,14 +2094,18 @@ model AuditType {
   // Multi-tenant: Link to customer account
   customerAccountId   String?
   customerAccount     CustomerAccount?    @relation(fields: [customerAccountId], references: [id])
+  // Audit Head isolation: each Audit Head has their own settings
+  auditHeadId         String?
+  auditHead           User?               @relation("AuditHeadTypes", fields: [auditHeadId], references: [id])
   name                String
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
   internalAuditRisks  InternalAuditRisk[]
   engagements         AuditEngagement[]   @relation("EngagementAuditType")
 
-  @@unique([customerAccountId, name])
+  @@unique([auditHeadId, name])
   @@index([customerAccountId])
+  @@index([auditHeadId])
 }
 
 // ==================== INTERNAL AUDIT RISK REGISTER ====================
@@ -2359,7 +2412,14 @@ model InternalAuditFinding {
   targetDate          DateTime?
   closedDate          DateTime?
   // Status
-  status              String                @default("Open") // Open, In Progress, Closed, Overdue
+  status              String                @default("Open") // Open, In Progress, Closed, Overdue, Under Review
+  // AI Review fields
+  aiReviewStatus      String?               // "Satisfactory" | "Unsatisfactory" | null
+  aiReviewDescription String?               // AI-generated description
+  aiReviewedAt        DateTime?             // When AI review was completed
+  aiReviewApproved    Boolean               @default(false) // Has Audit Head approved the review?
+  aiApprovedAt        DateTime?             // When Audit Head approved
+  aiApprovedBy        String?               // Audit Head user ID who approved
   // Timestamps
   createdAt           DateTime              @default(now())
   updatedAt           DateTime              @updatedAt
@@ -2424,6 +2484,12 @@ model InternalAuditCAPA {
 // Internal Audit Document (for document library)
 model InternalAuditDocument {
   id           String   @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  // Audit Head isolation - documents are NOT shared between Audit Heads
+  auditHeadId       String?
+  auditHead         User?            @relation("AuditHeadDocuments", fields: [auditHeadId], references: [id])
   documentCode String   @unique
   name         String
   description  String?

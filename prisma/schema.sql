@@ -1404,6 +1404,7 @@ CREATE TABLE "CAPA" (
 CREATE TABLE "AuditCategory" (
     "id" TEXT NOT NULL,
     "customerAccountId" TEXT,
+    "auditHeadId" TEXT,
     "name" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -1415,6 +1416,7 @@ CREATE TABLE "AuditCategory" (
 CREATE TABLE "AuditNatureOfControl" (
     "id" TEXT NOT NULL,
     "customerAccountId" TEXT,
+    "auditHeadId" TEXT,
     "label" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -1426,6 +1428,7 @@ CREATE TABLE "AuditNatureOfControl" (
 CREATE TABLE "AuditRiskFactor" (
     "id" TEXT NOT NULL,
     "customerAccountId" TEXT,
+    "auditHeadId" TEXT,
     "label" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -1437,6 +1440,7 @@ CREATE TABLE "AuditRiskFactor" (
 CREATE TABLE "AuditProbability" (
     "id" TEXT NOT NULL,
     "customerAccountId" TEXT,
+    "auditHeadId" TEXT,
     "label" TEXT NOT NULL,
     "value" INTEGER NOT NULL DEFAULT 0,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1449,6 +1453,7 @@ CREATE TABLE "AuditProbability" (
 CREATE TABLE "AuditImpact" (
     "id" TEXT NOT NULL,
     "customerAccountId" TEXT,
+    "auditHeadId" TEXT,
     "label" TEXT NOT NULL,
     "value" INTEGER NOT NULL DEFAULT 0,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1461,6 +1466,7 @@ CREATE TABLE "AuditImpact" (
 CREATE TABLE "AuditScoringRange" (
     "id" TEXT NOT NULL,
     "customerAccountId" TEXT,
+    "auditHeadId" TEXT,
     "label" TEXT NOT NULL,
     "lowValue" INTEGER NOT NULL DEFAULT 0,
     "highValue" INTEGER,
@@ -1475,6 +1481,7 @@ CREATE TABLE "AuditScoringRange" (
 CREATE TABLE "AuditScoringConfig" (
     "id" TEXT NOT NULL,
     "customerAccountId" TEXT,
+    "auditHeadId" TEXT,
     "probabilityImpactCalcType" TEXT NOT NULL DEFAULT 'Product of all',
     "riskRatingCalcType" TEXT NOT NULL DEFAULT 'High of all',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1487,6 +1494,7 @@ CREATE TABLE "AuditScoringConfig" (
 CREATE TABLE "AuditPeriodicity" (
     "id" TEXT NOT NULL,
     "customerAccountId" TEXT,
+    "auditHeadId" TEXT,
     "interval" TEXT NOT NULL,
     "months" INTEGER NOT NULL DEFAULT 1,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1499,6 +1507,7 @@ CREATE TABLE "AuditPeriodicity" (
 CREATE TABLE "AuditEscalationConfig" (
     "id" TEXT NOT NULL,
     "customerAccountId" TEXT,
+    "auditHeadId" TEXT,
     "responseSubmission" INTEGER NOT NULL DEFAULT 5,
     "acknowledgement" INTEGER NOT NULL DEFAULT 1,
     "clarification" INTEGER NOT NULL DEFAULT 2,
@@ -1513,6 +1522,7 @@ CREATE TABLE "AuditEscalationConfig" (
 CREATE TABLE "AuditType" (
     "id" TEXT NOT NULL,
     "customerAccountId" TEXT,
+    "auditHeadId" TEXT,
     "name" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -1524,6 +1534,7 @@ CREATE TABLE "AuditType" (
 CREATE TABLE "InternalAuditRisk" (
     "id" TEXT NOT NULL,
     "customerAccountId" TEXT NOT NULL,
+    "auditHeadId" TEXT,
     "riskId" TEXT NOT NULL,
     "riskName" TEXT NOT NULL,
     "departmentId" TEXT,
@@ -1578,6 +1589,7 @@ CREATE TABLE "AuditableEntity" (
 CREATE TABLE "AuditEngagement" (
     "id" TEXT NOT NULL,
     "customerAccountId" TEXT NOT NULL,
+    "auditHeadId" TEXT,
     "auditId" TEXT NOT NULL,
     "engagementTitle" TEXT NOT NULL,
     "engagementObjective" TEXT,
@@ -1692,6 +1704,7 @@ CREATE TABLE "FieldworkEvidenceAttachment" (
 CREATE TABLE "AuditReport" (
     "id" TEXT NOT NULL,
     "customerAccountId" TEXT NOT NULL,
+    "auditHeadId" TEXT,
     "reportCode" TEXT NOT NULL,
     "engagementId" TEXT NOT NULL,
     "title" TEXT NOT NULL,
@@ -1724,6 +1737,7 @@ CREATE TABLE "AuditReport" (
 CREATE TABLE "InternalAuditFinding" (
     "id" TEXT NOT NULL,
     "customerAccountId" TEXT NOT NULL,
+    "auditHeadId" TEXT,
     "findingId" TEXT NOT NULL,
     "engagementId" TEXT NOT NULL,
     "finding" TEXT NOT NULL,
@@ -1741,6 +1755,12 @@ CREATE TABLE "InternalAuditFinding" (
     "targetDate" TIMESTAMP(3),
     "closedDate" TIMESTAMP(3),
     "status" TEXT NOT NULL DEFAULT 'Open',
+    "aiReviewStatus" TEXT,
+    "aiReviewDescription" TEXT,
+    "aiReviewedAt" TIMESTAMP(3),
+    "aiReviewApproved" BOOLEAN NOT NULL DEFAULT false,
+    "aiApprovedAt" TIMESTAMP(3),
+    "aiApprovedBy" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -1767,6 +1787,7 @@ CREATE TABLE "FindingAttachment" (
 CREATE TABLE "InternalAuditCAPA" (
     "id" TEXT NOT NULL,
     "customerAccountId" TEXT NOT NULL,
+    "auditHeadId" TEXT,
     "capaId" TEXT NOT NULL,
     "findingId" TEXT NOT NULL,
     "title" TEXT NOT NULL,
@@ -1787,6 +1808,8 @@ CREATE TABLE "InternalAuditCAPA" (
 -- CreateTable
 CREATE TABLE "InternalAuditDocument" (
     "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
+    "auditHeadId" TEXT,
     "documentCode" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "description" TEXT,
@@ -2224,55 +2247,85 @@ CREATE UNIQUE INDEX "CAPA_customerAccountId_capaId_key" ON "CAPA"("customerAccou
 CREATE INDEX "AuditCategory_customerAccountId_idx" ON "AuditCategory"("customerAccountId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "AuditCategory_customerAccountId_name_key" ON "AuditCategory"("customerAccountId", "name");
+CREATE INDEX "AuditCategory_auditHeadId_idx" ON "AuditCategory"("auditHeadId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "AuditCategory_auditHeadId_name_key" ON "AuditCategory"("auditHeadId", "name");
 
 -- CreateIndex
 CREATE INDEX "AuditNatureOfControl_customerAccountId_idx" ON "AuditNatureOfControl"("customerAccountId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "AuditNatureOfControl_customerAccountId_label_key" ON "AuditNatureOfControl"("customerAccountId", "label");
+CREATE INDEX "AuditNatureOfControl_auditHeadId_idx" ON "AuditNatureOfControl"("auditHeadId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "AuditNatureOfControl_auditHeadId_label_key" ON "AuditNatureOfControl"("auditHeadId", "label");
 
 -- CreateIndex
 CREATE INDEX "AuditRiskFactor_customerAccountId_idx" ON "AuditRiskFactor"("customerAccountId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "AuditRiskFactor_customerAccountId_label_key" ON "AuditRiskFactor"("customerAccountId", "label");
+CREATE INDEX "AuditRiskFactor_auditHeadId_idx" ON "AuditRiskFactor"("auditHeadId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "AuditRiskFactor_auditHeadId_label_key" ON "AuditRiskFactor"("auditHeadId", "label");
 
 -- CreateIndex
 CREATE INDEX "AuditProbability_customerAccountId_idx" ON "AuditProbability"("customerAccountId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "AuditProbability_customerAccountId_label_key" ON "AuditProbability"("customerAccountId", "label");
+CREATE INDEX "AuditProbability_auditHeadId_idx" ON "AuditProbability"("auditHeadId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "AuditProbability_auditHeadId_label_key" ON "AuditProbability"("auditHeadId", "label");
 
 -- CreateIndex
 CREATE INDEX "AuditImpact_customerAccountId_idx" ON "AuditImpact"("customerAccountId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "AuditImpact_customerAccountId_label_key" ON "AuditImpact"("customerAccountId", "label");
+CREATE INDEX "AuditImpact_auditHeadId_idx" ON "AuditImpact"("auditHeadId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "AuditImpact_auditHeadId_label_key" ON "AuditImpact"("auditHeadId", "label");
 
 -- CreateIndex
 CREATE INDEX "AuditScoringRange_customerAccountId_idx" ON "AuditScoringRange"("customerAccountId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "AuditScoringRange_customerAccountId_label_calculationType_key" ON "AuditScoringRange"("customerAccountId", "label", "calculationType");
+CREATE INDEX "AuditScoringRange_auditHeadId_idx" ON "AuditScoringRange"("auditHeadId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "AuditScoringRange_auditHeadId_label_calculationType_key" ON "AuditScoringRange"("auditHeadId", "label", "calculationType");
 
 -- CreateIndex
 CREATE INDEX "AuditScoringConfig_customerAccountId_idx" ON "AuditScoringConfig"("customerAccountId");
 
 -- CreateIndex
+CREATE INDEX "AuditScoringConfig_auditHeadId_idx" ON "AuditScoringConfig"("auditHeadId");
+
+-- CreateIndex
 CREATE INDEX "AuditPeriodicity_customerAccountId_idx" ON "AuditPeriodicity"("customerAccountId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "AuditPeriodicity_customerAccountId_interval_key" ON "AuditPeriodicity"("customerAccountId", "interval");
+CREATE INDEX "AuditPeriodicity_auditHeadId_idx" ON "AuditPeriodicity"("auditHeadId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "AuditPeriodicity_auditHeadId_interval_key" ON "AuditPeriodicity"("auditHeadId", "interval");
 
 -- CreateIndex
 CREATE INDEX "AuditEscalationConfig_customerAccountId_idx" ON "AuditEscalationConfig"("customerAccountId");
 
 -- CreateIndex
+CREATE INDEX "AuditEscalationConfig_auditHeadId_idx" ON "AuditEscalationConfig"("auditHeadId");
+
+-- CreateIndex
 CREATE INDEX "AuditType_customerAccountId_idx" ON "AuditType"("customerAccountId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "AuditType_customerAccountId_name_key" ON "AuditType"("customerAccountId", "name");
+CREATE INDEX "AuditType_auditHeadId_idx" ON "AuditType"("auditHeadId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "AuditType_auditHeadId_name_key" ON "AuditType"("auditHeadId", "name");
 
 -- CreateIndex
 CREATE INDEX "InternalAuditRisk_customerAccountId_idx" ON "InternalAuditRisk"("customerAccountId");
@@ -2815,34 +2868,67 @@ ALTER TABLE "CAPA" ADD CONSTRAINT "CAPA_findingId_fkey" FOREIGN KEY ("findingId"
 ALTER TABLE "AuditCategory" ADD CONSTRAINT "AuditCategory_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "AuditCategory" ADD CONSTRAINT "AuditCategory_auditHeadId_fkey" FOREIGN KEY ("auditHeadId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "AuditNatureOfControl" ADD CONSTRAINT "AuditNatureOfControl_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AuditNatureOfControl" ADD CONSTRAINT "AuditNatureOfControl_auditHeadId_fkey" FOREIGN KEY ("auditHeadId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "AuditRiskFactor" ADD CONSTRAINT "AuditRiskFactor_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "AuditRiskFactor" ADD CONSTRAINT "AuditRiskFactor_auditHeadId_fkey" FOREIGN KEY ("auditHeadId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "AuditProbability" ADD CONSTRAINT "AuditProbability_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AuditProbability" ADD CONSTRAINT "AuditProbability_auditHeadId_fkey" FOREIGN KEY ("auditHeadId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "AuditImpact" ADD CONSTRAINT "AuditImpact_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "AuditImpact" ADD CONSTRAINT "AuditImpact_auditHeadId_fkey" FOREIGN KEY ("auditHeadId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "AuditScoringRange" ADD CONSTRAINT "AuditScoringRange_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AuditScoringRange" ADD CONSTRAINT "AuditScoringRange_auditHeadId_fkey" FOREIGN KEY ("auditHeadId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "AuditScoringConfig" ADD CONSTRAINT "AuditScoringConfig_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "AuditScoringConfig" ADD CONSTRAINT "AuditScoringConfig_auditHeadId_fkey" FOREIGN KEY ("auditHeadId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "AuditPeriodicity" ADD CONSTRAINT "AuditPeriodicity_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AuditPeriodicity" ADD CONSTRAINT "AuditPeriodicity_auditHeadId_fkey" FOREIGN KEY ("auditHeadId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "AuditEscalationConfig" ADD CONSTRAINT "AuditEscalationConfig_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "AuditEscalationConfig" ADD CONSTRAINT "AuditEscalationConfig_auditHeadId_fkey" FOREIGN KEY ("auditHeadId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "AuditType" ADD CONSTRAINT "AuditType_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "AuditType" ADD CONSTRAINT "AuditType_auditHeadId_fkey" FOREIGN KEY ("auditHeadId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "InternalAuditRisk" ADD CONSTRAINT "InternalAuditRisk_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "InternalAuditRisk" ADD CONSTRAINT "InternalAuditRisk_auditHeadId_fkey" FOREIGN KEY ("auditHeadId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "InternalAuditRisk" ADD CONSTRAINT "InternalAuditRisk_departmentId_fkey" FOREIGN KEY ("departmentId") REFERENCES "Department"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -2864,6 +2950,9 @@ ALTER TABLE "AuditableEntity" ADD CONSTRAINT "AuditableEntity_departmentId_fkey"
 
 -- AddForeignKey
 ALTER TABLE "AuditEngagement" ADD CONSTRAINT "AuditEngagement_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AuditEngagement" ADD CONSTRAINT "AuditEngagement_auditHeadId_fkey" FOREIGN KEY ("auditHeadId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "AuditEngagement" ADD CONSTRAINT "AuditEngagement_departmentId_fkey" FOREIGN KEY ("departmentId") REFERENCES "Department"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -2896,10 +2985,16 @@ ALTER TABLE "FieldworkEvidenceAttachment" ADD CONSTRAINT "FieldworkEvidenceAttac
 ALTER TABLE "AuditReport" ADD CONSTRAINT "AuditReport_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "AuditReport" ADD CONSTRAINT "AuditReport_auditHeadId_fkey" FOREIGN KEY ("auditHeadId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "AuditReport" ADD CONSTRAINT "AuditReport_engagementId_fkey" FOREIGN KEY ("engagementId") REFERENCES "AuditEngagement"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "InternalAuditFinding" ADD CONSTRAINT "InternalAuditFinding_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "InternalAuditFinding" ADD CONSTRAINT "InternalAuditFinding_auditHeadId_fkey" FOREIGN KEY ("auditHeadId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "InternalAuditFinding" ADD CONSTRAINT "InternalAuditFinding_engagementId_fkey" FOREIGN KEY ("engagementId") REFERENCES "AuditEngagement"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -2914,7 +3009,16 @@ ALTER TABLE "FindingAttachment" ADD CONSTRAINT "FindingAttachment_findingId_fkey
 ALTER TABLE "InternalAuditCAPA" ADD CONSTRAINT "InternalAuditCAPA_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "InternalAuditCAPA" ADD CONSTRAINT "InternalAuditCAPA_auditHeadId_fkey" FOREIGN KEY ("auditHeadId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "InternalAuditCAPA" ADD CONSTRAINT "InternalAuditCAPA_findingId_fkey" FOREIGN KEY ("findingId") REFERENCES "InternalAuditFinding"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "InternalAuditDocument" ADD CONSTRAINT "InternalAuditDocument_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "InternalAuditDocument" ADD CONSTRAINT "InternalAuditDocument_auditHeadId_fkey" FOREIGN KEY ("auditHeadId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "_EngagementTeamMembers" ADD CONSTRAINT "_EngagementTeamMembers_A_fkey" FOREIGN KEY ("A") REFERENCES "AuditEngagement"("id") ON DELETE CASCADE ON UPDATE CASCADE;

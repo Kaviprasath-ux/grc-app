@@ -30,7 +30,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
-import { Loader2, Trash2, Eye, Pencil, Upload, Download, FileText } from "lucide-react";
+import { Loader2, Trash2, Eye, Pencil, Download, FileText, CheckCircle2, XCircle, Bot } from "lucide-react";
 import { useHasRole } from "@/hooks/usePermissions";
 import { useRef } from "react";
 
@@ -68,6 +68,13 @@ interface Finding {
   recommendation: string | null;
   auditeeComment: string | null;
   attachments?: FindingAttachment[];
+  // AI Review fields
+  aiReviewStatus: string | null;
+  aiReviewDescription: string | null;
+  aiReviewedAt: string | null;
+  aiReviewApproved: boolean;
+  aiApprovedAt: string | null;
+  aiApprovedBy: string | null;
 }
 
 interface Department {
@@ -144,6 +151,9 @@ export default function CAPATrackingPage() {
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [existingAttachments, setExistingAttachments] = useState<FindingAttachment[]>([]);
   const [uploading, setUploading] = useState(false);
+
+  // AI Review state
+  const [aiReviewing, setAiReviewing] = useState(false);
 
   useEffect(() => {
     fetchDepartments();
@@ -352,7 +362,31 @@ export default function CAPATrackingPage() {
       );
 
       if (response.ok) {
-        toast.success(isAuditeeOnly ? "CAPA submitted for review" : "Finding updated successfully");
+        // For auditee submission, trigger AI review
+        if (isAuditeeOnly) {
+          setAiReviewing(true);
+          try {
+            const aiReviewResponse = await fetch(
+              `/api/internal-audit/capa-tracking/${findingToEdit.id}/ai-review`,
+              { method: "POST" }
+            );
+
+            if (aiReviewResponse.ok) {
+              toast.success("Documents submitted for Audit Head review");
+            } else {
+              // AI review failed, but save was successful
+              toast.success("CAPA submitted (AI review pending)");
+            }
+          } catch (aiError) {
+            console.error("AI review error:", aiError);
+            toast.success("CAPA submitted (AI review pending)");
+          } finally {
+            setAiReviewing(false);
+          }
+        } else {
+          toast.success("Finding updated successfully");
+        }
+
         setEditDialogOpen(false);
         setFindingToEdit(null);
         fetchFindings();
@@ -398,6 +432,8 @@ export default function CAPATrackingPage() {
         return "text-green-600";
       case "in progress":
         return "text-orange-600";
+      case "under review":
+        return "text-purple-600";
       case "overdue":
         return "text-red-600";
       default:
@@ -583,7 +619,7 @@ export default function CAPATrackingPage() {
           <DialogHeader>
             <DialogTitle>Delete Finding</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete finding "{findingToDelete?.findingId}"? This action cannot be undone.
+              Are you sure you want to delete finding &quot;{findingToDelete?.findingId}&quot;? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -721,6 +757,41 @@ export default function CAPATrackingPage() {
                 rows={3}
               />
             </div>
+
+            {/* AI Review Section (visible when approved for Auditee, always for Audit Team) */}
+            {findingToView?.aiReviewStatus && (
+              <div className="border-t pt-4 mt-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Bot className="h-5 w-5 text-purple-600" />
+                  <h3 className="font-semibold text-[#1e3a5f]">AI Review Result</h3>
+                </div>
+                <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                  <Label className="text-[#1e3a5f] font-medium">Status</Label>
+                  <div className="flex items-center gap-2">
+                    {findingToView.aiReviewStatus === "Satisfactory" ? (
+                      <>
+                        <CheckCircle2 className="h-5 w-5 text-green-600" />
+                        <span className="text-green-600 font-medium">Satisfactory</span>
+                      </>
+                    ) : (
+                      <>
+                        <XCircle className="h-5 w-5 text-red-600" />
+                        <span className="text-red-600 font-medium">Unsatisfactory</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <div className="grid grid-cols-[140px_1fr] items-start gap-4 mt-3">
+                  <Label className="text-[#1e3a5f] font-medium pt-2">Description</Label>
+                  <Textarea
+                    value={findingToView.aiReviewDescription || ""}
+                    readOnly
+                    className="bg-gray-50"
+                    rows={3}
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex gap-2 pt-4 border-t">
@@ -1012,43 +1083,82 @@ export default function CAPATrackingPage() {
             </div>
           </div>
 
-          {/* Footer with AI Review and Save/Cancel buttons */}
-          <div className="flex justify-between items-center pt-4 border-t">
-            <Button
-              variant="ghost"
-              className="text-red-500 hover:text-red-600 hover:bg-red-50"
-            >
-              <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2"/>
-                <path d="M8 12L11 15L16 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              AI Review
-            </Button>
-            <div className="flex gap-2">
-              <Button
-                className="bg-[#1e3a5f] hover:bg-[#2e4a6f]"
-                onClick={handleSaveEdit}
-                disabled={saving || uploading}
-              >
-                {saving || uploading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    {uploading ? "Uploading..." : "Saving..."}
-                  </>
-                ) : (
-                  "Save"
-                )}
-              </Button>
-              <Button
-                className="bg-[#1e3a5f] hover:bg-[#2e4a6f]"
-                onClick={() => {
-                  setEditDialogOpen(false);
-                  setFindingToEdit(null);
-                }}
-              >
-                Cancel
-              </Button>
+          {/* AI Review Section for Audit Head (visible when there's an AI review pending approval) */}
+          {isAuditHead && findingToEdit?.aiReviewStatus && !findingToEdit?.aiReviewApproved && (
+            <div className="border-t pt-4 mt-4 bg-purple-50 -mx-6 px-6 py-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Bot className="h-5 w-5 text-purple-600" />
+                <h3 className="font-semibold text-[#1e3a5f]">AI Review Result (Pending Approval)</h3>
+              </div>
+              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                <Label className="text-[#1e3a5f] font-medium">Status</Label>
+                <div className="flex items-center gap-2">
+                  {findingToEdit.aiReviewStatus === "Satisfactory" ? (
+                    <>
+                      <CheckCircle2 className="h-5 w-5 text-green-600" />
+                      <span className="text-green-600 font-medium">Satisfactory</span>
+                    </>
+                  ) : (
+                    <>
+                      <XCircle className="h-5 w-5 text-red-600" />
+                      <span className="text-red-600 font-medium">Unsatisfactory</span>
+                    </>
+                  )}
+                </div>
+              </div>
+              <div className="grid grid-cols-[140px_1fr] items-start gap-4 mt-3">
+                <Label className="text-[#1e3a5f] font-medium pt-2">Description</Label>
+                <Textarea
+                  value={findingToEdit.aiReviewDescription || ""}
+                  readOnly
+                  className="bg-white"
+                  rows={3}
+                />
+              </div>
+              <p className="text-sm text-purple-700 mt-3">
+                Click &quot;Save&quot; to approve this AI review and close the finding.
+              </p>
             </div>
+          )}
+
+          {/* Pending Audit Head Review message for Auditee (when AI review exists but not approved) */}
+          {isAuditeeOnly && findingToEdit?.status === "Under Review" && !findingToEdit?.aiReviewApproved && (
+            <div className="border-t pt-4 mt-4 bg-yellow-50 -mx-6 px-6 py-4">
+              <div className="flex items-center gap-2">
+                <Bot className="h-5 w-5 text-yellow-600" />
+                <span className="text-yellow-700 font-medium">Pending Audit Head Review</span>
+              </div>
+              <p className="text-sm text-yellow-600 mt-2">
+                Your documents have been submitted and are awaiting review by the Audit Head.
+              </p>
+            </div>
+          )}
+
+          {/* Footer with Save/Cancel buttons */}
+          <div className="flex justify-end items-center pt-4 border-t gap-2">
+            <Button
+              className="bg-[#1e3a5f] hover:bg-[#2e4a6f]"
+              onClick={handleSaveEdit}
+              disabled={saving || uploading || aiReviewing}
+            >
+              {saving || uploading || aiReviewing ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  {uploading ? "Uploading..." : aiReviewing ? "Analyzing..." : "Saving..."}
+                </>
+              ) : (
+                "Save"
+              )}
+            </Button>
+            <Button
+              className="bg-[#1e3a5f] hover:bg-[#2e4a6f]"
+              onClick={() => {
+                setEditDialogOpen(false);
+                setFindingToEdit(null);
+              }}
+            >
+              Cancel
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

@@ -45,7 +45,7 @@ export const DELETE = withAuth(
 
 // PATCH /api/internal-audit/capa-tracking/[findingId] - Update finding
 export const PATCH = withAuth(
-  async (req: NextRequest, context: RouteContext) => {
+  async (req: NextRequest, context: RouteContext, session) => {
     try {
       const { findingId } = await context.params;
       const body = await req.json();
@@ -62,7 +62,12 @@ export const PATCH = withAuth(
         targetDate,
         auditeeComment,
         isAuditeeSubmission, // Flag to indicate auditee submission
+        aiReviewStatus: newAiReviewStatus, // Allow Audit Head to modify AI review status
+        aiReviewDescription: newAiReviewDescription, // Allow Audit Head to modify AI review description
       } = body;
+
+      // Check if user is Audit Head
+      const isAuditHead = session.roles.includes('AuditHead');
 
       // Find the existing finding
       const existingFinding = await prisma.internalAuditFinding.findUnique({
@@ -96,6 +101,27 @@ export const PATCH = withAuth(
       } else if (status !== undefined) {
         updateData.status = status;
         updateData.closedDate = status === 'Closed' ? new Date() : null;
+      }
+
+      // Handle Audit Head approval of AI review
+      // When Audit Head saves a finding that has an AI review (status is "Under Review")
+      if (isAuditHead && existingFinding.aiReviewStatus && !existingFinding.aiReviewApproved) {
+        // Allow Audit Head to modify AI review status and description
+        if (newAiReviewStatus !== undefined) {
+          updateData.aiReviewStatus = newAiReviewStatus;
+        }
+        if (newAiReviewDescription !== undefined) {
+          updateData.aiReviewDescription = newAiReviewDescription;
+        }
+
+        // Auto-approve the AI review when Audit Head saves
+        updateData.aiReviewApproved = true;
+        updateData.aiApprovedAt = new Date();
+        updateData.aiApprovedBy = session.id;
+
+        // Set status to Closed when approving AI review
+        updateData.status = 'Closed';
+        updateData.closedDate = new Date();
       }
 
       // Update finding

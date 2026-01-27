@@ -72,32 +72,46 @@ export const GET = withAuth(
       });
 
       // Transform findings for the response
-      const transformedFindings = findings.map((finding) => ({
-        id: finding.id,
-        findingId: finding.findingId,
-        finding: finding.finding,
-        description: finding.description,
-        severity: finding.severity,
-        auditPlan: finding.engagement?.engagementTitle || '-',
-        engagementId: finding.engagementId,
-        departmentId: finding.departmentId,
-        departmentName: finding.department?.name || '-',
-        responsiblePerson: finding.responsiblePerson || '-',
-        targetDate: finding.targetDate,
-        status: finding.status,
-        identifiedDate: finding.identifiedDate,
-        closedDate: finding.closedDate,
-        createdAt: finding.createdAt,
-        // Additional fields for Edit CAPA
-        criteria: finding.criteria,
-        condition: finding.condition,
-        cause: finding.cause,
-        effect: finding.effect,
-        recommendation: finding.recommendation,
-        auditeeComment: finding.description, // Map description to auditeeComment for now
-        // Attachments
-        attachments: finding.attachments || [],
-      }));
+      const transformedFindings = findings.map((finding) => {
+        // Determine if user can see AI review results
+        // Audit team (AuditHead, AuditManager, Auditor) can always see AI review
+        // Auditee can only see AI review after Audit Head has approved it
+        const canSeeAiReview = isAuditTeam || finding.aiReviewApproved;
+
+        return {
+          id: finding.id,
+          findingId: finding.findingId,
+          finding: finding.finding,
+          description: finding.description,
+          severity: finding.severity,
+          auditPlan: finding.engagement?.engagementTitle || '-',
+          engagementId: finding.engagementId,
+          departmentId: finding.departmentId,
+          departmentName: finding.department?.name || '-',
+          responsiblePerson: finding.responsiblePerson || '-',
+          targetDate: finding.targetDate,
+          status: finding.status,
+          identifiedDate: finding.identifiedDate,
+          closedDate: finding.closedDate,
+          createdAt: finding.createdAt,
+          // Additional fields for Edit CAPA
+          criteria: finding.criteria,
+          condition: finding.condition,
+          cause: finding.cause,
+          effect: finding.effect,
+          recommendation: finding.recommendation,
+          auditeeComment: finding.description, // Map description to auditeeComment for now
+          // Attachments
+          attachments: finding.attachments || [],
+          // AI Review fields (role-based visibility)
+          aiReviewStatus: canSeeAiReview ? finding.aiReviewStatus : null,
+          aiReviewDescription: canSeeAiReview ? finding.aiReviewDescription : null,
+          aiReviewedAt: canSeeAiReview ? finding.aiReviewedAt : null,
+          aiReviewApproved: finding.aiReviewApproved,
+          aiApprovedAt: finding.aiReviewApproved ? finding.aiApprovedAt : null,
+          aiApprovedBy: finding.aiReviewApproved ? finding.aiApprovedBy : null,
+        };
+      });
 
       return NextResponse.json({
         findings: transformedFindings,
