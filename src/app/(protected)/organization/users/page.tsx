@@ -860,7 +860,29 @@ export default function UsersPage() {
       </Tabs>
 
       {/* Add User Dialog */}
-      <Dialog open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
+      <Dialog open={isAddUserOpen} onOpenChange={(open) => {
+        setIsAddUserOpen(open);
+        if (!open) {
+          setUserForm({
+            userName: "",
+            email: "",
+            password: "",
+            confirmPassword: "",
+            firstName: "",
+            lastName: "",
+            fullName: "",
+            designation: "",
+            function: "",
+            role: "",
+            language: "English",
+            timezone: "UTC",
+            isActive: true,
+            isBlocked: false,
+            departmentId: "",
+            reportingManagerId: "",
+          });
+        }
+      }}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>New Account</DialogTitle>
@@ -1143,7 +1165,27 @@ export default function UsersPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddUserOpen(false)}>
+            <Button variant="outline" onClick={() => {
+              setIsAddUserOpen(false);
+              setUserForm({
+                userName: "",
+                email: "",
+                password: "",
+                confirmPassword: "",
+                firstName: "",
+                lastName: "",
+                fullName: "",
+                designation: "",
+                function: "",
+                role: "",
+                language: "English",
+                timezone: "UTC",
+                isActive: true,
+                isBlocked: false,
+                departmentId: "",
+                reportingManagerId: "",
+              });
+            }}>
               Cancel
             </Button>
             <Button onClick={handleAddUser}>Save</Button>
