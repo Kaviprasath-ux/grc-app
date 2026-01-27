@@ -11,6 +11,7 @@ import { usePermissions, useUserRoles } from "@/hooks/usePermissions";
 import { PermissionGate } from "@/components/ui/permission-gate";
 import { Unauthorized } from "@/components/ui/unauthorized";
 import { useSession } from "next-auth/react";
+import { useToast } from "@/hooks/use-toast";
 import {
   Select,
   SelectContent,
@@ -113,6 +114,7 @@ function RiskRegisterContent() {
   const router = useRouter();
   const { data: session } = useSession();
   const userRoles = useUserRoles();
+  const { toast } = useToast();
   const { canView, canCreate, canEdit, canDelete, isLoading: permissionsLoading } = usePermissions('risk.register');
   const initialStatus = searchParams.get("status") || "";
   const initialRating = searchParams.get("riskRating") || "";
@@ -150,6 +152,8 @@ function RiskRegisterContent() {
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [activityLogsTotal, setActivityLogsTotal] = useState(0);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [importLoading, setImportLoading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const fetchRisks = useCallback(async () => {
     try {
@@ -651,34 +655,56 @@ function RiskRegisterContent() {
       </Dialog>
 
       {/* Import Dialog */}
-      <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
+      <Dialog open={importDialogOpen} onOpenChange={(open) => {
+        setImportDialogOpen(open);
+        if (!open) {
+          setSelectedFile(null);
+        }
+      }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Import Risks</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Upload a CSV or Excel file to import risks. Download the template first to see the required format.
+              Upload a CSV file to import risks. Download the template first to see the required format.
             </p>
+            <div className="bg-muted/50 p-3 rounded-md text-sm">
+              <p className="font-medium mb-1">Required columns:</p>
+              <p className="text-muted-foreground">
+                Risk name, Risk description, Department, Risk sources, Risk category, Potential threat, Associated vulnerabilities
+              </p>
+            </div>
             <div className="flex gap-2">
               <Button
                 variant="outline"
                 onClick={async () => {
                   try {
-                    const response = await fetch("/api/risks/export?format=csv");
+                    const response = await fetch("/api/risks/import");
                     if (response.ok) {
                       const blob = await response.blob();
                       const url = window.URL.createObjectURL(blob);
                       const a = document.createElement("a");
                       a.href = url;
-                      a.download = "Risk-Template.csv";
+                      a.download = "Risk-Import-Template.csv";
                       document.body.appendChild(a);
                       a.click();
                       window.URL.revokeObjectURL(url);
                       document.body.removeChild(a);
+                    } else {
+                      toast({
+                        title: "Error",
+                        description: "Failed to download template",
+                        variant: "destructive",
+                      });
                     }
                   } catch (error) {
                     console.error("Failed to download template:", error);
+                    toast({
+                      title: "Error",
+                      description: "Failed to download template",
+                      variant: "destructive",
+                    });
                   }
                 }}
               >
@@ -688,31 +714,169 @@ function RiskRegisterContent() {
             </div>
             <div className="border-2 border-dashed rounded-lg p-8 text-center">
               <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">
-                Drag and drop your file here, or click to browse
-              </p>
+              {selectedFile ? (
+                <p className="text-sm font-medium text-grc-primary">{selectedFile.name}</p>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Click to select a CSV file
+                </p>
+              )}
               <input
                 type="file"
-                accept=".csv,.xlsx,.xls"
+                accept=".csv"
                 className="hidden"
-                id="file-upload"
+                id="risk-file-upload"
                 onChange={(e) => {
-                  // Handle file upload
                   const file = e.target.files?.[0];
                   if (file) {
-                    // Process file
-                    console.log("File selected:", file.name);
+                    setSelectedFile(file);
                   }
                 }}
               />
               <Button
                 variant="outline"
                 className="mt-4"
-                onClick={() => document.getElementById("file-upload")?.click()}
+                onClick={() => document.getElementById("risk-file-upload")?.click()}
               >
                 Select File
               </Button>
             </div>
+            {selectedFile && (
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setSelectedFile(null)}
+                  disabled={importLoading}
+                >
+                  Clear
+                </Button>
+                <Button
+                  onClick={async () => {
+                    if (!selectedFile) return;
+
+                    setImportLoading(true);
+                    try {
+                      // Parse CSV file
+                      const text = await selectedFile.text();
+                      const lines = text.split(/\r?\n/).filter(line => line.trim());
+
+                      if (lines.length < 2) {
+                        toast({
+                          title: "Error",
+                          description: "File is empty or has no data rows",
+                          variant: "destructive",
+                        });
+                        setImportLoading(false);
+                        return;
+                      }
+
+                      // Parse headers
+                      const headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g, ""));
+
+                      // Parse data rows
+                      const data = [];
+                      for (let i = 1; i < lines.length; i++) {
+                        const line = lines[i];
+                        if (!line.trim()) continue;
+
+                        // Simple CSV parsing (handles basic quoted values)
+                        const values: string[] = [];
+                        let current = "";
+                        let inQuotes = false;
+
+                        for (let j = 0; j < line.length; j++) {
+                          const char = line[j];
+                          if (char === '"') {
+                            inQuotes = !inQuotes;
+                          } else if (char === "," && !inQuotes) {
+                            values.push(current.trim().replace(/^"|"$/g, ""));
+                            current = "";
+                          } else {
+                            current += char;
+                          }
+                        }
+                        values.push(current.trim().replace(/^"|"$/g, ""));
+
+                        // Create row object
+                        const row: Record<string, string> = {};
+                        headers.forEach((header, index) => {
+                          row[header] = values[index] || "";
+                        });
+                        data.push(row);
+                      }
+
+                      // Send to API
+                      const response = await fetch("/api/risks/import", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          data,
+                          columns: headers,
+                          actor: session?.user?.name || "System",
+                        }),
+                      });
+
+                      const result = await response.json();
+
+                      if (!response.ok) {
+                        toast({
+                          title: "Import Failed",
+                          description: result.error || "Failed to import risks",
+                          variant: "destructive",
+                        });
+
+                        // Show detailed errors if available
+                        if (result.results?.errors?.length > 0) {
+                          const errorDetails = result.results.errors
+                            .slice(0, 3)
+                            .map((e: { row: number; error: string }) => `Row ${e.row}: ${e.error}`)
+                            .join("\n");
+                          console.error("Import errors:", result.results.errors);
+                          toast({
+                            title: "Error Details",
+                            description: errorDetails,
+                            variant: "destructive",
+                          });
+                        }
+                      } else {
+                        toast({
+                          title: "Import Successful",
+                          description: result.message,
+                        });
+
+                        // Close dialog and refresh data
+                        setImportDialogOpen(false);
+                        setSelectedFile(null);
+                        fetchRisks();
+                        fetchStats();
+                      }
+                    } catch (error) {
+                      console.error("Import error:", error);
+                      toast({
+                        title: "Error",
+                        description: "Failed to process file. Please check the format.",
+                        variant: "destructive",
+                      });
+                    } finally {
+                      setImportLoading(false);
+                    }
+                  }}
+                  disabled={importLoading}
+                >
+                  {importLoading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Importing...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-4 w-4 mr-2" />
+                      Import
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
