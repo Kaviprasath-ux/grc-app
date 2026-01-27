@@ -560,7 +560,7 @@ export default function KPIDetailPage({
                       <XAxis dataKey="date" tick={{ fontSize: 12 }} />
                       <YAxis domain={[0, "auto"]} tick={{ fontSize: 12 }} />
                       <Tooltip
-                        formatter={(value: number, name: string) => [
+                        formatter={(value, name) => [
                           value,
                           name === "actualScore" ? "Actual Score" : "Expected Score",
                         ]}

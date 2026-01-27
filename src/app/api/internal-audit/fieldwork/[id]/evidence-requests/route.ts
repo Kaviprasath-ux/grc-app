@@ -44,6 +44,7 @@ export const GET = withAuth(
         auditeeId: er.auditeeId || null,
         numberOfSamples: er.sampleSize || null,
         aiReviewStatus: er.aiReviewStatus || null,
+        aiReviewComment: er.aiReviewComment || null,
         clarificationComment: er.clarificationComment || null,
         clarificationDocumentName: er.clarificationDocumentName || null,
         clarificationByUserName: er.clarificationByUserName || null,

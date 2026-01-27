@@ -135,6 +135,7 @@ interface EvidenceRequest {
   auditeeId?: string | null;
   numberOfSamples?: string | null;
   aiReviewStatus?: string | null;
+  aiReviewComment?: string | null;
   clarificationComment?: string | null;
   clarificationDocumentName?: string | null;
   clarificationByUserName?: string | null;
@@ -182,6 +183,9 @@ export default function FieldworkDetailsPage() {
 
   const [loading, setLoading] = useState(true);
   const [engagement, setEngagement] = useState<Engagement | null>(null);
+
+  // Check if engagement is completed (read-only mode)
+  const isCompleted = engagement?.status === "Completed";
 
   // Collapsible section states
   const [engagementDetailsOpen, setEngagementDetailsOpen] = useState(true);
@@ -1498,6 +1502,16 @@ export default function FieldworkDetailsPage() {
 
   return (
     <div className="p-6 space-y-4">
+      {/* Completed Status Banner */}
+      {isCompleted && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-2">
+          <Check className="h-5 w-5 text-green-600" />
+          <span className="text-green-800 font-medium">
+            This engagement has been completed and is now in read-only mode.
+          </span>
+        </div>
+      )}
+
       {/* Breadcrumb Header */}
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="sm" onClick={() => router.push("/internal-audit/fieldwork")}>
@@ -1683,7 +1697,7 @@ export default function FieldworkDetailsPage() {
                 size="sm"
                 className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
                 onClick={handleGenerateAIWorkpapers}
-                disabled={generatingWorkpapers}
+                disabled={generatingWorkpapers || isCompleted}
               >
                 {generatingWorkpapers ? (
                   <>
@@ -1791,7 +1805,7 @@ export default function FieldworkDetailsPage() {
               size="sm"
               className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
               onClick={handleAddTask}
-              disabled={addingTask}
+              disabled={addingTask || isCompleted}
             >
               {addingTask ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -1867,7 +1881,7 @@ export default function FieldworkDetailsPage() {
                           variant="outline"
                           size="sm"
                           className="text-xs"
-                          disabled={uploadingTaskDocument === task.id}
+                          disabled={uploadingTaskDocument === task.id || isCompleted}
                           onClick={() => {
                             const input = document.createElement("input");
                             input.type = "file";
@@ -1914,7 +1928,7 @@ export default function FieldworkDetailsPage() {
                             variant="ghost"
                             size="icon"
                             onClick={() => handleSaveTask(task)}
-                            disabled={savingTask === task.id}
+                            disabled={savingTask === task.id || isCompleted}
                             title="Save task"
                           >
                             {savingTask === task.id ? (
@@ -1928,6 +1942,7 @@ export default function FieldworkDetailsPage() {
                             size="icon"
                             onClick={() => handleDeleteTask(task.id)}
                             title="Delete task"
+                            disabled={isCompleted}
                           >
                             <Trash2 className="h-4 w-4 text-red-600" />
                           </Button>
@@ -1965,7 +1980,7 @@ export default function FieldworkDetailsPage() {
                     size="sm"
                     className="bg-green-600 hover:bg-green-700"
                     onClick={handleAIReview}
-                    disabled={generatingAIReview}
+                    disabled={generatingAIReview || isCompleted}
                   >
                     {generatingAIReview ? (
                       <>
@@ -1986,6 +2001,7 @@ export default function FieldworkDetailsPage() {
                   size="sm"
                   className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
                   onClick={() => setAddEvidenceDialogOpen(true)}
+                  disabled={isCompleted}
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Add Evidence Request
@@ -2040,30 +2056,39 @@ export default function FieldworkDetailsPage() {
                           <span className="text-sm font-medium text-gray-700">AI Review</span>
                         </div>
                         <div className="flex items-center gap-1 mb-1">
-                          {er.status === 'Reviewed' ? (
+                          {er.aiReviewStatus === 'Satisfactory' ? (
                             <>
                               <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center">
                                 <span className="text-white text-xs">✓</span>
                               </div>
                               <span className="text-sm text-green-600 font-medium">Satisfactory</span>
                             </>
-                          ) : (
+                          ) : er.aiReviewStatus === 'Needs Attention' ? (
                             <>
                               <div className="w-4 h-4 rounded-full bg-red-500 flex items-center justify-center">
                                 <span className="text-white text-xs">✕</span>
                               </div>
-                              <span className="text-sm text-red-600 font-medium">
-                                {er.status === 'Pending' ? 'Pending Review' : 'Unsatisfactory'}
+                              <span className="text-sm text-red-600 font-medium">Needs Attention</span>
+                            </>
+                          ) : (
+                            <>
+                              <div className="w-4 h-4 rounded-full bg-yellow-500 flex items-center justify-center">
+                                <span className="text-white text-xs">⏳</span>
+                              </div>
+                              <span className="text-sm text-yellow-600 font-medium">
+                                {er.status === 'Submitted' ? 'Awaiting Review' : 'Pending'}
                               </span>
                             </>
                           )}
                         </div>
                         <p className="text-xs text-amber-600 line-clamp-2">
-                          {er.status === 'Pending'
+                          {!er.aiReviewStatus && er.status === 'Pending'
                             ? 'Waiting for document upload and review.'
-                            : er.status === 'Submitted'
+                            : !er.aiReviewStatus && er.status === 'Submitted'
                             ? 'Document submitted. Awaiting AI review.'
-                            : 'Review completed.'}
+                            : er.aiReviewStatus
+                            ? 'AI review completed.'
+                            : 'Awaiting review.'}
                         </p>
                       </div>
 
@@ -2116,6 +2141,7 @@ export default function FieldworkDetailsPage() {
                     <TableHead className="text-white">Samples</TableHead>
                     <TableHead className="text-white">Due Date</TableHead>
                     <TableHead className="text-white">Status</TableHead>
+                    <TableHead className="text-white">AI Review</TableHead>
                     <TableHead className="text-white">Action</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -2144,6 +2170,29 @@ export default function FieldworkDetailsPage() {
                         }`}>
                           {er.status}
                         </span>
+                      </TableCell>
+                      <TableCell>
+                        {er.aiReviewStatus ? (
+                          <div className="flex items-center gap-1">
+                            {er.aiReviewStatus === 'Satisfactory' ? (
+                              <>
+                                <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center">
+                                  <span className="text-white text-xs">✓</span>
+                                </div>
+                                <span className="text-sm text-green-600 font-medium">Satisfactory</span>
+                              </>
+                            ) : (
+                              <>
+                                <div className="w-4 h-4 rounded-full bg-red-500 flex items-center justify-center">
+                                  <span className="text-white text-xs">✕</span>
+                                </div>
+                                <span className="text-sm text-red-600 font-medium">Needs Attention</span>
+                              </>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-sm text-gray-400">-</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
@@ -2312,6 +2361,7 @@ export default function FieldworkDetailsPage() {
                 size="sm"
                 variant="outline"
                 onClick={() => setAddFindingDialogOpen(true)}
+                disabled={isCompleted}
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Quick Add
@@ -2502,7 +2552,7 @@ export default function FieldworkDetailsPage() {
             <Button
               className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
               onClick={handleUploadFiles}
-              disabled={uploading || uploadedFiles.length === 0}
+              disabled={uploading || uploadedFiles.length === 0 || isCompleted}
             >
               {uploading ? (
                 <>
@@ -2680,7 +2730,7 @@ export default function FieldworkDetailsPage() {
             <Button
               variant="destructive"
               onClick={handleDeleteFinding}
-              disabled={deletingFinding}
+              disabled={deletingFinding || isCompleted}
             >
               {deletingFinding ? (
                 <>
@@ -2802,7 +2852,7 @@ export default function FieldworkDetailsPage() {
             <Button
               className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
               onClick={handleUploadDocument}
-              disabled={uploading}
+              disabled={uploading || isCompleted}
             >
               {uploading ? (
                 <>
@@ -2839,7 +2889,7 @@ export default function FieldworkDetailsPage() {
             <Button
               variant="destructive"
               onClick={handleDeleteDocument}
-              disabled={deletingDocument}
+              disabled={deletingDocument || isCompleted}
             >
               {deletingDocument ? (
                 <>
@@ -2876,7 +2926,7 @@ export default function FieldworkDetailsPage() {
             <Button
               variant="destructive"
               onClick={handleDeleteWorkpaper}
-              disabled={deletingWorkpaper}
+              disabled={deletingWorkpaper || isCompleted}
             >
               {deletingWorkpaper ? (
                 <>
@@ -2955,7 +3005,7 @@ export default function FieldworkDetailsPage() {
             <Button
               className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
               onClick={handleUpdateAIWorkpaper}
-              disabled={savingAIWorkpaper}
+              disabled={savingAIWorkpaper || isCompleted}
             >
               {savingAIWorkpaper ? (
                 <>
@@ -2992,7 +3042,7 @@ export default function FieldworkDetailsPage() {
             <Button
               variant="destructive"
               onClick={handleDeleteAIWorkpaper}
-              disabled={deletingAIWorkpaper}
+              disabled={deletingAIWorkpaper || isCompleted}
             >
               {deletingAIWorkpaper ? (
                 <>
@@ -3077,7 +3127,7 @@ export default function FieldworkDetailsPage() {
             <Button
               className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
               onClick={handleAddSelectedWorkpapers}
-              disabled={addingGeneratedWorkpapers || selectedGeneratedIds.length === 0}
+              disabled={addingGeneratedWorkpapers || selectedGeneratedIds.length === 0 || isCompleted}
             >
               {addingGeneratedWorkpapers ? (
                 <>
@@ -3197,7 +3247,7 @@ export default function FieldworkDetailsPage() {
               <Button
                 className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
                 onClick={handleUpdateDocument}
-                disabled={savingDocument}
+                disabled={savingDocument || isCompleted}
               >
                 {savingDocument ? (
                   <>
@@ -3385,6 +3435,44 @@ export default function FieldworkDetailsPage() {
                   </span>
                 </div>
               </div>
+              {/* AI Review Section */}
+              {selectedEvidence?.aiReviewStatus && (
+                <div className="space-y-2">
+                  <Label className="text-[#1e3a5f] font-medium">AI Review Result</Label>
+                  <div className={`p-3 rounded-md border ${
+                    selectedEvidence.aiReviewStatus === 'Satisfactory'
+                      ? 'bg-green-50 border-green-200'
+                      : 'bg-red-50 border-red-200'
+                  }`}>
+                    <div className="flex items-center gap-2 mb-2">
+                      {selectedEvidence.aiReviewStatus === 'Satisfactory' ? (
+                        <>
+                          <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+                            <span className="text-white text-xs">✓</span>
+                          </div>
+                          <span className="font-medium text-green-700">Satisfactory</span>
+                        </>
+                      ) : (
+                        <>
+                          <div className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center">
+                            <span className="text-white text-xs">✕</span>
+                          </div>
+                          <span className="font-medium text-red-700">Needs Attention</span>
+                        </>
+                      )}
+                    </div>
+                    {selectedEvidence.aiReviewComment && (
+                      <p className={`text-sm ${
+                        selectedEvidence.aiReviewStatus === 'Satisfactory'
+                          ? 'text-green-600'
+                          : 'text-red-600'
+                      }`}>
+                        {selectedEvidence.aiReviewComment}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
               </>
             )}
             {/* Attachments section - only show in view mode */}
@@ -3483,7 +3571,7 @@ export default function FieldworkDetailsPage() {
                 <Button
                   className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
                   onClick={handleUpdateEvidence}
-                  disabled={savingEvidence}
+                  disabled={savingEvidence || isCompleted}
                 >
                   {savingEvidence ? (
                     <>
@@ -3547,7 +3635,7 @@ export default function FieldworkDetailsPage() {
             <Button
               className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
               onClick={handleSendClarification}
-              disabled={sendingClarification || !clarificationDocument}
+              disabled={sendingClarification || !clarificationDocument || isCompleted}
             >
               {sendingClarification ? (
                 <>
@@ -3658,7 +3746,7 @@ export default function FieldworkDetailsPage() {
             <Button
               className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
               onClick={handleSendResponse}
-              disabled={sendingResponse}
+              disabled={sendingResponse || isCompleted}
             >
               {sendingResponse ? (
                 <>
@@ -3695,7 +3783,7 @@ export default function FieldworkDetailsPage() {
             <Button
               variant="destructive"
               onClick={handleDeleteEvidence}
-              disabled={deletingEvidence}
+              disabled={deletingEvidence || isCompleted}
             >
               {deletingEvidence ? (
                 <>
@@ -3822,7 +3910,7 @@ export default function FieldworkDetailsPage() {
             <Button
               className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
               onClick={handleUploadAttachment}
-              disabled={uploadingAttachment}
+              disabled={uploadingAttachment || isCompleted}
             >
               {uploadingAttachment ? (
                 <>

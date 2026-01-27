@@ -196,8 +196,8 @@ function ManagementReportContent() {
   ).map(([name, value]) => ({ name, value, fill: BAR_COLORS[name] || "#9ca3af" }));
 
   // Custom label for pie charts
-  const renderCustomLabel = ({ name, percent }: { name: string; percent: number }) => {
-    return `${name} (${(percent * 100).toFixed(0)}%)`;
+  const renderCustomLabel = ({ name, percent }: { name?: string; percent?: number }) => {
+    return `${name || ''} (${((percent || 0) * 100).toFixed(0)}%)`;
   };
 
   if (loading) {
