@@ -274,250 +274,221 @@ export function EditProfileWizard({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Edit Profile</DialogTitle>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+        {/* Fixed Header */}
+        <div className="flex-shrink-0 px-6 pt-6 pb-4 border-b border-slate-100">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-semibold text-slate-800">Edit Profile</DialogTitle>
+          </DialogHeader>
 
-        {/* Step Indicator */}
-        <div className="flex items-center justify-center py-6">
-          {steps.map((step, index) => (
-            <div key={step.id} className="flex items-center">
-              <div className="flex flex-col items-center">
-                <div
-                  className={cn(
-                    "w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium border-2 transition-colors",
-                    currentStep > step.id
-                      ? "bg-green-500 border-green-500 text-white"
-                      : currentStep === step.id
-                      ? "bg-primary border-primary text-primary-foreground"
-                      : "bg-muted border-muted-foreground/30 text-muted-foreground"
-                  )}
-                >
-                  {currentStep > step.id ? <Check className="h-5 w-5" /> : step.id}
+          {/* Step Indicator */}
+          <div className="flex items-center justify-center pt-5">
+            {steps.map((step, index) => (
+              <div key={step.id} className="flex items-center">
+                <div className="flex flex-col items-center">
+                  <div
+                    className={cn(
+                      "w-9 h-9 rounded-full flex items-center justify-center text-sm font-medium transition-colors",
+                      currentStep > step.id
+                        ? "bg-semantic-success text-white"
+                        : currentStep === step.id
+                        ? "bg-primary-600 text-white"
+                        : "bg-slate-100 text-slate-400 border border-slate-200"
+                    )}
+                  >
+                    {currentStep > step.id ? <Check className="h-4 w-4" /> : step.id}
+                  </div>
+                  <span
+                    className={cn(
+                      "mt-2 text-xs font-medium",
+                      currentStep >= step.id ? "text-slate-700" : "text-slate-400"
+                    )}
+                  >
+                    {step.name}
+                  </span>
                 </div>
-                <span
-                  className={cn(
-                    "mt-2 text-xs font-medium",
-                    currentStep >= step.id ? "text-foreground" : "text-muted-foreground"
-                  )}
-                >
-                  {step.name}
-                </span>
+                {index < steps.length - 1 && (
+                  <div
+                    className={cn(
+                      "w-12 h-0.5 mx-3 transition-colors",
+                      currentStep > step.id ? "bg-semantic-success" : "bg-slate-200"
+                    )}
+                  />
+                )}
               </div>
-              {index < steps.length - 1 && (
-                <div
-                  className={cn(
-                    "w-16 h-0.5 mx-2 transition-colors",
-                    currentStep > step.id ? "bg-green-500" : "bg-muted"
-                  )}
-                />
-              )}
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
 
-        {/* Step Content */}
-        <div className="py-4">
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto px-6 py-6">
           {/* Step 1: Info */}
           {currentStep === 1 && (
-            <div className="space-y-6">
+            <div className="space-y-5">
               {/* Logo */}
-              <div>
-                <Label className="font-semibold text-foreground">Logo</Label>
-                <div className="mt-2 border-2 border-dashed rounded-lg p-4">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-center overflow-hidden flex-shrink-0">
                   {formData.logo ? (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">{formData.logo.split("/").pop()}</span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setFormData({ ...formData, logo: "" })}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    <img src={formData.logo} alt="Logo" className="w-full h-full object-cover" />
                   ) : (
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <Input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => handleFileUpload(e, "logo")}
-                      />
-                      <span className="text-sm text-muted-foreground">...</span>
-                      <Button type="button" variant="outline" size="sm" asChild>
-                        <span>Browse...</span>
+                    <Upload className="h-5 w-5 text-slate-300" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-slate-700">Logo</p>
+                  <p className="text-xs text-slate-400 mb-2">PNG or JPG, max 2MB</p>
+                  <div className="flex gap-2">
+                    <label>
+                      <Input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileUpload(e, "logo")} />
+                      <Button type="button" variant="outline" size="sm" className="h-7 text-xs" asChild>
+                        <span>Upload</span>
                       </Button>
                     </label>
-                  )}
+                    {formData.logo && (
+                      <Button type="button" variant="ghost" size="sm" className="h-7 text-xs text-slate-400 hover:text-semantic-error" onClick={() => setFormData({ ...formData, logo: "" })}>
+                        Remove
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {/* Name and Email */}
+              {/* Organization Name */}
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Organization Name</Label>
+                <Input
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="mt-1.5"
+                  placeholder="Enter organization name"
+                />
+              </div>
+
+              {/* Email & Phone */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="font-semibold text-foreground">Name</Label>
-                  <Input
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="mt-2"
-                  />
-                </div>
-                <div>
-                  <Label className="font-semibold text-foreground">Email ID</Label>
+                  <Label className="text-sm font-medium text-slate-700">Email</Label>
                   <Input
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="mt-2"
+                    className="mt-1.5"
+                    placeholder="contact@company.com"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Phone</Label>
+                  <Input
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    className="mt-1.5"
+                    placeholder="+1 234 567 8900"
                   />
                 </div>
               </div>
 
-              {/* Phone and Established Date */}
+              {/* Website & Established */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="font-semibold text-foreground">Phone</Label>
+                  <Label className="text-sm font-medium text-slate-700">Website</Label>
                   <Input
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="mt-2"
+                    value={formData.website}
+                    onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                    className="mt-1.5"
+                    placeholder="https://company.com"
                   />
                 </div>
                 <div>
-                  <Label className="font-semibold text-foreground">Established Date</Label>
+                  <Label className="text-sm font-medium text-slate-700">Established</Label>
                   <Input
                     type="date"
                     value={formData.establishedDate}
                     onChange={(e) => setFormData({ ...formData, establishedDate: e.target.value })}
-                    className="mt-2"
+                    className="mt-1.5"
                   />
                 </div>
               </div>
 
-              {/* About Us */}
+              {/* Employee Count */}
               <div>
-                <Label className="font-semibold text-foreground">About Us</Label>
-                <Textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="mt-2"
-                  rows={4}
+                <Label className="text-sm font-medium text-slate-700">Employee Count</Label>
+                <Input
+                  type="number"
+                  value={formData.employeeCount}
+                  onChange={(e) => setFormData({ ...formData, employeeCount: parseInt(e.target.value) || 0 })}
+                  className="mt-1.5 w-40"
+                  placeholder="0"
                 />
               </div>
 
-              {/* Employee Count and Website */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="font-semibold text-foreground">Employee Count</Label>
-                  <Input
-                    type="number"
-                    value={formData.employeeCount}
-                    onChange={(e) =>
-                      setFormData({ ...formData, employeeCount: parseInt(e.target.value) || 0 })
-                    }
-                    className="mt-2"
-                  />
-                </div>
-                <div>
-                  <Label className="font-semibold text-foreground">Website</Label>
-                  <Input
-                    value={formData.website}
-                    onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-                    className="mt-2"
-                  />
-                </div>
+              {/* About */}
+              <div>
+                <Label className="text-sm font-medium text-slate-700">About</Label>
+                <Textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="mt-1.5"
+                  rows={3}
+                  placeholder="Brief description of your organization..."
+                />
               </div>
 
               {/* Head Office */}
-              <div className="border rounded-lg p-4 space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label className="font-semibold text-foreground">Head Office</Label>
-                  <Button type="button" size="sm" onClick={addBranch}>
-                    <Plus className="h-4 w-4 mr-1" />
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <Label className="text-sm font-medium text-slate-700">Head Office</Label>
+                  <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs text-primary-600" onClick={addBranch}>
+                    <Plus className="h-3 w-3 mr-1" />
                     Add Branch
                   </Button>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="font-semibold text-foreground">Location</Label>
-                    <Input
-                      value={formData.headOfficeLocation}
-                      onChange={(e) =>
-                        setFormData({ ...formData, headOfficeLocation: e.target.value })
-                      }
-                      className="mt-2"
-                    />
-                  </div>
-                  <div>
-                    <Label className="font-semibold text-foreground">Address</Label>
-                    <Input
-                      value={formData.headOfficeAddress}
-                      onChange={(e) =>
-                        setFormData({ ...formData, headOfficeAddress: e.target.value })
-                      }
-                      className="mt-2"
-                    />
-                  </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <Input
+                    value={formData.headOfficeLocation}
+                    onChange={(e) => setFormData({ ...formData, headOfficeLocation: e.target.value })}
+                    placeholder="City, Country"
+                  />
+                  <Input
+                    value={formData.headOfficeAddress}
+                    onChange={(e) => setFormData({ ...formData, headOfficeAddress: e.target.value })}
+                    placeholder="Full address"
+                  />
                 </div>
-
-                {/* Branches */}
-                {formData.branches.map((branch, index) => (
-                  <div key={index} className="border-t pt-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <Label className="font-semibold text-foreground">Branch Details</Label>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeBranch(index)}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label className="font-semibold text-foreground">Location</Label>
-                        <Input
-                          value={branch.location}
-                          onChange={(e) => updateBranch(index, "location", e.target.value)}
-                          className="mt-2"
-                        />
-                      </div>
-                      <div>
-                        <Label className="font-semibold text-foreground">Address</Label>
-                        <Input
-                          value={branch.address}
-                          onChange={(e) => updateBranch(index, "address", e.target.value)}
-                          className="mt-2"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
               </div>
 
+              {/* Branches */}
+              {formData.branches.map((branch, index) => (
+                <div key={index}>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label className="text-xs font-medium text-slate-500">Branch {index + 1}</Label>
+                    <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0 text-slate-400 hover:text-semantic-error" onClick={() => removeBranch(index)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Input value={branch.location} onChange={(e) => updateBranch(index, "location", e.target.value)} placeholder="City, Country" />
+                    <Input value={branch.address} onChange={(e) => updateBranch(index, "address", e.target.value)} placeholder="Full address" />
+                  </div>
+                </div>
+              ))}
+
               {/* Data Centers */}
-              <div className="border rounded-lg p-4 space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label className="font-semibold text-foreground">Data Center</Label>
-                  <Button type="button" size="sm" onClick={addDataCenter}>
-                    <Plus className="h-4 w-4 mr-1" />
-                    Add Data Center
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <Label className="text-sm font-medium text-slate-700">Data Centers</Label>
+                  <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs text-primary-600" onClick={addDataCenter}>
+                    <Plus className="h-3 w-3 mr-1" />
+                    Add
                   </Button>
                 </div>
-                {formData.dataCenters.map((dc, index) => (
-                  <div key={index} className="border-t pt-4 first:border-t-0 first:pt-0">
-                    <div className="grid grid-cols-3 gap-4 items-end">
-                      <div>
-                        <Label className="font-semibold text-foreground">Location</Label>
-                        <Select
-                          value={dc.locationType}
-                          onValueChange={(value) => updateDataCenter(index, "locationType", value)}
-                        >
-                          <SelectTrigger className="mt-2">
+                {formData.dataCenters.length === 0 ? (
+                  <p className="text-xs text-slate-400">No data centers added</p>
+                ) : (
+                  <div className="space-y-2">
+                    {formData.dataCenters.map((dc, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <Select value={dc.locationType} onValueChange={(value) => updateDataCenter(index, "locationType", value)}>
+                          <SelectTrigger className="w-28 h-9">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -525,153 +496,83 @@ export function EditProfileWizard({
                             <SelectItem value="Outsourced">Outsourced</SelectItem>
                           </SelectContent>
                         </Select>
-                      </div>
-                      <div>
-                        <Label className="font-semibold text-foreground">
-                          {dc.locationType === "Outsourced" ? "Vendor" : "Address"}
-                        </Label>
                         <Input
                           value={dc.locationType === "Outsourced" ? dc.vendor || "" : dc.address || ""}
-                          onChange={(e) =>
-                            updateDataCenter(
-                              index,
-                              dc.locationType === "Outsourced" ? "vendor" : "address",
-                              e.target.value
-                            )
-                          }
-                          className="mt-2"
+                          onChange={(e) => updateDataCenter(index, dc.locationType === "Outsourced" ? "vendor" : "address", e.target.value)}
+                          placeholder={dc.locationType === "Outsourced" ? "Vendor" : "Address"}
+                          className="flex-1 h-9"
                         />
+                        <Button type="button" variant="ghost" size="sm" className="h-9 w-9 p-0 text-slate-400 hover:text-semantic-error" onClick={() => removeDataCenter(index)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeDataCenter(index)}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
 
               {/* Cloud Providers */}
-              <div className="border rounded-lg p-4 space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label className="font-semibold text-foreground">Cloud Provider</Label>
-                  <Button type="button" size="sm" onClick={addCloudProvider}>
-                    <Plus className="h-4 w-4 mr-1" />
-                    Add Cloud Provider
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <Label className="text-sm font-medium text-slate-700">Cloud Providers</Label>
+                  <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs text-primary-600" onClick={addCloudProvider}>
+                    <Plus className="h-3 w-3 mr-1" />
+                    Add
                   </Button>
                 </div>
-                {formData.cloudProviders.map((cp, index) => (
-                  <div key={index} className="border-t pt-4 first:border-t-0 first:pt-0">
-                    <div className="grid grid-cols-3 gap-4 items-end">
-                      <div>
-                        <Label className="font-semibold text-foreground">Name</Label>
-                        <Input
-                          value={cp.name}
-                          onChange={(e) => updateCloudProvider(index, "name", e.target.value)}
-                          className="mt-2"
-                        />
-                      </div>
-                      <div>
-                        <Label className="font-semibold text-foreground">Service type</Label>
-                        <Select
-                          value={cp.serviceType}
-                          onValueChange={(value) => updateCloudProvider(index, "serviceType", value)}
-                        >
-                          <SelectTrigger className="mt-2">
-                            <SelectValue placeholder="Select type" />
+                {formData.cloudProviders.length === 0 ? (
+                  <p className="text-xs text-slate-400">No cloud providers added</p>
+                ) : (
+                  <div className="space-y-2">
+                    {formData.cloudProviders.map((cp, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <Input value={cp.name} onChange={(e) => updateCloudProvider(index, "name", e.target.value)} placeholder="Provider name" className="flex-1 h-9" />
+                        <Select value={cp.serviceType} onValueChange={(value) => updateCloudProvider(index, "serviceType", value)}>
+                          <SelectTrigger className="w-24 h-9">
+                            <SelectValue placeholder="Type" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="Iaas">Iaas</SelectItem>
-                            <SelectItem value="Paas">Paas</SelectItem>
-                            <SelectItem value="Saas">Saas</SelectItem>
+                            <SelectItem value="Iaas">IaaS</SelectItem>
+                            <SelectItem value="Paas">PaaS</SelectItem>
+                            <SelectItem value="Saas">SaaS</SelectItem>
                           </SelectContent>
                         </Select>
+                        <Button type="button" variant="ghost" size="sm" className="h-9 w-9 p-0 text-slate-400 hover:text-semantic-error" onClick={() => removeCloudProvider(index)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeCloudProvider(index)}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
 
               {/* Social Media */}
-              <div className="border rounded-lg p-4 space-y-4">
-                <Label className="font-semibold text-foreground">Social Media</Label>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="font-semibold text-foreground">Facebook</Label>
-                    <Input
-                      value={formData.facebook}
-                      onChange={(e) => setFormData({ ...formData, facebook: e.target.value })}
-                      className="mt-2"
-                    />
-                  </div>
-                  <div>
-                    <Label className="font-semibold text-foreground">Youtube</Label>
-                    <Input
-                      value={formData.youtube}
-                      onChange={(e) => setFormData({ ...formData, youtube: e.target.value })}
-                      className="mt-2"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="font-semibold text-foreground">Twitter</Label>
-                    <Input
-                      value={formData.twitter}
-                      onChange={(e) => setFormData({ ...formData, twitter: e.target.value })}
-                      className="mt-2"
-                    />
-                  </div>
-                  <div>
-                    <Label className="font-semibold text-foreground">LinkedIn</Label>
-                    <Input
-                      value={formData.linkedin}
-                      onChange={(e) => setFormData({ ...formData, linkedin: e.target.value })}
-                      className="mt-2"
-                    />
-                  </div>
+              <div>
+                <Label className="text-sm font-medium text-slate-700 mb-3 block">Social Media</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <Input value={formData.facebook} onChange={(e) => setFormData({ ...formData, facebook: e.target.value })} placeholder="Facebook URL" />
+                  <Input value={formData.linkedin} onChange={(e) => setFormData({ ...formData, linkedin: e.target.value })} placeholder="LinkedIn URL" />
+                  <Input value={formData.twitter} onChange={(e) => setFormData({ ...formData, twitter: e.target.value })} placeholder="Twitter URL" />
+                  <Input value={formData.youtube} onChange={(e) => setFormData({ ...formData, youtube: e.target.value })} placeholder="YouTube URL" />
                 </div>
               </div>
 
               {/* Brochure */}
               <div>
-                <Label className="font-semibold text-foreground">Brochure</Label>
-                <div className="mt-2 border-2 border-dashed rounded-lg p-4">
+                <Label className="text-sm font-medium text-slate-700">Brochure</Label>
+                <div className="mt-1.5 border border-dashed border-slate-200 rounded-lg p-4">
                   {formData.brochure ? (
                     <div className="flex items-center justify-between">
-                      <span className="text-sm">{formData.brochure.split("/").pop()}</span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setFormData({ ...formData, brochure: "" })}
-                      >
-                        <X className="h-4 w-4" />
+                      <span className="text-sm text-slate-600">{formData.brochure.split("/").pop()}</span>
+                      <Button type="button" variant="ghost" size="sm" className="text-slate-400 hover:text-semantic-error" onClick={() => setFormData({ ...formData, brochure: "" })}>
+                        Remove
                       </Button>
                     </div>
                   ) : (
-                    <label className="flex flex-col items-center cursor-pointer">
-                      <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-                      <span className="text-sm text-muted-foreground">
-                        Click here, or drop files here to upload
-                      </span>
-                      <input
-                        type="file"
-                        className="hidden"
-                        onChange={(e) => handleFileUpload(e, "brochure")}
-                      />
+                    <label className="flex flex-col items-center cursor-pointer py-2">
+                      <Upload className="h-6 w-6 text-slate-300 mb-2" />
+                      <span className="text-sm text-slate-500">Click to upload</span>
+                      <input type="file" className="hidden" onChange={(e) => handleFileUpload(e, "brochure")} />
                     </label>
                   )}
                 </div>
@@ -681,32 +582,37 @@ export function EditProfileWizard({
 
           {/* Step 2: VMW */}
           {currentStep === 2 && (
-            <div className="space-y-6">
+            <div className="space-y-5">
               <div>
-                <Label className="font-semibold text-foreground">Vision</Label>
+                <Label className="text-sm font-medium text-slate-700">Vision</Label>
                 <Textarea
                   value={formData.vision}
                   onChange={(e) => setFormData({ ...formData, vision: e.target.value })}
-                  className="mt-2"
+                  className="mt-1.5"
                   rows={5}
+                  placeholder="Where do you see your organization in the future?"
                 />
               </div>
+
               <div>
-                <Label className="font-semibold text-foreground">Mission</Label>
+                <Label className="text-sm font-medium text-slate-700">Mission</Label>
                 <Textarea
                   value={formData.mission}
                   onChange={(e) => setFormData({ ...formData, mission: e.target.value })}
-                  className="mt-2"
+                  className="mt-1.5"
                   rows={5}
+                  placeholder="What is your organization's purpose?"
                 />
               </div>
+
               <div>
-                <Label className="font-semibold text-foreground">Value</Label>
+                <Label className="text-sm font-medium text-slate-700">Core Values</Label>
                 <Textarea
                   value={formData.value}
                   onChange={(e) => setFormData({ ...formData, value: e.target.value })}
-                  className="mt-2"
+                  className="mt-1.5"
                   rows={5}
+                  placeholder="What principles guide your organization?"
                 />
               </div>
             </div>
@@ -714,162 +620,124 @@ export function EditProfileWizard({
 
           {/* Step 3: CEO Message */}
           {currentStep === 3 && (
-            <div className="space-y-6">
-              <div>
-                <Label className="font-semibold text-foreground">CEO Message</Label>
-                <Textarea
-                  value={formData.ceoMessage}
-                  onChange={(e) => setFormData({ ...formData, ceoMessage: e.target.value })}
-                  className="mt-2"
-                  rows={10}
-                />
-              </div>
+            <div>
+              <Label className="text-sm font-medium text-slate-700">CEO Message</Label>
+              <Textarea
+                value={formData.ceoMessage}
+                onChange={(e) => setFormData({ ...formData, ceoMessage: e.target.value })}
+                className="mt-1.5"
+                rows={14}
+                placeholder="Share a message from your CEO..."
+              />
             </div>
           )}
 
           {/* Step 4: Preview & Save */}
           {currentStep === 4 && (
-            <div className="space-y-6">
-              {/* Mission & Vision */}
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <Label className="font-semibold text-foreground">Mission</Label>
-                  <p className="mt-2 text-sm">{formData.mission || "-"}</p>
-                </div>
-                <div>
-                  <Label className="font-semibold text-foreground">Vision</Label>
-                  <p className="mt-2 text-sm">{formData.vision || "-"}</p>
-                </div>
-              </div>
-
-              {/* Basic Info */}
-              <div className="grid grid-cols-3 gap-6">
-                <div>
-                  <Label className="font-semibold text-foreground">Name</Label>
-                  <p className="mt-2 text-sm">{formData.name || "-"}</p>
-                </div>
-                <div>
-                  <Label className="font-semibold text-foreground">Email Id</Label>
-                  <p className="mt-2 text-sm">{formData.email || "-"}</p>
-                </div>
-                <div>
-                  <Label className="font-semibold text-foreground">Phone</Label>
-                  <p className="mt-2 text-sm">{formData.phone || "-"}</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-6">
-                <div>
-                  <Label className="font-semibold text-foreground">Established Date</Label>
-                  <p className="mt-2 text-sm">{formData.establishedDate || "-"}</p>
-                </div>
-                <div>
-                  <Label className="font-semibold text-foreground">Website</Label>
-                  <p className="mt-2 text-sm">{formData.website || "-"}</p>
-                </div>
-                <div>
-                  <Label className="font-semibold text-foreground">Employee Count</Label>
-                  <p className="mt-2 text-sm">{formData.employeeCount}</p>
-                </div>
-              </div>
-
-              {/* Head Office */}
-              <div className="border rounded-lg p-4">
-                <Label className="font-semibold text-foreground">Head Office</Label>
-                <div className="grid grid-cols-2 gap-6 mt-2">
-                  <div>
-                    <Label className="text-muted-foreground text-sm">Location</Label>
-                    <p className="text-sm">{formData.headOfficeLocation || "-"}</p>
+            <div className="space-y-4">
+              {/* Organization Info */}
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Organization</p>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                  <div className="flex justify-between py-2 border-b border-slate-100">
+                    <span className="text-sm text-slate-500">Name</span>
+                    <span className="text-sm font-medium text-slate-800">{formData.name || "-"}</span>
                   </div>
-                  <div>
-                    <Label className="text-muted-foreground text-sm">Address</Label>
-                    <p className="text-sm">{formData.headOfficeAddress || "-"}</p>
+                  <div className="flex justify-between py-2 border-b border-slate-100">
+                    <span className="text-sm text-slate-500">Email</span>
+                    <span className="text-sm text-slate-700">{formData.email || "-"}</span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-slate-100">
+                    <span className="text-sm text-slate-500">Phone</span>
+                    <span className="text-sm text-slate-700">{formData.phone || "-"}</span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-slate-100">
+                    <span className="text-sm text-slate-500">Website</span>
+                    <span className="text-sm text-primary-600">{formData.website || "-"}</span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-slate-100">
+                    <span className="text-sm text-slate-500">Established</span>
+                    <span className="text-sm text-slate-700">{formData.establishedDate || "-"}</span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-slate-100">
+                    <span className="text-sm text-slate-500">Employees</span>
+                    <span className="text-sm text-slate-700">{formData.employeeCount || "-"}</span>
                   </div>
                 </div>
               </div>
 
-              {/* Branch Offices */}
-              {formData.branches.length > 0 && (
-                <div className="border rounded-lg p-4">
-                  <Label className="font-semibold text-foreground">Branch Office</Label>
-                  {formData.branches.map((branch, index) => (
-                    <div key={index} className="grid grid-cols-2 gap-6 mt-2 pt-2 border-t first:border-t-0">
-                      <div>
-                        <Label className="text-muted-foreground text-sm">Location</Label>
-                        <p className="text-sm">{branch.location || "-"}</p>
-                      </div>
-                      <div>
-                        <Label className="text-muted-foreground text-sm">Address</Label>
-                        <p className="text-sm">{branch.address || "-"}</p>
-                      </div>
-                    </div>
-                  ))}
+              {/* Locations */}
+              <div className="space-y-2 pt-2">
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Locations</p>
+                <div className="flex justify-between py-2 border-b border-slate-100">
+                  <span className="text-sm text-slate-500">Head Office</span>
+                  <span className="text-sm text-slate-700">{formData.headOfficeLocation || "-"}</span>
                 </div>
-              )}
+                {formData.branches.map((branch, index) => (
+                  <div key={index} className="flex justify-between py-2 border-b border-slate-100">
+                    <span className="text-sm text-slate-500">Branch {index + 1}</span>
+                    <span className="text-sm text-slate-700">{branch.location || "-"}</span>
+                  </div>
+                ))}
+              </div>
 
-              {/* Data Centers */}
-              {formData.dataCenters.length > 0 && (
-                <div className="border rounded-lg p-4">
-                  <Label className="font-semibold text-foreground">Data Centers</Label>
+              {/* Infrastructure */}
+              {(formData.dataCenters.length > 0 || formData.cloudProviders.length > 0) && (
+                <div className="space-y-2 pt-2">
+                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Infrastructure</p>
                   {formData.dataCenters.map((dc, index) => (
-                    <div key={index} className="grid grid-cols-2 gap-6 mt-2 pt-2 border-t first:border-t-0">
-                      <div>
-                        <Label className="text-muted-foreground text-sm">Type</Label>
-                        <p className="text-sm">{dc.locationType || "-"}</p>
-                      </div>
-                      <div>
-                        <Label className="text-muted-foreground text-sm">
-                          {dc.locationType === "Outsourced" ? "Vendor" : "Address"}
-                        </Label>
-                        <p className="text-sm">
-                          {dc.locationType === "Outsourced" ? dc.vendor || "-" : dc.address || "-"}
-                        </p>
-                      </div>
+                    <div key={index} className="flex justify-between py-2 border-b border-slate-100">
+                      <span className="text-sm text-slate-500">Data Center</span>
+                      <span className="text-sm text-slate-700">{dc.locationType}</span>
+                    </div>
+                  ))}
+                  {formData.cloudProviders.map((cp, index) => (
+                    <div key={index} className="flex justify-between py-2 border-b border-slate-100">
+                      <span className="text-sm text-slate-500">Cloud</span>
+                      <span className="text-sm text-slate-700">{cp.name} ({cp.serviceType})</span>
                     </div>
                   ))}
                 </div>
               )}
 
-              {/* Cloud Providers */}
-              {formData.cloudProviders.length > 0 && (
-                <div className="border rounded-lg p-4">
-                  <Label className="font-semibold text-foreground">Cloud Providers</Label>
-                  {formData.cloudProviders.map((cp, index) => (
-                    <div key={index} className="grid grid-cols-2 gap-6 mt-2 pt-2 border-t first:border-t-0">
-                      <div>
-                        <Label className="text-muted-foreground text-sm">Name</Label>
-                        <p className="text-sm">{cp.name || "-"}</p>
-                      </div>
-                      <div>
-                        <Label className="text-muted-foreground text-sm">Service Type</Label>
-                        <p className="text-sm">{cp.serviceType || "-"}</p>
-                      </div>
+              {/* Vision, Mission, Values */}
+              {(formData.vision || formData.mission || formData.value) && (
+                <div className="space-y-3 pt-2">
+                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Vision, Mission & Values</p>
+                  {formData.vision && (
+                    <div>
+                      <p className="text-xs text-slate-400 mb-1">Vision</p>
+                      <p className="text-sm text-slate-700">{formData.vision}</p>
                     </div>
-                  ))}
+                  )}
+                  {formData.mission && (
+                    <div>
+                      <p className="text-xs text-slate-400 mb-1">Mission</p>
+                      <p className="text-sm text-slate-700">{formData.mission}</p>
+                    </div>
+                  )}
+                  {formData.value && (
+                    <div>
+                      <p className="text-xs text-slate-400 mb-1">Values</p>
+                      <p className="text-sm text-slate-700">{formData.value}</p>
+                    </div>
+                  )}
                 </div>
               )}
 
               {/* CEO Message */}
               {formData.ceoMessage && (
-                <div className="border rounded-lg p-4">
-                  <Label className="font-semibold text-foreground">CEO Message</Label>
-                  <p className="mt-2 text-sm">{formData.ceoMessage}</p>
-                </div>
-              )}
-
-              {/* Value */}
-              {formData.value && (
-                <div className="border rounded-lg p-4">
-                  <Label className="font-semibold text-foreground">Value</Label>
-                  <p className="mt-2 text-sm">{formData.value}</p>
+                <div className="space-y-2 pt-2">
+                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">CEO Message</p>
+                  <p className="text-sm text-slate-700">{formData.ceoMessage}</p>
                 </div>
               )}
             </div>
           )}
         </div>
 
-        {/* Navigation Buttons */}
-        <div className="flex justify-end gap-2 pt-4 border-t">
+        {/* Fixed Footer */}
+        <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
           <Button variant="outline" onClick={() => handleOpenChange(false)}>
             Cancel
           </Button>

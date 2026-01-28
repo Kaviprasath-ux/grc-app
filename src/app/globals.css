@@ -355,4 +355,29 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Minimal scrollbar - subtle and unobtrusive */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--slate-200) transparent;
+  }
+
+  /* Webkit browsers (Chrome, Safari, Edge) */
+  *::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: var(--slate-200);
+    border-radius: 3px;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: var(--slate-300);
+  }
 }
