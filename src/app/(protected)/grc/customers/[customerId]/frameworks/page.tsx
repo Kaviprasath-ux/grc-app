@@ -115,6 +115,8 @@ interface PolicyItem {
   status: string;
   version: string;
   department: { id: string; name: string } | null;
+  assignee: { id: string; fullName: string } | null;
+  approver: { id: string; fullName: string } | null;
 }
 
 interface EvidenceItem {
@@ -125,6 +127,8 @@ interface EvidenceItem {
   status: string;
   domain: string | null;
   framework: { id: string; name: string } | null;
+  department: { id: string; name: string } | null;
+  assignee: { id: string; fullName: string } | null;
 }
 
 interface DomainItem {
@@ -177,6 +181,22 @@ export default function CustomerFrameworkOverviewPage() {
   const [controlSortAsc, setControlSortAsc] = useState(true);
   const [controlShowColumns, setControlShowColumns] = useState(true);
   const [selectedControlFrameworkId, setSelectedControlFrameworkId] = useState<string>("all");
+
+  // Policy sub-tab state
+  const [policySubTab, setPolicySubTab] = useState<"Dashboard" | "Policy" | "Standard" | "Procedure">("Dashboard");
+  const [policySearchQuery, setPolicySearchQuery] = useState("");
+  const [policyStatusFilter, setPolicyStatusFilter] = useState<string>("all");
+  const [policyFrameworkFilter, setPolicyFrameworkFilter] = useState<string>("all");
+  const [policySortField, setPolicySortField] = useState<string>("name");
+  const [policySortAsc, setPolicySortAsc] = useState(true);
+
+  // Evidence sub-tab state
+  const [evidenceSubTab, setEvidenceSubTab] = useState<"Dashboard" | "AllEvidence">("Dashboard");
+  const [evidenceSearchQuery, setEvidenceSearchQuery] = useState("");
+  const [evidenceDeptFilter, setEvidenceDeptFilter] = useState<string>("all");
+  const [evidenceFrameworkFilter, setEvidenceFrameworkFilter] = useState<string>("all");
+  const [evidenceSortField, setEvidenceSortField] = useState<string>("evidenceCode");
+  const [evidenceSortAsc, setEvidenceSortAsc] = useState(true);
 
   // Master data states
   const [masterDataView, setMasterDataView] = useState<string | null>(null);
@@ -1300,117 +1320,418 @@ export default function CustomerFrameworkOverviewPage() {
             </div>
           )}
 
-          {activeTab === "Policy" && (
-            <div>
-              {masterDataLoading ? (
-                <div className="flex items-center justify-center h-64">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                </div>
-              ) : policies.length === 0 ? (
-                <div className="text-center py-12 text-gray-500">No policies found for this customer.</div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm border-collapse">
-                    <thead>
-                      <tr className="bg-gray-50 border-b">
-                        <th className="text-left p-3 font-medium text-gray-700">Code</th>
-                        <th className="text-left p-3 font-medium text-gray-700">Name</th>
-                        <th className="text-left p-3 font-medium text-gray-700">Type</th>
-                        <th className="text-left p-3 font-medium text-gray-700">Version</th>
-                        <th className="text-left p-3 font-medium text-gray-700">Department</th>
-                        <th className="text-left p-3 font-medium text-gray-700">Status</th>
-                        <th className="text-center p-3 font-medium text-gray-700">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {policies.map((pol) => (
-                        <tr key={pol.id} className="border-b hover:bg-gray-50">
-                          <td className="p-3 font-medium">{pol.code}</td>
-                          <td className="p-3">{pol.name}</td>
-                          <td className="p-3">{pol.documentType}</td>
-                          <td className="p-3">{pol.version}</td>
-                          <td className="p-3">{pol.department?.name || "-"}</td>
-                          <td className="p-3">
-                            <span className={`px-2 py-1 rounded text-xs font-medium ${
-                              pol.status === "Published" || pol.status === "Approved" ? "bg-green-100 text-green-800" :
-                              pol.status === "Draft" ? "bg-blue-100 text-blue-800" :
-                              pol.status === "Not Uploaded" ? "bg-gray-100 text-gray-800" :
-                              "bg-yellow-100 text-yellow-800"
-                            }`}>{pol.status}</span>
-                          </td>
-                          <td className="p-3 text-center">
-                            <div className="flex items-center justify-center gap-3">
-                              <button onClick={() => handleEditItem(pol.id, pol.name, "policies")} className="text-blue-600 hover:text-blue-800" title="Edit">
-                                <Pencil className="h-4 w-4" />
-                              </button>
-                              <button onClick={() => handleDeleteItem(pol.id, pol.name, "policies")} className="text-red-500 hover:text-red-700" title="Delete">
-                                <Trash2 className="h-4 w-4" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          )}
+          {activeTab === "Policy" && (() => {
+            const POLICY_STATUSES = ["Not Uploaded", "Draft", "Approved", "Needs Review", "Published"] as const;
 
-          {activeTab === "Evidence" && (
-            <div>
+            // Filter policies by sub-tab document type
+            const policySubTabType = policySubTab === "Policy" ? "Policy" : policySubTab === "Standard" ? "Standard" : policySubTab === "Procedure" ? "Procedure" : null;
+            const filteredByType = policySubTabType ? policies.filter(p => p.documentType === policySubTabType) : policies;
+
+            // Status counts
+            const statusCounts = POLICY_STATUSES.reduce((acc, s) => {
+              acc[s] = filteredByType.filter(p => p.status === s).length;
+              return acc;
+            }, {} as Record<string, number>);
+
+            // Apply search, status filter, and sorting for list sub-tabs
+            const listPolicies = filteredByType
+              .filter(p => {
+                if (policySearchQuery) {
+                  const q = policySearchQuery.toLowerCase();
+                  if (!p.name.toLowerCase().includes(q) && !p.code.toLowerCase().includes(q)) return false;
+                }
+                if (policyStatusFilter !== "all" && p.status !== policyStatusFilter) return false;
+                return true;
+              })
+              .sort((a, b) => {
+                let aVal = "";
+                let bVal = "";
+                if (policySortField === "name") { aVal = a.name; bVal = b.name; }
+                else if (policySortField === "status") { aVal = a.status; bVal = b.status; }
+                else if (policySortField === "assignee") { aVal = a.assignee?.fullName || ""; bVal = b.assignee?.fullName || ""; }
+                else if (policySortField === "approver") { aVal = a.approver?.fullName || ""; bVal = b.approver?.fullName || ""; }
+                else if (policySortField === "department") { aVal = a.department?.name || ""; bVal = b.department?.name || ""; }
+                const cmp = aVal.localeCompare(bVal);
+                return policySortAsc ? cmp : -cmp;
+              });
+
+            const handlePolicySortToggle = (field: string) => {
+              if (policySortField === field) {
+                setPolicySortAsc(!policySortAsc);
+              } else {
+                setPolicySortField(field);
+                setPolicySortAsc(true);
+              }
+            };
+
+            const statusCardData = [
+              { label: "Not Uploaded", icon: (
+                <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><circle cx="18" cy="18" r="16" stroke="white" strokeWidth="2" strokeDasharray="4 3"/><circle cx="18" cy="12" r="4" stroke="white" strokeWidth="1.5"/><path d="M10 28c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="white" strokeWidth="1.5"/></svg>
+              )},
+              { label: "Draft", icon: (
+                <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><circle cx="18" cy="18" r="16" stroke="white" strokeWidth="2" strokeDasharray="4 3"/><rect x="12" y="10" width="12" height="16" rx="1" stroke="white" strokeWidth="1.5"/><line x1="15" y1="15" x2="21" y2="15" stroke="white" strokeWidth="1.2"/><line x1="15" y1="19" x2="21" y2="19" stroke="white" strokeWidth="1.2"/><line x1="15" y1="23" x2="19" y2="23" stroke="white" strokeWidth="1.2"/></svg>
+              )},
+              { label: "Approved", icon: (
+                <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><circle cx="18" cy="18" r="16" stroke="white" strokeWidth="2" strokeDasharray="4 3"/><rect x="11" y="11" width="14" height="14" rx="2" stroke="white" strokeWidth="1.5"/><path d="M14 18l3 3 5-6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              )},
+              { label: "Needs Review", icon: (
+                <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><circle cx="18" cy="18" r="16" stroke="white" strokeWidth="2" strokeDasharray="4 3"/><circle cx="18" cy="13" r="4" stroke="white" strokeWidth="1.5"/><path d="M10 28c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="white" strokeWidth="1.5"/><path d="M24 14l2 2 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              )},
+              { label: "Published", icon: (
+                <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><circle cx="18" cy="18" r="16" stroke="white" strokeWidth="2" strokeDasharray="4 3"/><path d="M18 24V12m0 0l-4 4m4-4l4 4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              )},
+            ];
+
+            return (
+            <div className="space-y-4">
               {masterDataLoading ? (
                 <div className="flex items-center justify-center h-64">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                 </div>
-              ) : evidences.length === 0 ? (
-                <div className="text-center py-12 text-gray-500">No evidences found for this customer.</div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm border-collapse">
-                    <thead>
-                      <tr className="bg-gray-50 border-b">
-                        <th className="text-left p-3 font-medium text-gray-700">Evidence Code</th>
-                        <th className="text-left p-3 font-medium text-gray-700">Name</th>
-                        <th className="text-left p-3 font-medium text-gray-700">Description</th>
-                        <th className="text-left p-3 font-medium text-gray-700">Framework</th>
-                        <th className="text-left p-3 font-medium text-gray-700">Status</th>
-                        <th className="text-center p-3 font-medium text-gray-700">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {evidences.map((ev) => (
-                        <tr key={ev.id} className="border-b hover:bg-gray-50">
-                          <td className="p-3 font-medium">{ev.evidenceCode}</td>
-                          <td className="p-3">{ev.name}</td>
-                          <td className="p-3 max-w-[200px] truncate">{ev.description || "-"}</td>
-                          <td className="p-3">{ev.framework?.name || "-"}</td>
-                          <td className="p-3">
-                            <span className={`px-2 py-1 rounded text-xs font-medium ${
-                              ev.status === "Published" || ev.status === "Validated" ? "bg-green-100 text-green-800" :
-                              ev.status === "Draft" ? "bg-blue-100 text-blue-800" :
-                              ev.status === "Not Uploaded" ? "bg-gray-100 text-gray-800" :
-                              "bg-yellow-100 text-yellow-800"
-                            }`}>{ev.status}</span>
-                          </td>
-                          <td className="p-3 text-center">
-                            <div className="flex items-center justify-center gap-3">
-                              <button onClick={() => handleEditItem(ev.id, ev.name, "evidences")} className="text-blue-600 hover:text-blue-800" title="Edit">
-                                <Pencil className="h-4 w-4" />
-                              </button>
-                              <button onClick={() => handleDeleteItem(ev.id, ev.name, "evidences")} className="text-red-500 hover:text-red-700" title="Delete">
-                                <Trash2 className="h-4 w-4" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <>
+                  {/* Header */}
+                  <div className="flex items-center gap-3 mb-1">
+                    <h2 className="text-xl font-bold text-blue-800">Policies</h2>
+                    {customer && (
+                      <span className="px-3 py-1 bg-blue-50 text-blue-700 text-sm rounded-full font-medium border border-blue-200">{customer.customerName}</span>
+                    )}
+                  </div>
+                  <hr className="border-gray-200" />
+
+                  {/* Sub-tabs */}
+                  <div className="flex gap-2 mt-2">
+                    {(["Dashboard", "Policy", "Standard", "Procedure"] as const).map((tab) => (
+                      <button
+                        key={tab}
+                        onClick={() => { setPolicySubTab(tab); setPolicySearchQuery(""); setPolicyStatusFilter("all"); }}
+                        className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                          policySubTab === tab
+                            ? "bg-[#1e2a4a] text-white"
+                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        }`}
+                      >
+                        {tab === "Standard" ? "Standards" : tab === "Procedure" ? "Procedures" : tab}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Status Cards */}
+                  <div className="grid grid-cols-5 gap-3 mt-3">
+                    {statusCardData.map(({ label, icon }) => (
+                      <div key={label} className="rounded-xl p-4 flex flex-col items-center justify-center gap-2" style={{ background: "linear-gradient(135deg, #1e2a4a 0%, #2a4080 100%)" }}>
+                        {icon}
+                        <span className="text-2xl font-bold text-white">{statusCounts[label] || 0}</span>
+                        <span className="text-xs text-white/80 text-center">{label}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* List view for Policy / Standard / Procedure sub-tabs */}
+                  {policySubTab !== "Dashboard" && (
+                    <>
+                      {/* Search & Filters */}
+                      <div className="flex items-center gap-3 mt-4">
+                        <div className="relative flex-1 max-w-sm">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                          <input
+                            type="text"
+                            placeholder="Search by name or code..."
+                            value={policySearchQuery}
+                            onChange={(e) => setPolicySearchQuery(e.target.value)}
+                            className="w-full pl-9 pr-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                        <select
+                          value={policyStatusFilter}
+                          onChange={(e) => setPolicyStatusFilter(e.target.value)}
+                          className="px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="all">All Status</option>
+                          {POLICY_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                      </div>
+
+                      {/* Table */}
+                      {listPolicies.length === 0 ? (
+                        <div className="text-center py-12 text-gray-500">No {policySubTab.toLowerCase()}s found.</div>
+                      ) : (
+                        <div className="overflow-x-auto mt-2 rounded-lg border">
+                          <table className="w-full text-sm border-collapse">
+                            <thead>
+                              <tr style={{ background: "linear-gradient(135deg, #1e2a4a 0%, #2a4080 100%)" }}>
+                                {[
+                                  { key: "name", label: "Name" },
+                                  { key: "status", label: "Status" },
+                                  { key: "assignee", label: "Assignee" },
+                                  { key: "approver", label: "Approver" },
+                                  { key: "department", label: "Department Name" },
+                                ].map(col => (
+                                  <th
+                                    key={col.key}
+                                    className="text-left p-3 font-medium text-white cursor-pointer select-none"
+                                    onClick={() => handlePolicySortToggle(col.key)}
+                                  >
+                                    <div className="flex items-center gap-1">
+                                      {col.label}
+                                      <div className="flex flex-col leading-none">
+                                        <ArrowUpDown className="h-3.5 w-3.5 text-white/60" />
+                                      </div>
+                                    </div>
+                                  </th>
+                                ))}
+                                <th className="p-3 text-center text-white">
+                                  <Eye className="h-4 w-4 mx-auto" />
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {listPolicies.map((pol) => (
+                                <tr key={pol.id} className="border-b hover:bg-gray-50">
+                                  <td className="p-3 font-medium">{pol.name}</td>
+                                  <td className="p-3">{pol.status}</td>
+                                  <td className="p-3">{pol.assignee?.fullName || "-"}</td>
+                                  <td className="p-3">{pol.approver?.fullName || "-"}</td>
+                                  <td className="p-3">{pol.department?.name || "-"}</td>
+                                  <td className="p-3 text-center">
+                                    <div className="flex items-center justify-center gap-3">
+                                      <button onClick={() => handleEditItem(pol.id, pol.name, "policies")} className="text-blue-600 hover:text-blue-800" title="Edit">
+                                        <Pencil className="h-4 w-4" />
+                                      </button>
+                                      <button onClick={() => handleDeleteItem(pol.id, pol.name, "policies")} className="text-red-500 hover:text-red-700" title="Delete">
+                                        <Trash2 className="h-4 w-4" />
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </>
               )}
             </div>
-          )}
+            );
+          })()}
+
+          {activeTab === "Evidence" && (() => {
+            const EVIDENCE_STATUSES = ["Not Uploaded", "Draft", "Need Attention", "Published"] as const;
+
+            // Status counts for cards
+            const evStatusCounts: Record<string, number> = {
+              "Total count": evidences.length,
+              "Not Uploaded": evidences.filter(e => e.status === "Not Uploaded").length,
+              "Draft": evidences.filter(e => e.status === "Draft").length,
+              "Need Attention": evidences.filter(e => e.status === "Need Attention").length,
+              "Published": evidences.filter(e => e.status === "Published").length,
+            };
+
+            // Unique frameworks for dropdown
+            const evFrameworks = Array.from(new Set(evidences.filter(e => e.framework).map(e => e.framework!.name)));
+            // Unique departments for dropdown
+            const evDepartments = Array.from(new Set(evidences.filter(e => e.department).map(e => e.department!.name)));
+
+            // Filtered & sorted evidences for list view
+            const listEvidences = evidences
+              .filter(ev => {
+                if (evidenceSearchQuery) {
+                  const q = evidenceSearchQuery.toLowerCase();
+                  if (!ev.name.toLowerCase().includes(q) && !ev.evidenceCode.toLowerCase().includes(q)) return false;
+                }
+                if (evidenceDeptFilter !== "all" && ev.department?.name !== evidenceDeptFilter) return false;
+                if (evidenceFrameworkFilter !== "all" && ev.framework?.name !== evidenceFrameworkFilter) return false;
+                return true;
+              })
+              .sort((a, b) => {
+                let aVal = "";
+                let bVal = "";
+                if (evidenceSortField === "evidenceCode") { aVal = a.evidenceCode; bVal = b.evidenceCode; }
+                else if (evidenceSortField === "name") { aVal = a.name; bVal = b.name; }
+                else if (evidenceSortField === "status") { aVal = a.status; bVal = b.status; }
+                else if (evidenceSortField === "assignee") { aVal = a.assignee?.fullName || ""; bVal = b.assignee?.fullName || ""; }
+                else if (evidenceSortField === "department") { aVal = a.department?.name || ""; bVal = b.department?.name || ""; }
+                const cmp = aVal.localeCompare(bVal);
+                return evidenceSortAsc ? cmp : -cmp;
+              });
+
+            const handleEvSortToggle = (field: string) => {
+              if (evidenceSortField === field) {
+                setEvidenceSortAsc(!evidenceSortAsc);
+              } else {
+                setEvidenceSortField(field);
+                setEvidenceSortAsc(true);
+              }
+            };
+
+            const evStatusCardData = [
+              { label: "Total count", icon: (
+                <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><circle cx="18" cy="18" r="16" stroke="white" strokeWidth="2" strokeDasharray="4 3"/><circle cx="18" cy="12" r="4" stroke="white" strokeWidth="1.5"/><path d="M10 28c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="white" strokeWidth="1.5"/></svg>
+              )},
+              { label: "Not Uploaded", icon: (
+                <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><circle cx="18" cy="18" r="16" stroke="white" strokeWidth="2" strokeDasharray="4 3"/><circle cx="18" cy="12" r="4" stroke="white" strokeWidth="1.5"/><path d="M10 28c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="white" strokeWidth="1.5"/></svg>
+              )},
+              { label: "Draft", icon: (
+                <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><circle cx="18" cy="18" r="16" stroke="white" strokeWidth="2" strokeDasharray="4 3"/><rect x="12" y="10" width="12" height="16" rx="1" stroke="white" strokeWidth="1.5"/><line x1="15" y1="15" x2="21" y2="15" stroke="white" strokeWidth="1.2"/><line x1="15" y1="19" x2="21" y2="19" stroke="white" strokeWidth="1.2"/><line x1="15" y1="23" x2="19" y2="23" stroke="white" strokeWidth="1.2"/></svg>
+              )},
+              { label: "Need Attention", icon: (
+                <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><circle cx="18" cy="18" r="16" stroke="white" strokeWidth="2" strokeDasharray="4 3"/><circle cx="18" cy="18" r="7" stroke="white" strokeWidth="1.5"/><path d="M15 18l2 2 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              )},
+              { label: "Published", icon: (
+                <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><circle cx="18" cy="18" r="16" stroke="white" strokeWidth="2" strokeDasharray="4 3"/><path d="M18 24V12m0 0l-4 4m4-4l4 4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              )},
+            ];
+
+            return (
+            <div className="space-y-4">
+              {masterDataLoading ? (
+                <div className="flex items-center justify-center h-64">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                </div>
+              ) : (
+                <>
+                  {/* Sub-tabs */}
+                  <div className="flex gap-2">
+                    {(["Dashboard", "AllEvidence"] as const).map((tab) => (
+                      <button
+                        key={tab}
+                        onClick={() => { setEvidenceSubTab(tab); setEvidenceSearchQuery(""); setEvidenceDeptFilter("all"); setEvidenceFrameworkFilter("all"); }}
+                        className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                          evidenceSubTab === tab
+                            ? "bg-[#1e2a4a] text-white"
+                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        }`}
+                      >
+                        {tab === "AllEvidence" ? "All Evidence" : tab}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Dashboard sub-tab */}
+                  {evidenceSubTab === "Dashboard" && (
+                    <div className="grid grid-cols-5 gap-3 mt-3">
+                      {evStatusCardData.map(({ label, icon }) => (
+                        <div key={label} className="rounded-xl p-4 flex flex-col items-center justify-center gap-2" style={{ background: "linear-gradient(135deg, #1e2a4a 0%, #2a4080 100%)" }}>
+                          {icon}
+                          <span className="text-2xl font-bold text-white">{evStatusCounts[label] || 0}</span>
+                          <span className="text-xs text-white/80 text-center">{label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* All Evidence sub-tab */}
+                  {evidenceSubTab === "AllEvidence" && (
+                    <>
+                      {/* Framework dropdown */}
+                      <div className="flex justify-end mt-2">
+                        <select
+                          value={evidenceFrameworkFilter}
+                          onChange={(e) => setEvidenceFrameworkFilter(e.target.value)}
+                          className="px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="all">Framework</option>
+                          {evFrameworks.map(f => <option key={f} value={f}>{f}</option>)}
+                        </select>
+                      </div>
+
+                      {/* Status Cards */}
+                      <div className="grid grid-cols-5 gap-3 mt-2">
+                        {evStatusCardData.map(({ label, icon }) => (
+                          <div key={label} className="rounded-xl p-4 flex flex-col items-center justify-center gap-2" style={{ background: "linear-gradient(135deg, #1e2a4a 0%, #2a4080 100%)" }}>
+                            {icon}
+                            <span className="text-2xl font-bold text-white">{evStatusCounts[label] || 0}</span>
+                            <span className="text-xs text-white/80 text-center">{label}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Search & Department filter */}
+                      <div className="flex items-center gap-3 mt-4">
+                        <div className="relative flex-1">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                          <input
+                            type="text"
+                            placeholder="Search by name"
+                            value={evidenceSearchQuery}
+                            onChange={(e) => setEvidenceSearchQuery(e.target.value)}
+                            className="w-full pl-9 pr-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                        <select
+                          value={evidenceDeptFilter}
+                          onChange={(e) => setEvidenceDeptFilter(e.target.value)}
+                          className="px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="all">Department</option>
+                          {evDepartments.map(d => <option key={d} value={d}>{d}</option>)}
+                        </select>
+                      </div>
+
+                      {/* Table */}
+                      {listEvidences.length === 0 ? (
+                        <div className="text-center py-12 text-gray-500">No evidences found.</div>
+                      ) : (
+                        <div className="overflow-x-auto mt-2 rounded-lg border">
+                          <table className="w-full text-sm border-collapse">
+                            <thead>
+                              <tr style={{ background: "linear-gradient(135deg, #1e2a4a 0%, #2a4080 100%)" }}>
+                                {[
+                                  { key: "evidenceCode", label: "EvidenceCode" },
+                                  { key: "name", label: "Evidence Name" },
+                                  { key: "status", label: "Status" },
+                                  { key: "assignee", label: "Assignee" },
+                                  { key: "department", label: "Department Name" },
+                                ].map(col => (
+                                  <th
+                                    key={col.key}
+                                    className="text-left p-3 font-medium text-white cursor-pointer select-none"
+                                    onClick={() => handleEvSortToggle(col.key)}
+                                  >
+                                    <div className="flex items-center gap-1">
+                                      {col.label}
+                                      <ArrowUpDown className="h-3.5 w-3.5 text-white/60" />
+                                    </div>
+                                  </th>
+                                ))}
+                                <th className="p-3 text-center text-white">
+                                  <Eye className="h-4 w-4 mx-auto" />
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {listEvidences.map((ev) => (
+                                <tr key={ev.id} className="border-b hover:bg-gray-50">
+                                  <td className="p-3 font-medium">{ev.evidenceCode}</td>
+                                  <td className="p-3">{ev.name}</td>
+                                  <td className="p-3">{ev.status}</td>
+                                  <td className="p-3">{ev.assignee?.fullName || "-"}</td>
+                                  <td className="p-3">{ev.department?.name || "-"}</td>
+                                  <td className="p-3 text-center">
+                                    <div className="flex items-center justify-center gap-3">
+                                      <button onClick={() => handleEditItem(ev.id, ev.name, "evidences")} className="text-blue-600 hover:text-blue-800" title="Edit">
+                                        <Pencil className="h-4 w-4" />
+                                      </button>
+                                      <button onClick={() => handleDeleteItem(ev.id, ev.name, "evidences")} className="text-red-500 hover:text-red-700" title="Delete">
+                                        <Trash2 className="h-4 w-4" />
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </>
+              )}
+            </div>
+            );
+          })()}
 
           {activeTab === "Master data" && masterDataView === null && (
             <div>

@@ -59,7 +59,8 @@ export async function GET(req: NextRequest, context: RouteContext) {
       where,
       include: {
         framework: { select: { id: true, name: true } },
-        department: true,
+        department: { select: { id: true, name: true } },
+        assignee: { select: { id: true, fullName: true } },
       },
       orderBy: { evidenceCode: "asc" },
     });

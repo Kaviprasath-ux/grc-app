@@ -59,6 +59,8 @@ export async function GET(req: NextRequest, context: RouteContext) {
       where,
       include: {
         department: true,
+        assignee: { select: { id: true, fullName: true } },
+        approver: { select: { id: true, fullName: true } },
       },
       orderBy: { code: "asc" },
     });
