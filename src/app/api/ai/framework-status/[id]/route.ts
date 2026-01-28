@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { withAuthOnly } from "@/lib/api-auth";
+import { withAuthOnly, AuthenticatedRequest } from "@/lib/api-auth";
+import aiApiClient from "@/lib/ai-api-client";
+import { aiAuditService } from "@/services/ai-audit-service";
 
 export const dynamic = 'force-dynamic';
 
@@ -8,20 +10,17 @@ export const dynamic = 'force-dynamic';
  * 
  * Check the status of a framework generation job.
  * This is Step 2 of the 3-step async process.
- * 
- * Response:
- * - job_id: string
- * - status: "queued" | "processing" | "completed" | "error"
- * - progress?: number (0-100)
- * - message?: string
  */
 async function handler(
     req: NextRequest,
-    context: { params: Promise<{ id: string }> }
+    context: { params: Promise<{ id: string }> },
+    session: AuthenticatedRequest['user']
 ) {
-    try {
-        const { id } = await context.params;
+    const startTime = Date.now();
+    const { id } = await context.params;
+    const endpoint = `/api/framework_job_status/${id}`;
 
+    try {
         if (!id) {
             return NextResponse.json(
                 { error: "Job ID is required" },
@@ -29,45 +28,53 @@ async function handler(
             );
         }
 
-        const backendUrl = process.env.PYTHON_BACKEND_URL?.replace(/\/$/, "");
-        const apiSecret = process.env.PYTHON_API_SECRET;
-
-        if (!backendUrl) {
-            console.error("[AI Framework Status] PYTHON_BACKEND_URL not configured");
-            return NextResponse.json(
-                { error: "Backend configuration error" },
-                { status: 500 }
-            );
-        }
-
         console.log(`[AI Framework Status] Checking ID: ${id}`);
 
-        // Call Python backend
-        const response = await fetch(`${backendUrl}/api/framework_job_status/${id}`, {
-            method: "GET",
-            headers: {
-                ...(apiSecret ? { auth: apiSecret } : {}),
-            },
-        });
+        // Call Python backend via centralized client
+        const response = await aiApiClient.get(endpoint);
+        const result = response.data;
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error(`[AI Framework Status] Backend error (${response.status}): ${errorText}`);
-            return NextResponse.json(
-                { error: `Backend returned ${response.status}`, details: errorText },
-                { status: response.status }
-            );
+        // Sync with local DB
+        if (result.status) {
+            const dbStatus = result.status.toUpperCase();
+            await aiAuditService.updateJobStatus(id, dbStatus);
         }
 
-        const result = await response.json();
-        console.log(`[AI Framework Status] Result for ${id}:`, result);
+        // Log operation
+        await aiAuditService.logOperation({
+            jobId: id,
+            endpoint,
+            method: 'GET',
+            responseBody: result,
+            statusCode: response.status,
+            latencyMs: Date.now() - startTime,
+            userId: session.id
+        });
 
         return NextResponse.json(result);
-    } catch (error) {
-        console.error("[AI Framework Status] Error:", error);
+    } catch (error: any) {
+        console.error(`[AI Framework Status] Error for ${id}:`, error);
+
+        const statusCode = error.status || 500;
+        const errorMsg = error.message || "Internal server error";
+
+        // Log failed operation
+        await aiAuditService.logOperation({
+            jobId: id,
+            endpoint,
+            method: 'GET',
+            error: errorMsg,
+            statusCode,
+            latencyMs: Date.now() - startTime,
+            userId: session.id
+        });
+
         return NextResponse.json(
-            { error: "Internal server error", details: error instanceof Error ? error.message : "Unknown error" },
-            { status: 500 }
+            {
+                error: "Failed to check framework status",
+                details: error.data || errorMsg
+            },
+            { status: statusCode }
         );
     }
 }

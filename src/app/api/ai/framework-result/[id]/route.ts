@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { withAuthOnly } from "@/lib/api-auth";
+import { withAuthOnly, AuthenticatedRequest } from "@/lib/api-auth";
+import aiApiClient from "@/lib/ai-api-client";
+import { aiAuditService } from "@/services/ai-audit-service";
+import { saveFrameworkFromAIResult } from "@/services/framework-persistence";
+import { PrismaClient } from "@prisma/client";
 
+const prisma = new PrismaClient();
 export const dynamic = 'force-dynamic';
 
 /**
@@ -9,21 +14,18 @@ export const dynamic = 'force-dynamic';
  * Get the result of a completed framework generation job.
  * This is Step 3 of the 3-step async process.
  * 
- * Response:
- * - job_id: string
- * - framework_name: string
- * - generated_at: string (ISO datetime)
- * - requirements: Array<FrameworkRequirement>
- * - total_requirements: number
- * - status: "completed"
+ * IMPORTANT: This route now handles server-side persistence (Rule #6).
  */
 async function handler(
     req: NextRequest,
-    context: { params: Promise<{ id: string }> }
+    context: { params: Promise<{ id: string }> },
+    session: AuthenticatedRequest['user']
 ) {
-    try {
-        const { id } = await context.params;
+    const startTime = Date.now();
+    const { id } = await context.params;
+    const endpoint = `/api/framework_job_result/${id}`;
 
+    try {
         if (!id) {
             return NextResponse.json(
                 { error: "Job ID is required" },
@@ -31,45 +33,85 @@ async function handler(
             );
         }
 
-        const backendUrl = process.env.PYTHON_BACKEND_URL?.replace(/\/$/, "");
-        const apiSecret = process.env.PYTHON_API_SECRET;
-
-        if (!backendUrl) {
-            console.error("[AI Framework Result] PYTHON_BACKEND_URL not configured");
-            return NextResponse.json(
-                { error: "Backend configuration error" },
-                { status: 500 }
-            );
-        }
-
         console.log(`[AI Framework Result] Fetching result for ID: ${id}`);
 
         // Call Python backend
-        const response = await fetch(`${backendUrl}/api/framework_job_result/${id}`, {
-            method: "GET",
-            headers: {
-                ...(apiSecret ? { auth: apiSecret } : {}),
-            },
+        const response = await aiApiClient.get(endpoint);
+        const aiResult = response.data;
+
+        console.log(`[AI Framework Result] AI returned ${aiResult.total_requirements || 0} requirements`);
+
+        // SERVER-SIDE PERSISTENCE (Target State Implementation)
+        // 1. Retrieve job metadata
+        const job = await prisma.aIJob.findUnique({
+            where: { providerJobId: id }
         });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error(`[AI Framework Result] Backend error (${response.status}): ${errorText}`);
-            return NextResponse.json(
-                { error: `Backend returned ${response.status}`, details: errorText },
-                { status: response.status }
-            );
+        if (!job) {
+            console.warn(`[AI Framework Result] AIJob record not found for ${id}. Persistence may be limited.`);
         }
 
-        const result = await response.json();
-        console.log(`[AI Framework Result] Success for ID: ${id}`);
+        const metadata = job?.metadata ? JSON.parse(job.metadata) : {};
 
-        return NextResponse.json(result);
-    } catch (error) {
-        console.error("[AI Framework Result] Error:", error);
+        // 2. Persist to domain tables
+        console.log(`[AI Framework Result] Persisting to database...`);
+        const saveResult = await saveFrameworkFromAIResult(aiResult, {
+            framework_name: metadata.framework_name || aiResult.framework_name || "Generated Framework",
+            description: metadata.description || undefined,
+            type: metadata.type || undefined,
+            country: metadata.country || undefined,
+            industry: metadata.industry || undefined,
+            code: metadata.code || undefined,
+        });
+
+        // 3. Mark job as COMPLETED
+        await aiAuditService.updateJobStatus(id, 'COMPLETED');
+
+        // Log operation
+        await aiAuditService.logOperation({
+            jobId: id,
+            endpoint,
+            method: 'GET',
+            responseBody: { success: true, frameworkId: saveResult.frameworkId },
+            statusCode: response.status,
+            latencyMs: Date.now() - startTime,
+            userId: session.id
+        });
+
+        // Return combined result to UI
+        return NextResponse.json({
+            success: true,
+            ...aiResult,
+            ...saveResult
+        });
+    } catch (error: any) {
+        console.error(`[AI Framework Result] Error for ${id}:`, error);
+
+        const statusCode = error.status || 500;
+        const errorMsg = error.message || "Internal server error";
+
+        // Update job status to FAILED if it was in the DB
+        if (id) {
+            await aiAuditService.updateJobStatus(id, 'FAILED');
+        }
+
+        // Log failed operation
+        await aiAuditService.logOperation({
+            jobId: id,
+            endpoint,
+            method: 'GET',
+            error: errorMsg,
+            statusCode,
+            latencyMs: Date.now() - startTime,
+            userId: session.id
+        });
+
         return NextResponse.json(
-            { error: "Internal server error", details: error instanceof Error ? error.message : "Unknown error" },
-            { status: 500 }
+            {
+                error: "Failed to process framework result",
+                details: error.data || errorMsg
+            },
+            { status: statusCode }
         );
     }
 }

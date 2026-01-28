@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { withAuthOnly } from "@/lib/api-auth";
+import { withAuthOnly, AuthenticatedRequest } from "@/lib/api-auth";
+import aiApiClient from "@/lib/ai-api-client";
+import { aiAuditService } from "@/services/ai-audit-service";
 
 /**
  * POST /api/ai/generate-framework
@@ -17,13 +19,34 @@ import { withAuthOnly } from "@/lib/api-auth";
  * - status: "queued"
  * - message: string
  */
-async function handler(req: NextRequest) {
+async function handler(req: NextRequest, _context: any, session: AuthenticatedRequest['user']) {
+    const startTime = Date.now();
+    const endpoint = "/api/generate_framework_job";
+    let jobId: string | undefined;
+    let requestPayload: any = {};
+
     try {
         const formData = await req.formData();
 
         const frameworkName = formData.get("framework_name") as string;
         const attachment = formData.get("attachment") as File | null;
         const library = formData.get("library") as string | null;
+        const description = formData.get("description") as string | null;
+        const type = formData.get("type") as string | null;
+        const country = formData.get("country") as string | null;
+        const industry = formData.get("industry") as string | null;
+        const code = formData.get("code") as string | null;
+
+        requestPayload = {
+            framework_name: frameworkName,
+            has_attachment: !!attachment,
+            library,
+            description,
+            type,
+            country,
+            industry,
+            code
+        };
 
         if (!frameworkName) {
             return NextResponse.json(
@@ -32,7 +55,7 @@ async function handler(req: NextRequest) {
             );
         }
 
-        // Prepare request to Python backend
+        // Prepare request to Python backend using aiApiClient
         const backendFormData = new FormData();
         backendFormData.append("framework_name", frameworkName);
 
@@ -44,47 +67,65 @@ async function handler(req: NextRequest) {
             backendFormData.append("library", library);
         }
 
-        const backendUrl = process.env.PYTHON_BACKEND_URL?.replace(/\/$/, ""); // Remove trailing slash
-        const apiSecret = process.env.PYTHON_API_SECRET;
-
-        if (!backendUrl) {
-            console.error("PYTHON_BACKEND_URL not configured");
-            return NextResponse.json(
-                { error: "Backend configuration error" },
-                { status: 500 }
-            );
-        }
-
         console.log(`[AI Framework] Submitting job for framework: ${frameworkName}`);
-        console.log(`[AI Framework] Backend URL: ${backendUrl}/api/generate_framework_job`);
 
-        // Call Python backend
-        const response = await fetch(`${backendUrl}/api/generate_framework_job`, {
-            method: "POST",
+        // Call Python backend via centralized client
+        const response = await aiApiClient.post(endpoint, backendFormData, {
             headers: {
-                ...(apiSecret ? { auth: apiSecret } : {}),
+                'Content-Type': 'multipart/form-data',
             },
-            body: backendFormData,
         });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error(`[AI Framework] Backend error: ${response.status} - ${errorText}`);
-            return NextResponse.json(
-                { error: "Failed to submit framework generation job", details: errorText },
-                { status: response.status }
-            );
+        const result = response.data;
+        jobId = result.job_id;
+
+        console.log(`[AI Framework] Job submitted successfully: ${jobId}`);
+
+        // PERSISTENCE: Create Job and Log Operation
+        if (jobId) {
+            await aiAuditService.createJob({
+                providerJobId: jobId,
+                type: 'FRAMEWORK_GEN',
+                userId: session.id,
+                metadata: requestPayload // Save all metadata for server-side persistence later
+            });
         }
 
-        const result = await response.json();
-        console.log(`[AI Framework] Job submitted successfully: ${result.job_id}`);
+        await aiAuditService.logOperation({
+            jobId,
+            endpoint,
+            method: 'POST',
+            requestBody: requestPayload,
+            responseBody: result,
+            statusCode: response.status,
+            latencyMs: Date.now() - startTime,
+            userId: session.id
+        });
 
         return NextResponse.json(result);
-    } catch (error) {
+    } catch (error: any) {
         console.error("[AI Framework] Error submitting job:", error);
+
+        const statusCode = error.status || 500;
+        const errorMsg = error.message || "Internal server error";
+
+        // Log failed operation
+        await aiAuditService.logOperation({
+            endpoint,
+            method: 'POST',
+            requestBody: requestPayload,
+            error: errorMsg,
+            statusCode,
+            latencyMs: Date.now() - startTime,
+            userId: session.id
+        });
+
         return NextResponse.json(
-            { error: "Internal server error", details: error instanceof Error ? error.message : "Unknown error" },
-            { status: 500 }
+            {
+                error: "Failed to submit framework generation job",
+                details: error.data || errorMsg
+            },
+            { status: statusCode }
         );
     }
 }

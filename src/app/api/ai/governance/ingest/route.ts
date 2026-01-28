@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
         const runpodFormData = new FormData();
         runpodFormData.append("base_id", policyId);
         runpodFormData.append("doc_type", "policy");
-        runpodFormData.append("file_code", policy.code || `POL-${policyId.substring(0, 8)}`);
+        runpodFormData.append("file_code", policy.policyCode || `POL-${policyId.substring(0, 8)}`);
         runpodFormData.append("document_id", policyId);
         runpodFormData.append("files", file); // OpenAPI expects 'files' array
 
@@ -53,13 +53,13 @@ export async function POST(req: NextRequest) {
             requestBody: {
                 base_id: policyId,
                 doc_type: "policy",
-                file_code: policy.code,
+                file_code: policy.policyCode,
                 fileName: file.name
             },
             userId,
         });
 
-        console.log(`[Governance Ingest] Ingesting policy ${policy.code} (RunPod Contract Sync)`);
+        console.log(`[Governance Ingest] Ingesting policy ${policy.policyCode} (RunPod Contract Sync)`);
 
         // Step 2: Call RunPod via aiApiClient
         const response = await aiApiClient.post("/api/grc_ingest", runpodFormData, {
@@ -68,8 +68,7 @@ export async function POST(req: NextRequest) {
             },
         });
 
-        // Backend may return job_id for async tracking or document_id for sync
-        const jobId = response.data.job_id;
+        // The API is expected to return { document_id: "..." }
         const documentId = response.data.document_id;
         const latencyMs = Date.now() - startTime;
 
@@ -85,31 +84,17 @@ export async function POST(req: NextRequest) {
             });
         }
 
-        // Step 4: Create AIJob for async tracking (if job_id returned)
-        if (jobId) {
-            await aiAuditService.createJob({
-                providerJobId: jobId,
-                type: "/api/grc_ingest",
-                userId,
-                metadata: { policyId, documentId },
-            });
-        }
-
-        // Step 5: Persist to PolicyAIReview (Domain Persistence)
+        // Step 4: Persist to PolicyAIReview (Domain Persistence)
         await prisma.policyAIReview.create({
             data: {
                 policyId,
-                documentId: documentId || jobId || policyId, // Use returned doc ID, job ID, or fallback
-                status: jobId ? "processing" : "ingested",
+                documentId: documentId || policyId, // Use returned doc ID or fallback to our reference
+                status: "ingested",
                 aiOperationId: operation?.id,
             }
         });
 
-        return NextResponse.json({
-            job_id: jobId,
-            document_id: documentId || policyId,
-            status: jobId ? "queued" : "completed"
-        });
+        return NextResponse.json({ document_id: documentId || policyId });
 
     } catch (error: any) {
         const latencyMs = Date.now() - startTime;

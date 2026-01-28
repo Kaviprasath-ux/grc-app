@@ -1,22 +1,28 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { withAuthOnly, AuthenticatedRequest } from '@/lib/api-auth';
+import aiApiClient from '@/lib/ai-api-client';
+import { aiAuditService } from '@/services/ai-audit-service';
+import { prisma } from '@/lib/prisma';
+
 /**
- * AI Risk Evaluation API Route
- * 
  * POST /api/ai/risk-evaluation
  * 
- * Generates AI-powered risk assessment for a process based on:
- * - Process details (name, description, department)
- * - Asset dependencies
+ * Generates AI-powered risk assessment.
+ * Standardized with Atomic Audit Hook pattern.
  */
+async function handler(
+    req: NextRequest,
+    _context: any,
+    session: AuthenticatedRequest['user']
+) {
+    const startTime = Date.now();
+    const endpoint = '/api/generate_process_asset_risk_v2';
+    let requestPayload: any = {};
 
-import { NextRequest, NextResponse } from 'next/server';
-import { withAuthOnly } from '@/lib/api-auth';
-import { generateProcessRisks } from '@/services/ai-risk-service';
-import { RiskGenerationRequest } from '@/types/ai-types';
-
-async function handler(req: NextRequest) {
     try {
         // Parse request body
         const body = await req.json();
+        requestPayload = body;
 
         // Validate required fields
         if (!body.Process_Details && !body.Assets_Details) {
@@ -26,25 +32,57 @@ async function handler(req: NextRequest) {
             );
         }
 
-        // Prepare request for AI service
-        const request: RiskGenerationRequest = {
+        // Step 1: Log AIOperation (Request) - Standard Pre-flight Hook
+        const operation = await aiAuditService.logOperation({
+            endpoint,
+            method: 'POST',
+            requestBody: requestPayload,
+            userId: session.id,
+        });
+
+        // Step 2: Call AI service directly via aiApiClient
+        const response = await aiApiClient.post(endpoint, {
             Process_Details: body.Process_Details,
             Assets_Details: body.Assets_Details,
-        };
+        });
 
-        // Call AI service to generate risks
-        const result = await generateProcessRisks(request);
+        const result = response.data;
+        const latencyMs = Date.now() - startTime;
+
+        // Step 3: Log AIOperation (Success Update) - Standard Post-flight Hook
+        if (operation) {
+            await prisma.aIOperation.update({
+                where: { id: operation.id },
+                data: {
+                    responseBody: JSON.stringify(result),
+                    statusCode: 200,
+                    latencyMs,
+                }
+            });
+        }
 
         return NextResponse.json(result, { status: 200 });
     } catch (error: any) {
+        const latencyMs = Date.now() - startTime;
         console.error('Error in risk evaluation API:', error);
+
+        // Standardized Error Logging
+        await aiAuditService.logOperation({
+            endpoint,
+            method: 'POST',
+            requestBody: requestPayload,
+            error: error.message || 'Failed to generate risk evaluation',
+            statusCode: error.status || 500,
+            latencyMs,
+            userId: session.id
+        });
 
         return NextResponse.json(
             {
                 error: error.message || 'Failed to generate risk evaluation',
-                details: process.env.NODE_ENV === 'development' ? error : undefined
+                details: error.data || (process.env.NODE_ENV === 'development' ? error : undefined)
             },
-            { status: 500 }
+            { status: error.status || 500 }
         );
     }
 }
