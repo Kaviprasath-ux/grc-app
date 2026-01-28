@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
+import { withAuth, getTenantFilter, getCustomerAccountId, getAuditHeadFilter, getAuditHeadId } from "@/lib/api-auth";
 
-// GET all periodicities
-// Requires 'edit' action so only AuditHead can access (CustomerAdmin has only 'view')
+// GET all periodicities - filtered by audit head
 export const GET = withAuth(
   async (req: NextRequest, context, session) => {
     try {
       const tenantFilter = getTenantFilter(session);
+      const auditHeadFilter = getAuditHeadFilter(session);
 
       const periodicities = await prisma.auditPeriodicity.findMany({
-        where: tenantFilter,
+        where: { ...tenantFilter, ...auditHeadFilter },
         orderBy: { months: "asc" },
       });
 
@@ -26,11 +26,12 @@ export const GET = withAuth(
   { resource: "audit.settings", action: "edit" }
 );
 
-// POST create a new periodicity
+// POST create a new periodicity - assigned to current audit head
 export const POST = withAuth(
   async (req: NextRequest, context, session) => {
     try {
       const customerAccountId = getCustomerAccountId(session);
+      const auditHeadId = getAuditHeadId(session);
       const body = await req.json();
       const { interval, months } = body;
 
@@ -41,10 +42,9 @@ export const POST = withAuth(
         );
       }
 
-      // Check for duplicate interval within tenant
-      const tenantFilter = getTenantFilter(session);
+      // Check for duplicate within the same audit head's settings
       const existing = await prisma.auditPeriodicity.findFirst({
-        where: { interval, ...tenantFilter },
+        where: { interval, auditHeadId },
       });
 
       if (existing) {
@@ -59,6 +59,7 @@ export const POST = withAuth(
           interval,
           months: months || 1,
           customerAccountId,
+          auditHeadId,
         },
       });
 

@@ -150,13 +150,15 @@ export default function AuditReportViewPage({ params }: PageProps) {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch("/api/users");
+      // Fetch only auditees under the current Audit Head
+      const response = await fetch("/api/users/my-auditees");
       if (response.ok) {
         const data = await response.json();
-        setUsers(data);
+        // my-auditees returns { auditees: [...], count: N }
+        setUsers(data.auditees || []);
       }
     } catch (error) {
-      console.error("Error fetching users:", error);
+      console.error("Error fetching auditees:", error);
     }
   };
 

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { withAuth, getTenantFilter } from '@/lib/api-auth';
+import { withAuth, getTenantFilter, getAuditHeadFilter } from '@/lib/api-auth';
 
 // GET /api/internal-audit/report/completed-engagements - Get all completed engagements for reports
 export const GET = withAuth(
@@ -11,6 +11,7 @@ export const GET = withAuth(
       const limit = parseInt(searchParams.get('limit') || '20');
       const skip = (page - 1) * limit;
       const tenantFilter = getTenantFilter(session);
+      const auditHeadFilter = getAuditHeadFilter(session);
 
       // Check if user is auditee only (has Auditee role but not AuditHead/AuditManager/Auditor)
       // Note: session IS the user object (not session.user) because withAuth passes user directly
@@ -22,8 +23,10 @@ export const GET = withAuth(
       const isAuditeeOnly = isAuditee && !isAuditTeam;
 
       // Build where clause - use AND to combine multiple OR conditions
+      // Apply auditHeadFilter to isolate data by AuditHead (reports are NOT shared between Audit Heads)
       const whereClause: Record<string, unknown> = {
         ...tenantFilter,
+        ...auditHeadFilter,
         // Status filter (case-insensitive)
         OR: [
           { status: 'Completed' },

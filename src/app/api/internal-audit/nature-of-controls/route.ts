@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
+import { withAuth, getTenantFilter, getCustomerAccountId, getAuditHeadFilter, getAuditHeadId } from "@/lib/api-auth";
 
-// GET all nature of controls
-// Requires 'edit' action so only AuditHead can access (CustomerAdmin has only 'view')
+// GET all nature of controls - filtered by audit head
 export const GET = withAuth(
   async (req: NextRequest, context, session) => {
     try {
       const tenantFilter = getTenantFilter(session);
+      const auditHeadFilter = getAuditHeadFilter(session);
 
       const controls = await prisma.auditNatureOfControl.findMany({
-        where: tenantFilter,
+        where: { ...tenantFilter, ...auditHeadFilter },
         orderBy: { label: "asc" },
       });
 
@@ -26,11 +26,12 @@ export const GET = withAuth(
   { resource: "audit.settings", action: "edit" }
 );
 
-// POST create a new nature of control
+// POST create a new nature of control - assigned to current audit head
 export const POST = withAuth(
   async (req: NextRequest, context, session) => {
     try {
       const customerAccountId = getCustomerAccountId(session);
+      const auditHeadId = getAuditHeadId(session);
       const body = await req.json();
       const { label } = body;
 
@@ -41,12 +42,11 @@ export const POST = withAuth(
         );
       }
 
-      // Check for duplicate within the same tenant
-      const tenantFilter = getTenantFilter(session);
+      // Check for duplicate within the same audit head's settings
       const existing = await prisma.auditNatureOfControl.findFirst({
         where: {
           label,
-          ...tenantFilter,
+          auditHeadId,
         },
       });
 
@@ -61,6 +61,7 @@ export const POST = withAuth(
         data: {
           label,
           customerAccountId,
+          auditHeadId,
         },
       });
 

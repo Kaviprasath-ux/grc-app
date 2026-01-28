@@ -28,6 +28,8 @@ export interface AuthenticatedRequest extends NextRequest {
     customerAccountId: string | null;
     customerAccountCode: string | null;
     customerAccountName: string | null;
+    // Audit Head isolation: Links user to their managing Audit Head
+    auditHeadId: string | null;
     roles: string[];
     permissions: UserPermission[];
   };
@@ -106,6 +108,8 @@ export function withAuth<T extends { params?: Promise<unknown> }>(
         customerAccountId: user.customerAccountId || null,
         customerAccountCode: user.customerAccountCode || null,
         customerAccountName: user.customerAccountName || null,
+        // Audit Head isolation
+        auditHeadId: user.auditHeadId || null,
         roles: user.roles || [],
         permissions: user.permissions || [],
       };
@@ -153,6 +157,8 @@ export function withAuthOnly<T extends { params?: Promise<unknown> }>(
         customerAccountId: user.customerAccountId || null,
         customerAccountCode: user.customerAccountCode || null,
         customerAccountName: user.customerAccountName || null,
+        // Audit Head isolation
+        auditHeadId: user.auditHeadId || null,
         roles: user.roles || [],
         permissions: user.permissions || [],
       };
@@ -265,10 +271,18 @@ export function validateTenantAccess(
 // ==================== AUDIT HEAD FILTER HELPERS ====================
 
 /**
- * Get the auditHeadId for data filtering.
- * - AuditHead users: their own ID
- * - AuditManager: their own ID (they act like AuditHead for their data)
- * - Admins: null (see all data)
+ * Get the auditHeadId for data filtering in multi-tenant Internal Audit.
+ *
+ * Hierarchy:
+ * - CustomerAdmin can create multiple Audit Heads
+ * - Each Audit Head can create/manage their own Audit Managers and Auditees
+ * - Data isolation: Audit Head A cannot see Audit Head B's data
+ *
+ * Returns:
+ * - AuditHead: their own ID (they are the head, their ID is the auditHeadId)
+ * - AuditManager: session.auditHeadId (they belong to an Audit Head)
+ * - Auditor/Auditee: session.auditHeadId (they belong to an Audit Head)
+ * - Admins (GRCAdministrator, CustomerAdministrator): null (see all data within tenant)
  *
  * @example
  * const auditHeadId = getAuditHeadId(session);
@@ -283,13 +297,25 @@ export function getAuditHeadId(session: AuthenticatedRequest['user']): string | 
     return null;
   }
 
-  // AuditHead and AuditManager use their own ID
-  if (session.roles.includes('AuditHead') || session.roles.includes('AuditManager')) {
+  // AuditHead: their own user ID is the auditHeadId for data they create/own
+  if (session.roles.includes('AuditHead')) {
     return session.id;
   }
 
-  // Other roles don't filter by auditHeadId at this level
-  // (Auditors/Auditees are handled differently in specific routes)
+  // AuditManager, Auditor, Auditee: use their assigned auditHeadId
+  // This ensures they only see data belonging to their Audit Head
+  const auditRoles = ['AuditManager', 'Auditor', 'Auditee', 'AuditUser'];
+  if (session.roles.some(role => auditRoles.includes(role))) {
+    // If user has an auditHeadId assigned, filter by it
+    if (session.auditHeadId) {
+      return session.auditHeadId;
+    }
+    // If no auditHeadId assigned, return impossible filter to prevent data leakage
+    // This shouldn't happen in properly configured systems
+    return '__NO_AUDIT_HEAD__';
+  }
+
+  // Other roles don't have audit head filtering
   return null;
 }
 
@@ -459,6 +485,8 @@ export async function getApiSession(): Promise<AuthenticatedRequest['user'] | nu
     customerAccountId: user.customerAccountId || null,
     customerAccountCode: user.customerAccountCode || null,
     customerAccountName: user.customerAccountName || null,
+    // Audit Head isolation
+    auditHeadId: user.auditHeadId || null,
     roles: user.roles || [],
     permissions: user.permissions || [],
   };
