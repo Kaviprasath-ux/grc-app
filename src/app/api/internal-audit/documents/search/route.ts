@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { aiAuditService } from "@/services/ai-audit-service";
 
 // POST - Smart document search
 export async function POST(request: NextRequest) {
+  const startTime = Date.now();
   try {
     const body = await request.json();
     const { query, userId } = body;
@@ -26,6 +28,14 @@ export async function POST(request: NextRequest) {
       take: 10,
     });
 
+    // 1. Start AIOperation (Request)
+    const operation = await aiAuditService.logOperation({
+      endpoint: "/api/internal-audit/documents/search",
+      method: "POST",
+      requestBody: { query },
+      userId: userId || null,
+    });
+
     // Generate AI-like response based on search results
     let result: string;
     let status: string;
@@ -39,13 +49,26 @@ export async function POST(request: NextRequest) {
       status = "Unsatisfactory";
     }
 
-    // Store search in history
+    // 2. Finalize AIOperation (Response)
+    if (operation) {
+      await prisma.aIOperation.update({
+        where: { id: operation.id },
+        data: {
+          responseBody: JSON.stringify({ result, status }),
+          statusCode: 200,
+          latencyMs: Date.now() - startTime,
+        },
+      });
+    }
+
+    // 3. Store search in history (Projection)
     const search = await prisma.documentSearch.create({
       data: {
         query,
         result,
         status,
         userId: userId || null,
+        aiOperationId: operation?.id,
       },
     });
 
@@ -56,6 +79,7 @@ export async function POST(request: NextRequest) {
       status,
       documents,
       timestamp: search.createdAt,
+      aiOperationId: operation?.id,
     });
   } catch (error) {
     console.error("Error searching documents:", error);

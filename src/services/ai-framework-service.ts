@@ -16,19 +16,33 @@ import type {
 /**
  * Submit a framework generation job
  * 
- * @param frameworkName - Name of the framework to generate
+ * @param frameworkInput - Metadata for the framework (name, description, etc.)
  * @param file - Optional document file (PDF, DOCX, XLSX, etc.)
  * @param library - Optional library identifier
  * @returns Job ID and initial status
  */
 export async function generateFramework(
-    frameworkName: string,
+    frameworkInput: {
+        name: string;
+        description?: string;
+        type?: string;
+        country?: string;
+        industry?: string;
+        code?: string;
+    },
     file?: File | null,
     library?: string
 ): Promise<FrameworkJobResponse> {
     try {
         const formData = new FormData();
-        formData.append("framework_name", frameworkName);
+        formData.append("framework_name", frameworkInput.name);
+
+        // Add additional metadata
+        if (frameworkInput.description) formData.append("description", frameworkInput.description);
+        if (frameworkInput.type) formData.append("type", frameworkInput.type);
+        if (frameworkInput.country) formData.append("country", frameworkInput.country);
+        if (frameworkInput.industry) formData.append("industry", frameworkInput.industry);
+        if (frameworkInput.code) formData.append("code", frameworkInput.code);
 
         if (file) {
             formData.append("attachment", file);
@@ -38,7 +52,7 @@ export async function generateFramework(
             formData.append("library", library);
         }
 
-        console.log(`[AI Framework Service] Submitting job for: ${frameworkName}`);
+        console.log(`[AI Framework Service] Submitting job for: ${frameworkInput.name}`);
 
         const response = await fetch("/api/ai/generate-framework", {
             method: "POST",
@@ -227,13 +241,20 @@ export async function pollFrameworkStatus(
  * @returns Generated framework result
  */
 export async function generateFrameworkComplete(
-    frameworkName: string,
+    frameworkInput: {
+        name: string;
+        description?: string;
+        type?: string;
+        country?: string;
+        industry?: string;
+        code?: string;
+    },
     file?: File | null,
     library?: string,
     onProgress?: (status: FrameworkJobStatus) => void
 ): Promise<FrameworkGenerationResult> {
     // Step 1: Submit job
-    const jobResponse = await generateFramework(frameworkName, file, library);
+    const jobResponse = await generateFramework(frameworkInput, file, library);
 
     // Initial delay (5 seconds) to allow the backend to initialize the job
     // This is especially important for cold starts on RunPod

@@ -270,9 +270,16 @@ export default function FrameworkOverviewPage() {
           setGenerationStatus("Submitting framework generation job...");
 
           try {
-            // Call AI generation service
+            // Call AI generation service with FULL metadata
             const result = await generateFrameworkComplete(
-              formData.name,
+              {
+                name: formData.name,
+                description: formData.description,
+                type: formData.type,
+                country: formData.country,
+                industry: formData.industry,
+                code: formData.code,
+              },
               uploadedFile,
               undefined,
               (status: FrameworkJobStatus) => {
@@ -288,49 +295,17 @@ export default function FrameworkOverviewPage() {
               }
             );
 
-            console.log(`[Framework] AI generation complete: ${result.total_requirements} requirements`);
-            setGenerationStatus("Saving framework to database...");
+            console.log(`[Framework] AI generation and server-side saving complete`);
 
-            // Create framework in database
-            const frameworkResponse = await fetch("/api/frameworks", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                ...formData,
-                isCustom: true,
-                status: "Subscribed",
-              }),
-            });
+            // The result now contains both AI requirements AND database persistence info
+            // (e.g., frameworkId, totalRequirements, totalCategories)
+            const saveResult = result as any;
 
-            if (!frameworkResponse.ok) {
-              throw new Error("Failed to create framework in database");
-            }
+            console.log(`[Framework] ✅ Framework saved: ${saveResult.frameworkId}`);
+            console.log(`[Framework] ✅ Requirements: ${saveResult.totalRequirements}`);
+            console.log(`[Framework] ✅ Categories: ${saveResult.totalCategories}`);
 
-            const newFramework = await frameworkResponse.json();
-            console.log(`[Framework] Framework created with ID: ${newFramework.id}`);
-
-            // Save requirements to database
-            setGenerationStatus("Saving requirements...");
-
-            const requirementsResponse = await fetch(`/api/frameworks/${newFramework.id}/import`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                requirements: result.requirements.map((req) => ({
-                  category: req.requirement_category,
-                  code: req.requirement_code,
-                  requirement: req.requirement,
-                  description: req.description,
-                  controlMapping: req.control_mapping,
-                  type: req.requirement_type,
-                  chapterType: req.chapter_type,
-                })),
-              }),
-            });
-
-            if (!requirementsResponse.ok) {
-              console.warn("[Framework] Failed to save requirements, but framework created");
-            }
+            setGenerationStatus(`Saved ${saveResult.totalRequirements} requirements in ${saveResult.totalCategories} categories`);
 
             // Success!
             setIsGenerating(false);
@@ -339,7 +314,7 @@ export default function FrameworkOverviewPage() {
 
             toast({
               title: "Success",
-              description: `Framework created with ${result.total_requirements} AI-generated requirements!`,
+              description: `Framework created with ${saveResult.totalRequirements} AI-generated requirements organized into ${saveResult.totalCategories} categories!`,
             });
           } catch (error) {
             console.error("[Framework] AI generation error:", error);

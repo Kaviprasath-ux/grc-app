@@ -685,6 +685,7 @@ model Policy {
   policyControls        PolicyControl[]
   policyExceptions      PolicyException[]
   exceptions            Exception[]        @relation("PolicyExceptions")
+  policyAIReviews       PolicyAIReview[]
 }
 
 // Evidence
@@ -720,6 +721,7 @@ model Evidence {
   kpis                  KPI[]
   evidenceControls      EvidenceControl[]
   linkedArtifacts       EvidenceArtifact[]
+  evidenceAIReviews     EvidenceAIReview[]
 }
 
 // Evidence-Control Many-to-Many Junction Table
@@ -1859,14 +1861,50 @@ model InternalAuditDocument {
   updatedAt    DateTime @updatedAt
 }
 
+// Policy AI Review (tracks the 2-step review process)
+model PolicyAIReview {
+  id                String       @id @default(cuid())
+  policyId          String
+  policy            Policy       @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  documentId        String?      // The ID returned by grc_ingest
+  status            String       @default("pending") // pending, ingested, completed, failed
+  complianceSummary String?
+  riskScore         Float?
+  matchedControls   String?      // JSON string
+  gaps              String?      // JSON string
+  recommendations   String?      // JSON string
+  reviewedAt        DateTime?
+  aiOperationId     String?      @unique
+  aiOperation       AIOperation? @relation("PolicyAIReviewLog", fields: [aiOperationId], references: [id])
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+}
+
+// Evidence AI Review (critique of artifacts against controls)
+model EvidenceAIReview {
+  id                String       @id @default(cuid())
+  evidenceId        String
+  evidence          Evidence     @relation(fields: [evidenceId], references: [id], onDelete: Cascade)
+  status            String       @default("pending") // pending, completed, failed
+  critique          String?
+  similarityScore   Float?
+  recommendations   String?      // JSON string
+  aiOperationId     String?      @unique
+  aiOperation       AIOperation? @relation("EvidenceAIReviewLog", fields: [aiOperationId], references: [id])
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+}
+
 // Document Library Search History
 model DocumentSearch {
-  id        String   @id @default(cuid())
-  query     String
-  result    String?  // AI response text
-  status    String   @default("Satisfactory") // Satisfactory, Unsatisfactory
-  userId    String?
-  createdAt DateTime @default(now())
+  id            String       @id @default(cuid())
+  query         String
+  result        String?      // AI response text
+  status        String       @default("Satisfactory") // Satisfactory, Unsatisfactory
+  userId        String?
+  aiOperationId String?      @unique
+  aiOperation   AIOperation? @relation(fields: [aiOperationId], references: [id])
+  createdAt     DateTime     @default(now())
 }
 
 // ==================== GOVERNANCE TEMPLATES ====================
@@ -1883,6 +1921,41 @@ model GovernanceTemplate {
   uploadedBy     String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+}
+
+// ==================== AI INTEGRATION & AUDIT ====================
+
+// AI Job tracking for long-running async tasks
+model AIJob {
+  id             String        @id @default(cuid())
+  providerJobId  String        @unique // The job ID returned by RunPod
+  type           String        // e.g., "FRAMEWORK_GEN", "POLICY_GEN"
+  status         String        @default("QUEUED") // QUEUED, PROCESSING, COMPLETED, FAILED
+  userId         String?       // The user who initiated the job
+  resultPath     String?       // Optional reference to large result files
+  metadata       String?       // JSON string for additional job-specific data
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  operations     AIOperation[]
+}
+
+// Low-level audit log of every AI API interaction
+model AIOperation {
+  id             String   @id @default(cuid())
+  jobId          String?  // Optional link to an AIJob
+  job            AIJob?   @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  endpoint       String   // The RunPod API route called
+  method         String   @default("POST")
+  requestBody    String?  // JSON string of the request payload
+  responseBody   String?  // JSON string of the raw AI response
+  statusCode     Int?
+  latencyMs      Int?
+  error          String?  // Error message if the call failed
+  userId         String?
+  documentSearch DocumentSearch?
+  policyAIReview PolicyAIReview? @relation("PolicyAIReviewLog")
+  evidenceAIReview EvidenceAIReview? @relation("EvidenceAIReviewLog")
+  createdAt      DateTime @default(now())
 }
 
 // ==================== AUDIT LOGS ====================

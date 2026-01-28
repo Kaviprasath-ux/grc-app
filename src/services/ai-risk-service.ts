@@ -31,29 +31,24 @@ export async function generateProcessRisks(
     request: RiskGenerationRequest
 ): Promise<RiskGenerationResponse> {
     try {
-        console.log('[AI Service] Calling risk generation API with:', request);
+        console.log('[AI Service] Calling internal risk evaluation API');
 
-        const response = await aiApiClient.post<RiskGenerationResponse>(
-            '/api/generate_process_asset_risk_v2',
-            request
-        );
-
-        console.log('[AI Service] Risk generation response:', response.data);
-        return response.data;
-    } catch (error: any) {
-        console.error('[AI Service] Error generating process risks:', {
-            message: error.message,
-            status: error.status,
-            statusText: error.statusText,
-            data: error.data,
-            url: error.url
+        const response = await fetch('/api/ai/risk-evaluation', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(request),
         });
 
-        throw new Error(
-            error.data?.detail ||
-            error.message ||
-            'Failed to generate process risks'
-        );
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to generate process risks');
+        }
+
+        const data = await response.json();
+        return data;
+    } catch (error: any) {
+        console.error('[AI Service] Error generating process risks:', error);
+        throw error;
     }
 }
 
@@ -71,30 +66,25 @@ export async function submitSemanticMatching(
     generatedRisk: GeneratedRiskData
 ): Promise<SemanticMatchingJobResponse> {
     try {
-        // Convert objects to JSON strings as required by the API
         const formData = createFormData({
             existing_library: JSON.stringify(existingLibrary),
             generated_risk: JSON.stringify(generatedRisk),
         });
 
-        const response = await aiApiClient.post<SemanticMatchingJobResponse>(
-            '/api/semanticMatch_process_asset_riskV2',
-            formData,
-            {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-            }
-        );
+        const response = await fetch('/api/ai/semantic-matching/submit', {
+            method: 'POST',
+            body: formData,
+        });
 
-        return response.data;
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to submit semantic matching job');
+        }
+
+        return await response.json();
     } catch (error: any) {
         console.error('Error submitting semantic matching job:', error);
-        throw new Error(
-            error.data?.detail ||
-            error.message ||
-            'Failed to submit semantic matching job'
-        );
+        throw error;
     }
 }
 
@@ -108,18 +98,17 @@ export async function checkSemanticMatchingStatus(
     jobId: string
 ): Promise<SemanticMatchingStatusResponse> {
     try {
-        const response = await aiApiClient.get<SemanticMatchingStatusResponse>(
-            `/api/semanticMatch_process_asset_riskV2_status/${jobId}`
-        );
+        const response = await fetch(`/api/ai/semantic-matching/status/${jobId}`);
 
-        return response.data;
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to check semantic matching status');
+        }
+
+        return await response.json();
     } catch (error: any) {
         console.error('Error checking semantic matching status:', error);
-        throw new Error(
-            error.data?.detail ||
-            error.message ||
-            'Failed to check semantic matching status'
-        );
+        throw error;
     }
 }
 
@@ -133,18 +122,17 @@ export async function getSemanticMatchingResult(
     jobId: string
 ): Promise<SemanticMatchingResultResponse> {
     try {
-        const response = await aiApiClient.get<SemanticMatchingResultResponse>(
-            `/api/semanticMatch_process_asset_riskV2_result/${jobId}`
-        );
+        const response = await fetch(`/api/ai/semantic-matching/result/${jobId}`);
 
-        return response.data;
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to get semantic matching result');
+        }
+
+        return await response.json();
     } catch (error: any) {
         console.error('Error getting semantic matching result:', error);
-        throw new Error(
-            error.data?.detail ||
-            error.message ||
-            'Failed to get semantic matching result'
-        );
+        throw error;
     }
 }
 
