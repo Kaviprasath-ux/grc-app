@@ -36,6 +36,8 @@ import {
 import { ColumnDef } from "@tanstack/react-table";
 import { EditProfileWizard } from "@/components/profile/edit-profile-wizard";
 import { OrgChart } from "@/components/organization/org-chart";
+import { DatePicker } from "@/components/ui/date-picker";
+import { format } from "date-fns";
 
 interface Branch {
   id?: string;
@@ -158,8 +160,8 @@ function ProfilePageContent() {
     title: "",
     description: "",
     serviceUser: "Internal",
-    serviceCategory: "consulting",
-    serviceItem: "Advisory",
+    serviceCategory: "",
+    serviceItem: "",
   });
   const [newRegulation, setNewRegulation] = useState({
     name: "",
@@ -279,8 +281,8 @@ function ProfilePageContent() {
           title: "",
           description: "",
           serviceUser: "Internal",
-          serviceCategory: "consulting",
-          serviceItem: "Advisory",
+          serviceCategory: "",
+          serviceItem: "",
         });
         setIsAddServiceOpen(false);
       }
@@ -859,114 +861,132 @@ function ProfilePageContent() {
 
       {/* Add Department Dialog */}
       <Dialog open={isAddDepartmentOpen} onOpenChange={setIsAddDepartmentOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add Department</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <Label htmlFor="departmentName">Department Name</Label>
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Add Department</DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Content */}
+          <div className="px-6 py-6">
+            <Label className="text-sm font-medium text-slate-700">Department Name</Label>
             <Input
-              id="departmentName"
               value={newDepartmentName}
               onChange={(e) => setNewDepartmentName(e.target.value)}
               placeholder="Enter department name"
-              className="mt-2"
+              className="mt-1.5"
             />
           </div>
-          <DialogFooter>
+
+          {/* Fixed Footer */}
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsAddDepartmentOpen(false)}>
               Cancel
             </Button>
             <Button onClick={handleAddDepartment}>Save</Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Edit Department Dialog */}
       <Dialog open={isEditDepartmentOpen} onOpenChange={setIsEditDepartmentOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Department</DialogTitle>
-          </DialogHeader>
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Edit Department</DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Content */}
           {editingDepartment && (
-            <div className="py-4">
-              <Label htmlFor="editDepartmentName">Department Name</Label>
+            <div className="px-6 py-6">
+              <Label className="text-sm font-medium text-slate-700">Department Name</Label>
               <Input
-                id="editDepartmentName"
                 value={editingDepartment.name}
                 onChange={(e) => setEditingDepartment({ ...editingDepartment, name: e.target.value })}
                 placeholder="Enter department name"
-                className="mt-2"
+                className="mt-1.5"
               />
             </div>
           )}
-          <DialogFooter>
+
+          {/* Fixed Footer */}
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsEditDepartmentOpen(false)}>
               Cancel
             </Button>
             <Button onClick={handleEditDepartment}>Save</Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Add Service Dialog */}
       <Dialog open={isAddServiceOpen} onOpenChange={setIsAddServiceOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add Service</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Add Service</DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Content */}
+          <div className="px-6 py-6 space-y-5">
+            {/* Service Title */}
             <div>
-              <Label htmlFor="serviceTitle">Title</Label>
+              <Label className="text-sm font-medium text-slate-700">Service Title</Label>
               <Input
-                id="serviceTitle"
                 value={newService.title}
                 onChange={(e) => setNewService({ ...newService, title: e.target.value })}
                 placeholder="Enter service title"
-                className="mt-2"
+                className="mt-1.5"
               />
             </div>
+
+            {/* Description */}
             <div>
-              <Label htmlFor="serviceDescription">Description</Label>
-              <Input
-                id="serviceDescription"
+              <Label className="text-sm font-medium text-slate-700">Description</Label>
+              <Textarea
                 value={newService.description}
                 onChange={(e) => setNewService({ ...newService, description: e.target.value })}
-                placeholder="Enter description"
-                className="mt-2"
+                placeholder="Enter service description"
+                className="mt-1.5"
+                rows={3}
               />
             </div>
+
+            {/* Service User */}
             <div>
-              <Label>Service User</Label>
-              <div className="flex gap-4 mt-2">
+              <Label className="text-sm font-medium text-slate-700">Service User</Label>
+              <div className="flex gap-6 mt-2">
                 {["Internal", "External", "Public"].map((userType) => (
-                  <div key={userType} className="flex items-center space-x-2">
+                  <label key={userType} className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="radio"
-                      id={`add-${userType}`}
                       name="addServiceUser"
                       checked={newService.serviceUser === userType}
-                      onChange={() =>
-                        setNewService({ ...newService, serviceUser: userType })
-                      }
-                      className="h-4 w-4"
+                      onChange={() => setNewService({ ...newService, serviceUser: userType })}
+                      className="w-4 h-4 text-primary-600 border-slate-300 focus:ring-primary-500"
                     />
-                    <Label htmlFor={`add-${userType}`} className="font-normal">
-                      {userType}
-                    </Label>
-                  </div>
+                    <span className="text-sm text-slate-600">{userType}</span>
+                  </label>
                 ))}
               </div>
             </div>
+
+            {/* Service Category */}
             <div>
-              <Label>Service Category</Label>
-              <div className="flex gap-2 mt-2">
+              <Label className="text-sm font-medium text-slate-700">Service Category</Label>
+              <div className="flex gap-2 mt-1.5">
                 <Select
                   value={newService.serviceCategory}
                   onValueChange={(value) => setNewService({ ...newService, serviceCategory: value })}
                 >
                   <SelectTrigger className="flex-1">
-                    <SelectValue />
+                    <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
                     {serviceCategories.map((cat) => (
@@ -978,22 +998,26 @@ function ProfilePageContent() {
                 </Select>
                 <Button
                   type="button"
+                  variant="outline"
                   size="icon"
                   onClick={() => setIsAddCategoryOpen(true)}
+                  className="flex-shrink-0"
                 >
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
             </div>
+
+            {/* Service Item */}
             <div>
-              <Label>Service Item</Label>
-              <div className="flex gap-2 mt-2">
+              <Label className="text-sm font-medium text-slate-700">Service Item</Label>
+              <div className="flex gap-2 mt-1.5">
                 <Select
                   value={newService.serviceItem}
                   onValueChange={(value) => setNewService({ ...newService, serviceItem: value })}
                 >
                   <SelectTrigger className="flex-1">
-                    <SelectValue />
+                    <SelectValue placeholder="Select item" />
                   </SelectTrigger>
                   <SelectContent>
                     {serviceItems.map((item) => (
@@ -1005,86 +1029,92 @@ function ProfilePageContent() {
                 </Select>
                 <Button
                   type="button"
+                  variant="outline"
                   size="icon"
                   onClick={() => setIsAddItemOpen(true)}
+                  className="flex-shrink-0"
                 >
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
             </div>
           </div>
-          <DialogFooter>
+
+          {/* Fixed Footer */}
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsAddServiceOpen(false)}>
               Cancel
             </Button>
             <Button onClick={handleAddService}>Save</Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Edit Service Dialog */}
       <Dialog open={isEditServiceOpen} onOpenChange={setIsEditServiceOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Service</DialogTitle>
-          </DialogHeader>
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0">
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Edit Service</DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Content */}
           {editingService && (
-            <div className="space-y-4 py-4">
+            <div className="px-6 py-6 space-y-5">
+              {/* Service Title */}
               <div>
-                <Label htmlFor="editServiceTitle">Title</Label>
+                <Label className="text-sm font-medium text-slate-700">Service Title</Label>
                 <Input
-                  id="editServiceTitle"
                   value={editingService.title}
-                  onChange={(e) =>
-                    setEditingService({ ...editingService, title: e.target.value })
-                  }
-                  className="mt-2"
+                  onChange={(e) => setEditingService({ ...editingService, title: e.target.value })}
+                  placeholder="Enter service title"
+                  className="mt-1.5"
                 />
               </div>
+
+              {/* Description */}
               <div>
-                <Label htmlFor="editServiceDescription">Description</Label>
-                <Input
-                  id="editServiceDescription"
+                <Label className="text-sm font-medium text-slate-700">Description</Label>
+                <Textarea
                   value={editingService.description || ""}
-                  onChange={(e) =>
-                    setEditingService({ ...editingService, description: e.target.value })
-                  }
-                  className="mt-2"
+                  onChange={(e) => setEditingService({ ...editingService, description: e.target.value })}
+                  placeholder="Enter service description"
+                  className="mt-1.5"
+                  rows={3}
                 />
               </div>
+
+              {/* Service User */}
               <div>
-                <Label>Service User</Label>
-                <div className="flex gap-4 mt-2">
+                <Label className="text-sm font-medium text-slate-700">Service User</Label>
+                <div className="flex gap-6 mt-2">
                   {["Internal", "External", "Public"].map((userType) => (
-                    <div key={userType} className="flex items-center space-x-2">
+                    <label key={userType} className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="radio"
-                        id={`edit-${userType}`}
                         name="editServiceUser"
                         checked={editingService.serviceUser === userType}
-                        onChange={() =>
-                          setEditingService({ ...editingService, serviceUser: userType })
-                        }
-                        className="h-4 w-4"
+                        onChange={() => setEditingService({ ...editingService, serviceUser: userType })}
+                        className="w-4 h-4 text-primary-600 border-slate-300 focus:ring-primary-500"
                       />
-                      <Label htmlFor={`edit-${userType}`} className="font-normal">
-                        {userType}
-                      </Label>
-                    </div>
+                      <span className="text-sm text-slate-600">{userType}</span>
+                    </label>
                   ))}
                 </div>
               </div>
+
+              {/* Service Category */}
               <div>
-                <Label>Service Category</Label>
-                <div className="flex gap-2 mt-2">
+                <Label className="text-sm font-medium text-slate-700">Service Category</Label>
+                <div className="flex gap-2 mt-1.5">
                   <Select
                     value={editingService.serviceCategory}
-                    onValueChange={(value) =>
-                      setEditingService({ ...editingService, serviceCategory: value })
-                    }
+                    onValueChange={(value) => setEditingService({ ...editingService, serviceCategory: value })}
                   >
                     <SelectTrigger className="flex-1">
-                      <SelectValue />
+                      <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
                       {serviceCategories.map((cat) => (
@@ -1096,24 +1126,26 @@ function ProfilePageContent() {
                   </Select>
                   <Button
                     type="button"
+                    variant="outline"
                     size="icon"
                     onClick={() => setIsAddCategoryOpen(true)}
+                    className="flex-shrink-0"
                   >
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
+
+              {/* Service Item */}
               <div>
-                <Label>Service Item</Label>
-                <div className="flex gap-2 mt-2">
+                <Label className="text-sm font-medium text-slate-700">Service Item</Label>
+                <div className="flex gap-2 mt-1.5">
                   <Select
                     value={editingService.serviceItem}
-                    onValueChange={(value) =>
-                      setEditingService({ ...editingService, serviceItem: value })
-                    }
+                    onValueChange={(value) => setEditingService({ ...editingService, serviceItem: value })}
                   >
                     <SelectTrigger className="flex-1">
-                      <SelectValue />
+                      <SelectValue placeholder="Select item" />
                     </SelectTrigger>
                     <SelectContent>
                       {serviceItems.map((item) => (
@@ -1125,8 +1157,10 @@ function ProfilePageContent() {
                   </Select>
                   <Button
                     type="button"
+                    variant="outline"
                     size="icon"
                     onClick={() => setIsAddItemOpen(true)}
+                    className="flex-shrink-0"
                   >
                     <Plus className="h-4 w-4" />
                   </Button>
@@ -1134,252 +1168,301 @@ function ProfilePageContent() {
               </div>
             </div>
           )}
-          <DialogFooter>
+
+          {/* Fixed Footer */}
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsEditServiceOpen(false)}>
               Cancel
             </Button>
             <Button onClick={handleEditService}>Save</Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Add Regulation Dialog */}
       <Dialog open={isAddRegulationOpen} onOpenChange={setIsAddRegulationOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Add Regulation</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="regulationName">Regulation Name *</Label>
-                <Input
-                  id="regulationName"
-                  value={newRegulation.name}
-                  onChange={(e) => setNewRegulation({ ...newRegulation, name: e.target.value })}
-                  placeholder="Enter regulation name"
-                  className="mt-2"
-                />
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Add Regulation</DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            <div className="space-y-5">
+              {/* Name and Version */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Regulation Name <span className="text-error">*</span></Label>
+                  <Input
+                    value={newRegulation.name}
+                    onChange={(e) => setNewRegulation({ ...newRegulation, name: e.target.value })}
+                    placeholder="Enter regulation name"
+                    className="mt-1.5"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Version <span className="text-error">*</span></Label>
+                  <Input
+                    value={newRegulation.version}
+                    onChange={(e) => setNewRegulation({ ...newRegulation, version: e.target.value })}
+                    placeholder="Enter version"
+                    className="mt-1.5"
+                  />
+                </div>
               </div>
-              <div>
-                <Label htmlFor="regulationVersion">Version *</Label>
-                <Input
-                  id="regulationVersion"
-                  value={newRegulation.version}
-                  onChange={(e) => setNewRegulation({ ...newRegulation, version: e.target.value })}
-                  placeholder="Enter version"
-                  className="mt-2"
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="sa1Date">SA1 Date</Label>
-                <Input
-                  id="sa1Date"
-                  type="date"
-                  value={newRegulation.sa1Date}
-                  onChange={(e) => setNewRegulation({ ...newRegulation, sa1Date: e.target.value })}
-                  className="mt-2"
-                />
-              </div>
-              <div>
-                <Label htmlFor="sa2Date">SA2 Date</Label>
-                <Input
-                  id="sa2Date"
-                  type="date"
-                  value={newRegulation.sa2Date}
-                  onChange={(e) => setNewRegulation({ ...newRegulation, sa2Date: e.target.value })}
-                  className="mt-2"
-                />
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="scope">Scope</Label>
-              <Textarea
-                id="scope"
-                value={newRegulation.scope}
-                onChange={(e) => setNewRegulation({ ...newRegulation, scope: e.target.value })}
-                placeholder="Enter scope"
-                className="mt-2"
-                rows={3}
-              />
-            </div>
-            <div>
-              <Label htmlFor="exclusionJustification">Exclusion and Justification</Label>
-              <Textarea
-                id="exclusionJustification"
-                value={newRegulation.exclusionJustification}
-                onChange={(e) => setNewRegulation({ ...newRegulation, exclusionJustification: e.target.value })}
-                placeholder="Enter exclusion and justification"
-                className="mt-2"
-                rows={3}
-              />
-            </div>
-            <div>
-              <Label>Document</Label>
-              <div className="mt-2 border-2 border-dashed rounded-lg p-4">
-                {documentFile ? (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">{documentFile.name}</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setDocumentFile(null)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ) : (
-                  <label className="flex flex-col items-center cursor-pointer">
-                    <Upload className="h-8 w-8 text-slate-400 mb-2" />
-                    <span className="text-sm text-slate-400">Click here, or drop files here to upload</span>
-                    <input
-                      type="file"
-                      className="hidden"
-                      onChange={(e) => {
-                        if (e.target.files?.[0]) {
-                          setDocumentFile(e.target.files[0]);
-                        }
-                      }}
+
+              {/* SA1 and SA2 Dates */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">SA1 Date</Label>
+                  <div className="mt-1.5">
+                    <DatePicker
+                      value={newRegulation.sa1Date}
+                      onChange={(date) => setNewRegulation({ ...newRegulation, sa1Date: date ? format(date, "yyyy-MM-dd") : "" })}
+                      placeholder="Select SA1 date"
                     />
-                  </label>
-                )}
-              </div>
-            </div>
-            <div>
-              <Label>Certificate</Label>
-              <div className="mt-2 border-2 border-dashed rounded-lg p-4">
-                {certificateFile ? (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">{certificateFile.name}</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setCertificateFile(null)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
                   </div>
-                ) : (
-                  <label className="flex flex-col items-center cursor-pointer">
-                    <Upload className="h-8 w-8 text-slate-400 mb-2" />
-                    <span className="text-sm text-slate-400">Click here, or drop files here to upload</span>
-                    <input
-                      type="file"
-                      className="hidden"
-                      onChange={(e) => {
-                        if (e.target.files?.[0]) {
-                          setCertificateFile(e.target.files[0]);
-                        }
-                      }}
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">SA2 Date</Label>
+                  <div className="mt-1.5">
+                    <DatePicker
+                      value={newRegulation.sa2Date}
+                      onChange={(date) => setNewRegulation({ ...newRegulation, sa2Date: date ? format(date, "yyyy-MM-dd") : "" })}
+                      placeholder="Select SA2 date"
                     />
-                  </label>
-                )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Scope */}
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Scope</Label>
+                <Textarea
+                  value={newRegulation.scope}
+                  onChange={(e) => setNewRegulation({ ...newRegulation, scope: e.target.value })}
+                  placeholder="Enter scope"
+                  className="mt-1.5"
+                  rows={3}
+                />
+              </div>
+
+              {/* Exclusion and Justification */}
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Exclusion and Justification</Label>
+                <Textarea
+                  value={newRegulation.exclusionJustification}
+                  onChange={(e) => setNewRegulation({ ...newRegulation, exclusionJustification: e.target.value })}
+                  placeholder="Enter exclusion and justification"
+                  className="mt-1.5"
+                  rows={3}
+                />
+              </div>
+
+              {/* Document Upload */}
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Document</Label>
+                <div className="mt-1.5 border border-dashed border-slate-200 rounded-lg p-4">
+                  {documentFile ? (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-600">{documentFile.name}</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-slate-400 hover:text-error"
+                        onClick={() => setDocumentFile(null)}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center cursor-pointer py-2">
+                      <Upload className="h-6 w-6 text-slate-300 mb-2" />
+                      <span className="text-sm text-slate-500">Click to upload document</span>
+                      <input
+                        type="file"
+                        className="hidden"
+                        onChange={(e) => {
+                          if (e.target.files?.[0]) {
+                            setDocumentFile(e.target.files[0]);
+                          }
+                        }}
+                      />
+                    </label>
+                  )}
+                </div>
+              </div>
+
+              {/* Certificate Upload */}
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Certificate</Label>
+                <div className="mt-1.5 border border-dashed border-slate-200 rounded-lg p-4">
+                  {certificateFile ? (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-600">{certificateFile.name}</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-slate-400 hover:text-error"
+                        onClick={() => setCertificateFile(null)}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center cursor-pointer py-2">
+                      <Upload className="h-6 w-6 text-slate-300 mb-2" />
+                      <span className="text-sm text-slate-500">Click to upload certificate</span>
+                      <input
+                        type="file"
+                        className="hidden"
+                        onChange={(e) => {
+                          if (e.target.files?.[0]) {
+                            setCertificateFile(e.target.files[0]);
+                          }
+                        }}
+                      />
+                    </label>
+                  )}
+                </div>
               </div>
             </div>
           </div>
-          <DialogFooter>
+
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsAddRegulationOpen(false)}>
               Cancel
             </Button>
             <Button onClick={handleAddRegulation}>Save</Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Edit Regulation Dialog */}
       <Dialog open={isEditRegulationOpen} onOpenChange={setIsEditRegulationOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit Regulation</DialogTitle>
-          </DialogHeader>
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Edit Regulation</DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Scrollable Content */}
           {editingRegulation && (
-            <div className="space-y-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="editRegulationName">Regulation Name *</Label>
-                  <Input
-                    id="editRegulationName"
-                    value={editingRegulation.name}
-                    onChange={(e) => setEditingRegulation({ ...editingRegulation, name: e.target.value })}
-                    className="mt-2"
-                  />
+            <div className="flex-1 overflow-y-auto px-6 py-6">
+              <div className="space-y-5">
+                {/* Name and Version */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Regulation Name <span className="text-error">*</span></Label>
+                    <Input
+                      value={editingRegulation.name}
+                      onChange={(e) => setEditingRegulation({ ...editingRegulation, name: e.target.value })}
+                      className="mt-1.5"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Version <span className="text-error">*</span></Label>
+                    <Input
+                      value={editingRegulation.version}
+                      onChange={(e) => setEditingRegulation({ ...editingRegulation, version: e.target.value })}
+                      className="mt-1.5"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="editRegulationVersion">Version *</Label>
-                  <Input
-                    id="editRegulationVersion"
-                    value={editingRegulation.version}
-                    onChange={(e) => setEditingRegulation({ ...editingRegulation, version: e.target.value })}
-                    className="mt-2"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="editSa1Date">SA1 Date</Label>
-                  <Input
-                    id="editSa1Date"
-                    type="date"
-                    value={editingRegulation.sa1Date}
-                    onChange={(e) => setEditingRegulation({ ...editingRegulation, sa1Date: e.target.value })}
-                    className="mt-2"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="editSa2Date">SA2 Date</Label>
-                  <Input
-                    id="editSa2Date"
-                    type="date"
-                    value={editingRegulation.sa2Date}
-                    onChange={(e) => setEditingRegulation({ ...editingRegulation, sa2Date: e.target.value })}
-                    className="mt-2"
-                  />
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="editScope">Scope</Label>
-                <Textarea
-                  id="editScope"
-                  value={editingRegulation.scope}
-                  onChange={(e) => setEditingRegulation({ ...editingRegulation, scope: e.target.value })}
-                  className="mt-2"
-                  rows={3}
-                />
-              </div>
-              <div>
-                <Label htmlFor="editExclusionJustification">Exclusion and Justification</Label>
-                <Textarea
-                  id="editExclusionJustification"
-                  value={editingRegulation.exclusionJustification}
-                  onChange={(e) => setEditingRegulation({ ...editingRegulation, exclusionJustification: e.target.value })}
-                  className="mt-2"
-                  rows={3}
-                />
-              </div>
-              <div>
-                <Label>Document</Label>
-                <div className="mt-2 border-2 border-dashed rounded-lg p-4">
-                  {editDocumentFile ? (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">{editDocumentFile.name}</span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setEditDocumentFile(null)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
+
+                {/* SA1 and SA2 Dates */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">SA1 Date</Label>
+                    <div className="mt-1.5">
+                      <DatePicker
+                        value={editingRegulation.sa1Date}
+                        onChange={(date) => setEditingRegulation({ ...editingRegulation, sa1Date: date ? format(date, "yyyy-MM-dd") : "" })}
+                        placeholder="Select SA1 date"
+                      />
                     </div>
-                  ) : editingRegulation.document ? (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-400">Current: {editingRegulation.document.split("/").pop()}</span>
-                      <label className="cursor-pointer text-sm text-primary hover:underline">
-                        Replace
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">SA2 Date</Label>
+                    <div className="mt-1.5">
+                      <DatePicker
+                        value={editingRegulation.sa2Date}
+                        onChange={(date) => setEditingRegulation({ ...editingRegulation, sa2Date: date ? format(date, "yyyy-MM-dd") : "" })}
+                        placeholder="Select SA2 date"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Scope */}
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Scope</Label>
+                  <Textarea
+                    value={editingRegulation.scope}
+                    onChange={(e) => setEditingRegulation({ ...editingRegulation, scope: e.target.value })}
+                    placeholder="Enter scope"
+                    className="mt-1.5"
+                    rows={3}
+                  />
+                </div>
+
+                {/* Exclusion and Justification */}
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Exclusion and Justification</Label>
+                  <Textarea
+                    value={editingRegulation.exclusionJustification}
+                    onChange={(e) => setEditingRegulation({ ...editingRegulation, exclusionJustification: e.target.value })}
+                    placeholder="Enter exclusion and justification"
+                    className="mt-1.5"
+                    rows={3}
+                  />
+                </div>
+
+                {/* Document Upload */}
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Document</Label>
+                  <div className="mt-1.5 border border-dashed border-slate-200 rounded-lg p-4">
+                    {editDocumentFile ? (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-600">{editDocumentFile.name}</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="text-slate-400 hover:text-error"
+                          onClick={() => setEditDocumentFile(null)}
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    ) : editingRegulation.document ? (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-500">{editingRegulation.document.split("/").pop()}</span>
+                        <label className="cursor-pointer text-sm text-primary-600 hover:text-primary-700">
+                          Replace
+                          <input
+                            type="file"
+                            className="hidden"
+                            onChange={(e) => {
+                              if (e.target.files?.[0]) {
+                                setEditDocumentFile(e.target.files[0]);
+                              }
+                            }}
+                          />
+                        </label>
+                      </div>
+                    ) : (
+                      <label className="flex flex-col items-center cursor-pointer py-2">
+                        <Upload className="h-6 w-6 text-slate-300 mb-2" />
+                        <span className="text-sm text-slate-500">Click to upload document</span>
                         <input
                           type="file"
                           className="hidden"
@@ -1390,44 +1473,47 @@ function ProfilePageContent() {
                           }}
                         />
                       </label>
-                    </div>
-                  ) : (
-                    <label className="flex flex-col items-center cursor-pointer">
-                      <Upload className="h-8 w-8 text-slate-400 mb-2" />
-                      <span className="text-sm text-slate-400">Click here, or drop files here to upload</span>
-                      <input
-                        type="file"
-                        className="hidden"
-                        onChange={(e) => {
-                          if (e.target.files?.[0]) {
-                            setEditDocumentFile(e.target.files[0]);
-                          }
-                        }}
-                      />
-                    </label>
-                  )}
+                    )}
+                  </div>
                 </div>
-              </div>
-              <div>
-                <Label>Certificate</Label>
-                <div className="mt-2 border-2 border-dashed rounded-lg p-4">
-                  {editCertificateFile ? (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">{editCertificateFile.name}</span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setEditCertificateFile(null)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ) : editingRegulation.certificate ? (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-400">Current: {editingRegulation.certificate.split("/").pop()}</span>
-                      <label className="cursor-pointer text-sm text-primary hover:underline">
-                        Replace
+
+                {/* Certificate Upload */}
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Certificate</Label>
+                  <div className="mt-1.5 border border-dashed border-slate-200 rounded-lg p-4">
+                    {editCertificateFile ? (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-600">{editCertificateFile.name}</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="text-slate-400 hover:text-error"
+                          onClick={() => setEditCertificateFile(null)}
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    ) : editingRegulation.certificate ? (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-500">{editingRegulation.certificate.split("/").pop()}</span>
+                        <label className="cursor-pointer text-sm text-primary-600 hover:text-primary-700">
+                          Replace
+                          <input
+                            type="file"
+                            className="hidden"
+                            onChange={(e) => {
+                              if (e.target.files?.[0]) {
+                                setEditCertificateFile(e.target.files[0]);
+                              }
+                            }}
+                          />
+                        </label>
+                      </div>
+                    ) : (
+                      <label className="flex flex-col items-center cursor-pointer py-2">
+                        <Upload className="h-6 w-6 text-slate-300 mb-2" />
+                        <span className="text-sm text-slate-500">Click to upload certificate</span>
                         <input
                           type="file"
                           className="hidden"
@@ -1438,82 +1524,82 @@ function ProfilePageContent() {
                           }}
                         />
                       </label>
-                    </div>
-                  ) : (
-                    <label className="flex flex-col items-center cursor-pointer">
-                      <Upload className="h-8 w-8 text-slate-400 mb-2" />
-                      <span className="text-sm text-slate-400">Click here, or drop files here to upload</span>
-                      <input
-                        type="file"
-                        className="hidden"
-                        onChange={(e) => {
-                          if (e.target.files?.[0]) {
-                            setEditCertificateFile(e.target.files[0]);
-                          }
-                        }}
-                      />
-                    </label>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
           )}
-          <DialogFooter>
+
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsEditRegulationOpen(false)}>
               Cancel
             </Button>
             <Button onClick={handleEditRegulation}>Save</Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Add Service Category Dialog */}
       <Dialog open={isAddCategoryOpen} onOpenChange={setIsAddCategoryOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add Service Category</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <Label htmlFor="categoryName">Category Name</Label>
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0">
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Add Service Category</DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Content */}
+          <div className="px-6 py-6">
+            <Label className="text-sm font-medium text-slate-700">Category Name</Label>
             <Input
-              id="categoryName"
               value={newCategoryName}
               onChange={(e) => setNewCategoryName(e.target.value)}
               placeholder="Enter category name"
-              className="mt-2"
+              className="mt-1.5"
             />
           </div>
-          <DialogFooter>
+
+          {/* Fixed Footer */}
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsAddCategoryOpen(false)}>
               Cancel
             </Button>
             <Button onClick={handleAddCategory}>Save</Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Add Service Item Dialog */}
       <Dialog open={isAddItemOpen} onOpenChange={setIsAddItemOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add Service Item</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <Label htmlFor="itemName">Item Name</Label>
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0">
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Add Service Item</DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Content */}
+          <div className="px-6 py-6">
+            <Label className="text-sm font-medium text-slate-700">Item Name</Label>
             <Input
-              id="itemName"
               value={newItemName}
               onChange={(e) => setNewItemName(e.target.value)}
               placeholder="Enter item name"
-              className="mt-2"
+              className="mt-1.5"
             />
           </div>
-          <DialogFooter>
+
+          {/* Fixed Footer */}
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsAddItemOpen(false)}>
               Cancel
             </Button>
             <Button onClick={handleAddItem}>Save</Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 

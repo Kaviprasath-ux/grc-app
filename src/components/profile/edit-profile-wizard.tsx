@@ -282,15 +282,15 @@ export function EditProfileWizard({
           </DialogHeader>
 
           {/* Step Indicator */}
-          <div className="flex items-center justify-center pt-5">
+          <div className="flex items-start justify-center pt-5">
             {steps.map((step, index) => (
-              <div key={step.id} className="flex items-center">
-                <div className="flex flex-col items-center">
+              <div key={step.id} className="flex items-start">
+                <div className="flex flex-col items-center w-32">
                   <div
                     className={cn(
                       "w-9 h-9 rounded-full flex items-center justify-center text-sm font-medium transition-colors",
                       currentStep > step.id
-                        ? "bg-semantic-success text-white"
+                        ? "bg-success text-white"
                         : currentStep === step.id
                         ? "bg-primary-600 text-white"
                         : "bg-slate-100 text-slate-400 border border-slate-200"
@@ -300,7 +300,7 @@ export function EditProfileWizard({
                   </div>
                   <span
                     className={cn(
-                      "mt-2 text-xs font-medium",
+                      "mt-2 text-xs font-medium text-center",
                       currentStep >= step.id ? "text-slate-700" : "text-slate-400"
                     )}
                   >
@@ -310,8 +310,8 @@ export function EditProfileWizard({
                 {index < steps.length - 1 && (
                   <div
                     className={cn(
-                      "w-12 h-0.5 mx-3 transition-colors",
-                      currentStep > step.id ? "bg-semantic-success" : "bg-slate-200"
+                      "w-12 h-0.5 mt-[18px] -mx-5 transition-colors",
+                      currentStep > step.id ? "bg-success" : "bg-slate-200"
                     )}
                   />
                 )}
