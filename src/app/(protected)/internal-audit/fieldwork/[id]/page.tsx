@@ -2114,18 +2114,20 @@ export default function FieldworkDetailsPage() {
                         </Button>
                       </div>
                     </div>
-                    {/* Submit Response Button */}
-                    <div className="flex justify-end mt-4">
-                      <Button
-                        className="bg-[#1e3a5f] hover:bg-[#2d4a6f] text-white"
-                        onClick={() => {
-                          setAuditeeClariEvidence(er);
-                          setRespondDialogOpen(true);
-                        }}
-                      >
-                        Submit Response
-                      </Button>
-                    </div>
+                    {/* Submit Response Button - only show when status is Pending */}
+                    {er.status === 'Pending' && (
+                      <div className="flex justify-end mt-4">
+                        <Button
+                          className="bg-[#1e3a5f] hover:bg-[#2d4a6f] text-white"
+                          onClick={() => {
+                            setAuditeeClariEvidence(er);
+                            setRespondDialogOpen(true);
+                          }}
+                        >
+                          Submit Response
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
