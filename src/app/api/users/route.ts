@@ -167,9 +167,16 @@ export async function POST(request: NextRequest) {
         timezone: timezone || "UTC",
         isActive: isActive ?? true,
         isBlocked: isBlocked ?? false,
-        departmentId,
-        reportingManagerId: reportingManagerId || null,
-        customerAccountId, // Multi-tenant: Link user to same customer account as creator
+        // Use relation connect syntax for foreign keys
+        ...(departmentId && {
+          department: { connect: { id: departmentId } },
+        }),
+        ...(reportingManagerId && {
+          reportingManager: { connect: { id: reportingManagerId } },
+        }),
+        ...(customerAccountId && {
+          customerAccount: { connect: { id: customerAccountId } },
+        }),
         // Create UserRole entry if role exists in Role table
         ...(roleRecord && {
           userRoles: {

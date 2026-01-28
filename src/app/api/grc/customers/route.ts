@@ -38,6 +38,7 @@ export async function GET(req: NextRequest) {
         firstName: true,
         lastName: true,
         fullName: true,
+        customerAccountId: true,
         department: {
           select: {
             name: true,
@@ -80,6 +81,7 @@ export async function GET(req: NextRequest) {
           customerName: user.department?.name || user.fullName || `${user.firstName} ${user.lastName}`,
           email: user.email,
           userName: user.userName,
+          customerAccountId: user.customerAccountId,
           compliancePercentage,
         };
       })

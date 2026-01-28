@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { expandRolePermissions } from "@/lib/permissions";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  trustHost: true,
   providers: [
     Credentials({
       name: "credentials",
@@ -19,6 +20,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           return null;
         }
 
+        try {
         // Find user in database
         const user = await prisma.user.findFirst({
           where: {
@@ -64,8 +66,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         console.log('[AUTH] User found:', user.userName, 'isActive:', user.isActive, 'isBlocked:', user.isBlocked);
 
         // Simple password check (in production, use bcrypt)
-        if (user.password !== credentials.password) {
-          console.log('[AUTH] Password mismatch');
+        const inputPassword = String(credentials.password);
+        if (user.password !== inputPassword) {
+          console.log('[AUTH] Password mismatch. DB password length:', user.password.length, 'Input password length:', inputPassword.length);
           return null;
         }
 
@@ -97,6 +100,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           roles: effectiveRoles,
           permissions: [], // Placeholder - expanded in session callback
         };
+        } catch (error) {
+          console.error('[AUTH] Error during authentication:', error);
+          return null;
+        }
       },
     }),
   ],
