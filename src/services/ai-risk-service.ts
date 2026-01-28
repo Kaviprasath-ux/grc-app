@@ -72,17 +72,17 @@ export async function submitSemanticMatching(
 ): Promise<SemanticMatchingJobResponse> {
     try {
         // Convert objects to JSON strings as required by the API
-        const formData = createFormData({
-            existing_library: JSON.stringify(existingLibrary),
-            generated_risk: JSON.stringify(generatedRisk),
-        });
+        // Use URLSearchParams for application/x-www-form-urlencoded
+        const params = new URLSearchParams();
+        params.append('existing_library', JSON.stringify(existingLibrary));
+        params.append('generated_risk', JSON.stringify(generatedRisk));
 
         const response = await aiApiClient.post<SemanticMatchingJobResponse>(
             '/api/semanticMatch_process_asset_riskV2',
-            formData,
+            params.toString(),
             {
                 headers: {
-                    'Content-Type': 'multipart/form-data',
+                    'Content-Type': 'application/x-www-form-urlencoded',
                 },
             }
         );
