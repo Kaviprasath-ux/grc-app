@@ -71,26 +71,7 @@ interface Policy {
   department?: { id: string; name: string };
   assignee?: { id: string; fullName: string };
   approver?: { id: string; fullName: string };
-  customerAccount?: { id: string; code: string; name: string };
   _count?: { policyControls: number; attachments: number };
-}
-
-interface Department {
-  id: string;
-  name: string;
-}
-
-interface User {
-  id: string;
-  fullName: string;
-  departmentId?: string;
-  customerCode?: string;
-}
-
-interface CustomerAccount {
-  id: string;
-  code: string;
-  name: string;
 }
 
 interface Framework {
@@ -103,7 +84,9 @@ interface Control {
   id: string;
   controlCode: string;
   name: string;
+  description?: string;
   status: string;
+  entities?: string;
   domain?: { id: string; name: string };
 }
 
@@ -114,6 +97,7 @@ interface Domain {
 
 const DOCUMENT_TYPES = ["Policy", "Standard", "Procedure"];
 const RECURRENCE_OPTIONS = ["Weekly", "Monthly", "Quarterly", "Yearly"];
+const ENTITIES_OPTIONS = ["Organization Wide"];
 
 export default function GRCAdminGovernancePage() {
   const router = useRouter();
@@ -131,15 +115,11 @@ export default function GRCAdminGovernancePage() {
 
   // Filters
   const [frameworkFilter, setFrameworkFilter] = useState<string>("all");
-  const [customerFilter, setCustomerFilter] = useState<string>("all");
 
   // Filter options
-  const [departments, setDepartments] = useState<Department[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
   const [frameworks, setFrameworks] = useState<Framework[]>([]);
   const [controls, setControls] = useState<Control[]>([]);
   const [domains, setDomains] = useState<Domain[]>([]);
-  const [customerAccounts, setCustomerAccounts] = useState<CustomerAccount[]>([]);
 
   // Create dialog
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -148,16 +128,13 @@ export default function GRCAdminGovernancePage() {
     name: "",
     documentType: "Policy",
     recurrence: "",
-    departmentId: "",
-    assigneeId: "",
-    customerAccountId: "",
+    entities: "",
   });
 
   // Step 2 - Control linking
   const [selectedControlIds, setSelectedControlIds] = useState<string[]>([]);
   const [controlSearch, setControlSearch] = useState("");
   const [controlDomainFilter, setControlDomainFilter] = useState<string>("all");
-  const [controlStatusFilter, setControlStatusFilter] = useState<string>("all");
 
   // Delete dialogs
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -175,23 +152,15 @@ export default function GRCAdminGovernancePage() {
 
   useEffect(() => {
     fetchPolicies();
-  }, [activeDocType, currentPage, frameworkFilter, customerFilter]);
+  }, [activeDocType, currentPage, frameworkFilter]);
 
   const fetchFilterOptions = async () => {
     try {
-      const [deptRes, userRes, frameworkRes, controlRes, domainRes, customerRes] = await Promise.all([
-        fetch("/api/departments"),
-        fetch("/api/users"),
+      const [frameworkRes, controlRes, domainRes] = await Promise.all([
         fetch("/api/frameworks"),
         fetch("/api/controls"),
         fetch("/api/control-domains"),
-        fetch("/api/customer-accounts"),
       ]);
-      if (deptRes.ok) setDepartments(await deptRes.json());
-      if (userRes.ok) {
-        const userData = await userRes.json();
-        setUsers(userData);
-      }
       if (frameworkRes.ok) {
         const data = await frameworkRes.json();
         setFrameworks(Array.isArray(data) ? data : data.data || []);
@@ -203,10 +172,6 @@ export default function GRCAdminGovernancePage() {
       if (domainRes.ok) {
         const data = await domainRes.json();
         setDomains(Array.isArray(data) ? data : data.data || []);
-      }
-      if (customerRes.ok) {
-        const data = await customerRes.json();
-        setCustomerAccounts(Array.isArray(data) ? data : data.data || []);
       }
     } catch (error) {
       console.error("Error fetching filter options:", error);
@@ -221,7 +186,6 @@ export default function GRCAdminGovernancePage() {
       params.set("limit", itemsPerPage.toString());
       params.set("documentType", activeDocType);
       if (frameworkFilter && frameworkFilter !== "all") params.set("frameworkId", frameworkFilter);
-      if (customerFilter && customerFilter !== "all") params.set("customerAccountId", customerFilter);
       if (search) params.set("search", search);
 
       const response = await fetch(`/api/policies?${params.toString()}`);
@@ -236,7 +200,7 @@ export default function GRCAdminGovernancePage() {
     } finally {
       setLoading(false);
     }
-  }, [activeDocType, currentPage, frameworkFilter, customerFilter, search]);
+  }, [activeDocType, currentPage, frameworkFilter, search]);
 
   const handleSearch = () => {
     setCurrentPage(1);
@@ -249,7 +213,9 @@ export default function GRCAdminGovernancePage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...newPolicy,
+          name: newPolicy.name,
+          documentType: newPolicy.documentType,
+          recurrence: newPolicy.recurrence,
           controlIds: selectedControlIds,
         }),
       });
@@ -269,14 +235,11 @@ export default function GRCAdminGovernancePage() {
       name: "",
       documentType: activeDocType,
       recurrence: "",
-      departmentId: "",
-      assigneeId: "",
-      customerAccountId: "",
+      entities: "",
     });
     setSelectedControlIds([]);
     setControlSearch("");
     setControlDomainFilter("all");
-    setControlStatusFilter("all");
   };
 
   const handleDeletePolicy = async () => {
@@ -300,9 +263,6 @@ export default function GRCAdminGovernancePage() {
     try {
       const params = new URLSearchParams();
       params.set("documentType", activeDocType);
-      if (customerFilter && customerFilter !== "all") {
-        params.set("customerAccountId", customerFilter);
-      }
       const response = await fetch(`/api/policies/delete-all?${params.toString()}`, {
         method: "DELETE",
       });
@@ -322,9 +282,6 @@ export default function GRCAdminGovernancePage() {
       const formData = new FormData();
       formData.append("file", importFile);
       formData.append("documentType", activeDocType);
-      if (newPolicy.customerAccountId) {
-        formData.append("customerAccountId", newPolicy.customerAccountId);
-      }
 
       const response = await fetch("/api/policies/import", {
         method: "POST",
@@ -377,28 +334,8 @@ export default function GRCAdminGovernancePage() {
       control.name.toLowerCase().includes(controlSearch.toLowerCase()) ||
       control.controlCode.toLowerCase().includes(controlSearch.toLowerCase());
     const matchesDomain = controlDomainFilter === "all" || control.domain?.id === controlDomainFilter;
-    const matchesStatus = controlStatusFilter === "all" || control.status === controlStatusFilter;
-    return matchesSearch && matchesDomain && matchesStatus;
+    return matchesSearch && matchesDomain;
   });
-
-  // Filter users by selected customer account (for GRC Admin)
-  const filteredUsers = (() => {
-    if (!newPolicy.customerAccountId) return users;
-    return users.filter((u) => u.customerCode === customerAccounts.find(c => c.id === newPolicy.customerAccountId)?.code);
-  })();
-
-  // Filter departments by selected customer account (for GRC Admin)
-  const filteredDepartments = (() => {
-    if (!newPolicy.customerAccountId) return departments;
-    // Get departments that have users from the selected customer
-    const customerCode = customerAccounts.find(c => c.id === newPolicy.customerAccountId)?.code;
-    const customerUserDeptIds = new Set(
-      users
-        .filter((u) => u.customerCode === customerCode && u.departmentId)
-        .map((u) => u.departmentId)
-    );
-    return departments.filter((d) => customerUserDeptIds.has(d.id));
-  })();
 
   const handleTabChange = (tab: string) => {
     setActiveDocType(tab);
@@ -407,7 +344,7 @@ export default function GRCAdminGovernancePage() {
     setFrameworkFilter("all");
   };
 
-  const canProceedStep1 = newPolicy.name && newPolicy.departmentId && newPolicy.documentType && newPolicy.recurrence && newPolicy.assigneeId && newPolicy.customerAccountId;
+  const canProceedStep1 = newPolicy.name && newPolicy.documentType && newPolicy.recurrence && newPolicy.entities;
 
   // Pagination helpers
   const startItem = total > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0;
@@ -433,7 +370,6 @@ export default function GRCAdminGovernancePage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Governance</h1>
-          <p className="text-muted-foreground text-sm">GRC Administrator View - All Customer Accounts</p>
         </div>
         <div className="flex gap-2">
           <PermissionGate resource="compliance.governance" action="create">
@@ -490,17 +426,6 @@ export default function GRCAdminGovernancePage() {
                   <Search className="h-4 w-4" />
                 </Button>
               </div>
-              <Select value={customerFilter} onValueChange={setCustomerFilter}>
-                <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="All Customers" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Customers</SelectItem>
-                  {customerAccounts.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
               <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
                 <SelectTrigger className="w-[250px]">
                   <SelectValue placeholder="Integrated Framework" />
@@ -527,10 +452,10 @@ export default function GRCAdminGovernancePage() {
                       <TableRow>
                         <TableHead>Code</TableHead>
                         <TableHead>Name</TableHead>
-                        <TableHead>Customer</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Assignee</TableHead>
-                        <TableHead>Department</TableHead>
+                        <TableHead>Approver</TableHead>
+                        <TableHead>Department Name</TableHead>
                         <TableHead>Action</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -539,21 +464,17 @@ export default function GRCAdminGovernancePage() {
                         <TableRow
                           key={policy.id}
                           className="cursor-pointer hover:bg-muted/50"
-                          onDoubleClick={() => router.push(`/compliance/governance/${policy.id}`)}
+                          onDoubleClick={() => router.push(`/roles/grc-administrator/compliance/governance/${policy.id}`)}
                         >
                           <TableCell className="font-medium">{policy.code}</TableCell>
                           <TableCell>{policy.name}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline">
-                              {policy.customerAccount?.name || "-"}
-                            </Badge>
-                          </TableCell>
                           <TableCell>
                             <Badge className={getStatusBadgeColor(policy.status)}>
                               {policy.status}
                             </Badge>
                           </TableCell>
                           <TableCell>{policy.assignee?.fullName || ""}</TableCell>
+                          <TableCell>{policy.approver?.fullName || ""}</TableCell>
                           <TableCell>{policy.department?.name || ""}</TableCell>
                           <TableCell>
                             <div className="flex gap-1">
@@ -563,7 +484,7 @@ export default function GRCAdminGovernancePage() {
                                   size="icon"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    router.push(`/compliance/governance/${policy.id}`);
+                                    router.push(`/roles/grc-administrator/compliance/governance/${policy.id}`);
                                   }}
                                 >
                                   <Pencil className="h-4 w-4" />
@@ -673,51 +594,27 @@ export default function GRCAdminGovernancePage() {
             ))}
           </div>
 
+          <div className="flex justify-center gap-16 text-sm text-muted-foreground mb-4">
+            <span className={createStep === 1 ? "text-primary font-medium" : ""}>Policy Information</span>
+            <span className={createStep === 2 ? "text-primary font-medium" : ""}>Assignments & Details</span>
+            <span className={createStep === 3 ? "text-primary font-medium" : ""}>Review informations</span>
+          </div>
+
           <div className="py-4">
-            {/* Step 1: Basic Information */}
+            {/* Step 1: Policy Information — UAT exact fields */}
             {createStep === 1 && (
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="customerAccountId">Customer Account *</Label>
-                  <Select value={newPolicy.customerAccountId} onValueChange={(v) => setNewPolicy({ ...newPolicy, customerAccountId: v, departmentId: "", assigneeId: "" })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select customer account" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {customerAccounts.map((c) => (
-                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="name">Governance Name *</Label>
+                  <Label htmlFor="name">Policy Name *</Label>
                   <Input
                     id="name"
                     value={newPolicy.name}
                     onChange={(e) => setNewPolicy({ ...newPolicy, name: e.target.value })}
-                    placeholder="Enter governance name"
+                    placeholder="Enter policy name"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="departmentId">Department *</Label>
-                  <Select
-                    value={newPolicy.departmentId}
-                    onValueChange={(v) => setNewPolicy({ ...newPolicy, departmentId: v, assigneeId: "" })}
-                    disabled={!newPolicy.customerAccountId}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={newPolicy.customerAccountId ? "Select department" : "Select customer first"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {filteredDepartments.map((d) => (
-                        <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="documentType">Document Type *</Label>
+                  <Label htmlFor="documentType">Document type *</Label>
                   <Select value={newPolicy.documentType} onValueChange={(v) => setNewPolicy({ ...newPolicy, documentType: v })}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select document type" />
@@ -743,18 +640,14 @@ export default function GRCAdminGovernancePage() {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="assigneeId">Assignee *</Label>
-                  <Select
-                    value={newPolicy.assigneeId}
-                    onValueChange={(v) => setNewPolicy({ ...newPolicy, assigneeId: v })}
-                    disabled={!newPolicy.customerAccountId}
-                  >
+                  <Label htmlFor="entities">Entities *</Label>
+                  <Select value={newPolicy.entities} onValueChange={(v) => setNewPolicy({ ...newPolicy, entities: v })}>
                     <SelectTrigger>
-                      <SelectValue placeholder={newPolicy.customerAccountId ? "Select assignee" : "Select customer first"} />
+                      <SelectValue placeholder="Select entities" />
                     </SelectTrigger>
                     <SelectContent>
-                      {filteredUsers.map((u) => (
-                        <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
+                      {ENTITIES_OPTIONS.map((e) => (
+                        <SelectItem key={e} value={e}>{e}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -762,154 +655,109 @@ export default function GRCAdminGovernancePage() {
               </div>
             )}
 
-            {/* Step 2: Link Controls */}
+            {/* Step 2: Assignments & Details — UAT exact: domain filter + search + control cards */}
             {createStep === 2 && (
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label className="text-lg font-medium">Select Controls to Link</Label>
-                  <Badge variant="secondary">{selectedControlIds.length} selected</Badge>
-                </div>
-
-                {/* Control Filters */}
-                <div className="flex gap-4">
-                  <div className="flex-1">
-                    <Input
-                      placeholder="Search controls..."
-                      value={controlSearch}
-                      onChange={(e) => setControlSearch(e.target.value)}
-                    />
-                  </div>
+                {/* Domain Filter */}
+                <div className="flex justify-center">
                   <Select value={controlDomainFilter} onValueChange={setControlDomainFilter}>
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Domain" />
+                    <SelectTrigger className="w-[250px]">
+                      <SelectValue placeholder="Clear Filter" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Domains</SelectItem>
+                      <SelectItem value="all">Clear Filter</SelectItem>
                       {domains.map((d) => (
                         <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  <Select value={controlStatusFilter} onValueChange={setControlStatusFilter}>
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Statuses</SelectItem>
-                      <SelectItem value="Compliant">Compliant</SelectItem>
-                      <SelectItem value="Non Compliant">Non Compliant</SelectItem>
-                      <SelectItem value="Not Applicable">Not Applicable</SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
 
-                {/* Controls Table */}
-                <div className="border rounded-lg max-h-[300px] overflow-y-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[50px]"></TableHead>
-                        <TableHead>Control Code</TableHead>
-                        <TableHead>Control Name</TableHead>
-                        <TableHead>Domain</TableHead>
-                        <TableHead>Status</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredControls.map((control) => (
-                        <TableRow key={control.id}>
-                          <TableCell>
-                            <Checkbox
-                              checked={selectedControlIds.includes(control.id)}
-                              onCheckedChange={(checked) => {
-                                if (checked) {
-                                  setSelectedControlIds([...selectedControlIds, control.id]);
-                                } else {
-                                  setSelectedControlIds(selectedControlIds.filter((id) => id !== control.id));
-                                }
-                              }}
-                            />
-                          </TableCell>
-                          <TableCell className="font-medium">{control.controlCode}</TableCell>
-                          <TableCell>{control.name}</TableCell>
-                          <TableCell>{control.domain?.name || "-"}</TableCell>
-                          <TableCell>
-                            <Badge className={getStatusBadgeColor(control.status)}>
-                              {control.status}
-                            </Badge>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                      {filteredControls.length === 0 && (
-                        <TableRow>
-                          <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                            No controls found
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
+                {/* Control Search */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search By Control Code , Name"
+                    value={controlSearch}
+                    onChange={(e) => setControlSearch(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+
+                {/* Controls List — Card style matching UAT */}
+                <div className="max-h-[400px] overflow-y-auto space-y-3">
+                  {filteredControls.map((control) => (
+                    <div
+                      key={control.id}
+                      className={`border rounded-lg p-4 cursor-pointer transition-colors ${
+                        selectedControlIds.includes(control.id)
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:border-primary/50"
+                      }`}
+                      onClick={() => {
+                        if (selectedControlIds.includes(control.id)) {
+                          setSelectedControlIds(selectedControlIds.filter((id) => id !== control.id));
+                        } else {
+                          setSelectedControlIds([...selectedControlIds, control.id]);
+                        }
+                      }}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start gap-3">
+                          <Checkbox
+                            checked={selectedControlIds.includes(control.id)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedControlIds([...selectedControlIds, control.id]);
+                              } else {
+                                setSelectedControlIds(selectedControlIds.filter((id) => id !== control.id));
+                              }
+                            }}
+                            className="mt-1"
+                          />
+                          <div>
+                            <p className="font-medium">
+                              {control.controlCode} : {control.name}
+                            </p>
+                            {control.description && (
+                              <p className="text-sm text-muted-foreground mt-1">
+                                {control.description}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <Badge variant="outline" className="shrink-0">
+                          {control.entities || "Organization Wide"}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                  {filteredControls.length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      No controls found
+                    </div>
+                  )}
                 </div>
               </div>
             )}
 
-            {/* Step 3: Review */}
+            {/* Step 3: Review — UAT exact fields: Policy Name, Recurrence, Entity */}
             {createStep === 3 && (
               <div className="space-y-6">
-                <div className="text-lg font-medium">Review Information</div>
-
-                <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
+                <div className="grid grid-cols-2 gap-4 p-4">
                   <div>
-                    <Label className="text-muted-foreground text-sm">Customer Account</Label>
-                    <p className="font-medium">
-                      {customerAccounts.find((c) => c.id === newPolicy.customerAccountId)?.name || "-"}
-                    </p>
+                    <Label className="text-primary font-medium">Policy Name</Label>
+                    <p className="mt-1">{newPolicy.name}</p>
                   </div>
                   <div>
-                    <Label className="text-muted-foreground text-sm">Governance Name</Label>
-                    <p className="font-medium">{newPolicy.name}</p>
+                    <Label className="text-primary font-medium">Recurrence</Label>
+                    <p className="mt-1">{newPolicy.recurrence}</p>
                   </div>
                   <div>
-                    <Label className="text-muted-foreground text-sm">Document Type</Label>
-                    <p className="font-medium">{newPolicy.documentType}</p>
-                  </div>
-                  <div>
-                    <Label className="text-muted-foreground text-sm">Recurrence</Label>
-                    <p className="font-medium">{newPolicy.recurrence}</p>
-                  </div>
-                  <div>
-                    <Label className="text-muted-foreground text-sm">Department</Label>
-                    <p className="font-medium">
-                      {filteredDepartments.find((d) => d.id === newPolicy.departmentId)?.name || "-"}
-                    </p>
-                  </div>
-                  <div>
-                    <Label className="text-muted-foreground text-sm">Assignee</Label>
-                    <p className="font-medium">
-                      {filteredUsers.find((u) => u.id === newPolicy.assigneeId)?.fullName || "-"}
-                    </p>
-                  </div>
-                  <div>
-                    <Label className="text-muted-foreground text-sm">Linked Controls</Label>
-                    <p className="font-medium">{selectedControlIds.length} controls</p>
+                    <Label className="text-primary font-medium">Entity</Label>
+                    <p className="mt-1">{newPolicy.entities}</p>
                   </div>
                 </div>
-
-                {selectedControlIds.length > 0 && (
-                  <div>
-                    <Label className="text-muted-foreground text-sm mb-2 block">Selected Controls:</Label>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedControlIds.map((id) => {
-                        const control = controls.find((c) => c.id === id);
-                        return control ? (
-                          <Badge key={id} variant="outline">
-                            {control.controlCode}
-                          </Badge>
-                        ) : null;
-                      })}
-                    </div>
-                  </div>
-                )}
               </div>
             )}
           </div>
@@ -961,7 +809,7 @@ export default function GRCAdminGovernancePage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete All {activeDocType}s</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete all {activeDocType.toLowerCase()}s{customerFilter !== "all" ? ` for the selected customer` : ""}? This action cannot be undone.
+              Are you sure you want to delete all {activeDocType.toLowerCase()}s? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -980,19 +828,6 @@ export default function GRCAdminGovernancePage() {
             <DialogTitle>Import {activeDocType}s</DialogTitle>
           </DialogHeader>
           <div className="py-4 space-y-4">
-            <div>
-              <Label htmlFor="importCustomerAccountId">Customer Account *</Label>
-              <Select value={newPolicy.customerAccountId} onValueChange={(v) => setNewPolicy({ ...newPolicy, customerAccountId: v })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select customer account" />
-                </SelectTrigger>
-                <SelectContent>
-                  {customerAccounts.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
             <div
               className={`border-2 border-dashed rounded-lg p-8 text-center ${
                 isDragging ? "border-primary bg-primary/5" : "border-muted-foreground/25"
@@ -1040,7 +875,7 @@ export default function GRCAdminGovernancePage() {
             }}>
               Cancel
             </Button>
-            <Button onClick={handleImport} disabled={!importFile || !newPolicy.customerAccountId}>
+            <Button onClick={handleImport} disabled={!importFile}>
               Import
             </Button>
           </DialogFooter>
