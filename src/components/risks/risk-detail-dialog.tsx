@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Fragment } from "react";
 import {
   Dialog,
   DialogContent,
@@ -706,8 +706,8 @@ export function RiskDetailDialog({
                         </div>
                       ))}
                       {[5, 4, 3, 2, 1].map((likelihood) => (
-                        <>
-                          <div key={`l-${likelihood}`} className="p-2 text-center font-medium">
+                        <Fragment key={`row-${likelihood}`}>
+                          <div className="p-2 text-center font-medium">
                             {likelihood}
                           </div>
                           {[1, 2, 3, 4, 5].map((impact) => {
@@ -733,7 +733,7 @@ export function RiskDetailDialog({
                               </div>
                             );
                           })}
-                        </>
+                        </Fragment>
                       ))}
                     </div>
                     <div className="flex justify-between text-xs text-muted-foreground mt-2">
