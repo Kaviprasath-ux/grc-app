@@ -151,19 +151,6 @@ export function Sidebar() {
     );
   }, [session?.user?.permissions, session?.user?.roles]);
 
-  // Determine if user info should be shown
-  const showUserInfo = session?.user?.roles && session.user.roles.length > 0;
-
-  // Get initials for avatar
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(n => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
-
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-[260px] bg-white border-r border-slate-200">
       {/* Logo area */}
@@ -177,54 +164,12 @@ export function Sidebar() {
               <path fill="currentColor" d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
             </svg>
           </div>
-          <div className="flex flex-col">
-            <span className="text-base font-semibold text-slate-800 tracking-tight">GRC Platform</span>
-            <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Enterprise</span>
-          </div>
+          <span className="text-base font-semibold text-slate-800 tracking-tight">GRC Platform</span>
         </Link>
       </div>
 
-      {/* User profile section */}
-      {showUserInfo && (
-        <div className="relative mx-3 mt-4 mb-2 p-3 rounded-xl bg-slate-50 border border-slate-200">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-primary-600 text-white text-sm font-semibold shadow-md">
-              {getInitials(session.user.name || 'U')}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium text-slate-800 truncate">
-                {session.user.name}
-              </div>
-              <div className="flex flex-wrap gap-1 mt-1">
-                {session.user.roles.slice(0, 1).map((role) => (
-                  <span
-                    key={role}
-                    className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium bg-primary-50 text-primary-600 border border-primary-200"
-                  >
-                    {role.replace(/([A-Z])/g, ' $1').trim()}
-                  </span>
-                ))}
-                {session.user.roles.length > 1 && (
-                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-medium bg-slate-100 text-slate-500">
-                    +{session.user.roles.length - 1}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Navigation section label */}
-      <div className="relative px-5 py-3">
-        <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Navigation</span>
-      </div>
-
       {/* Navigation */}
-      <ScrollArea className={cn(
-        "relative",
-        showUserInfo ? "h-[calc(100vh-200px)]" : "h-[calc(100vh-120px)]"
-      )}>
+      <ScrollArea className="relative h-[calc(100vh-120px)]">
         <nav className="pb-4">
           {status === "loading" ? (
             <div className="flex flex-col items-center justify-center py-8 gap-3">

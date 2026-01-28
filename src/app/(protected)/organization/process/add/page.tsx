@@ -161,23 +161,23 @@ export default function AddProcessPage() {
                 <div
                   className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium border-2 ${
                     currentStep > item.step
-                      ? "bg-green-600 border-green-600 text-white"
+                      ? "bg-success border-success text-white"
                       : currentStep === item.step
-                      ? "bg-blue-600 border-blue-600 text-white"
-                      : "bg-white border-gray-300 text-gray-500"
+                      ? "bg-primary-600 border-primary-600 text-white"
+                      : "bg-white border-slate-300 text-slate-500"
                   }`}
                 >
                   {currentStep > item.step ? <Check className="h-5 w-5" /> : item.step}
                 </div>
                 <div className="mt-2 text-center">
-                  <p className={`text-sm font-medium ${currentStep >= item.step ? "text-blue-600" : "text-gray-500"}`}>
+                  <p className={`text-sm font-medium ${currentStep >= item.step ? "text-primary-600" : "text-slate-500"}`}>
                     {item.label}
                   </p>
                   <p className="text-xs text-muted-foreground hidden md:block">{item.description}</p>
                 </div>
               </div>
               {index < steps.length - 1 && (
-                <div className={`flex-1 h-1 mx-4 ${currentStep > item.step ? "bg-green-600" : "bg-gray-200"}`} />
+                <div className={`flex-1 h-1 mx-4 ${currentStep > item.step ? "bg-success" : "bg-slate-200"}`} />
               )}
             </div>
           ))}
@@ -214,7 +214,7 @@ export default function AddProcessPage() {
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="Enter description"
-                className="w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
+                className="w-full min-h-[80px] px-3 py-2 text-sm border rounded-md bg-white"
               />
             </div>
 
@@ -226,7 +226,7 @@ export default function AddProcessPage() {
                   onValueChange={(value) => setFormData({ ...formData, departmentId: value })}
                   disabled={isDepartmentContributor}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-white">
                     <SelectValue placeholder="Select Department" />
                   </SelectTrigger>
                   <SelectContent>
@@ -244,7 +244,7 @@ export default function AddProcessPage() {
                   value={formData.ownerId}
                   onValueChange={(value) => setFormData({ ...formData, ownerId: value })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-white">
                     <SelectValue placeholder="Select Owner" />
                   </SelectTrigger>
                   <SelectContent>
@@ -265,7 +265,7 @@ export default function AddProcessPage() {
                   value={formData.frequency}
                   onValueChange={(value) => setFormData({ ...formData, frequency: value })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-white">
                     <SelectValue placeholder="Select Frequency" />
                   </SelectTrigger>
                   <SelectContent>
@@ -283,7 +283,7 @@ export default function AddProcessPage() {
                   value={formData.natureOfImplementation}
                   onValueChange={(value) => setFormData({ ...formData, natureOfImplementation: value })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-white">
                     <SelectValue placeholder="Select Nature" />
                   </SelectTrigger>
                   <SelectContent>
@@ -303,7 +303,7 @@ export default function AddProcessPage() {
                 value={formData.processType}
                 onValueChange={(value) => setFormData({ ...formData, processType: value })}
               >
-                <SelectTrigger>
+                <SelectTrigger className="bg-white">
                   <SelectValue placeholder="Select Type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -328,7 +328,7 @@ export default function AddProcessPage() {
                   value={formData.location}
                   onValueChange={(value) => setFormData({ ...formData, location: value })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-white">
                     <SelectValue placeholder="Select Location" />
                   </SelectTrigger>
                   <SelectContent>
@@ -346,7 +346,7 @@ export default function AddProcessPage() {
                   value={formData.operationalComplexity}
                   onValueChange={(value) => setFormData({ ...formData, operationalComplexity: value })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-white">
                     <SelectValue placeholder="Select Complexity" />
                   </SelectTrigger>
                   <SelectContent>
@@ -420,7 +420,7 @@ export default function AddProcessPage() {
                   value={formData.responsible}
                   onValueChange={(value) => setFormData({ ...formData, responsible: value })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-white">
                     <SelectValue placeholder="Select user" />
                   </SelectTrigger>
                   <SelectContent>
@@ -439,7 +439,7 @@ export default function AddProcessPage() {
                   value={formData.accountable}
                   onValueChange={(value) => setFormData({ ...formData, accountable: value })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-white">
                     <SelectValue placeholder="Select user" />
                   </SelectTrigger>
                   <SelectContent>
@@ -460,7 +460,7 @@ export default function AddProcessPage() {
                   value={formData.consulted}
                   onValueChange={(value) => setFormData({ ...formData, consulted: value })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-white">
                     <SelectValue placeholder="Select user" />
                   </SelectTrigger>
                   <SelectContent>
@@ -479,7 +479,7 @@ export default function AddProcessPage() {
                   value={formData.informed}
                   onValueChange={(value) => setFormData({ ...formData, informed: value })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-white">
                     <SelectValue placeholder="Select user" />
                   </SelectTrigger>
                   <SelectContent>

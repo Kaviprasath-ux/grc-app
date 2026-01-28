@@ -988,7 +988,7 @@ function ProfilePageContent() {
                   <SelectTrigger className="flex-1">
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper" sideOffset={4}>
                     {serviceCategories.map((cat) => (
                       <SelectItem key={cat} value={cat}>
                         {cat}
@@ -1019,7 +1019,7 @@ function ProfilePageContent() {
                   <SelectTrigger className="flex-1">
                     <SelectValue placeholder="Select item" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper" sideOffset={4}>
                     {serviceItems.map((item) => (
                       <SelectItem key={item} value={item}>
                         {item}
@@ -1116,7 +1116,7 @@ function ProfilePageContent() {
                     <SelectTrigger className="flex-1">
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" sideOffset={4}>
                       {serviceCategories.map((cat) => (
                         <SelectItem key={cat} value={cat}>
                           {cat}
@@ -1147,7 +1147,7 @@ function ProfilePageContent() {
                     <SelectTrigger className="flex-1">
                       <SelectValue placeholder="Select item" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" sideOffset={4}>
                       {serviceItems.map((item) => (
                         <SelectItem key={item} value={item}>
                           {item}

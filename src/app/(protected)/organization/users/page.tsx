@@ -564,7 +564,13 @@ export default function UsersPage() {
       cell: ({ row }) => {
         const isActive = row.getValue("isActive") as boolean;
         return (
-          <Badge variant={isActive ? "default" : "secondary"}>
+          <Badge
+            variant="outline"
+            className={isActive
+              ? "border-transparent bg-success-light text-success-dark"
+              : "border-transparent bg-slate-100 text-slate-600"
+            }
+          >
             {isActive ? "Active" : "Inactive"}
           </Badge>
         );
@@ -592,8 +598,25 @@ export default function UsersPage() {
             >
               Edit
             </DropdownMenuItem>
-            <DropdownMenuItem>View Details</DropdownMenuItem>
-            <DropdownMenuItem>Reset Password</DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => {
+                setEditingUser(row.original);
+                if (row.original.function) {
+                  fetchReportingManagers(row.original.function);
+                }
+                setIsEditUserOpen(true);
+              }}
+            >
+              View Details
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => {
+                setEditingUser(row.original);
+                setIsChangePasswordOpen(true);
+              }}
+            >
+              Reset Password
+            </DropdownMenuItem>
             <DropdownMenuItem
               className="text-destructive"
               onClick={() => handleDeactivateUser(row.original)}
@@ -722,16 +745,16 @@ export default function UsersPage() {
                 placeholder="Search by Department Name"
                 value={departmentSearchTerm}
                 onChange={(e) => setDepartmentSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 bg-white"
               />
             </div>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={handleExport}>
-                <Download className="h-4 w-4 mr-2" />
+                <Upload className="h-4 w-4 mr-2" />
                 Export
               </Button>
               <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)}>
-                <Upload className="h-4 w-4 mr-2" />
+                <Download className="h-4 w-4 mr-2" />
                 Import
               </Button>
               <Button size="sm" onClick={() => setIsAddUserOpen(true)}>
@@ -747,7 +770,7 @@ export default function UsersPage() {
               <AccordionItem
                 key={dept.id}
                 value={dept.id}
-                className="border rounded-lg px-4"
+                className="border rounded-lg px-4 bg-white"
               >
                 <AccordionTrigger className="hover:no-underline py-4">
                   <span className="font-semibold text-foreground">
@@ -756,32 +779,32 @@ export default function UsersPage() {
                 </AccordionTrigger>
                 <AccordionContent>
                   {dept.users.length > 0 ? (
-                    <div className="overflow-x-auto">
+                    <div className="overflow-x-auto bg-white rounded-xl border border-slate-200">
                       <table className="w-full text-sm">
                         <thead>
-                          <tr className="border-b bg-muted/50">
-                            <th className="text-left p-3 font-medium">Full Name</th>
-                            <th className="text-left p-3 font-medium">Designation Name</th>
-                            <th className="text-left p-3 font-medium">Reporting Manager</th>
-                            <th className="text-left p-3 font-medium">Email ID</th>
-                            <th className="text-left p-3 font-medium">Last Login</th>
-                            <th className="text-center p-3 font-medium">Actions</th>
+                          <tr className="border-b border-slate-100 bg-slate-50/50">
+                            <th className="text-left py-3 pl-4 text-xs font-semibold text-slate-600">Full Name</th>
+                            <th className="text-left py-3 text-xs font-semibold text-slate-600">Designation Name</th>
+                            <th className="text-left py-3 text-xs font-semibold text-slate-600">Reporting Manager</th>
+                            <th className="text-left py-3 text-xs font-semibold text-slate-600">Email ID</th>
+                            <th className="text-left py-3 text-xs font-semibold text-slate-600">Last Login</th>
+                            <th className="text-center py-3 text-xs font-semibold text-slate-600">Actions</th>
                           </tr>
                         </thead>
-                        <tbody>
+                        <tbody className="bg-white">
                           {dept.users.map((user) => (
-                            <tr key={user.id} className="border-b hover:bg-muted/30">
-                              <td className="p-3">{user.fullName}</td>
-                              <td className="p-3">{user.designation || "-"}</td>
-                              <td className="p-3">{user.reportingManager?.fullName || "-"}</td>
-                              <td className="p-3">{user.email}</td>
-                              <td className="p-3">-</td>
-                              <td className="p-3">
+                            <tr key={user.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                              <td className="py-3 pl-4 text-sm text-slate-700">{user.fullName}</td>
+                              <td className="py-3 text-sm text-slate-700">{user.designation || "-"}</td>
+                              <td className="py-3 text-sm text-slate-700">{user.reportingManager?.fullName || "-"}</td>
+                              <td className="py-3 text-sm text-slate-700">{user.email}</td>
+                              <td className="py-3 text-sm text-slate-700">-</td>
+                              <td className="py-3">
                                 <div className="flex items-center justify-center gap-2">
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-8 w-8 text-muted-foreground hover:text-primary"
+                                    className="h-8 w-8 text-slate-400 hover:text-slate-600"
                                     onClick={() => {
                                       setEditingUser(user);
                                       if (user.function) {
@@ -795,7 +818,7 @@ export default function UsersPage() {
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                    className="h-8 w-8 text-slate-400 hover:text-error"
                                     onClick={() => openDeleteDialog(user)}
                                   >
                                     <Trash2 className="h-4 w-4" />
@@ -807,14 +830,18 @@ export default function UsersPage() {
                         </tbody>
                       </table>
                       {/* Pagination */}
-                      <div className="flex items-center justify-end py-3 text-sm text-muted-foreground">
-                        <span>1 to {dept.users.length} of {dept.users.length}</span>
+                      <div className="flex items-center justify-between p-4 border-t border-slate-100">
+                        <div className="text-xs text-slate-500">
+                          Showing 1 to {dept.users.length} of {dept.users.length}
+                        </div>
                       </div>
                     </div>
                   ) : (
-                    <p className="text-muted-foreground text-sm py-4 text-center">
-                      No users in this department
-                    </p>
+                    <div className="bg-white rounded-xl border border-slate-200 p-8">
+                      <p className="text-slate-500 text-sm text-center">
+                        No users in this department
+                      </p>
+                    </div>
                   )}
                 </AccordionContent>
               </AccordionItem>
@@ -887,280 +914,322 @@ export default function UsersPage() {
           <DialogHeader>
             <DialogTitle>New Account</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="userName">Username *</Label>
-                <Input
-                  id="userName"
-                  value={userForm.userName}
-                  onChange={(e) => setUserForm({ ...userForm, userName: e.target.value })}
-                  placeholder="Enter username"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={userForm.email}
-                  onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
-                  placeholder="Enter email"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="firstName">First Name *</Label>
-                <Input
-                  id="firstName"
-                  value={userForm.firstName}
-                  onChange={(e) => setUserForm({ ...userForm, firstName: e.target.value })}
-                  placeholder="Enter first name"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="lastName">Last Name *</Label>
-                <Input
-                  id="lastName"
-                  value={userForm.lastName}
-                  onChange={(e) => setUserForm({ ...userForm, lastName: e.target.value })}
-                  placeholder="Enter last name"
-                />
-              </div>
-              <div className="space-y-2 col-span-2">
-                <Label htmlFor="fullName">Full Name *</Label>
-                <Input
-                  id="fullName"
-                  value={userForm.fullName}
-                  onChange={(e) => setUserForm({ ...userForm, fullName: e.target.value })}
-                  placeholder="Enter full name"
-                />
-              </div>
-              {/* Function and Role - side by side */}
-              <div className="space-y-2">
-                <Label htmlFor="function">Function *</Label>
-                <Select
-                  value={userForm.function}
-                  onValueChange={(value) => {
-                    setUserForm({ ...userForm, function: value, role: "", reportingManagerId: "" });
-                    fetchReportingManagers(value);
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select function" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Business">Business</SelectItem>
-                    <SelectItem value="Security">Security</SelectItem>
-                    <SelectItem value="Audit">Audit</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="role">Role *</Label>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div>
-                        <Select
-                          value={userForm.role}
-                          onValueChange={(value) => setUserForm({ ...userForm, role: value })}
-                          disabled={!userForm.function}
-                        >
-                          <SelectTrigger className={!userForm.function ? "cursor-not-allowed opacity-50" : ""}>
-                            <SelectValue placeholder={userForm.function ? "Select role" : "Select function first"} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {userForm.function && rolesByFunction[userForm.function]?.map((role) => (
-                              <SelectItem key={role} value={role}>
-                                {role}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </TooltipTrigger>
-                    {!userForm.function && (
-                      <TooltipContent>
-                        <p>Please select a function first</p>
-                      </TooltipContent>
-                    )}
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-              {/* Department and Designation - side by side */}
-              <div className="space-y-2">
-                <Label htmlFor="department">Department</Label>
-                <Select
-                  value={userForm.departmentId}
-                  onValueChange={(value) => setUserForm({ ...userForm, departmentId: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select department" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {departments.map((dept) => (
-                      <SelectItem key={dept.id} value={dept.id}>
-                        {dept.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="designation">Designation</Label>
-                <Input
-                  id="designation"
-                  value={userForm.designation}
-                  onChange={(e) => setUserForm({ ...userForm, designation: e.target.value })}
-                  placeholder="Enter designation"
-                  autoComplete="off"
-                />
-              </div>
-              {/* Reporting Manager */}
-              <div className="space-y-2 col-span-2">
-                <Label htmlFor="reportingManager">Reporting Manager</Label>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div>
-                        <Select
-                          value={userForm.reportingManagerId}
-                          onValueChange={(value) => setUserForm({ ...userForm, reportingManagerId: value })}
-                          disabled={!userForm.function}
-                        >
-                          <SelectTrigger className={!userForm.function ? "cursor-not-allowed opacity-50" : ""}>
-                            <SelectValue placeholder={userForm.function ? "Select reporting manager" : "Select function first"} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {reportingManagers.map((manager) => (
-                              <SelectItem key={manager.id} value={manager.id}>
-                                {manager.fullName} {manager.designation ? `(${manager.designation})` : ""}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </TooltipTrigger>
-                    {!userForm.function && (
-                      <TooltipContent>
-                        <p>Please select a function first</p>
-                      </TooltipContent>
-                    )}
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="language">Language</Label>
-                <Select
-                  value={userForm.language}
-                  onValueChange={(value) => setUserForm({ ...userForm, language: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select language" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="English">English</SelectItem>
-                    <SelectItem value="Arabic">Arabic</SelectItem>
-                    <SelectItem value="Hindi">Hindi</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="timezone">Time Zone</Label>
-                <Select
-                  value={userForm.timezone}
-                  onValueChange={(value) => setUserForm({ ...userForm, timezone: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select timezone" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-[300px]">
-                    <SelectItem value="UTC">UTC</SelectItem>
-                    <SelectItem value="GMT-12:00">(GMT-12:00) International Date Line West</SelectItem>
-                    <SelectItem value="GMT-11:00">(GMT-11:00) Midway Island, Samoa</SelectItem>
-                    <SelectItem value="GMT-10:00">(GMT-10:00) Hawaii</SelectItem>
-                    <SelectItem value="GMT-09:00">(GMT-09:00) Alaska</SelectItem>
-                    <SelectItem value="GMT-08:00">(GMT-08:00) Pacific Time (US & Canada)</SelectItem>
-                    <SelectItem value="GMT-07:00">(GMT-07:00) Mountain Time (US & Canada)</SelectItem>
-                    <SelectItem value="GMT-06:00">(GMT-06:00) Central Time (US & Canada)</SelectItem>
-                    <SelectItem value="GMT-05:00">(GMT-05:00) Eastern Time (US & Canada)</SelectItem>
-                    <SelectItem value="GMT-04:00">(GMT-04:00) Atlantic Time (Canada)</SelectItem>
-                    <SelectItem value="GMT-03:30">(GMT-03:30) Newfoundland</SelectItem>
-                    <SelectItem value="GMT-03:00">(GMT-03:00) Buenos Aires, Brasilia</SelectItem>
-                    <SelectItem value="GMT-02:00">(GMT-02:00) Mid-Atlantic</SelectItem>
-                    <SelectItem value="GMT-01:00">(GMT-01:00) Azores, Cape Verde</SelectItem>
-                    <SelectItem value="GMT+00:00">(GMT+00:00) London, Dublin, Lisbon</SelectItem>
-                    <SelectItem value="GMT+01:00">(GMT+01:00) Berlin, Paris, Rome, Madrid</SelectItem>
-                    <SelectItem value="GMT+02:00">(GMT+02:00) Cairo, Jerusalem, Athens</SelectItem>
-                    <SelectItem value="GMT+03:00">(GMT+03:00) Qatar, Kuwait, Riyadh, Moscow</SelectItem>
-                    <SelectItem value="GMT+03:30">(GMT+03:30) Tehran</SelectItem>
-                    <SelectItem value="GMT+04:00">(GMT+04:00) Abu Dhabi, Dubai, Muscat</SelectItem>
-                    <SelectItem value="GMT+04:30">(GMT+04:30) Kabul</SelectItem>
-                    <SelectItem value="GMT+05:00">(GMT+05:00) Karachi, Tashkent</SelectItem>
-                    <SelectItem value="GMT+05:30">(GMT+05:30) India, Sri Lanka</SelectItem>
-                    <SelectItem value="GMT+05:45">(GMT+05:45) Kathmandu</SelectItem>
-                    <SelectItem value="GMT+06:00">(GMT+06:00) Dhaka, Almaty</SelectItem>
-                    <SelectItem value="GMT+06:30">(GMT+06:30) Yangon</SelectItem>
-                    <SelectItem value="GMT+07:00">(GMT+07:00) Bangkok, Jakarta, Hanoi</SelectItem>
-                    <SelectItem value="GMT+08:00">(GMT+08:00) Singapore, Hong Kong, Beijing</SelectItem>
-                    <SelectItem value="GMT+09:00">(GMT+09:00) Tokyo, Seoul</SelectItem>
-                    <SelectItem value="GMT+09:30">(GMT+09:30) Adelaide, Darwin</SelectItem>
-                    <SelectItem value="GMT+10:00">(GMT+10:00) Sydney, Melbourne, Brisbane</SelectItem>
-                    <SelectItem value="GMT+11:00">(GMT+11:00) Solomon Islands</SelectItem>
-                    <SelectItem value="GMT+12:00">(GMT+12:00) Auckland, Fiji</SelectItem>
-                    <SelectItem value="GMT+13:00">(GMT+13:00) Nuku'alofa, Samoa</SelectItem>
-                  </SelectContent>
-                </Select>
+          <div className="space-y-6 py-4">
+            {/* Account Credentials Section */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">Account Credentials</h4>
+              <div className="grid grid-cols-2 gap-4">
+                {/* Username - full width */}
+                <div className="col-span-2">
+                  <Label htmlFor="userName" className="text-sm font-medium text-slate-700">Username *</Label>
+                  <Input
+                    id="userName"
+                    value={userForm.userName}
+                    onChange={(e) => setUserForm({ ...userForm, userName: e.target.value })}
+                    placeholder="Enter username"
+                    className="mt-1.5 bg-white"
+                  />
+                </div>
+                {/* Email - full width */}
+                <div className="col-span-2">
+                  <Label htmlFor="email" className="text-sm font-medium text-slate-700">Email *</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={userForm.email}
+                    onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
+                    placeholder="Enter email"
+                    className="mt-1.5 bg-white"
+                  />
+                </div>
+                {/* Password and Confirm Password - side by side */}
+                <div>
+                  <Label htmlFor="password" className="text-sm font-medium text-slate-700">Password *</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={userForm.password}
+                    onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
+                    placeholder="Enter password"
+                    autoComplete="new-password"
+                    className="mt-1.5 bg-white"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="confirmPassword" className="text-sm font-medium text-slate-700">Confirm Password *</Label>
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    value={userForm.confirmPassword}
+                    onChange={(e) => setUserForm({ ...userForm, confirmPassword: e.target.value })}
+                    placeholder="Confirm password"
+                    autoComplete="new-password"
+                    className="mt-1.5 bg-white"
+                  />
+                </div>
               </div>
             </div>
-            <div className="flex gap-6">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="blocked"
-                  checked={userForm.isBlocked}
-                  onCheckedChange={(checked) =>
-                    setUserForm({ ...userForm, isBlocked: checked as boolean })
-                  }
-                />
-                <Label htmlFor="blocked" className="font-normal">
-                  Blocked
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="active"
-                  checked={userForm.isActive}
-                  onCheckedChange={(checked) =>
-                    setUserForm({ ...userForm, isActive: checked as boolean })
-                  }
-                />
-                <Label htmlFor="active" className="font-normal">
-                  Active
-                </Label>
+
+            {/* Personal Information Section */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">Personal Information</h4>
+              <div className="grid grid-cols-2 gap-4">
+                {/* First Name and Last Name - side by side */}
+                <div>
+                  <Label htmlFor="firstName" className="text-sm font-medium text-slate-700">First Name *</Label>
+                  <Input
+                    id="firstName"
+                    value={userForm.firstName}
+                    onChange={(e) => setUserForm({ ...userForm, firstName: e.target.value })}
+                    placeholder="Enter first name"
+                    className="mt-1.5 bg-white"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="lastName" className="text-sm font-medium text-slate-700">Last Name *</Label>
+                  <Input
+                    id="lastName"
+                    value={userForm.lastName}
+                    onChange={(e) => setUserForm({ ...userForm, lastName: e.target.value })}
+                    placeholder="Enter last name"
+                    className="mt-1.5 bg-white"
+                  />
+                </div>
+                {/* Full Name - full width */}
+                <div className="col-span-2">
+                  <Label htmlFor="fullName" className="text-sm font-medium text-slate-700">Full Name *</Label>
+                  <Input
+                    id="fullName"
+                    value={userForm.fullName}
+                    onChange={(e) => setUserForm({ ...userForm, fullName: e.target.value })}
+                    placeholder="Enter full name"
+                    className="mt-1.5 bg-white"
+                  />
+                </div>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="password">Password *</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={userForm.password}
-                  onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
-                  placeholder="Enter password"
-                  autoComplete="new-password"
-                />
+
+            {/* Organization & Role Section */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">Organization & Role</h4>
+              <div className="grid grid-cols-2 gap-4">
+                {/* Function - full width */}
+                <div className="col-span-2">
+                  <Label htmlFor="function" className="text-sm font-medium text-slate-700">Function *</Label>
+                  <Select
+                    value={userForm.function}
+                    onValueChange={(value) => {
+                      setUserForm({ ...userForm, function: value, role: "", reportingManagerId: "" });
+                      fetchReportingManagers(value);
+                    }}
+                  >
+                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                      <SelectValue placeholder="Select function" />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4} className="max-h-[200px]">
+                      <SelectItem value="Business">Business</SelectItem>
+                      <SelectItem value="Security">Security</SelectItem>
+                      <SelectItem value="Audit">Audit</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {/* Role - full width */}
+                <div className="col-span-2">
+                  <Label htmlFor="role" className="text-sm font-medium text-slate-700">Role *</Label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div>
+                          <Select
+                            value={userForm.role}
+                            onValueChange={(value) => setUserForm({ ...userForm, role: value })}
+                            disabled={!userForm.function}
+                          >
+                            <SelectTrigger className={`mt-1.5 w-full bg-white ${!userForm.function ? "cursor-not-allowed opacity-50" : ""}`}>
+                              <SelectValue placeholder={userForm.function ? "Select role" : "Select function first"} />
+                            </SelectTrigger>
+                            <SelectContent position="popper" sideOffset={4} className="max-h-[200px]">
+                              {userForm.function && rolesByFunction[userForm.function]?.map((role) => (
+                                <SelectItem key={role} value={role}>
+                                  {role}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </TooltipTrigger>
+                      {!userForm.function && (
+                        <TooltipContent>
+                          <p>Please select a function first</p>
+                        </TooltipContent>
+                      )}
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                {/* Department and Designation - side by side */}
+                <div>
+                  <Label htmlFor="department" className="text-sm font-medium text-slate-700">Department</Label>
+                  <Select
+                    value={userForm.departmentId}
+                    onValueChange={(value) => setUserForm({ ...userForm, departmentId: value })}
+                  >
+                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                      <SelectValue placeholder="Select department" />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4} className="max-h-[200px]">
+                      {departments.map((dept) => (
+                        <SelectItem key={dept.id} value={dept.id}>
+                          {dept.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="designation" className="text-sm font-medium text-slate-700">Designation</Label>
+                  <Input
+                    id="designation"
+                    value={userForm.designation}
+                    onChange={(e) => setUserForm({ ...userForm, designation: e.target.value })}
+                    placeholder="Enter designation"
+                    autoComplete="off"
+                    className="mt-1.5 bg-white"
+                  />
+                </div>
+                {/* Reporting Manager - full width */}
+                <div className="col-span-2">
+                  <Label htmlFor="reportingManager" className="text-sm font-medium text-slate-700">Reporting Manager</Label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div>
+                          <Select
+                            value={userForm.reportingManagerId}
+                            onValueChange={(value) => setUserForm({ ...userForm, reportingManagerId: value })}
+                            disabled={!userForm.function}
+                          >
+                            <SelectTrigger className={`mt-1.5 w-full bg-white ${!userForm.function ? "cursor-not-allowed opacity-50" : ""}`}>
+                              <SelectValue placeholder={userForm.function ? "Select reporting manager" : "Select function first"} />
+                            </SelectTrigger>
+                            <SelectContent position="popper" sideOffset={4} className="max-h-[200px]">
+                              {reportingManagers.map((manager) => (
+                                <SelectItem key={manager.id} value={manager.id}>
+                                  {manager.fullName} {manager.designation ? `(${manager.designation})` : ""}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </TooltipTrigger>
+                      {!userForm.function && (
+                        <TooltipContent>
+                          <p>Please select a function first</p>
+                        </TooltipContent>
+                      )}
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password *</Label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  value={userForm.confirmPassword}
-                  onChange={(e) => setUserForm({ ...userForm, confirmPassword: e.target.value })}
-                  placeholder="Confirm password"
-                  autoComplete="new-password"
-                />
+            </div>
+
+            {/* Preferences Section */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">Preferences</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="language" className="text-sm font-medium text-slate-700">Language</Label>
+                  <Select
+                    value={userForm.language}
+                    onValueChange={(value) => setUserForm({ ...userForm, language: value })}
+                  >
+                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                      <SelectValue placeholder="Select language" />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4} className="max-h-[200px]">
+                      <SelectItem value="English">English</SelectItem>
+                      <SelectItem value="Arabic">Arabic</SelectItem>
+                      <SelectItem value="Hindi">Hindi</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="timezone" className="text-sm font-medium text-slate-700">Time Zone</Label>
+                  <Select
+                    value={userForm.timezone}
+                    onValueChange={(value) => setUserForm({ ...userForm, timezone: value })}
+                  >
+                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                      <SelectValue placeholder="Select timezone" />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4} className="max-h-[300px]">
+                      <SelectItem value="UTC">UTC</SelectItem>
+                      <SelectItem value="GMT-12:00">(GMT-12:00) International Date Line West</SelectItem>
+                      <SelectItem value="GMT-11:00">(GMT-11:00) Midway Island, Samoa</SelectItem>
+                      <SelectItem value="GMT-10:00">(GMT-10:00) Hawaii</SelectItem>
+                      <SelectItem value="GMT-09:00">(GMT-09:00) Alaska</SelectItem>
+                      <SelectItem value="GMT-08:00">(GMT-08:00) Pacific Time (US & Canada)</SelectItem>
+                      <SelectItem value="GMT-07:00">(GMT-07:00) Mountain Time (US & Canada)</SelectItem>
+                      <SelectItem value="GMT-06:00">(GMT-06:00) Central Time (US & Canada)</SelectItem>
+                      <SelectItem value="GMT-05:00">(GMT-05:00) Eastern Time (US & Canada)</SelectItem>
+                      <SelectItem value="GMT-04:00">(GMT-04:00) Atlantic Time (Canada)</SelectItem>
+                      <SelectItem value="GMT-03:30">(GMT-03:30) Newfoundland</SelectItem>
+                      <SelectItem value="GMT-03:00">(GMT-03:00) Buenos Aires, Brasilia</SelectItem>
+                      <SelectItem value="GMT-02:00">(GMT-02:00) Mid-Atlantic</SelectItem>
+                      <SelectItem value="GMT-01:00">(GMT-01:00) Azores, Cape Verde</SelectItem>
+                      <SelectItem value="GMT+00:00">(GMT+00:00) London, Dublin, Lisbon</SelectItem>
+                      <SelectItem value="GMT+01:00">(GMT+01:00) Berlin, Paris, Rome, Madrid</SelectItem>
+                      <SelectItem value="GMT+02:00">(GMT+02:00) Cairo, Jerusalem, Athens</SelectItem>
+                      <SelectItem value="GMT+03:00">(GMT+03:00) Qatar, Kuwait, Riyadh, Moscow</SelectItem>
+                      <SelectItem value="GMT+03:30">(GMT+03:30) Tehran</SelectItem>
+                      <SelectItem value="GMT+04:00">(GMT+04:00) Abu Dhabi, Dubai, Muscat</SelectItem>
+                      <SelectItem value="GMT+04:30">(GMT+04:30) Kabul</SelectItem>
+                      <SelectItem value="GMT+05:00">(GMT+05:00) Karachi, Tashkent</SelectItem>
+                      <SelectItem value="GMT+05:30">(GMT+05:30) India, Sri Lanka</SelectItem>
+                      <SelectItem value="GMT+05:45">(GMT+05:45) Kathmandu</SelectItem>
+                      <SelectItem value="GMT+06:00">(GMT+06:00) Dhaka, Almaty</SelectItem>
+                      <SelectItem value="GMT+06:30">(GMT+06:30) Yangon</SelectItem>
+                      <SelectItem value="GMT+07:00">(GMT+07:00) Bangkok, Jakarta, Hanoi</SelectItem>
+                      <SelectItem value="GMT+08:00">(GMT+08:00) Singapore, Hong Kong, Beijing</SelectItem>
+                      <SelectItem value="GMT+09:00">(GMT+09:00) Tokyo, Seoul</SelectItem>
+                      <SelectItem value="GMT+09:30">(GMT+09:30) Adelaide, Darwin</SelectItem>
+                      <SelectItem value="GMT+10:00">(GMT+10:00) Sydney, Melbourne, Brisbane</SelectItem>
+                      <SelectItem value="GMT+11:00">(GMT+11:00) Solomon Islands</SelectItem>
+                      <SelectItem value="GMT+12:00">(GMT+12:00) Auckland, Fiji</SelectItem>
+                      <SelectItem value="GMT+13:00">(GMT+13:00) Nuku'alofa, Samoa</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            {/* Account Status Section */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">Account Status</h4>
+              <div className="flex gap-6">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="active"
+                    checked={userForm.isActive}
+                    onCheckedChange={(checked) =>
+                      setUserForm({ ...userForm, isActive: checked as boolean })
+                    }
+                  />
+                  <Label htmlFor="active" className="font-normal">
+                    Active
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="blocked"
+                    checked={userForm.isBlocked}
+                    onCheckedChange={(checked) =>
+                      setUserForm({ ...userForm, isBlocked: checked as boolean })
+                    }
+                  />
+                  <Label htmlFor="blocked" className="font-normal">
+                    Blocked
+                  </Label>
+                </div>
               </div>
             </div>
           </div>
@@ -1216,6 +1285,7 @@ export default function UsersPage() {
                   onChange={(e) =>
                     setEditingUser({ ...editingUser, firstName: e.target.value })
                   }
+                  className="bg-white"
                 />
               </div>
 
@@ -1228,6 +1298,7 @@ export default function UsersPage() {
                   onChange={(e) =>
                     setEditingUser({ ...editingUser, lastName: e.target.value })
                   }
+                  className="bg-white"
                 />
               </div>
 
@@ -1240,6 +1311,7 @@ export default function UsersPage() {
                   onChange={(e) =>
                     setEditingUser({ ...editingUser, fullName: e.target.value })
                   }
+                  className="bg-white"
                 />
               </div>
 
@@ -1253,6 +1325,7 @@ export default function UsersPage() {
                   onChange={(e) =>
                     setEditingUser({ ...editingUser, email: e.target.value })
                   }
+                  className="bg-white"
                 />
               </div>
 
@@ -1294,6 +1367,7 @@ export default function UsersPage() {
                   onChange={(e) =>
                     setEditingUser({ ...editingUser, userName: e.target.value })
                   }
+                  className="bg-white"
                 />
               </div>
 
@@ -1307,10 +1381,10 @@ export default function UsersPage() {
                     fetchReportingManagers(value);
                   }}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full bg-white">
                     <SelectValue placeholder="Select function" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper" sideOffset={4} className="max-h-[200px]">
                     <SelectItem value="Business">Business</SelectItem>
                     <SelectItem value="Security">Security</SelectItem>
                     <SelectItem value="Audit">Audit</SelectItem>
@@ -1327,10 +1401,10 @@ export default function UsersPage() {
                     setEditingUser({ ...editingUser, role: value })
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full bg-white">
                     <SelectValue placeholder="Select..." />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper" sideOffset={4} className="max-h-[200px]">
                     {allUserRoles.map((role) => (
                       <SelectItem key={role} value={role}>
                         {role}
@@ -1349,10 +1423,10 @@ export default function UsersPage() {
                     setEditingUser({ ...editingUser, departmentId: value })
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full bg-white">
                     <SelectValue placeholder="Select department" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper" sideOffset={4} className="max-h-[200px]">
                     {departments.map((dept) => (
                       <SelectItem key={dept.id} value={dept.id}>
                         {dept.name}
@@ -1371,10 +1445,10 @@ export default function UsersPage() {
                     setEditingUser({ ...editingUser, designation: value })
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full bg-white">
                     <SelectValue placeholder="Select Designation" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper" sideOffset={4} className="max-h-[200px]">
                     <SelectItem value="Analyst">Analyst</SelectItem>
                     <SelectItem value="Developer">Developer</SelectItem>
                     <SelectItem value="Financial Analyst">Financial Analyst</SelectItem>
@@ -1398,10 +1472,10 @@ export default function UsersPage() {
                     setEditingUser({ ...editingUser, reportingManagerId: value })
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full bg-white">
                     <SelectValue placeholder="Select reporting manager" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper" sideOffset={4} className="max-h-[200px]">
                     {reportingManagers.map((manager) => (
                       <SelectItem key={manager.id} value={manager.id}>
                         {manager.fullName} {manager.designation ? `(${manager.designation})` : ""}
@@ -1420,10 +1494,10 @@ export default function UsersPage() {
                     setEditingUser({ ...editingUser, language: value })
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full bg-white">
                     <SelectValue placeholder="Select language" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper" sideOffset={4} className="max-h-[200px]">
                     <SelectItem value="English">English</SelectItem>
                     <SelectItem value="Arabic">Arabic</SelectItem>
                     <SelectItem value="Hindi">Hindi</SelectItem>
@@ -1503,10 +1577,10 @@ export default function UsersPage() {
             </div>
           )}
           <DialogFooter>
-            <Button onClick={handleEditUser}>Save</Button>
             <Button variant="outline" onClick={() => setIsEditUserOpen(false)}>
               Cancel
             </Button>
+            <Button onClick={handleEditUser}>Save</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1594,8 +1668,8 @@ export default function UsersPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="newPassword">New Password *</Label>
+            <div>
+              <Label htmlFor="newPassword" className="text-sm font-medium text-slate-700">New Password *</Label>
               <Input
                 id="newPassword"
                 type="password"
@@ -1608,10 +1682,11 @@ export default function UsersPage() {
                 }
                 placeholder="Enter new password"
                 autoComplete="new-password"
+                className="mt-1.5 bg-white"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirmNewPassword">Confirm Password *</Label>
+            <div>
+              <Label htmlFor="confirmNewPassword" className="text-sm font-medium text-slate-700">Confirm Password *</Label>
               <Input
                 id="confirmNewPassword"
                 type="password"
@@ -1624,6 +1699,7 @@ export default function UsersPage() {
                 }
                 placeholder="Confirm new password"
                 autoComplete="new-password"
+                className="mt-1.5 bg-white"
               />
             </div>
           </div>

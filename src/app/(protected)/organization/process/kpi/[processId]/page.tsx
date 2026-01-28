@@ -229,7 +229,7 @@ export default function KPIDetailsPage() {
       cell: ({ row }) => {
         const doc = row.original.document;
         return doc ? (
-          <a href={doc} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+          <a href={doc} target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline">
             View
           </a>
         ) : (
@@ -289,19 +289,19 @@ export default function KPIDetailsPage() {
         <span className="text-muted-foreground">|</span>
         <span className="text-muted-foreground">KPI</span>
         <span className="text-muted-foreground">|</span>
-        <span className="text-blue-600 font-medium">{process?.name}</span>
+        <span className="text-primary-600 font-medium">{process?.name}</span>
       </div>
 
       {/* Main Content Card */}
-      <Card className="bg-[#f8fafc]">
+      <Card className="bg-slate-50">
         <CardContent className="pt-6">
           {/* KPI Header with Year Selector */}
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-[#1e3a5f]">KPI</h3>
+            <h3 className="text-lg font-semibold text-slate-800">KPI</h3>
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">Year</span>
               <Select value={selectedYear} onValueChange={setSelectedYear}>
-                <SelectTrigger className="w-[100px]">
+                <SelectTrigger className="w-[100px] bg-white">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -505,7 +505,7 @@ export default function KPIDetailsPage() {
                   )
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger className="bg-white">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

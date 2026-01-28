@@ -612,22 +612,22 @@ export default function BIAPage() {
         <span className="text-muted-foreground">|</span>
         <span className="text-muted-foreground">Process</span>
         <span className="text-muted-foreground">|</span>
-        <span className="text-blue-600 font-medium">Business Impact Analysis</span>
+        <span className="text-primary-600 font-medium">Business Impact Analysis</span>
       </div>
 
       {/* Top controls row */}
       <div className="flex items-center justify-end gap-4">
         <span className={`font-medium ${
-          status === "Open" ? "text-blue-600" :
-          status === "Pending Approval" ? "text-orange-600" :
-          status === "Approved" ? "text-green-600" :
-          status === "Sent Back" ? "text-red-600" :
-          "text-gray-600"
+          status === "Open" ? "text-info" :
+          status === "Pending Approval" ? "text-warning" :
+          status === "Approved" ? "text-success" :
+          status === "Sent Back" ? "text-error" :
+          "text-slate-600"
         }`}>
           {status}
         </span>
         <Select value={selectedDepartment} onValueChange={setSelectedDepartment} disabled={isReviewer ? !(status === "Open" || status === "Sent Back") : !isEditable}>
-          <SelectTrigger className="w-[200px]">
+          <SelectTrigger className="w-[200px] bg-white">
             <SelectValue placeholder="Department" />
           </SelectTrigger>
           <SelectContent>
@@ -647,7 +647,7 @@ export default function BIAPage() {
             !selectedDepartment // For all roles: disabled if no department selected
           }
         >
-          <SelectTrigger className="w-[200px]">
+          <SelectTrigger className="w-[200px] bg-white">
             <SelectValue placeholder={!selectedDepartment ? "Select Department First" : "Approver"} />
           </SelectTrigger>
           <SelectContent>
@@ -666,7 +666,7 @@ export default function BIAPage() {
               variant="outline"
               onClick={() => setIsSendBackDialogOpen(true)}
               disabled={saving}
-              className="border-red-300 text-red-600 hover:bg-red-50"
+              className="border-error/30 text-error hover:bg-error-light"
             >
               Send Back
             </Button>
@@ -692,7 +692,7 @@ export default function BIAPage() {
             title="View Comments"
             onClick={() => setIsCommentsDialogOpen(true)}
           >
-            <MessageSquare className="h-5 w-5 text-blue-600" />
+            <MessageSquare className="h-5 w-5 text-primary-600" />
           </Button>
         )}
 
@@ -705,7 +705,7 @@ export default function BIAPage() {
             title={`View Comments (${biaComments.length})`}
             onClick={() => setIsCommentsDialogOpen(true)}
           >
-            <MessageSquare className="h-5 w-5 text-blue-600" />
+            <MessageSquare className="h-5 w-5 text-primary-600" />
           </Button>
         )}
       </div>
@@ -718,7 +718,7 @@ export default function BIAPage() {
         {/* Category table */}
         <div className="border rounded-lg overflow-hidden">
           {/* Table header */}
-          <div className="grid grid-cols-3 bg-[#1e3a5f] text-white">
+          <div className="grid grid-cols-3 bg-slate-800 text-white">
             <div className="px-4 py-3 font-medium">Category</div>
             <div className="px-4 py-3 font-medium text-center">BIA Rating</div>
             <div className="px-4 py-3 font-medium">Description</div>
@@ -739,7 +739,7 @@ export default function BIAPage() {
                     onValueChange={(value) => handleRatingChange(category.name, value)}
                     disabled={!isEditable}
                   >
-                    <SelectTrigger className="w-[150px]">
+                    <SelectTrigger className="w-[150px] bg-white">
                       <SelectValue placeholder="" />
                     </SelectTrigger>
                     <SelectContent>
@@ -768,7 +768,7 @@ export default function BIAPage() {
         {/* Recovery metrics row */}
         <div className="grid grid-cols-6 gap-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-blue-600">RTO</label>
+            <label className="text-sm font-medium text-primary-600">RTO</label>
             <Input
               type="number"
               value={rtoHours}
@@ -778,7 +778,7 @@ export default function BIAPage() {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-blue-600">Low</label>
+            <label className="text-sm font-medium text-primary-600">Low</label>
             <Input
               type="number"
               value={lowValue}
@@ -788,7 +788,7 @@ export default function BIAPage() {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-blue-600">Critical</label>
+            <label className="text-sm font-medium text-primary-600">Critical</label>
             <Input
               type="number"
               value={criticalValue}
@@ -798,7 +798,7 @@ export default function BIAPage() {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-blue-600">High</label>
+            <label className="text-sm font-medium text-primary-600">High</label>
             <Input
               type="number"
               value={highValue}
@@ -808,7 +808,7 @@ export default function BIAPage() {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-blue-600">Medium</label>
+            <label className="text-sm font-medium text-primary-600">Medium</label>
             <Input
               type="number"
               value={mediumValue}
@@ -818,7 +818,7 @@ export default function BIAPage() {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-blue-600">RPO</label>
+            <label className="text-sm font-medium text-primary-600">RPO</label>
             <Input
               type="number"
               value={rpoHours}
@@ -886,14 +886,14 @@ export default function BIAPage() {
                   <div className="flex items-center justify-between">
                     <span className="font-medium text-sm">{comment.createdByName}</span>
                     <span className={`text-xs px-2 py-1 rounded ${
-                      comment.action === "Approve" ? "bg-green-100 text-green-700" :
-                      comment.action === "SendBack" ? "bg-red-100 text-red-700" :
-                      "bg-blue-100 text-blue-700"
+                      comment.action === "Approve" ? "bg-success-light text-success-dark" :
+                      comment.action === "SendBack" ? "bg-error-light text-error-dark" :
+                      "bg-info-light text-info-dark"
                     }`}>
                       {comment.action === "SendBack" ? "Sent Back" : comment.action}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-700">{comment.comment}</p>
+                  <p className="text-sm text-slate-700">{comment.comment}</p>
                   <p className="text-xs text-muted-foreground">
                     {new Date(comment.createdAt).toLocaleString()}
                   </p>

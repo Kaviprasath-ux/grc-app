@@ -326,29 +326,31 @@ export function EditProfileWizard({
           {currentStep === 1 && (
             <div className="space-y-5">
               {/* Logo */}
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-center overflow-hidden flex-shrink-0">
-                  {formData.logo ? (
-                    <img src={formData.logo} alt="Logo" className="w-full h-full object-cover" />
-                  ) : (
-                    <Upload className="h-5 w-5 text-slate-300" />
-                  )}
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-slate-700">Logo</p>
-                  <p className="text-xs text-slate-400 mb-2">PNG or JPG, max 2MB</p>
-                  <div className="flex gap-2">
-                    <label>
-                      <Input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileUpload(e, "logo")} />
-                      <Button type="button" variant="outline" size="sm" className="h-7 text-xs" asChild>
-                        <span>Upload</span>
-                      </Button>
-                    </label>
-                    {formData.logo && (
-                      <Button type="button" variant="ghost" size="sm" className="h-7 text-xs text-slate-400 hover:text-semantic-error" onClick={() => setFormData({ ...formData, logo: "" })}>
-                        Remove
-                      </Button>
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Logo</Label>
+                <div className="flex items-center gap-4 mt-1.5">
+                  <div className="w-16 h-16 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-center overflow-hidden flex-shrink-0">
+                    {formData.logo ? (
+                      <img src={formData.logo} alt="Logo" className="w-full h-full object-cover" />
+                    ) : (
+                      <Upload className="h-5 w-5 text-slate-300" />
                     )}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs text-slate-500 mb-2">PNG or JPG, max 2MB</p>
+                    <div className="flex gap-2">
+                      <label>
+                        <Input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileUpload(e, "logo")} />
+                        <Button type="button" variant="outline" size="sm" className="h-7 text-xs" asChild>
+                          <span>Upload</span>
+                        </Button>
+                      </label>
+                      {formData.logo && (
+                        <Button type="button" variant="ghost" size="sm" className="h-7 text-xs text-slate-400 hover:text-error" onClick={() => setFormData({ ...formData, logo: "" })}>
+                          Remove
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -416,8 +418,8 @@ export function EditProfileWizard({
                   type="number"
                   value={formData.employeeCount}
                   onChange={(e) => setFormData({ ...formData, employeeCount: parseInt(e.target.value) || 0 })}
-                  className="mt-1.5 w-40"
-                  placeholder="0"
+                  className="mt-1.5"
+                  placeholder="Enter employee count"
                 />
               </div>
 

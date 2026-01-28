@@ -48,7 +48,7 @@ export function FilterBar({
           placeholder={searchPlaceholder}
           value={searchValue}
           onChange={(e) => onSearchChange?.(e.target.value)}
-          className="pl-9"
+          className="pl-9 bg-white"
         />
       </div>
 
@@ -59,7 +59,7 @@ export function FilterBar({
           value={filter.value}
           onValueChange={filter.onChange}
         >
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-[180px] bg-white">
             <SelectValue placeholder={filter.label} />
           </SelectTrigger>
           <SelectContent>

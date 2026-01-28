@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, Trash2, Download, Upload, Search, ChevronRight, ArrowLeft, MessageSquare, File, FileText, FileImage, FileSpreadsheet, Eye, X } from "lucide-react";
-import { PageHeader, DataGrid } from "@/components/shared";
+import { Plus, Pencil, Trash2, Download, Upload, Search, ChevronRight, MessageSquare, File, FileText, FileImage, FileSpreadsheet, Eye, X, Check } from "lucide-react";
+import { DataGrid } from "@/components/shared";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -201,14 +201,16 @@ export default function ContextPage() {
   const [issueSearch, setIssueSearch] = useState("");
 
   // Form states
-  const [showAddStakeholder, setShowAddStakeholder] = useState(false);
-  const [showAddIssue, setShowAddIssue] = useState(false);
+  const [isAddStakeholderOpen, setIsAddStakeholderOpen] = useState(false);
+  const [isEditStakeholderOpen, setIsEditStakeholderOpen] = useState(false);
+  const [editingStakeholder, setEditingStakeholder] = useState<Stakeholder | null>(null);
+  const [isAddIssueOpen, setIsAddIssueOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deletingItem, setDeletingItem] = useState<{ type: string; id: string } | null>(null);
 
   // Edit issue state
-  const [showEditIssue, setShowEditIssue] = useState(false);
+  const [isEditIssueOpen, setIsEditIssueOpen] = useState(false);
   const [editingIssue, setEditingIssue] = useState<Issue | null>(null);
   const [editCurrentStep, setEditCurrentStep] = useState(1);
   const [editIssueForm, setEditIssueForm] = useState({
@@ -585,10 +587,39 @@ export default function ContextPage() {
           status: "Active",
           departmentId: "",
         });
-        setShowAddStakeholder(false);
+        setIsAddStakeholderOpen(false);
       }
     } catch (error) {
       console.error("Error adding stakeholder:", error);
+    }
+  };
+
+  const handleOpenEditStakeholder = (stakeholder: Stakeholder) => {
+    setEditingStakeholder(stakeholder);
+    setIsEditStakeholderOpen(true);
+  };
+
+  const handleUpdateStakeholder = async () => {
+    if (!editingStakeholder || !editingStakeholder.name.trim()) return;
+    try {
+      const res = await fetch(`/api/stakeholders/${editingStakeholder.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editingStakeholder.name,
+          type: editingStakeholder.type,
+          status: editingStakeholder.status,
+          departmentId: editingStakeholder.departmentId || null,
+        }),
+      });
+      if (res.ok) {
+        const updatedStakeholder = await res.json();
+        setStakeholders(stakeholders.map((s) => s.id === updatedStakeholder.id ? updatedStakeholder : s));
+        setEditingStakeholder(null);
+        setIsEditStakeholderOpen(false);
+      }
+    } catch (error) {
+      console.error("Error updating stakeholder:", error);
     }
   };
 
@@ -660,7 +691,7 @@ export default function ContextPage() {
           selectedStakeholders: [] as string[],
         });
         setStakeholderNeeds([]);
-        setShowAddIssue(false);
+        setIsAddIssueOpen(false);
         setCurrentStep(1);
         toast({
           title: "Success",
@@ -743,7 +774,7 @@ export default function ContextPage() {
     setEditSelectedStakeholderId("");
     setEditSelectedNeedExpectation("");
     setEditStakeholderNeeds(existingStakeholderNeeds);
-    setShowEditIssue(true);
+    setIsEditIssueOpen(true);
   };
 
   const handleUpdateIssue = async () => {
@@ -776,7 +807,7 @@ export default function ContextPage() {
       if (res.ok) {
         const updatedIssue = await res.json();
         setIssues(issues.map((i) => (i.id === editingIssue.id ? updatedIssue : i)));
-        setShowEditIssue(false);
+        setIsEditIssueOpen(false);
         setEditingIssue(null);
         setEditCurrentStep(1);
         setEditStakeholderNeeds([]);
@@ -1229,7 +1260,13 @@ export default function ContextPage() {
       cell: ({ row }) => {
         const status = row.getValue("status") as string;
         return (
-          <Badge variant={status === "Active" ? "default" : "secondary"}>
+          <Badge
+            variant="outline"
+            className={status === "Active"
+              ? "border-transparent bg-success-light text-success-dark"
+              : "border-transparent bg-slate-100 text-slate-600"
+            }
+          >
             {status}
           </Badge>
         );
@@ -1241,13 +1278,18 @@ export default function ContextPage() {
       header: "Actions",
       cell: ({ row }: { row: { original: Stakeholder } }) => (
         <div className="flex gap-2">
-          <Button variant="ghost" size="icon">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-slate-400 hover:text-slate-600"
+            onClick={() => handleOpenEditStakeholder(row.original)}
+          >
             <Pencil className="h-4 w-4" />
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            className="text-destructive"
+            className="h-8 w-8 text-slate-400 hover:text-error"
             onClick={() => {
               setDeletingItem({ type: "stakeholder", id: row.original.id });
               setIsDeleteDialogOpen(true);
@@ -1268,195 +1310,110 @@ export default function ContextPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Open":
-        return "bg-red-100 text-red-800";
+        return "bg-error-light text-error-dark";
       case "In Progress":
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-warning-light text-warning-dark";
       case "Pending":
-        return "bg-blue-100 text-blue-800";
+        return "bg-info-light text-info-dark";
       case "Resolved":
-        return "bg-green-100 text-green-800";
+        return "bg-success-light text-success-dark";
       case "Closed":
-        return "bg-gray-100 text-gray-800";
+        return "bg-slate-100 text-slate-800";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-slate-100 text-slate-800";
     }
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Loading...</p>
+      <div className="flex items-center justify-center h-[60vh]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative">
+            <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
+            <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+          </div>
+          <p className="text-sm text-slate-500 font-medium">Loading...</p>
+        </div>
       </div>
     );
   }
 
-  // Add Stakeholder Form (Full Page)
-  if (showAddStakeholder) {
-    return (
-      <div className="space-y-6">
-        <PageHeader
-          title="New Stakeholder"
-          actions={[
-            {
-              label: "Cancel",
-              variant: "outline",
-              onClick: () => setShowAddStakeholder(false),
-            },
-          ]}
-        />
-
-        <Card>
-          <CardContent className="pt-6 space-y-6">
-            <div className="space-y-4">
-              <Label>Stakeholder Type</Label>
-              <RadioGroup
-                value={newStakeholder.type}
-                onValueChange={(value) => setNewStakeholder({ ...newStakeholder, type: value })}
-                className="flex gap-6"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="Internal" id="internal" />
-                  <Label htmlFor="internal" className="font-normal">Internal</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="External" id="external" />
-                  <Label htmlFor="external" className="font-normal">External</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="Third Party" id="thirdparty" />
-                  <Label htmlFor="thirdparty" className="font-normal">Third Party</Label>
-                </div>
-              </RadioGroup>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="stakeholderName">Stakeholder Name *</Label>
-              <Input
-                id="stakeholderName"
-                value={newStakeholder.name}
-                onChange={(e) => setNewStakeholder({ ...newStakeholder, name: e.target.value })}
-                placeholder="Enter stakeholder name"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label>Department</Label>
-                <Select
-                  value={newStakeholder.departmentId}
-                  onValueChange={(value) => setNewStakeholder({ ...newStakeholder, departmentId: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select department" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {departments.map((dept) => (
-                      <SelectItem key={dept.id} value={dept.id}>
-                        {dept.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <Select
-                  value={newStakeholder.status}
-                  onValueChange={(value) => setNewStakeholder({ ...newStakeholder, status: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Active">Active</SelectItem>
-                    <SelectItem value="Inactive">Inactive</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 pt-4">
-              <Button variant="outline" onClick={() => setShowAddStakeholder(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleAddStakeholder}>Save Stakeholder</Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // Add Issue Form (5-Step Wizard)
-  if (showAddIssue) {
-    return (
-      <div className="space-y-6">
-        <PageHeader
-          title="Add Issue"
-          actions={[
-            {
-              label: "Cancel",
-              variant: "outline",
-              onClick: () => {
-                setShowAddIssue(false);
-                setCurrentStep(1);
-              },
-            },
-          ]}
-        />
+  // Add Issue Form (5-Step Wizard) - Rendered as Modal
+  const renderAddIssueModal = () => (
+    <Dialog open={isAddIssueOpen} onOpenChange={(open) => { if (!open) { setIsAddIssueOpen(false); setCurrentStep(1); } }}>
+      <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+        {/* Fixed Header */}
+        <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-semibold text-slate-800">Add Issue</DialogTitle>
+          </DialogHeader>
+        </div>
 
         {/* Step Progress */}
-        <div className="flex items-center justify-center gap-2 py-4">
+        <div className="flex-shrink-0 flex items-start justify-center py-5 px-6 border-b border-slate-100">
           {ISSUE_STEPS.map((step, index) => (
-            <div key={step.id} className="flex items-center">
-              <div
-                className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${
-                  currentStep === step.id
-                    ? "bg-blue-600 text-white"
-                    : currentStep > step.id
-                    ? "bg-green-500 text-white"
-                    : "bg-gray-200 text-gray-600"
-                }`}
-              >
-                {step.id}
+            <div key={step.id} className="flex items-start">
+              <div className="flex flex-col items-center w-24">
+                <div
+                  className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
+                    currentStep > step.id
+                      ? "bg-success text-white"
+                      : currentStep === step.id
+                      ? "bg-primary-600 text-white"
+                      : "bg-slate-100 text-slate-400 border border-slate-200"
+                  }`}
+                >
+                  {currentStep > step.id ? <Check className="h-4 w-4" /> : step.id}
+                </div>
+                <span
+                  className={`mt-2 text-xs font-medium text-center ${
+                    currentStep >= step.id ? "text-slate-700" : "text-slate-400"
+                  }`}
+                >
+                  {step.name}
+                </span>
               </div>
-              <span className={`ml-2 text-sm ${currentStep === step.id ? "font-medium" : "text-muted-foreground"}`}>
-                {step.name}
-              </span>
               {index < ISSUE_STEPS.length - 1 && (
-                <ChevronRight className="h-4 w-4 mx-4 text-gray-400" />
+                <div
+                  className={`w-8 h-0.5 mt-[18px] -mx-3 transition-colors ${
+                    currentStep > step.id ? "bg-success" : "bg-slate-200"
+                  }`}
+                />
               )}
             </div>
           ))}
         </div>
 
-        <Card>
-          <CardContent className="pt-6">
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto px-6 py-5">
+          <div className="space-y-5">
             {/* Step 1: Info */}
             {currentStep === 1 && (
-              <div className="space-y-6">
-                <h3 className="text-lg font-medium">Basic Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="issueTitle">Issue Title *</Label>
-                    <Input
-                      id="issueTitle"
-                      value={newIssue.title}
-                      onChange={(e) => setNewIssue({ ...newIssue, title: e.target.value })}
-                      placeholder="Enter issue title"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Domain *</Label>
-                    <div className="flex gap-2">
+              <div className="space-y-5">
+                <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">Basic Information</h3>
+                {/* Issue Title - Full Width */}
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Issue Title <span className="text-error">*</span></Label>
+                  <Input
+                    value={newIssue.title}
+                    onChange={(e) => setNewIssue({ ...newIssue, title: e.target.value })}
+                    placeholder="Enter issue title"
+                    className="mt-1.5"
+                  />
+                </div>
+                {/* Domain & Category */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Domain <span className="text-error">*</span></Label>
+                    <div className="flex gap-2 mt-1.5">
                       <Select
                         value={newIssue.domain}
                         onValueChange={(value) => setNewIssue({ ...newIssue, domain: value })}
                       >
-                        <SelectTrigger className="flex-1">
-                          <SelectValue />
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select domain" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent position="popper" sideOffset={4}>
                           {domains.map((domain) => (
                             <SelectItem key={domain} value={domain}>
                               {domain}
@@ -1469,19 +1426,17 @@ export default function ContextPage() {
                       </Button>
                     </div>
                   </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label>Category *</Label>
-                    <div className="flex gap-2">
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Category <span className="text-error">*</span></Label>
+                    <div className="flex gap-2 mt-1.5">
                       <Select
                         value={newIssue.category}
                         onValueChange={(value) => setNewIssue({ ...newIssue, category: value })}
                       >
-                        <SelectTrigger className="flex-1">
-                          <SelectValue />
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select category" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent position="popper" sideOffset={4}>
                           {categories.map((category) => (
                             <SelectItem key={category} value={category}>
                               {category}
@@ -1494,16 +1449,19 @@ export default function ContextPage() {
                       </Button>
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Department</Label>
+                </div>
+                {/* Department & Issue Owner */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Department</Label>
                     <Select
                       value={newIssue.departmentId}
                       onValueChange={(value) => setNewIssue({ ...newIssue, departmentId: value, ownerId: "" })}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full mt-1.5">
                         <SelectValue placeholder="Select department" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent position="popper" sideOffset={4}>
                         {departments.map((dept) => (
                           <SelectItem key={dept.id} value={dept.id}>
                             {dept.name}
@@ -1512,19 +1470,17 @@ export default function ContextPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label>Issue Owner</Label>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Issue Owner</Label>
                     <Select
                       value={newIssue.ownerId}
                       onValueChange={(value) => setNewIssue({ ...newIssue, ownerId: value })}
                       disabled={!newIssue.departmentId}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full mt-1.5">
                         <SelectValue placeholder={newIssue.departmentId ? "Select owner" : "Select department first"} />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent position="popper" sideOffset={4}>
                         {users
                           .filter((user) =>
                             (!newIssue.departmentId || user.departmentId === newIssue.departmentId) &&
@@ -1538,38 +1494,40 @@ export default function ContextPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Issue Type</Label>
-                    <div className="flex gap-2">
-                      <Select
-                        value={newIssue.issueType}
-                        onValueChange={(value) => setNewIssue({ ...newIssue, issueType: value })}
-                      >
-                        <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Select type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {issueTypes.map((type) => (
-                            <SelectItem key={type} value={type}>
-                              {type}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Button type="button" variant="outline" size="icon" onClick={() => setShowAddTypeDialog(true)}>
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
+                </div>
+                {/* Issue Type - Full Width */}
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Issue Type</Label>
+                  <div className="flex gap-2 mt-1.5">
+                    <Select
+                      value={newIssue.issueType}
+                      onValueChange={(value) => setNewIssue({ ...newIssue, issueType: value })}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent position="popper" sideOffset={4}>
+                        {issueTypes.map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {type}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button type="button" variant="outline" size="icon" onClick={() => setShowAddTypeDialog(true)}>
+                      <Plus className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="issueDescription">Description</Label>
+                {/* Description */}
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Description</Label>
                   <textarea
                     id="issueDescription"
                     value={newIssue.description}
                     onChange={(e) => setNewIssue({ ...newIssue, description: e.target.value })}
                     placeholder="Enter issue description"
-                    className="w-full min-h-[100px] px-3 py-2 text-sm border rounded-md"
+                    className="w-full min-h-[100px] px-3 py-2 text-sm border border-slate-200 rounded-md mt-1.5 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   />
                 </div>
               </div>
@@ -1577,14 +1535,14 @@ export default function ContextPage() {
 
             {/* Step 2: Regulations */}
             {currentStep === 2 && (
-              <div className="space-y-6">
-                <h3 className="text-lg font-medium">Related Regulations</h3>
-                <p className="text-muted-foreground text-sm">Select regulations related to this issue (optional)</p>
+              <div className="space-y-5">
+                <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">Related Regulations</h3>
+                <p className="text-slate-500 text-sm">Select regulations related to this issue (optional)</p>
                 <div className="border rounded-lg p-4 min-h-[200px]">
                   {regulations.length > 0 ? (
                     <div className="space-y-2">
                       {regulations.map((reg) => (
-                        <label key={reg.id} className="flex items-center gap-3 p-2 rounded hover:bg-gray-50 cursor-pointer">
+                        <label key={reg.id} className="flex items-center gap-3 p-2 rounded hover:bg-slate-50 cursor-pointer">
                           <input
                             type="checkbox"
                             checked={newIssue.selectedRegulations.includes(reg.id)}
@@ -1605,13 +1563,13 @@ export default function ContextPage() {
                           />
                           <div className="flex-1">
                             <span className="font-medium">{reg.name}</span>
-                            {reg.version && <span className="text-muted-foreground ml-2 text-sm">v{reg.version}</span>}
+                            {reg.version && <span className="text-slate-500 ml-2 text-sm">v{reg.version}</span>}
                           </div>
                         </label>
                       ))}
                     </div>
                   ) : (
-                    <div className="flex items-center justify-center text-muted-foreground h-full">
+                    <div className="flex items-center justify-center text-slate-500 h-full">
                       No regulations available
                     </div>
                   )}
@@ -1621,9 +1579,9 @@ export default function ContextPage() {
 
             {/* Step 3: Process */}
             {currentStep === 3 && (
-              <div className="space-y-6">
+              <div className="space-y-5">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-medium">Select Process related with the issue</h3>
+                  <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">Related Processes</h3>
                   <Button variant="outline" onClick={handleOpenProcessDialog}>
                     Choose Processes
                   </Button>
@@ -1636,11 +1594,11 @@ export default function ContextPage() {
                         return process ? (
                           <div key={process.id} className="p-4 border rounded-lg flex items-start justify-between">
                             <div>
-                              <div className="text-blue-600 font-medium">
+                              <div className="text-primary-600 font-medium">
                                 {process.processCode} : {process.name}
                               </div>
                               {process.description && (
-                                <p className="text-sm text-muted-foreground mt-1">{process.description}</p>
+                                <p className="text-sm text-slate-500 mt-1">{process.description}</p>
                               )}
                             </div>
                             <Button
@@ -1661,7 +1619,7 @@ export default function ContextPage() {
                       })}
                     </>
                   ) : (
-                    <div className="flex items-center justify-center h-[200px] text-muted-foreground border rounded-lg">
+                    <div className="flex items-center justify-center h-[200px] text-slate-500 border rounded-lg">
                       No items found
                     </div>
                   )}
@@ -1671,14 +1629,15 @@ export default function ContextPage() {
 
             {/* Step 4: Stakeholder */}
             {currentStep === 4 && (
-              <div className="space-y-6">
+              <div className="space-y-5">
+                <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">Stakeholder Information</h3>
                 {/* Stakeholder Type */}
-                <div className="space-y-2">
-                  <h5 className="font-medium">Stakeholder Type</h5>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Stakeholder Type</Label>
                   <RadioGroup
                     value={stakeholderType}
                     onValueChange={setStakeholderType}
-                    className="flex gap-6"
+                    className="flex gap-6 mt-1.5"
                   >
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="Internal" id="st-internal" />
@@ -1696,16 +1655,16 @@ export default function ContextPage() {
                 </div>
 
                 {/* Stakeholder Selection */}
-                <div className="space-y-2">
-                  <h5 className="font-medium">Stakeholder</h5>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Stakeholder</Label>
                   <Select
                     value={selectedStakeholderId}
                     onValueChange={setSelectedStakeholderId}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="mt-1.5">
                       <SelectValue placeholder="Select stakeholder" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" sideOffset={4}>
                       {filteredStakeholdersByType.length > 0 ? (
                         filteredStakeholdersByType.map((s) => (
                           <SelectItem key={s.id} value={s.id}>
@@ -1713,7 +1672,7 @@ export default function ContextPage() {
                           </SelectItem>
                         ))
                       ) : (
-                        <div className="p-2 text-sm text-muted-foreground">No {stakeholderType} stakeholders found</div>
+                        <div className="p-2 text-sm text-slate-500">No {stakeholderType} stakeholders found</div>
                       )}
                     </SelectContent>
                   </Select>
@@ -1721,9 +1680,9 @@ export default function ContextPage() {
 
                 {/* Need and Expectation */}
                 <div className="flex items-end gap-4">
-                  <div className="flex-1 space-y-2">
-                    <h5 className="font-medium">Need and Expectation</h5>
-                    <div className="flex gap-2">
+                  <div className="flex-1">
+                    <Label className="text-sm font-medium text-slate-700">Need and Expectation</Label>
+                    <div className="flex gap-2 mt-1.5">
                       <Select
                         value={selectedNeedExpectation}
                         onValueChange={setSelectedNeedExpectation}
@@ -1731,7 +1690,7 @@ export default function ContextPage() {
                         <SelectTrigger className="flex-1">
                           <SelectValue placeholder="Select need/expectation" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent position="popper" sideOffset={4}>
                           {allNeedExpectations.map((need) => (
                             <SelectItem key={need} value={need}>
                               {need}
@@ -1754,12 +1713,12 @@ export default function ContextPage() {
                 </div>
 
                 {/* Stakeholder Needs and Exceptions Table */}
-                <div className="space-y-2">
-                  <h4 className="font-medium">Stakeholder Needs and Expectations</h4>
-                  <div className="border rounded-lg min-h-[150px]">
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Stakeholder Needs and Expectations</Label>
+                  <div className="border rounded-lg min-h-[150px] mt-1.5">
                     {stakeholderNeeds.length > 0 ? (
                       <table className="w-full">
-                        <thead className="bg-gray-50 border-b">
+                        <thead className="bg-slate-50 border-b">
                           <tr>
                             <th className="text-left p-3 text-sm font-medium">Stakeholder</th>
                             <th className="text-left p-3 text-sm font-medium">Need/Expectation</th>
@@ -1791,7 +1750,7 @@ export default function ContextPage() {
                         </tbody>
                       </table>
                     ) : (
-                      <div className="flex items-center justify-center h-[150px] text-muted-foreground">
+                      <div className="flex items-center justify-center h-[150px] text-slate-500">
                         No stakeholder needs added
                       </div>
                     )}
@@ -1802,48 +1761,48 @@ export default function ContextPage() {
 
             {/* Step 5: Preview & Save */}
             {currentStep === 5 && (
-              <div className="space-y-6">
-                <h3 className="text-lg font-medium">Preview & Save</h3>
-                <div className="border rounded-lg p-6 space-y-4 bg-gray-50">
+              <div className="space-y-5">
+                <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">Preview & Save</h3>
+                <div className="border border-slate-200 rounded-lg p-6 space-y-4 bg-slate-50">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label className="text-muted-foreground">Title</Label>
-                      <p className="font-medium">{newIssue.title || "-"}</p>
+                      <p className="text-xs text-slate-500 mb-1">Title</p>
+                      <p className="text-sm font-medium text-slate-800">{newIssue.title || "-"}</p>
                     </div>
                     <div>
-                      <Label className="text-muted-foreground">Domain</Label>
-                      <p className="font-medium">{newIssue.domain}</p>
+                      <p className="text-xs text-slate-500 mb-1">Domain</p>
+                      <p className="text-sm font-medium text-slate-800">{newIssue.domain}</p>
                     </div>
                     <div>
-                      <Label className="text-muted-foreground">Category</Label>
-                      <p className="font-medium">{newIssue.category}</p>
+                      <p className="text-xs text-slate-500 mb-1">Category</p>
+                      <p className="text-sm font-medium text-slate-800">{newIssue.category}</p>
                     </div>
                     <div>
-                      <Label className="text-muted-foreground">Issue Type</Label>
-                      <p className="font-medium">{newIssue.issueType || "-"}</p>
+                      <p className="text-xs text-slate-500 mb-1">Issue Type</p>
+                      <p className="text-sm font-medium text-slate-800">{newIssue.issueType || "-"}</p>
                     </div>
                     <div>
-                      <Label className="text-muted-foreground">Department</Label>
-                      <p className="font-medium">
+                      <p className="text-xs text-slate-500 mb-1">Department</p>
+                      <p className="text-sm font-medium text-slate-800">
                         {departments.find((d) => d.id === newIssue.departmentId)?.name || "-"}
                       </p>
                     </div>
                     <div>
-                      <Label className="text-muted-foreground">Issue Owner</Label>
-                      <p className="font-medium">
+                      <p className="text-xs text-slate-500 mb-1">Issue Owner</p>
+                      <p className="text-sm font-medium text-slate-800">
                         {users.find((u) => u.id === newIssue.ownerId)?.fullName || "-"}
                       </p>
                     </div>
                   </div>
                   {newIssue.description && (
                     <div>
-                      <Label className="text-muted-foreground">Description</Label>
-                      <p className="font-medium">{newIssue.description}</p>
+                      <p className="text-xs text-slate-500 mb-1">Description</p>
+                      <p className="text-sm font-medium text-slate-800">{newIssue.description}</p>
                     </div>
                   )}
                   {newIssue.selectedRegulations.length > 0 && (
                     <div>
-                      <Label className="text-muted-foreground">Related Regulations</Label>
+                      <p className="text-xs text-slate-500 mb-1">Related Regulations</p>
                       <div className="flex flex-wrap gap-2 mt-1">
                         {newIssue.selectedRegulations.map((id) => {
                           const regulation = regulations.find((r) => r.id === id);
@@ -1856,7 +1815,7 @@ export default function ContextPage() {
                   )}
                   {newIssue.selectedProcesses.length > 0 && (
                     <div>
-                      <Label className="text-muted-foreground">Related Processes</Label>
+                      <p className="text-xs text-slate-500 mb-1">Related Processes</p>
                       <div className="flex flex-wrap gap-2 mt-1">
                         {newIssue.selectedProcesses.map((id) => {
                           const process = processes.find((p) => p.id === id);
@@ -1869,13 +1828,13 @@ export default function ContextPage() {
                   )}
                   {stakeholderNeeds.length > 0 && (
                     <div>
-                      <Label className="text-muted-foreground">Stakeholder Needs and Expectations</Label>
+                      <p className="text-xs text-slate-500 mb-1">Stakeholder Needs and Expectations</p>
                       <div className="mt-1 space-y-1">
                         {stakeholderNeeds.map((item, index) => {
                           const stakeholder = stakeholders.find((s) => s.id === item.stakeholderId);
                           return (
-                            <div key={index} className="text-sm">
-                              <span className="font-medium">{stakeholder?.name}</span>: {item.needExpectation}
+                            <div key={index} className="text-sm text-slate-700">
+                              <span className="font-medium text-slate-800">{stakeholder?.name}</span>: {item.needExpectation}
                             </div>
                           );
                         })}
@@ -1886,125 +1845,128 @@ export default function ContextPage() {
               </div>
             )}
 
-            {/* Navigation buttons */}
-            <div className="flex justify-between pt-6">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  if (currentStep === 1) {
-                    setShowAddIssue(false);
-                  } else {
-                    setCurrentStep(currentStep - 1);
-                  }
-                }}
-              >
-                {currentStep === 1 ? "Cancel" : "Previous"}
-              </Button>
-              <Button
-                onClick={() => {
-                  if (currentStep === 5) {
-                    handleAddIssue();
-                  } else {
-                    setCurrentStep(currentStep + 1);
-                  }
-                }}
-              >
-                {currentStep === 5 ? "Save Issue" : "Next"}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        {/* Add Domain Dialog */}
+        {/* Fixed Footer with Navigation */}
+        <div className="flex-shrink-0 flex justify-between px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <Button
+            variant="outline"
+            onClick={() => {
+              if (currentStep === 1) {
+                setIsAddIssueOpen(false);
+                setCurrentStep(1);
+              } else {
+                setCurrentStep(currentStep - 1);
+              }
+            }}
+          >
+            {currentStep === 1 ? "Cancel" : "Previous"}
+          </Button>
+          <Button
+            onClick={() => {
+              if (currentStep === 5) {
+                handleAddIssue();
+              } else {
+                setCurrentStep(currentStep + 1);
+              }
+            }}
+          >
+            {currentStep === 5 ? "Save Issue" : "Next"}
+          </Button>
+        </div>
+      </DialogContent>
+
+      {/* Add Domain Dialog */}
         <Dialog open={showAddDomainDialog} onOpenChange={setShowAddDomainDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add New Domain</DialogTitle>
-              <DialogDescription>
-                Enter a name for the new domain.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="newDomainWizard">Domain Name *</Label>
-                <Input
-                  id="newDomainWizard"
-                  value={newDomain}
-                  onChange={(e) => setNewDomain(e.target.value)}
-                  placeholder="Enter domain name"
-                />
-              </div>
+          <DialogContent className="sm:max-w-[500px] p-0 gap-0" nested>
+            <div className="px-6 py-5 border-b border-slate-100">
+              <DialogHeader>
+                <DialogTitle className="text-lg font-semibold text-slate-800">Add New Domain</DialogTitle>
+                <DialogDescription className="text-sm text-slate-500 mt-1">
+                  Enter a name for the new domain.
+                </DialogDescription>
+              </DialogHeader>
             </div>
-            <DialogFooter>
+            <div className="px-6 py-6">
+              <Label className="text-sm font-medium text-slate-700">Domain Name <span className="text-error">*</span></Label>
+              <Input
+                value={newDomain}
+                onChange={(e) => setNewDomain(e.target.value)}
+                placeholder="Enter domain name"
+                className="mt-1.5"
+              />
+            </div>
+            <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
               <Button variant="outline" onClick={() => { setShowAddDomainDialog(false); setNewDomain(""); }}>
                 Cancel
               </Button>
               <Button onClick={handleAddDomain} disabled={!newDomain.trim()}>
                 Add Domain
               </Button>
-            </DialogFooter>
+            </div>
           </DialogContent>
         </Dialog>
 
         {/* Add Category Dialog */}
         <Dialog open={showAddCategoryDialog} onOpenChange={setShowAddCategoryDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add New Category</DialogTitle>
-              <DialogDescription>
-                Enter a name for the new category.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="newCategoryWizard">Category Name *</Label>
-                <Input
-                  id="newCategoryWizard"
-                  value={newCategory}
-                  onChange={(e) => setNewCategory(e.target.value)}
-                  placeholder="Enter category name"
-                />
-              </div>
+          <DialogContent className="sm:max-w-[500px] p-0 gap-0" nested>
+            <div className="px-6 py-5 border-b border-slate-100">
+              <DialogHeader>
+                <DialogTitle className="text-lg font-semibold text-slate-800">Add New Category</DialogTitle>
+                <DialogDescription className="text-sm text-slate-500 mt-1">
+                  Enter a name for the new category.
+                </DialogDescription>
+              </DialogHeader>
             </div>
-            <DialogFooter>
+            <div className="px-6 py-6">
+              <Label className="text-sm font-medium text-slate-700">Category Name <span className="text-error">*</span></Label>
+              <Input
+                value={newCategory}
+                onChange={(e) => setNewCategory(e.target.value)}
+                placeholder="Enter category name"
+                className="mt-1.5"
+              />
+            </div>
+            <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
               <Button variant="outline" onClick={() => { setShowAddCategoryDialog(false); setNewCategory(""); }}>
                 Cancel
               </Button>
               <Button onClick={handleAddCategory} disabled={!newCategory.trim()}>
                 Add Category
               </Button>
-            </DialogFooter>
+            </div>
           </DialogContent>
         </Dialog>
 
         {/* Add Issue Type Dialog */}
         <Dialog open={showAddTypeDialog} onOpenChange={setShowAddTypeDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add New Issue Type</DialogTitle>
-              <DialogDescription>
-                Enter a name for the new issue type.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="newTypeWizard">Issue Type Name *</Label>
-                <Input
-                  id="newTypeWizard"
-                  value={newType}
-                  onChange={(e) => setNewType(e.target.value)}
-                  placeholder="Enter issue type name"
-                />
-              </div>
+          <DialogContent className="sm:max-w-[500px] p-0 gap-0" nested>
+            <div className="px-6 py-5 border-b border-slate-100">
+              <DialogHeader>
+                <DialogTitle className="text-lg font-semibold text-slate-800">Add New Issue Type</DialogTitle>
+                <DialogDescription className="text-sm text-slate-500 mt-1">
+                  Enter a name for the new issue type.
+                </DialogDescription>
+              </DialogHeader>
             </div>
-            <DialogFooter>
+            <div className="px-6 py-6">
+              <Label className="text-sm font-medium text-slate-700">Issue Type Name <span className="text-error">*</span></Label>
+              <Input
+                value={newType}
+                onChange={(e) => setNewType(e.target.value)}
+                placeholder="Enter issue type name"
+                className="mt-1.5"
+              />
+            </div>
+            <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
               <Button variant="outline" onClick={() => { setShowAddTypeDialog(false); setNewType(""); }}>
                 Cancel
               </Button>
               <Button onClick={handleAddType} disabled={!newType.trim()}>
                 Add Type
               </Button>
-            </DialogFooter>
+            </div>
           </DialogContent>
         </Dialog>
 
@@ -2019,7 +1981,7 @@ export default function ContextPage() {
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
                 <Input
                   placeholder="Search processes..."
                   value={processSearchQuery}
@@ -2033,7 +1995,7 @@ export default function ContextPage() {
                     {filteredProcesses.map((process) => (
                       <label
                         key={process.id}
-                        className="flex items-start gap-3 p-4 border rounded-lg hover:border-blue-300 cursor-pointer transition-colors"
+                        className="flex items-start gap-3 p-4 border rounded-lg hover:border-primary-300 cursor-pointer transition-colors"
                       >
                         <input
                           type="checkbox"
@@ -2048,18 +2010,18 @@ export default function ContextPage() {
                           className="h-4 w-4 mt-1"
                         />
                         <div className="flex-1">
-                          <div className="text-blue-600 font-medium">
+                          <div className="text-primary-600 font-medium">
                             {process.processCode} : {process.name}
                           </div>
                           {process.description && (
-                            <p className="text-sm text-muted-foreground mt-1">{process.description}</p>
+                            <p className="text-sm text-slate-500 mt-1">{process.description}</p>
                           )}
                         </div>
                       </label>
                     ))}
                   </>
                 ) : (
-                  <div className="flex items-center justify-center h-[200px] text-muted-foreground">
+                  <div className="flex items-center justify-center h-[200px] text-slate-500">
                     No processes found
                   </div>
                 )}
@@ -2106,81 +2068,86 @@ export default function ContextPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
-    );
-  }
+    </Dialog>
+  );
 
-  // Edit Issue Form (5-Step Wizard)
-  if (showEditIssue && editingIssue) {
-    return (
-      <div className="space-y-6">
-        <PageHeader
-          title="Edit Issue"
-          actions={[
-            {
-              label: "Cancel",
-              variant: "outline",
-              onClick: () => {
-                setShowEditIssue(false);
-                setEditCurrentStep(1);
-                setEditingIssue(null);
-              },
-            },
-          ]}
-        />
+  // Edit Issue Form (5-Step Wizard) - Rendered as Modal
+  const renderEditIssueModal = () => (
+    <Dialog open={isEditIssueOpen && !!editingIssue} onOpenChange={(open) => { if (!open) { setIsEditIssueOpen(false); setEditCurrentStep(1); setEditingIssue(null); } }}>
+      <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+        {/* Fixed Header */}
+        <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-semibold text-slate-800">Edit Issue</DialogTitle>
+          </DialogHeader>
+        </div>
 
         {/* Step Progress */}
-        <div className="flex items-center justify-center gap-2 py-4">
+        <div className="flex-shrink-0 flex items-start justify-center py-5 px-6 border-b border-slate-100">
           {ISSUE_STEPS.map((step, index) => (
-            <div key={step.id} className="flex items-center">
-              <div
-                className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${
-                  editCurrentStep === step.id
-                    ? "bg-blue-600 text-white"
-                    : editCurrentStep > step.id
-                    ? "bg-green-500 text-white"
-                    : "bg-gray-200 text-gray-600"
-                }`}
-              >
-                {step.id}
+            <div key={step.id} className="flex items-start">
+              <div className="flex flex-col items-center w-24">
+                <div
+                  className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
+                    editCurrentStep > step.id
+                      ? "bg-success text-white"
+                      : editCurrentStep === step.id
+                      ? "bg-primary-600 text-white"
+                      : "bg-slate-100 text-slate-400 border border-slate-200"
+                  }`}
+                >
+                  {editCurrentStep > step.id ? <Check className="h-4 w-4" /> : step.id}
+                </div>
+                <span
+                  className={`mt-2 text-xs font-medium text-center ${
+                    editCurrentStep >= step.id ? "text-slate-700" : "text-slate-400"
+                  }`}
+                >
+                  {step.name}
+                </span>
               </div>
-              <span className={`ml-2 text-sm ${editCurrentStep === step.id ? "font-medium" : "text-muted-foreground"}`}>
-                {step.name}
-              </span>
               {index < ISSUE_STEPS.length - 1 && (
-                <ChevronRight className="h-4 w-4 mx-4 text-gray-400" />
+                <div
+                  className={`w-8 h-0.5 mt-[18px] -mx-3 transition-colors ${
+                    editCurrentStep > step.id ? "bg-success" : "bg-slate-200"
+                  }`}
+                />
               )}
             </div>
           ))}
         </div>
 
-        <Card>
-          <CardContent className="pt-6">
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto px-6 py-5">
+          <div className="space-y-5">
             {/* Step 1: Info */}
             {editCurrentStep === 1 && (
-              <div className="space-y-6">
-                <h3 className="text-lg font-medium">Basic Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="editIssueTitle">Issue Title *</Label>
-                    <Input
-                      id="editIssueTitle"
-                      value={editIssueForm.title}
-                      onChange={(e) => setEditIssueForm({ ...editIssueForm, title: e.target.value })}
-                      placeholder="Enter issue title"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Domain *</Label>
-                    <div className="flex gap-2">
+              <div className="space-y-5">
+                <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">Basic Information</h3>
+                {/* Issue Title - Full Width */}
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Issue Title <span className="text-error">*</span></Label>
+                  <Input
+                    id="editIssueTitle"
+                    value={editIssueForm.title}
+                    onChange={(e) => setEditIssueForm({ ...editIssueForm, title: e.target.value })}
+                    placeholder="Enter issue title"
+                    className="mt-1.5"
+                  />
+                </div>
+                {/* Domain & Category */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Domain <span className="text-error">*</span></Label>
+                    <div className="flex gap-2 mt-1.5">
                       <Select
                         value={editIssueForm.domain}
                         onValueChange={(value) => setEditIssueForm({ ...editIssueForm, domain: value })}
                       >
-                        <SelectTrigger className="flex-1">
-                          <SelectValue />
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select domain" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent position="popper" sideOffset={4}>
                           {domains.map((domain) => (
                             <SelectItem key={domain} value={domain}>
                               {domain}
@@ -2193,19 +2160,17 @@ export default function ContextPage() {
                       </Button>
                     </div>
                   </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label>Category *</Label>
-                    <div className="flex gap-2">
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Category <span className="text-error">*</span></Label>
+                    <div className="flex gap-2 mt-1.5">
                       <Select
                         value={editIssueForm.category}
                         onValueChange={(value) => setEditIssueForm({ ...editIssueForm, category: value })}
                       >
-                        <SelectTrigger className="flex-1">
-                          <SelectValue />
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select category" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent position="popper" sideOffset={4}>
                           {categories.map((category) => (
                             <SelectItem key={category} value={category}>
                               {category}
@@ -2218,16 +2183,19 @@ export default function ContextPage() {
                       </Button>
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Department</Label>
+                </div>
+                {/* Department & Issue Owner */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Department</Label>
                     <Select
                       value={editIssueForm.departmentId}
                       onValueChange={(value) => setEditIssueForm({ ...editIssueForm, departmentId: value, ownerId: "" })}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full mt-1.5">
                         <SelectValue placeholder="Select department" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent position="popper" sideOffset={4}>
                         {departments.map((dept) => (
                           <SelectItem key={dept.id} value={dept.id}>
                             {dept.name}
@@ -2236,19 +2204,17 @@ export default function ContextPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label>Issue Owner</Label>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Issue Owner</Label>
                     <Select
                       value={editIssueForm.ownerId}
                       onValueChange={(value) => setEditIssueForm({ ...editIssueForm, ownerId: value })}
                       disabled={!editIssueForm.departmentId}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full mt-1.5">
                         <SelectValue placeholder={editIssueForm.departmentId ? "Select owner" : "Select department first"} />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent position="popper" sideOffset={4}>
                         {users
                           .filter((user) =>
                             (!editIssueForm.departmentId || user.departmentId === editIssueForm.departmentId) &&
@@ -2262,38 +2228,40 @@ export default function ContextPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Issue Type</Label>
-                    <div className="flex gap-2">
-                      <Select
-                        value={editIssueForm.issueType}
-                        onValueChange={(value) => setEditIssueForm({ ...editIssueForm, issueType: value })}
-                      >
-                        <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Select type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {issueTypes.map((type) => (
-                            <SelectItem key={type} value={type}>
-                              {type}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Button type="button" variant="outline" size="icon" onClick={() => setShowAddTypeDialog(true)}>
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
+                </div>
+                {/* Issue Type - Full Width */}
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Issue Type</Label>
+                  <div className="flex gap-2 mt-1.5">
+                    <Select
+                      value={editIssueForm.issueType}
+                      onValueChange={(value) => setEditIssueForm({ ...editIssueForm, issueType: value })}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent position="popper" sideOffset={4}>
+                        {issueTypes.map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {type}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button type="button" variant="outline" size="icon" onClick={() => setShowAddTypeDialog(true)}>
+                      <Plus className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="editIssueDescription">Description</Label>
+                {/* Description */}
+                <div>
+                  <Label htmlFor="editIssueDescription" className="text-sm font-medium text-slate-700">Description</Label>
                   <textarea
                     id="editIssueDescription"
                     value={editIssueForm.description}
                     onChange={(e) => setEditIssueForm({ ...editIssueForm, description: e.target.value })}
                     placeholder="Enter issue description"
-                    className="w-full min-h-[100px] px-3 py-2 text-sm border rounded-md"
+                    className="w-full min-h-[100px] px-3 py-2 text-sm border border-slate-200 rounded-md mt-1.5 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   />
                 </div>
               </div>
@@ -2301,14 +2269,16 @@ export default function ContextPage() {
 
             {/* Step 2: Regulations */}
             {editCurrentStep === 2 && (
-              <div className="space-y-6">
-                <h3 className="text-lg font-medium">Related Regulations</h3>
-                <p className="text-muted-foreground text-sm">Select regulations related to this issue (optional)</p>
+              <div className="space-y-5">
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">Related Regulations</h3>
+                  <p className="text-slate-500 text-sm mt-1">Select regulations related to this issue (optional)</p>
+                </div>
                 <div className="border rounded-lg p-4 min-h-[200px]">
                   {regulations.length > 0 ? (
                     <div className="space-y-2">
                       {regulations.map((reg) => (
-                        <label key={reg.id} className="flex items-center gap-3 p-2 rounded hover:bg-gray-50 cursor-pointer">
+                        <label key={reg.id} className="flex items-center gap-3 p-2 rounded hover:bg-slate-50 cursor-pointer">
                           <input
                             type="checkbox"
                             checked={editIssueForm.selectedRegulations.includes(reg.id)}
@@ -2329,13 +2299,13 @@ export default function ContextPage() {
                           />
                           <div className="flex-1">
                             <span className="font-medium">{reg.name}</span>
-                            {reg.version && <span className="text-muted-foreground ml-2 text-sm">v{reg.version}</span>}
+                            {reg.version && <span className="text-slate-500 ml-2 text-sm">v{reg.version}</span>}
                           </div>
                         </label>
                       ))}
                     </div>
                   ) : (
-                    <div className="flex items-center justify-center text-muted-foreground h-full">
+                    <div className="flex items-center justify-center text-slate-500 h-full">
                       No regulations available
                     </div>
                   )}
@@ -2345,9 +2315,9 @@ export default function ContextPage() {
 
             {/* Step 3: Process */}
             {editCurrentStep === 3 && (
-              <div className="space-y-6">
+              <div className="space-y-5">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-medium">Select Process related with the issue</h3>
+                  <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">Related Processes</h3>
                   <Button variant="outline" onClick={handleOpenEditProcessDialog}>
                     Choose Processes
                   </Button>
@@ -2360,11 +2330,11 @@ export default function ContextPage() {
                         return process ? (
                           <div key={process.id} className="p-4 border rounded-lg flex items-start justify-between">
                             <div>
-                              <div className="text-blue-600 font-medium">
+                              <div className="text-primary-600 font-medium">
                                 {process.processCode} : {process.name}
                               </div>
                               {process.description && (
-                                <p className="text-sm text-muted-foreground mt-1">{process.description}</p>
+                                <p className="text-sm text-slate-500 mt-1">{process.description}</p>
                               )}
                             </div>
                             <Button
@@ -2385,7 +2355,7 @@ export default function ContextPage() {
                       })}
                     </>
                   ) : (
-                    <div className="flex items-center justify-center h-[200px] text-muted-foreground border rounded-lg">
+                    <div className="flex items-center justify-center h-[200px] text-slate-500 border rounded-lg">
                       No items found
                     </div>
                   )}
@@ -2395,14 +2365,15 @@ export default function ContextPage() {
 
             {/* Step 4: Stakeholder */}
             {editCurrentStep === 4 && (
-              <div className="space-y-6">
+              <div className="space-y-5">
+                <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">Stakeholder Information</h3>
                 {/* Stakeholder Type */}
-                <div className="space-y-2">
-                  <h5 className="font-medium">Stakeholder Type</h5>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Stakeholder Type</Label>
                   <RadioGroup
                     value={editStakeholderType}
                     onValueChange={setEditStakeholderType}
-                    className="flex gap-6"
+                    className="flex gap-6 mt-1.5"
                   >
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="Internal" id="edit-st-internal" />
@@ -2420,16 +2391,16 @@ export default function ContextPage() {
                 </div>
 
                 {/* Stakeholder Selection */}
-                <div className="space-y-2">
-                  <h5 className="font-medium">Stakeholder</h5>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Stakeholder</Label>
                   <Select
                     value={editSelectedStakeholderId}
                     onValueChange={setEditSelectedStakeholderId}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="mt-1.5">
                       <SelectValue placeholder="Select stakeholder" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" sideOffset={4}>
                       {filteredEditStakeholdersByType.length > 0 ? (
                         filteredEditStakeholdersByType.map((s) => (
                           <SelectItem key={s.id} value={s.id}>
@@ -2437,7 +2408,7 @@ export default function ContextPage() {
                           </SelectItem>
                         ))
                       ) : (
-                        <div className="p-2 text-sm text-muted-foreground">No {editStakeholderType} stakeholders found</div>
+                        <div className="p-2 text-sm text-slate-500">No {editStakeholderType} stakeholders found</div>
                       )}
                     </SelectContent>
                   </Select>
@@ -2445,9 +2416,9 @@ export default function ContextPage() {
 
                 {/* Need and Expectation */}
                 <div className="flex items-end gap-4">
-                  <div className="flex-1 space-y-2">
-                    <h5 className="font-medium">Need and Expectation</h5>
-                    <div className="flex gap-2">
+                  <div className="flex-1">
+                    <Label className="text-sm font-medium text-slate-700">Need and Expectation</Label>
+                    <div className="flex gap-2 mt-1.5">
                       <Select
                         value={editSelectedNeedExpectation}
                         onValueChange={setEditSelectedNeedExpectation}
@@ -2455,7 +2426,7 @@ export default function ContextPage() {
                         <SelectTrigger className="flex-1">
                           <SelectValue placeholder="Select need/expectation" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent position="popper" sideOffset={4}>
                           {allNeedExpectations.map((need) => (
                             <SelectItem key={need} value={need}>
                               {need}
@@ -2478,12 +2449,12 @@ export default function ContextPage() {
                 </div>
 
                 {/* Stakeholder Needs and Exceptions Table */}
-                <div className="space-y-2">
-                  <h4 className="font-medium">Stakeholder Needs and Expectations</h4>
-                  <div className="border rounded-lg min-h-[150px]">
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Stakeholder Needs and Expectations</Label>
+                  <div className="border rounded-lg min-h-[150px] mt-1.5">
                     {editStakeholderNeeds.length > 0 ? (
                       <table className="w-full">
-                        <thead className="bg-gray-50 border-b">
+                        <thead className="bg-slate-50 border-b">
                           <tr>
                             <th className="text-left p-3 text-sm font-medium">Stakeholder</th>
                             <th className="text-left p-3 text-sm font-medium">Need/Expectation</th>
@@ -2515,7 +2486,7 @@ export default function ContextPage() {
                         </tbody>
                       </table>
                     ) : (
-                      <div className="flex items-center justify-center h-[150px] text-muted-foreground">
+                      <div className="flex items-center justify-center h-[150px] text-slate-500">
                         No stakeholder needs added
                       </div>
                     )}
@@ -2526,34 +2497,34 @@ export default function ContextPage() {
 
             {/* Step 5: Preview & Save */}
             {editCurrentStep === 5 && (
-              <div className="space-y-6">
-                <h3 className="text-lg font-medium">Preview & Save</h3>
-                <div className="border rounded-lg p-6 space-y-4 bg-gray-50">
+              <div className="space-y-5">
+                <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">Preview & Save</h3>
+                <div className="border rounded-lg p-6 space-y-4 bg-slate-50">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label className="text-muted-foreground">Title</Label>
+                      <Label className="text-slate-500">Title</Label>
                       <p className="font-medium">{editIssueForm.title || "-"}</p>
                     </div>
                     <div>
-                      <Label className="text-muted-foreground">Domain</Label>
+                      <Label className="text-slate-500">Domain</Label>
                       <p className="font-medium">{editIssueForm.domain}</p>
                     </div>
                     <div>
-                      <Label className="text-muted-foreground">Category</Label>
+                      <Label className="text-slate-500">Category</Label>
                       <p className="font-medium">{editIssueForm.category}</p>
                     </div>
                     <div>
-                      <Label className="text-muted-foreground">Issue Type</Label>
+                      <Label className="text-slate-500">Issue Type</Label>
                       <p className="font-medium">{editIssueForm.issueType || "-"}</p>
                     </div>
                     <div>
-                      <Label className="text-muted-foreground">Department</Label>
+                      <Label className="text-slate-500">Department</Label>
                       <p className="font-medium">
                         {departments.find((d) => d.id === editIssueForm.departmentId)?.name || "-"}
                       </p>
                     </div>
                     <div>
-                      <Label className="text-muted-foreground">Issue Owner</Label>
+                      <Label className="text-slate-500">Issue Owner</Label>
                       <p className="font-medium">
                         {users.find((u) => u.id === editIssueForm.ownerId)?.fullName || "-"}
                       </p>
@@ -2561,13 +2532,13 @@ export default function ContextPage() {
                   </div>
                   {editIssueForm.description && (
                     <div>
-                      <Label className="text-muted-foreground">Description</Label>
+                      <Label className="text-slate-500">Description</Label>
                       <p className="font-medium">{editIssueForm.description}</p>
                     </div>
                   )}
                   {editIssueForm.selectedRegulations.length > 0 && (
                     <div>
-                      <Label className="text-muted-foreground">Related Regulations</Label>
+                      <Label className="text-slate-500">Related Regulations</Label>
                       <div className="flex flex-wrap gap-2 mt-1">
                         {editIssueForm.selectedRegulations.map((id) => {
                           const regulation = regulations.find((r) => r.id === id);
@@ -2580,7 +2551,7 @@ export default function ContextPage() {
                   )}
                   {editIssueForm.selectedProcesses.length > 0 && (
                     <div>
-                      <Label className="text-muted-foreground">Related Processes</Label>
+                      <Label className="text-slate-500">Related Processes</Label>
                       <div className="flex flex-wrap gap-2 mt-1">
                         {editIssueForm.selectedProcesses.map((id) => {
                           const process = processes.find((p) => p.id === id);
@@ -2593,7 +2564,7 @@ export default function ContextPage() {
                   )}
                   {editStakeholderNeeds.length > 0 && (
                     <div>
-                      <Label className="text-muted-foreground">Stakeholder Needs and Expectations</Label>
+                      <Label className="text-slate-500">Stakeholder Needs and Expectations</Label>
                       <div className="mt-1 space-y-1">
                         {editStakeholderNeeds.map((item, index) => {
                           const stakeholder = stakeholders.find((s) => s.id === item.stakeholderId);
@@ -2610,57 +2581,61 @@ export default function ContextPage() {
               </div>
             )}
 
-            {/* Navigation buttons */}
-            <div className="flex justify-between pt-6">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  if (editCurrentStep === 1) {
-                    setShowEditIssue(false);
-                    setEditingIssue(null);
-                  } else {
-                    setEditCurrentStep(editCurrentStep - 1);
-                  }
-                }}
-              >
-                {editCurrentStep === 1 ? "Cancel" : "Previous"}
-              </Button>
-              <Button
-                onClick={() => {
-                  if (editCurrentStep === 5) {
-                    handleUpdateIssue();
-                  } else {
-                    setEditCurrentStep(editCurrentStep + 1);
-                  }
-                }}
-              >
-                {editCurrentStep === 5 ? "Update Issue" : "Next"}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        {/* Add Domain Dialog */}
+        {/* Fixed Footer with Navigation */}
+        <div className="flex-shrink-0 flex justify-between px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+          <Button
+            variant="outline"
+            onClick={() => {
+              if (editCurrentStep === 1) {
+                setIsEditIssueOpen(false);
+                setEditCurrentStep(1);
+                setEditingIssue(null);
+              } else {
+                setEditCurrentStep(editCurrentStep - 1);
+              }
+            }}
+          >
+            {editCurrentStep === 1 ? "Cancel" : "Previous"}
+          </Button>
+          <Button
+            onClick={() => {
+              if (editCurrentStep === 5) {
+                handleUpdateIssue();
+              } else {
+                setEditCurrentStep(editCurrentStep + 1);
+              }
+            }}
+          >
+            {editCurrentStep === 5 ? "Update Issue" : "Next"}
+          </Button>
+        </div>
+      </DialogContent>
+
+      {/* Add Domain Dialog */}
         <Dialog open={showAddDomainDialog} onOpenChange={setShowAddDomainDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add New Domain</DialogTitle>
-              <DialogDescription>
-                Enter a name for the new domain.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="editNewDomain">Domain Name *</Label>
-                <Input
-                  id="editNewDomain"
-                  value={newDomain}
-                  onChange={(e) => setNewDomain(e.target.value)}
-                  placeholder="Enter domain name"
-                />
-              </div>
+          <DialogContent className="sm:max-w-[500px] p-0 gap-0" nested>
+            <div className="px-6 py-5 border-b border-slate-100">
+              <DialogHeader>
+                <DialogTitle className="text-lg font-semibold text-slate-800">Add New Domain</DialogTitle>
+                <DialogDescription className="text-sm text-slate-500 mt-1">
+                  Enter a name for the new domain.
+                </DialogDescription>
+              </DialogHeader>
             </div>
-            <DialogFooter>
+            <div className="px-6 py-6">
+              <Label className="text-sm font-medium text-slate-700">Domain Name <span className="text-error">*</span></Label>
+              <Input
+                id="editNewDomain"
+                value={newDomain}
+                onChange={(e) => setNewDomain(e.target.value)}
+                placeholder="Enter domain name"
+                className="mt-1.5"
+              />
+            </div>
+            <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
               <Button variant="outline" onClick={() => { setShowAddDomainDialog(false); setNewDomain(""); }}>
                 Cancel
               </Button>
@@ -2674,31 +2649,32 @@ export default function ContextPage() {
               }} disabled={!newDomain.trim()}>
                 Add Domain
               </Button>
-            </DialogFooter>
+            </div>
           </DialogContent>
         </Dialog>
 
         {/* Add Category Dialog */}
         <Dialog open={showAddCategoryDialog} onOpenChange={setShowAddCategoryDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add New Category</DialogTitle>
-              <DialogDescription>
-                Enter a name for the new category.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="editNewCategory">Category Name *</Label>
-                <Input
-                  id="editNewCategory"
-                  value={newCategory}
-                  onChange={(e) => setNewCategory(e.target.value)}
-                  placeholder="Enter category name"
-                />
-              </div>
+          <DialogContent className="sm:max-w-[500px] p-0 gap-0" nested>
+            <div className="px-6 py-5 border-b border-slate-100">
+              <DialogHeader>
+                <DialogTitle className="text-lg font-semibold text-slate-800">Add New Category</DialogTitle>
+                <DialogDescription className="text-sm text-slate-500 mt-1">
+                  Enter a name for the new category.
+                </DialogDescription>
+              </DialogHeader>
             </div>
-            <DialogFooter>
+            <div className="px-6 py-6">
+              <Label className="text-sm font-medium text-slate-700">Category Name <span className="text-error">*</span></Label>
+              <Input
+                id="editNewCategory"
+                value={newCategory}
+                onChange={(e) => setNewCategory(e.target.value)}
+                placeholder="Enter category name"
+                className="mt-1.5"
+              />
+            </div>
+            <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
               <Button variant="outline" onClick={() => { setShowAddCategoryDialog(false); setNewCategory(""); }}>
                 Cancel
               </Button>
@@ -2712,31 +2688,32 @@ export default function ContextPage() {
               }} disabled={!newCategory.trim()}>
                 Add Category
               </Button>
-            </DialogFooter>
+            </div>
           </DialogContent>
         </Dialog>
 
         {/* Add Issue Type Dialog */}
         <Dialog open={showAddTypeDialog} onOpenChange={setShowAddTypeDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add New Issue Type</DialogTitle>
-              <DialogDescription>
-                Enter a name for the new issue type.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="editNewType">Issue Type Name *</Label>
-                <Input
-                  id="editNewType"
-                  value={newType}
-                  onChange={(e) => setNewType(e.target.value)}
-                  placeholder="Enter issue type name"
-                />
-              </div>
+          <DialogContent className="sm:max-w-[500px] p-0 gap-0" nested>
+            <div className="px-6 py-5 border-b border-slate-100">
+              <DialogHeader>
+                <DialogTitle className="text-lg font-semibold text-slate-800">Add New Issue Type</DialogTitle>
+                <DialogDescription className="text-sm text-slate-500 mt-1">
+                  Enter a name for the new issue type.
+                </DialogDescription>
+              </DialogHeader>
             </div>
-            <DialogFooter>
+            <div className="px-6 py-6">
+              <Label className="text-sm font-medium text-slate-700">Issue Type Name <span className="text-error">*</span></Label>
+              <Input
+                id="editNewType"
+                value={newType}
+                onChange={(e) => setNewType(e.target.value)}
+                placeholder="Enter issue type name"
+                className="mt-1.5"
+              />
+            </div>
+            <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
               <Button variant="outline" onClick={() => { setShowAddTypeDialog(false); setNewType(""); }}>
                 Cancel
               </Button>
@@ -2750,7 +2727,7 @@ export default function ContextPage() {
               }} disabled={!newType.trim()}>
                 Add Type
               </Button>
-            </DialogFooter>
+            </div>
           </DialogContent>
         </Dialog>
 
@@ -2765,7 +2742,7 @@ export default function ContextPage() {
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
                 <Input
                   placeholder="Search processes..."
                   value={editProcessSearchQuery}
@@ -2779,7 +2756,7 @@ export default function ContextPage() {
                     {filteredEditProcesses.map((process) => (
                       <label
                         key={process.id}
-                        className="flex items-start gap-3 p-4 border rounded-lg hover:border-blue-300 cursor-pointer transition-colors"
+                        className="flex items-start gap-3 p-4 border rounded-lg hover:border-primary-300 cursor-pointer transition-colors"
                       >
                         <input
                           type="checkbox"
@@ -2794,18 +2771,18 @@ export default function ContextPage() {
                           className="h-4 w-4 mt-1"
                         />
                         <div className="flex-1">
-                          <div className="text-blue-600 font-medium">
+                          <div className="text-primary-600 font-medium">
                             {process.processCode} : {process.name}
                           </div>
                           {process.description && (
-                            <p className="text-sm text-muted-foreground mt-1">{process.description}</p>
+                            <p className="text-sm text-slate-500 mt-1">{process.description}</p>
                           )}
                         </div>
                       </label>
                     ))}
                   </>
                 ) : (
-                  <div className="flex items-center justify-center h-[200px] text-muted-foreground">
+                  <div className="flex items-center justify-center h-[200px] text-slate-500">
                     No processes found
                   </div>
                 )}
@@ -2852,64 +2829,59 @@ export default function ContextPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
-    );
-  }
+    </Dialog>
+  );
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Context"
-        backAction={{
-          label: "",
-          icon: ArrowLeft,
-          onClick: () => router.back(),
-        }}
-      />
+      {/* Page Header */}
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold text-slate-800">Context</h1>
+        <p className="text-sm text-slate-500">
+          Manage stakeholders and issues for your organization.
+        </p>
+      </div>
 
-      {/* DepartmentContributor: Show Stakeholder as title without tabs */}
+      {/* DepartmentContributor: Show Stakeholder without tabs */}
       {isDepartmentContributor ? (
         <div className="space-y-4">
-          <h2 className="text-xl font-semibold">Stakeholder</h2>
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search stakeholders..."
-                  value={stakeholderSearch}
-                  onChange={(e) => setStakeholderSearch(e.target.value)}
-                  className="pl-10 w-[250px]"
-                />
-              </div>
-              <Select value={stakeholderTypeFilter} onValueChange={setStakeholderTypeFilter}>
-                <SelectTrigger className="w-[150px]">
-                  <SelectValue placeholder="Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="Internal">Internal</SelectItem>
-                  <SelectItem value="External">External</SelectItem>
-                  <SelectItem value="Third Party">Third Party</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={stakeholderStatusFilter} onValueChange={setStakeholderStatusFilter}>
-                <SelectTrigger className="w-[150px]">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="Active">Active</SelectItem>
-                  <SelectItem value="Inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input
+                placeholder="Search stakeholders..."
+                value={stakeholderSearch}
+                onChange={(e) => setStakeholderSearch(e.target.value)}
+                className="pl-10 w-[250px] bg-white"
+              />
             </div>
+            <Select value={stakeholderTypeFilter} onValueChange={setStakeholderTypeFilter}>
+              <SelectTrigger className="w-[150px] bg-white">
+                <SelectValue placeholder="Type" />
+              </SelectTrigger>
+              <SelectContent position="popper" sideOffset={4}>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="Internal">Internal</SelectItem>
+                <SelectItem value="External">External</SelectItem>
+                <SelectItem value="Third Party">Third Party</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={stakeholderStatusFilter} onValueChange={setStakeholderStatusFilter}>
+              <SelectTrigger className="w-[150px] bg-white">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent position="popper" sideOffset={4}>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="Active">Active</SelectItem>
+                <SelectItem value="Inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <DataGrid
             columns={stakeholderColumns}
             data={filteredStakeholders}
-            searchPlaceholder="Search..."
+            hideSearch={true}
           />
         </div>
       ) : (
@@ -2921,369 +2893,599 @@ export default function ContextPage() {
           </TabsList>
 
           {/* Stakeholder Tab */}
-          <TabsContent value="stakeholder" className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search stakeholders..."
-                  value={stakeholderSearch}
-                  onChange={(e) => setStakeholderSearch(e.target.value)}
-                  className="pl-10 w-[250px]"
-                />
+          <TabsContent value="stakeholder" className="mt-6">
+            {/* Filters and Action Button */}
+            <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Input
+                    placeholder="Search stakeholders..."
+                    value={stakeholderSearch}
+                    onChange={(e) => setStakeholderSearch(e.target.value)}
+                    className="pl-10 w-[250px] bg-white"
+                  />
+                </div>
+                <Select value={stakeholderTypeFilter} onValueChange={setStakeholderTypeFilter}>
+                  <SelectTrigger className="w-[150px] bg-white">
+                    <SelectValue placeholder="Type" />
+                  </SelectTrigger>
+                  <SelectContent position="popper" sideOffset={4}>
+                    <SelectItem value="all">All Types</SelectItem>
+                    <SelectItem value="Internal">Internal</SelectItem>
+                    <SelectItem value="External">External</SelectItem>
+                    <SelectItem value="Third Party">Third Party</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={stakeholderStatusFilter} onValueChange={setStakeholderStatusFilter}>
+                  <SelectTrigger className="w-[150px] bg-white">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent position="popper" sideOffset={4}>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="Active">Active</SelectItem>
+                    <SelectItem value="Inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <Select value={stakeholderTypeFilter} onValueChange={setStakeholderTypeFilter}>
-                <SelectTrigger className="w-[150px]">
-                  <SelectValue placeholder="Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="Internal">Internal</SelectItem>
-                  <SelectItem value="External">External</SelectItem>
-                  <SelectItem value="Third Party">Third Party</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={stakeholderStatusFilter} onValueChange={setStakeholderStatusFilter}>
-                <SelectTrigger className="w-[150px]">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="Active">Active</SelectItem>
-                  <SelectItem value="Inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            {!isReadOnlyRole && (
-              <Button onClick={() => setShowAddStakeholder(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                New Stakeholder
-              </Button>
-            )}
-          </div>
-
-          <DataGrid
-            columns={stakeholderColumns}
-            data={filteredStakeholders}
-            searchPlaceholder="Search..."
-          />
-        </TabsContent>
-
-        {/* Issue List Tab */}
-        <TabsContent value="issuelist" className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search issues..."
-                  value={issueSearch}
-                  onChange={(e) => setIssueSearch(e.target.value)}
-                  className="pl-10 w-[250px]"
-                />
-              </div>
-              <Select value={issueDepartmentFilter} onValueChange={setIssueDepartmentFilter}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Department" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Departments</SelectItem>
-                  {departments.map((dept) => (
-                    <SelectItem key={dept.id} value={dept.id}>
-                      {dept.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={issueCategoryFilter} onValueChange={setIssueCategoryFilter}>
-                <SelectTrigger className="w-[150px]">
-                  <SelectValue placeholder="Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  {uniqueCategories.map((cat) => (
-                    <SelectItem key={cat} value={cat}>
-                      {cat}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={issueDomainFilter} onValueChange={setIssueDomainFilter}>
-                <SelectTrigger className="w-[150px]">
-                  <SelectValue placeholder="Domain" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Domains</SelectItem>
-                  {uniqueDomains.map((domain) => (
-                    <SelectItem key={domain} value={domain}>
-                      {domain}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center gap-2">
               {!isReadOnlyRole && (
-                <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)}>
-                  <Upload className="h-4 w-4 mr-2" />
-                  Import
+                <Button size="sm" onClick={() => setIsAddStakeholderOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  New Stakeholder
                 </Button>
               )}
-              <Button variant="outline" size="sm" onClick={handleExport}>
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </Button>
-              {!isReadOnlyRole && (
-                <>
-                  <Button variant="outline" size="sm" className="text-destructive">
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Delete All
+            </div>
+
+            <DataGrid
+              columns={stakeholderColumns}
+              data={filteredStakeholders}
+              hideSearch={true}
+            />
+          </TabsContent>
+
+          {/* Issue List Tab */}
+          <TabsContent value="issuelist" className="mt-6">
+            {/* Filters and Action Buttons */}
+            <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Input
+                    placeholder="Search issues..."
+                    value={issueSearch}
+                    onChange={(e) => setIssueSearch(e.target.value)}
+                    className="pl-10 w-[250px] bg-white"
+                  />
+                </div>
+                <Select value={issueDepartmentFilter} onValueChange={setIssueDepartmentFilter}>
+                  <SelectTrigger className="w-[180px] bg-white">
+                    <SelectValue placeholder="Department" />
+                  </SelectTrigger>
+                  <SelectContent position="popper" sideOffset={4}>
+                    <SelectItem value="all">All Departments</SelectItem>
+                    {departments.map((dept) => (
+                      <SelectItem key={dept.id} value={dept.id}>
+                        {dept.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={issueCategoryFilter} onValueChange={setIssueCategoryFilter}>
+                  <SelectTrigger className="w-[150px] bg-white">
+                    <SelectValue placeholder="Category" />
+                  </SelectTrigger>
+                  <SelectContent position="popper" sideOffset={4}>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    {uniqueCategories.map((cat) => (
+                      <SelectItem key={cat} value={cat}>
+                        {cat}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={issueDomainFilter} onValueChange={setIssueDomainFilter}>
+                  <SelectTrigger className="w-[150px] bg-white">
+                    <SelectValue placeholder="Domain" />
+                  </SelectTrigger>
+                  <SelectContent position="popper" sideOffset={4}>
+                    <SelectItem value="all">All Domains</SelectItem>
+                    {uniqueDomains.map((domain) => (
+                      <SelectItem key={domain} value={domain}>
+                        {domain}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-2">
+                {!isReadOnlyRole && (
+                  <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Import
                   </Button>
-                  <Button onClick={() => setShowAddIssue(true)}>
+                )}
+                <Button variant="outline" size="sm" onClick={handleExport}>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Export
+                </Button>
+                {!isReadOnlyRole && (
+                  <Button size="sm" onClick={() => setIsAddIssueOpen(true)}>
                     <Plus className="h-4 w-4 mr-2" />
                     Add New
                   </Button>
-                </>
-              )}
+                )}
+              </div>
             </div>
-          </div>
 
-          {/* Issue Cards - Single column list layout */}
-          <div className="space-y-4">
-            {filteredIssues.map((issue, index) => (
-              <Card key={issue.id} className="relative">
-                <CardContent className="p-6">
-                  {/* Header Row */}
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h3 className="text-lg font-semibold text-primary">
-                        IS{index + 1} - {issue.id.slice(0, 4).toUpperCase()}
-                      </h3>
-                      <p className="text-base text-foreground">{issue.title}</p>
+            {/* Issue Cards - Single column list layout */}
+            <div className="space-y-3">
+              {filteredIssues.map((issue, index) => (
+                <div key={issue.id} className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                  {/* Card Header */}
+                  <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                    <div className="flex items-center gap-4">
+                      <span className="text-xs font-semibold text-primary-600 bg-primary-50 px-2.5 py-1 rounded-md">
+                        IS{String(index + 1).padStart(3, '0')}
+                      </span>
+                      <h3 className="text-sm font-semibold text-slate-800">{issue.title}</h3>
                     </div>
-                    {!isReadOnlyRole && (
-                      <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditIssue(issue)}>
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive"
-                          onClick={() => {
-                            setDeletingItem({ type: "issue", id: issue.id });
-                            setIsDeleteDialogOpen(true);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                    <div className="flex items-center gap-3">
+                      <Badge
+                        variant="outline"
+                        className={
+                          issue.status === "Open"
+                            ? "border-transparent bg-error-light text-error-dark"
+                            : issue.status === "In Progress"
+                            ? "border-transparent bg-warning-light text-warning-dark"
+                            : issue.status === "Resolved"
+                            ? "border-transparent bg-success-light text-success-dark"
+                            : "border-transparent bg-slate-100 text-slate-600"
+                        }
+                      >
+                        {issue.status}
+                      </Badge>
+                      {!isReadOnlyRole && (
+                        <div className="flex items-center gap-1 ml-2">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => handleEditIssue(issue)}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-slate-400 hover:text-error"
+                            onClick={() => {
+                              setDeletingItem({ type: "issue", id: issue.id });
+                              setIsDeleteDialogOpen(true);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Card Content */}
+                  <div className="px-6 py-5">
+                    {/* Details Row */}
+                    <div className="grid grid-cols-5 gap-6">
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">Owner</p>
+                        <p className="text-sm font-medium text-slate-700">{issue.owner?.fullName || "-"}</p>
                       </div>
-                    )}
-                  </div>
-
-                  {/* Details Grid */}
-                  <div className="grid grid-cols-5 gap-4">
-                    <div>
-                      <p className="text-sm font-medium text-primary">Issue Owner</p>
-                      <p className="text-sm text-foreground">{issue.owner?.fullName || "-"}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-primary">Category</p>
-                      <p className="text-sm text-foreground">{issue.category || "-"}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-primary">Type</p>
-                      <p className="text-sm text-foreground">{issue.issueType || "-"}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-primary">Domain</p>
-                      <p className="text-sm text-foreground">{issue.domain || "-"}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-primary">Department</p>
-                      <p className="text-sm text-foreground">{issue.department?.name || "-"}</p>
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">Category</p>
+                        <p className="text-sm font-medium text-slate-700">{issue.category || "-"}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">Type</p>
+                        <p className="text-sm font-medium text-slate-700">{issue.issueType || "-"}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">Domain</p>
+                        <p className="text-sm font-medium text-slate-700">{issue.domain || "-"}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">Department</p>
+                        <p className="text-sm font-medium text-slate-700">{issue.department?.name || "-"}</p>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Action Buttons Row */}
-                  <div className="flex items-center gap-2 mt-4 pt-4 border-t">
-                    {/* DeptReviewer/DeptContributor: Create Action and View Action buttons */}
-                    {isReadOnlyRole && (
-                      <>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedIssueForAction(issue);
-                            setActionForm({ actionType: "", description: "", completion: 0, comment: "" });
-                            setShowCreateActionDialog(true);
-                          }}
-                        >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Create Action
-                        </Button>
-                        {issue.actions && issue.actions.length > 0 && (
+                  {/* Action Buttons Footer - Only show if there are actions or for readonly role */}
+                  {(isReadOnlyRole || (isReviewerRole && issue.actions && issue.actions.length > 0)) && (
+                    <div className="flex items-center gap-3 px-6 py-3 border-t border-slate-100 bg-slate-50/30">
+                      {/* DeptReviewer/DeptContributor: Create Action and View Action buttons */}
+                      {isReadOnlyRole && (
+                        <>
                           <Button
                             variant="outline"
                             size="sm"
+                            className="text-xs"
                             onClick={() => {
                               setSelectedIssueForAction(issue);
-                              setShowViewActionsDialog(true);
+                              setActionForm({ actionType: "", description: "", completion: 0, comment: "" });
+                              setShowCreateActionDialog(true);
                             }}
                           >
-                            View Action ({issue.actions.length})
+                            <Plus className="h-3.5 w-3.5 mr-1.5" />
+                            Create Action
                           </Button>
-                        )}
-                      </>
-                    )}
+                          {issue.actions && issue.actions.length > 0 && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-xs"
+                              onClick={() => {
+                                setSelectedIssueForAction(issue);
+                                setShowViewActionsDialog(true);
+                              }}
+                            >
+                              <Eye className="h-3.5 w-3.5 mr-1.5" />
+                              View Actions ({issue.actions.length})
+                            </Button>
+                          )}
+                        </>
+                      )}
 
-                    {/* CustomerAdmin/Reviewer: Action button (only if actions exist) */}
-                    {isReviewerRole && issue.actions && issue.actions.length > 0 && (
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedIssueForAction(issue);
-                          // Open review dialog with the first pending action
-                          const pendingAction = issue.actions?.find(a => a.status === "Pending");
-                          if (pendingAction) {
-                            setSelectedActionForReview(pendingAction);
-                            setShowActionReviewDialog(true);
-                          } else {
-                            // Show all actions if none pending
-                            setShowViewActionsDialog(true);
-                          }
-                        }}
-                      >
-                        Action ({issue.actions.filter(a => a.status === "Pending").length} pending)
-                      </Button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                      {/* CustomerAdmin/Reviewer: Action button (only if actions exist) */}
+                      {isReviewerRole && issue.actions && issue.actions.length > 0 && (
+                        <Button
+                          variant="default"
+                          size="sm"
+                          className="text-xs"
+                          onClick={() => {
+                            setSelectedIssueForAction(issue);
+                            const pendingAction = issue.actions?.find(a => a.status === "Pending");
+                            if (pendingAction) {
+                              setSelectedActionForReview(pendingAction);
+                              setShowActionReviewDialog(true);
+                            } else {
+                              setShowViewActionsDialog(true);
+                            }
+                          }}
+                        >
+                          Review Actions ({issue.actions.filter(a => a.status === "Pending").length} pending)
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {filteredIssues.length === 0 && (
+              <div className="bg-white rounded-xl border border-slate-200 p-16 text-center">
+                <div className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                  <FileText className="h-6 w-6 text-slate-400" />
+                </div>
+                <h3 className="text-base font-semibold text-slate-800 mb-1">No Issues Found</h3>
+                <p className="text-sm text-slate-500">
+                  {issueSearch || issueDepartmentFilter !== "all" || issueCategoryFilter !== "all" || issueDomainFilter !== "all"
+                    ? "Try adjusting your filters to find issues."
+                    : "Create your first issue to get started."}
+                </p>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+      )}
+
+      {/* Add Issue Modal */}
+      {renderAddIssueModal()}
+
+      {/* Edit Issue Modal */}
+      {renderEditIssueModal()}
+
+      {/* Add Stakeholder Dialog */}
+      <Dialog open={isAddStakeholderOpen} onOpenChange={setIsAddStakeholderOpen}>
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Add Stakeholder</DialogTitle>
+            </DialogHeader>
           </div>
 
-          {filteredIssues.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">No issues found</p>
+          {/* Content */}
+          <div className="px-6 py-6">
+            <div className="space-y-5">
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Stakeholder Type</Label>
+                <RadioGroup
+                  value={newStakeholder.type}
+                  onValueChange={(value) => setNewStakeholder({ ...newStakeholder, type: value })}
+                  className="flex gap-6 mt-1.5"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="Internal" id="add-internal" />
+                    <Label htmlFor="add-internal" className="font-normal text-sm text-slate-600">Internal</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="External" id="add-external" />
+                    <Label htmlFor="add-external" className="font-normal text-sm text-slate-600">External</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="Third Party" id="add-thirdparty" />
+                    <Label htmlFor="add-thirdparty" className="font-normal text-sm text-slate-600">Third Party</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Stakeholder Name <span className="text-error">*</span></Label>
+                <Input
+                  value={newStakeholder.name}
+                  onChange={(e) => setNewStakeholder({ ...newStakeholder, name: e.target.value })}
+                  placeholder="Enter stakeholder name"
+                  className="mt-1.5"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Department</Label>
+                  <Select
+                    value={newStakeholder.departmentId}
+                    onValueChange={(value) => setNewStakeholder({ ...newStakeholder, departmentId: value })}
+                  >
+                    <SelectTrigger className="w-full mt-1.5">
+                      <SelectValue placeholder="Select department" />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4}>
+                      {departments.map((dept) => (
+                        <SelectItem key={dept.id} value={dept.id}>
+                          {dept.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Status</Label>
+                  <Select
+                    value={newStakeholder.status}
+                    onValueChange={(value) => setNewStakeholder({ ...newStakeholder, status: value })}
+                  >
+                    <SelectTrigger className="w-full mt-1.5">
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4}>
+                      <SelectItem value="Active">Active</SelectItem>
+                      <SelectItem value="Inactive">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </div>
-          )}
-        </TabsContent>
-      </Tabs>
-      )}
+          </div>
+
+          {/* Fixed Footer */}
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <Button variant="outline" onClick={() => setIsAddStakeholderOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddStakeholder}>Save</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Stakeholder Dialog */}
+      <Dialog open={isEditStakeholderOpen} onOpenChange={setIsEditStakeholderOpen}>
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Edit Stakeholder</DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Content */}
+          <div className="px-6 py-6">
+            <div className="space-y-5">
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Stakeholder Type</Label>
+                <RadioGroup
+                  value={editingStakeholder?.type || "Internal"}
+                  onValueChange={(value) => setEditingStakeholder(editingStakeholder ? { ...editingStakeholder, type: value } : null)}
+                  className="flex gap-6 mt-1.5"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="Internal" id="edit-internal" />
+                    <Label htmlFor="edit-internal" className="font-normal text-sm text-slate-600">Internal</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="External" id="edit-external" />
+                    <Label htmlFor="edit-external" className="font-normal text-sm text-slate-600">External</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="Third Party" id="edit-thirdparty" />
+                    <Label htmlFor="edit-thirdparty" className="font-normal text-sm text-slate-600">Third Party</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Stakeholder Name <span className="text-error">*</span></Label>
+                <Input
+                  value={editingStakeholder?.name || ""}
+                  onChange={(e) => setEditingStakeholder(editingStakeholder ? { ...editingStakeholder, name: e.target.value } : null)}
+                  placeholder="Enter stakeholder name"
+                  className="mt-1.5"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Department</Label>
+                  <Select
+                    value={editingStakeholder?.departmentId || ""}
+                    onValueChange={(value) => setEditingStakeholder(editingStakeholder ? { ...editingStakeholder, departmentId: value } : null)}
+                  >
+                    <SelectTrigger className="w-full mt-1.5">
+                      <SelectValue placeholder="Select department" />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4}>
+                      {departments.map((dept) => (
+                        <SelectItem key={dept.id} value={dept.id}>
+                          {dept.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Status</Label>
+                  <Select
+                    value={editingStakeholder?.status || "Active"}
+                    onValueChange={(value) => setEditingStakeholder(editingStakeholder ? { ...editingStakeholder, status: value } : null)}
+                  >
+                    <SelectTrigger className="w-full mt-1.5">
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4}>
+                      <SelectItem value="Active">Active</SelectItem>
+                      <SelectItem value="Inactive">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Fixed Footer */}
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <Button variant="outline" onClick={() => setIsEditStakeholderOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpdateStakeholder}>Save</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirm Delete</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete this {deletingItem?.type}? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
+        <DialogContent className="sm:max-w-[500px] p-0 gap-0">
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Confirm Delete</DialogTitle>
+              <DialogDescription className="text-sm text-slate-500 mt-1">
+                Are you sure you want to delete this {deletingItem?.type}? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          {/* Fixed Footer */}
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
               Cancel
             </Button>
             <Button variant="destructive" onClick={confirmDelete}>
               Delete
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Add Domain Dialog */}
       <Dialog open={showAddDomainDialog} onOpenChange={setShowAddDomainDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New Domain</DialogTitle>
-            <DialogDescription>
-              Enter a name for the new domain.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="newDomain">Domain Name *</Label>
-              <Input
-                id="newDomain"
-                value={newDomain}
-                onChange={(e) => setNewDomain(e.target.value)}
-                placeholder="Enter domain name"
-              />
-            </div>
+        <DialogContent className="sm:max-w-[500px] p-0 gap-0" nested>
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Add New Domain</DialogTitle>
+              <DialogDescription className="text-sm text-slate-500 mt-1">
+                Enter a name for the new domain.
+              </DialogDescription>
+            </DialogHeader>
           </div>
-          <DialogFooter>
+          {/* Content */}
+          <div className="px-6 py-6">
+            <Label className="text-sm font-medium text-slate-700">Domain Name <span className="text-error">*</span></Label>
+            <Input
+              value={newDomain}
+              onChange={(e) => setNewDomain(e.target.value)}
+              placeholder="Enter domain name"
+              className="mt-1.5"
+            />
+          </div>
+          {/* Fixed Footer */}
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => { setShowAddDomainDialog(false); setNewDomain(""); }}>
               Cancel
             </Button>
             <Button onClick={handleAddDomain} disabled={!newDomain.trim()}>
               Add Domain
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Add Category Dialog */}
       <Dialog open={showAddCategoryDialog} onOpenChange={setShowAddCategoryDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New Category</DialogTitle>
-            <DialogDescription>
-              Enter a name for the new category.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="newCategory">Category Name *</Label>
-              <Input
-                id="newCategory"
-                value={newCategory}
-                onChange={(e) => setNewCategory(e.target.value)}
-                placeholder="Enter category name"
-              />
-            </div>
+        <DialogContent className="sm:max-w-[500px] p-0 gap-0" nested>
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Add New Category</DialogTitle>
+              <DialogDescription className="text-sm text-slate-500 mt-1">
+                Enter a name for the new category.
+              </DialogDescription>
+            </DialogHeader>
           </div>
-          <DialogFooter>
+          {/* Content */}
+          <div className="px-6 py-6">
+            <Label className="text-sm font-medium text-slate-700">Category Name <span className="text-error">*</span></Label>
+            <Input
+              value={newCategory}
+              onChange={(e) => setNewCategory(e.target.value)}
+              placeholder="Enter category name"
+              className="mt-1.5"
+            />
+          </div>
+          {/* Fixed Footer */}
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => { setShowAddCategoryDialog(false); setNewCategory(""); }}>
               Cancel
             </Button>
             <Button onClick={handleAddCategory} disabled={!newCategory.trim()}>
               Add Category
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Add Issue Type Dialog */}
       <Dialog open={showAddTypeDialog} onOpenChange={setShowAddTypeDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New Issue Type</DialogTitle>
-            <DialogDescription>
-              Enter a name for the new issue type.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="newType">Issue Type Name *</Label>
-              <Input
-                id="newType"
-                value={newType}
-                onChange={(e) => setNewType(e.target.value)}
-                placeholder="Enter issue type name"
-              />
-            </div>
+        <DialogContent className="sm:max-w-[500px] p-0 gap-0" nested>
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Add New Issue Type</DialogTitle>
+              <DialogDescription className="text-sm text-slate-500 mt-1">
+                Enter a name for the new issue type.
+              </DialogDescription>
+            </DialogHeader>
           </div>
-          <DialogFooter>
+          {/* Content */}
+          <div className="px-6 py-6">
+            <Label className="text-sm font-medium text-slate-700">Issue Type Name <span className="text-error">*</span></Label>
+            <Input
+              value={newType}
+              onChange={(e) => setNewType(e.target.value)}
+              placeholder="Enter issue type name"
+              className="mt-1.5"
+            />
+          </div>
+          {/* Fixed Footer */}
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => { setShowAddTypeDialog(false); setNewType(""); }}>
               Cancel
             </Button>
             <Button onClick={handleAddType} disabled={!newType.trim()}>
               Add Type
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -3296,118 +3498,124 @@ export default function ContextPage() {
           setSelectedIssueForAction(null);
         }
       }}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Action Details</DialogTitle>
-            <DialogDescription>
-              Create a new action for issue: {selectedIssueForAction?.title}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="actionType">Action Type *</Label>
-              <Select
-                value={actionForm.actionType}
-                onValueChange={(value) => setActionForm({ ...actionForm, actionType: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select action type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Preventive">Preventive</SelectItem>
-                  <SelectItem value="Corrective">Corrective</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="description">Description *</Label>
-              <textarea
-                id="description"
-                className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                placeholder="Enter action description"
-                value={actionForm.description}
-                onChange={(e) => setActionForm({ ...actionForm, description: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="completion">Completion (%)</Label>
-              <Input
-                id="completion"
-                type="number"
-                min="0"
-                max="100"
-                value={actionForm.completion}
-                onChange={(e) => setActionForm({ ...actionForm, completion: parseInt(e.target.value) || 0 })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="comment">Comment</Label>
-              <textarea
-                id="comment"
-                className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                placeholder="Optional comment"
-                value={actionForm.comment}
-                onChange={(e) => setActionForm({ ...actionForm, comment: e.target.value })}
-              />
-            </div>
-            {/* File Upload Section */}
-            <div className="space-y-2">
-              <Label>Attachment</Label>
-              <div
-                className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${
-                  isDraggingActionFile ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50"
-                }`}
-                onDragOver={handleActionFileDragOver}
-                onDragLeave={handleActionFileDragLeave}
-                onDrop={handleActionFileDrop}
-                onClick={() => actionFileInputRef.current?.click()}
-              >
-                {actionFile ? (
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <File className="h-5 w-5 text-muted-foreground" />
-                      <span className="text-sm font-medium truncate max-w-[200px]">{actionFile.name}</span>
-                      <span className="text-xs text-muted-foreground">
-                        ({(actionFile.size / 1024).toFixed(1)} KB)
-                      </span>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setActionFile(null);
-                      }}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-2 py-2">
-                    <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">
-                      Drag and drop a file here, or click to browse
-                    </p>
-                  </div>
-                )}
-                <input
-                  ref={actionFileInputRef}
-                  type="file"
-                  className="hidden"
-                  onChange={handleActionFileChange}
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Action Details</DialogTitle>
+              <DialogDescription className="text-sm text-slate-500 mt-1">
+                Create a new action for issue: {selectedIssueForAction?.title}
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            <div className="space-y-5">
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Action Type <span className="text-error">*</span></Label>
+                <Select
+                  value={actionForm.actionType}
+                  onValueChange={(value) => setActionForm({ ...actionForm, actionType: value })}
+                >
+                  <SelectTrigger className="mt-1.5">
+                    <SelectValue placeholder="Select action type" />
+                  </SelectTrigger>
+                  <SelectContent position="popper" sideOffset={4}>
+                    <SelectItem value="Preventive">Preventive</SelectItem>
+                    <SelectItem value="Corrective">Corrective</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Description <span className="text-error">*</span></Label>
+                <textarea
+                  className="mt-1.5 flex min-h-[100px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
+                  placeholder="Enter action description"
+                  value={actionForm.description}
+                  onChange={(e) => setActionForm({ ...actionForm, description: e.target.value })}
                 />
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Completion (%)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={actionForm.completion}
+                  onChange={(e) => setActionForm({ ...actionForm, completion: parseInt(e.target.value) || 0 })}
+                  className="mt-1.5"
+                />
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Comment</Label>
+                <textarea
+                  className="mt-1.5 flex min-h-[60px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
+                  placeholder="Optional comment"
+                  value={actionForm.comment}
+                  onChange={(e) => setActionForm({ ...actionForm, comment: e.target.value })}
+                />
+              </div>
+              {/* File Upload Section */}
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Attachment</Label>
+                <div
+                  className={`mt-1.5 border border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${
+                    isDraggingActionFile ? "border-primary-500 bg-primary-50" : "border-slate-200 hover:border-primary-500/50"
+                  }`}
+                  onDragOver={handleActionFileDragOver}
+                  onDragLeave={handleActionFileDragLeave}
+                  onDrop={handleActionFileDrop}
+                  onClick={() => actionFileInputRef.current?.click()}
+                >
+                  {actionFile ? (
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <File className="h-5 w-5 text-slate-400" />
+                        <span className="text-sm font-medium text-slate-700 truncate max-w-[200px]">{actionFile.name}</span>
+                        <span className="text-xs text-slate-500">
+                          ({(actionFile.size / 1024).toFixed(1)} KB)
+                        </span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-slate-400 hover:text-error"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActionFile(null);
+                        }}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2 py-2">
+                      <Upload className="h-6 w-6 mx-auto text-slate-300" />
+                      <p className="text-sm text-slate-500">
+                        Drag and drop a file here, or click to browse
+                      </p>
+                    </div>
+                  )}
+                  <input
+                    ref={actionFileInputRef}
+                    type="file"
+                    className="hidden"
+                    onChange={handleActionFileChange}
+                  />
+                </div>
               </div>
             </div>
           </div>
-          <DialogFooter>
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setShowCreateActionDialog(false)}>
               Cancel
             </Button>
             <Button onClick={handleCreateAction} disabled={savingAction || !actionForm.actionType || !actionForm.description}>
               {savingAction ? "Submitting..." : "Submit"}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -3425,7 +3633,7 @@ export default function ContextPage() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             {selectedIssueForAction?.actions?.map((action) => (
-              <Card key={action.id} className={`${action.status === "Sent Back" ? "border-orange-500" : action.status === "Resolved" ? "border-green-500" : ""}`}>
+              <Card key={action.id} className={`${action.status === "Sent Back" ? "border-warning" : action.status === "Resolved" ? "border-success" : ""}`}>
                 <CardContent className="p-4">
                   <div className="flex justify-between items-start mb-2">
                     <div>
@@ -3445,7 +3653,7 @@ export default function ContextPage() {
                             setShowActionCommentsDialog(true);
                           }}
                         >
-                          <MessageSquare className="h-4 w-4 text-orange-500" />
+                          <MessageSquare className="h-4 w-4 text-warning" />
                         </Button>
                       )}
                       {action.status === "Sent Back" && (
@@ -3492,12 +3700,12 @@ export default function ContextPage() {
                         {uploadingActionId === action.id ? (
                           <div className="flex items-center justify-center gap-2 py-1">
                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-                            <span className="text-sm text-muted-foreground">Uploading...</span>
+                            <span className="text-sm text-slate-500">Uploading...</span>
                           </div>
                         ) : (
                           <div className="flex items-center justify-center gap-2 py-1">
-                            <Upload className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm text-muted-foreground">Drop file here or click to upload</span>
+                            <Upload className="h-4 w-4 text-slate-500" />
+                            <span className="text-sm text-slate-500">Drop file here or click to upload</span>
                           </div>
                         )}
                       </div>
@@ -3510,17 +3718,17 @@ export default function ContextPage() {
                       <div className="flex items-center justify-between p-2 bg-muted rounded-lg">
                         <div className="flex items-center gap-2">
                           {action.fileType?.match(/^(jpg|jpeg|png|gif|bmp|webp)$/i) ? (
-                            <FileImage className="h-5 w-5 text-blue-500" />
+                            <FileImage className="h-5 w-5 text-info" />
                           ) : action.fileType?.match(/^(xls|xlsx|csv)$/i) ? (
-                            <FileSpreadsheet className="h-5 w-5 text-green-600" />
+                            <FileSpreadsheet className="h-5 w-5 text-success" />
                           ) : action.fileType?.match(/^(doc|docx|txt|pdf)$/i) ? (
-                            <FileText className="h-5 w-5 text-red-500" />
+                            <FileText className="h-5 w-5 text-error" />
                           ) : (
-                            <File className="h-5 w-5 text-gray-500" />
+                            <File className="h-5 w-5 text-slate-500" />
                           )}
                           <span className="text-sm truncate max-w-[150px]">{action.fileName}</span>
                           {action.fileSize && (
-                            <span className="text-xs text-muted-foreground">
+                            <span className="text-xs text-slate-500">
                               ({(action.fileSize / 1024).toFixed(1)} KB)
                             </span>
                           )}
@@ -3552,7 +3760,7 @@ export default function ContextPage() {
                               onClick={() => handleDeleteActionFile(action)}
                               disabled={uploadingActionId === action.id}
                               title="Delete"
-                              className="text-red-500 hover:text-red-700"
+                              className="text-error hover:text-error-dark"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -3562,7 +3770,7 @@ export default function ContextPage() {
                     </div>
                   )}
 
-                  <div className="flex justify-between text-xs text-muted-foreground">
+                  <div className="flex justify-between text-xs text-slate-500">
                     <span>By: {action.createdBy.fullName}</span>
                     <span>Completion: {action.completion}%</span>
                   </div>
@@ -3570,7 +3778,7 @@ export default function ContextPage() {
               </Card>
             ))}
             {(!selectedIssueForAction?.actions || selectedIssueForAction.actions.length === 0) && (
-              <p className="text-center text-muted-foreground py-4">No actions found</p>
+              <p className="text-center text-slate-500 py-4">No actions found</p>
             )}
             {/* Hidden file input for View Actions */}
             <input
@@ -3644,13 +3852,13 @@ export default function ContextPage() {
                     <div className="flex items-center gap-3">
                       {/* File Type Icon */}
                       {selectedActionForReview.fileType?.match(/^(jpg|jpeg|png|gif|bmp|webp)$/i) ? (
-                        <FileImage className="h-8 w-8 text-blue-500" />
+                        <FileImage className="h-8 w-8 text-info" />
                       ) : selectedActionForReview.fileType?.match(/^(xls|xlsx|csv)$/i) ? (
-                        <FileSpreadsheet className="h-8 w-8 text-green-600" />
+                        <FileSpreadsheet className="h-8 w-8 text-success" />
                       ) : selectedActionForReview.fileType?.match(/^(doc|docx|txt|pdf)$/i) ? (
-                        <FileText className="h-8 w-8 text-red-500" />
+                        <FileText className="h-8 w-8 text-error" />
                       ) : (
-                        <File className="h-8 w-8 text-gray-500" />
+                        <File className="h-8 w-8 text-slate-500" />
                       )}
                       {/* File Name and Size */}
                       <div>
@@ -3658,7 +3866,7 @@ export default function ContextPage() {
                           {selectedActionForReview.fileName}
                         </p>
                         {selectedActionForReview.fileSize && (
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-xs text-slate-500">
                             {(selectedActionForReview.fileSize / 1024).toFixed(1)} KB
                           </p>
                         )}
@@ -3732,7 +3940,7 @@ export default function ContextPage() {
               <Label htmlFor="resendComment">Comment *</Label>
               <textarea
                 id="resendComment"
-                className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 placeholder="Enter your feedback..."
                 value={resendComment}
                 onChange={(e) => setResendComment(e.target.value)}
@@ -3767,7 +3975,7 @@ export default function ContextPage() {
               <Card key={comment.id}>
                 <CardContent className="p-3">
                   <p className="text-sm whitespace-pre-wrap">{comment.comment}</p>
-                  <div className="flex justify-between text-xs text-muted-foreground mt-2">
+                  <div className="flex justify-between text-xs text-slate-500 mt-2">
                     <span>By: {comment.createdBy}</span>
                     <span>{new Date(comment.createdAt).toLocaleDateString()}</span>
                   </div>
@@ -3775,7 +3983,7 @@ export default function ContextPage() {
               </Card>
             ))}
             {(!selectedActionForComments?.comments || selectedActionForComments.comments.length === 0) && (
-              <p className="text-center text-muted-foreground py-4">No comments</p>
+              <p className="text-center text-slate-500 py-4">No comments</p>
             )}
           </div>
           <DialogFooter>
@@ -3811,7 +4019,7 @@ export default function ContextPage() {
                 <SelectTrigger>
                   <SelectValue placeholder="Select action type" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent position="popper" sideOffset={4}>
                   <SelectItem value="Preventive">Preventive</SelectItem>
                   <SelectItem value="Corrective">Corrective</SelectItem>
                 </SelectContent>
@@ -3821,7 +4029,7 @@ export default function ContextPage() {
               <Label htmlFor="editDescription">Description *</Label>
               <textarea
                 id="editDescription"
-                className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 placeholder="Enter action description"
                 value={editActionForm.description}
                 onChange={(e) => setEditActionForm({ ...editActionForm, description: e.target.value })}
@@ -3842,7 +4050,7 @@ export default function ContextPage() {
               <Label htmlFor="editComment">Comment</Label>
               <textarea
                 id="editComment"
-                className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 placeholder="Optional comment"
                 value={editActionForm.comment}
                 onChange={(e) => setEditActionForm({ ...editActionForm, comment: e.target.value })}
@@ -3888,7 +4096,7 @@ export default function ContextPage() {
                 />
               </div>
               {importFile && (
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-sm text-slate-500 mt-1">
                   Selected: {importFile.name}
                 </p>
               )}
