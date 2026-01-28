@@ -56,6 +56,7 @@ import {
   Paperclip,
   Check,
   AlertCircle,
+  Send,
 } from "lucide-react";
 import { useHasRole } from "@/hooks/usePermissions";
 import { useSession } from "next-auth/react";
@@ -2112,6 +2113,21 @@ export default function FieldworkDetailsPage() {
                         >
                           <Paperclip className="h-5 w-5 text-[#1e3a5f]" />
                         </Button>
+                        {/* Submit Response button for pending evidence requests */}
+                        {er.status === 'Pending' && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="Submit Response"
+                            onClick={() => {
+                              setAuditeeClariEvidence(er);
+                              setRespondDialogOpen(true);
+                            }}
+                            className="h-8 w-8"
+                          >
+                            <Send className="h-5 w-5 text-blue-600" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -2213,6 +2229,21 @@ export default function FieldworkDetailsPage() {
                               onClick={() => handleOpenAttachmentDialog(er)}
                             >
                               <Upload className="h-4 w-4 text-green-600" />
+                            </Button>
+                          )}
+                          {/* Submit Response button for auditees - only for pending evidence requests */}
+                          {isAuditee && er.auditeeId === currentUserId && er.status === 'Pending' && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              title="Submit Response"
+                              onClick={() => {
+                                setAuditeeClariEvidence(er);
+                                setRespondDialogOpen(true);
+                              }}
+                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            >
+                              <Send className="h-4 w-4" />
                             </Button>
                           )}
                           {/* Only Audit Heads can edit and delete */}
