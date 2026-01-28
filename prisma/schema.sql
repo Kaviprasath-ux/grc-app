@@ -478,6 +478,21 @@ CREATE TABLE "Process" (
 );
 
 -- CreateTable
+CREATE TABLE "ProcessAttachment" (
+    "id" TEXT NOT NULL,
+    "fileName" TEXT NOT NULL,
+    "fileType" TEXT,
+    "fileSize" INTEGER,
+    "filePath" TEXT NOT NULL,
+    "uploadedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "processId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "ProcessAttachment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "BIACategory" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -2545,6 +2560,9 @@ ALTER TABLE "Process" ADD CONSTRAINT "Process_consultedId_fkey" FOREIGN KEY ("co
 
 -- AddForeignKey
 ALTER TABLE "Process" ADD CONSTRAINT "Process_informedId_fkey" FOREIGN KEY ("informedId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ProcessAttachment" ADD CONSTRAINT "ProcessAttachment_processId_fkey" FOREIGN KEY ("processId") REFERENCES "Process"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "ProcessBIA" ADD CONSTRAINT "ProcessBIA_processId_fkey" FOREIGN KEY ("processId") REFERENCES "Process"("id") ON DELETE CASCADE ON UPDATE CASCADE;

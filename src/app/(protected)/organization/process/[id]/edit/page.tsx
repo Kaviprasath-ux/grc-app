@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ChevronLeft, Check } from "lucide-react";
+import { ChevronLeft, Check, Upload, FileText, Eye, Download, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,6 +26,15 @@ interface User {
   fullName: string;
 }
 
+interface ProcessAttachment {
+  id: string;
+  fileName: string;
+  fileType: string | null;
+  fileSize: number | null;
+  filePath: string;
+  uploadedAt: string;
+}
+
 interface Process {
   id: string;
   processCode: string;
@@ -35,7 +44,7 @@ interface Process {
   departmentId: string | null;
   ownerId: string | null;
   status: string;
-  frequency?: string | null;
+  processFrequency?: string | null;
   natureOfImplementation?: string | null;
   assetDependency?: boolean;
   externalDependency?: boolean;
@@ -44,10 +53,11 @@ interface Process {
   piiCapture?: boolean;
   operationalComplexity?: string | null;
   lastAuditDate?: string | null;
-  responsible?: string | null;
-  accountable?: string | null;
-  consulted?: string | null;
-  informed?: string | null;
+  responsibleId?: string | null;
+  accountableId?: string | null;
+  consultedId?: string | null;
+  informedId?: string | null;
+  attachments?: ProcessAttachment[];
 }
 
 const processTypes = ["Primary", "Management", "Supporting"];
@@ -75,6 +85,13 @@ export default function EditProcessPage() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [users, setUsers] = useState<User[]>([]);
 
+  // File upload states
+  const [attachments, setAttachments] = useState<ProcessAttachment[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const [deletingAttachmentId, setDeletingAttachmentId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [formData, setFormData] = useState({
     processCode: "",
     name: "",
@@ -99,6 +116,8 @@ export default function EditProcessPage() {
   });
 
   const fetchData = useCallback(async () => {
+    if (!processId) return;
+
     setLoading(true);
     try {
       const [processRes, deptRes, userRes] = await Promise.all([
@@ -112,6 +131,7 @@ export default function EditProcessPage() {
 
       if (processRes.ok) {
         const process: Process = await processRes.json();
+        console.log("Fetched process:", process);
         setFormData({
           processCode: process.processCode || "",
           name: process.name || "",
@@ -120,30 +140,122 @@ export default function EditProcessPage() {
           departmentId: process.departmentId || "",
           ownerId: process.ownerId || "",
           status: process.status || "Active",
-          frequency: process.frequency || "",
+          frequency: process.processFrequency || "",
           natureOfImplementation: process.natureOfImplementation || "",
-          assetDependency: process.assetDependency || false,
-          externalDependency: process.externalDependency || false,
+          assetDependency: process.assetDependency ?? false,
+          externalDependency: process.externalDependency ?? false,
           location: process.location || "",
-          kpiMeasurementRequired: process.kpiMeasurementRequired || false,
-          piiCapture: process.piiCapture || false,
+          kpiMeasurementRequired: process.kpiMeasurementRequired ?? false,
+          piiCapture: process.piiCapture ?? false,
           operationalComplexity: process.operationalComplexity || "",
           lastAuditDate: process.lastAuditDate?.split("T")[0] || "",
-          responsible: process.responsible || "",
-          accountable: process.accountable || "",
-          consulted: process.consulted || "",
-          informed: process.informed || "",
+          responsible: process.responsibleId || "",
+          accountable: process.accountableId || "",
+          consulted: process.consultedId || "",
+          informed: process.informedId || "",
         });
+        // Set attachments
+        setAttachments(process.attachments || []);
+      } else {
+        console.error("Failed to fetch process:", await processRes.text());
+        toast({ title: "Error", description: "Failed to load process data", variant: "destructive" });
       }
     } catch (error) {
       console.error("Error fetching data:", error);
+      toast({ title: "Error", description: "Failed to load data", variant: "destructive" });
     }
     setLoading(false);
-  }, [processId]);
+  }, [processId, toast]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // File upload handlers
+  const formatFileSize = (bytes: number | null): string => {
+    if (!bytes) return "0 B";
+    const k = 1024;
+    const sizes = ["B", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      await uploadFile(files[0]);
+    }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      await uploadFile(file);
+    }
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const uploadFile = async (file: File) => {
+    setUploadingFile(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch(`/api/processes/${processId}/attachments`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (res.ok) {
+        const attachment = await res.json();
+        setAttachments((prev) => [attachment, ...prev]);
+        toast({ title: "Success", description: "File uploaded successfully" });
+      } else {
+        const error = await res.json();
+        toast({ title: "Error", description: error.error || "Failed to upload file", variant: "destructive" });
+      }
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      toast({ title: "Error", description: "Failed to upload file", variant: "destructive" });
+    }
+    setUploadingFile(false);
+  };
+
+  const handleDeleteAttachment = async (attachmentId: string) => {
+    setDeletingAttachmentId(attachmentId);
+    try {
+      const res = await fetch(`/api/processes/${processId}/attachments/${attachmentId}`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        setAttachments((prev) => prev.filter((a) => a.id !== attachmentId));
+        toast({ title: "Success", description: "Attachment deleted successfully" });
+      } else {
+        const error = await res.json();
+        toast({ title: "Error", description: error.error || "Failed to delete attachment", variant: "destructive" });
+      }
+    } catch (error) {
+      console.error("Error deleting attachment:", error);
+      toast({ title: "Error", description: "Failed to delete attachment", variant: "destructive" });
+    }
+    setDeletingAttachmentId(null);
+  };
 
   const handleSave = async () => {
     if (!formData.name.trim()) {
@@ -163,7 +275,7 @@ export default function EditProcessPage() {
           departmentId: formData.departmentId || null,
           ownerId: formData.ownerId || null,
           status: formData.status,
-          frequency: formData.frequency || null,
+          processFrequency: formData.frequency || null,
           natureOfImplementation: formData.natureOfImplementation || null,
           assetDependency: formData.assetDependency,
           externalDependency: formData.externalDependency,
@@ -172,10 +284,10 @@ export default function EditProcessPage() {
           piiCapture: formData.piiCapture,
           operationalComplexity: formData.operationalComplexity || null,
           lastAuditDate: formData.lastAuditDate || null,
-          responsible: formData.responsible || null,
-          accountable: formData.accountable || null,
-          consulted: formData.consulted || null,
-          informed: formData.informed || null,
+          responsibleId: formData.responsible || null,
+          accountableId: formData.accountable || null,
+          consultedId: formData.consulted || null,
+          informedId: formData.informed || null,
         }),
       });
 
@@ -469,6 +581,107 @@ export default function EditProcessPage() {
                 />
                 <Label htmlFor="piiCapture" className="text-sm font-normal">PII Capture</Label>
               </div>
+            </div>
+
+            {/* File Upload Section */}
+            <div className="space-y-4 pt-6 border-t">
+              <Label className="text-base font-medium">Process Documents</Label>
+
+              {/* File Dropper */}
+              <div
+                className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                  isDragging ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-gray-400"
+                }`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
+                {uploadingFile ? (
+                  <div className="space-y-2">
+                    <div className="animate-spin h-8 w-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto" />
+                    <p className="text-sm text-muted-foreground">Uploading...</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Upload className="h-10 w-10 mx-auto text-gray-400" />
+                    <p className="text-sm text-gray-600">
+                      Drag and drop a file here, or{" "}
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="text-blue-600 hover:underline font-medium"
+                      >
+                        browse
+                      </button>
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Supported formats: PDF, DOCX, XLSX, CSV, PNG, JPG, PPT
+                    </p>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      className="hidden"
+                      onChange={handleFileChange}
+                      accept=".pdf,.docx,.doc,.xlsx,.xls,.csv,.png,.jpg,.jpeg,.ppt,.pptx"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Uploaded Files List */}
+              {attachments.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Uploaded Files</Label>
+                  <div className="border rounded-lg divide-y">
+                    {attachments.map((attachment) => (
+                      <div key={attachment.id} className="flex items-center justify-between p-3 hover:bg-gray-50">
+                        <div className="flex items-center gap-3">
+                          <FileText className="h-5 w-5 text-blue-600" />
+                          <div>
+                            <p className="text-sm font-medium">{attachment.fileName}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {formatFileSize(attachment.fileSize)} • Uploaded {new Date(attachment.uploadedAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            title="View"
+                            onClick={() => window.open(attachment.filePath, "_blank")}
+                          >
+                            <Eye className="h-4 w-4 text-gray-600" />
+                          </Button>
+                          <a
+                            href={attachment.filePath}
+                            download={attachment.fileName}
+                            className="inline-flex items-center justify-center h-8 w-8 rounded-md hover:bg-gray-100"
+                            title="Download"
+                          >
+                            <Download className="h-4 w-4 text-gray-600" />
+                          </a>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            title="Delete"
+                            disabled={deletingAttachmentId === attachment.id}
+                            onClick={() => handleDeleteAttachment(attachment.id)}
+                          >
+                            {deletingAttachmentId === attachment.id ? (
+                              <div className="animate-spin h-4 w-4 border-2 border-red-500 border-t-transparent rounded-full" />
+                            ) : (
+                              <Trash2 className="h-4 w-4 text-red-600" />
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

@@ -1,7 +1,7 @@
 "use client";
 
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { cn } from "@/lib/utils";
 
 interface DonutChartData {
   name: string;
@@ -22,67 +22,91 @@ export function DonutChart({ title, data, centerLabel, centerSubLabel, className
   const total = data.reduce((sum, item) => sum + item.value, 0);
 
   return (
-    <Card className={className}>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base font-medium">{title}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="h-[220px] relative flex">
-          {/* Chart container - left side */}
-          <div className="relative w-[140px] h-full flex-shrink-0">
-            <ResponsiveContainer width="100%" height="100%" minHeight={220}>
-              <PieChart>
-                <Pie
-                  data={data}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={40}
-                  outerRadius={60}
-                  paddingAngle={2}
-                  dataKey="value"
-                >
-                  {data.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "white",
-                    border: "1px solid #e5e7eb",
-                    borderRadius: "6px",
-                    fontSize: "12px",
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-            {/* Center label - positioned relative to chart container */}
-            {(centerLabel !== undefined || centerSubLabel) && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                {centerLabel !== undefined && (
-                  <span className="text-xl font-bold text-grc-text">{centerLabel}</span>
-                )}
-                {centerSubLabel && (
-                  <span className="text-xs text-muted-foreground">{centerSubLabel}</span>
-                )}
-              </div>
-            )}
-          </div>
-          {/* Legend - right side */}
-          <div className="flex-1 flex flex-col justify-center pl-2 min-w-0">
-            {data.map((item, index) => (
-              <div key={index} className="flex items-center gap-2 py-1">
+    <div className={cn(
+      "bg-white rounded-xl border border-slate-200 p-5",
+      className
+    )}>
+      {/* Header */}
+      {title && (
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-semibold text-slate-800">{title}</h3>
+          <span className="text-xs text-slate-400">
+            {data.length} {data.length === 1 ? 'item' : 'items'}
+          </span>
+        </div>
+      )}
+
+      <div className="flex items-center gap-6">
+        {/* Chart container - left side */}
+        <div className="relative w-[140px] h-[140px] flex-shrink-0">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={data}
+                cx="50%"
+                cy="50%"
+                innerRadius={42}
+                outerRadius={65}
+                paddingAngle={2}
+                dataKey="value"
+                strokeWidth={0}
+              >
+                {data.map((entry, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={entry.color}
+                    className="transition-opacity hover:opacity-80"
+                  />
+                ))}
+              </Pie>
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "white",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: "8px",
+                  boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                  fontSize: "12px",
+                  padding: "8px 12px",
+                }}
+                itemStyle={{ color: "#334155" }}
+                formatter={(value: number, name: string) => [`${value} (${total > 0 ? ((value / total) * 100).toFixed(0) : 0}%)`, name]}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+          {/* Center label */}
+          {(centerLabel !== undefined || centerSubLabel) && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              {centerLabel !== undefined && (
+                <span className="text-2xl font-bold text-slate-800">{centerLabel}</span>
+              )}
+              {centerSubLabel && (
+                <span className="text-[10px] text-slate-500 font-medium">{centerSubLabel}</span>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Legend - right side with full names */}
+        <div className="flex-1 grid grid-cols-2 gap-x-4 gap-y-2">
+          {data.map((item, index) => {
+            const percentage = total > 0 ? ((item.value / total) * 100).toFixed(0) : 0;
+            return (
+              <div key={index} className="flex items-center gap-2 group cursor-default">
                 <div
-                  className="w-3 h-3 rounded-sm flex-shrink-0"
+                  className="w-2.5 h-2.5 rounded-full flex-shrink-0"
                   style={{ backgroundColor: item.color }}
                 />
-                <span className="text-sm text-grc-text truncate">
-                  {item.name}: {item.value}
+                <span className="text-xs text-slate-600 truncate flex-1" title={item.name}>
+                  {item.name}
+                </span>
+                <span className="text-xs font-semibold text-slate-700 tabular-nums">
+                  {item.value}
                 </span>
               </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

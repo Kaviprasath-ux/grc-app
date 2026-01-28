@@ -2,10 +2,23 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 // Unified subtle color for all elements
 const THEME_COLOR = "#64748b"; // slate-500 - subtle and professional
 const LINE_COLOR = "#cbd5e1"; // slate-300 - light for lines
+
+interface Department {
+  id: string;
+  name: string;
+}
 
 interface UserNode {
   id: string;
@@ -13,8 +26,10 @@ interface UserNode {
   designation: string;
   role: string;
   department?: {
+    id: string;
     name: string;
   };
+  departmentId?: string;
   function?: string;
   reportingManagerId?: string;
   userRoles?: { role: { name: string } }[];
@@ -25,7 +40,7 @@ interface TreeNode extends UserNode {
 }
 
 // Single org chart node with unified color
-function OrgChartNode({ node, isRoot = false }: { node: TreeNode; isRoot?: boolean }) {
+function OrgChartNode({ node, isRoot = false, showDepartment = true }: { node: TreeNode; isRoot?: boolean; showDepartment?: boolean }) {
   const roleName = node.userRoles?.[0]?.role?.name || node.role;
 
   return (
@@ -51,7 +66,7 @@ function OrgChartNode({ node, isRoot = false }: { node: TreeNode; isRoot?: boole
           <p className="text-sm font-semibold text-gray-700 truncate">
             {node.fullName}
           </p>
-          {node.department?.name && (
+          {showDepartment && node.department?.name && (
             <p className="text-xs text-gray-500 truncate mt-0.5">
               {node.department.name}
             </p>
@@ -62,27 +77,47 @@ function OrgChartNode({ node, isRoot = false }: { node: TreeNode; isRoot?: boole
   );
 }
 
-// Child node width for calculating connector positions
-const CHILD_WIDTH = 200;
-const CHILD_GAP = 24;
+// Base node width and gap for calculating connector positions
+const NODE_WIDTH = 200;
+const NODE_GAP = 24;
+
+// Calculate the total width needed for a subtree
+function getSubtreeWidth(node: TreeNode): number {
+  if (node.children.length === 0) {
+    return NODE_WIDTH;
+  }
+  const childrenWidth = node.children.reduce((sum, child) => sum + getSubtreeWidth(child), 0);
+  const gapsWidth = (node.children.length - 1) * NODE_GAP;
+  return Math.max(NODE_WIDTH, childrenWidth + gapsWidth);
+}
 
 // Recursive tree rendering with proper connected lines
-function OrgChartTree({ nodes, level = 0 }: { nodes: TreeNode[]; level?: number }) {
+function OrgChartTree({ nodes, level = 0, showDepartment = true }: { nodes: TreeNode[]; level?: number; showDepartment?: boolean }) {
   if (nodes.length === 0) return null;
 
   return (
     <div className="flex flex-col items-center">
       {/* Current level nodes */}
-      <div className="flex justify-center" style={{ gap: `${CHILD_GAP}px` }}>
+      <div className="flex justify-center" style={{ gap: `${NODE_GAP}px` }}>
         {nodes.map((node) => {
           const childCount = node.children.length;
-          const totalChildrenWidth = childCount > 0
-            ? (childCount * CHILD_WIDTH) + ((childCount - 1) * CHILD_GAP)
-            : 0;
+
+          // Calculate widths for each child subtree
+          const childWidths = node.children.map(child => getSubtreeWidth(child));
+          const totalChildrenWidth = childWidths.reduce((sum, w) => sum + w, 0) +
+            (childCount > 1 ? (childCount - 1) * NODE_GAP : 0);
+
+          // Calculate x positions for connector lines (center of each child subtree)
+          const childXPositions: number[] = [];
+          let currentX = 0;
+          childWidths.forEach((width) => {
+            childXPositions.push(currentX + width / 2);
+            currentX += width + NODE_GAP;
+          });
 
           return (
             <div key={node.id} className="flex flex-col items-center">
-              <OrgChartNode node={node} isRoot={level === 0} />
+              <OrgChartNode node={node} isRoot={level === 0} showDepartment={showDepartment} />
 
               {/* Connector lines to children */}
               {childCount > 0 && (
@@ -105,62 +140,26 @@ function OrgChartTree({ nodes, level = 0 }: { nodes: TreeNode[]; level?: number 
                     >
                       {/* Main horizontal line */}
                       <line
-                        x1={CHILD_WIDTH / 2}
+                        x1={childXPositions[0]}
                         y1="0"
-                        x2={totalChildrenWidth - CHILD_WIDTH / 2}
+                        x2={childXPositions[childCount - 1]}
                         y2="0"
                         stroke={LINE_COLOR}
                         strokeWidth="2"
                       />
 
-                      {/* Curved corners and vertical drops for each child */}
-                      {node.children.map((_, idx) => {
-                        const x = (CHILD_WIDTH / 2) + (idx * (CHILD_WIDTH + CHILD_GAP));
-                        const isFirst = idx === 0;
-                        const isLast = idx === childCount - 1;
-                        const radius = 8;
-
-                        if (isFirst) {
-                          // Left corner - curved
-                          return (
-                            <path
-                              key={idx}
-                              d={`M ${x} 0
-                                  Q ${x} ${radius} ${x} ${radius}
-                                  L ${x} 30`}
-                              fill="none"
-                              stroke={LINE_COLOR}
-                              strokeWidth="2"
-                            />
-                          );
-                        } else if (isLast) {
-                          // Right corner - curved
-                          return (
-                            <path
-                              key={idx}
-                              d={`M ${x} 0
-                                  Q ${x} ${radius} ${x} ${radius}
-                                  L ${x} 30`}
-                              fill="none"
-                              stroke={LINE_COLOR}
-                              strokeWidth="2"
-                            />
-                          );
-                        } else {
-                          // Middle - straight down
-                          return (
-                            <line
-                              key={idx}
-                              x1={x}
-                              y1="0"
-                              x2={x}
-                              y2="30"
-                              stroke={LINE_COLOR}
-                              strokeWidth="2"
-                            />
-                          );
-                        }
-                      })}
+                      {/* Vertical drops for each child */}
+                      {childXPositions.map((x, idx) => (
+                        <line
+                          key={idx}
+                          x1={x}
+                          y1="0"
+                          x2={x}
+                          y2="30"
+                          stroke={LINE_COLOR}
+                          strokeWidth="2"
+                        />
+                      ))}
                     </svg>
                   ) : (
                     // Single child - just a vertical line
@@ -174,14 +173,14 @@ function OrgChartTree({ nodes, level = 0 }: { nodes: TreeNode[]; level?: number 
                   )}
 
                   {/* Children nodes */}
-                  <div className="flex justify-center" style={{ gap: `${CHILD_GAP}px` }}>
-                    {node.children.map((child) => (
+                  <div className="flex justify-center" style={{ gap: `${NODE_GAP}px` }}>
+                    {node.children.map((child, idx) => (
                       <div
                         key={child.id}
                         className="flex flex-col items-center"
-                        style={{ width: `${CHILD_WIDTH}px` }}
+                        style={{ width: `${childWidths[idx]}px` }}
                       >
-                        <OrgChartTree nodes={[child]} level={level + 1} />
+                        <OrgChartTree nodes={[child]} level={level + 1} showDepartment={showDepartment} />
                       </div>
                     ))}
                   </div>
@@ -195,23 +194,39 @@ function OrgChartTree({ nodes, level = 0 }: { nodes: TreeNode[]; level?: number 
   );
 }
 
+type ViewMode = "role" | "department";
+
 export function OrgChart() {
   const [users, setUsers] = useState<UserNode[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<ViewMode>("role");
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState<string>("");
 
   useEffect(() => {
-    fetchUsers();
+    fetchData();
   }, []);
 
-  const fetchUsers = async () => {
+  const fetchData = async () => {
     try {
-      const res = await fetch("/api/users");
-      if (res.ok) {
-        const data = await res.json();
+      const [usersRes, deptRes] = await Promise.all([
+        fetch("/api/users"),
+        fetch("/api/departments"),
+      ]);
+      if (usersRes.ok) {
+        const data = await usersRes.json();
         setUsers(data);
       }
+      if (deptRes.ok) {
+        const deptData = await deptRes.json();
+        setDepartments(deptData);
+        // Auto-select first department if available
+        if (deptData.length > 0) {
+          setSelectedDepartmentId(deptData[0].id);
+        }
+      }
     } catch (error) {
-      console.error("Error fetching users:", error);
+      console.error("Error fetching data:", error);
     } finally {
       setLoading(false);
     }
@@ -290,17 +305,139 @@ export function OrgChart() {
     sortChildren(customerAdmins);
     sortChildren(unassignedUsers);
 
-    // If we have CustomerAdmins with children, show them first
-    // Otherwise, show all users at root level
-    if (customerAdmins.length > 0 && customerAdmins.some(ca => ca.children.length > 0)) {
+    // If we have CustomerAdmins, place unassigned users under the first CustomerAdmin
+    if (customerAdmins.length > 0) {
+      if (unassignedUsers.length > 0) {
+        // Add unassigned users as children of the first CustomerAdmin
+        customerAdmins[0].children.push(...unassignedUsers);
+        sortChildren(customerAdmins[0].children);
+      }
       return customerAdmins;
     }
 
-    // If no hierarchy defined, just show CustomerAdmins at top, then others
-    return [...customerAdmins, ...unassignedUsers];
+    // If no CustomerAdmins, just show all unassigned users at root level
+    return unassignedUsers;
   }, []);
 
-  const tree = buildTree(users);
+  // Build tree structure for department view - shows department as root with users as children
+  const buildDepartmentTree = useCallback((userList: UserNode[], departmentId: string, deptName: string): TreeNode[] => {
+    // Filter users belonging to the selected department
+    const deptUsers = userList.filter(
+      (user) => user.department?.id === departmentId || user.departmentId === departmentId
+    );
+
+    if (deptUsers.length === 0) return [];
+
+    const userMap = new Map<string, TreeNode>();
+
+    // Role priority for sorting
+    const rolePriority: Record<string, number> = {
+      CustomerAdministrator: 1,
+      AuditHead: 2,
+      AuditManager: 3,
+      Reviewer: 4,
+      DepartmentReviewer: 5,
+      Contributor: 6,
+      DepartmentContributor: 7,
+      Auditor: 8,
+      Auditee: 9,
+    };
+
+    const getRolePriority = (user: UserNode) => {
+      const roleName = user.userRoles?.[0]?.role?.name || user.role;
+      return rolePriority[roleName] || 100;
+    };
+
+    // Create TreeNode for each department user
+    deptUsers.forEach((user) => {
+      userMap.set(user.id, { ...user, children: [] });
+    });
+
+    // Track users with valid reporting managers in department
+    const hasManagerInDept = new Set<string>();
+
+    // Build parent-child relationships for users with managers in department
+    deptUsers.forEach((user) => {
+      if (user.reportingManagerId && userMap.has(user.reportingManagerId)) {
+        const node = userMap.get(user.id)!;
+        const parent = userMap.get(user.reportingManagerId)!;
+        parent.children.push(node);
+        hasManagerInDept.add(user.id);
+      }
+    });
+
+    // Find all root candidates (users without manager in department)
+    const rootCandidates: TreeNode[] = [];
+    deptUsers.forEach((user) => {
+      if (!hasManagerInDept.has(user.id)) {
+        rootCandidates.push(userMap.get(user.id)!);
+      }
+    });
+
+    // Sort root candidates by role priority
+    rootCandidates.sort((a, b) => {
+      const aPriority = getRolePriority(a);
+      const bPriority = getRolePriority(b);
+      if (aPriority !== bPriority) return aPriority - bPriority;
+      return a.fullName.localeCompare(b.fullName);
+    });
+
+    // Find the highest priority (lowest number) among root candidates
+    const highestPriority = rootCandidates.length > 0 ? getRolePriority(rootCandidates[0]) : 100;
+
+    // Separate into top-level roots (highest priority) and users to be assigned
+    const topRoots: TreeNode[] = [];
+    const unassignedUsers: TreeNode[] = [];
+
+    rootCandidates.forEach((node) => {
+      if (getRolePriority(node) === highestPriority) {
+        topRoots.push(node);
+      } else {
+        unassignedUsers.push(node);
+      }
+    });
+
+    // Assign unassigned users to the first top root (highest ranking person)
+    if (topRoots.length > 0 && unassignedUsers.length > 0) {
+      topRoots[0].children.push(...unassignedUsers);
+    }
+
+    // Sort function for children
+    const sortChildren = (nodes: TreeNode[]) => {
+      nodes.sort((a, b) => {
+        const aPriority = getRolePriority(a);
+        const bPriority = getRolePriority(b);
+        if (aPriority !== bPriority) return aPriority - bPriority;
+        return a.fullName.localeCompare(b.fullName);
+      });
+
+      nodes.forEach((node) => {
+        if (node.children.length > 0) {
+          sortChildren(node.children);
+        }
+      });
+    };
+
+    sortChildren(topRoots);
+
+    // Create department node as the root with top-level users as children
+    const departmentNode: TreeNode = {
+      id: `dept-${departmentId}`,
+      fullName: deptName,
+      designation: "Department",
+      role: "",
+      children: topRoots,
+    };
+
+    return [departmentNode];
+  }, []);
+
+  const roleTree = buildTree(users);
+  const selectedDepartment = departments.find(d => d.id === selectedDepartmentId);
+  const departmentTree = viewMode === "department" && selectedDepartmentId && selectedDepartment
+    ? buildDepartmentTree(users, selectedDepartmentId, selectedDepartment.name)
+    : [];
+  const tree = viewMode === "role" ? roleTree : departmentTree;
 
   if (loading) {
     return (
@@ -320,26 +457,60 @@ export function OrgChart() {
     );
   }
 
-  if (tree.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">
-          No organization hierarchy defined. Assign reporting managers to users to build the chart.
-        </p>
-      </div>
-    );
-  }
-
   return (
-    <div className="w-full overflow-x-auto">
-      <div className="min-w-max p-8">
-        <OrgChartTree nodes={tree} />
+    <div className="w-full">
+      {/* View Mode Controls */}
+      <div className="flex items-end gap-4 mb-6">
+        <div className="w-48">
+          <Label className="text-sm font-medium text-slate-700 mb-1.5 block">View Mode</Label>
+          <Select value={viewMode} onValueChange={(value: ViewMode) => setViewMode(value)}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="role">Role-wise Chart</SelectItem>
+              <SelectItem value="department">Department-wise Chart</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {viewMode === "department" && (
+          <div className="w-48">
+            <Label className="text-sm font-medium text-slate-700 mb-1.5 block">Department</Label>
+            <Select value={selectedDepartmentId} onValueChange={setSelectedDepartmentId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select department" />
+              </SelectTrigger>
+              <SelectContent>
+                {departments.map((dept) => (
+                  <SelectItem key={dept.id} value={dept.id}>
+                    {dept.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </div>
 
-      {/* Info text */}
-      <div className="mt-6 text-center text-sm text-gray-500">
-        Organization hierarchy based on reporting manager assignments
-      </div>
+      {/* Chart Content */}
+      {tree.length === 0 ? (
+        <div className="flex items-center justify-center h-64 border border-dashed border-slate-200 rounded-lg">
+          <p className="text-muted-foreground">
+            {viewMode === "department" && selectedDepartmentId
+              ? `No users found in ${selectedDepartment?.name || "selected department"}. Assign users to this department to see the hierarchy.`
+              : viewMode === "department"
+              ? "Select a department to view its hierarchy."
+              : "No organization hierarchy defined. Assign reporting managers to users to build the chart."}
+          </p>
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <div className="min-w-max p-8">
+            <OrgChartTree nodes={tree} showDepartment={viewMode === "role"} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -19,11 +19,15 @@ export const GET = withAuth(
 
       // Check if user is auditee only (has Auditee role but not AuditHead/AuditManager/Auditor)
       const userRoles = session.roles || [];
+      const auditTeamRoles = ['AuditHead', 'AuditManager', 'Auditor'];
       const isAuditTeam = userRoles.some((role: string) =>
-        ['AuditHead', 'AuditManager', 'Auditor'].includes(role)
+        auditTeamRoles.some(r => r.toLowerCase() === role.toLowerCase())
       );
-      const isAuditee = userRoles.includes('Auditee');
+      const isAuditee = userRoles.some((role: string) => role.toLowerCase() === 'auditee');
       const isAuditeeOnly = isAuditee && !isAuditTeam;
+
+      // Debug logging
+      console.log('[CAPA-GET] User roles:', userRoles, 'isAuditTeam:', isAuditTeam, 'isAuditee:', isAuditee);
 
       // Build where clause with tenant filter
       const where: Record<string, unknown> = { ...tenantFilter };
@@ -77,6 +81,11 @@ export const GET = withAuth(
         // Audit team (AuditHead, AuditManager, Auditor) can always see AI review
         // Auditee can only see AI review after Audit Head has approved it
         const canSeeAiReview = isAuditTeam || finding.aiReviewApproved;
+
+        // Debug logging for AI review
+        if (finding.aiReviewStatus) {
+          console.log('[CAPA-GET] Finding', finding.findingId, 'has AI review:', finding.aiReviewStatus, 'canSeeAiReview:', canSeeAiReview);
+        }
 
         return {
           id: finding.id,

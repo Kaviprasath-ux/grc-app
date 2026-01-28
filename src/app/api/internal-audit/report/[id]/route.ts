@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { withAuth } from '@/lib/api-auth';
+import { withAuth, getTenantFilter, getAuditHeadFilter } from '@/lib/api-auth';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -8,13 +8,16 @@ interface RouteContext {
 
 // GET /api/internal-audit/report/[id] - Get report by engagement ID
 export const GET = withAuth(
-  async (req: NextRequest, context: RouteContext) => {
+  async (req: NextRequest, context: RouteContext, session) => {
     try {
       const { id: engagementId } = await context.params;
+      const tenantFilter = getTenantFilter(session);
+      const auditHeadFilter = getAuditHeadFilter(session);
 
-      // Find report by engagement ID
-      const report = await prisma.auditReport.findUnique({
-        where: { engagementId },
+      // Find report by engagement ID with AuditHead isolation
+      // Reports are NOT shared between Audit Heads
+      const report = await prisma.auditReport.findFirst({
+        where: { engagementId, ...tenantFilter, ...auditHeadFilter },
         include: {
           engagement: {
             select: {
@@ -72,7 +75,7 @@ export const GET = withAuth(
 
 // PATCH /api/internal-audit/report/[id] - Update report
 export const PATCH = withAuth(
-  async (req: NextRequest, context: RouteContext) => {
+  async (req: NextRequest, context: RouteContext, session) => {
     try {
       const { id: engagementId } = await context.params;
       const body = await req.json();
@@ -90,9 +93,13 @@ export const PATCH = withAuth(
         auditeeName,
       } = body;
 
-      // Find report by engagement ID
-      const existingReport = await prisma.auditReport.findUnique({
-        where: { engagementId },
+      const tenantFilter = getTenantFilter(session);
+      const auditHeadFilter = getAuditHeadFilter(session);
+
+      // Find report by engagement ID with AuditHead isolation
+      // Reports are NOT shared between Audit Heads
+      const existingReport = await prisma.auditReport.findFirst({
+        where: { engagementId, ...tenantFilter, ...auditHeadFilter },
       });
 
       if (!existingReport) {
@@ -116,9 +123,9 @@ export const PATCH = withAuth(
       if (auditeeId !== undefined) updateData.auditeeId = auditeeId;
       if (auditeeName !== undefined) updateData.auditeeName = auditeeName;
 
-      // Update the report
+      // Update the report using id (verified above to belong to this audit head)
       const updatedReport = await prisma.auditReport.update({
-        where: { engagementId },
+        where: { id: existingReport.id },
         data: updateData,
         include: {
           engagement: {

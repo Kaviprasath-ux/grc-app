@@ -185,7 +185,8 @@ export default function DocumentLibraryPage() {
   };
 
   const handleDownload = (doc: Document) => {
-    window.open(doc.filePath, "_blank");
+    // Use the download API endpoint instead of direct file path
+    window.open(`/api/internal-audit/documents/${doc.id}/download`, "_blank");
   };
 
   const handleDrag = (e: React.DragEvent, category: string, active: boolean) => {

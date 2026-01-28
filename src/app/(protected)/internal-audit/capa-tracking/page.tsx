@@ -239,6 +239,13 @@ export default function CAPATrackingPage() {
   };
 
   const handleOpenEdit = (finding: Finding) => {
+    // Debug logging for AI review
+    console.log('[CAPA-Edit] Opening finding:', finding.findingId);
+    console.log('[CAPA-Edit] isAuditHead:', isAuditHead);
+    console.log('[CAPA-Edit] AI Review Status:', finding.aiReviewStatus);
+    console.log('[CAPA-Edit] AI Review Description:', finding.aiReviewDescription);
+    console.log('[CAPA-Edit] AI Review Approved:', finding.aiReviewApproved);
+
     setFindingToEdit(finding);
     setEditForm({
       engagementId: finding.engagementId,
@@ -1083,12 +1090,16 @@ export default function CAPATrackingPage() {
             </div>
           </div>
 
-          {/* AI Review Section for Audit Head (visible when there's an AI review pending approval) */}
-          {isAuditHead && findingToEdit?.aiReviewStatus && !findingToEdit?.aiReviewApproved && (
+          {/* AI Review Section for Audit Head (visible when AI review exists) */}
+          {isAuditHead && findingToEdit?.aiReviewStatus && (
             <div className="border-t pt-4 mt-4 bg-purple-50 -mx-6 px-6 py-4">
               <div className="flex items-center gap-2 mb-3">
                 <Bot className="h-5 w-5 text-purple-600" />
-                <h3 className="font-semibold text-[#1e3a5f]">AI Review Result (Pending Approval)</h3>
+                <h3 className="font-semibold text-[#1e3a5f]">
+                  {!findingToEdit.aiReviewApproved
+                    ? "AI Review Result (Pending Approval)"
+                    : "AI Review Result"}
+                </h3>
               </div>
               <div className="grid grid-cols-[140px_1fr] items-center gap-4">
                 <Label className="text-[#1e3a5f] font-medium">Status</Label>
@@ -1115,9 +1126,16 @@ export default function CAPATrackingPage() {
                   rows={3}
                 />
               </div>
-              <p className="text-sm text-purple-700 mt-3">
-                Click &quot;Save&quot; to approve this AI review and close the finding.
-              </p>
+              {!findingToEdit.aiReviewApproved && (
+                <p className="text-sm text-purple-700 mt-3">
+                  Click &quot;Save&quot; to approve this AI review and close the finding.
+                </p>
+              )}
+              {findingToEdit.aiReviewApproved && (
+                <p className="text-sm text-green-600 mt-3">
+                  AI review has been approved.
+                </p>
+              )}
             </div>
           )}
 
