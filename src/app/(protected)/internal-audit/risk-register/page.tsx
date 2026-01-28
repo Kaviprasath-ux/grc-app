@@ -28,7 +28,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Plus, Pencil, Trash2, ArrowUpDown, Eye, Search, Download, Upload, X, FileText } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, ArrowUpDown, Eye, Search, Download, Upload, X, FileText, Sparkles, Loader2, Calendar, Target, AlertTriangle } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -42,6 +42,30 @@ import { Badge } from "@/components/ui/badge";
 interface Department {
   id: string;
   name: string;
+}
+
+interface RecommendedAudit {
+  id: string;
+  auditName: string;
+  department: string;
+  riskLevel: string;
+  justification: string;
+  suggestedScope: string;
+  relatedRisks: string[];
+  priority: 'High' | 'Medium' | 'Low';
+  estimatedDuration: string;
+}
+
+interface AIRecommendationsResponse {
+  recommendations: RecommendedAudit[];
+  summary: {
+    totalRisks: number;
+    extremeRisks: number;
+    highRisks: number;
+    departmentsAnalyzed: number;
+    recommendationsGenerated: number;
+  };
+  generatedAt: string;
 }
 
 interface AuditCategory {
@@ -91,6 +115,11 @@ export default function RiskRegisterPage() {
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
+
+  // AI Recommendations dialog
+  const [aiDialogOpen, setAiDialogOpen] = useState(false);
+  const [aiRecommendations, setAiRecommendations] = useState<AIRecommendationsResponse | null>(null);
+  const [loadingAI, setLoadingAI] = useState(false);
 
   // Generate year options (current year + 5 years back)
   const currentYear = new Date().getFullYear();
@@ -231,6 +260,31 @@ export default function RiskRegisterPage() {
     }
   };
 
+  const fetchAIRecommendations = async () => {
+    setLoadingAI(true);
+    setAiDialogOpen(true);
+    try {
+      const response = await fetch("/api/internal-audit/risks/ai-recommended-audits");
+      if (response.ok) {
+        const data = await response.json();
+        setAiRecommendations(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch AI recommendations:", error);
+    } finally {
+      setLoadingAI(false);
+    }
+  };
+
+  const getPriorityBadge = (priority: string) => {
+    const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+      High: "destructive",
+      Medium: "default",
+      Low: "secondary",
+    };
+    return <Badge variant={variants[priority] || "outline"}>{priority}</Badge>;
+  };
+
   const getRiskLevelBadge = (level: string | null) => {
     if (!level) return null;
 
@@ -285,6 +339,14 @@ export default function RiskRegisterPage() {
           <h1 className="text-2xl font-semibold">Risk Register</h1>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={fetchAIRecommendations}
+            className="bg-gradient-to-r from-purple-500 to-blue-500 text-white border-0 hover:from-purple-600 hover:to-blue-600"
+          >
+            <Sparkles className="h-4 w-4 mr-2" />
+            AI Recommended Audits
+          </Button>
           <Button variant="outline" onClick={handleExport}>
             <Download className="h-4 w-4 mr-2" />
             Export
@@ -507,6 +569,135 @@ export default function RiskRegisterPage() {
               </div>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* AI Recommended Audits Dialog */}
+      <Dialog open={aiDialogOpen} onOpenChange={setAiDialogOpen}>
+        <DialogContent className="sm:max-w-[900px] max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-blue-900">
+              <Sparkles className="h-5 w-5 text-purple-500" />
+              AI Recommended Audits
+            </DialogTitle>
+          </DialogHeader>
+
+          {loadingAI ? (
+            <div className="flex flex-col items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-purple-500 mb-4" />
+              <p className="text-muted-foreground">Analyzing risks and generating recommendations...</p>
+            </div>
+          ) : aiRecommendations ? (
+            <div className="space-y-6 py-4">
+              {/* Summary Cards */}
+              <div className="grid grid-cols-4 gap-4">
+                <div className="bg-blue-50 rounded-lg p-4 text-center">
+                  <p className="text-2xl font-bold text-blue-600">{aiRecommendations.summary.totalRisks}</p>
+                  <p className="text-xs text-blue-600">Total Risks</p>
+                </div>
+                <div className="bg-red-50 rounded-lg p-4 text-center">
+                  <p className="text-2xl font-bold text-red-600">{aiRecommendations.summary.extremeRisks}</p>
+                  <p className="text-xs text-red-600">Extreme Risks</p>
+                </div>
+                <div className="bg-orange-50 rounded-lg p-4 text-center">
+                  <p className="text-2xl font-bold text-orange-600">{aiRecommendations.summary.highRisks}</p>
+                  <p className="text-xs text-orange-600">High Risks</p>
+                </div>
+                <div className="bg-purple-50 rounded-lg p-4 text-center">
+                  <p className="text-2xl font-bold text-purple-600">{aiRecommendations.summary.recommendationsGenerated}</p>
+                  <p className="text-xs text-purple-600">Recommendations</p>
+                </div>
+              </div>
+
+              {/* Recommendations List */}
+              {aiRecommendations.recommendations.length > 0 ? (
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-sm text-gray-700">Recommended Audits</h3>
+                  {aiRecommendations.recommendations.map((rec) => (
+                    <div
+                      key={rec.id}
+                      className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-white"
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-gradient-to-r from-purple-500 to-blue-500 text-white text-xs font-medium px-2 py-1 rounded">
+                            {rec.id}
+                          </div>
+                          <h4 className="font-semibold text-gray-900">{rec.auditName}</h4>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {getPriorityBadge(rec.priority)}
+                          {getRiskLevelBadge(rec.riskLevel)}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4 text-sm mb-3">
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <Target className="h-4 w-4" />
+                          <span>Department: <strong>{rec.department}</strong></span>
+                        </div>
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <Calendar className="h-4 w-4" />
+                          <span>Duration: <strong>{rec.estimatedDuration}</strong></span>
+                        </div>
+                      </div>
+
+                      <div className="bg-gray-50 rounded p-3 mb-3">
+                        <p className="text-sm text-gray-700">
+                          <strong className="text-gray-900">Justification:</strong> {rec.justification}
+                        </p>
+                      </div>
+
+                      <div className="text-sm">
+                        <p className="text-gray-600 mb-2">
+                          <strong>Suggested Scope:</strong> {rec.suggestedScope}
+                        </p>
+                        {rec.relatedRisks.length > 0 && (
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <AlertTriangle className="h-4 w-4 text-orange-500" />
+                            <span className="text-gray-500">Related Risks:</span>
+                            {rec.relatedRisks.map((riskId) => (
+                              <Badge key={riskId} variant="outline" className="text-xs">
+                                {riskId}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="mt-4 pt-3 border-t flex justify-end">
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            router.push(`/internal-audit/audit-plan?suggested=${encodeURIComponent(rec.auditName)}&department=${encodeURIComponent(rec.department)}`);
+                            setAiDialogOpen(false);
+                          }}
+                          className="bg-blue-600 hover:bg-blue-700"
+                        >
+                          <Plus className="h-4 w-4 mr-1" />
+                          Create Audit
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Sparkles className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                  <p>No audit recommendations at this time.</p>
+                  <p className="text-sm mt-2">Add more risks to the register to generate AI recommendations.</p>
+                </div>
+              )}
+
+              <div className="text-xs text-gray-400 text-right">
+                Generated at: {new Date(aiRecommendations.generatedAt).toLocaleString()}
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>Failed to load recommendations. Please try again.</p>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

@@ -5,6 +5,29 @@ import { withAuth, getTenantFilter } from "@/lib/api-auth";
 // Audit-related roles that can be assigned
 const AUDIT_ROLES = ["AuditHead", "AuditManager", "Auditor", "Auditee"];
 
+/**
+ * Build filter for audit head isolation
+ * - AuditHead can only access users they manage (auditHeadId = session.id) or themselves
+ * - Admins can access all users within their tenant
+ */
+function getAuditUserFilter(session: { id: string; roles: string[] }): Record<string, unknown> | undefined {
+  const isAuditHead = session.roles.includes('AuditHead');
+  const isAdmin = session.roles.includes('GRCAdministrator') || session.roles.includes('CustomerAdministrator');
+
+  if (isAuditHead && !isAdmin) {
+    // AuditHead can only access their managed users or themselves
+    return {
+      OR: [
+        { auditHeadId: session.id },
+        { id: session.id },
+      ],
+    };
+  }
+
+  // Admins see all users within tenant (handled by tenantFilter)
+  return undefined;
+}
+
 // GET single audit user
 // Requires 'edit' action so only AuditHead can access (CustomerAdmin has only 'view')
 export const GET = withAuth(
@@ -12,9 +35,15 @@ export const GET = withAuth(
     try {
       const { id } = await params;
       const tenantFilter = getTenantFilter(session);
+      const auditUserFilter = getAuditUserFilter(session);
+
+      const whereClause: Record<string, unknown> = { id, ...tenantFilter };
+      if (auditUserFilter) {
+        whereClause.AND = [auditUserFilter];
+      }
 
       const user = await prisma.user.findFirst({
-        where: { id, ...tenantFilter },
+        where: whereClause,
         include: {
           department: {
             select: { id: true, name: true },
@@ -25,6 +54,9 @@ export const GET = withAuth(
                 select: { id: true, name: true },
               },
             },
+          },
+          auditHead: {
+            select: { id: true, fullName: true },
           },
         },
       });
@@ -51,11 +83,13 @@ export const GET = withAuth(
 );
 
 // PUT update audit user
+// AuditHead can only update users they manage
 export const PUT = withAuth(
   async (req: NextRequest, { params }: { params: Promise<{ id: string }> }, session) => {
     try {
       const { id } = await params;
       const tenantFilter = getTenantFilter(session);
+      const auditUserFilter = getAuditUserFilter(session);
       const body = await req.json();
 
       const {
@@ -67,11 +101,25 @@ export const PUT = withAuth(
         designation,
         role,
         departmentId,
+        auditHeadId: requestedAuditHeadId, // For admin to reassign users
       } = body;
 
-      // Verify user exists and belongs to tenant
+      // Build where clause with audit isolation
+      const whereClause: Record<string, unknown> = { id, ...tenantFilter };
+      if (auditUserFilter) {
+        whereClause.AND = [auditUserFilter];
+      }
+
+      // Verify user exists and user has access
       const existingUser = await prisma.user.findFirst({
-        where: { id, ...tenantFilter },
+        where: whereClause,
+        include: {
+          userRoles: {
+            include: {
+              role: true,
+            },
+          },
+        },
       });
 
       if (!existingUser) {
@@ -79,7 +127,33 @@ export const PUT = withAuth(
       }
 
       // Parse roles (comma-separated string)
-      const roleNames = role ? role.split(",").map((r: string) => r.trim()).filter(Boolean) : [];
+      const roleNames: string[] = role ? role.split(",").map((r: string) => r.trim()).filter(Boolean) : [];
+
+      // Determine auditHeadId update
+      // Rules:
+      // - If changing TO AuditHead role, clear auditHeadId
+      // - If AuditHead is updating, keep their own ID as auditHeadId
+      // - Admin can explicitly set auditHeadId
+      let auditHeadIdToSet: string | null | undefined = undefined; // undefined = don't change
+      const isCreatingAuditHead = roleNames.includes('AuditHead');
+      const wasAuditHead = existingUser.userRoles.some(ur => ur.role.name === 'AuditHead');
+      const isAuditHead = session.roles.includes('AuditHead');
+      const isAdmin = session.roles.includes('GRCAdministrator') || session.roles.includes('CustomerAdministrator');
+
+      if (isCreatingAuditHead && !wasAuditHead) {
+        // Promoting to AuditHead - clear auditHeadId
+        auditHeadIdToSet = null;
+      } else if (!isCreatingAuditHead && wasAuditHead) {
+        // Demoting from AuditHead - need to set auditHeadId
+        if (isAdmin && requestedAuditHeadId) {
+          auditHeadIdToSet = requestedAuditHeadId;
+        } else if (isAuditHead && !isAdmin) {
+          auditHeadIdToSet = session.id;
+        }
+      } else if (isAdmin && requestedAuditHeadId !== undefined) {
+        // Admin explicitly setting auditHeadId
+        auditHeadIdToSet = requestedAuditHeadId;
+      }
 
       // Find or create roles in the Role table
       const roleRecords = [];
@@ -116,19 +190,26 @@ export const PUT = withAuth(
         });
       }
 
+      // Build update data
+      const updateData: Record<string, unknown> = {
+        userName,
+        email,
+        firstName,
+        lastName,
+        fullName: fullName || (firstName && lastName ? `${firstName} ${lastName}` : undefined),
+        designation: designation || null,
+        function: "Audit",
+        role: role || "User",
+        departmentId: departmentId || null,
+      };
+
+      if (auditHeadIdToSet !== undefined) {
+        updateData.auditHeadId = auditHeadIdToSet;
+      }
+
       const user = await prisma.user.update({
         where: { id },
-        data: {
-          userName,
-          email,
-          firstName,
-          lastName,
-          fullName: fullName || (firstName && lastName ? `${firstName} ${lastName}` : undefined),
-          designation: designation || null,
-          function: "Audit",
-          role: role || "User",
-          departmentId: departmentId || null,
-        },
+        data: updateData,
         include: {
           department: {
             select: { id: true, name: true },
@@ -139,6 +220,9 @@ export const PUT = withAuth(
                 select: { id: true, name: true },
               },
             },
+          },
+          auditHead: {
+            select: { id: true, fullName: true },
           },
         },
       });
@@ -163,19 +247,32 @@ export const PUT = withAuth(
 );
 
 // DELETE audit user
+// AuditHead can only delete users they manage
 export const DELETE = withAuth(
   async (req: NextRequest, { params }: { params: Promise<{ id: string }> }, session) => {
     try {
       const { id } = await params;
       const tenantFilter = getTenantFilter(session);
+      const auditUserFilter = getAuditUserFilter(session);
 
-      // Verify user exists and belongs to tenant
+      // Build where clause with audit isolation
+      const whereClause: Record<string, unknown> = { id, ...tenantFilter };
+      if (auditUserFilter) {
+        whereClause.AND = [auditUserFilter];
+      }
+
+      // Verify user exists and user has access
       const existingUser = await prisma.user.findFirst({
-        where: { id, ...tenantFilter },
+        where: whereClause,
       });
 
       if (!existingUser) {
         return NextResponse.json({ error: "User not found" }, { status: 404 });
+      }
+
+      // Prevent deleting yourself
+      if (id === session.id) {
+        return NextResponse.json({ error: "Cannot delete yourself" }, { status: 400 });
       }
 
       // Delete user roles first

@@ -1,24 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
+import { withAuth, getTenantFilter, getCustomerAccountId, getAuditHeadFilter, getAuditHeadId } from "@/lib/api-auth";
 
-// GET escalation config (per tenant)
-// Requires 'edit' action so only AuditHead can access (CustomerAdmin has only 'view')
+// GET escalation config - filtered by audit head
 export const GET = withAuth(
   async (req: NextRequest, context, session) => {
     try {
       const tenantFilter = getTenantFilter(session);
+      const auditHeadFilter = getAuditHeadFilter(session);
 
       let config = await prisma.auditEscalationConfig.findFirst({
-        where: tenantFilter,
+        where: { ...tenantFilter, ...auditHeadFilter },
       });
 
-      // Create default config if none exists for this tenant
+      // Create default config if none exists for this audit head
       if (!config) {
         const customerAccountId = getCustomerAccountId(session);
+        const auditHeadId = getAuditHeadId(session);
         config = await prisma.auditEscalationConfig.create({
           data: {
             customerAccountId,
+            auditHeadId,
             responseSubmission: 5,
             acknowledgement: 1,
             clarification: 2,
@@ -39,24 +41,27 @@ export const GET = withAuth(
   { resource: "audit.settings", action: "edit" }
 );
 
-// PUT update escalation config
+// PUT update escalation config - for current audit head
 export const PUT = withAuth(
   async (req: NextRequest, context, session) => {
     try {
       const body = await req.json();
       const { responseSubmission, acknowledgement, clarification, issueResolution } = body;
       const tenantFilter = getTenantFilter(session);
+      const auditHeadFilter = getAuditHeadFilter(session);
 
       let config = await prisma.auditEscalationConfig.findFirst({
-        where: tenantFilter,
+        where: { ...tenantFilter, ...auditHeadFilter },
       });
 
       if (!config) {
-        // Create if doesn't exist for this tenant
+        // Create if doesn't exist for this audit head
         const customerAccountId = getCustomerAccountId(session);
+        const auditHeadId = getAuditHeadId(session);
         config = await prisma.auditEscalationConfig.create({
           data: {
             customerAccountId,
+            auditHeadId,
             responseSubmission: responseSubmission ?? 5,
             acknowledgement: acknowledgement ?? 1,
             clarification: clarification ?? 2,

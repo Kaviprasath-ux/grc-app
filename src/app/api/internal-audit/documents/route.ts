@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { withAuth } from "@/lib/api-auth";
+import { withAuth, getTenantFilter, getAuditHeadFilter, getCustomerAccountId, getAuditHeadId } from "@/lib/api-auth";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 
 // GET documents organized by category with pagination
+// Documents are specific to each Audit Head - NOT shared between Audit Heads
 export const GET = withAuth(
-  async (request: NextRequest) => {
+  async (request: NextRequest, context, session) => {
     try {
       const { searchParams } = new URL(request.url);
       const category = searchParams.get("category");
@@ -14,7 +15,16 @@ export const GET = withAuth(
       const limit = parseInt(searchParams.get("limit") || "10");
       const skip = (page - 1) * limit;
 
-      const where = category ? { category } : {};
+      // Apply tenant and audit head filters
+      const tenantFilter = getTenantFilter(session);
+      const auditHeadFilter = getAuditHeadFilter(session);
+
+      const baseWhere = {
+        ...tenantFilter,
+        ...auditHeadFilter,
+      };
+
+      const where = category ? { ...baseWhere, category } : baseWhere;
 
       const [documents, total] = await Promise.all([
         prisma.internalAuditDocument.findMany({
@@ -29,15 +39,15 @@ export const GET = withAuth(
       // If no category filter, organize by category
       if (!category) {
         const policies = await prisma.internalAuditDocument.findMany({
-          where: { category: "Policy" },
+          where: { ...baseWhere, category: "Policy" },
           orderBy: { uploadedAt: "desc" },
         });
         const regulations = await prisma.internalAuditDocument.findMany({
-          where: { category: "Regulation" },
+          where: { ...baseWhere, category: "Regulation" },
           orderBy: { uploadedAt: "desc" },
         });
         const auditReports = await prisma.internalAuditDocument.findMany({
-          where: { category: "PreviousReport" },
+          where: { ...baseWhere, category: "PreviousReport" },
           orderBy: { uploadedAt: "desc" },
         });
 
@@ -72,14 +82,19 @@ export const GET = withAuth(
 );
 
 // POST - Upload a new document
+// Documents are specific to each Audit Head - NOT shared between Audit Heads
 export const POST = withAuth(
-  async (request: NextRequest) => {
+  async (request: NextRequest, context, session) => {
     try {
       const formData = await request.formData();
       const file = formData.get("file") as File;
       const category = formData.get("category") as string || "Policy";
       const name = formData.get("name") as string;
       const description = formData.get("description") as string;
+
+      // Get tenant and audit head IDs for data isolation
+      const customerAccountId = getCustomerAccountId(session);
+      const auditHeadId = getAuditHeadId(session);
 
       if (!file) {
         return NextResponse.json(
@@ -105,11 +120,22 @@ export const POST = withAuth(
       const buffer = Buffer.from(bytes);
       await writeFile(filePath, buffer);
 
-      // Generate document code
-      const count = await prisma.internalAuditDocument.count();
-      const documentCode = `DOC-${String(count + 1).padStart(4, "0")}`;
+      // Generate document code - find the highest existing code and increment
+      const lastDoc = await prisma.internalAuditDocument.findFirst({
+        orderBy: { documentCode: "desc" },
+        select: { documentCode: true },
+      });
 
-      // Create document record in database
+      let nextNum = 1;
+      if (lastDoc?.documentCode) {
+        const match = lastDoc.documentCode.match(/DOC-(\d+)/);
+        if (match) {
+          nextNum = parseInt(match[1], 10) + 1;
+        }
+      }
+      const documentCode = `DOC-${String(nextNum).padStart(4, "0")}`;
+
+      // Create document record in database with auditHeadId for isolation
       const document = await prisma.internalAuditDocument.create({
         data: {
           documentCode,
@@ -121,6 +147,8 @@ export const POST = withAuth(
           fileSize: buffer.length,
           filePath: `/uploads/documents/${uniqueFileName}`,
           uploadedAt: new Date(),
+          customerAccountId,
+          auditHeadId,
         },
       });
 

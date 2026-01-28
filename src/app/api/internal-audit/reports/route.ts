@@ -29,8 +29,9 @@ export const GET = withAuth(
         whereClause.status = 'Published';
         whereClause.auditeeId = session.id;
       } else if (hasAuditRole) {
-        // For AuditHead/AuditManager/Auditor, filter through engagement
-        whereClause.engagement = auditHeadFilter;
+        // For AuditHead/AuditManager/Auditor, filter by auditHeadId directly on report
+        // Reports are NOT shared between Audit Heads
+        Object.assign(whereClause, auditHeadFilter);
         if (status && status !== 'all') {
           whereClause.status = status;
         }

@@ -14,6 +14,8 @@ declare module "next-auth" {
       customerAccountId: string | null;
       customerAccountCode: string | null;
       customerAccountName: string | null;
+      // Audit Head isolation: Links user to their managing Audit Head
+      auditHeadId: string | null;
       roles: string[];
       permissions: UserPermission[];
     } & DefaultSession["user"];
@@ -28,6 +30,8 @@ declare module "next-auth" {
     customerAccountId: string | null;
     customerAccountCode: string | null;
     customerAccountName: string | null;
+    // Audit Head isolation: Links user to their managing Audit Head
+    auditHeadId: string | null;
     roles: string[];
     permissions: UserPermission[];
   }
@@ -43,6 +47,8 @@ declare module "next-auth/jwt" {
     customerAccountId: string | null;
     customerAccountCode: string | null;
     customerAccountName: string | null;
+    // Audit Head isolation: Links user to their managing Audit Head
+    auditHeadId: string | null;
     roles: string[];
     permissions: UserPermission[];
   }

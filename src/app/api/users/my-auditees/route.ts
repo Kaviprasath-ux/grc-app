@@ -1,36 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { withAuthOnly } from "@/lib/api-auth";
+import { withAuthOnly, getTenantFilter } from "@/lib/api-auth";
 
-// GET auditees managed by the current user (Audit Head/Manager)
+// GET auditees managed by the current user's Audit Head
+// Multi-tenant: respects data isolation by auditHeadId
 export const GET = withAuthOnly(async (req: NextRequest, context: {}, session) => {
   try {
     const currentUserId = session.id;
     const userRoles = session.roles || [];
+    const tenantFilter = getTenantFilter(session);
 
-    // Debug logging
-    console.log("=== MY-AUDITEES API DEBUG ===");
-    console.log("Current User ID:", currentUserId);
-    console.log("User Roles:", userRoles);
-
-    // Check if user is an Audit Head, Audit Manager, Auditor, or GRC Administrator
+    // Check if user is an Audit Head, Audit Manager, Auditor, or Admin
     const isAuditHead = userRoles.includes("AuditHead");
     const isAuditManager = userRoles.includes("AuditManager");
     const isAuditor = userRoles.includes("Auditor");
     const isGRCAdmin = userRoles.includes("GRCAdministrator");
-
-    console.log("isAuditHead:", isAuditHead);
-    console.log("isAuditManager:", isAuditManager);
-    console.log("isAuditor:", isAuditor);
-    console.log("isGRCAdmin:", isGRCAdmin);
+    const isCustomerAdmin = userRoles.includes("CustomerAdministrator");
 
     let auditees: Awaited<ReturnType<typeof prisma.user.findMany>>;
 
-    if (isGRCAdmin) {
-      // GRC Admin can see all auditees
-      console.log("Fetching all auditees for GRC Admin");
+    if (isGRCAdmin || isCustomerAdmin) {
+      // Admins can see all auditees within their tenant
       auditees = await prisma.user.findMany({
         where: {
+          ...tenantFilter,
           userRoles: {
             some: {
               role: {
@@ -49,11 +42,11 @@ export const GET = withAuthOnly(async (req: NextRequest, context: {}, session) =
         },
         orderBy: { fullName: "asc" },
       });
-    } else if (isAuditHead || isAuditManager) {
-      // Audit Head/Manager can only see their managed auditees
-      console.log("Fetching managed auditees for Audit Head/Manager, auditHeadId:", currentUserId);
+    } else if (isAuditHead) {
+      // Audit Head sees auditees they manage (auditHeadId = their own ID)
       auditees = await prisma.user.findMany({
         where: {
+          ...tenantFilter,
           auditHeadId: currentUserId,
           userRoles: {
             some: {
@@ -73,13 +66,24 @@ export const GET = withAuthOnly(async (req: NextRequest, context: {}, session) =
         },
         orderBy: { fullName: "asc" },
       });
-    } else if (isAuditor) {
-      // Auditor can see auditees managed by their engagement's audit head
-      // For now, show all auditees that have an auditHeadId set (belong to any audit head)
-      console.log("Fetching auditees for Auditor");
+    } else if (isAuditManager || isAuditor) {
+      // Audit Manager/Auditor sees auditees under their assigned Audit Head
+      // Use session.auditHeadId (the ID of their managing Audit Head)
+      const auditHeadId = session.auditHeadId;
+
+      if (!auditHeadId) {
+        // Not assigned to an Audit Head, cannot see auditees
+        return NextResponse.json({
+          auditees: [],
+          count: 0,
+          message: "No Audit Head assigned. Contact your administrator.",
+        });
+      }
+
       auditees = await prisma.user.findMany({
         where: {
-          auditHeadId: { not: null },
+          ...tenantFilter,
+          auditHeadId: auditHeadId,
           userRoles: {
             some: {
               role: {
@@ -100,11 +104,8 @@ export const GET = withAuthOnly(async (req: NextRequest, context: {}, session) =
       });
     } else {
       // Other users cannot see auditees
-      console.log("User has no audit role, returning empty list");
       auditees = [];
     }
-
-    console.log("Found auditees count:", auditees.length);
 
     // Remove password from response
     const safeAuditees = auditees.map(({ password, ...user }) => user);

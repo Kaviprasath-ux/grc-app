@@ -1,8 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Loader2, Clock, CalendarDays, CheckCircle, AlertTriangle, PlayCircle } from "lucide-react";
 
 interface AuditItem {
   id: string;
@@ -11,6 +18,8 @@ interface AuditItem {
   actualHours: number;
   plannedHours: number;
   status: string;
+  startDate: string | null;
+  endDate: string | null;
 }
 
 interface DepartmentData {
@@ -26,6 +35,7 @@ interface AuditUniverseData {
 }
 
 export default function AuditUniversePage() {
+  const router = useRouter();
   const [data, setData] = useState<AuditUniverseData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -48,10 +58,47 @@ export default function AuditUniversePage() {
   };
 
   const getStatusColor = (actualHours: number, plannedHours: number, status: string) => {
-    if (status === "Completed") return "bg-green-500";
-    if (actualHours > plannedHours) return "bg-red-500";
-    if (actualHours > 0) return "bg-yellow-500";
-    return "bg-green-500";
+    const statusLower = status?.toLowerCase() || '';
+
+    // Completed audits
+    if (statusLower === 'completed' || statusLower === 'complete' || statusLower === 'closed') {
+      return actualHours > plannedHours ? "bg-red-500" : "bg-green-500";
+    }
+
+    // In progress audits
+    if (statusLower === 'in progress' || statusLower === 'inprogress' || statusLower === 'ongoing' || statusLower === 'active') {
+      if (actualHours > plannedHours) return "bg-red-500"; // Over budget
+      if (actualHours > plannedHours * 0.8) return "bg-yellow-500"; // Approaching limit
+      return "bg-orange-500"; // In progress
+    }
+
+    // Planned/Draft audits
+    return "bg-blue-500";
+  };
+
+  const getStatusIcon = (status: string) => {
+    const statusLower = status?.toLowerCase() || '';
+
+    if (statusLower === 'completed' || statusLower === 'complete' || statusLower === 'closed') {
+      return <CheckCircle className="h-3 w-3" />;
+    }
+    if (statusLower === 'in progress' || statusLower === 'inprogress' || statusLower === 'ongoing' || statusLower === 'active') {
+      return <PlayCircle className="h-3 w-3" />;
+    }
+    return <Clock className="h-3 w-3" />;
+  };
+
+  const formatDate = (dateStr: string | null) => {
+    if (!dateStr) return 'N/A';
+    return new Date(dateStr).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
+  const handleAuditClick = (auditId: string) => {
+    router.push(`/internal-audit/fieldwork/${auditId}`);
   };
 
   if (loading) {
@@ -67,14 +114,19 @@ export default function AuditUniversePage() {
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold text-blue-900">Audit Universe</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-blue-900">Audit Universe</h1>
+        <div className="text-sm text-gray-500">
+          {data?.totalDepartments || 0} Departments | {data?.totalAudits || 0} Audits
+        </div>
+      </div>
 
       <Card>
         <CardContent className="pt-6">
-          <div className="relative overflow-x-auto">
+          <div className="relative">
             {/* Root Node */}
             <div className="flex justify-center mb-8">
-              <div className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold shadow-md">
+              <div className="bg-blue-600 text-white px-8 py-4 rounded-lg font-semibold shadow-lg">
                 Audit Universe
               </div>
             </div>
@@ -84,57 +136,117 @@ export default function AuditUniversePage() {
               <div className="w-0.5 h-8 bg-gray-300"></div>
             </div>
 
-            {/* Horizontal line connecting all departments */}
-            {data?.departments && data.departments.length > 0 && (
-              <div className="flex justify-center mb-4">
-                <div className="h-0.5 bg-gray-300" style={{ width: `${Math.min(data.departments.length * 150, 1200)}px` }}></div>
-              </div>
-            )}
-
-            {/* Department branches */}
-            <div className="flex flex-wrap justify-center gap-4">
-              {data?.departments.map((dept) => (
-                <div key={dept.id} className="flex flex-col items-center">
-                  {/* Vertical line to department */}
-                  <div className="w-0.5 h-4 bg-gray-300"></div>
-
-                  {/* Department box */}
-                  <div className="border border-gray-300 rounded px-4 py-2 bg-white mb-4 min-w-[120px] text-center">
-                    <span className="text-sm font-medium">{dept.name}</span>
-                  </div>
-
-                  {/* Audit items */}
-                  <div className="flex flex-col items-center gap-2">
-                    {dept.audits.map((audit) => (
-                      <div key={audit.id} className="flex flex-col items-center">
-                        {/* Connection line */}
-                        <div className="w-0.5 h-3 bg-gray-300"></div>
-
-                        {/* Audit card */}
-                        <div
-                          className={`${getStatusColor(audit.actualHours, audit.plannedHours, audit.status)} text-white rounded px-3 py-2 min-w-[100px] text-center shadow`}
-                        >
-                          <div className="font-semibold text-sm">{audit.auditId}</div>
-                          <div className="text-xs mt-1 flex justify-between gap-2">
-                            <span>Actual Hours</span>
-                            <span>Planned Hours</span>
-                          </div>
-                          <div className="text-xs flex justify-between gap-2">
-                            <span>:{audit.actualHours}</span>
-                            <span>:{audit.plannedHours}</span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+            {/* Scrollable container for horizontal line and departments */}
+            <div className="overflow-x-auto pb-4">
+              {/* Horizontal line connecting all departments */}
+              {data?.departments && data.departments.length > 0 && (
+                <div className="flex mb-4">
+                  <div className="h-0.5 bg-gray-300 flex-1" style={{ minWidth: `${data.departments.length * 160}px` }}></div>
                 </div>
-              ))}
+              )}
+
+              {/* Department branches - single row */}
+              <TooltipProvider>
+                <div className="flex gap-6" style={{ minWidth: 'max-content' }}>
+                  {data?.departments.map((dept) => (
+                  <div key={dept.id} className="flex flex-col items-center flex-shrink-0">
+                    {/* Vertical line to department */}
+                    <div className="w-0.5 h-4 bg-gray-300"></div>
+
+                    {/* Department box */}
+                    <div className={`border-2 rounded-lg px-4 py-3 mb-4 min-w-[140px] text-center shadow-sm hover:shadow-md transition-shadow ${
+                      dept.audits.length > 0
+                        ? 'border-gray-300 bg-white'
+                        : 'border-dashed border-gray-200 bg-gray-50'
+                    }`}>
+                      <span className={`text-sm font-semibold ${dept.audits.length > 0 ? 'text-gray-700' : 'text-gray-400'}`}>
+                        {dept.name}
+                      </span>
+                      <div className={`text-xs mt-1 ${dept.audits.length > 0 ? 'text-gray-400' : 'text-gray-300'}`}>
+                        {dept.audits.length > 0 ? `${dept.audits.length} audit(s)` : 'No audits'}
+                      </div>
+                    </div>
+
+                    {/* Audit items */}
+                    <div className="flex flex-col items-center gap-3">
+                      {dept.audits.length > 0 ? (
+                        dept.audits.map((audit) => (
+                          <div key={audit.id} className="flex flex-col items-center">
+                            {/* Connection line */}
+                            <div className="w-0.5 h-3 bg-gray-300"></div>
+
+                            {/* Audit card with tooltip */}
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div
+                                  className={`${getStatusColor(audit.actualHours, audit.plannedHours, audit.status)} text-white rounded-lg px-4 py-3 min-w-[130px] text-center shadow-md cursor-pointer hover:opacity-90 transition-all hover:scale-105`}
+                                  onClick={() => handleAuditClick(audit.id)}
+                                >
+                                  <div className="flex items-center justify-center gap-1 font-semibold text-sm mb-2">
+                                    {getStatusIcon(audit.status)}
+                                    <span>{audit.auditId}</span>
+                                  </div>
+                                  <div className="text-xs space-y-1">
+                                    <div className="flex justify-between gap-4">
+                                      <span className="opacity-80">Actual</span>
+                                      <span className="opacity-80">Planned</span>
+                                    </div>
+                                    <div className="flex justify-between gap-4">
+                                      <span className="font-medium">
+                                        {audit.actualHours > 0 ? `${audit.actualHours}h` : '-'}
+                                      </span>
+                                      <span className="font-medium">
+                                        {audit.plannedHours > 0 ? `${audit.plannedHours}h` : '-'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent side="right" className="max-w-xs">
+                                <div className="space-y-2">
+                                  <p className="font-semibold">{audit.engagementTitle}</p>
+                                  <div className="text-xs space-y-1">
+                                    <div className="flex items-center gap-2">
+                                      <CalendarDays className="h-3 w-3" />
+                                      <span>Start: {formatDate(audit.startDate)}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <CalendarDays className="h-3 w-3" />
+                                      <span>End: {formatDate(audit.endDate)}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Clock className="h-3 w-3" />
+                                      <span>Status: {audit.status}</span>
+                                    </div>
+                                    {audit.actualHours > audit.plannedHours && (
+                                      <div className="flex items-center gap-2 text-red-600">
+                                        <AlertTriangle className="h-3 w-3" />
+                                        <span>Over budget by {audit.actualHours - audit.plannedHours}h</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                  <p className="text-xs text-gray-400 italic">Click to view details</p>
+                                </div>
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-xs text-gray-300 italic py-2">
+                          —
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </TooltipProvider>
             </div>
 
             {/* Empty state */}
             {(!data?.departments || data.departments.length === 0) && (
               <div className="text-center py-12 text-gray-500">
-                <p>No audits in the universe yet</p>
+                <p className="text-lg">No audits in the universe yet</p>
                 <p className="text-sm mt-2">Audits will appear here once created and assigned to departments</p>
               </div>
             )}
@@ -150,12 +262,20 @@ export default function AuditUniversePage() {
         <CardContent>
           <div className="flex gap-6 flex-wrap">
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-green-500 rounded"></div>
-              <span className="text-sm">On Track / Completed</span>
+              <div className="w-4 h-4 bg-blue-500 rounded"></div>
+              <span className="text-sm">Planned</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-orange-500 rounded"></div>
+              <span className="text-sm">In Progress</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 bg-yellow-500 rounded"></div>
-              <span className="text-sm">In Progress</span>
+              <span className="text-sm">Approaching Budget</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-green-500 rounded"></div>
+              <span className="text-sm">Completed (On Budget)</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 bg-red-500 rounded"></div>
@@ -164,6 +284,69 @@ export default function AuditUniversePage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Hours Summary */}
+      {data?.departments && data.departments.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">Hours Summary by Department</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-2 px-3 font-medium">Department</th>
+                    <th className="text-right py-2 px-3 font-medium">Audits</th>
+                    <th className="text-right py-2 px-3 font-medium">Total Planned Hours</th>
+                    <th className="text-right py-2 px-3 font-medium">Total Actual Hours</th>
+                    <th className="text-right py-2 px-3 font-medium">Variance</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.departments.map((dept) => {
+                    const totalPlanned = dept.audits.reduce((sum, a) => sum + a.plannedHours, 0);
+                    const totalActual = dept.audits.reduce((sum, a) => sum + a.actualHours, 0);
+                    const variance = totalActual - totalPlanned;
+                    const hasAudits = dept.audits.length > 0;
+                    return (
+                      <tr key={dept.id} className={`border-b hover:bg-gray-50 ${!hasAudits ? 'text-gray-400' : ''}`}>
+                        <td className="py-2 px-3">{dept.name}</td>
+                        <td className="text-right py-2 px-3">{dept.audits.length}</td>
+                        <td className="text-right py-2 px-3">{hasAudits ? `${totalPlanned}h` : '-'}</td>
+                        <td className="text-right py-2 px-3">{hasAudits ? `${totalActual}h` : '-'}</td>
+                        <td className={`text-right py-2 px-3 font-medium ${hasAudits ? (variance > 0 ? 'text-red-600' : variance < 0 ? 'text-green-600' : '') : ''}`}>
+                          {hasAudits ? `${variance > 0 ? '+' : ''}${variance}h` : '-'}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                <tfoot>
+                  <tr className="font-semibold bg-gray-50">
+                    <td className="py-2 px-3">Total</td>
+                    <td className="text-right py-2 px-3">{data.totalAudits}</td>
+                    <td className="text-right py-2 px-3">
+                      {data.departments.reduce((sum, d) => sum + d.audits.reduce((s, a) => s + a.plannedHours, 0), 0)}h
+                    </td>
+                    <td className="text-right py-2 px-3">
+                      {data.departments.reduce((sum, d) => sum + d.audits.reduce((s, a) => s + a.actualHours, 0), 0)}h
+                    </td>
+                    <td className="text-right py-2 px-3">
+                      {(() => {
+                        const totalP = data.departments.reduce((sum, d) => sum + d.audits.reduce((s, a) => s + a.plannedHours, 0), 0);
+                        const totalA = data.departments.reduce((sum, d) => sum + d.audits.reduce((s, a) => s + a.actualHours, 0), 0);
+                        const v = totalA - totalP;
+                        return <span className={v > 0 ? 'text-red-600' : v < 0 ? 'text-green-600' : ''}>{v > 0 ? '+' : ''}{v}h</span>;
+                      })()}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { withAuth } from '@/lib/api-auth';
+import { withAuth, getTenantFilter, getAuditHeadFilter } from '@/lib/api-auth';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 
 // Force Node.js runtime
@@ -13,13 +13,16 @@ interface RouteContext {
 
 // GET /api/internal-audit/report/[id]/download - Download report as PDF
 export const GET = withAuth(
-  async (req: NextRequest, context: RouteContext) => {
+  async (req: NextRequest, context: RouteContext, session) => {
     try {
       const { id: engagementId } = await context.params;
+      const tenantFilter = getTenantFilter(session);
+      const auditHeadFilter = getAuditHeadFilter(session);
 
-      // Find report by engagement ID
-      const report = await prisma.auditReport.findUnique({
-        where: { engagementId },
+      // Find report by engagement ID with AuditHead isolation
+      // Reports are NOT shared between Audit Heads
+      const report = await prisma.auditReport.findFirst({
+        where: { engagementId, ...tenantFilter, ...auditHeadFilter },
         include: {
           engagement: {
             select: {

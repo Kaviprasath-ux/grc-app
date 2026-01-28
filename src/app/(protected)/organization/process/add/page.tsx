@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Check } from "lucide-react";
+import { ChevronLeft, Check, Upload, FileText, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -56,6 +56,11 @@ export default function AddProcessPage() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [users, setUsers] = useState<User[]>([]);
 
+  // File upload states
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [formData, setFormData] = useState({
     processCode: "",
     name: "",
@@ -102,9 +107,68 @@ export default function AddProcessPage() {
     }
   }, [isDepartmentContributor, userDepartmentId, formData.departmentId]);
 
+  // File upload handlers
+  const formatFileSize = (bytes: number): string => {
+    if (!bytes) return "0 B";
+    const k = 1024;
+    const sizes = ["B", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      setPendingFiles((prev) => [...prev, files[0]]);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setPendingFiles((prev) => [...prev, file]);
+    }
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const removePendingFile = (index: number) => {
+    setPendingFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const uploadFiles = async (processId: string) => {
+    for (const file of pendingFiles) {
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        await fetch(`/api/processes/${processId}/attachments`, {
+          method: "POST",
+          body: formData,
+        });
+      } catch (error) {
+        console.error("Error uploading file:", error);
+      }
+    }
+  };
+
   const handleSave = async () => {
-    if (!formData.processCode.trim() || !formData.name.trim()) {
-      toast({ title: "Error", description: "Process ID and Name are required", variant: "destructive" });
+    if (!formData.name.trim()) {
+      toast({ title: "Error", description: "Process Name is required", variant: "destructive" });
       return;
     }
 
@@ -114,13 +178,36 @@ export default function AddProcessPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...formData,
+          name: formData.name,
+          description: formData.description || null,
+          processType: formData.processType,
           departmentId: formData.departmentId || null,
           ownerId: formData.ownerId || null,
+          status: formData.status,
+          processFrequency: formData.frequency || null,
+          natureOfImplementation: formData.natureOfImplementation || null,
+          assetDependency: formData.assetDependency,
+          externalDependency: formData.externalDependency,
+          location: formData.location || null,
+          kpiMeasurementRequired: formData.kpiMeasurementRequired,
+          piiCapture: formData.piiCapture,
+          operationalComplexity: formData.operationalComplexity || null,
+          lastAuditDate: formData.lastAuditDate || null,
+          responsibleId: formData.responsible || null,
+          accountableId: formData.accountable || null,
+          consultedId: formData.consulted || null,
+          informedId: formData.informed || null,
         }),
       });
 
       if (res.ok) {
+        const process = await res.json();
+
+        // Upload pending files if any
+        if (pendingFiles.length > 0) {
+          await uploadFiles(process.id);
+        }
+
         toast({ title: "Success", description: "Process created successfully" });
         router.push("/organization/process");
       } else {
@@ -186,25 +273,14 @@ export default function AddProcessPage() {
         {/* Step 1: Info */}
         {currentStep === 1 && (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="processCode">Process ID *</Label>
-                <Input
-                  id="processCode"
-                  value={formData.processCode}
-                  onChange={(e) => setFormData({ ...formData, processCode: e.target.value })}
-                  placeholder="e.g., PRO001"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="name">Process Name *</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Enter process name"
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="name">Process Name *</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="Enter process name"
+              />
             </div>
 
             <div className="space-y-2">
@@ -403,6 +479,79 @@ export default function AddProcessPage() {
                 />
                 <Label htmlFor="piiCapture" className="text-sm font-normal">PII Capture</Label>
               </div>
+            </div>
+
+            {/* File Upload Section */}
+            <div className="space-y-4 pt-6 border-t">
+              <Label className="text-base font-medium">Process Documents</Label>
+              <p className="text-sm text-muted-foreground">
+                Add files to attach to this process. Files will be uploaded when you save.
+              </p>
+
+              {/* File Dropper */}
+              <div
+                className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                  isDragging ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-gray-400"
+                }`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
+                <div className="space-y-2">
+                  <Upload className="h-10 w-10 mx-auto text-gray-400" />
+                  <p className="text-sm text-gray-600">
+                    Drag and drop a file here, or{" "}
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="text-blue-600 hover:underline font-medium"
+                    >
+                      browse
+                    </button>
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Supported formats: PDF, DOCX, XLSX, CSV, PNG, JPG, PPT
+                  </p>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    className="hidden"
+                    onChange={handleFileChange}
+                    accept=".pdf,.docx,.doc,.xlsx,.xls,.csv,.png,.jpg,.jpeg,.ppt,.pptx"
+                  />
+                </div>
+              </div>
+
+              {/* Pending Files List */}
+              {pendingFiles.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Files to Upload ({pendingFiles.length})</Label>
+                  <div className="border rounded-lg divide-y">
+                    {pendingFiles.map((file, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 hover:bg-gray-50">
+                        <div className="flex items-center gap-3">
+                          <FileText className="h-5 w-5 text-blue-600" />
+                          <div>
+                            <p className="text-sm font-medium">{file.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {formatFileSize(file.size)}
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          title="Remove"
+                          onClick={() => removePendingFile(index)}
+                        >
+                          <X className="h-4 w-4 text-red-600" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

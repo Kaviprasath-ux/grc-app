@@ -39,28 +39,43 @@ export async function GET(request: NextRequest) {
       const currentUserId = session.user.id;
       const currentUserRoles = session.user.roles || [];
       const isAuditHead = currentUserRoles.includes("AuditHead");
+      const isAuditManager = currentUserRoles.includes("AuditManager");
+      const currentUserAuditHeadId = (session.user as any).auditHeadId;
 
-      if (isAuditHead) {
-        if (forAuditHead === "auditees") {
-          // Get all auditees in the same customer account
-          where.userRoles = {
-            some: {
-              role: {
-                name: "Auditee",
-              },
+      // Determine the audit head ID to filter by
+      const effectiveAuditHeadId = isAuditHead ? currentUserId : currentUserAuditHeadId;
+
+      if (forAuditHead === "auditees") {
+        // Get auditees managed by this Audit Head
+        where.userRoles = {
+          some: {
+            role: {
+              name: "Auditee",
             },
-          };
-        } else if (forAuditHead === "auditors") {
-          // Get audit team members (AuditHead, AuditManager, Auditor) in the same customer account
-          // This allows Audit Head to assign themselves or any audit team member
-          where.userRoles = {
-            some: {
-              role: {
-                name: { in: ["AuditHead", "AuditManager", "Auditor"] },
-              },
-            },
-          };
+          },
+        };
+        // Filter by auditHeadId to only show auditees under this Audit Head
+        if (effectiveAuditHeadId) {
+          where.auditHeadId = effectiveAuditHeadId;
         }
+      } else if (forAuditHead === "auditors") {
+        // Get audit team members managed by this Audit Head + the Audit Head themselves
+        // For auditors dropdown (to assign as auditor on an engagement)
+        where.OR = [
+          // The Audit Head themselves
+          { id: effectiveAuditHeadId },
+          // Audit Managers and Auditors under this Audit Head
+          {
+            auditHeadId: effectiveAuditHeadId,
+            userRoles: {
+              some: {
+                role: {
+                  name: { in: ["AuditManager", "Auditor"] },
+                },
+              },
+            },
+          },
+        ];
       }
     }
 
@@ -167,9 +182,16 @@ export async function POST(request: NextRequest) {
         timezone: timezone || "UTC",
         isActive: isActive ?? true,
         isBlocked: isBlocked ?? false,
-        departmentId,
-        reportingManagerId: reportingManagerId || null,
-        customerAccountId, // Multi-tenant: Link user to same customer account as creator
+        // Use relation connect syntax for foreign keys
+        ...(departmentId && {
+          department: { connect: { id: departmentId } },
+        }),
+        ...(reportingManagerId && {
+          reportingManager: { connect: { id: reportingManagerId } },
+        }),
+        ...(customerAccountId && {
+          customerAccount: { connect: { id: customerAccountId } },
+        }),
         // Create UserRole entry if role exists in Role table
         ...(roleRecord && {
           userRoles: {

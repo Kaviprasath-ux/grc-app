@@ -605,7 +605,7 @@ export default function GRCAdminControlListPage() {
                 <TableRow
                   key={control.id}
                   className="cursor-pointer hover:bg-gray-50"
-                  onDoubleClick={() => router.push(`/compliance/control/${control.id}`)}
+                  onDoubleClick={() => router.push(`/roles/grc-administrator/compliance/control/${control.id}`)}
                 >
                   {visibleColumns.controlName && (
                     <TableCell className="font-medium">{control.name}</TableCell>

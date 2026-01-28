@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { expandRolePermissions } from "@/lib/permissions";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  trustHost: true,
   providers: [
     Credentials({
       name: "credentials",
@@ -19,6 +20,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           return null;
         }
 
+        try {
         // Find user in database
         const user = await prisma.user.findFirst({
           where: {
@@ -64,8 +66,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         console.log('[AUTH] User found:', user.userName, 'isActive:', user.isActive, 'isBlocked:', user.isBlocked);
 
         // Simple password check (in production, use bcrypt)
-        if (user.password !== credentials.password) {
-          console.log('[AUTH] Password mismatch');
+        const inputPassword = String(credentials.password);
+        if (user.password !== inputPassword) {
+          console.log('[AUTH] Password mismatch. DB password length:', user.password.length, 'Input password length:', inputPassword.length);
           return null;
         }
 
@@ -94,9 +97,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           customerAccountId: user.customerAccountId,
           customerAccountCode: user.customerAccount?.code || null,
           customerAccountName: user.customerAccount?.name || null,
+          // Audit Head isolation: Store auditHeadId for subordinate users
+          auditHeadId: user.auditHeadId,
           roles: effectiveRoles,
           permissions: [], // Placeholder - expanded in session callback
         };
+        } catch (error) {
+          console.error('[AUTH] Error during authentication:', error);
+          return null;
+        }
       },
     }),
   ],
@@ -115,6 +124,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.customerAccountId = user.customerAccountId;
         token.customerAccountCode = user.customerAccountCode;
         token.customerAccountName = user.customerAccountName;
+        // Audit Head isolation: Store auditHeadId for subordinate users
+        token.auditHeadId = user.auditHeadId;
         token.roles = user.roles;
         // Don't store permissions in JWT - they'll be expanded in session callback
       }
@@ -131,6 +142,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.customerAccountId = token.customerAccountId as string | null;
         session.user.customerAccountCode = token.customerAccountCode as string | null;
         session.user.customerAccountName = token.customerAccountName as string | null;
+        // Audit Head isolation: Include auditHeadId for subordinate users
+        session.user.auditHeadId = token.auditHeadId as string | null;
         session.user.roles = (token.roles as string[]) || [];
 
         // Expand permissions from roles here (session callback runs server-side)
