@@ -33,7 +33,7 @@ export const GET = withAuth(
         orderBy: { createdAt: 'desc' },
       });
 
-      // Transform to expected format
+      // Transform to expected format (include attachmentCount for AI Review / simple_ingest)
       const transformed = evidenceRequests.map(er => ({
         id: er.id,
         title: er.title,
@@ -43,6 +43,7 @@ export const GET = withAuth(
         auditee: er.auditeeName || '',
         auditeeId: er.auditeeId || null,
         numberOfSamples: er.sampleSize || null,
+        attachmentCount: er.attachments?.length ?? 0,
       }));
 
       return NextResponse.json(transformed);

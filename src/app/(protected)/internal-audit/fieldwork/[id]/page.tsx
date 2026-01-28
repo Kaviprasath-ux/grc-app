@@ -121,6 +121,7 @@ interface EvidenceRequest {
   auditee: string;
   auditeeId?: string | null;
   numberOfSamples?: string | null;
+  attachmentCount?: number;
 }
 
 interface Finding {
@@ -1011,9 +1012,19 @@ export default function FieldworkDetailsPage() {
     }
   };
 
+  const selectedWithFilesCount = selectedEvidenceIds.filter((id) => {
+    const er = evidenceRequests.find((r) => r.id === id);
+    return (er?.attachmentCount ?? 0) > 0;
+  }).length;
+  const canRunAIReview = selectedEvidenceIds.length > 0 && selectedWithFilesCount > 0;
+
   const handleAIReview = async () => {
     if (selectedEvidenceIds.length === 0) {
       toast.error("Please select at least one evidence request");
+      return;
+    }
+    if (selectedWithFilesCount === 0) {
+      toast.error("Select evidence requests that have at least one file. Use 'Add attachment' to upload files first.");
       return;
     }
 
@@ -1034,7 +1045,8 @@ export default function FieldworkDetailsPage() {
         setAiReviewDialogOpen(true);
         toast.success("AI Review generated successfully");
       } else {
-        toast.error("Failed to generate AI review");
+        const err = await response.json().catch(() => ({})) as { error?: string };
+        toast.error(err?.error ?? "Failed to generate AI review");
       }
     } catch (error) {
       console.error("Error generating AI review:", error);
@@ -1744,7 +1756,8 @@ export default function FieldworkDetailsPage() {
                   size="sm"
                   className="bg-green-600 hover:bg-green-700"
                   onClick={handleAIReview}
-                  disabled={generatingAIReview}
+                  disabled={generatingAIReview || !canRunAIReview}
+                  title={!canRunAIReview ? "Select evidence requests with at least one file to run AI Review" : undefined}
                 >
                   {generatingAIReview ? (
                     <>
@@ -1787,6 +1800,7 @@ export default function FieldworkDetailsPage() {
                   <TableHead className="text-white">Auditee</TableHead>
                   <TableHead className="text-white">Due Date</TableHead>
                   <TableHead className="text-white">Status</TableHead>
+                  <TableHead className="text-white">Files</TableHead>
                   <TableHead className="text-white">Action</TableHead>
                 </TableRow>
               </TableHeader>
@@ -1814,6 +1828,13 @@ export default function FieldworkDetailsPage() {
                       }`}>
                         {er.status}
                       </span>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {(er.attachmentCount ?? 0) > 0 ? (
+                        <span className="text-green-600 font-medium">{er.attachmentCount}</span>
+                      ) : (
+                        <span className="text-amber-600">0</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
