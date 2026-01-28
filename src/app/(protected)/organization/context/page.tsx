@@ -587,7 +587,7 @@ export default function ContextPage() {
           status: "Active",
           departmentId: "",
         });
-        setIsAddStakeholderOpen(false);
+        setShowAddStakeholder(false);
       }
     } catch (error) {
       console.error("Error adding stakeholder:", error);
@@ -596,31 +596,7 @@ export default function ContextPage() {
 
   const handleOpenEditStakeholder = (stakeholder: Stakeholder) => {
     setEditingStakeholder(stakeholder);
-    setIsEditStakeholderOpen(true);
-  };
-
-  const handleUpdateStakeholder = async () => {
-    if (!editingStakeholder || !editingStakeholder.name.trim()) return;
-    try {
-      const res = await fetch(`/api/stakeholders/${editingStakeholder.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: editingStakeholder.name,
-          type: editingStakeholder.type,
-          status: editingStakeholder.status,
-          departmentId: editingStakeholder.departmentId || null,
-        }),
-      });
-      if (res.ok) {
-        const updatedStakeholder = await res.json();
-        setStakeholders(stakeholders.map((s) => s.id === updatedStakeholder.id ? updatedStakeholder : s));
-        setEditingStakeholder(null);
-        setIsEditStakeholderOpen(false);
-      }
-    } catch (error) {
-      console.error("Error updating stakeholder:", error);
-    }
+    setShowEditStakeholder(true);
   };
 
   const handleDeleteStakeholder = async (id: string) => {
@@ -729,7 +705,7 @@ export default function ContextPage() {
           selectedStakeholders: [] as string[],
         });
         setStakeholderNeeds([]);
-        setIsAddIssueOpen(false);
+        setShowAddIssue(false);
         setCurrentStep(1);
         toast({
           title: "Success",
@@ -1365,209 +1341,9 @@ export default function ContextPage() {
     );
   }
 
-  // Add Stakeholder Form (Full Page)
-  if (showAddStakeholder) {
-    return (
-      <div className="space-y-6">
-        <PageHeader
-          title="New Stakeholder"
-          actions={[
-            {
-              label: "Cancel",
-              variant: "outline",
-              onClick: () => setShowAddStakeholder(false),
-            },
-          ]}
-        />
-
-        <Card>
-          <CardContent className="pt-6 space-y-6">
-            <div className="space-y-4">
-              <Label>Stakeholder Type</Label>
-              <RadioGroup
-                value={newStakeholder.type}
-                onValueChange={(value) => setNewStakeholder({ ...newStakeholder, type: value })}
-                className="flex gap-6"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="Internal" id="internal" />
-                  <Label htmlFor="internal" className="font-normal">Internal</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="External" id="external" />
-                  <Label htmlFor="external" className="font-normal">External</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="Third Party" id="thirdparty" />
-                  <Label htmlFor="thirdparty" className="font-normal">Third Party</Label>
-                </div>
-              </RadioGroup>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="stakeholderName">Stakeholder Name *</Label>
-              <Input
-                id="stakeholderName"
-                value={newStakeholder.name}
-                onChange={(e) => setNewStakeholder({ ...newStakeholder, name: e.target.value })}
-                placeholder="Enter stakeholder name"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label>Department</Label>
-                <Select
-                  value={newStakeholder.departmentId}
-                  onValueChange={(value) => setNewStakeholder({ ...newStakeholder, departmentId: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select department" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {departments.map((dept) => (
-                      <SelectItem key={dept.id} value={dept.id}>
-                        {dept.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <Select
-                  value={newStakeholder.status}
-                  onValueChange={(value) => setNewStakeholder({ ...newStakeholder, status: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Active">Active</SelectItem>
-                    <SelectItem value="Inactive">Inactive</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 pt-4">
-              <Button variant="outline" onClick={() => setShowAddStakeholder(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleAddStakeholder}>Save Stakeholder</Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // Edit Stakeholder Form (Full Page)
-  if (showEditStakeholder && editingStakeholder) {
-    return (
-      <div className="space-y-6">
-        <PageHeader
-          title="Edit Stakeholder"
-          actions={[
-            {
-              label: "Cancel",
-              variant: "outline",
-              onClick: () => {
-                setShowEditStakeholder(false);
-                setEditingStakeholder(null);
-              },
-            },
-          ]}
-        />
-
-        <Card>
-          <CardContent className="pt-6 space-y-6">
-            <div className="space-y-4">
-              <Label>Stakeholder Type</Label>
-              <RadioGroup
-                value={editingStakeholder.type}
-                onValueChange={(value) => setEditingStakeholder({ ...editingStakeholder, type: value })}
-                className="flex gap-6"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="Internal" id="edit-internal" />
-                  <Label htmlFor="edit-internal" className="font-normal">Internal</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="External" id="edit-external" />
-                  <Label htmlFor="edit-external" className="font-normal">External</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="Third Party" id="edit-thirdparty" />
-                  <Label htmlFor="edit-thirdparty" className="font-normal">Third Party</Label>
-                </div>
-              </RadioGroup>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="editStakeholderName">Stakeholder Name *</Label>
-              <Input
-                id="editStakeholderName"
-                value={editingStakeholder.name}
-                onChange={(e) => setEditingStakeholder({ ...editingStakeholder, name: e.target.value })}
-                placeholder="Enter stakeholder name"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label>Department</Label>
-                <Select
-                  value={editingStakeholder.departmentId || ""}
-                  onValueChange={(value) => setEditingStakeholder({ ...editingStakeholder, departmentId: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select department" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {departments.map((dept) => (
-                      <SelectItem key={dept.id} value={dept.id}>
-                        {dept.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <Select
-                  value={editingStakeholder.status}
-                  onValueChange={(value) => setEditingStakeholder({ ...editingStakeholder, status: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Active">Active</SelectItem>
-                    <SelectItem value="Inactive">Inactive</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 pt-4">
-              <Button variant="outline" onClick={() => {
-                setShowEditStakeholder(false);
-                setEditingStakeholder(null);
-              }}>
-                Cancel
-              </Button>
-              <Button onClick={handleUpdateStakeholder}>Update Stakeholder</Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   // Add Issue Form (5-Step Wizard) - Rendered as Modal
   const renderAddIssueModal = () => (
-    <Dialog open={isAddIssueOpen} onOpenChange={(open) => { if (!open) { setIsAddIssueOpen(false); setCurrentStep(1); } }}>
+    <Dialog open={showAddIssue} onOpenChange={(open) => { if (!open) { setShowAddIssue(false); setCurrentStep(1); } }}>
       <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
         {/* Fixed Header */}
         <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
@@ -2081,7 +1857,7 @@ export default function ContextPage() {
             variant="outline"
             onClick={() => {
               if (currentStep === 1) {
-                setIsAddIssueOpen(false);
+                setShowAddIssue(false);
                 setCurrentStep(1);
               } else {
                 setCurrentStep(currentStep - 1);
@@ -3156,7 +2932,7 @@ export default function ContextPage() {
                 </Select>
               </div>
               {!isReadOnlyRole && (
-                <Button size="sm" onClick={() => setIsAddStakeholderOpen(true)}>
+                <Button size="sm" onClick={() => setShowAddStakeholder(true)}>
                   <Plus className="h-4 w-4 mr-2" />
                   New Stakeholder
                 </Button>
@@ -3236,7 +3012,7 @@ export default function ContextPage() {
                   Export
                 </Button>
                 {!isReadOnlyRole && (
-                  <Button size="sm" onClick={() => setIsAddIssueOpen(true)}>
+                  <Button size="sm" onClick={() => setShowAddIssue(true)}>
                     <Plus className="h-4 w-4 mr-2" />
                     Add New
                   </Button>
@@ -3405,7 +3181,7 @@ export default function ContextPage() {
       {renderEditIssueModal()}
 
       {/* Add Stakeholder Dialog */}
-      <Dialog open={isAddStakeholderOpen} onOpenChange={setIsAddStakeholderOpen}>
+      <Dialog open={showAddStakeholder} onOpenChange={setShowAddStakeholder}>
         <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
@@ -3489,7 +3265,7 @@ export default function ContextPage() {
 
           {/* Fixed Footer */}
           <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
-            <Button variant="outline" onClick={() => setIsAddStakeholderOpen(false)}>
+            <Button variant="outline" onClick={() => setShowAddStakeholder(false)}>
               Cancel
             </Button>
             <Button onClick={handleAddStakeholder}>Save</Button>
@@ -3498,7 +3274,7 @@ export default function ContextPage() {
       </Dialog>
 
       {/* Edit Stakeholder Dialog */}
-      <Dialog open={isEditStakeholderOpen} onOpenChange={setIsEditStakeholderOpen}>
+      <Dialog open={showEditStakeholder} onOpenChange={setShowEditStakeholder}>
         <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
@@ -3582,7 +3358,7 @@ export default function ContextPage() {
 
           {/* Fixed Footer */}
           <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
-            <Button variant="outline" onClick={() => setIsEditStakeholderOpen(false)}>
+            <Button variant="outline" onClick={() => setShowEditStakeholder(false)}>
               Cancel
             </Button>
             <Button onClick={handleUpdateStakeholder}>Save</Button>

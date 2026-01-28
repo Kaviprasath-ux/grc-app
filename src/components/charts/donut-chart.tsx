@@ -69,7 +69,7 @@ export function DonutChart({ title, data, centerLabel, centerSubLabel, className
                   padding: "8px 12px",
                 }}
                 itemStyle={{ color: "#334155" }}
-                formatter={(value: number, name: string) => [`${value} (${total > 0 ? ((value / total) * 100).toFixed(0) : 0}%)`, name]}
+                formatter={(value, name) => [`${value ?? 0} (${total > 0 && value ? (((value as number) / total) * 100).toFixed(0) : 0}%)`, name as string]}
               />
             </PieChart>
           </ResponsiveContainer>
