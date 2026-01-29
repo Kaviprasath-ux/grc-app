@@ -301,8 +301,6 @@ export default function AddProcessPage() {
           </div>
         )}
 
-        import {extractProcessControls} from "@/actions/control-extraction";
-
         {/* Step 2: Process Flow */}
         {currentStep === 2 && (
           <div className="space-y-4">
