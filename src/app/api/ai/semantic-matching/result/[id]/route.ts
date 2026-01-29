@@ -5,10 +5,11 @@ import { aiAuditService } from "@/services/ai-audit-service";
 
 export async function GET(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params;
     const startTime = Date.now();
-    const runpodJobId = params.id;
+    const runpodJobId = id;
     let userId: string | undefined;
 
     try {
