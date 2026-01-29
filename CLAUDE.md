@@ -173,33 +173,73 @@ npm run dev  # Uses local PostgreSQL (localhost:5432/grc_app)
 git add . && git commit -m "message" && git push
 ```
 
-**Deploy to Vercel (when user says "deploy on vercel"):**
+**IMPORTANT: Full Deployment with Database Seeding (Recommended Approach)**
+
+Due to git author permission issues with Vercel, use this temp directory approach:
+
 ```bash
-# Redeploy with latest code (uses Neon cloud database)
-vercel redeploy grc-app-ba-testing-81zs8dwgd-omjc44-8839s-projects.vercel.app
+# Step 1: Create temp directory and copy files (without .git)
+rm -rf /c/temp/grc-deploy 2>/dev/null
+mkdir -p /c/temp/grc-deploy
+cd "C:\Claude apps\grc-app"
+cp -r src package.json package-lock.json tsconfig.json next.config.ts postcss.config.mjs prisma components.json public .vercel /c/temp/grc-deploy/
+
+# Step 2: Deploy from temp directory
+cd /c/temp/grc-deploy
+vercel --prod
+
+# Step 3: Reset and seed the cloud database (from main project directory)
+cd "C:\Claude apps\grc-app"
+
+# Reset database (clears all data)
+DATABASE_URL="postgresql://neondb_owner:npg_TESP3ed8wYvZ@ep-small-sea-ahhjbm6p.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require" npx prisma db push --force-reset
+
+# Seed main data (superadmin, grcadmin2, frameworks, all modules)
+DATABASE_URL="postgresql://neondb_owner:npg_TESP3ed8wYvZ@ep-small-sea-ahhjbm6p.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require" npx tsx prisma/seed.ts
+
+# Seed BTS customer-specific data (bts users and their data)
+DATABASE_URL="postgresql://neondb_owner:npg_TESP3ed8wYvZ@ep-small-sea-ahhjbm6p.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require" npx tsx prisma/seed-customer-bts.ts
 ```
 
-**If redeploy URL changes, find latest deployment:**
+**Quick Redeploy (without database changes):**
 ```bash
-vercel ls grc-app-ba-testing --limit 1
+# Find latest deployment
+vercel ls grc-app-ba-testing
+
+# Redeploy (only rebuilds, doesn't include new code changes)
+vercel redeploy <deployment-url>
 ```
 
 ### Database Management (Cloud)
+
+**Neon PostgreSQL Connection:**
+```
+DATABASE_URL="postgresql://neondb_owner:npg_TESP3ed8wYvZ@ep-small-sea-ahhjbm6p.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require"
+```
 
 **Push schema changes to Neon:**
 ```bash
 DATABASE_URL="postgresql://neondb_owner:npg_TESP3ed8wYvZ@ep-small-sea-ahhjbm6p.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require" npx prisma db push
 ```
 
-**Reseed cloud database:**
+**Full database reset and reseed:**
 ```bash
+# Reset (clears all data and recreates schema)
+DATABASE_URL="postgresql://neondb_owner:npg_TESP3ed8wYvZ@ep-small-sea-ahhjbm6p.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require" npx prisma db push --force-reset
+
+# Seed main data
 DATABASE_URL="postgresql://neondb_owner:npg_TESP3ed8wYvZ@ep-small-sea-ahhjbm6p.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require" npx tsx prisma/seed.ts
+
+# Seed BTS customer data
+DATABASE_URL="postgresql://neondb_owner:npg_TESP3ed8wYvZ@ep-small-sea-ahhjbm6p.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require" npx tsx prisma/seed-customer-bts.ts
 ```
 
 ### Key Notes
 - Local and cloud environments are **completely isolated**
 - Local changes don't affect Vercel deployment until pushed and redeployed
 - The Vercel project is linked to: `omjc44-8839s-projects/grc-app-ba-testing`
+- **Use temp directory approach** to avoid git author permission errors during deployment
+- **Always run both seed files** (seed.ts and seed-customer-bts.ts) for complete data
 
 ## Pending Tasks / Reminders
 
