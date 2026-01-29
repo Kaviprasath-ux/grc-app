@@ -28,7 +28,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Plus, Pencil, Trash2, ArrowUpDown, Eye, Search, Download, Upload, X, FileText } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, ArrowUpDown, Eye, Search, Download, Upload, X, FileText, Sparkles } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -285,6 +285,10 @@ export default function RiskRegisterPage() {
           <h1 className="text-2xl font-semibold">Risk Register</h1>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="link" className="text-blue-600" onClick={() => router.push("/internal-audit/risk-register/ai-recommended")}>
+            <Sparkles className="h-4 w-4 mr-2" />
+            AI Recommended Risks
+          </Button>
           <Button variant="outline" onClick={handleExport}>
             <Download className="h-4 w-4 mr-2" />
             Export
