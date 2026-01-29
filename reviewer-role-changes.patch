@@ -1,0 +1,213 @@
+diff --git a/src/app/(protected)/organization/context/page.tsx b/src/app/(protected)/organization/context/page.tsx
+index 88975cc..1a4abe7 100644
+--- a/src/app/(protected)/organization/context/page.tsx
++++ b/src/app/(protected)/organization/context/page.tsx
+@@ -168,9 +168,10 @@ export default function ContextPage() {
+   const { data: session } = useSession();
+   const userRoles = useUserRoles();
+ 
+-  // Check if user is DepartmentReviewer or DepartmentContributor (read-only for stakeholders, export-only for issues)
++  // Check if user is Reviewer, DepartmentReviewer or DepartmentContributor (read-only for stakeholders, export-only for issues)
++  // Reviewer has same UI/buttons as DepartmentReviewer but without department filtering
+   const isReadOnlyRole = userRoles.some(
+-    (role) => role === "DepartmentReviewer" || role === "DepartmentContributor"
++    (role) => role === "Reviewer" || role === "DepartmentReviewer" || role === "DepartmentContributor"
+   );
+ 
+   // Check if user is specifically DepartmentContributor (no Issues tab, Stakeholder as title)
+@@ -1165,9 +1166,10 @@ export default function ContextPage() {
+     }
+   };
+ 
+-  // Check if user is CustomerAdmin or Reviewer (can review actions)
++  // Check if user is CustomerAdmin (can review actions submitted by department roles)
++  // Note: Reviewer mirrors DepartmentReviewer, so they CREATE actions, not review them
+   const isReviewerRole = userRoles.some(
+-    (role) => role === "CustomerAdministrator" || role === "Reviewer"
++    (role) => role === "CustomerAdministrator"
+   );
+ 
+   // Export Issues handler
+diff --git a/src/app/(protected)/organization/process/bia/[processId]/page.tsx b/src/app/(protected)/organization/process/bia/[processId]/page.tsx
+index e6d2212..3dc8591 100644
+--- a/src/app/(protected)/organization/process/bia/[processId]/page.tsx
++++ b/src/app/(protected)/organization/process/bia/[processId]/page.tsx
+@@ -120,6 +120,9 @@ export default function BIAPage() {
+ 
+   // Check user role
+   const isDepartmentReviewer = userRoles.some((role) => role === "DepartmentReviewer");
++  // Check if user is a Reviewer type (Reviewer or DepartmentReviewer) for UI purposes
++  // Reviewer has same UI/buttons as DepartmentReviewer but without department filtering
++  const isReviewerType = userRoles.some((role) => role === "Reviewer" || role === "DepartmentReviewer");
+   const currentUserId = session?.user?.id;
+   const currentUserName = session?.user?.name || "User";
+ 
+@@ -547,13 +550,14 @@ export default function BIAPage() {
+   };
+ 
+   // Determine if fields should be editable
+-  const isEditable = isDepartmentReviewer
+-    ? status === "Pending Approval" // DeptReviewer can edit when pending
++  // Reviewer types (Reviewer, DepartmentReviewer) can edit when pending approval
++  const isEditable = isReviewerType
++    ? status === "Pending Approval" // Reviewer types can edit when pending
+     : status === "Open" || status === "Sent Back"; // Others can edit when open or sent back
+ 
+   // Determine what buttons to show
+-  const showApproveButtons = isDepartmentReviewer && status === "Pending Approval";
+-  const showSubmitButton = !isDepartmentReviewer && (status === "Open" || status === "Sent Back");
++  const showApproveButtons = isReviewerType && status === "Pending Approval";
++  const showSubmitButton = !isReviewerType && (status === "Open" || status === "Sent Back");
+   const showCommentsIcon = biaComments.length > 0 || status === "Pending Approval" || status === "Approved" || status === "Sent Back";
+ 
+   if (loading) {
+@@ -606,7 +610,7 @@ export default function BIAPage() {
+             ))}
+           </SelectContent>
+         </Select>
+-        <Select value={selectedApprover} onValueChange={setSelectedApprover} disabled={!isEditable || isDepartmentReviewer}>
++        <Select value={selectedApprover} onValueChange={setSelectedApprover} disabled={!isEditable || isReviewerType}>
+           <SelectTrigger className="w-[200px]">
+             <SelectValue placeholder="Approver" />
+           </SelectTrigger>
+diff --git a/src/app/(protected)/organization/process/page.tsx b/src/app/(protected)/organization/process/page.tsx
+index 2f72195..7e38887 100644
+--- a/src/app/(protected)/organization/process/page.tsx
++++ b/src/app/(protected)/organization/process/page.tsx
+@@ -112,6 +112,9 @@ export default function ProcessPage() {
+   const isDepartmentReviewer = userRoles.some((role) => role === "DepartmentReviewer");
+   // Check if user is DepartmentContributor (can add processes with their department pre-selected)
+   const isDepartmentContributor = userRoles.some((role) => role === "DepartmentContributor");
++  // Check if user is a Reviewer type (Reviewer or DepartmentReviewer) for UI purposes
++  // Reviewer has same UI/buttons as DepartmentReviewer but without department filtering
++  const isReviewerType = userRoles.some((role) => role === "Reviewer" || role === "DepartmentReviewer");
+   // Check if user has roles that can add new processes
+   const isCustomerAdministrator = userRoles.some((role) => role === "CustomerAdministrator");
+   const isContributor = userRoles.some((role) => role === "Contributor");
+@@ -335,8 +338,8 @@ export default function ProcessPage() {
+         const isSentBack = status === "Sent Back";
+         const hasComments = biaStatus && (isPendingApproval || isApproved || isSentBack);
+ 
+-        // DepartmentReviewer sees "View" button for all BIAs (they review pending ones)
+-        if (isDepartmentReviewer) {
++        // Reviewer types (Reviewer, DepartmentReviewer) see "View" button for all BIAs (they review pending ones)
++        if (isReviewerType) {
+           return (
+             <Button
+               variant="outline"
+diff --git a/src/app/(protected)/risks/response/page.tsx b/src/app/(protected)/risks/response/page.tsx
+index a2165a7..7563f14 100644
+--- a/src/app/(protected)/risks/response/page.tsx
++++ b/src/app/(protected)/risks/response/page.tsx
+@@ -95,17 +95,21 @@ export default function RiskResponsePage() {
+   const [risks, setRisks] = useState<Risk[]>([]);
+   const [loading, setLoading] = useState(true);
+ 
+-  // Check if user is DepartmentReviewer or DepartmentContributor (department-scoped)
++  // Check if user is DepartmentReviewer or DepartmentContributor (department-scoped filtering)
+   const isDepartmentRole = userRoles.some(
+     (role) => role === "DepartmentReviewer" || role === "DepartmentContributor"
+   );
+-  const isDepartmentReviewer = userRoles.includes("DepartmentReviewer");
++  // Check if user is a Reviewer type (Reviewer or DepartmentReviewer) for status filtering
++  // Reviewer has same UI/behavior as DepartmentReviewer but without department filtering
++  const isReviewerType = userRoles.some(
++    (role) => role === "Reviewer" || role === "DepartmentReviewer"
++  );
+   const userDepartmentId = session?.user?.departmentId;
+ 
+   // Filters - Default to first option (no "all" option per source system)
+-  // DepartmentReviewer defaults to "Awaiting Approval" since they only see approval-related items
++  // Reviewer types default to "Awaiting Approval" since they only see approval-related items
+   const [strategyFilter, setStrategyFilter] = useState("Treat");
+-  const [progressFilter, setProgressFilter] = useState(isDepartmentReviewer ? "Awaiting Approval" : "Completed");
++  const [progressFilter, setProgressFilter] = useState(isReviewerType ? "Awaiting Approval" : "Completed");
+ 
+   // Dialog states
+   const [successDialogOpen, setSuccessDialogOpen] = useState(false);
+@@ -355,8 +359,8 @@ export default function RiskResponsePage() {
+     ? risks.filter((risk) => risk.department?.id === userDepartmentId)
+     : risks;
+ 
+-  // DepartmentReviewer only sees items with "Awaiting Approval", "Sent Back", or "Completed" status
+-  const reviewerFilteredRisks = isDepartmentReviewer
++  // Reviewer types (Reviewer, DepartmentReviewer) only see items with "Awaiting Approval", "Sent Back", or "Completed" status
++  const reviewerFilteredRisks = isReviewerType
+     ? departmentFilteredRisks.filter((risk) => {
+         const status = normalizeStatus(risk.responseStatus || "Open");
+         return status === "Awaiting Approval" || status === "Sent Back" || status === "Completed";
+@@ -408,7 +412,7 @@ export default function RiskResponsePage() {
+   const displayRisks = filteredByProgress;
+ 
+   const clearStrategyFilter = () => setStrategyFilter("Treat");
+-  const clearProgressFilter = () => setProgressFilter(isDepartmentReviewer ? "Awaiting Approval" : "Completed");
++  const clearProgressFilter = () => setProgressFilter(isReviewerType ? "Awaiting Approval" : "Completed");
+ 
+   if (loading) {
+     return (
+@@ -473,9 +477,9 @@ export default function RiskResponsePage() {
+                     <SelectValue placeholder="Status" />
+                   </SelectTrigger>
+                   <SelectContent>
+-                    {/* DepartmentReviewer only sees Awaiting Approval, Sent Back, and Completed */}
+-                    {!isDepartmentReviewer && <SelectItem value="Open">Open</SelectItem>}
+-                    {!isDepartmentReviewer && <SelectItem value="In-Progress">In-Progress</SelectItem>}
++                    {/* Reviewer types (Reviewer, DepartmentReviewer) only see Awaiting Approval, Sent Back, and Completed */}
++                    {!isReviewerType && <SelectItem value="Open">Open</SelectItem>}
++                    {!isReviewerType && <SelectItem value="In-Progress">In-Progress</SelectItem>}
+                     <SelectItem value="Awaiting Approval">Awaiting Approval</SelectItem>
+                     <SelectItem value="Sent Back">Sent Back</SelectItem>
+                     <SelectItem value="Completed">Completed</SelectItem>
+diff --git a/src/lib/permissions.ts b/src/lib/permissions.ts
+index d47ddc5..35cab8a 100644
+--- a/src/lib/permissions.ts
++++ b/src/lib/permissions.ts
+@@ -257,15 +257,17 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
+     { resource: 'audit.capa', actions: ['view', 'edit'], scope: 'department' },
+   ],
+ 
+-  // Reviewer - View access to compliance, risk, asset (no admin, settings, or audit access)
+-  // Excluded: organization.profile, organization.users, organization.settings,
+-  //           compliance.settings (Master Data), asset.settings, risk.settings, audit.* (entire module)
++  // Reviewer - Same as DepartmentReviewer but WITHOUT department filtering (scope: all)
++  // For Organization and Risk modules: matches DepartmentReviewer actions with scope 'all'
++  // Excluded: organization.profile, organization.settings, compliance.settings, asset.settings, risk.settings, audit.* (entire module)
+   Reviewer: [
+-    // Organization - only dashboard, context, and process (NO profile, users, settings)
++    // Organization - Same pages/actions as DepartmentReviewer but scope: all (NO Profile, NO Settings)
+     { resource: 'organization.dashboard', actions: ['view'], scope: 'all' },
+     { resource: 'organization.context', actions: ['view'], scope: 'all' },
+-    { resource: 'organization.process', actions: ['view'], scope: 'all' },
+-    // Compliance - view only (NO settings/Master Data)
++    { resource: 'organization.users', actions: ['view'], scope: 'all' },
++    { resource: 'organization.department', actions: ['view'], scope: 'all' },
++    { resource: 'organization.process', actions: ['view', 'approve'], scope: 'all' },
++    // Compliance - view only (NO settings/Master Data) - UNCHANGED
+     { resource: 'compliance.dashboard', actions: ['view'], scope: 'all' },
+     { resource: 'compliance.framework', actions: ['view'], scope: 'all' },
+     { resource: 'compliance.controls', actions: ['view'], scope: 'all' },
+@@ -276,18 +278,17 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
+     { resource: 'compliance.kpi', actions: ['view'], scope: 'all' },
+     { resource: 'compliance.risk-matrix', actions: ['view'], scope: 'all' },
+     // compliance.settings (Master Data) - EXCLUDED
+-    // Asset Management - view only (NO settings)
++    // Asset Management - view only (NO settings) - UNCHANGED
+     { resource: 'asset.dashboard', actions: ['view'], scope: 'all' },
+     { resource: 'asset.inventory', actions: ['view'], scope: 'all' },
+     { resource: 'asset.classification', actions: ['view'], scope: 'all' },
+     { resource: 'asset.reports', actions: ['view'], scope: 'all' },
+-    // Risk Management - view only, EXCEPT approve for risk.response (per UAT)
+-    // Per UAT: Approval workflow exists ONLY in Risk Response Strategy, NOT in Risk Assessment
++    // Risk Management - Same pages/actions as DepartmentReviewer but scope: all (NO Settings)
+     { resource: 'risk.dashboard', actions: ['view'], scope: 'all' },
+-    { resource: 'risk.register', actions: ['view'], scope: 'all' },
+-    { resource: 'risk.assessment', actions: ['view'], scope: 'all' },
+-    { resource: 'risk.response', actions: ['view', 'approve'], scope: 'all' },
+-    { resource: 'risk.risk-matrix', actions: ['view'], scope: 'all' },
++    { resource: 'risk.register', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
++    { resource: 'risk.assessment', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
++    { resource: 'risk.response', actions: ['view', 'create', 'approve'], scope: 'all' },
++    { resource: 'risk.risk-matrix', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
+     { resource: 'risk.reports', actions: ['view'], scope: 'all' },
+     // Internal Audit - NO ACCESS (entire module excluded)
+   ],
