@@ -56,6 +56,7 @@ model CustomerAccount {
   internalAuditCAPAs     InternalAuditCAPA[]
   auditReports           AuditReport[]
   internalAuditDocuments InternalAuditDocument[]
+  governanceVaultDocuments GovernanceVaultDocument[]
   subscriptionPlans      SubscriptionPlan[]
   // Master data relations (tenant-specific)
   regulations            Regulation[]
@@ -907,6 +908,7 @@ model Policy {
   policyControls        PolicyControl[]
   policyExceptions      PolicyException[]
   exceptions            Exception[]        @relation("PolicyExceptions")
+  vaultDocumentLinks    GovernanceVaultDocumentLink[]
 
   @@unique([customerAccountId, code])
   @@index([customerAccountId])
@@ -1125,6 +1127,39 @@ model PolicyAttachment {
   policy     Policy   @relation(fields: [policyId], references: [id], onDelete: Cascade)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+}
+
+// Governance Vault Document (Information Security Vault)
+model GovernanceVaultDocument {
+  id                String                        @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String
+  customerAccount   CustomerAccount               @relation(fields: [customerAccountId], references: [id])
+  documentCode      String                        // Auto-generated code like VD-001
+  fileName          String
+  fileType          String?                       // pdf, docx, xlsx, etc.
+  fileSize          Int?
+  filePath          String
+  status            String                        @default("Active") // Active, Archived
+  uploadedAt        DateTime                      @default(now())
+  createdAt         DateTime                      @default(now())
+  updatedAt         DateTime                      @updatedAt
+  linkedPolicies    GovernanceVaultDocumentLink[]
+
+  @@unique([customerAccountId, documentCode])
+  @@index([customerAccountId])
+}
+
+// Junction table for linking vault documents to policies (many-to-many)
+model GovernanceVaultDocumentLink {
+  id         String                  @id @default(cuid())
+  documentId String
+  document   GovernanceVaultDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  policyId   String
+  policy     Policy                  @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  linkedAt   DateTime                @default(now())
+
+  @@unique([documentId, policyId])
 }
 
 // Evidence Attachments (Artifacts)

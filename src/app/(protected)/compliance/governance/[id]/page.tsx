@@ -123,6 +123,18 @@ interface Policy {
       code: string;
     };
   }>;
+  vaultDocumentLinks?: Array<{
+    document: {
+      id: string;
+      documentCode: string;
+      fileName: string;
+      fileType: string | null;
+      fileSize: number | null;
+      filePath: string;
+      uploadedAt: string;
+    };
+    linkedAt: string;
+  }>;
 }
 
 interface Framework {
@@ -1515,6 +1527,48 @@ export default function GovernanceDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Vault Documents Section (Documents linked from Information Security Vault) */}
+      {isCustomerAdmin && policy.vaultDocumentLinks && policy.vaultDocumentLinks.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Vault Documents</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Document Code</TableHead>
+                  <TableHead>File Name</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Linked At</TableHead>
+                  <TableHead className="w-[100px]">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {policy.vaultDocumentLinks.map((link) => (
+                  <TableRow key={link.document.id}>
+                    <TableCell className="font-medium">{link.document.documentCode}</TableCell>
+                    <TableCell>{link.document.fileName}</TableCell>
+                    <TableCell>{link.document.fileType?.toUpperCase() || "FILE"}</TableCell>
+                    <TableCell>{new Date(link.linkedAt).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => window.open(link.document.filePath, "_blank")}
+                        title="Download"
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Signature Publish Dialog */}
       <Dialog open={signatureDialogOpen} onOpenChange={(open) => {

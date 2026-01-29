@@ -59,6 +59,9 @@ import {
   CheckSquare,
   ArrowUpFromLine,
   UserCheck,
+  Download,
+  Link2,
+  FileText,
 } from "lucide-react";
 
 interface Policy {
@@ -133,6 +136,25 @@ interface DashboardStats {
   needsReview: number;
 }
 
+interface VaultDocument {
+  id: string;
+  documentCode: string;
+  fileName: string;
+  fileType: string | null;
+  fileSize: number | null;
+  filePath: string;
+  status: string;
+  uploadedAt: string;
+  source: "vault" | "policy";
+  linkedPolicies: Array<{
+    id: string;
+    code: string;
+    name: string;
+    documentType: string;
+    linkedAt: string;
+  }>;
+}
+
 export default function GovernancePage() {
   const router = useRouter();
   const { data: session } = useSession();
@@ -202,6 +224,19 @@ export default function GovernancePage() {
   const [importFile, setImportFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
+  // Vault states (Customer Admin only)
+  const [vaultDocuments, setVaultDocuments] = useState<VaultDocument[]>([]);
+  const [vaultLoading, setVaultLoading] = useState(false);
+  const [vaultFile, setVaultFile] = useState<File | null>(null);
+  const [vaultUploading, setVaultUploading] = useState(false);
+  const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
+  const [documentToLink, setDocumentToLink] = useState<VaultDocument | null>(null);
+  const [selectedPolicyIds, setSelectedPolicyIds] = useState<string[]>([]);
+  const [isDeleteVaultDocDialogOpen, setIsDeleteVaultDocDialogOpen] = useState(false);
+  const [vaultDocToDelete, setVaultDocToDelete] = useState<VaultDocument | null>(null);
+  const [allGovernanceRecords, setAllGovernanceRecords] = useState<Policy[]>([]);
+  const [linkDialogLoading, setLinkDialogLoading] = useState(false);
+
   useEffect(() => {
     fetchFilterOptions();
   }, [session?.user?.id]);
@@ -218,6 +253,13 @@ export default function GovernancePage() {
       fetchPolicies();
     }
   }, [activeTab, activeDocType, currentPage, frameworkFilter, statusFilter]);
+
+  // Fetch vault documents when Customer Admin views the vault tab
+  useEffect(() => {
+    if (activeTab === "Information Security Vault" && isCustomerAdmin) {
+      fetchVaultDocuments();
+    }
+  }, [activeTab, isCustomerAdmin]);
 
   const fetchDashboardStats = async () => {
     try {
@@ -449,6 +491,131 @@ export default function GovernancePage() {
     if (files.length > 0) {
       setImportFile(files[0]);
     }
+  };
+
+  // Vault functions (Customer Admin only)
+  const fetchVaultDocuments = async () => {
+    try {
+      setVaultLoading(true);
+      const response = await fetch("/api/governance-vault");
+      if (response.ok) {
+        const data = await response.json();
+        setVaultDocuments(data.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching vault documents:", error);
+    } finally {
+      setVaultLoading(false);
+    }
+  };
+
+  const handleVaultUpload = async () => {
+    if (!vaultFile) return;
+    try {
+      setVaultUploading(true);
+      const formData = new FormData();
+      formData.append("file", vaultFile);
+
+      const response = await fetch("/api/governance-vault", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (response.ok) {
+        setVaultFile(null);
+        fetchVaultDocuments();
+      }
+    } catch (error) {
+      console.error("Error uploading vault document:", error);
+    } finally {
+      setVaultUploading(false);
+    }
+  };
+
+  const handleOpenLinkDialog = async (doc: VaultDocument) => {
+    setDocumentToLink(doc);
+    setSelectedPolicyIds(doc.linkedPolicies.map((p) => p.id));
+    setIsLinkDialogOpen(true);
+    setLinkDialogLoading(true);
+
+    try {
+      // Fetch all governance records (policies, standards, procedures)
+      const response = await fetch("/api/policies?limit=500");
+      if (response.ok) {
+        const data = await response.json();
+        setAllGovernanceRecords(data.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching governance records:", error);
+    } finally {
+      setLinkDialogLoading(false);
+    }
+  };
+
+  const handleSaveLinks = async () => {
+    if (!documentToLink) return;
+    try {
+      const response = await fetch(`/api/governance-vault/${documentToLink.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ policyIds: selectedPolicyIds }),
+      });
+
+      if (response.ok) {
+        setIsLinkDialogOpen(false);
+        setDocumentToLink(null);
+        setSelectedPolicyIds([]);
+        fetchVaultDocuments();
+      }
+    } catch (error) {
+      console.error("Error updating links:", error);
+    }
+  };
+
+  const handleDeleteVaultDoc = async () => {
+    if (!vaultDocToDelete) return;
+    try {
+      let response;
+      if (vaultDocToDelete.source === "vault") {
+        // Delete vault document
+        response = await fetch(`/api/governance-vault/${vaultDocToDelete.id}`, {
+          method: "DELETE",
+        });
+      } else {
+        // Delete policy attachment - need to call the policy attachment API
+        const policyId = vaultDocToDelete.linkedPolicies[0]?.id;
+        if (policyId) {
+          response = await fetch(`/api/policies/${policyId}/attachments?attachmentId=${vaultDocToDelete.id}`, {
+            method: "DELETE",
+          });
+        }
+      }
+
+      if (response?.ok) {
+        setIsDeleteVaultDocDialogOpen(false);
+        setVaultDocToDelete(null);
+        fetchVaultDocuments();
+      }
+    } catch (error) {
+      console.error("Error deleting vault document:", error);
+    }
+  };
+
+  const handleDownloadVaultDoc = (doc: VaultDocument) => {
+    // Create a temporary link to trigger download
+    const link = document.createElement("a");
+    link.href = doc.filePath;
+    link.download = doc.fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const formatFileSize = (bytes: number | null) => {
+    if (!bytes) return "-";
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
   const getStatusBadgeColor = (status: string) => {
@@ -781,9 +948,167 @@ export default function GovernancePage() {
 
         {/* Information Security Vault Tab Content */}
         <TabsContent value="Information Security Vault" className="mt-4">
-          <div className="flex items-center justify-center py-12 text-muted-foreground">
-            Information Security Vault content coming soon
-          </div>
+          {isCustomerAdmin ? (
+            <div className="space-y-6">
+              {/* File Upload Section */}
+              <div className="border rounded-lg p-6">
+                <h3 className="text-lg font-medium mb-4">Upload Document to Vault</h3>
+                <div className="flex items-center gap-4">
+                  <div className="flex-1">
+                    <Input
+                      type="file"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) setVaultFile(file);
+                      }}
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
+                    />
+                  </div>
+                  <Button
+                    onClick={handleVaultUpload}
+                    disabled={!vaultFile || vaultUploading}
+                  >
+                    {vaultUploading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Uploading...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="h-4 w-4 mr-2" />
+                        Upload
+                      </>
+                    )}
+                  </Button>
+                </div>
+                {vaultFile && (
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Selected: {vaultFile.name}
+                  </p>
+                )}
+              </div>
+
+              {/* Document Listing */}
+              {vaultLoading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                </div>
+              ) : (
+                <div className="border rounded-lg">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Document ID</TableHead>
+                        <TableHead>Document Name</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Linked To</TableHead>
+                        <TableHead>Date Uploaded</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {vaultDocuments.map((doc) => (
+                        <TableRow key={`${doc.source}-${doc.id}`}>
+                          <TableCell className="font-medium">{doc.documentCode}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <FileText className="h-4 w-4 text-muted-foreground" />
+                              {doc.fileName}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">
+                              {doc.fileType?.toUpperCase() || "FILE"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={doc.status === "Active" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}>
+                              {doc.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {doc.linkedPolicies.length > 0 ? (
+                              <div className="flex flex-wrap gap-1">
+                                {doc.linkedPolicies.slice(0, 2).map((p) => (
+                                  <Badge key={p.id} variant="secondary" className="text-xs">
+                                    {p.code}
+                                  </Badge>
+                                ))}
+                                {doc.linkedPolicies.length > 2 && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    +{doc.linkedPolicies.length - 2}
+                                  </Badge>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground text-sm">Not linked</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {new Date(doc.uploadedAt).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-1">
+                              {doc.source === "vault" ? (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  title="Link / Delink Governance"
+                                  onClick={() => handleOpenLinkDialog(doc)}
+                                >
+                                  <Link2 className="h-4 w-4" />
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  disabled
+                                  title={`Already linked to ${doc.linkedPolicies[0]?.code || 'governance'}`}
+                                >
+                                  <Link2 className="h-4 w-4 text-muted-foreground" />
+                                </Button>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title="Download"
+                                onClick={() => handleDownloadVaultDoc(doc)}
+                              >
+                                <Download className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title="Delete"
+                                onClick={() => {
+                                  setVaultDocToDelete(doc);
+                                  setIsDeleteVaultDocDialogOpen(true);
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {vaultDocuments.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                            No documents in the vault. Upload your first document above.
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center justify-center py-12 text-muted-foreground">
+              Information Security Vault is available for Customer Administrators only.
+            </div>
+          )}
         </TabsContent>
 
         {/* Tab Content - Same structure for Policy, Standard, Procedure tabs */}
@@ -1533,6 +1858,130 @@ export default function GovernancePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Link / Delink Vault Document to Governance Dialog */}
+      <Dialog open={isLinkDialogOpen} onOpenChange={(open) => {
+        if (!open) {
+          setIsLinkDialogOpen(false);
+          setDocumentToLink(null);
+          setSelectedPolicyIds([]);
+        }
+      }}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Link / Delink Governance</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            {documentToLink && (
+              <div className="mb-4 p-3 bg-muted rounded-lg">
+                <p className="text-sm text-muted-foreground">Document:</p>
+                <p className="font-medium">{documentToLink.fileName}</p>
+              </div>
+            )}
+            <p className="text-sm text-muted-foreground mb-4">
+              Check to link, uncheck to delink. Changes are applied on save.
+            </p>
+            <div className="border rounded-lg max-h-[300px] overflow-y-auto">
+              {linkDialogLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[50px]"></TableHead>
+                      <TableHead>Code</TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Type</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {allGovernanceRecords.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                          No governance records found. Please create governance first.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      allGovernanceRecords.map((policy) => (
+                        <TableRow
+                          key={policy.id}
+                          className="cursor-pointer"
+                          onClick={() => {
+                            setSelectedPolicyIds((prev) =>
+                              prev.includes(policy.id)
+                                ? prev.filter((id) => id !== policy.id)
+                                : [...prev, policy.id]
+                            );
+                          }}
+                        >
+                          <TableCell>
+                            <Checkbox
+                              checked={selectedPolicyIds.includes(policy.id)}
+                              onCheckedChange={(checked) => {
+                                setSelectedPolicyIds((prev) =>
+                                  checked
+                                    ? [...prev, policy.id]
+                                    : prev.filter((id) => id !== policy.id)
+                                );
+                              }}
+                            />
+                          </TableCell>
+                          <TableCell className="font-medium">{policy.code}</TableCell>
+                          <TableCell>{policy.name}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{policy.documentType}</Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
+            {selectedPolicyIds.length > 0 && (
+              <p className="text-sm text-muted-foreground mt-2">
+                {selectedPolicyIds.length} governance record(s) selected
+              </p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setIsLinkDialogOpen(false);
+              setDocumentToLink(null);
+              setSelectedPolicyIds([]);
+            }}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveLinks}>
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Vault Document Dialog */}
+      <AlertDialog open={isDeleteVaultDocDialogOpen} onOpenChange={setIsDeleteVaultDocDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Document</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this document?
+              <br /><br />
+              <strong>&quot;{vaultDocToDelete?.fileName}&quot;</strong>
+              <br /><br />
+              This will permanently remove the document from the vault and all linked governance records. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setVaultDocToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteVaultDoc} className="bg-red-600 hover:bg-red-700">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
