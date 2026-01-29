@@ -21,6 +21,7 @@ interface HorizontalBarChartProps {
   }[];
   yAxisDataKey: string;
   className?: string;
+  onClick?: () => void;
 }
 
 export function HorizontalBarChart({
@@ -29,6 +30,7 @@ export function HorizontalBarChart({
   bars,
   yAxisDataKey,
   className,
+  onClick,
 }: HorizontalBarChartProps) {
   // Dynamic height based on number of items (minimum 200px)
   const minBarHeight = 45; // Space per bar category
@@ -41,10 +43,14 @@ export function HorizontalBarChart({
   }, {} as Record<string, number>);
 
   return (
-    <div className={cn(
-      "bg-white rounded-xl border border-slate-200 p-4",
-      className
-    )}>
+    <div
+      className={cn(
+        "bg-white rounded-xl border border-slate-200 p-4",
+        onClick && "cursor-pointer hover:shadow-md transition-shadow",
+        className
+      )}
+      onClick={onClick}
+    >
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold text-slate-800">{title}</h3>

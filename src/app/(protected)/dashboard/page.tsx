@@ -187,6 +187,7 @@ export default function DashboardPage() {
             { dataKey: "closed", fill: "#10B981", name: "Closed" },
             { dataKey: "total", fill: "#6366F1", name: "Total" },
           ]}
+          onClick={() => router.push("/risks/assessment")}
         />
       </div>
 
@@ -197,24 +198,28 @@ export default function DashboardPage() {
           data={issueByCategoryData}
           centerLabel={issueCategoryTotal}
           centerSubLabel="Total"
+          onClick={() => router.push("/organization/context?tab=issuelist")}
         />
         <DonutChart
           title="Issue By Department"
           data={issueByDepartmentData}
           centerLabel={issueDepartmentTotal}
           centerSubLabel="Total"
+          onClick={() => router.push("/organization/context?tab=issuelist")}
         />
         <DonutChart
           title="Issue By Domain"
           data={issueByDomainData}
           centerLabel={issueDomainTotal}
           centerSubLabel="Total"
+          onClick={() => router.push("/organization/context?tab=issuelist")}
         />
         <DonutChart
           title="Exceptions"
           data={exceptionByTypeData}
           centerLabel={exceptionTotal}
           centerSubLabel="Total"
+          onClick={() => router.push("/compliance/exceptions")}
         />
       </div>
 
