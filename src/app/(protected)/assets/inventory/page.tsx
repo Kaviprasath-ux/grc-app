@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Plus, Pencil, Trash2, Download, Upload, Search, Package, Server, Monitor, Database, Users, Building, Wrench, Calendar } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Plus, Pencil, Trash2, Download, Upload, Search, Package, Server, Monitor, Database, Users, Building, Wrench, Calendar, UploadCloud } from "lucide-react";
 import { PageHeader, DataGrid } from "@/components/shared";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -187,6 +187,10 @@ export default function AssetInventoryPage() {
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deletingAssetId, setDeletingAssetId] = useState<string | null>(null);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+
+  // File input ref for import
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Inline add dialog states
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
@@ -500,6 +504,27 @@ export default function AssetInventoryPage() {
     } catch (error) {
       console.error("Error adding lifecycle status:", error);
     }
+  };
+
+  // Download template for import
+  const handleDownloadTemplate = () => {
+    const headers = ["Asset ID", "Asset Name", "Asset Owner", "Asset Category", "Asset Sub Category", "Group", "Department", "Custodian", "Lifecycle Status", "Location", "Acquisition Date", "Next Review Date"];
+    const sampleRow = ["ASSET0001", "Sample Asset", "", "", "", "", "", "", "", "", "", ""];
+
+    const csvContent = [
+      headers.join(","),
+      sampleRow.map(cell => `"${cell}"`).join(",")
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", "assets_import_template.csv");
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   // Import/Export handlers
@@ -819,20 +844,10 @@ export default function AssetInventoryPage() {
         </div>
         <div className="flex items-center gap-2">
           <PermissionGate resource="asset.inventory" action="create">
-            <label>
-              <input
-                type="file"
-                accept=".csv"
-                onChange={handleImport}
-                className="hidden"
-              />
-              <Button variant="outline" size="sm" asChild>
-                <span>
-                  <Upload className="h-4 w-4 mr-2" />
-                  Import
-                </span>
-              </Button>
-            </label>
+            <Button variant="outline" size="sm" onClick={() => setIsImportDialogOpen(true)}>
+              <Upload className="h-4 w-4 mr-2" />
+              Import
+            </Button>
           </PermissionGate>
           <Button variant="outline" size="sm" onClick={handleExport}>
             <Download className="h-4 w-4 mr-2" />
@@ -1560,6 +1575,75 @@ export default function AssetInventoryPage() {
               Cancel
             </Button>
             <Button onClick={handleAddLifecycle}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Import Assets Dialog */}
+      <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Import Assets</DialogTitle>
+            <DialogDescription>
+              Upload a CSV file to import multiple assets at once. The file should contain the required columns listed below.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {/* Required Columns Section */}
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium text-gray-700">Required Columns:</h4>
+              <div className="bg-gray-50 rounded-lg p-3 border">
+                <div className="flex flex-wrap gap-2">
+                  <span className="text-xs bg-white px-2 py-1 rounded border text-gray-600">Asset ID</span>
+                  <span className="text-xs bg-white px-2 py-1 rounded border text-gray-600">Asset Name</span>
+                  <span className="text-xs bg-white px-2 py-1 rounded border text-gray-600">Asset Owner</span>
+                  <span className="text-xs bg-white px-2 py-1 rounded border text-gray-600">Asset Category</span>
+                  <span className="text-xs bg-white px-2 py-1 rounded border text-gray-600">Asset Sub Category</span>
+                  <span className="text-xs bg-white px-2 py-1 rounded border text-gray-600">Group</span>
+                  <span className="text-xs bg-white px-2 py-1 rounded border text-gray-600">Department</span>
+                  <span className="text-xs bg-white px-2 py-1 rounded border text-gray-600">Custodian</span>
+                  <span className="text-xs bg-white px-2 py-1 rounded border text-gray-600">Lifecycle Status</span>
+                  <span className="text-xs bg-white px-2 py-1 rounded border text-gray-600">Location</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Download Template Button */}
+            <div>
+              <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
+                <Download className="h-4 w-4 mr-2" />
+                Download Template
+              </Button>
+            </div>
+
+            {/* File Upload Area */}
+            <div
+              className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors cursor-pointer"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv"
+                onChange={(e) => {
+                  handleImport(e);
+                  setIsImportDialogOpen(false);
+                }}
+                className="hidden"
+              />
+              <UploadCloud className="h-10 w-10 mx-auto text-gray-400 mb-3" />
+              <p className="text-sm text-gray-600 mb-2">
+                Drag and drop your CSV file here, or click to browse
+              </p>
+              <Button variant="outline" size="sm" type="button">
+                Select File
+              </Button>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsImportDialogOpen(false)}>
+              Cancel
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
