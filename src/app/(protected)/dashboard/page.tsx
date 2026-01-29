@@ -23,7 +23,7 @@ interface DashboardData {
     risks: number;
     exceptions: number;
   };
-  complianceData: { framework: string; compliant: number; nonCompliant: number }[];
+  complianceData: { frameworkId: string; framework: string; compliant: number; nonCompliant: number }[];
   riskAssessmentData: { category: string; total: number; closed: number }[];
   issueByCategoryData: { name: string; value: number; color: string }[];
   issueByDepartmentData: { name: string; value: number; color: string }[];
@@ -177,6 +177,7 @@ export default function DashboardPage() {
         <ComplianceProgressBar
           title="Overall Compliance Status"
           data={complianceData}
+          onFrameworkClick={(frameworkId) => router.push(`/compliance/control?frameworkId=${frameworkId}`)}
         />
         <HorizontalBarChart
           title="Risk Assessment Overview"
