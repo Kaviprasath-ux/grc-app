@@ -131,6 +131,7 @@ export default function EvidencePage() {
   const { data: session } = useSession();
   const { canView, canCreate, canDelete, isLoading: permissionsLoading } = usePermissions('compliance.evidence');
   const isCustomerAdmin = useHasRole("CustomerAdministrator");
+  const isGRCAdmin = useHasRole("GRCAdministrator");
   const [evidences, setEvidences] = useState<Evidence[]>([]);
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [loading, setLoading] = useState(true);
@@ -150,6 +151,7 @@ export default function EvidencePage() {
 
   // Filters
   const [frameworkFilter, setFrameworkFilter] = useState<string>("all");
+  const [departmentFilter, setDepartmentFilter] = useState<string>("all");
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -187,6 +189,7 @@ export default function EvidencePage() {
       setLoading(true);
       const params = new URLSearchParams();
       if (frameworkFilter && frameworkFilter !== "all") params.append("frameworkId", frameworkFilter);
+      if (departmentFilter && departmentFilter !== "all") params.append("departmentId", departmentFilter);
       if (searchTerm) params.append("search", searchTerm);
       params.append("page", currentPage.toString());
       params.append("limit", itemsPerPage.toString());
@@ -203,7 +206,7 @@ export default function EvidencePage() {
     } finally {
       setLoading(false);
     }
-  }, [frameworkFilter, searchTerm, currentPage]);
+  }, [frameworkFilter, departmentFilter, searchTerm, currentPage]);
 
   const fetchReferenceData = useCallback(async () => {
     try {
@@ -492,6 +495,20 @@ export default function EvidencePage() {
             <Search className="h-4 w-4" />
           </Button>
         </div>
+        {/* Department Filter - visible only for customer roles, hidden for GRC Admin */}
+        {!isGRCAdmin && (
+          <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Department" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Departments</SelectItem>
+              {departments.map((d) => (
+                <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
         <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
           <SelectTrigger className="w-[250px]">
             <SelectValue placeholder="Integrated Framework" />
