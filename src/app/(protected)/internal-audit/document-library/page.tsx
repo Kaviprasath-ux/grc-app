@@ -122,7 +122,8 @@ export default function DocumentLibraryPage() {
         toast.success("Search completed");
         setQuery("");
       } else {
-        toast.error("Search failed");
+        const err = (await response.json().catch(() => ({}))) as { error?: string };
+        toast.error(err?.error ?? "Search failed");
       }
     } catch (error) {
       toast.error("Search failed");
