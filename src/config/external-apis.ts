@@ -1,8 +1,16 @@
+// Validate required environment variables at module load time
+if (!process.env.AI_API_BASE_URL) {
+    throw new Error('AI_API_BASE_URL environment variable is required');
+}
+
+if (!process.env.PYTHON_BACKEND_URL) {
+    throw new Error('PYTHON_BACKEND_URL environment variable is required');
+}
+
 export const EXTERNAL_API_URLS = {
-    // Use environment variables for flexibility across environments (dev, staging, prod)
-    // Provide defaults or throw errors if strictly required
-    AI_SERVICE: process.env.AI_API_BASE_URL || 'http://localhost:8000',
-    PYTHON_BACKEND: process.env.PYTHON_BACKEND_URL || 'https://a4t2jogsl4815o-8000.proxy.runpod.net',
+    // All URLs must be configured via environment variables - no hardcoded defaults
+    AI_SERVICE: process.env.AI_API_BASE_URL,
+    PYTHON_BACKEND: process.env.PYTHON_BACKEND_URL,
 } as const;
 
 export const EXTERNAL_API_SECRETS = {
