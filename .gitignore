@@ -51,3 +51,26 @@ next-env.d.ts
 #database
 prisma/dev.db
 nul
+
+# Debug/test scripts
+check-capa.ts
+check-user.ts
+test-auth.ts
+cookies.txt
+
+# Prisma debug/migration scripts
+prisma/assign-orphaned-data.ts
+prisma/check-audit-head-data.ts
+prisma/check-audit-isolation.ts
+prisma/create-ah-test-data.ts
+prisma/debug-session-id.ts
+prisma/find-deepika.ts
+prisma/list-audit-heads.ts
+prisma/migrate-audit-head-data.ts
+prisma/migrate-settings-to-audit-heads.ts
+
+# Debug API routes
+src/app/api/debug-session/
+
+# Uploads
+uploads/
