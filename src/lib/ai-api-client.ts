@@ -10,6 +10,7 @@
  */
 
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
+import axiosRetry from 'axios-retry';
 
 // ==================== CONFIGURATION ====================
 
@@ -35,6 +36,20 @@ export const aiApiClient: AxiosInstance = axios.create({
     headers: {
         'Content-Type': 'application/json',
     },
+});
+
+// WARNING FIX: Add retry strategy for transient failures (network errors, 5xx)
+axiosRetry(aiApiClient, {
+    retries: 2, // Max 2 retries (total 3 attempts)
+    retryDelay: axiosRetry.exponentialDelay, // 500ms, 1500ms
+    retryCondition: (error) => {
+        // Retry on network errors or 5xx responses
+        return axiosRetry.isNetworkOrIdempotentRequestError(error) ||
+            (error.response?.status !== undefined && error.response.status >= 500);
+    },
+    onRetry: (retryCount, error, requestConfig) => {
+        console.log(`[AI API] Retry attempt ${retryCount} for ${requestConfig.url}: ${error.message}`);
+    }
 });
 
 // ==================== REQUEST INTERCEPTOR ====================
@@ -95,13 +110,18 @@ aiApiClient.interceptors.response.use(
 
 /**
  * Check if the AI API is healthy
+ * 
+ * IMPORTANT: This function NEVER throws errors to prevent blocking app startup.
+ * It only logs warnings and returns false on failure.
  */
 export async function checkAiApiHealth(): Promise<boolean> {
     try {
         const response = await aiApiClient.get('/api/health_check');
+        console.log('[AI API] Health check passed');
         return response.status === 200;
     } catch (error) {
-        console.error('AI API health check failed:', error);
+        console.warn('[AI API] Health check failed (non-blocking):', error);
+        // DO NOT throw - health check failures should never crash the app
         return false;
     }
 }

@@ -41,6 +41,34 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Evidence not found" }, { status: 404 });
         }
 
+        // DEPENDENCY CHECK: Ensure related document has been ingested
+        // Check if there's a completed ingest job for this evidence
+        const relatedIngestJob = await prisma.aIJob.findFirst({
+            where: {
+                type: 'GRC_INGEST',
+                metadata: {
+                    contains: evidenceId
+                }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        if (!relatedIngestJob) {
+            return NextResponse.json({
+                error: "Document must be ingested before review",
+                message: "Please ingest the related document first using the ingest endpoint."
+            }, { status: 400 });
+        }
+
+        if (relatedIngestJob.status !== 'COMPLETED') {
+            return NextResponse.json({
+                error: "Document ingestion not complete",
+                message: `Ingestion status: ${relatedIngestJob.status}. Please wait for ingestion to complete.`,
+                jobId: relatedIngestJob.providerJobId,
+                status: relatedIngestJob.status
+            }, { status: 400 });
+        }
+
         // Prepare RunPod Payload (grc_evidencePayLoad)
         // evidences: Array of { evidence_code: string, evidence_artifact: string }
         const evidencesPayload = evidence.linkedArtifacts.map(la => ({
@@ -70,6 +98,27 @@ export async function POST(req: NextRequest) {
 
         // Expected Response: { critique: "...", similarity_score: 0.85, recommendations: [...] }
         const aiData = response.data;
+
+        // WARNING FIX: Validate AI response structure to prevent database constraint violations
+        if (!aiData || typeof aiData.similarity_score !== 'number' || typeof aiData.critique !== 'string') {
+            const validationError = 'Invalid AI response format: missing or malformed required fields';
+            console.error('[Evidence Review] Validation failed:', { aiData });
+
+            await aiAuditService.logOperation({
+                endpoint: "/api/grc_evidence_query",
+                method: "POST",
+                error: validationError,
+                statusCode: 502,
+                latencyMs: Date.now() - startTime,
+                userId,
+            });
+
+            return NextResponse.json(
+                { error: validationError, details: 'AI backend returned unexpected response format' },
+                { status: 502 }
+            );
+        }
+
         const latencyMs = Date.now() - startTime;
 
         // Step 3: Log AIOperation (Success Result)
@@ -100,8 +149,9 @@ export async function POST(req: NextRequest) {
         await prisma.evidence.update({
             where: { id: evidenceId },
             data: {
-                status: aiData.similarity_score > 0.7 ? "Validated" : "Need Attention",
+                status: aiData.similarity_score > 0.7 ? "Published" : "Need Attention",
                 reviewDate: new Date(),
+                qualityScore: aiData.similarity_score * 100,
             }
         });
 

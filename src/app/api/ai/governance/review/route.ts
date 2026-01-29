@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
         // 3. Construct the 'policies' array required by RunPod
         const policiesPayload = [{
             policy_name: policy.name,
-            policy_code: policy.policyCode || policyId,
+            policy_code: policy.code || policyId,
             controls: grcControls,
             evidences: Array.from(evidenceMap.values())
         }];
@@ -100,12 +100,34 @@ export async function POST(req: NextRequest) {
             userId,
         });
 
-        console.log(`[Governance Review] Syncing Policy Review for ${policy.policyCode} (Contract OK)`);
+        console.log(`[Governance Review] Syncing Policy Review for ${policy.code} (Contract OK)`);
 
         // Step 2: Call RunPod via aiApiClient
         const response = await aiApiClient.post("/api/grc_policy_query", runpodPayload);
 
         const aiData = response.data;
+
+        // WARNING FIX: Validate AI response structure to prevent database constraint violations
+        const hasSummary = typeof aiData.compliance_summary === 'string' || typeof aiData.summary === 'string';
+        if (!aiData || typeof aiData.risk_score !== 'number' || !hasSummary) {
+            const validationError = 'Invalid AI response format: missing or malformed required fields';
+            console.error('[Policy Review] Validation failed:', { aiData });
+
+            await aiAuditService.logOperation({
+                endpoint: "/api/grc_policy_query",
+                method: "POST",
+                error: validationError,
+                statusCode: 502,
+                latencyMs: Date.now() - startTime,
+                userId,
+            });
+
+            return NextResponse.json(
+                { error: validationError, details: 'AI backend returned unexpected response format' },
+                { status: 502 }
+            );
+        }
+
         const latencyMs = Date.now() - startTime;
 
         // Step 3: Log AIOperation (Success Update)
@@ -147,6 +169,7 @@ export async function POST(req: NextRequest) {
         await prisma.policy.update({
             where: { id: policyId },
             data: {
+                status: "Published",
                 aiReviewStatus: "Completed",
                 aiReviewScore: aiData.risk_score,
                 aiReviewJustification: aiData.compliance_summary || aiData.summary,
