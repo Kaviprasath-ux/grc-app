@@ -137,37 +137,37 @@ export default function DashboardPage() {
         <StatsCard
           label="Departments"
           value={dashboardStats.departments}
-          href="/organization/profile?tab=departments"
+          href="/organization/profile?tab=departments&from=dashboard"
           icon={Building2}
         />
         <StatsCard
           label="Stakeholders"
           value={dashboardStats.stakeholders}
-          href="/organization/context"
+          href="/organization/context?from=dashboard"
           icon={Users}
         />
         <StatsCard
           label="Regulations"
           value={dashboardStats.regulations}
-          href="/organization/profile?tab=regulations"
+          href="/organization/profile?tab=regulations&from=dashboard"
           icon={Scale}
         />
         <StatsCard
           label="Issues"
           value={dashboardStats.issues}
-          href="/organization/context"
+          href="/organization/context?tab=issuelist&from=dashboard"
           icon={AlertTriangle}
         />
         <StatsCard
           label="Risks"
           value={dashboardStats.risks}
-          href="/risks/register"
+          href="/risks/register?from=dashboard"
           icon={ShieldAlert}
         />
         <StatsCard
           label="Exceptions"
           value={dashboardStats.exceptions}
-          href="/compliance/exception"
+          href="/compliance/exceptions?from=dashboard"
           icon={FileWarning}
         />
       </div>
