@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -31,7 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft, Plus, Pencil, Trash2, Download, Upload, Search } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, Download, Upload, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 
 interface ControlDomain {
   id: string;
@@ -53,6 +52,10 @@ export default function DomainMasterDataPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const [formData, setFormData] = useState({
     code: "",
@@ -239,16 +242,29 @@ export default function DomainMasterDataPage() {
       (d.code && d.code.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredDomains.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedDomains = filteredDomains.slice(startIndex, startIndex + itemsPerPage);
+
+  // Reset to page 1 when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="relative h-10 w-10">
+          <div className="absolute inset-0 rounded-full border-4 border-primary/30"></div>
+          <div className="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -256,184 +272,246 @@ export default function DomainMasterDataPage() {
             variant="ghost"
             size="icon"
             onClick={() => router.push("/compliance/master-data")}
+            className="h-9 w-9"
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">Domain</h1>
-            <p className="text-gray-600">Manage control domains</p>
+            <h1 className="text-2xl font-bold text-slate-800">Domain</h1>
+            <p className="text-sm text-slate-500 mt-1">Manage control domains</p>
           </div>
         </div>
         <div className="flex gap-2">
           <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button size="sm">
                 <Plus className="h-4 w-4 mr-2" />
                 New Domain
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Create New Domain</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
+            <DialogContent className="max-w-xl flex flex-col max-h-[90vh] p-0 gap-0">
+              <div className="px-6 py-5 flex-shrink-0">
+                <DialogHeader>
+                  <DialogTitle className="text-lg font-semibold text-slate-800">Create New Domain</DialogTitle>
+                </DialogHeader>
+              </div>
+              <div className="space-y-4 px-6 py-4 overflow-y-auto flex-1">
                 <div>
-                  <Label>Domain Code</Label>
+                  <Label className="text-sm font-medium text-slate-700">Domain Code</Label>
                   <Input
                     value={formData.code}
                     onChange={(e) =>
                       setFormData({ ...formData, code: e.target.value })
                     }
                     placeholder="e.g., GOV"
+                    className="mt-1.5 w-full bg-white"
                   />
                 </div>
                 <div>
-                  <Label>Domain Name *</Label>
+                  <Label className="text-sm font-medium text-slate-700">
+                    Domain Name <span className="text-red-500">*</span>
+                  </Label>
                   <Input
                     value={formData.name}
                     onChange={(e) =>
                       setFormData({ ...formData, name: e.target.value })
                     }
                     placeholder="e.g., Governance"
+                    className="mt-1.5 w-full bg-white"
                   />
                 </div>
-                <div className="flex justify-end gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setCreateDialogOpen(false);
-                      resetForm();
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                  <Button onClick={handleCreate} disabled={!formData.name}>
-                    Create
-                  </Button>
-                </div>
+              </div>
+              <div className="flex justify-end gap-2 px-6 py-4 flex-shrink-0">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setCreateDialogOpen(false);
+                    resetForm();
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button size="sm" onClick={handleCreate} disabled={!formData.name}>
+                  Create
+                </Button>
               </div>
             </DialogContent>
           </Dialog>
-          <Button variant="outline" onClick={handleDeleteAll}>
+          <Button variant="outline" size="sm" onClick={handleDeleteAll}>
             <Trash2 className="h-4 w-4 mr-2" />
             Delete All
           </Button>
-          <Button variant="outline" onClick={() => setImportDialogOpen(true)}>
+          <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
             <Upload className="h-4 w-4 mr-2" />
             Import
           </Button>
-          <Button variant="outline" onClick={handleExport}>
+          <Button variant="outline" size="sm" onClick={handleExport}>
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>
         </div>
       </div>
 
-      {/* Search and Table */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search domains..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
+      {/* Search */}
+      <div className="flex items-center gap-4">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input
+            placeholder="Search domains..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 bg-white"
+          />
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="bg-white rounded-xl border border-slate-200">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-slate-50/50 hover:bg-slate-50/50">
+              <TableHead className="font-semibold text-slate-700">Domain Code</TableHead>
+              <TableHead className="font-semibold text-slate-700">Domain Name</TableHead>
+              <TableHead className="w-[100px] font-semibold text-slate-700">Action</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {paginatedDomains.length === 0 ? (
               <TableRow>
-                <TableHead>Domain Code</TableHead>
-                <TableHead>Domain Name</TableHead>
-                <TableHead className="w-[100px]">Action</TableHead>
+                <TableCell colSpan={3} className="text-center py-12">
+                  <p className="text-slate-500">No domains found</p>
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredDomains.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={3} className="text-center py-8">
-                    <p className="text-gray-500">No domains found</p>
+            ) : (
+              paginatedDomains.map((domain) => (
+                <TableRow key={domain.id} className="hover:bg-slate-50/50">
+                  <TableCell className="text-slate-600">{domain.code || "-"}</TableCell>
+                  <TableCell className="font-medium text-slate-800">{domain.name}</TableCell>
+                  <TableCell>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                        onClick={() => openEditDialog(domain)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+                        onClick={() => openDeleteDialog(domain)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
-              ) : (
-                filteredDomains.map((domain) => (
-                  <TableRow key={domain.id}>
-                    <TableCell>{domain.code || "-"}</TableCell>
-                    <TableCell className="font-medium">{domain.name}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => openEditDialog(domain)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => openDeleteDialog(domain)}
-                        >
-                          <Trash2 className="h-4 w-4 text-red-500" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-          <div className="mt-4 text-sm text-gray-500">
-            Showing {filteredDomains.length} of {domains.length} domains
+              ))
+            )}
+          </TableBody>
+        </Table>
+
+        {/* Pagination */}
+        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200">
+          <p className="text-sm text-slate-500">
+            Showing {filteredDomains.length === 0 ? 0 : startIndex + 1} to{" "}
+            {Math.min(startIndex + itemsPerPage, filteredDomains.length)} of{" "}
+            {filteredDomains.length}
+          </p>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setCurrentPage(1)}
+              disabled={currentPage === 1}
+            >
+              <ChevronsLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-sm text-slate-600 px-2">
+              Page {currentPage} of {totalPages || 1}
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage >= totalPages}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setCurrentPage(totalPages)}
+              disabled={currentPage >= totalPages}
+            >
+              <ChevronsRight className="h-4 w-4" />
+            </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit Domain</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
+        <DialogContent className="max-w-xl flex flex-col max-h-[90vh] p-0 gap-0">
+          <div className="px-6 py-5 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Edit Domain</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="space-y-4 px-6 py-4 overflow-y-auto flex-1">
             <div>
-              <Label>Domain Code</Label>
+              <Label className="text-sm font-medium text-slate-700">Domain Code</Label>
               <Input
                 value={formData.code}
                 onChange={(e) =>
                   setFormData({ ...formData, code: e.target.value })
                 }
+                className="mt-1.5 w-full bg-white"
               />
             </div>
             <div>
-              <Label>Domain Name *</Label>
+              <Label className="text-sm font-medium text-slate-700">
+                Domain Name <span className="text-red-500">*</span>
+              </Label>
               <Input
                 value={formData.name}
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
                 }
+                className="mt-1.5 w-full bg-white"
               />
             </div>
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setEditDialogOpen(false);
-                  setSelectedDomain(null);
-                  resetForm();
-                }}
-              >
-                Cancel
-              </Button>
-              <Button onClick={handleEdit} disabled={!formData.name}>
-                Save
-              </Button>
-            </div>
+          </div>
+          <div className="flex justify-end gap-2 px-6 py-4 flex-shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setEditDialogOpen(false);
+                setSelectedDomain(null);
+                resetForm();
+              }}
+            >
+              Cancel
+            </Button>
+            <Button size="sm" onClick={handleEdit} disabled={!formData.name}>
+              Save
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -486,20 +564,22 @@ export default function DomainMasterDataPage() {
         setImportDialogOpen(open);
         if (!open) setSelectedFile(null);
       }}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Import Domain</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
+        <DialogContent className="max-w-xl flex flex-col max-h-[90vh] p-0 gap-0">
+          <div className="px-6 py-5 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Import Domain</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="space-y-4 px-6 py-4 overflow-y-auto flex-1">
             <div>
-              <Label>File</Label>
-              <div className="flex gap-2 mt-1">
+              <Label className="text-sm font-medium text-slate-700">File</Label>
+              <div className="flex gap-2 mt-1.5">
                 <Input
                   type="text"
                   value={selectedFile?.name || ""}
                   readOnly
                   placeholder="Choose a file..."
-                  className="flex-1"
+                  className="flex-1 bg-white min-w-0"
                 />
                 <input
                   type="file"
@@ -510,47 +590,55 @@ export default function DomainMasterDataPage() {
                 />
                 <Button
                   variant="outline"
+                  size="sm"
                   onClick={() => fileInputRef.current?.click()}
+                  className="flex-shrink-0"
                 >
                   Browse...
                 </Button>
               </div>
             </div>
-            <div className="flex justify-between pt-4">
+          </div>
+          <div className="flex justify-between px-6 py-4 flex-shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDownloadTemplate}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Download Template
+            </Button>
+            <div className="flex gap-2">
               <Button
                 variant="outline"
-                onClick={handleDownloadTemplate}
+                size="sm"
+                onClick={() => {
+                  setImportDialogOpen(false);
+                  setSelectedFile(null);
+                }}
               >
-                <Download className="h-4 w-4 mr-2" />
-                Download Template
+                Cancel
               </Button>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setImportDialogOpen(false);
-                    setSelectedFile(null);
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleImport}
-                  disabled={!selectedFile || importing}
-                >
-                  {importing ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Importing...
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="h-4 w-4 mr-2" />
-                      Import
-                    </>
-                  )}
-                </Button>
-              </div>
+              <Button
+                size="sm"
+                onClick={handleImport}
+                disabled={!selectedFile || importing}
+              >
+                {importing ? (
+                  <>
+                    <div className="relative h-4 w-4 mr-2">
+                      <div className="absolute inset-0 rounded-full border-2 border-white/30"></div>
+                      <div className="absolute inset-0 rounded-full border-2 border-white border-t-transparent animate-spin"></div>
+                    </div>
+                    Importing...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Import
+                  </>
+                )}
+              </Button>
             </div>
           </div>
         </DialogContent>

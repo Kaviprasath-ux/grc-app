@@ -220,10 +220,10 @@ export default function OrganizationReportsPage() {
   const endItem = Math.min(currentPage * pageSize, totalItems);
 
   return (
-    <div className="p-6">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-semibold">Reports</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-slate-800">Reports</h1>
         <Button onClick={() => setIsManagementDialogOpen(true)}>
           Get Management Report
         </Button>
@@ -235,7 +235,7 @@ export default function OrganizationReportsPage() {
           <Button
             key={report.id}
             variant="outline"
-            className="w-full justify-start text-left h-auto py-3 px-4 hover:bg-gray-50"
+            className="w-full justify-start text-left h-auto py-3 px-4 hover:bg-slate-50 border-slate-200"
             onClick={() => handleReportClick(report)}
           >
             {report.title}
@@ -245,97 +245,102 @@ export default function OrganizationReportsPage() {
 
       {/* Report Detail Dialog */}
       <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
-          <DialogHeader>
-            <DialogTitle>{selectedReport?.title}</DialogTitle>
-          </DialogHeader>
-
-          {/* Export Button */}
-          <div className="flex justify-end mb-2">
-            <Button variant="outline" size="sm" onClick={handleExport}>
-              <Download className="h-4 w-4 mr-2" />
-              Export
-            </Button>
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader className="flex flex-row items-center justify-between">
+              <DialogTitle className="text-lg font-semibold text-slate-800">{selectedReport?.title}</DialogTitle>
+              <Button variant="outline" size="sm" onClick={handleExport}>
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+            </DialogHeader>
           </div>
 
-          {/* Table */}
-          <div className="flex-1 overflow-auto border rounded-lg">
-            {loading ? (
-              <div className="flex items-center justify-center h-64">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              </div>
-            ) : (
-              <table className="w-full">
-                <thead className="bg-gray-50 sticky top-0">
-                  <tr>
-                    {selectedReport?.columns.map((col) => (
-                      <th key={col} className="text-left p-3 text-sm font-medium border-b">
-                        <button className="flex items-center gap-1 hover:text-primary">
-                          {col}
-                        </button>
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {paginatedData.length === 0 ? (
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-auto px-6 py-6">
+            {/* Table */}
+            <div className="border border-slate-200 rounded-lg overflow-hidden">
+              {loading ? (
+                <div className="flex items-center justify-center h-64">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              ) : (
+                <table className="w-full">
+                  <thead className="bg-slate-50 sticky top-0">
                     <tr>
-                      <td colSpan={selectedReport?.columns.length || 1} className="text-center py-8 text-muted-foreground">
-                        No data found
-                      </td>
+                      {selectedReport?.columns.map((col) => (
+                        <th key={col} className="text-left p-3 text-sm font-medium text-slate-600 border-b border-slate-100">
+                          {col}
+                        </th>
+                      ))}
                     </tr>
-                  ) : (
-                    paginatedData.map((row, idx) => (
-                      <tr key={idx} className="border-b hover:bg-gray-50">
-                        {selectedReport?.columns.map((col) => (
-                          <td key={col} className="p-3 text-sm">
-                            {String(row[col] || "")}
-                          </td>
-                        ))}
+                  </thead>
+                  <tbody>
+                    {paginatedData.length === 0 ? (
+                      <tr>
+                        <td colSpan={selectedReport?.columns.length || 1} className="text-center py-8 text-slate-500">
+                          No data found
+                        </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            )}
+                    ) : (
+                      paginatedData.map((row, idx) => (
+                        <tr key={idx} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                          {selectedReport?.columns.map((col) => (
+                            <td key={col} className="p-3 text-sm text-slate-700">
+                              {String(row[col] || "")}
+                            </td>
+                          ))}
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              )}
+            </div>
           </div>
 
-          {/* Pagination */}
+          {/* Fixed Footer with Pagination */}
           {totalItems > 0 && (
-            <div className="flex items-center justify-between mt-4 pt-4 border-t">
-              <div className="flex items-center gap-2">
+            <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+              <span className="text-sm text-slate-500">
+                {startItem} to {endItem} of {totalItems}
+              </span>
+              <div className="flex items-center gap-1">
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="icon"
+                  className="h-8 w-8"
                   onClick={() => setCurrentPage(1)}
                   disabled={currentPage === 1}
                 >
                   <ChevronsLeft className="h-4 w-4" />
                 </Button>
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="icon"
+                  className="h-8 w-8"
                   onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                   disabled={currentPage === 1}
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-              </div>
-              <span className="text-sm text-muted-foreground">
-                {startItem} to {endItem} of {totalItems}
-              </span>
-              <div className="flex items-center gap-2">
+                <span className="text-sm text-slate-600 px-2">
+                  Page {currentPage} of {totalPages || 1}
+                </span>
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="icon"
+                  className="h-8 w-8"
                   onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                   disabled={currentPage === totalPages}
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="icon"
+                  className="h-8 w-8"
                   onClick={() => setCurrentPage(totalPages)}
                   disabled={currentPage === totalPages}
                 >
@@ -349,30 +354,40 @@ export default function OrganizationReportsPage() {
 
       {/* Management Report Parameters Dialog */}
       <Dialog open={isManagementDialogOpen} onOpenChange={setIsManagementDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Process Report Parameters</DialogTitle>
-          </DialogHeader>
-
-          <div className="grid grid-cols-2 gap-4 py-4">
-            {managementOptions.map((option) => (
-              <div key={option.id} className="flex items-center space-x-2">
-                <Checkbox
-                  id={option.id}
-                  checked={option.checked}
-                  onCheckedChange={() => toggleManagementOption(option.id)}
-                />
-                <label
-                  htmlFor={option.id}
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                >
-                  {option.label}
-                </label>
-              </div>
-            ))}
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0">
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Process Report Parameters</DialogTitle>
+            </DialogHeader>
           </div>
 
-          <div className="flex justify-end">
+          {/* Content */}
+          <div className="px-6 py-6">
+            <div className="grid grid-cols-2 gap-4">
+              {managementOptions.map((option) => (
+                <div key={option.id} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={option.id}
+                    checked={option.checked}
+                    onCheckedChange={() => toggleManagementOption(option.id)}
+                  />
+                  <label
+                    htmlFor={option.id}
+                    className="text-sm font-medium text-slate-700 leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                  >
+                    {option.label}
+                  </label>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Fixed Footer */}
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <Button variant="outline" onClick={() => setIsManagementDialogOpen(false)}>
+              Cancel
+            </Button>
             <Button onClick={handleShowManagementReport}>
               Show Report
             </Button>

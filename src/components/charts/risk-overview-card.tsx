@@ -51,8 +51,7 @@ export function RiskOverviewCard({ title, data, className }: RiskOverviewCardPro
 
   return (
     <div className={cn(
-      "bg-white rounded-xl border border-slate-200 p-5 transition-all duration-200",
-      "hover:shadow-lg hover:shadow-slate-200/50 hover:border-slate-300",
+      "bg-white rounded-xl border border-slate-200 p-5",
       className
     )}>
       {/* Header */}

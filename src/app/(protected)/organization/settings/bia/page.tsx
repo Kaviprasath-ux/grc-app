@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { ArrowLeft, Plus, Pencil, Trash2 } from "lucide-react";
-import { PageHeader, DataGrid } from "@/components/shared";
+import { Plus, Pencil, Trash2, Search } from "lucide-react";
+import { DataGrid } from "@/components/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
@@ -20,9 +20,17 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
-  DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { ColumnDef } from "@tanstack/react-table";
 
@@ -65,10 +73,15 @@ interface BCPLabel {
 }
 
 export default function BIASettingsPage() {
-  const router = useRouter();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("category");
   const [loading, setLoading] = useState(true);
+
+  // Search states for each tab
+  const [categorySearch, setCategorySearch] = useState("");
+  const [ratingSearch, setRatingSearch] = useState("");
+  const [rangeSearch, setRangeSearch] = useState("");
+  const [bcpSearch, setBcpSearch] = useState("");
 
   // Data states
   const [categories, setCategories] = useState<BIACategory[]>([]);
@@ -82,7 +95,6 @@ export default function BIASettingsPage() {
   const [isRatingDialogOpen, setIsRatingDialogOpen] = useState(false);
   const [isRangeDialogOpen, setIsRangeDialogOpen] = useState(false);
   const [isBcpDialogOpen, setIsBcpDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   // Form states
   const [editingCategory, setEditingCategory] = useState<BIACategory | null>(null);
@@ -275,7 +287,6 @@ export default function BIASettingsPage() {
       console.error("Error deleting item:", error);
       toast({ title: "Error", description: "Failed to delete item", variant: "destructive" });
     }
-    setIsDeleteDialogOpen(false);
     setDeleteTarget(null);
   };
 
@@ -299,16 +310,17 @@ export default function BIASettingsPage() {
     {
       accessorKey: "name",
       header: "Name",
-      cell: ({ row }) => <span className="font-medium">{row.getValue("name")}</span>,
+      cell: ({ row }) => <span className="font-medium text-slate-800">{row.getValue("name")}</span>,
     },
     {
       id: "actions",
       header: "Actions",
       cell: ({ row }) => (
-        <div className="flex gap-2">
+        <div className="flex gap-1">
           <Button
             variant="ghost"
             size="icon"
+            className="h-8 w-8 text-slate-400 hover:text-slate-600"
             onClick={() => {
               setEditingCategory(row.original);
               setIsCategoryDialogOpen(true);
@@ -319,11 +331,8 @@ export default function BIASettingsPage() {
           <Button
             variant="ghost"
             size="icon"
-            className="text-destructive"
-            onClick={() => {
-              setDeleteTarget({ type: "category", id: row.original.id });
-              setIsDeleteDialogOpen(true);
-            }}
+            className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+            onClick={() => setDeleteTarget({ type: "category", id: row.original.id })}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -336,27 +345,29 @@ export default function BIASettingsPage() {
     {
       accessorKey: "label",
       header: "Rating",
-      cell: ({ row }) => <span className="font-medium">{row.getValue("label")}</span>,
+      cell: ({ row }) => <span className="font-medium text-slate-800">{row.getValue("label")}</span>,
     },
     {
       accessorKey: "score",
       header: "Score",
+      cell: ({ row }) => <span className="text-slate-600">{row.getValue("score")}</span>,
     },
     {
       accessorKey: "description",
       header: "Description",
       cell: ({ row }) => (
-        <span className="text-muted-foreground">{row.getValue("description") || "-"}</span>
+        <span className="text-slate-600">{row.getValue("description") || "-"}</span>
       ),
     },
     {
       id: "actions",
       header: "Actions",
       cell: ({ row }) => (
-        <div className="flex gap-2">
+        <div className="flex gap-1">
           <Button
             variant="ghost"
             size="icon"
+            className="h-8 w-8 text-slate-400 hover:text-slate-600"
             onClick={() => {
               setEditingRating(row.original);
               setIsRatingDialogOpen(true);
@@ -367,11 +378,8 @@ export default function BIASettingsPage() {
           <Button
             variant="ghost"
             size="icon"
-            className="text-destructive"
-            onClick={() => {
-              setDeleteTarget({ type: "rating", id: row.original.id });
-              setIsDeleteDialogOpen(true);
-            }}
+            className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+            onClick={() => setDeleteTarget({ type: "rating", id: row.original.id })}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -384,25 +392,27 @@ export default function BIASettingsPage() {
     {
       accessorKey: "label",
       header: "Rating",
-      cell: ({ row }) => <span className="font-medium">{row.getValue("label")}</span>,
+      cell: ({ row }) => <span className="font-medium text-slate-800">{row.getValue("label")}</span>,
     },
     {
       accessorKey: "highValue",
       header: "High Range",
-      cell: ({ row }) => row.original.highValue ?? "-",
+      cell: ({ row }) => <span className="text-slate-600">{row.original.highValue ?? "-"}</span>,
     },
     {
       accessorKey: "lowValue",
       header: "Low Range",
+      cell: ({ row }) => <span className="text-slate-600">{row.getValue("lowValue")}</span>,
     },
     {
       id: "actions",
       header: "Actions",
       cell: ({ row }) => (
-        <div className="flex gap-2">
+        <div className="flex gap-1">
           <Button
             variant="ghost"
             size="icon"
+            className="h-8 w-8 text-slate-400 hover:text-slate-600"
             onClick={() => {
               setEditingRange(row.original);
               setIsRangeDialogOpen(true);
@@ -413,11 +423,8 @@ export default function BIASettingsPage() {
           <Button
             variant="ghost"
             size="icon"
-            className="text-destructive"
-            onClick={() => {
-              setDeleteTarget({ type: "range", id: row.original.id });
-              setIsDeleteDialogOpen(true);
-            }}
+            className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+            onClick={() => setDeleteTarget({ type: "range", id: row.original.id })}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -430,29 +437,37 @@ export default function BIASettingsPage() {
     {
       accessorKey: "name",
       header: "Name",
-      cell: ({ row }) => <span className="font-medium">{row.getValue("name")}</span>,
+      cell: ({ row }) => <span className="font-medium text-slate-800">{row.getValue("name")}</span>,
     },
     {
       accessorKey: "type",
       header: "Type",
+      cell: ({ row }) => <span className="text-slate-600">{row.getValue("type")}</span>,
     },
     {
       accessorKey: "isActive",
       header: "Status",
       cell: ({ row }) => (
-        <span className={row.original.isActive ? "text-green-600" : "text-red-600"}>
+        <Badge
+          className={
+            row.original.isActive
+              ? "border-transparent bg-success-light text-success-dark"
+              : "border-transparent bg-error-light text-error"
+          }
+        >
           {row.original.isActive ? "Active" : "Inactive"}
-        </span>
+        </Badge>
       ),
     },
     {
       id: "actions",
       header: "Actions",
       cell: ({ row }) => (
-        <div className="flex gap-2">
+        <div className="flex gap-1">
           <Button
             variant="ghost"
             size="icon"
+            className="h-8 w-8 text-slate-400 hover:text-slate-600"
             onClick={() => {
               setEditingBcp(row.original);
               setIsBcpDialogOpen(true);
@@ -463,11 +478,8 @@ export default function BIASettingsPage() {
           <Button
             variant="ghost"
             size="icon"
-            className="text-destructive"
-            onClick={() => {
-              setDeleteTarget({ type: "bcp", id: row.original.id });
-              setIsDeleteDialogOpen(true);
-            }}
+            className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+            onClick={() => setDeleteTarget({ type: "bcp", id: row.original.id })}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -476,32 +488,44 @@ export default function BIASettingsPage() {
     },
   ];
 
-  // Filter scoring ranges by calculation type
-  const filteredScoringRanges = scoringRanges.filter(
-    (r) => r.calculationType === calculationType
+  // Filter data based on search
+  const filteredCategories = categories.filter((c) =>
+    c.name.toLowerCase().includes(categorySearch.toLowerCase())
+  );
+  const filteredRatings = ratings.filter(
+    (r) =>
+      r.label.toLowerCase().includes(ratingSearch.toLowerCase()) ||
+      r.description?.toLowerCase().includes(ratingSearch.toLowerCase())
+  );
+  const filteredScoringRanges = scoringRanges
+    .filter((r) => r.calculationType === calculationType)
+    .filter((r) => r.label.toLowerCase().includes(rangeSearch.toLowerCase()));
+  const filteredBcpLabels = bcpLabels.filter(
+    (b) =>
+      b.name.toLowerCase().includes(bcpSearch.toLowerCase()) ||
+      b.type.toLowerCase().includes(bcpSearch.toLowerCase())
   );
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Loading...</p>
+      <div className="flex items-center justify-center h-[60vh]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative">
+            <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
+            <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+          </div>
+          <p className="text-sm text-slate-500 font-medium">Loading BIA settings...</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="BIA Settings"
-        actions={[
-          {
-            label: "Back to Settings",
-            variant: "outline",
-            icon: ArrowLeft,
-            onClick: () => router.push("/organization/settings"),
-          },
-        ]}
-      />
+      {/* Page Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-slate-800">BIA Settings</h1>
+      </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
@@ -511,9 +535,20 @@ export default function BIASettingsPage() {
         </TabsList>
 
         {/* Category Tab */}
-        <TabsContent value="category" className="space-y-4">
-          <div className="flex justify-end">
+        <TabsContent value="category" className="mt-6 space-y-4">
+          {/* Toolbar */}
+          <div className="flex items-center justify-between gap-4">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input
+                placeholder="Search categories..."
+                value={categorySearch}
+                onChange={(e) => setCategorySearch(e.target.value)}
+                className="pl-10 bg-white border-slate-200"
+              />
+            </div>
             <Button
+              size="sm"
               onClick={() => {
                 setEditingCategory(null);
                 setNewCategory({ name: "", description: "" });
@@ -524,16 +559,27 @@ export default function BIASettingsPage() {
               Add Category
             </Button>
           </div>
-          <DataGrid columns={categoryColumns} data={categories} searchPlaceholder="Search categories..." />
+          <DataGrid columns={categoryColumns} data={filteredCategories} hideSearch={true} />
         </TabsContent>
 
         {/* BIA Methodology Tab */}
-        <TabsContent value="methodology" className="space-y-6">
+        <TabsContent value="methodology" className="mt-6 space-y-8">
           {/* BIA Rating Section */}
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">BIA Rating</h3>
+            <h3 className="text-base font-semibold text-slate-800">BIA Rating</h3>
+            {/* Toolbar */}
+            <div className="flex items-center justify-between gap-4">
+              <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  placeholder="Search ratings..."
+                  value={ratingSearch}
+                  onChange={(e) => setRatingSearch(e.target.value)}
+                  className="pl-10 bg-white border-slate-200"
+                />
+              </div>
               <Button
+                size="sm"
                 onClick={() => {
                   setEditingRating(null);
                   setNewRating({ label: "", score: 0, description: "" });
@@ -544,19 +590,19 @@ export default function BIASettingsPage() {
                 Add Rating
               </Button>
             </div>
-            <DataGrid columns={ratingColumns} data={ratings} searchPlaceholder="Search ratings..." />
+            <DataGrid columns={ratingColumns} data={filteredRatings} hideSearch={true} />
           </div>
 
           {/* BIA Calculation Section */}
-          <div className="space-y-4 border-t pt-6">
-            <h3 className="text-lg font-semibold">BIA Calculation</h3>
+          <div className="border-t border-slate-200 pt-8 space-y-4">
+            <h3 className="text-base font-semibold text-slate-800">BIA Calculation</h3>
             <div className="flex items-center gap-4">
-              <Label>Calculation Type</Label>
+              <Label className="text-sm font-medium text-slate-700">Calculation Type</Label>
               <Select value={calculationType} onValueChange={handleCalculationTypeChange}>
-                <SelectTrigger className="w-[200px]">
+                <SelectTrigger className="w-[200px] bg-white">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white" position="popper" sideOffset={4}>
                   <SelectItem value="High of all">High of all</SelectItem>
                   <SelectItem value="Addition of all">Addition of all</SelectItem>
                   <SelectItem value="Product of all">Product of all</SelectItem>
@@ -566,10 +612,21 @@ export default function BIASettingsPage() {
 
             {/* Scoring Calculation Grid - Only show for Addition/Product */}
             {calculationType !== "High of all" && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-md font-medium">Scoring Calculation</h4>
+              <div className="space-y-4 pt-4">
+                <h4 className="text-sm font-medium text-slate-700">Scoring Calculation</h4>
+                {/* Toolbar */}
+                <div className="flex items-center justify-between gap-4">
+                  <div className="relative flex-1 max-w-sm">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Input
+                      placeholder="Search ranges..."
+                      value={rangeSearch}
+                      onChange={(e) => setRangeSearch(e.target.value)}
+                      className="pl-10 bg-white border-slate-200"
+                    />
+                  </div>
                   <Button
+                    size="sm"
                     onClick={() => {
                       setEditingRange(null);
                       setNewRange({ label: "", lowValue: 0, highValue: 0 });
@@ -580,16 +637,27 @@ export default function BIASettingsPage() {
                     Add Range
                   </Button>
                 </div>
-                <DataGrid columns={scoringRangeColumns} data={filteredScoringRanges} searchPlaceholder="Search ranges..." />
+                <DataGrid columns={scoringRangeColumns} data={filteredScoringRanges} hideSearch={true} />
               </div>
             )}
           </div>
         </TabsContent>
 
         {/* BCP Labels Tab */}
-        <TabsContent value="bcp" className="space-y-4">
-          <div className="flex justify-end">
+        <TabsContent value="bcp" className="mt-6 space-y-4">
+          {/* Toolbar */}
+          <div className="flex items-center justify-between gap-4">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input
+                placeholder="Search BCP labels..."
+                value={bcpSearch}
+                onChange={(e) => setBcpSearch(e.target.value)}
+                className="pl-10 bg-white border-slate-200"
+              />
+            </div>
             <Button
+              size="sm"
               onClick={() => {
                 setEditingBcp(null);
                 setNewBcp({ name: "", type: "RTO", hours: 0, description: "" });
@@ -600,264 +668,318 @@ export default function BIASettingsPage() {
               Add BCP Label
             </Button>
           </div>
-          <DataGrid columns={bcpColumns} data={bcpLabels} searchPlaceholder="Search BCP labels..." />
+          <DataGrid columns={bcpColumns} data={filteredBcpLabels} hideSearch={true} />
         </TabsContent>
       </Tabs>
 
       {/* Category Dialog */}
       <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingCategory ? "Edit Category" : "Add Category"}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="categoryName">Name *</Label>
-              <Input
-                id="categoryName"
-                value={editingCategory?.name || newCategory.name}
-                onChange={(e) =>
-                  editingCategory
-                    ? setEditingCategory({ ...editingCategory, name: e.target.value })
-                    : setNewCategory({ ...newCategory, name: e.target.value })
-                }
-                placeholder="Enter category name"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="categoryDescription">Description</Label>
-              <Input
-                id="categoryDescription"
-                value={editingCategory?.description || newCategory.description}
-                onChange={(e) =>
-                  editingCategory
-                    ? setEditingCategory({ ...editingCategory, description: e.target.value })
-                    : setNewCategory({ ...newCategory, description: e.target.value })
-                }
-                placeholder="Enter description"
-              />
+        <DialogContent className="sm:max-w-[500px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">
+                {editingCategory ? "Edit Category" : "Add Category"}
+              </DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Content */}
+          <div className="px-6 py-6">
+            <div className="space-y-5">
+              <div>
+                <Label className="text-sm font-medium text-slate-700">
+                  Name <span className="text-error">*</span>
+                </Label>
+                <Input
+                  value={editingCategory?.name || newCategory.name}
+                  onChange={(e) =>
+                    editingCategory
+                      ? setEditingCategory({ ...editingCategory, name: e.target.value })
+                      : setNewCategory({ ...newCategory, name: e.target.value })
+                  }
+                  placeholder="Enter category name"
+                  className="mt-1.5 bg-white"
+                />
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Description</Label>
+                <Input
+                  value={editingCategory?.description || newCategory.description}
+                  onChange={(e) =>
+                    editingCategory
+                      ? setEditingCategory({ ...editingCategory, description: e.target.value })
+                      : setNewCategory({ ...newCategory, description: e.target.value })
+                  }
+                  placeholder="Enter description"
+                  className="mt-1.5 bg-white"
+                />
+              </div>
             </div>
           </div>
-          <DialogFooter>
+
+          {/* Fixed Footer */}
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsCategoryDialogOpen(false)}>
               Cancel
             </Button>
             <Button onClick={handleSaveCategory}>Save</Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Rating Dialog */}
       <Dialog open={isRatingDialogOpen} onOpenChange={setIsRatingDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingRating ? "Edit Rating" : "Add Rating"}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="ratingLabel">Rating *</Label>
-              <Input
-                id="ratingLabel"
-                value={editingRating?.label || newRating.label}
-                onChange={(e) =>
-                  editingRating
-                    ? setEditingRating({ ...editingRating, label: e.target.value })
-                    : setNewRating({ ...newRating, label: e.target.value })
-                }
-                placeholder="e.g., High, Medium, Low"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="ratingScore">Score *</Label>
-              <Input
-                id="ratingScore"
-                type="number"
-                value={editingRating?.score ?? newRating.score}
-                onChange={(e) =>
-                  editingRating
-                    ? setEditingRating({ ...editingRating, score: parseInt(e.target.value) || 0 })
-                    : setNewRating({ ...newRating, score: parseInt(e.target.value) || 0 })
-                }
-                placeholder="e.g., 100"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="ratingDescription">Description</Label>
-              <Input
-                id="ratingDescription"
-                value={editingRating?.description || newRating.description}
-                onChange={(e) =>
-                  editingRating
-                    ? setEditingRating({ ...editingRating, description: e.target.value })
-                    : setNewRating({ ...newRating, description: e.target.value })
-                }
-                placeholder="Enter description"
-              />
+        <DialogContent className="sm:max-w-[500px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">
+                {editingRating ? "Edit Rating" : "Add Rating"}
+              </DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Content */}
+          <div className="px-6 py-6">
+            <div className="space-y-5">
+              <div>
+                <Label className="text-sm font-medium text-slate-700">
+                  Rating <span className="text-error">*</span>
+                </Label>
+                <Input
+                  value={editingRating?.label || newRating.label}
+                  onChange={(e) =>
+                    editingRating
+                      ? setEditingRating({ ...editingRating, label: e.target.value })
+                      : setNewRating({ ...newRating, label: e.target.value })
+                  }
+                  placeholder="e.g., High, Medium, Low"
+                  className="mt-1.5 bg-white"
+                />
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-slate-700">
+                  Score <span className="text-error">*</span>
+                </Label>
+                <Input
+                  type="number"
+                  value={editingRating?.score ?? newRating.score}
+                  onChange={(e) =>
+                    editingRating
+                      ? setEditingRating({ ...editingRating, score: parseInt(e.target.value) || 0 })
+                      : setNewRating({ ...newRating, score: parseInt(e.target.value) || 0 })
+                  }
+                  placeholder="e.g., 100"
+                  className="mt-1.5 bg-white"
+                />
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Description</Label>
+                <Input
+                  value={editingRating?.description || newRating.description}
+                  onChange={(e) =>
+                    editingRating
+                      ? setEditingRating({ ...editingRating, description: e.target.value })
+                      : setNewRating({ ...newRating, description: e.target.value })
+                  }
+                  placeholder="Enter description"
+                  className="mt-1.5 bg-white"
+                />
+              </div>
             </div>
           </div>
-          <DialogFooter>
+
+          {/* Fixed Footer */}
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsRatingDialogOpen(false)}>
               Cancel
             </Button>
             <Button onClick={handleSaveRating}>Save</Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Scoring Range Dialog */}
       <Dialog open={isRangeDialogOpen} onOpenChange={setIsRangeDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingRange ? "Edit Scoring Range" : "Add Scoring Range"}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="rangeLabel">Rating *</Label>
-              <Input
-                id="rangeLabel"
-                value={editingRange?.label || newRange.label}
-                onChange={(e) =>
-                  editingRange
-                    ? setEditingRange({ ...editingRange, label: e.target.value })
-                    : setNewRange({ ...newRange, label: e.target.value })
-                }
-                placeholder="e.g., Critical, High, Medium, Low"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="rangeHigh">High Range</Label>
-              <Input
-                id="rangeHigh"
-                type="number"
-                value={editingRange?.highValue ?? newRange.highValue}
-                onChange={(e) =>
-                  editingRange
-                    ? setEditingRange({ ...editingRange, highValue: parseInt(e.target.value) || 0 })
-                    : setNewRange({ ...newRange, highValue: parseInt(e.target.value) || 0 })
-                }
-                placeholder="e.g., 500"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="rangeLow">Low Range *</Label>
-              <Input
-                id="rangeLow"
-                type="number"
-                value={editingRange?.lowValue ?? newRange.lowValue}
-                onChange={(e) =>
-                  editingRange
-                    ? setEditingRange({ ...editingRange, lowValue: parseInt(e.target.value) || 0 })
-                    : setNewRange({ ...newRange, lowValue: parseInt(e.target.value) || 0 })
-                }
-                placeholder="e.g., 250"
-              />
+        <DialogContent className="sm:max-w-[500px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">
+                {editingRange ? "Edit Scoring Range" : "Add Scoring Range"}
+              </DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Content */}
+          <div className="px-6 py-6">
+            <div className="space-y-5">
+              <div>
+                <Label className="text-sm font-medium text-slate-700">
+                  Rating <span className="text-error">*</span>
+                </Label>
+                <Input
+                  value={editingRange?.label || newRange.label}
+                  onChange={(e) =>
+                    editingRange
+                      ? setEditingRange({ ...editingRange, label: e.target.value })
+                      : setNewRange({ ...newRange, label: e.target.value })
+                  }
+                  placeholder="e.g., Critical, High, Medium, Low"
+                  className="mt-1.5 bg-white"
+                />
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-slate-700">High Range</Label>
+                <Input
+                  type="number"
+                  value={editingRange?.highValue ?? newRange.highValue}
+                  onChange={(e) =>
+                    editingRange
+                      ? setEditingRange({ ...editingRange, highValue: parseInt(e.target.value) || 0 })
+                      : setNewRange({ ...newRange, highValue: parseInt(e.target.value) || 0 })
+                  }
+                  placeholder="e.g., 500"
+                  className="mt-1.5 bg-white"
+                />
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-slate-700">
+                  Low Range <span className="text-error">*</span>
+                </Label>
+                <Input
+                  type="number"
+                  value={editingRange?.lowValue ?? newRange.lowValue}
+                  onChange={(e) =>
+                    editingRange
+                      ? setEditingRange({ ...editingRange, lowValue: parseInt(e.target.value) || 0 })
+                      : setNewRange({ ...newRange, lowValue: parseInt(e.target.value) || 0 })
+                  }
+                  placeholder="e.g., 250"
+                  className="mt-1.5 bg-white"
+                />
+              </div>
             </div>
           </div>
-          <DialogFooter>
+
+          {/* Fixed Footer */}
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsRangeDialogOpen(false)}>
               Cancel
             </Button>
             <Button onClick={handleSaveRange}>Save</Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* BCP Label Dialog */}
       <Dialog open={isBcpDialogOpen} onOpenChange={setIsBcpDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingBcp ? "Edit BCP Label" : "Add BCP Label"}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="bcpName">Name *</Label>
-              <Input
-                id="bcpName"
-                value={editingBcp?.name || newBcp.name}
-                onChange={(e) =>
-                  editingBcp
-                    ? setEditingBcp({ ...editingBcp, name: e.target.value })
-                    : setNewBcp({ ...newBcp, name: e.target.value })
-                }
-                placeholder="e.g., Critical, High, RTO"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="bcpType">Type *</Label>
-              <Select
-                value={editingBcp?.type || newBcp.type}
-                onValueChange={(value) =>
-                  editingBcp
-                    ? setEditingBcp({ ...editingBcp, type: value })
-                    : setNewBcp({ ...newBcp, type: value })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="RTO">RTO</SelectItem>
-                  <SelectItem value="RPO">RPO</SelectItem>
-                  <SelectItem value="Criticality">Criticality</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="bcpHours">Hours</Label>
-              <Input
-                id="bcpHours"
-                type="number"
-                value={editingBcp?.hours ?? newBcp.hours}
-                onChange={(e) =>
-                  editingBcp
-                    ? setEditingBcp({ ...editingBcp, hours: parseInt(e.target.value) || 0 })
-                    : setNewBcp({ ...newBcp, hours: parseInt(e.target.value) || 0 })
-                }
-                placeholder="e.g., 4"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="bcpDescription">Description</Label>
-              <Input
-                id="bcpDescription"
-                value={editingBcp?.description || newBcp.description}
-                onChange={(e) =>
-                  editingBcp
-                    ? setEditingBcp({ ...editingBcp, description: e.target.value })
-                    : setNewBcp({ ...newBcp, description: e.target.value })
-                }
-                placeholder="Enter description"
-              />
+        <DialogContent className="sm:max-w-[500px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">
+                {editingBcp ? "Edit BCP Label" : "Add BCP Label"}
+              </DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Content */}
+          <div className="px-6 py-6">
+            <div className="space-y-5">
+              <div>
+                <Label className="text-sm font-medium text-slate-700">
+                  Name <span className="text-error">*</span>
+                </Label>
+                <Input
+                  value={editingBcp?.name || newBcp.name}
+                  onChange={(e) =>
+                    editingBcp
+                      ? setEditingBcp({ ...editingBcp, name: e.target.value })
+                      : setNewBcp({ ...newBcp, name: e.target.value })
+                  }
+                  placeholder="e.g., Critical, High, RTO"
+                  className="mt-1.5 bg-white"
+                />
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-slate-700">
+                  Type <span className="text-error">*</span>
+                </Label>
+                <Select
+                  value={editingBcp?.type || newBcp.type}
+                  onValueChange={(value) =>
+                    editingBcp
+                      ? setEditingBcp({ ...editingBcp, type: value })
+                      : setNewBcp({ ...newBcp, type: value })
+                  }
+                >
+                  <SelectTrigger className="mt-1.5 bg-white">
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white" position="popper" sideOffset={4}>
+                    <SelectItem value="RTO">RTO</SelectItem>
+                    <SelectItem value="RPO">RPO</SelectItem>
+                    <SelectItem value="Criticality">Criticality</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Hours</Label>
+                <Input
+                  type="number"
+                  value={editingBcp?.hours ?? newBcp.hours}
+                  onChange={(e) =>
+                    editingBcp
+                      ? setEditingBcp({ ...editingBcp, hours: parseInt(e.target.value) || 0 })
+                      : setNewBcp({ ...newBcp, hours: parseInt(e.target.value) || 0 })
+                  }
+                  placeholder="e.g., 4"
+                  className="mt-1.5 bg-white"
+                />
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Description</Label>
+                <Input
+                  value={editingBcp?.description || newBcp.description}
+                  onChange={(e) =>
+                    editingBcp
+                      ? setEditingBcp({ ...editingBcp, description: e.target.value })
+                      : setNewBcp({ ...newBcp, description: e.target.value })
+                  }
+                  placeholder="Enter description"
+                  className="mt-1.5 bg-white"
+                />
+              </div>
             </div>
           </div>
-          <DialogFooter>
+
+          {/* Fixed Footer */}
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsBcpDialogOpen(false)}>
               Cancel
             </Button>
             <Button onClick={handleSaveBcp}>Save</Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirm Delete</DialogTitle>
-            <DialogDescription>
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Item</AlertDialogTitle>
+            <AlertDialogDescription>
               Are you sure you want to delete this item? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              Delete
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

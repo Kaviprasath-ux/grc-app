@@ -1273,7 +1273,7 @@ function ProfilePageContent() {
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className="text-slate-400 hover:text-error"
+                        className="text-slate-400 hover:text-semantic-error"
                         onClick={() => setDocumentFile(null)}
                       >
                         Remove
@@ -1308,7 +1308,7 @@ function ProfilePageContent() {
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className="text-slate-400 hover:text-error"
+                        className="text-slate-400 hover:text-semantic-error"
                         onClick={() => setCertificateFile(null)}
                       >
                         Remove
@@ -1437,7 +1437,7 @@ function ProfilePageContent() {
                           type="button"
                           variant="ghost"
                           size="sm"
-                          className="text-slate-400 hover:text-error"
+                          className="text-slate-400 hover:text-semantic-error"
                           onClick={() => setEditDocumentFile(null)}
                         >
                           Remove
@@ -1488,7 +1488,7 @@ function ProfilePageContent() {
                           type="button"
                           variant="ghost"
                           size="sm"
-                          className="text-slate-400 hover:text-error"
+                          className="text-slate-400 hover:text-semantic-error"
                           onClick={() => setEditCertificateFile(null)}
                         >
                           Remove

@@ -15,7 +15,6 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import {
-  Search,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
@@ -261,22 +260,23 @@ export default function PoliciesByFrameworkPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center gap-3">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => router.push("/roles/customer-administrator/compliance/framework")}
+            className="h-8 w-8 text-slate-400 hover:text-slate-600"
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">Governance</h1>
+            <h1 className="text-2xl font-bold text-slate-800">Governance</h1>
             {framework && (
-              <p className="text-sm text-muted-foreground">
-                Filtered by: {framework.name}
+              <p className="text-sm text-slate-500">
+                Framework: {framework.name}
               </p>
             )}
           </div>
@@ -296,119 +296,111 @@ export default function PoliciesByFrameworkPage() {
           <TabsContent key={docType} value={docType} className="mt-4 space-y-4">
             {/* Search Row */}
             <div className="flex items-center gap-4">
-              <div className="flex-1 relative">
-                <Input
-                  placeholder={` Search By ${docType} Name , ${docType} Code`}
-                  value={search}
-                  onChange={(e) => {
-                    setSearch(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                  className="pr-10"
-                />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-0 top-0 h-full"
-                  onClick={handleSearch}
-                >
-                  <Search className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="text-sm text-muted-foreground">
-                Framework: <span className="font-medium">{framework?.name || "Loading..."}</span>
-              </div>
+              <Input
+                placeholder={`Search by ${docType.toLowerCase()} name or code...`}
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setCurrentPage(1);
+                }}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                className="max-w-md bg-white"
+              />
             </div>
 
             {/* Table */}
             {loading ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+              <div className="flex items-center justify-center py-8">
+                <div className="relative h-8 w-8">
+                  <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
+                  <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+                </div>
               </div>
             ) : (
-              <>
-                <div className="border rounded-lg">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Code</TableHead>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Assignee</TableHead>
-                        <TableHead>Approver</TableHead>
-                        <TableHead>Department Name</TableHead>
+              <div className="bg-white rounded-xl border border-slate-200">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-slate-50/50">
+                      <TableHead className="text-xs font-semibold text-slate-600 py-3">Code</TableHead>
+                      <TableHead className="text-xs font-semibold text-slate-600 py-3">Name</TableHead>
+                      <TableHead className="text-xs font-semibold text-slate-600 py-3">Status</TableHead>
+                      <TableHead className="text-xs font-semibold text-slate-600 py-3">Assignee</TableHead>
+                      <TableHead className="text-xs font-semibold text-slate-600 py-3">Approver</TableHead>
+                      <TableHead className="text-xs font-semibold text-slate-600 py-3">Department</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedPolicies.map((policy) => (
+                      <TableRow
+                        key={policy.id}
+                        className="cursor-pointer hover:bg-slate-50"
+                        onDoubleClick={() => router.push(`/compliance/governance/${policy.id}`)}
+                      >
+                        <TableCell className="font-medium text-slate-900">{policy.code}</TableCell>
+                        <TableCell className="text-slate-600">{policy.name}</TableCell>
+                        <TableCell>
+                          <Badge className={getStatusBadgeColor(policy.status)}>
+                            {policy.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-slate-600">{policy.assignee?.fullName || "-"}</TableCell>
+                        <TableCell className="text-slate-600">{policy.approver?.fullName || "-"}</TableCell>
+                        <TableCell className="text-slate-600">{policy.department?.name || "-"}</TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {paginatedPolicies.map((policy) => (
-                        <TableRow
-                          key={policy.id}
-                          className="cursor-pointer hover:bg-muted/50"
-                          onDoubleClick={() => router.push(`/compliance/governance/${policy.id}`)}
-                        >
-                          <TableCell className="font-medium">{policy.code}</TableCell>
-                          <TableCell>{policy.name}</TableCell>
-                          <TableCell>
-                            <Badge className={getStatusBadgeColor(policy.status)}>
-                              {policy.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{policy.assignee?.fullName || ""}</TableCell>
-                          <TableCell>{policy.approver?.fullName || ""}</TableCell>
-                          <TableCell>{policy.department?.name || ""}</TableCell>
-                        </TableRow>
-                      ))}
-                      {paginatedPolicies.length === 0 && (
-                        <TableRow>
-                          <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                            No {docType.toLowerCase()}s found for this framework
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
+                    ))}
+                    {paginatedPolicies.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-8 text-slate-500">
+                          No {docType.toLowerCase()}s found for this framework
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
 
                 {/* Pagination */}
-                <div className="flex items-center justify-center gap-2">
+                <div className="flex items-center justify-center gap-2 p-4 border-t border-slate-100">
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="icon"
                     disabled={currentPage === 1}
                     onClick={() => setCurrentPage(1)}
+                    className="h-8 w-8"
                   >
                     <ChevronsLeft className="h-4 w-4" />
                   </Button>
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="icon"
                     disabled={currentPage === 1}
                     onClick={() => setCurrentPage((p) => p - 1)}
+                    className="h-8 w-8"
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
-                  <span className="text-sm text-muted-foreground px-4">
-                    Currently showing {startItem} to {endItem} of {total}
+                  <span className="text-sm text-slate-500 px-3 py-1">
+                    {total > 0 ? `Showing ${startItem} to ${endItem} of ${total}` : `No ${docType.toLowerCase()}s`}
                   </span>
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="icon"
                     disabled={currentPage >= totalPages}
                     onClick={() => setCurrentPage((p) => p + 1)}
+                    className="h-8 w-8"
                   >
                     <ChevronRight className="h-4 w-4" />
                   </Button>
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="icon"
                     disabled={currentPage >= totalPages}
                     onClick={() => setCurrentPage(totalPages)}
+                    className="h-8 w-8"
                   >
                     <ChevronsRight className="h-4 w-4" />
                   </Button>
                 </div>
-              </>
+              </div>
             )}
           </TabsContent>
         ))}

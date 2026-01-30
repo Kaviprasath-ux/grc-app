@@ -47,10 +47,7 @@ export function PageHeader({
           </Button>
         )}
         <div>
-          <h1 className="text-2xl font-semibold text-grc-text">{title}</h1>
-          {description && (
-            <p className="text-sm text-muted-foreground mt-1">{description}</p>
-          )}
+          <h1 className="text-2xl font-bold text-slate-800">{title}</h1>
         </div>
       </div>
       {actions && actions.length > 0 && (

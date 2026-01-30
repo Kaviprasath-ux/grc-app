@@ -241,10 +241,11 @@ export default function KPIDetailsPage() {
       id: "actions",
       header: "Action",
       cell: ({ row }) => (
-        <div className="flex gap-2">
+        <div className="flex gap-1">
           <Button
             variant="ghost"
             size="icon"
+            className="h-8 w-8 text-slate-400 hover:text-slate-600"
             onClick={() => {
               setEditingRecord(row.original);
               setIsEditDialogOpen(true);
@@ -255,7 +256,7 @@ export default function KPIDetailsPage() {
           <Button
             variant="ghost"
             size="icon"
-            className="text-destructive"
+            className="h-8 w-8 text-slate-400 hover:text-semantic-error"
             onClick={() => handleDeleteRecord(row.original.id)}
           >
             <Trash2 className="h-4 w-4" />

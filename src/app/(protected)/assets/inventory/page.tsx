@@ -663,11 +663,12 @@ export default function AssetInventoryPage() {
       id: "actions",
       header: "Action",
       cell: ({ row }) => (
-        <div className="flex gap-2">
+        <div className="flex gap-1">
           {canEdit && (
             <Button
               variant="ghost"
               size="icon"
+              className="h-8 w-8 text-slate-400 hover:text-slate-600"
               onClick={() => {
                 setEditingAsset({
                   ...row.original,
@@ -688,7 +689,7 @@ export default function AssetInventoryPage() {
             <Button
               variant="ghost"
               size="icon"
-              className="text-destructive"
+              className="h-8 w-8 text-slate-400 hover:text-semantic-error"
               onClick={() => {
                 setDeletingAssetId(row.original.id);
                 setIsDeleteDialogOpen(true);
@@ -774,11 +775,11 @@ export default function AssetInventoryPage() {
               placeholder="Search assets..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 w-[250px]"
+              className="pl-10 w-[250px] bg-white"
             />
           </div>
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="w-[150px]">
+            <SelectTrigger className="w-[150px] bg-white">
               <SelectValue placeholder="Category" />
             </SelectTrigger>
             <SelectContent>
@@ -791,7 +792,7 @@ export default function AssetInventoryPage() {
             </SelectContent>
           </Select>
           <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-[180px] bg-white">
               <SelectValue placeholder="Department" />
             </SelectTrigger>
             <SelectContent>
@@ -804,7 +805,7 @@ export default function AssetInventoryPage() {
             </SelectContent>
           </Select>
           <Select value={lifecycleFilter} onValueChange={setLifecycleFilter}>
-            <SelectTrigger className="w-[160px]">
+            <SelectTrigger className="w-[160px] bg-white">
               <SelectValue placeholder="All Status" />
             </SelectTrigger>
             <SelectContent>
@@ -855,14 +856,16 @@ export default function AssetInventoryPage() {
 
       {/* Add Asset Dialog */}
       <Dialog open={isAddAssetOpen} onOpenChange={setIsAddAssetOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Add New Asset</DialogTitle>
-            <DialogDescription>
-              Enter the details for the new asset
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
+        <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0">
+          <div className="px-6 py-5 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Add New Asset</DialogTitle>
+              <DialogDescription className="text-sm text-slate-500">
+                Enter the details for the new asset
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="space-y-4 px-6 py-4 overflow-y-auto flex-1">
             {/* Basic Info - Row 1 */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -1123,29 +1126,31 @@ export default function AssetInventoryPage() {
               </div>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => {
+          <div className="flex justify-end gap-2 px-6 py-4 flex-shrink-0">
+            <Button variant="outline" size="sm" onClick={() => {
               resetForm();
               setIsAddAssetOpen(false);
             }}>
               Cancel
             </Button>
-            <Button onClick={handleAddAsset}>Save</Button>
-          </DialogFooter>
+            <Button size="sm" onClick={handleAddAsset}>Save</Button>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Edit Asset Dialog */}
       <Dialog open={isEditAssetOpen} onOpenChange={setIsEditAssetOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit Asset</DialogTitle>
-            <DialogDescription>
-              Update the asset details
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0">
+          <div className="px-6 py-5 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Edit Asset</DialogTitle>
+              <DialogDescription className="text-sm text-slate-500">
+                Update the asset details
+              </DialogDescription>
+            </DialogHeader>
+          </div>
           {editingAsset && (
-            <div className="space-y-4 py-4">
+            <div className="space-y-4 px-6 py-4 overflow-y-auto flex-1">
               {/* Basic Info - Row 1 */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -1404,163 +1409,177 @@ export default function AssetInventoryPage() {
               </div>
             </div>
           )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => {
+          <div className="flex justify-end gap-2 px-6 py-4 flex-shrink-0">
+            <Button variant="outline" size="sm" onClick={() => {
               setIsEditAssetOpen(false);
               setEditingAsset(null);
             }}>
               Cancel
             </Button>
-            <Button onClick={handleEditAsset}>Save Changes</Button>
-          </DialogFooter>
+            <Button size="sm" onClick={handleEditAsset}>Save Changes</Button>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirm Delete</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete this asset? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+        <DialogContent className="max-w-md p-0 gap-0">
+          <div className="px-6 py-5">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Confirm Delete</DialogTitle>
+              <DialogDescription className="text-sm text-slate-500 mt-1">
+                Are you sure you want to delete this asset? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="flex justify-end gap-2 px-6 py-4">
+            <Button variant="outline" size="sm" onClick={() => setIsDeleteDialogOpen(false)}>
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleDeleteAsset}>
+            <Button variant="destructive" size="sm" onClick={handleDeleteAsset}>
               Delete
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Inline Add Category Dialog */}
       <Dialog open={isAddCategoryOpen} onOpenChange={setIsAddCategoryOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Add Asset Category</DialogTitle>
-            <DialogDescription>
-              Create a new asset category
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
+        <DialogContent className="max-w-md p-0 gap-0">
+          <div className="px-6 py-5">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Add Asset Category</DialogTitle>
+              <DialogDescription className="text-sm text-slate-500 mt-1">
+                Create a new asset category
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="space-y-4 px-6 py-4">
             <div className="space-y-2">
-              <Label htmlFor="new-category-name">Category Name</Label>
+              <Label htmlFor="new-category-name" className="text-sm font-medium text-slate-700">Category Name</Label>
               <Input
                 id="new-category-name"
                 value={newCategoryName}
                 onChange={(e) => setNewCategoryName(e.target.value)}
                 placeholder="Enter category name"
+                className="bg-white"
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => {
+          <div className="flex justify-end gap-2 px-6 py-4">
+            <Button variant="outline" size="sm" onClick={() => {
               setNewCategoryName("");
               setIsAddCategoryOpen(false);
             }}>
               Cancel
             </Button>
-            <Button onClick={handleAddCategory}>Save</Button>
-          </DialogFooter>
+            <Button size="sm" onClick={handleAddCategory}>Save</Button>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Inline Add Sub Category Dialog */}
       <Dialog open={isAddSubCategoryOpen} onOpenChange={setIsAddSubCategoryOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Add Asset Sub Category</DialogTitle>
-            <DialogDescription>
-              Create a new asset sub category
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
+        <DialogContent className="max-w-md p-0 gap-0">
+          <div className="px-6 py-5">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Add Asset Sub Category</DialogTitle>
+              <DialogDescription className="text-sm text-slate-500 mt-1">
+                Create a new asset sub category
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="space-y-4 px-6 py-4">
             <div className="space-y-2">
-              <Label htmlFor="new-subcategory-name">Sub Category Name</Label>
+              <Label htmlFor="new-subcategory-name" className="text-sm font-medium text-slate-700">Sub Category Name</Label>
               <Input
                 id="new-subcategory-name"
                 value={newSubCategoryName}
                 onChange={(e) => setNewSubCategoryName(e.target.value)}
                 placeholder="Enter sub category name"
+                className="bg-white"
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => {
+          <div className="flex justify-end gap-2 px-6 py-4">
+            <Button variant="outline" size="sm" onClick={() => {
               setNewSubCategoryName("");
               setIsAddSubCategoryOpen(false);
             }}>
               Cancel
             </Button>
-            <Button onClick={handleAddSubCategory}>Save</Button>
-          </DialogFooter>
+            <Button size="sm" onClick={handleAddSubCategory}>Save</Button>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Inline Add Group Dialog */}
       <Dialog open={isAddGroupOpen} onOpenChange={setIsAddGroupOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Add Asset Group</DialogTitle>
-            <DialogDescription>
-              Create a new asset group
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
+        <DialogContent className="max-w-md p-0 gap-0">
+          <div className="px-6 py-5">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Add Asset Group</DialogTitle>
+              <DialogDescription className="text-sm text-slate-500 mt-1">
+                Create a new asset group
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="space-y-4 px-6 py-4">
             <div className="space-y-2">
-              <Label htmlFor="new-group-name">Group Name</Label>
+              <Label htmlFor="new-group-name" className="text-sm font-medium text-slate-700">Group Name</Label>
               <Input
                 id="new-group-name"
                 value={newGroupName}
                 onChange={(e) => setNewGroupName(e.target.value)}
                 placeholder="Enter group name"
+                className="bg-white"
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => {
+          <div className="flex justify-end gap-2 px-6 py-4">
+            <Button variant="outline" size="sm" onClick={() => {
               setNewGroupName("");
               setIsAddGroupOpen(false);
             }}>
               Cancel
             </Button>
-            <Button onClick={handleAddGroup}>Save</Button>
-          </DialogFooter>
+            <Button size="sm" onClick={handleAddGroup}>Save</Button>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Inline Add Lifecycle Status Dialog */}
       <Dialog open={isAddLifecycleOpen} onOpenChange={setIsAddLifecycleOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Add Lifecycle Status</DialogTitle>
-            <DialogDescription>
-              Create a new lifecycle status
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
+        <DialogContent className="max-w-md p-0 gap-0">
+          <div className="px-6 py-5">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Add Lifecycle Status</DialogTitle>
+              <DialogDescription className="text-sm text-slate-500 mt-1">
+                Create a new lifecycle status
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="space-y-4 px-6 py-4">
             <div className="space-y-2">
-              <Label htmlFor="new-lifecycle-name">Status Name</Label>
+              <Label htmlFor="new-lifecycle-name" className="text-sm font-medium text-slate-700">Status Name</Label>
               <Input
                 id="new-lifecycle-name"
                 value={newLifecycleName}
                 onChange={(e) => setNewLifecycleName(e.target.value)}
                 placeholder="Enter status name"
+                className="bg-white"
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => {
+          <div className="flex justify-end gap-2 px-6 py-4">
+            <Button variant="outline" size="sm" onClick={() => {
               setNewLifecycleName("");
               setIsAddLifecycleOpen(false);
             }}>
               Cancel
             </Button>
-            <Button onClick={handleAddLifecycle}>Save</Button>
-          </DialogFooter>
+            <Button size="sm" onClick={handleAddLifecycle}>Save</Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

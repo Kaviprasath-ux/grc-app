@@ -32,7 +32,7 @@ function ProgressIndicator({
 
   return (
     <div
-      className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 rounded-lg p-1 transition-colors"
+      className="flex items-center gap-2 cursor-pointer rounded-lg p-1"
       onClick={onClick}
     >
       {/* Icon with badge */}
@@ -122,7 +122,7 @@ export function FrameworkCard({
   return (
     <div
       onClick={onClick}
-      className="bg-white rounded-xl border border-gray-200 shadow-sm cursor-pointer group transition-all duration-300 hover:shadow-lg hover:border-primary/30"
+      className="bg-white rounded-xl border border-slate-200 cursor-pointer"
     >
       <div className="p-5">
         {/* Framework Name */}

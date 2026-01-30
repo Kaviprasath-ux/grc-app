@@ -14,7 +14,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -53,6 +52,7 @@ import {
   AlertCircle,
   CheckCircle2,
   X,
+  Search,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
@@ -112,6 +112,7 @@ export default function FrameworkOverviewPage() {
   const [currentPage, setCurrentPage] = useState(0);
   const [sortField, setSortField] = useState<string>("code");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Dialog states - Step 1 (Basic Info)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -171,7 +172,15 @@ export default function FrameworkOverviewPage() {
     }
   };
 
-  const sortedFrameworks = [...frameworks].sort((a, b) => {
+  // Filter and sort frameworks
+  const filteredFrameworks = frameworks.filter(
+    (f) =>
+      f.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      f.code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      f.description?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const sortedFrameworks = [...filteredFrameworks].sort((a, b) => {
     const aValue = (a[sortField as keyof Framework] || "") as string;
     const bValue = (b[sortField as keyof Framework] || "") as string;
 
@@ -490,85 +499,99 @@ export default function FrameworkOverviewPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="flex items-center justify-center h-[60vh]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative">
+            <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
+            <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+          </div>
+          <p className="text-sm text-slate-500 font-medium">Loading frameworks...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      {/* Header Section */}
-      <div className="bg-white rounded-lg shadow-sm border p-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900">Frameworks</h3>
-          {!isReviewerRole && (
-            <div className="flex items-center gap-2">
-              <Button
-                onClick={() => openCreateDialog(true)}
-                variant="outline"
-                className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
-              >
-                <Sparkles className="h-4 w-4 mr-2" />
-                New Integrated Framework (AI)
-              </Button>
-              <Button
-                onClick={() => openCreateDialog(false)}
-                variant="outline"
-                className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                New Integrated Framework
-              </Button>
-            </div>
-          )}
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-slate-800">Frameworks</h1>
+      </div>
+
+      {/* Toolbar */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input
+            placeholder="Search frameworks..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 bg-white border-slate-200"
+          />
         </div>
+        {!isReviewerRole && (
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => openCreateDialog(true)}
+              variant="outline"
+              size="sm"
+              className="bg-primary-50 hover:bg-primary-100 text-primary-700 border-primary-200"
+            >
+              <Sparkles className="h-4 w-4 mr-2" />
+              New Framework (AI)
+            </Button>
+            <Button
+              onClick={() => openCreateDialog(false)}
+              size="sm"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              New Framework
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Data Table */}
-      <div className="bg-white rounded-lg shadow-sm border">
+      <div className="bg-white rounded-xl border border-slate-200">
         <Table>
           <TableHeader>
-            <TableRow className="bg-gray-50">
-              <TableHead className="w-[120px]">
-                <Button
-                  variant="ghost"
+            <TableRow className="border-b border-slate-100 bg-slate-50/50">
+              <TableHead className="w-[120px] py-3">
+                <button
                   onClick={() => handleSort("code")}
-                  className="h-8 px-2 font-semibold"
+                  className="flex items-center gap-2 text-xs font-semibold text-slate-600 hover:text-slate-800"
                 >
                   Code
-                  <ArrowUpDown className="ml-2 h-4 w-4" />
-                </Button>
+                  <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
+                </button>
               </TableHead>
-              <TableHead>
-                <Button
-                  variant="ghost"
+              <TableHead className="py-3">
+                <button
                   onClick={() => handleSort("name")}
-                  className="h-8 px-2 font-semibold"
+                  className="flex items-center gap-2 text-xs font-semibold text-slate-600 hover:text-slate-800"
                 >
-                  FrameworkName
-                  <ArrowUpDown className="ml-2 h-4 w-4" />
-                </Button>
+                  Framework Name
+                  <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
+                </button>
               </TableHead>
-              <TableHead className="w-[40%]">
-                <Button
-                  variant="ghost"
+              <TableHead className="w-[40%] py-3">
+                <button
                   onClick={() => handleSort("description")}
-                  className="h-8 px-2 font-semibold"
+                  className="flex items-center gap-2 text-xs font-semibold text-slate-600 hover:text-slate-800"
                 >
                   Description
-                  <ArrowUpDown className="ml-2 h-4 w-4" />
-                </Button>
+                  <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
+                </button>
               </TableHead>
               {!isReviewerRole && (
-                <TableHead className="w-[100px] text-center">Action</TableHead>
+                <TableHead className="w-[100px] text-xs font-semibold text-slate-600 py-3">Actions</TableHead>
               )}
             </TableRow>
           </TableHeader>
           <TableBody>
             {currentFrameworks.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={isReviewerRole ? 3 : 4} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={isReviewerRole ? 3 : 4} className="h-24 text-center text-slate-500">
                   No frameworks found.
                 </TableCell>
               </TableRow>
@@ -576,30 +599,36 @@ export default function FrameworkOverviewPage() {
               currentFrameworks.map((framework) => (
                 <TableRow
                   key={framework.id}
-                  className="hover:bg-gray-50 cursor-pointer"
+                  className="border-b border-slate-100 last:border-0 hover:bg-slate-50 cursor-pointer"
                   onDoubleClick={() => router.push(`/compliance/framework/${framework.id}`)}
                 >
-                  <TableCell className="font-medium">{framework.code || "-"}</TableCell>
-                  <TableCell>{framework.name}</TableCell>
-                  <TableCell className="text-gray-600 truncate max-w-[400px]">
+                  <TableCell className="py-3 text-sm font-medium text-slate-800">{framework.code || "-"}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700">{framework.name}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-600 truncate max-w-[400px]">
                     {framework.description || "-"}
                   </TableCell>
                   {!isReviewerRole && (
-                    <TableCell>
-                      <div className="flex items-center justify-center gap-1">
+                    <TableCell className="py-3">
+                      <div className="flex items-center gap-1">
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => openEditDialog(framework)}
-                          className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openEditDialog(framework);
+                          }}
+                          className="h-8 w-8 text-slate-400 hover:text-slate-600"
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => openDeleteDialog(framework)}
-                          className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openDeleteDialog(framework);
+                          }}
+                          className="h-8 w-8 text-slate-400 hover:text-semantic-error"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -613,379 +642,389 @@ export default function FrameworkOverviewPage() {
         </Table>
 
         {/* Pagination */}
-        <div className="flex items-center justify-center gap-2 p-4 border-t">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setCurrentPage(0)}
-            disabled={currentPage === 0}
-            className="h-8 w-8"
-          >
-            <ChevronsLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setCurrentPage(currentPage - 1)}
-            disabled={currentPage === 0}
-            className="h-8 w-8"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <span className="text-sm text-muted-foreground px-3 py-1">
+        <div className="flex items-center justify-between p-4 border-t border-slate-100">
+          <div className="text-xs text-slate-500">
             {sortedFrameworks.length > 0
-              ? `Currently showing ${startIndex + 1} to ${endIndex} of ${sortedFrameworks.length}`
+              ? `Showing ${startIndex + 1} to ${endIndex} of ${sortedFrameworks.length}`
               : "No frameworks"}
-          </span>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setCurrentPage(currentPage + 1)}
-            disabled={currentPage >= totalPages - 1}
-            className="h-8 w-8"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setCurrentPage(totalPages - 1)}
-            disabled={currentPage >= totalPages - 1}
-            className="h-8 w-8"
-          >
-            <ChevronsRight className="h-4 w-4" />
-          </Button>
+          </div>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setCurrentPage(0)}
+              disabled={currentPage === 0}
+            >
+              <ChevronsLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setCurrentPage(currentPage - 1)}
+              disabled={currentPage === 0}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setCurrentPage(currentPage + 1)}
+              disabled={currentPage >= totalPages - 1}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setCurrentPage(totalPages - 1)}
+              disabled={currentPage >= totalPages - 1}
+            >
+              <ChevronsRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Step 1: Create/Edit Framework Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {isEditMode ? "Edit Integrated Framework" : "Create Integrated Framework"}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <p className="text-sm text-muted-foreground">
-              Please find out the following details to create new compliance framework.
-              Provide distinctive name for easy identification. Note that custom framework
-              will be automatically assigned a grey color to differentiate them from
-              standard frameworks in the dashboard.
-            </p>
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">
+                {isEditMode ? "Edit Framework" : "Create Framework"}
+              </DialogTitle>
+            </DialogHeader>
+          </div>
 
-            {isEditMode && (
-              <p className="text-sm text-blue-600 bg-blue-50 p-2 rounded border border-blue-100">
-                Note: Custom framework will be automatically added in grey color to
-                differentiate between Subscribed Frameworks.
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            <div className="space-y-5">
+              <p className="text-sm text-slate-500">
+                Please provide the following details to create a new compliance framework.
               </p>
-            )}
 
-            <div className="space-y-2">
-              <Label htmlFor="code">Code</Label>
-              <Input
-                id="code"
-                value={formData.code}
-                onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                placeholder="Enter code"
-              />
-            </div>
+              {isEditMode && (
+                <p className="text-sm text-primary-600 bg-primary-50 p-3 rounded-lg border border-primary-100">
+                  Note: Custom framework will be automatically added in grey color to
+                  differentiate between Subscribed Frameworks.
+                </p>
+              )}
 
-            <div className="space-y-2">
-              <Label htmlFor="name">Integrated Framework Name</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Enter framework name"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Enter description"
-                rows={3}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="type">Framework Type</Label>
-              <Select
-                value={formData.type}
-                onValueChange={(value) => setFormData({ ...formData, type: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Framework">Framework</SelectItem>
-                  <SelectItem value="Standard">Standard</SelectItem>
-                  <SelectItem value="Regulation">Regulation</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="country">Country</Label>
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Code</Label>
                 <Input
-                  id="country"
-                  value={formData.country}
-                  onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                  placeholder="Enter country"
+                  value={formData.code}
+                  onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                  placeholder="Enter code"
+                  className="mt-1.5 bg-white"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="industry">Industry</Label>
+
+              <div>
+                <Label className="text-sm font-medium text-slate-700">
+                  Framework Name <span className="text-error">*</span>
+                </Label>
                 <Input
-                  id="industry"
-                  value={formData.industry}
-                  onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
-                  placeholder="Enter industry"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Enter framework name"
+                  className="mt-1.5 bg-white"
                 />
               </div>
-            </div>
 
-            {/* File Upload - Only for AI version */}
-            {isAICreate && (
-              <div className="space-y-2">
-                <Label>Upload Support Document</Label>
-                <div
-                  className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
-                    isDragging
-                      ? "border-primary bg-primary/5"
-                      : "border-gray-300 hover:border-gray-400"
-                  }`}
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                  onClick={() => document.getElementById("file-upload")?.click()}
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Description</Label>
+                <Textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Enter description"
+                  rows={3}
+                  className="mt-1.5 bg-white"
+                />
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Framework Type</Label>
+                <Select
+                  value={formData.type}
+                  onValueChange={(value) => setFormData({ ...formData, type: value })}
                 >
-                  <input
-                    id="file-upload"
-                    type="file"
-                    className="hidden"
-                    onChange={handleFileSelect}
-                    accept=".pdf,.doc,.docx,.xlsx,.xls"
+                  <SelectTrigger className="mt-1.5 bg-white">
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white" position="popper" sideOffset={4}>
+                    <SelectItem value="Framework">Framework</SelectItem>
+                    <SelectItem value="Standard">Standard</SelectItem>
+                    <SelectItem value="Regulation">Regulation</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Country</Label>
+                  <Input
+                    value={formData.country}
+                    onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                    placeholder="Enter country"
+                    className="mt-1.5 bg-white"
                   />
-                  {uploadedFile ? (
-                    <div className="flex flex-col items-center gap-2">
-                      <Upload className="h-8 w-8 text-green-500" />
-                      <span className="text-sm font-medium text-green-600">
-                        {uploadedFile.name}
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setUploadedFile(null);
-                        }}
-                        className="text-red-500 hover:text-red-600"
-                      >
-                        Remove
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                      <Upload className="h-8 w-8" />
-                      <span className="text-sm">Click here, or drop files here to upload.</span>
-                    </div>
-                  )}
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Industry</Label>
+                  <Input
+                    value={formData.industry}
+                    onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
+                    placeholder="Enter industry"
+                    className="mt-1.5 bg-white"
+                  />
                 </div>
               </div>
-            )}
 
-            <DialogFooter className="pt-4 border-t">
-              <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                Cancel
-              </Button>
-              {isEditMode ? (
-                <Button onClick={handleCreateOrUpdate} disabled={!formData.name}>
-                  Save
-                </Button>
-              ) : (
-                <Button onClick={handleCreateOrUpdate} disabled={!formData.name}>
-                  Create
-                </Button>
+              {/* File Upload - Only for AI version */}
+              {isAICreate && (
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Upload Support Document</Label>
+                  <div
+                    className={`mt-1.5 border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
+                      isDragging
+                        ? "border-primary-500 bg-primary-50"
+                        : "border-slate-200 hover:border-slate-300"
+                    }`}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    onClick={() => document.getElementById("file-upload")?.click()}
+                  >
+                    <input
+                      id="file-upload"
+                      type="file"
+                      className="hidden"
+                      onChange={handleFileSelect}
+                      accept=".pdf,.doc,.docx,.xlsx,.xls"
+                    />
+                    {uploadedFile ? (
+                      <div className="flex flex-col items-center gap-2">
+                        <Upload className="h-8 w-8 text-success-dark" />
+                        <span className="text-sm font-medium text-success-dark">
+                          {uploadedFile.name}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setUploadedFile(null);
+                          }}
+                          className="text-slate-400 hover:text-semantic-error"
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center gap-2 text-slate-400">
+                        <Upload className="h-8 w-8" />
+                        <span className="text-sm">Click here, or drop files here to upload.</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
               )}
-            </DialogFooter>
+            </div>
+          </div>
+
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateOrUpdate} disabled={!formData.name}>
+              {isEditMode ? "Save" : "Create"}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
 
       {/* Step 2: Import Requirements Dialog */}
       <Dialog open={isImportDialogOpen} onOpenChange={handleCloseImportDialog}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FileSpreadsheet className="h-5 w-5 text-green-600" />
-              Import Framework Requirements
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-6 py-4">
-            <p className="text-sm text-muted-foreground">
-              Upload an Excel file (.xlsx) containing your framework requirements.
-              You can download the sample template to see the required format.
-            </p>
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-lg font-semibold text-slate-800">
+                <FileSpreadsheet className="h-5 w-5 text-success-dark" />
+                Import Framework Requirements
+              </DialogTitle>
+            </DialogHeader>
+          </div>
 
-            {/* Download Template Button */}
-            <div className="flex items-center gap-4">
-              <Button
-                variant="outline"
-                onClick={handleDownloadTemplate}
-                className="flex items-center gap-2"
-              >
-                <Download className="h-4 w-4" />
-                Download Sample Template
-              </Button>
-              <span className="text-sm text-muted-foreground">
-                Use this template to ensure correct column headers
-              </span>
-            </div>
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            <div className="space-y-5">
+              <p className="text-sm text-slate-500">
+                Upload an Excel file (.xlsx) containing your framework requirements.
+                You can download the sample template to see the required format.
+              </p>
 
-            {/* File Upload Area */}
-            <div className="space-y-2">
-              <Label>Upload Document</Label>
-              <div
-                className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-                  isDraggingImport
-                    ? "border-green-500 bg-green-50"
-                    : importFile
-                    ? "border-green-500 bg-green-50"
-                    : "border-gray-300 hover:border-gray-400"
-                }`}
-                onDragOver={handleImportDragOver}
-                onDragLeave={handleImportDragLeave}
-                onDrop={handleImportDrop}
-                onClick={() => document.getElementById("import-file-upload")?.click()}
-              >
-                <input
-                  id="import-file-upload"
-                  type="file"
-                  className="hidden"
-                  onChange={handleImportFileSelect}
-                  accept=".xlsx,.xls"
-                />
-                {importFile ? (
-                  <div className="flex flex-col items-center gap-3">
-                    <FileSpreadsheet className="h-12 w-12 text-green-500" />
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-green-600">
-                        {importFile.name}
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setImportFile(null);
-                          setImportErrors([]);
-                          setImportSuccess(null);
-                        }}
-                        className="h-6 w-6 p-0 text-gray-400 hover:text-red-500"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <span className="text-xs text-muted-foreground">
-                      {(importFile.size / 1024).toFixed(2)} KB
-                    </span>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center gap-3 text-muted-foreground">
-                    <Upload className="h-12 w-12" />
-                    <div>
-                      <span className="text-sm font-medium">
-                        Click to upload or drag and drop
-                      </span>
-                      <p className="text-xs mt-1">Excel files only (.xlsx)</p>
-                    </div>
-                  </div>
-                )}
+              {/* Download Template Button */}
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDownloadTemplate}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Download Sample Template
+                </Button>
+                <span className="text-sm text-slate-500">
+                  Use this template to ensure correct column headers
+                </span>
               </div>
-            </div>
 
-            {/* Success Message */}
-            {importSuccess && (
-              <div className="flex items-start gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
-                <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-green-800">{importSuccess}</p>
-                  {importErrors.length > 0 && (
-                    <p className="text-xs text-green-600 mt-1">
-                      Some warnings occurred during import. See details below.
-                    </p>
+              {/* File Upload Area */}
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Upload Document</Label>
+                <div
+                  className={`mt-1.5 border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+                    isDraggingImport
+                      ? "border-success-dark bg-success-light"
+                      : importFile
+                      ? "border-success-dark bg-success-light"
+                      : "border-slate-200 hover:border-slate-300"
+                  }`}
+                  onDragOver={handleImportDragOver}
+                  onDragLeave={handleImportDragLeave}
+                  onDrop={handleImportDrop}
+                  onClick={() => document.getElementById("import-file-upload")?.click()}
+                >
+                  <input
+                    id="import-file-upload"
+                    type="file"
+                    className="hidden"
+                    onChange={handleImportFileSelect}
+                    accept=".xlsx,.xls"
+                  />
+                  {importFile ? (
+                    <div className="flex flex-col items-center gap-3">
+                      <FileSpreadsheet className="h-12 w-12 text-success-dark" />
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-success-dark">
+                          {importFile.name}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setImportFile(null);
+                            setImportErrors([]);
+                            setImportSuccess(null);
+                          }}
+                          className="h-6 w-6 p-0 text-slate-400 hover:text-semantic-error"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <span className="text-xs text-slate-500">
+                        {(importFile.size / 1024).toFixed(2)} KB
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-3 text-slate-400">
+                      <Upload className="h-12 w-12" />
+                      <div>
+                        <span className="text-sm font-medium">
+                          Click to upload or drag and drop
+                        </span>
+                        <p className="text-xs mt-1">Excel files only (.xlsx)</p>
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>
-            )}
 
-            {/* Error Messages */}
-            {importErrors.length > 0 && (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-red-600">
-                  <AlertCircle className="h-4 w-4" />
-                  <span className="text-sm font-medium">
-                    {importSuccess ? "Warnings" : "Validation Errors"}
-                  </span>
+              {/* Success Message */}
+              {importSuccess && (
+                <div className="flex items-start gap-2 p-3 bg-success-light border border-success-dark/20 rounded-lg">
+                  <CheckCircle2 className="h-5 w-5 text-success-dark mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-success-dark">{importSuccess}</p>
+                    {importErrors.length > 0 && (
+                      <p className="text-xs text-success-dark/80 mt-1">
+                        Some warnings occurred during import. See details below.
+                      </p>
+                    )}
+                  </div>
                 </div>
-                <div className="max-h-40 overflow-y-auto border border-red-200 rounded-lg bg-red-50">
-                  {importErrors.map((error, index) => (
-                    <div
-                      key={index}
-                      className="px-3 py-2 text-sm text-red-700 border-b border-red-100 last:border-b-0"
+              )}
+
+              {/* Error Messages */}
+              {importErrors.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-error">
+                    <AlertCircle className="h-4 w-4" />
+                    <span className="text-sm font-medium">
+                      {importSuccess ? "Warnings" : "Validation Errors"}
+                    </span>
+                  </div>
+                  <div className="max-h-40 overflow-y-auto border border-error/20 rounded-lg bg-error-light">
+                    {importErrors.map((error, index) => (
+                      <div
+                        key={index}
+                        className="px-3 py-2 text-sm text-error border-b border-error/10 last:border-b-0"
+                      >
+                        {error.row > 0 && <span className="font-medium">Row {error.row}: </span>}
+                        {error.column && <span className="font-medium">{error.column} - </span>}
+                        {error.message}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Required Columns Info */}
+              <div className="bg-slate-50 rounded-lg p-4">
+                <p className="text-sm font-medium text-slate-700 mb-2">Required Column Headers:</p>
+                <div className="flex flex-wrap gap-2">
+                  {TEMPLATE_COLUMNS.map((col) => (
+                    <span
+                      key={col}
+                      className="text-xs px-2 py-1 bg-white border border-slate-200 rounded-md text-slate-600"
                     >
-                      {error.row > 0 && <span className="font-medium">Row {error.row}: </span>}
-                      {error.column && <span className="font-medium">{error.column} - </span>}
-                      {error.message}
-                    </div>
+                      {col}
+                    </span>
                   ))}
                 </div>
               </div>
-            )}
-
-            {/* Required Columns Info */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <p className="text-sm font-medium text-gray-700 mb-2">Required Column Headers:</p>
-              <div className="flex flex-wrap gap-2">
-                {TEMPLATE_COLUMNS.map((col) => (
-                  <span
-                    key={col}
-                    className="text-xs px-2 py-1 bg-white border rounded-md text-gray-600"
-                  >
-                    {col}
-                  </span>
-                ))}
-              </div>
             </div>
+          </div>
 
-            <DialogFooter className="pt-4 border-t">
-              <Button variant="outline" onClick={handleCloseImportDialog}>
-                {importSuccess ? "Close" : "Skip"}
-              </Button>
-              <Button
-                onClick={handleImport}
-                disabled={!importFile || isImporting}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                {isImporting ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
-                    Importing...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="h-4 w-4 mr-2" />
-                    Import
-                  </>
-                )}
-              </Button>
-            </DialogFooter>
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <Button variant="outline" onClick={handleCloseImportDialog}>
+              {importSuccess ? "Close" : "Skip"}
+            </Button>
+            <Button
+              onClick={handleImport}
+              disabled={!importFile || isImporting}
+            >
+              {isImporting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
+                  Importing...
+                </>
+              ) : (
+                <>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Import
+                </>
+              )}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -994,14 +1033,14 @@ export default function FrameworkOverviewPage() {
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmation</AlertDialogTitle>
+            <AlertDialogTitle>Delete Framework</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this?
+              Are you sure you want to delete this framework? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogAction onClick={handleDelete}>OK</AlertDialogAction>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -4,9 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Pencil, Trash2, Download, Upload, Search, Sparkles, FileText, Eye, BarChart3, ChevronLeft } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, LineChart, Line, XAxis, YAxis, CartesianGrid, Legend } from "recharts";
-import { PageHeader, DataGrid } from "@/components/shared";
+import { DataGrid } from "@/components/shared";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -584,7 +583,7 @@ export default function ProcessPage() {
       header: "Description",
       cell: ({ row }) => {
         const desc = row.getValue("description") as string;
-        return <span className="text-sm text-muted-foreground truncate max-w-[200px] block">{desc || "-"}</span>;
+        return <span className="text-sm text-slate-400 truncate max-w-[200px] block">{desc || "-"}</span>;
       },
     },
     {
@@ -628,7 +627,7 @@ export default function ProcessPage() {
       id: "actions",
       header: "Actions",
       cell: ({ row }: { row: { original: Process } }) => (
-        <div className="flex gap-2">
+        <div className="flex gap-1">
           <Button
             variant="ghost"
             size="icon"
@@ -640,7 +639,7 @@ export default function ProcessPage() {
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-slate-400 hover:text-error"
+            className="h-8 w-8 text-slate-400 hover:text-semantic-error"
             onClick={() => {
               setDeletingProcessId(row.original.id);
               setIsDeleteDialogOpen(true);
@@ -684,14 +683,17 @@ export default function ProcessPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-slate-400">Loading...</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Process" />
+      {/* Page Header */}
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold text-slate-800">Process</h1>
+      </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
@@ -705,7 +707,7 @@ export default function ProcessPage() {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input
                   placeholder="Search processes..."
                   value={searchTerm}
@@ -755,12 +757,12 @@ export default function ProcessPage() {
             </div>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm">
-                <Upload className="h-4 w-4 mr-2" />
+                <Download className="h-4 w-4 mr-2" />
                 Export
               </Button>
               {!isDepartmentContributor && (
                 <Button variant="outline" size="sm">
-                  <Download className="h-4 w-4 mr-2" />
+                  <Upload className="h-4 w-4 mr-2" />
                   Import
                 </Button>
               )}
@@ -785,7 +787,7 @@ export default function ProcessPage() {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input
                   placeholder="Search By Process ID, Name"
                   value={searchTerm}
@@ -821,7 +823,7 @@ export default function ProcessPage() {
               </Select>
             </div>
             <Button variant="outline" size="sm">
-              <Upload className="h-4 w-4 mr-2" />
+              <Download className="h-4 w-4 mr-2" />
               Export
             </Button>
           </div>
@@ -835,17 +837,14 @@ export default function ProcessPage() {
 
         {/* Performance Dashboard Tab - Matching UAT structure */}
         <TabsContent value="performance" className="space-y-6">
-          {/* KPI Dashboard Heading */}
-          <h3 className="text-xl font-semibold text-slate-800">KPI Dashboard</h3>
-
           {/* Two Donut Charts Side by Side */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Status Chart */}
-            <Card className="bg-slate-50">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base font-semibold text-slate-800">Status</CardTitle>
-              </CardHeader>
-              <CardContent>
+            <div className="bg-white rounded-xl border border-slate-200">
+              <div className="px-6 py-4 border-b border-slate-100">
+                <h3 className="text-base font-semibold text-slate-800">Status</h3>
+              </div>
+              <div className="p-6">
                 {(() => {
                   const kpiProcesses = departmentFilteredProcesses.filter((p) => p.kpiMeasurementRequired);
                   const total = kpiProcesses.length || 1;
@@ -893,15 +892,15 @@ export default function ProcessPage() {
                     </div>
                   );
                 })()}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
             {/* Department Chart */}
-            <Card className="bg-slate-50">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base font-semibold text-slate-800">Department</CardTitle>
-              </CardHeader>
-              <CardContent>
+            <div className="bg-white rounded-xl border border-slate-200">
+              <div className="px-6 py-4 border-b border-slate-100">
+                <h3 className="text-base font-semibold text-slate-800">Department</h3>
+              </div>
+              <div className="p-6">
                 {(() => {
                   const kpiProcesses = departmentFilteredProcesses.filter((p) => p.kpiMeasurementRequired);
                   // Group by department
@@ -954,14 +953,14 @@ export default function ProcessPage() {
                     </div>
                   );
                 })()}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
 
           {/* Search and Department Filter */}
           <div className="flex items-center gap-4 mb-4">
             <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
                 placeholder="Search processes..."
                 value={kpiSearchTerm}
@@ -1000,17 +999,15 @@ export default function ProcessPage() {
                 hideSearch={true}
               />
             ) : (
-              <Card>
-                <CardContent className="py-12">
-                  <div className="flex flex-col items-center justify-center text-center">
-                    <FileText className="h-16 w-16 text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-medium mb-2">No KPI Data</h3>
-                    <p className="text-muted-foreground">
-                      No processes have KPI measurement enabled. Enable KPI Measurement Required when adding a process to see it here.
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+              <div className="bg-white rounded-xl border border-slate-200 p-12">
+                <div className="flex flex-col items-center justify-center text-center">
+                  <FileText className="h-12 w-12 text-slate-400 mb-4" />
+                  <h3 className="text-base font-semibold text-slate-800 mb-1">No KPI Data</h3>
+                  <p className="text-sm text-slate-500">
+                    No processes have KPI measurement enabled. Enable KPI Measurement Required when adding a process to see it here.
+                  </p>
+                </div>
+              </div>
             );
           })()}
         </TabsContent>
@@ -1038,63 +1035,70 @@ export default function ProcessPage() {
 
       {/* AI Risk Evaluation Dialog */}
       <Dialog open={isAIEvaluationOpen} onOpenChange={setIsAIEvaluationOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary-600" />
-              AI Risk Evaluation
-            </DialogTitle>
-            <DialogDescription>
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-lg font-semibold text-slate-800">
+                <Sparkles className="h-5 w-5 text-primary-600" />
+                AI Risk Evaluation
+              </DialogTitle>
+            </DialogHeader>
+          </div>
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+            <p className="text-sm text-slate-500">
               AI-powered risk assessment for process: {evaluatingProcess?.name}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <div className="space-y-4">
-              <div className="p-4 bg-primary-50 rounded-lg border border-primary-200">
-                <h4 className="font-medium text-primary-900 mb-2">Risk Assessment Summary</h4>
-                <p className="text-sm text-primary-700">
-                  Based on the process characteristics and historical data, the AI has identified
-                  the following risk factors:
-                </p>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center p-2 bg-slate-50 rounded">
-                  <span className="text-sm">Operational Risk</span>
-                  <Badge variant="secondary">Medium</Badge>
-                </div>
-                <div className="flex justify-between items-center p-2 bg-slate-50 rounded">
-                  <span className="text-sm">Compliance Risk</span>
-                  <Badge variant="outline">Low</Badge>
-                </div>
-                <div className="flex justify-between items-center p-2 bg-slate-50 rounded">
-                  <span className="text-sm">Security Risk</span>
-                  <Badge variant="secondary">Medium</Badge>
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                * This is a simulated AI evaluation. In production, this would connect to an AI service
-                for real-time risk assessment.
+            </p>
+            <div className="p-4 bg-primary-50 rounded-lg border border-primary-200">
+              <h4 className="font-medium text-primary-900 mb-2">Risk Assessment Summary</h4>
+              <p className="text-sm text-primary-700">
+                Based on the process characteristics and historical data, the AI has identified
+                the following risk factors:
               </p>
             </div>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center p-2 bg-slate-50 rounded">
+                <span className="text-sm">Operational Risk</span>
+                <Badge variant="secondary">Medium</Badge>
+              </div>
+              <div className="flex justify-between items-center p-2 bg-slate-50 rounded">
+                <span className="text-sm">Compliance Risk</span>
+                <Badge variant="outline">Low</Badge>
+              </div>
+              <div className="flex justify-between items-center p-2 bg-slate-50 rounded">
+                <span className="text-sm">Security Risk</span>
+                <Badge variant="secondary">Medium</Badge>
+              </div>
+            </div>
+            <p className="text-xs text-slate-400">
+              * This is a simulated AI evaluation. In production, this would connect to an AI service
+              for real-time risk assessment.
+            </p>
           </div>
-          <DialogFooter>
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsAIEvaluationOpen(false)}>
               Close
             </Button>
             <Button>
               Generate Full Report
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* BIA Form Dialog */}
       <Dialog open={isBIAFormOpen} onOpenChange={setIsBIAFormOpen}>
-        <DialogContent className="sm:max-w-[800px] max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-semibold text-slate-800">Business Impact Analysis - {biaProcess?.name}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-6 py-4">
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Business Impact Analysis - {biaProcess?.name}</DialogTitle>
+            </DialogHeader>
+          </div>
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
             {/* Status and Controls Section */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
@@ -1213,14 +1217,15 @@ export default function ProcessPage() {
               </div>
             </div>
           </div>
-          <DialogFooter>
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsBIAFormOpen(false)}>
               Cancel
             </Button>
             <Button onClick={handleSaveBIA}>
               Save
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -1229,11 +1234,15 @@ export default function ProcessPage() {
         setIsAddProcessOpen(open);
         if (!open) resetProcessForm();
       }}>
-        <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-semibold text-slate-800">Add New Process</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-6 py-4">
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Add New Process</DialogTitle>
+            </DialogHeader>
+          </div>
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
             {/* Basic Information Section */}
             <div className="space-y-4">
               <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">Basic Information</h4>
@@ -1448,14 +1457,15 @@ export default function ProcessPage() {
               </div>
             </div>
           </div>
-          <DialogFooter>
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsAddProcessOpen(false)}>
               Cancel
             </Button>
             <Button onClick={handleAddProcess} disabled={saving}>
               {saving ? "Saving..." : "Add Process"}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -1464,12 +1474,15 @@ export default function ProcessPage() {
         setIsEditProcessOpen(open);
         if (!open) setEditingProcess(null);
       }}>
-        <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-semibold text-slate-800">Edit Process</DialogTitle>
-          </DialogHeader>
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Edit Process</DialogTitle>
+            </DialogHeader>
+          </div>
           {editingProcess && (
-            <div className="space-y-6 py-4">
+            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
               {/* Basic Information Section */}
               <div className="space-y-4">
                 <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">Basic Information</h4>
@@ -1701,14 +1714,15 @@ export default function ProcessPage() {
               </div>
             </div>
           )}
-          <DialogFooter>
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsEditProcessOpen(false)}>
               Cancel
             </Button>
             <Button onClick={handleEditProcess} disabled={saving}>
               {saving ? "Saving..." : "Save Changes"}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -1717,18 +1731,21 @@ export default function ProcessPage() {
         setIsKPIModalOpen(open);
         if (!open) setSelectedKPIProcess(null);
       }}>
-        <DialogContent className="sm:max-w-[800px] max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-semibold text-slate-800">KPI Details - {selectedKPIProcess?.name}</DialogTitle>
-          </DialogHeader>
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">KPI Details - {selectedKPIProcess?.name}</DialogTitle>
+            </DialogHeader>
+          </div>
           {selectedKPIProcess && (
-            <div className="space-y-6 py-4">
+            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
               {/* KPI Chart Section */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">Performance Chart</h4>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">Year</span>
+                    <span className="text-sm text-slate-400">Year</span>
                     <Select value={selectedKPIYear} onValueChange={setSelectedKPIYear}>
                       <SelectTrigger className="w-[100px] bg-white">
                         <SelectValue />
@@ -1750,8 +1767,8 @@ export default function ProcessPage() {
                   </div>
                 </div>
 
-                <Card className="bg-slate-50">
-                  <CardContent className="pt-6">
+                <div className="bg-white rounded-xl border border-slate-200 p-6">
+                  <div>
                     {/* Line Chart */}
                     <div className="h-[250px] mb-4">
                       <ResponsiveContainer width="100%" height="100%">
@@ -1792,8 +1809,8 @@ export default function ProcessPage() {
                         <span className="text-sm text-slate-600">Expected Value</span>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               </div>
 
               {/* KPI Configuration Section */}
@@ -1832,20 +1849,21 @@ export default function ProcessPage() {
                 <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">KPI Records</h4>
                 <div className="border border-slate-200 rounded-lg p-8 bg-slate-50">
                   <div className="flex flex-col items-center justify-center text-center">
-                    <p className="text-muted-foreground">No KPI records yet</p>
+                    <p className="text-slate-400">No KPI records yet</p>
                   </div>
                 </div>
               </div>
             </div>
           )}
-          <DialogFooter>
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsKPIModalOpen(false)}>
               Close
             </Button>
             <Button>
               Save
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

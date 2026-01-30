@@ -400,7 +400,7 @@ export default function AssetClassificationPage() {
       id: "actions",
       header: "Action",
       cell: ({ row }) => (
-        <div className="flex gap-2">
+        <div className="flex gap-1">
           <Button
             variant="outline"
             size="sm"
@@ -412,6 +412,7 @@ export default function AssetClassificationPage() {
           <Button
             variant="ghost"
             size="icon"
+            className="h-8 w-8 text-slate-400 hover:text-slate-600"
             onClick={() => openEditDialog(row.original)}
           >
             <Pencil className="h-4 w-4" />
@@ -419,7 +420,7 @@ export default function AssetClassificationPage() {
           <Button
             variant="ghost"
             size="icon"
-            className="text-destructive"
+            className="h-8 w-8 text-slate-400 hover:text-semantic-error"
             onClick={() => openDeleteDialog(row.original)}
           >
             <Trash2 className="h-4 w-4" />
@@ -476,11 +477,13 @@ export default function AssetClassificationPage() {
 
       {/* Add Classification Dialog - matching UAT */}
       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Add Asset Classification</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
+        <DialogContent className="max-w-lg flex flex-col max-h-[90vh] p-0 gap-0">
+          <div className="px-6 py-5 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Add Asset Classification</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="space-y-4 px-6 py-4 overflow-y-auto flex-1">
             {/* Asset Sub Category */}
             <div className="space-y-2">
               <Label>Asset Sub Category</Label>
@@ -650,22 +653,24 @@ export default function AssetClassificationPage() {
               </div>
             </div>
           </div>
-          <DialogFooter>
-            <Button onClick={handleAdd}>Save</Button>
-            <Button variant="outline" onClick={() => setIsAddOpen(false)}>
+          <div className="flex justify-end gap-2 px-6 py-4 flex-shrink-0">
+            <Button variant="outline" size="sm" onClick={() => setIsAddOpen(false)}>
               Cancel
             </Button>
-          </DialogFooter>
+            <Button size="sm" onClick={handleAdd}>Save</Button>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Edit Classification Dialog - matching UAT */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit Asset Classification</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
+        <DialogContent className="max-w-lg flex flex-col max-h-[90vh] p-0 gap-0">
+          <div className="px-6 py-5 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Edit Asset Classification</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="space-y-4 px-6 py-4 overflow-y-auto flex-1">
             {/* Asset Sub Category */}
             <div className="space-y-2">
               <Label>Asset Sub Category</Label>
@@ -835,98 +840,107 @@ export default function AssetClassificationPage() {
               </div>
             </div>
           </div>
-          <DialogFooter>
-            <Button onClick={handleEdit}>Save</Button>
-            <Button variant="outline" onClick={() => setIsEditOpen(false)}>
+          <div className="flex justify-end gap-2 px-6 py-4 flex-shrink-0">
+            <Button variant="outline" size="sm" onClick={() => setIsEditOpen(false)}>
               Cancel
             </Button>
-          </DialogFooter>
+            <Button size="sm" onClick={handleEdit}>Save</Button>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirm Delete</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete this classification? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>
+        <DialogContent className="max-w-md p-0 gap-0">
+          <div className="px-6 py-5">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Confirm Delete</DialogTitle>
+              <DialogDescription className="text-sm text-slate-500 mt-1">
+                Are you sure you want to delete this classification? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="flex justify-end gap-2 px-6 py-4">
+            <Button variant="outline" size="sm" onClick={() => setIsDeleteOpen(false)}>
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleDelete}>
+            <Button variant="destructive" size="sm" onClick={handleDelete}>
               Delete
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Add Asset Sensitivity Dialog - inline add */}
       <Dialog open={isAddSensitivityOpen} onOpenChange={setIsAddSensitivityOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Add Asset Sensitivity</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
+        <DialogContent className="max-w-md p-0 gap-0">
+          <div className="px-6 py-5">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Add Asset Sensitivity</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="space-y-4 px-6 py-4">
             <div className="space-y-2">
-              <Label>Name</Label>
+              <Label className="text-sm font-medium text-slate-700">Name</Label>
               <Input
                 value={newSensitivityName}
                 onChange={(e) => setNewSensitivityName(e.target.value)}
                 placeholder="Enter sensitivity name"
+                className="bg-white"
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => {
+          <div className="flex justify-end gap-2 px-6 py-4">
+            <Button variant="outline" size="sm" onClick={() => {
               setNewSensitivityName("");
               setIsAddSensitivityOpen(false);
             }}>
               Cancel
             </Button>
-            <Button onClick={handleAddSensitivity}>Save</Button>
-          </DialogFooter>
+            <Button size="sm" onClick={handleAddSensitivity}>Save</Button>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Add CIA Rating Dialog - inline add */}
       <Dialog open={isAddCIARatingOpen} onOpenChange={setIsAddCIARatingOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Add {newCIARatingType}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
+        <DialogContent className="max-w-md p-0 gap-0">
+          <div className="px-6 py-5">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Add {newCIARatingType}</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="space-y-4 px-6 py-4">
             <div className="space-y-2">
-              <Label>Label</Label>
+              <Label className="text-sm font-medium text-slate-700">Label</Label>
               <Input
                 value={newCIARatingLabel}
                 onChange={(e) => setNewCIARatingLabel(e.target.value)}
                 placeholder="e.g., high, medium, low"
+                className="bg-white"
               />
             </div>
             <div className="space-y-2">
-              <Label>Value</Label>
+              <Label className="text-sm font-medium text-slate-700">Value</Label>
               <Input
                 type="number"
                 value={newCIARatingValue}
                 onChange={(e) => setNewCIARatingValue(parseInt(e.target.value) || 0)}
                 placeholder="Score value"
+                className="bg-white"
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => {
+          <div className="flex justify-end gap-2 px-6 py-4">
+            <Button variant="outline" size="sm" onClick={() => {
               setNewCIARatingLabel("");
               setNewCIARatingValue(0);
               setIsAddCIARatingOpen(false);
             }}>
               Cancel
             </Button>
-            <Button onClick={handleAddCIARating}>Save</Button>
-          </DialogFooter>
+            <Button size="sm" onClick={handleAddCIARating}>Save</Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

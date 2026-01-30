@@ -14,7 +14,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  Search,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
@@ -238,22 +237,23 @@ export default function EvidenceByFrameworkPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center gap-3">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => router.push("/roles/customer-administrator/compliance/framework")}
+            className="h-8 w-8 text-slate-400 hover:text-slate-600"
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">Evidence</h1>
+            <h1 className="text-2xl font-bold text-slate-800">Evidence</h1>
             {framework && (
-              <p className="text-sm text-muted-foreground">
-                Filtered by: {framework.name}
+              <p className="text-sm text-slate-500">
+                Framework: {framework.name}
               </p>
             )}
           </div>
@@ -262,119 +262,111 @@ export default function EvidenceByFrameworkPage() {
 
       {/* Search Row */}
       <div className="flex items-center gap-4">
-        <div className="flex-1 relative">
-          <Input
-            placeholder="Search by Name, Domain and Assignee"
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setCurrentPage(1);
-            }}
-            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-            className="pr-10"
-          />
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute right-0 top-0 h-full"
-            onClick={handleSearch}
-          >
-            <Search className="h-4 w-4" />
-          </Button>
-        </div>
-        <div className="text-sm text-muted-foreground">
-          Framework: <span className="font-medium">{framework?.name || "Loading..."}</span>
-        </div>
+        <Input
+          placeholder="Search by name, domain or assignee..."
+          value={searchTerm}
+          onChange={(e) => {
+            setSearchTerm(e.target.value);
+            setCurrentPage(1);
+          }}
+          onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+          className="max-w-md bg-white"
+        />
       </div>
 
       {/* Table */}
       {loading ? (
-        <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+        <div className="flex items-center justify-center py-8">
+          <div className="relative h-8 w-8">
+            <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+          </div>
         </div>
       ) : (
-        <>
-          <div className="border rounded-lg">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Evidence Code</TableHead>
-                  <TableHead>Evidence Name</TableHead>
-                  <TableHead>Domain</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Assignee</TableHead>
-                  <TableHead>Department Name</TableHead>
+        <div className="bg-white rounded-xl border border-slate-200">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-slate-50/50">
+                <TableHead className="text-xs font-semibold text-slate-600 py-3">Evidence Code</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 py-3">Evidence Name</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 py-3">Domain</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 py-3">Status</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 py-3">Assignee</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 py-3">Department</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginatedEvidences.map((evidence) => (
+                <TableRow
+                  key={evidence.id}
+                  className="cursor-pointer hover:bg-slate-50"
+                  onDoubleClick={() => router.push(`/compliance/evidence/${evidence.id}`)}
+                >
+                  <TableCell className="font-medium text-slate-900">{evidence.evidenceCode}</TableCell>
+                  <TableCell className="text-slate-600">{evidence.name}</TableCell>
+                  <TableCell className="text-slate-600">{evidence.domain || "-"}</TableCell>
+                  <TableCell>
+                    <Badge className={statusColors[evidence.status] || "bg-gray-100 text-gray-800"}>
+                      {evidence.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-slate-600">{evidence.assignee?.fullName || "-"}</TableCell>
+                  <TableCell className="text-slate-600">{evidence.department?.name || "-"}</TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedEvidences.map((evidence) => (
-                  <TableRow
-                    key={evidence.id}
-                    className="cursor-pointer hover:bg-muted/50"
-                    onDoubleClick={() => router.push(`/compliance/evidence/${evidence.id}`)}
-                  >
-                    <TableCell className="font-medium">{evidence.evidenceCode}</TableCell>
-                    <TableCell>{evidence.name}</TableCell>
-                    <TableCell>{evidence.domain || ""}</TableCell>
-                    <TableCell>
-                      <Badge className={statusColors[evidence.status] || "bg-gray-100 text-gray-800"}>
-                        {evidence.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{evidence.assignee?.fullName || ""}</TableCell>
-                    <TableCell>{evidence.department?.name || ""}</TableCell>
-                  </TableRow>
-                ))}
-                {paginatedEvidences.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                      No evidence records found for this framework
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
+              ))}
+              {paginatedEvidences.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-8 text-slate-500">
+                    No evidence records found for this framework
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
 
           {/* Pagination */}
-          <div className="flex items-center justify-center gap-2">
+          <div className="flex items-center justify-center gap-2 p-4 border-t border-slate-100">
             <Button
-              variant="outline"
+              variant="ghost"
               size="icon"
               disabled={currentPage === 1}
               onClick={() => setCurrentPage(1)}
+              className="h-8 w-8"
             >
               <ChevronsLeft className="h-4 w-4" />
             </Button>
             <Button
-              variant="outline"
+              variant="ghost"
               size="icon"
               disabled={currentPage === 1}
               onClick={() => setCurrentPage((p) => p - 1)}
+              className="h-8 w-8"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="text-sm text-muted-foreground px-4">
-              Currently showing {startItem} to {endItem} of {total}
+            <span className="text-sm text-slate-500 px-3 py-1">
+              {total > 0 ? `Showing ${startItem} to ${endItem} of ${total}` : "No evidence"}
             </span>
             <Button
-              variant="outline"
+              variant="ghost"
               size="icon"
               disabled={currentPage >= totalPages}
               onClick={() => setCurrentPage((p) => p + 1)}
+              className="h-8 w-8"
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
             <Button
-              variant="outline"
+              variant="ghost"
               size="icon"
               disabled={currentPage >= totalPages}
               onClick={() => setCurrentPage(totalPages)}
+              className="h-8 w-8"
             >
               <ChevronsRight className="h-4 w-4" />
             </Button>
           </div>
-        </>
+        </div>
       )}
     </div>
   );

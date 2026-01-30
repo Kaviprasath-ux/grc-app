@@ -337,7 +337,7 @@ export default function DomainPage() {
                 ))}
                 {domains.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={4} className="text-center py-8 text-slate-400">
                       No domains found
                     </TableCell>
                   </TableRow>
@@ -364,7 +364,7 @@ export default function DomainPage() {
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="text-sm text-muted-foreground px-4">
+            <span className="text-sm text-slate-400 px-4">
               Currently showing {startItem} to {endItem} of {total}
             </span>
             <Button
@@ -402,7 +402,7 @@ export default function DomainPage() {
                 disabled
                 className="bg-gray-100 cursor-not-allowed"
               />
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs text-slate-400 mt-1">
                 {editingDomain ? "Auto-generated code cannot be changed" : "Will be auto-generated on save"}
               </p>
             </div>

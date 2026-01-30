@@ -41,8 +41,7 @@ export function DocumentStatusCard({ title, data, className }: DocumentStatusCar
 
   return (
     <div className={cn(
-      "bg-white rounded-xl border border-slate-200 p-4 transition-all duration-200 flex flex-col",
-      "hover:shadow-lg hover:shadow-slate-200/50 hover:border-slate-300",
+      "bg-white rounded-xl border border-slate-200 p-4 flex flex-col",
       className
     )}>
       {/* Header with summary stats */}

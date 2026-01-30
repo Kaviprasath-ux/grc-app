@@ -238,7 +238,7 @@ function ManagementReportContent() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-muted-foreground">Loading report data...</div>
+        <div className="text-slate-400">Loading report data...</div>
       </div>
     );
   }
@@ -417,7 +417,7 @@ function ManagementReportContent() {
                 </div>
               ))}
               {frameworkComplianceStats.length === 0 && (
-                <p className="text-muted-foreground text-center py-4">No frameworks found</p>
+                <p className="text-slate-400 text-center py-4">No frameworks found</p>
               )}
             </div>
 
@@ -460,7 +460,7 @@ function ManagementReportContent() {
                 </div>
               ))}
               {filteredFrameworks.length === 0 && (
-                <p className="text-muted-foreground text-center py-4">No frameworks found</p>
+                <p className="text-slate-400 text-center py-4">No frameworks found</p>
               )}
             </div>
           </CardContent>
@@ -490,7 +490,7 @@ function ManagementReportContent() {
                 </div>
               ))}
               {filteredFrameworks.length === 0 && (
-                <p className="text-muted-foreground text-center py-4">No frameworks found</p>
+                <p className="text-slate-400 text-center py-4">No frameworks found</p>
               )}
             </div>
           </CardContent>
@@ -520,7 +520,7 @@ function ManagementReportContent() {
                 ))}
               </div>
             ) : (
-              <p className="text-muted-foreground text-center py-4">No requirement exceptions found</p>
+              <p className="text-slate-400 text-center py-4">No requirement exceptions found</p>
             )}
           </CardContent>
         </Card>
@@ -573,7 +573,7 @@ function ManagementReportContent() {
                   </>
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-gray-100 rounded-full">
-                    <span className="text-muted-foreground text-sm">No Data</span>
+                    <span className="text-slate-400 text-sm">No Data</span>
                   </div>
                 )}
               </div>
@@ -611,17 +611,17 @@ function ManagementReportContent() {
                     {(governanceByFramework[framework.name] || []).map((doc) => (
                       <div key={doc.id} className="flex justify-between text-sm p-2 bg-gray-50 rounded">
                         <span>{doc.title}</span>
-                        <span className="text-muted-foreground">{doc.type}</span>
+                        <span className="text-slate-400">{doc.type}</span>
                       </div>
                     ))}
                     {(!governanceByFramework[framework.name] || governanceByFramework[framework.name].length === 0) && (
-                      <p className="text-sm text-muted-foreground">No governance documents</p>
+                      <p className="text-sm text-slate-400">No governance documents</p>
                     )}
                   </div>
                 </div>
               ))}
               {filteredFrameworks.length === 0 && (
-                <p className="text-muted-foreground text-center py-4">No frameworks found</p>
+                <p className="text-slate-400 text-center py-4">No frameworks found</p>
               )}
             </div>
           </CardContent>
@@ -680,7 +680,7 @@ function ManagementReportContent() {
                 );
               })}
               {filteredFrameworks.length === 0 && (
-                <p className="text-muted-foreground text-center py-4">No frameworks found</p>
+                <p className="text-slate-400 text-center py-4">No frameworks found</p>
               )}
             </div>
           </CardContent>
@@ -703,7 +703,7 @@ function ManagementReportContent() {
                     <div key={control.id} className="flex justify-between p-2 bg-gray-50 rounded">
                       <div>
                         <span className="font-medium">{control.code}</span>
-                        <span className="text-muted-foreground ml-2">{control.name}</span>
+                        <span className="text-slate-400 ml-2">{control.name}</span>
                       </div>
                       <span className={`text-sm px-2 py-1 rounded ${
                         control.status === "Not Implemented" ? "bg-red-100 text-red-800" :
@@ -715,7 +715,7 @@ function ManagementReportContent() {
                   ))}
               </div>
             ) : (
-              <p className="text-muted-foreground text-center py-4">No compliance issues found</p>
+              <p className="text-slate-400 text-center py-4">No compliance issues found</p>
             )}
           </CardContent>
         </Card>

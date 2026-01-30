@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Plus, Pencil, Trash2, Download, Upload, Search, Settings2, MapPin, FileType, Clock, Briefcase, BarChart3 } from "lucide-react";
-import { PageHeader, DataGrid } from "@/components/shared";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Plus, Pencil, Trash2, Settings2, MapPin, FileType, Clock, Briefcase, BarChart3, Search } from "lucide-react";
+import { DataGrid } from "@/components/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,9 +12,18 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
-  DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
 import { ColumnDef } from "@tanstack/react-table";
 
 interface SettingItem {
@@ -108,6 +116,7 @@ const mockSettingsData: Record<string, SettingItem[]> = {
 
 export default function OrganizationSettingsPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [settingsData, setSettingsData] = useState<Record<string, SettingItem[]>>(mockSettingsData);
   const [searchTerm, setSearchTerm] = useState("");
@@ -115,7 +124,6 @@ export default function OrganizationSettingsPage() {
   // Dialog states
   const [isAddItemOpen, setIsAddItemOpen] = useState(false);
   const [isEditItemOpen, setIsEditItemOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<SettingItem | null>(null);
   const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
 
@@ -126,14 +134,19 @@ export default function OrganizationSettingsPage() {
   const currentCategory = settingCategories.find((c) => c.id === activeCategory);
   const currentData = activeCategory ? settingsData[activeCategory] || [] : [];
 
-  // Filter data
-  const filteredData = currentData.filter((item) =>
-    item.name.toLowerCase().includes(searchTerm.toLowerCase())
+  // Filter data based on search
+  const filteredData = currentData.filter(
+    (item) =>
+      item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.description?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // CRUD operations
   const handleAddItem = () => {
-    if (!activeCategory || !newItem.name.trim()) return;
+    if (!activeCategory || !newItem.name.trim()) {
+      toast({ title: "Error", description: "Please enter a name", variant: "destructive" });
+      return;
+    }
     const newId = Date.now().toString();
     setSettingsData({
       ...settingsData,
@@ -141,6 +154,7 @@ export default function OrganizationSettingsPage() {
     });
     setNewItem({ name: "", description: "" });
     setIsAddItemOpen(false);
+    toast({ title: "Success", description: "Item added successfully" });
   };
 
   const handleEditItem = () => {
@@ -153,6 +167,7 @@ export default function OrganizationSettingsPage() {
     });
     setIsEditItemOpen(false);
     setEditingItem(null);
+    toast({ title: "Success", description: "Item updated successfully" });
   };
 
   const handleDeleteItem = () => {
@@ -161,32 +176,33 @@ export default function OrganizationSettingsPage() {
       ...settingsData,
       [activeCategory]: currentData.filter((item) => item.id !== deletingItemId),
     });
-    setIsDeleteDialogOpen(false);
     setDeletingItemId(null);
+    toast({ title: "Success", description: "Item deleted successfully" });
   };
 
-  // Columns for settings table
+  // Columns for settings table - matching profile page pattern
   const settingColumns: ColumnDef<SettingItem>[] = [
     {
       accessorKey: "name",
       header: "Name",
-      cell: ({ row }) => <span className="font-medium">{row.getValue("name")}</span>,
+      cell: ({ row }) => <span className="font-medium text-slate-800">{row.getValue("name")}</span>,
     },
     {
       accessorKey: "description",
       header: "Description",
       cell: ({ row }) => (
-        <span className="text-muted-foreground">{row.getValue("description") || "-"}</span>
+        <span className="text-slate-600">{row.getValue("description") || "-"}</span>
       ),
     },
     {
       id: "actions",
       header: "Actions",
       cell: ({ row }) => (
-        <div className="flex gap-2">
+        <div className="flex gap-1">
           <Button
             variant="ghost"
             size="icon"
+            className="h-8 w-8 text-slate-400 hover:text-slate-600"
             onClick={() => {
               setEditingItem(row.original);
               setIsEditItemOpen(true);
@@ -197,11 +213,8 @@ export default function OrganizationSettingsPage() {
           <Button
             variant="ghost"
             size="icon"
-            className="text-destructive"
-            onClick={() => {
-              setDeletingItemId(row.original.id);
-              setIsDeleteDialogOpen(true);
-            }}
+            className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+            onClick={() => setDeletingItemId(row.original.id)}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -214,139 +227,150 @@ export default function OrganizationSettingsPage() {
   if (activeCategory) {
     return (
       <div className="space-y-6">
-        <PageHeader
-          title={currentCategory?.title || "Settings"}
-          actions={[
-            {
-              label: "Back to Settings",
-              variant: "outline",
-              icon: ArrowLeft,
-              onClick: () => setActiveCategory(null),
-            },
-          ]}
-        />
-
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 w-[250px]"
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
-              <Upload className="h-4 w-4 mr-2" />
-              Import
-            </Button>
-            <Button variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-2" />
-              Export
-            </Button>
-            <Button onClick={() => setIsAddItemOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add New
-            </Button>
-          </div>
+        {/* Page Header */}
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800">{currentCategory?.title}</h1>
         </div>
 
+        {/* Toolbar - Search and Actions */}
+        <div className="flex items-center justify-between gap-4">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Input
+              placeholder={`Search ${currentCategory?.title.toLowerCase()}...`}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 bg-white border-slate-200"
+            />
+          </div>
+          <Button size="sm" onClick={() => setIsAddItemOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add {currentCategory?.title}
+          </Button>
+        </div>
+
+        {/* Data Grid - hide internal search */}
         <DataGrid
           columns={settingColumns}
           data={filteredData}
-          searchPlaceholder="Search..."
+          hideSearch={true}
         />
 
         {/* Add Item Dialog */}
         <Dialog open={isAddItemOpen} onOpenChange={setIsAddItemOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add New {currentCategory?.title}</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="itemName">Name *</Label>
-                <Input
-                  id="itemName"
-                  value={newItem.name}
-                  onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
-                  placeholder="Enter name"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="itemDescription">Description</Label>
-                <Input
-                  id="itemDescription"
-                  value={newItem.description}
-                  onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
-                  placeholder="Enter description"
-                />
+          <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+            {/* Fixed Header */}
+            <div className="px-6 py-5 border-b border-slate-100">
+              <DialogHeader>
+                <DialogTitle className="text-lg font-semibold text-slate-800">
+                  Add {currentCategory?.title}
+                </DialogTitle>
+              </DialogHeader>
+            </div>
+
+            {/* Content */}
+            <div className="px-6 py-6">
+              <div className="space-y-5">
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">
+                    Name <span className="text-error">*</span>
+                  </Label>
+                  <Input
+                    value={newItem.name}
+                    onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+                    placeholder="Enter name"
+                    className="mt-1.5 bg-white"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">
+                    Description
+                  </Label>
+                  <Input
+                    value={newItem.description}
+                    onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
+                    placeholder="Enter description"
+                    className="mt-1.5 bg-white"
+                  />
+                </div>
               </div>
             </div>
-            <DialogFooter>
+
+            {/* Fixed Footer */}
+            <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
               <Button variant="outline" onClick={() => setIsAddItemOpen(false)}>
                 Cancel
               </Button>
               <Button onClick={handleAddItem}>Save</Button>
-            </DialogFooter>
+            </div>
           </DialogContent>
         </Dialog>
 
         {/* Edit Item Dialog */}
         <Dialog open={isEditItemOpen} onOpenChange={setIsEditItemOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Edit {currentCategory?.title}</DialogTitle>
-            </DialogHeader>
+          <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+            {/* Fixed Header */}
+            <div className="px-6 py-5 border-b border-slate-100">
+              <DialogHeader>
+                <DialogTitle className="text-lg font-semibold text-slate-800">
+                  Edit {currentCategory?.title}
+                </DialogTitle>
+              </DialogHeader>
+            </div>
+
+            {/* Content */}
             {editingItem && (
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="editItemName">Name *</Label>
-                  <Input
-                    id="editItemName"
-                    value={editingItem.name}
-                    onChange={(e) => setEditingItem({ ...editingItem, name: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="editItemDescription">Description</Label>
-                  <Input
-                    id="editItemDescription"
-                    value={editingItem.description || ""}
-                    onChange={(e) => setEditingItem({ ...editingItem, description: e.target.value })}
-                  />
+              <div className="px-6 py-6">
+                <div className="space-y-5">
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">
+                      Name <span className="text-error">*</span>
+                    </Label>
+                    <Input
+                      value={editingItem.name}
+                      onChange={(e) => setEditingItem({ ...editingItem, name: e.target.value })}
+                      className="mt-1.5 bg-white"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">
+                      Description
+                    </Label>
+                    <Input
+                      value={editingItem.description || ""}
+                      onChange={(e) => setEditingItem({ ...editingItem, description: e.target.value })}
+                      className="mt-1.5 bg-white"
+                    />
+                  </div>
                 </div>
               </div>
             )}
-            <DialogFooter>
+
+            {/* Fixed Footer */}
+            <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
               <Button variant="outline" onClick={() => setIsEditItemOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleEditItem}>Save Changes</Button>
-            </DialogFooter>
+              <Button onClick={handleEditItem}>Save</Button>
+            </div>
           </DialogContent>
         </Dialog>
 
         {/* Delete Confirmation Dialog */}
-        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Confirm Delete</DialogTitle>
-              <DialogDescription>
+        <AlertDialog open={!!deletingItemId} onOpenChange={(open) => !open && setDeletingItemId(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete {currentCategory?.title}</AlertDialogTitle>
+              <AlertDialogDescription>
                 Are you sure you want to delete this item? This action cannot be undone.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button variant="destructive" onClick={handleDeleteItem}>
-                Delete
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteItem}>Delete</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     );
   }
@@ -354,7 +378,10 @@ export default function OrganizationSettingsPage() {
   // Show settings grid view
   return (
     <div className="space-y-6">
-      <PageHeader title="Organization Settings" />
+      {/* Page Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-slate-800">Organization Settings</h1>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {settingCategories.map((category) => {
@@ -362,9 +389,9 @@ export default function OrganizationSettingsPage() {
           const itemCount = settingsData[category.id]?.length || 0;
 
           return (
-            <Card
+            <div
               key={category.id}
-              className="cursor-pointer hover:border-blue-300 hover:shadow-md transition-all"
+              className="cursor-pointer bg-white rounded-xl border border-slate-200 p-5"
               onClick={() => {
                 // Navigate to dedicated BIA settings page
                 if (category.id === "bia") {
@@ -374,28 +401,23 @@ export default function OrganizationSettingsPage() {
                 }
               }}
             >
-              <CardHeader className="flex flex-row items-center gap-4">
-                <div className="p-3 bg-blue-50 rounded-lg">
-                  <Icon className="h-6 w-6 text-blue-600" />
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-primary-50 rounded-lg">
+                  <Icon className="h-6 w-6 text-primary-600" />
                 </div>
                 <div>
-                  <CardTitle className="text-base">{category.title}</CardTitle>
-                  <CardDescription className="text-sm">
+                  <h3 className="text-base font-semibold text-slate-800">{category.title}</h3>
+                  <p className="text-sm text-slate-500">
                     {category.description}
-                  </CardDescription>
+                  </p>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">
-                    {itemCount} {itemCount === 1 ? "item" : "items"}
-                  </span>
-                  <Button variant="ghost" size="sm" className="text-blue-600">
-                    Manage
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+              </div>
+              <div className="mt-4 pt-3 border-t border-slate-100">
+                <span className="text-sm text-slate-500">
+                  {itemCount} {itemCount === 1 ? "item" : "items"}
+                </span>
+              </div>
+            </div>
           );
         })}
       </div>

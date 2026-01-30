@@ -1291,14 +1291,14 @@ export default function ContextPage() {
       id: "actions",
       header: "Actions",
       cell: ({ row }: { row: { original: Stakeholder } }) => (
-        <div className="flex gap-2">
-          <Button variant="ghost" size="icon" onClick={() => handleEditStakeholder(row.original)}>
+        <div className="flex gap-1">
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => handleEditStakeholder(row.original)}>
             <Pencil className="h-4 w-4" />
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-slate-400 hover:text-error"
+            className="h-8 w-8 text-slate-400 hover:text-semantic-error"
             onClick={() => {
               setDeletingItem({ type: "stakeholder", id: row.original.id });
               setIsDeleteDialogOpen(true);
@@ -1336,7 +1336,7 @@ export default function ContextPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-slate-400">Loading...</p>
       </div>
     );
   }
@@ -1882,7 +1882,7 @@ export default function ContextPage() {
 
       {/* Add Domain Dialog */}
         <Dialog open={showAddDomainDialog} onOpenChange={setShowAddDomainDialog}>
-          <DialogContent className="sm:max-w-[500px] p-0 gap-0" nested>
+          <DialogContent className="sm:max-w-[700px] p-0 gap-0" nested>
             <div className="px-6 py-5 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-lg font-semibold text-slate-800">Add New Domain</DialogTitle>
@@ -1913,7 +1913,7 @@ export default function ContextPage() {
 
         {/* Add Category Dialog */}
         <Dialog open={showAddCategoryDialog} onOpenChange={setShowAddCategoryDialog}>
-          <DialogContent className="sm:max-w-[500px] p-0 gap-0" nested>
+          <DialogContent className="sm:max-w-[700px] p-0 gap-0" nested>
             <div className="px-6 py-5 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-lg font-semibold text-slate-800">Add New Category</DialogTitle>
@@ -1944,7 +1944,7 @@ export default function ContextPage() {
 
         {/* Add Issue Type Dialog */}
         <Dialog open={showAddTypeDialog} onOpenChange={setShowAddTypeDialog}>
-          <DialogContent className="sm:max-w-[500px] p-0 gap-0" nested>
+          <DialogContent className="sm:max-w-[700px] p-0 gap-0" nested>
             <div className="px-6 py-5 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-lg font-semibold text-slate-800">Add New Issue Type</DialogTitle>
@@ -1975,14 +1975,18 @@ export default function ContextPage() {
 
         {/* Choose Processes Dialog */}
         <Dialog open={showProcessDialog} onOpenChange={setShowProcessDialog}>
-          <DialogContent className="max-w-2xl max-h-[80vh]">
-            <DialogHeader>
-              <DialogTitle>Link Process</DialogTitle>
-              <DialogDescription>
-                Select processes to link with this issue.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
+          <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+            {/* Fixed Header */}
+            <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+              <DialogHeader>
+                <DialogTitle className="text-lg font-semibold text-slate-800">Link Process</DialogTitle>
+                <DialogDescription>
+                  Select processes to link with this issue.
+                </DialogDescription>
+              </DialogHeader>
+            </div>
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
                 <Input
@@ -1998,7 +2002,7 @@ export default function ContextPage() {
                     {filteredProcesses.map((process) => (
                       <label
                         key={process.id}
-                        className="flex items-start gap-3 p-4 border rounded-lg hover:border-primary-300 cursor-pointer transition-colors"
+                        className="flex items-start gap-3 p-4 border rounded-lg border-slate-200 cursor-pointer transition-colors"
                       >
                         <input
                           type="checkbox"
@@ -2030,45 +2034,52 @@ export default function ContextPage() {
                 )}
               </div>
             </div>
-            <DialogFooter>
+            {/* Fixed Footer */}
+            <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
               <Button variant="outline" onClick={() => setShowProcessDialog(false)}>
                 Cancel
               </Button>
               <Button onClick={handleLinkProcesses}>
                 Link Process
               </Button>
-            </DialogFooter>
+            </div>
           </DialogContent>
         </Dialog>
 
         {/* Add Need/Expectation Dialog */}
         <Dialog open={showAddNeedDialog} onOpenChange={setShowAddNeedDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add New Need/Expectation</DialogTitle>
-              <DialogDescription>
-                Enter a new need or expectation type.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="newNeedExpectation">Need/Expectation *</Label>
+          <DialogContent className="sm:max-w-[700px] p-0 gap-0">
+            {/* Fixed Header */}
+            <div className="px-6 py-5 border-b border-slate-100">
+              <DialogHeader>
+                <DialogTitle className="text-lg font-semibold text-slate-800">Add New Need/Expectation</DialogTitle>
+                <DialogDescription>
+                  Enter a new need or expectation type.
+                </DialogDescription>
+              </DialogHeader>
+            </div>
+            {/* Content */}
+            <div className="px-6 py-6 space-y-5">
+              <div>
+                <Label htmlFor="newNeedExpectation" className="text-sm font-medium text-slate-700">Need/Expectation *</Label>
                 <Input
                   id="newNeedExpectation"
                   value={newNeedExpectation}
                   onChange={(e) => setNewNeedExpectation(e.target.value)}
                   placeholder="Enter need/expectation"
+                  className="mt-1.5"
                 />
               </div>
             </div>
-            <DialogFooter>
+            {/* Fixed Footer */}
+            <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
               <Button variant="outline" onClick={() => { setShowAddNeedDialog(false); setNewNeedExpectation(""); }}>
                 Cancel
               </Button>
               <Button onClick={handleAddCustomNeedExpectation} disabled={!newNeedExpectation.trim()}>
                 Add
               </Button>
-            </DialogFooter>
+            </div>
           </DialogContent>
         </Dialog>
     </Dialog>
@@ -2619,7 +2630,7 @@ export default function ContextPage() {
 
       {/* Add Domain Dialog */}
         <Dialog open={showAddDomainDialog} onOpenChange={setShowAddDomainDialog}>
-          <DialogContent className="sm:max-w-[500px] p-0 gap-0" nested>
+          <DialogContent className="sm:max-w-[700px] p-0 gap-0" nested>
             <div className="px-6 py-5 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-lg font-semibold text-slate-800">Add New Domain</DialogTitle>
@@ -2658,7 +2669,7 @@ export default function ContextPage() {
 
         {/* Add Category Dialog */}
         <Dialog open={showAddCategoryDialog} onOpenChange={setShowAddCategoryDialog}>
-          <DialogContent className="sm:max-w-[500px] p-0 gap-0" nested>
+          <DialogContent className="sm:max-w-[700px] p-0 gap-0" nested>
             <div className="px-6 py-5 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-lg font-semibold text-slate-800">Add New Category</DialogTitle>
@@ -2697,7 +2708,7 @@ export default function ContextPage() {
 
         {/* Add Issue Type Dialog */}
         <Dialog open={showAddTypeDialog} onOpenChange={setShowAddTypeDialog}>
-          <DialogContent className="sm:max-w-[500px] p-0 gap-0" nested>
+          <DialogContent className="sm:max-w-[700px] p-0 gap-0" nested>
             <div className="px-6 py-5 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-lg font-semibold text-slate-800">Add New Issue Type</DialogTitle>
@@ -2736,14 +2747,18 @@ export default function ContextPage() {
 
         {/* Choose Processes Dialog for Edit */}
         <Dialog open={showEditProcessDialog} onOpenChange={setShowEditProcessDialog}>
-          <DialogContent className="max-w-2xl max-h-[80vh]">
-            <DialogHeader>
-              <DialogTitle>Link Process</DialogTitle>
-              <DialogDescription>
-                Select processes to link with this issue.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
+          <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+            {/* Fixed Header */}
+            <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+              <DialogHeader>
+                <DialogTitle className="text-lg font-semibold text-slate-800">Link Process</DialogTitle>
+                <DialogDescription>
+                  Select processes to link with this issue.
+                </DialogDescription>
+              </DialogHeader>
+            </div>
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
                 <Input
@@ -2759,7 +2774,7 @@ export default function ContextPage() {
                     {filteredEditProcesses.map((process) => (
                       <label
                         key={process.id}
-                        className="flex items-start gap-3 p-4 border rounded-lg hover:border-primary-300 cursor-pointer transition-colors"
+                        className="flex items-start gap-3 p-4 border rounded-lg border-slate-200 cursor-pointer transition-colors"
                       >
                         <input
                           type="checkbox"
@@ -2791,14 +2806,15 @@ export default function ContextPage() {
                 )}
               </div>
             </div>
-            <DialogFooter>
+            {/* Fixed Footer */}
+            <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
               <Button variant="outline" onClick={() => setShowEditProcessDialog(false)}>
                 Cancel
               </Button>
               <Button onClick={handleLinkEditProcesses}>
                 Link Process
               </Button>
-            </DialogFooter>
+            </div>
           </DialogContent>
         </Dialog>
 
@@ -2838,11 +2854,8 @@ export default function ContextPage() {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col gap-1">
+      <div>
         <h1 className="text-2xl font-bold text-slate-800">Context</h1>
-        <p className="text-sm text-slate-500">
-          Manage stakeholders and issues for your organization.
-        </p>
       </div>
 
       {/* DepartmentContributor: Show Stakeholder without tabs */}
@@ -3055,7 +3068,7 @@ export default function ContextPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 text-slate-400 hover:text-error"
+                            className="h-8 w-8 text-slate-400 hover:text-semantic-error"
                             onClick={() => {
                               setDeletingItem({ type: "issue", id: issue.id });
                               setIsDeleteDialogOpen(true);
@@ -3368,7 +3381,7 @@ export default function ContextPage() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-[500px] p-0 gap-0">
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0">
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
@@ -3392,7 +3405,7 @@ export default function ContextPage() {
 
       {/* Add Domain Dialog */}
       <Dialog open={showAddDomainDialog} onOpenChange={setShowAddDomainDialog}>
-        <DialogContent className="sm:max-w-[500px] p-0 gap-0" nested>
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0" nested>
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
@@ -3426,7 +3439,7 @@ export default function ContextPage() {
 
       {/* Add Category Dialog */}
       <Dialog open={showAddCategoryDialog} onOpenChange={setShowAddCategoryDialog}>
-        <DialogContent className="sm:max-w-[500px] p-0 gap-0" nested>
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0" nested>
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
@@ -3460,7 +3473,7 @@ export default function ContextPage() {
 
       {/* Add Issue Type Dialog */}
       <Dialog open={showAddTypeDialog} onOpenChange={setShowAddTypeDialog}>
-        <DialogContent className="sm:max-w-[500px] p-0 gap-0" nested>
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0" nested>
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
@@ -3563,7 +3576,7 @@ export default function ContextPage() {
                 <Label className="text-sm font-medium text-slate-700">Attachment</Label>
                 <div
                   className={`mt-1.5 border border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${
-                    isDraggingActionFile ? "border-primary-500 bg-primary-50" : "border-slate-200 hover:border-primary-500/50"
+                    isDraggingActionFile ? "border-primary-500 bg-primary-50" : "border-slate-200 border-slate-200"
                   }`}
                   onDragOver={handleActionFileDragOver}
                   onDragLeave={handleActionFileDragLeave}
@@ -3583,7 +3596,7 @@ export default function ContextPage() {
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className="text-slate-400 hover:text-error"
+                        className="text-slate-400 hover:text-semantic-error"
                         onClick={(e) => {
                           e.stopPropagation();
                           setActionFile(null);
@@ -3627,14 +3640,18 @@ export default function ContextPage() {
         setShowViewActionsDialog(open);
         if (!open) setSelectedIssueForAction(null);
       }}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Actions for Issue</DialogTitle>
-            <DialogDescription>
-              {selectedIssueForAction?.title}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Actions for Issue</DialogTitle>
+              <DialogDescription>
+                {selectedIssueForAction?.title}
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
             {selectedIssueForAction?.actions?.map((action) => (
               <Card key={action.id} className={`${action.status === "Sent Back" ? "border-warning" : action.status === "Resolved" ? "border-success" : ""}`}>
                 <CardContent className="p-4">
@@ -3687,7 +3704,7 @@ export default function ContextPage() {
                     <div className="space-y-2 mb-2">
                       <div
                         className={`border-2 border-dashed rounded-lg p-3 text-center cursor-pointer transition-colors ${
-                          isDraggingViewActionFile === action.id ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50"
+                          isDraggingViewActionFile === action.id ? "border-primary bg-primary/5" : "border-muted-foreground/25 border-slate-200"
                         } ${uploadingActionId === action.id ? "opacity-50 pointer-events-none" : ""}`}
                         onDragOver={(e) => handleViewActionFileDragOver(e, action.id)}
                         onDragLeave={handleViewActionFileDragLeave}
@@ -3763,7 +3780,7 @@ export default function ContextPage() {
                               onClick={() => handleDeleteActionFile(action)}
                               disabled={uploadingActionId === action.id}
                               title="Delete"
-                              className="text-error hover:text-error-dark"
+                              className="text-slate-400 hover:text-semantic-error"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -3798,11 +3815,12 @@ export default function ContextPage() {
               }}
             />
           </div>
-          <DialogFooter>
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setShowViewActionsDialog(false)}>
               Close
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -3814,15 +3832,19 @@ export default function ContextPage() {
           setSelectedIssueForAction(null);
         }
       }}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Review Action</DialogTitle>
-            <DialogDescription>
-              Review and take action on this submission
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Review Action</DialogTitle>
+              <DialogDescription>
+                Review and take action on this submission
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          {/* Scrollable Content */}
           {selectedActionForReview && (
-            <div className="space-y-4 py-4">
+            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
               <div className="space-y-2">
                 <Label>Action Type</Label>
                 <p className="text-sm p-2 bg-muted rounded">{selectedActionForReview.actionType}</p>
@@ -3904,7 +3926,8 @@ export default function ContextPage() {
               )}
             </div>
           )}
-          <DialogFooter className="flex gap-2">
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setShowActionReviewDialog(false)}>
               Cancel
             </Button>
@@ -3922,7 +3945,7 @@ export default function ContextPage() {
             >
               Resend
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -3931,33 +3954,38 @@ export default function ContextPage() {
         setShowResendDialog(open);
         if (!open) setResendComment("");
       }}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Send Back Action</DialogTitle>
-            <DialogDescription>
-              Add a comment explaining why this action is being sent back
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="resendComment">Comment *</Label>
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0">
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Send Back Action</DialogTitle>
+              <DialogDescription>
+                Add a comment explaining why this action is being sent back
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          {/* Content */}
+          <div className="px-6 py-6 space-y-5">
+            <div>
+              <Label htmlFor="resendComment" className="text-sm font-medium text-slate-700">Comment *</Label>
               <textarea
                 id="resendComment"
-                className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 mt-1.5"
                 placeholder="Enter your feedback..."
                 value={resendComment}
                 onChange={(e) => setResendComment(e.target.value)}
               />
             </div>
           </div>
-          <DialogFooter>
+          {/* Fixed Footer */}
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setShowResendDialog(false)}>
               Cancel
             </Button>
             <Button onClick={handleResendAction} disabled={processingAction || !resendComment.trim()}>
               {processingAction ? "Sending..." : "Send Back"}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -3966,14 +3994,18 @@ export default function ContextPage() {
         setShowActionCommentsDialog(open);
         if (!open) setSelectedActionForComments(null);
       }}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Comments</DialogTitle>
-            <DialogDescription>
-              Feedback from reviewer
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4 max-h-[400px] overflow-y-auto">
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Comments</DialogTitle>
+              <DialogDescription>
+                Feedback from reviewer
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
             {selectedActionForComments?.comments.map((comment) => (
               <Card key={comment.id}>
                 <CardContent className="p-3">
@@ -3989,11 +4021,12 @@ export default function ContextPage() {
               <p className="text-center text-slate-500 py-4">No comments</p>
             )}
           </div>
-          <DialogFooter>
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setShowActionCommentsDialog(false)}>
               Close
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -4005,21 +4038,25 @@ export default function ContextPage() {
           setEditActionForm({ actionType: "", description: "", completion: 0, comment: "" });
         }
       }}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Edit Action</DialogTitle>
-            <DialogDescription>
-              Update and resubmit this action
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="editActionType">Action Type *</Label>
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0">
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Edit Action</DialogTitle>
+              <DialogDescription>
+                Update and resubmit this action
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          {/* Content */}
+          <div className="px-6 py-6 space-y-5">
+            <div>
+              <Label htmlFor="editActionType" className="text-sm font-medium text-slate-700">Action Type *</Label>
               <Select
                 value={editActionForm.actionType}
                 onValueChange={(value) => setEditActionForm({ ...editActionForm, actionType: value })}
               >
-                <SelectTrigger>
+                <SelectTrigger className="mt-1.5 bg-white">
                   <SelectValue placeholder="Select action type" />
                 </SelectTrigger>
                 <SelectContent position="popper" sideOffset={4}>
@@ -4028,18 +4065,18 @@ export default function ContextPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="editDescription">Description *</Label>
+            <div>
+              <Label htmlFor="editDescription" className="text-sm font-medium text-slate-700">Description *</Label>
               <textarea
                 id="editDescription"
-                className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 mt-1.5"
                 placeholder="Enter action description"
                 value={editActionForm.description}
                 onChange={(e) => setEditActionForm({ ...editActionForm, description: e.target.value })}
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="editCompletion">Completion (%)</Label>
+            <div>
+              <Label htmlFor="editCompletion" className="text-sm font-medium text-slate-700">Completion (%)</Label>
               <Input
                 id="editCompletion"
                 type="number"
@@ -4047,27 +4084,29 @@ export default function ContextPage() {
                 max="100"
                 value={editActionForm.completion}
                 onChange={(e) => setEditActionForm({ ...editActionForm, completion: parseInt(e.target.value) || 0 })}
+                className="mt-1.5"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="editComment">Comment</Label>
+            <div>
+              <Label htmlFor="editComment" className="text-sm font-medium text-slate-700">Comment</Label>
               <textarea
                 id="editComment"
-                className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 mt-1.5"
                 placeholder="Optional comment"
                 value={editActionForm.comment}
                 onChange={(e) => setEditActionForm({ ...editActionForm, comment: e.target.value })}
               />
             </div>
           </div>
-          <DialogFooter>
+          {/* Fixed Footer */}
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setShowEditActionDialog(false)}>
               Cancel
             </Button>
             <Button onClick={handleUpdateAction} disabled={savingAction || !editActionForm.actionType || !editActionForm.description}>
               {savingAction ? "Saving..." : "Save & Resubmit"}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -4079,17 +4118,21 @@ export default function ContextPage() {
           if (fileInputRef.current) fileInputRef.current.value = '';
         }
       }}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Import Issues</DialogTitle>
-            <DialogDescription>
-              Import issues from a CSV file. The file should have columns: title (required), description, domain, category, type.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0">
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Import Issues</DialogTitle>
+              <DialogDescription>
+                Import issues from a CSV file. The file should have columns: title (required), description, domain, category, type.
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          {/* Content */}
+          <div className="px-6 py-6 space-y-5">
             <div>
-              <Label>File</Label>
-              <div className="flex gap-2 mt-1">
+              <Label className="text-sm font-medium text-slate-700">File</Label>
+              <div className="flex gap-2 mt-1.5">
                 <Input
                   type="file"
                   accept=".csv"
@@ -4104,26 +4147,27 @@ export default function ContextPage() {
                 </p>
               )}
             </div>
-            <div className="flex justify-between gap-2 pt-4">
-              <Button variant="outline" onClick={handleDownloadTemplate}>
-                <Download className="h-4 w-4 mr-2" />
-                Download Template
+          </div>
+          {/* Fixed Footer */}
+          <div className="flex justify-between gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <Button variant="outline" onClick={handleDownloadTemplate}>
+              <Download className="h-4 w-4 mr-2" />
+              Download Template
+            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowImportDialog(false);
+                  setImportFile(null);
+                  if (fileInputRef.current) fileInputRef.current.value = '';
+                }}
+              >
+                Cancel
               </Button>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setShowImportDialog(false);
-                    setImportFile(null);
-                    if (fileInputRef.current) fileInputRef.current.value = '';
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button onClick={handleImport} disabled={!importFile || importing}>
-                  {importing ? "Importing..." : "Import"}
-                </Button>
-              </div>
+              <Button onClick={handleImport} disabled={!importFile || importing}>
+                {importing ? "Importing..." : "Import"}
+              </Button>
             </div>
           </div>
         </DialogContent>
