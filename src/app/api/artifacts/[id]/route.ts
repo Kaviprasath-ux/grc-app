@@ -117,10 +117,9 @@ export const PUT = withAuth(
         return NextResponse.json(artifact);
       }
 
-      // Try evidence attachment - check parent evidence for tenant validation
+      // Try evidence attachment
       const existingAttachment = await prisma.evidenceAttachment.findUnique({
         where: { id },
-        include: { evidence: { select: { customerAccountId: true } } },
       });
 
       if (!existingAttachment) {
@@ -128,10 +127,6 @@ export const PUT = withAuth(
           { error: "Artifact not found" },
           { status: 404 }
         );
-      }
-
-      if (!validateTenantAccess(session, existingAttachment.evidence.customerAccountId)) {
-        return forbidden("Access denied to this artifact");
       }
 
       const attachment = await prisma.evidenceAttachment.update({
@@ -174,14 +169,10 @@ export const DELETE = withAuth(
       // Try to find and delete standalone artifact first
       const artifact = await prisma.artifact.findUnique({
         where: { id },
-        select: { customerAccountId: true, filePath: true },
+        select: { filePath: true },
       });
 
       if (artifact) {
-        if (!validateTenantAccess(session, artifact.customerAccountId)) {
-          return forbidden("Access denied to this artifact");
-        }
-
         // Delete the physical file if it exists
         if (artifact.filePath) {
           try {
@@ -200,10 +191,9 @@ export const DELETE = withAuth(
         return NextResponse.json({ message: "Artifact deleted successfully" });
       }
 
-      // If not a standalone artifact, try evidence attachment - check parent evidence for tenant validation
+      // If not a standalone artifact, try evidence attachment
       const attachment = await prisma.evidenceAttachment.findUnique({
         where: { id },
-        include: { evidence: { select: { customerAccountId: true } } },
       });
 
       if (!attachment) {
@@ -211,10 +201,6 @@ export const DELETE = withAuth(
           { error: "Artifact not found" },
           { status: 404 }
         );
-      }
-
-      if (!validateTenantAccess(session, attachment.evidence.customerAccountId)) {
-        return forbidden("Access denied to this artifact");
       }
 
       // Delete the physical file if it exists

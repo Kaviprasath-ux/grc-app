@@ -11,12 +11,10 @@ export const GET = withAuth(
       const page = parseInt(searchParams.get("page") || "1");
       const limit = parseInt(searchParams.get("limit") || "50");
 
-      const tenantFilter = getTenantFilter(session);
-
       // If evidenceId is provided, get evidence attachments
       if (evidenceId) {
         const attachments = await prisma.evidenceAttachment.findMany({
-          where: { evidenceId, ...tenantFilter },
+          where: { evidenceId },
           include: {
             evidence: true,
           },
@@ -31,7 +29,6 @@ export const GET = withAuth(
       // Otherwise, get standalone artifacts
       const [artifacts, total] = await Promise.all([
         prisma.artifact.findMany({
-          where: tenantFilter,
           include: {
             uploader: {
               select: {
@@ -49,7 +46,7 @@ export const GET = withAuth(
           skip: (page - 1) * limit,
           take: limit,
         }),
-        prisma.artifact.count({ where: tenantFilter }),
+        prisma.artifact.count(),
       ]);
 
       return NextResponse.json({
@@ -129,7 +126,6 @@ export const POST = withAuth(
 
       const artifact = await prisma.artifact.create({
         data: {
-          customerAccountId,
           artifactCode,
           name,
           fileName,
