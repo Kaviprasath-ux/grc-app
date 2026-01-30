@@ -292,9 +292,8 @@ export default function AuditReportViewPage({ params }: PageProps) {
       {/* Header with Back button and Actions */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-sm">
-          <Link href="/internal-audit/report" className="flex items-center gap-1 text-gray-600 hover:text-[#1e3a5f]">
+          <Link href="/internal-audit/report" className="flex items-center text-gray-600 hover:text-[#1e3a5f]">
             <ArrowLeft className="h-4 w-4" />
-            Back
           </Link>
           <span className="text-gray-400">|</span>
           <span className="text-gray-600">Report</span>

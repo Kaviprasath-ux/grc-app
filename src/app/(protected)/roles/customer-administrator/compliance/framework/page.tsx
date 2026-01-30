@@ -952,11 +952,10 @@ export default function CustomerAdminFrameworkPage() {
 
       {/* AI Create Framework Dialog */}
       <Dialog open={isAICreateDialogOpen} onOpenChange={setIsAICreateDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Sticky Header */}
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
             <DialogTitle className="text-lg font-semibold text-slate-800">Create Integrated Framework (AI)</DialogTitle>
-            <p className="text-sm text-slate-500 mt-1">Generate a framework using AI assistance</p>
           </div>
           {/* Scrollable Content */}
           <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
@@ -996,7 +995,7 @@ export default function CustomerAdminFrameworkPage() {
                 value={formData.type}
                 onValueChange={(value) => setFormData({ ...formData, type: value })}
               >
-                <SelectTrigger className="bg-white">
+                <SelectTrigger className="w-full bg-white">
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
                 <SelectContent className="bg-white">
@@ -1098,11 +1097,10 @@ export default function CustomerAdminFrameworkPage() {
 
       {/* Step 1: Create Framework Dialog (Manual with Excel Import) */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Sticky Header */}
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
             <DialogTitle className="text-lg font-semibold text-slate-800">Create Integrated Framework</DialogTitle>
-            <p className="text-sm text-slate-500 mt-1">Create a new framework and import requirements</p>
           </div>
           {/* Scrollable Content */}
           <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
@@ -1153,7 +1151,7 @@ export default function CustomerAdminFrameworkPage() {
                 value={formData.type}
                 onValueChange={(value) => setFormData({ ...formData, type: value })}
               >
-                <SelectTrigger className="bg-white">
+                <SelectTrigger className="w-full bg-white">
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
                 <SelectContent className="bg-white">
@@ -1207,14 +1205,13 @@ export default function CustomerAdminFrameworkPage() {
 
       {/* Step 2: Import Requirements Dialog (same as GRC Admin) */}
       <Dialog open={isImportDialogOpen} onOpenChange={handleCloseImportDialog}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Sticky Header */}
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
             <DialogTitle className="flex items-center gap-2 text-lg font-semibold text-slate-800">
               <FileSpreadsheet className="h-5 w-5 text-success-500" />
               Import Framework Requirements
             </DialogTitle>
-            <p className="text-sm text-slate-500 mt-1">Upload an Excel file with your requirements</p>
           </div>
           {/* Scrollable Content */}
           <div className="px-6 py-5 space-y-5 overflow-y-auto flex-1">

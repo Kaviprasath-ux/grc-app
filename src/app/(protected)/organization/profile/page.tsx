@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Plus, Pencil, Trash2, Upload, X, Building2, Users, MapPin, Globe, Calendar, Target, Eye, Briefcase, Scale, ArrowLeft } from "lucide-react";
+import { Plus, Pencil, Trash2, Upload, X, Building2, Users, MapPin, Globe, Calendar, Target, Eye, Briefcase, Scale } from "lucide-react";
 import { DataGrid } from "@/components/shared";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -116,7 +116,6 @@ function ProfilePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialTab = searchParams.get("tab") || "overview";
-  const fromDashboard = searchParams.get("from") === "dashboard";
   const [activeTab, setActiveTab] = useState(initialTab);
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -596,25 +595,10 @@ function ProfilePageContent() {
 
   return (
     <div className="space-y-6">
-      {/* Back to Dashboard Button */}
-      {fromDashboard && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => router.push("/dashboard")}
-          className="flex items-center gap-2 text-slate-600 hover:text-slate-800 -ml-2"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Dashboard
-        </Button>
-      )}
-
       {/* Page Header */}
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-bold text-slate-800">Organization Profile</h1>
-        <p className="text-sm text-slate-500">
-          Manage your organization information, services, regulations, and departments.
-        </p>
+        
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>

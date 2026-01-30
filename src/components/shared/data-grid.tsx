@@ -204,10 +204,10 @@ export function DataGrid<TData, TValue>({
       </Table>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200">
-        <p className="text-sm text-slate-500">
-          Showing {startRow} to {endRow} of {totalRows}
-        </p>
+      <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
+        <span className="text-sm text-slate-500">
+          {totalRows > 0 ? `${startRow} to ${endRow} of ${totalRows}` : "No results"}
+        </span>
         <div className="flex items-center gap-1">
           <Button
             variant="ghost"
@@ -227,9 +227,6 @@ export function DataGrid<TData, TValue>({
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <span className="text-sm text-slate-600 px-2">
-            Page {pageIndex + 1} of {table.getPageCount() || 1}
-          </span>
           <Button
             variant="ghost"
             size="icon"

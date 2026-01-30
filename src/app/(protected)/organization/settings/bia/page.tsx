@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Pencil, Trash2, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, ChevronLeft } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { DataGrid } from "@/components/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -73,6 +74,7 @@ interface BCPLabel {
 }
 
 export default function BIASettingsPage() {
+  const router = useRouter();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("category");
   const [loading, setLoading] = useState(true);
@@ -522,8 +524,16 @@ export default function BIASettingsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
-      <div>
+      {/* Page Header with Back Button */}
+      <div className="flex items-center gap-3">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 text-slate-600 hover:text-slate-800"
+          onClick={() => router.push("/organization/settings")}
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </Button>
         <h1 className="text-2xl font-bold text-slate-800">BIA Settings</h1>
       </div>
 

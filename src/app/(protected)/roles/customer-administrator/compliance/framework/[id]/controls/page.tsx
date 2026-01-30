@@ -25,7 +25,6 @@ import {
   ChevronsRight,
   ArrowUpDown,
   Settings2,
-  ArrowLeft,
 } from "lucide-react";
 import { Unauthorized } from "@/components/ui/unauthorized";
 
@@ -63,7 +62,6 @@ interface FrameworkData {
   name: string;
   code?: string;
   requirements: Requirement[];
-  controls?: Control[]; // Direct controls linked to framework
 }
 
 const ITEMS_PER_PAGE = 20;
@@ -121,27 +119,17 @@ export default function ControlsByFrameworkPage() {
         // Store framework info including status for access control
         setFramework({ id: frameworkData.id, name: frameworkData.name, status: (frameworkData as { status?: string }).status || "Subscribed" });
 
-        // Step 2: Extract Controls from multiple sources and de-duplicate
+        // Step 2: Extract Controls from all Requirements
+        // Data path: framework.requirements[].controls[].control
         const controlsMap = new Map<string, Control>();
 
-        // Source 1: Direct controls linked to framework (framework.controls)
-        if (frameworkData.controls && Array.isArray(frameworkData.controls)) {
-          for (const control of frameworkData.controls) {
-            if (control && control.id) {
-              if (!controlsMap.has(control.id)) {
-                controlsMap.set(control.id, control);
-              }
-            }
-          }
-        }
-
-        // Source 2: Controls via requirements (framework.requirements[].controls[].control)
         if (frameworkData.requirements && Array.isArray(frameworkData.requirements)) {
           for (const requirement of frameworkData.requirements) {
             if (requirement.controls && Array.isArray(requirement.controls)) {
               for (const reqControl of requirement.controls) {
                 if (reqControl.control && reqControl.control.id) {
-                  // De-duplicate by control ID
+                  // Step 3: De-duplicate by control ID
+                  // If control already exists in map, skip (first occurrence wins)
                   if (!controlsMap.has(reqControl.control.id)) {
                     controlsMap.set(reqControl.control.id, reqControl.control);
                   }
@@ -257,25 +245,16 @@ export default function ControlsByFrameworkPage() {
   return (
     <div className="space-y-6">
       {/* Header Section */}
-      <div className="flex flex-col gap-1">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.push("/roles/customer-administrator/compliance/framework")}
-            className="h-8 w-8 text-slate-400 hover:text-slate-600"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-800">Controls</h1>
-            {framework && (
-              <p className="text-sm text-slate-500">
-                Framework: {framework.name}
-              </p>
-            )}
-          </div>
-        </div>
+      <div className="flex items-center gap-3">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => router.push("/roles/customer-administrator/compliance/framework")}
+          className="h-9 w-9 text-slate-600 hover:text-slate-800"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </Button>
+        <h1 className="text-2xl font-bold text-slate-800">Controls</h1>
       </div>
 
       {/* Search Row */}
@@ -296,71 +275,66 @@ export default function ControlsByFrameworkPage() {
       <div className="bg-white rounded-xl border border-slate-200">
         <Table>
           <TableHeader>
-            <TableRow className="bg-slate-50/50">
+            <TableRow className="border-b border-slate-100 bg-slate-50/50">
               {visibleColumns.controlName && (
-                <TableHead className="py-3">
-                  <Button
-                    variant="ghost"
-                    onClick={() => handleSort("name")}
-                    className="h-8 px-2 text-xs font-semibold text-slate-600"
-                  >
+                <TableHead
+                  className="text-xs font-semibold text-slate-600 py-4 pl-4 cursor-pointer select-none"
+                  onClick={() => handleSort("name")}
+                >
+                  <div className="flex items-center gap-2">
                     Control Name
-                    <ArrowUpDown className="ml-2 h-3 w-3" />
-                  </Button>
+                    <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
+                  </div>
                 </TableHead>
               )}
               {visibleColumns.controlCode && (
-                <TableHead className="py-3">
-                  <Button
-                    variant="ghost"
-                    onClick={() => handleSort("controlCode")}
-                    className="h-8 px-2 text-xs font-semibold text-slate-600"
-                  >
+                <TableHead
+                  className="text-xs font-semibold text-slate-600 py-4 cursor-pointer select-none"
+                  onClick={() => handleSort("controlCode")}
+                >
+                  <div className="flex items-center gap-2">
                     Control Code
-                    <ArrowUpDown className="ml-2 h-3 w-3" />
-                  </Button>
+                    <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
+                  </div>
                 </TableHead>
               )}
               {visibleColumns.functionalGrouping && (
-                <TableHead className="py-3">
-                  <Button
-                    variant="ghost"
-                    onClick={() => handleSort("functionalGrouping")}
-                    className="h-8 px-2 text-xs font-semibold text-slate-600"
-                  >
+                <TableHead
+                  className="text-xs font-semibold text-slate-600 py-4 cursor-pointer select-none"
+                  onClick={() => handleSort("functionalGrouping")}
+                >
+                  <div className="flex items-center gap-2">
                     Functional Grouping
-                    <ArrowUpDown className="ml-2 h-3 w-3" />
-                  </Button>
+                    <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
+                  </div>
                 </TableHead>
               )}
               {visibleColumns.status && (
-                <TableHead className="py-3">
-                  <Button
-                    variant="ghost"
-                    onClick={() => handleSort("status")}
-                    className="h-8 px-2 text-xs font-semibold text-slate-600"
-                  >
+                <TableHead
+                  className="text-xs font-semibold text-slate-600 py-4 cursor-pointer select-none"
+                  onClick={() => handleSort("status")}
+                >
+                  <div className="flex items-center gap-2">
                     Status
-                    <ArrowUpDown className="ml-2 h-3 w-3" />
-                  </Button>
+                    <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
+                  </div>
                 </TableHead>
               )}
               {visibleColumns.assignee && (
-                <TableHead className="text-xs font-semibold text-slate-600 py-3">Assignee</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 py-4">Assignee</TableHead>
               )}
               {visibleColumns.domain && (
-                <TableHead className="py-3">
-                  <Button
-                    variant="ghost"
-                    onClick={() => handleSort("domain")}
-                    className="h-8 px-2 text-xs font-semibold text-slate-600"
-                  >
+                <TableHead
+                  className="text-xs font-semibold text-slate-600 py-4 cursor-pointer select-none"
+                  onClick={() => handleSort("domain")}
+                >
+                  <div className="flex items-center gap-2">
                     Domain Name
-                    <ArrowUpDown className="ml-2 h-3 w-3" />
-                  </Button>
+                    <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
+                  </div>
                 </TableHead>
               )}
-              <TableHead className="w-[50px]">
+              <TableHead className="w-[50px] py-4">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -431,28 +405,28 @@ export default function ControlsByFrameworkPage() {
               paginatedControls.map((control) => (
                 <TableRow
                   key={control.id}
-                  className="cursor-pointer hover:bg-slate-50"
+                  className="border-b border-slate-100 last:border-0 cursor-pointer hover:bg-slate-50"
                   onDoubleClick={() => router.push(`/compliance/control/${control.id}`)}
                 >
                   {visibleColumns.controlName && (
-                    <TableCell className="font-medium text-slate-900">{control.name}</TableCell>
+                    <TableCell className="py-4 pl-4 text-sm font-medium text-slate-900">{control.name}</TableCell>
                   )}
                   {visibleColumns.controlCode && (
-                    <TableCell className="text-slate-600">{control.controlCode}</TableCell>
+                    <TableCell className="py-4 text-sm text-slate-700">{control.controlCode}</TableCell>
                   )}
                   {visibleColumns.functionalGrouping && (
-                    <TableCell className="text-slate-600">{control.functionalGrouping || "-"}</TableCell>
+                    <TableCell className="py-4 text-sm text-slate-700">{control.functionalGrouping || "-"}</TableCell>
                   )}
                   {visibleColumns.status && (
-                    <TableCell className="text-slate-600">{control.status}</TableCell>
+                    <TableCell className="py-4 text-sm text-slate-700">{control.status}</TableCell>
                   )}
                   {visibleColumns.assignee && (
-                    <TableCell className="text-slate-600">{getAssigneeName(control)}</TableCell>
+                    <TableCell className="py-4 text-sm text-slate-700">{getAssigneeName(control)}</TableCell>
                   )}
                   {visibleColumns.domain && (
-                    <TableCell className="text-slate-600">{control.domain?.name || "-"}</TableCell>
+                    <TableCell className="py-4 text-sm text-slate-700">{control.domain?.name || "-"}</TableCell>
                   )}
-                  <TableCell></TableCell>
+                  <TableCell className="py-4"></TableCell>
                 </TableRow>
               ))
             )}
@@ -460,48 +434,50 @@ export default function ControlsByFrameworkPage() {
         </Table>
 
         {/* Pagination */}
-        <div className="flex items-center justify-center gap-2 p-4 border-t border-slate-100">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setCurrentPage(0)}
-            disabled={currentPage === 0}
-            className="h-8 w-8"
-          >
-            <ChevronsLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setCurrentPage(currentPage - 1)}
-            disabled={currentPage === 0}
-            className="h-8 w-8"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <span className="text-sm text-slate-500 px-3 py-1">
+        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
+          <span className="text-sm text-slate-500">
             {total > 0
-              ? `Showing ${startIndex + 1} to ${endIndex} of ${total}`
+              ? `${startIndex + 1} to ${endIndex} of ${total}`
               : "No controls"}
           </span>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setCurrentPage(currentPage + 1)}
-            disabled={currentPage >= totalPages - 1}
-            className="h-8 w-8"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setCurrentPage(totalPages - 1)}
-            disabled={currentPage >= totalPages - 1}
-            className="h-8 w-8"
-          >
-            <ChevronsRight className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setCurrentPage(0)}
+              disabled={currentPage === 0}
+              className="h-8 w-8"
+            >
+              <ChevronsLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setCurrentPage(currentPage - 1)}
+              disabled={currentPage === 0}
+              className="h-8 w-8"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setCurrentPage(currentPage + 1)}
+              disabled={currentPage >= totalPages - 1}
+              className="h-8 w-8"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setCurrentPage(totalPages - 1)}
+              disabled={currentPage >= totalPages - 1}
+              className="h-8 w-8"
+            >
+              <ChevronsRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
     </div>

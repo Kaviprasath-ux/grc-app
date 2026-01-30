@@ -11,7 +11,6 @@ export const GET = withAuth(
       const frameworkId = searchParams.get("frameworkId");
       const domainId = searchParams.get("domainId");
       const departmentId = searchParams.get("departmentId");
-      const assigneeId = searchParams.get("assigneeId");
       const functionalGrouping = searchParams.get("functionalGrouping");
       const search = searchParams.get("search");
       const page = parseInt(searchParams.get("page") || "1");
@@ -26,7 +25,6 @@ export const GET = withAuth(
       if (frameworkId) where.frameworkId = frameworkId;
       if (domainId) where.domainId = domainId;
       if (departmentId) where.departmentId = departmentId;
-      if (assigneeId) where.assigneeId = assigneeId;
       if (functionalGrouping) where.functionalGrouping = functionalGrouping;
       if (search) {
         where.OR = [

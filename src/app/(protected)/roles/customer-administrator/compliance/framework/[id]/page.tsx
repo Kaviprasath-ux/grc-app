@@ -34,13 +34,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  ArrowLeft,
+  ChevronLeft,
   Plus,
   Download,
   Edit2,
   Link2,
   AlertTriangle,
-  ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
@@ -1250,21 +1249,16 @@ export default function CustomerAdminFrameworkDetailPage({
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col gap-1">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-slate-400 hover:text-slate-600"
-            onClick={() => router.push("/roles/customer-administrator/compliance/framework")}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-800">{framework.name}</h1>
-            <p className="text-sm text-slate-500">Manage framework requirements and controls</p>
-          </div>
-        </div>
+      <div className="flex items-center gap-3">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 text-slate-600 hover:text-slate-800"
+          onClick={() => router.push("/roles/customer-administrator/compliance/framework")}
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </Button>
+        <h1 className="text-2xl font-bold text-slate-800">{framework.name}</h1>
       </div>
 
       {/* Tabs */}
@@ -1276,7 +1270,7 @@ export default function CustomerAdminFrameworkDetailPage({
         </TabsList>
 
         {/* Requirements Tab */}
-        <TabsContent value="requirements" className="mt-6">
+        <TabsContent value="requirements" className="mt-6 space-y-4">
           {/* Toolbar */}
           <div className="flex items-center justify-between mb-4">
             <Input
@@ -1442,9 +1436,9 @@ export default function CustomerAdminFrameworkDetailPage({
         </TabsContent>
 
         {/* SOA Tab */}
-        <TabsContent value="soa" className="mt-6">
+        <TabsContent value="soa" className="mt-6 space-y-4">
           {/* Toolbar */}
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between">
             <h3 className="text-base font-semibold text-slate-800">Statement of Applicability</h3>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm">
@@ -1459,22 +1453,22 @@ export default function CustomerAdminFrameworkDetailPage({
             <Table>
               <TableHeader>
                 <TableRow className="border-b border-slate-100 bg-slate-50/50">
-                  <TableHead className="text-xs font-semibold text-slate-600 py-3">Code</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600 py-3">Requirement</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600 py-3">Applicability</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600 py-3">Justification</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600 py-3">Implementation Status</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600 py-3">Control Compliance</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600 py-4 pl-4">Code</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600 py-4">Requirement</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600 py-4">Applicability</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600 py-4">Justification</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600 py-4">Implementation Status</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600 py-4">Control Compliance</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {soaRequirements.map((req) => (
                   <TableRow key={req.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
-                    <TableCell className="py-3 text-sm font-medium text-slate-800">{req.code}</TableCell>
-                    <TableCell className="py-3 text-sm text-slate-700 max-w-xs truncate">
+                    <TableCell className="py-4 pl-4 text-sm font-medium text-slate-800">{req.code}</TableCell>
+                    <TableCell className="py-4 text-sm text-slate-700 max-w-xs truncate">
                       {req.name}
                     </TableCell>
-                    <TableCell className="py-3">
+                    <TableCell className="py-4">
                       <Select
                         value={req.applicability || ""}
                         onValueChange={(value) =>
@@ -1490,7 +1484,7 @@ export default function CustomerAdminFrameworkDetailPage({
                         </SelectContent>
                       </Select>
                     </TableCell>
-                    <TableCell className="py-3">
+                    <TableCell className="py-4">
                       <Input
                         className="w-40 bg-white"
                         value={req.justification || ""}
@@ -1500,7 +1494,7 @@ export default function CustomerAdminFrameworkDetailPage({
                         placeholder="Enter justification"
                       />
                     </TableCell>
-                    <TableCell className="py-3">
+                    <TableCell className="py-4">
                       <Select
                         value={req.implementationStatus || ""}
                         onValueChange={(value) =>
@@ -1518,7 +1512,7 @@ export default function CustomerAdminFrameworkDetailPage({
                         </SelectContent>
                       </Select>
                     </TableCell>
-                    <TableCell className="py-3">
+                    <TableCell className="py-4">
                       <span
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                           req.controlCompliance === "Compliant"
@@ -1595,7 +1589,7 @@ export default function CustomerAdminFrameworkDetailPage({
 
       {/* Add Requirement Dialog */}
       <Dialog open={isAddRequirementOpen} onOpenChange={setIsAddRequirementOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Sticky Header */}
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
             <DialogTitle className="text-lg font-semibold text-slate-800">Add Requirement</DialogTitle>
@@ -1722,7 +1716,7 @@ export default function CustomerAdminFrameworkDetailPage({
 
       {/* Link Controls Dialog */}
       <Dialog open={isLinkControlsOpen} onOpenChange={setIsLinkControlsOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Sticky Header */}
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
             <DialogTitle className="text-lg font-semibold text-slate-800">Control Select</DialogTitle>
@@ -1845,7 +1839,7 @@ export default function CustomerAdminFrameworkDetailPage({
 
       {/* Add Exception Dialog */}
       <Dialog open={isAddExceptionOpen} onOpenChange={setIsAddExceptionOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Sticky Header */}
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
             <DialogTitle className="text-lg font-semibold text-slate-800">Add Exception</DialogTitle>
@@ -1955,7 +1949,7 @@ export default function CustomerAdminFrameworkDetailPage({
 
       {/* Update Requirement Dialog */}
       <Dialog open={isUpdateRequirementOpen} onOpenChange={setIsUpdateRequirementOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Sticky Header */}
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
             <DialogTitle className="text-lg font-semibold text-slate-800">Update Requirement</DialogTitle>

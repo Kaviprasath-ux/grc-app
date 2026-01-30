@@ -233,9 +233,8 @@ export default function AddEvidenceRequestPage() {
     return (
       <div className="p-6">
         <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" size="sm" onClick={() => router.back()}>
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back
+          <Button variant="ghost" size="icon" onClick={() => router.back()}>
+            <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="text-sm text-muted-foreground">Fieldwork</div>
           <h1 className="text-xl font-semibold text-blue-900">New Evidence Request</h1>
@@ -251,9 +250,8 @@ export default function AddEvidenceRequestPage() {
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" onClick={() => router.back()}>
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          Back
+        <Button variant="ghost" size="icon" onClick={() => router.back()}>
+          <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="text-sm text-muted-foreground">Fieldwork</div>
         <h1 className="text-xl font-semibold text-blue-900">New Evidence Request</h1>

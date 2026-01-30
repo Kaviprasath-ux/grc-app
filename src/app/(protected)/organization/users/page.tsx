@@ -716,14 +716,9 @@ export default function UsersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      {/* Page Header */}
+      <div>
         <h1 className="text-2xl font-bold text-slate-800">Users</h1>
-        {activeTab === "user-management" && (
-          <Button size="sm" onClick={() => setIsAddUserOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Account
-          </Button>
-        )}
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -733,7 +728,7 @@ export default function UsersPage() {
         </TabsList>
 
         {/* Account Overview Tab */}
-        <TabsContent value="account-overview" className="space-y-4">
+        <TabsContent value="account-overview" className="mt-6 space-y-4">
           {/* Header with search and action buttons */}
           <div className="flex items-center justify-between gap-4">
             <div className="relative flex-1 max-w-md">
@@ -780,23 +775,23 @@ export default function UsersPage() {
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="border-b border-slate-100 bg-slate-50/50">
-                            <th className="text-left py-3 pl-4 text-xs font-semibold text-slate-600">Full Name</th>
-                            <th className="text-left py-3 text-xs font-semibold text-slate-600">Designation Name</th>
-                            <th className="text-left py-3 text-xs font-semibold text-slate-600">Reporting Manager</th>
-                            <th className="text-left py-3 text-xs font-semibold text-slate-600">Email ID</th>
-                            <th className="text-left py-3 text-xs font-semibold text-slate-600">Last Login</th>
-                            <th className="text-center py-3 text-xs font-semibold text-slate-600">Actions</th>
+                            <th className="text-left py-4 pl-4 text-xs font-semibold text-slate-600">Full Name</th>
+                            <th className="text-left py-4 text-xs font-semibold text-slate-600">Designation Name</th>
+                            <th className="text-left py-4 text-xs font-semibold text-slate-600">Reporting Manager</th>
+                            <th className="text-left py-4 text-xs font-semibold text-slate-600">Email ID</th>
+                            <th className="text-left py-4 text-xs font-semibold text-slate-600">Last Login</th>
+                            <th className="text-center py-4 text-xs font-semibold text-slate-600">Actions</th>
                           </tr>
                         </thead>
                         <tbody className="bg-white">
                           {dept.users.map((user) => (
                             <tr key={user.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
-                              <td className="py-3 pl-4 text-sm text-slate-700">{user.fullName}</td>
-                              <td className="py-3 text-sm text-slate-700">{user.designation || "-"}</td>
-                              <td className="py-3 text-sm text-slate-700">{user.reportingManager?.fullName || "-"}</td>
-                              <td className="py-3 text-sm text-slate-700">{user.email}</td>
-                              <td className="py-3 text-sm text-slate-700">-</td>
-                              <td className="py-3">
+                              <td className="py-4 pl-4 text-sm text-slate-700">{user.fullName}</td>
+                              <td className="py-4 text-sm text-slate-700">{user.designation || "-"}</td>
+                              <td className="py-4 text-sm text-slate-700">{user.reportingManager?.fullName || "-"}</td>
+                              <td className="py-4 text-sm text-slate-700">{user.email}</td>
+                              <td className="py-4 text-sm text-slate-700">-</td>
+                              <td className="py-4">
                                 <div className="flex items-center justify-center gap-1">
                                   <Button
                                     variant="ghost"
@@ -847,34 +842,42 @@ export default function UsersPage() {
         </TabsContent>
 
         {/* User Management Tab */}
-        <TabsContent value="user-management" className="space-y-4">
-          <FilterBar
-            searchPlaceholder="Search user..."
-            searchValue={searchTerm}
-            onSearchChange={setSearchTerm}
-            filters={[
-              {
-                id: "role",
-                label: "Role",
-                options: [
-                  { value: "all", label: "All Roles" },
-                  ...allUserRoles.map((role) => ({ value: role, label: role })),
-                ],
-                value: roleFilter,
-                onChange: setRoleFilter,
-              },
-              {
-                id: "department",
-                label: "Department",
-                options: [
-                  { value: "all", label: "All Departments" },
-                  ...departments.map((d) => ({ value: d.name, label: d.name })),
-                ],
-                value: departmentFilter,
-                onChange: setDepartmentFilter,
-              },
-            ]}
-          />
+        <TabsContent value="user-management" className="mt-6 space-y-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex-1">
+              <FilterBar
+                searchPlaceholder="Search user..."
+                searchValue={searchTerm}
+                onSearchChange={setSearchTerm}
+                filters={[
+                  {
+                    id: "role",
+                    label: "Role",
+                    options: [
+                      { value: "all", label: "All Roles" },
+                      ...allUserRoles.map((role) => ({ value: role, label: role })),
+                    ],
+                    value: roleFilter,
+                    onChange: setRoleFilter,
+                  },
+                  {
+                    id: "department",
+                    label: "Department",
+                    options: [
+                      { value: "all", label: "All Departments" },
+                      ...departments.map((d) => ({ value: d.name, label: d.name })),
+                    ],
+                    value: departmentFilter,
+                    onChange: setDepartmentFilter,
+                  },
+                ]}
+              />
+            </div>
+            <Button size="sm" onClick={() => setIsAddUserOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              New Account
+            </Button>
+          </div>
           <DataGrid
             columns={userColumns}
             data={filteredUsers}

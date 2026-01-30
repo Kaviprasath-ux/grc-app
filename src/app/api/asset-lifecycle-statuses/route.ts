@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { withAuth, getTenantFilter } from "@/lib/api-auth";
 
 // GET all asset lifecycle statuses
+// Note: Uses asset.inventory:view permission to allow inventory users to see statuses in dropdowns
 export const GET = withAuth(
   async (_req, _context, session) => {
     try {
@@ -26,7 +27,7 @@ export const GET = withAuth(
       );
     }
   },
-  { resource: "asset.settings", action: "view" }
+  { resource: "asset.inventory", action: "view" }
 );
 
 // POST create new asset lifecycle status

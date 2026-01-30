@@ -1332,9 +1332,8 @@ export default function RiskSettingsCategoryPage() {
       <div className="space-y-6 p-6">
         <div className="flex items-center gap-4">
           <Link href="/risks/settings">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
+            <Button variant="ghost" size="icon">
+              <ArrowLeft className="h-4 w-4" />
             </Button>
           </Link>
           <PageHeader title={title} />

@@ -5,7 +5,6 @@ import { cn } from "@/lib/utils";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
 interface ComplianceItem {
-  frameworkId?: string;
   framework: string;
   compliant: number;
   nonCompliant: number;
@@ -16,10 +15,9 @@ interface ComplianceProgressBarProps {
   data: ComplianceItem[];
   className?: string;
   maxItems?: number;
-  onFrameworkClick?: (frameworkId: string) => void;
 }
 
-export function ComplianceProgressBar({ title, data, className, maxItems = 5, onFrameworkClick }: ComplianceProgressBarProps) {
+export function ComplianceProgressBar({ title, data, className, maxItems = 5 }: ComplianceProgressBarProps) {
   const [showAll, setShowAll] = useState(false);
 
   // Calculate compliance percentage for each framework
@@ -77,48 +75,32 @@ export function ComplianceProgressBar({ title, data, className, maxItems = 5, on
 
       {/* Progress Bars */}
       <div className="space-y-3">
-        {displayData.map((item, index) => {
-          const content = (
-            <>
-              {/* Label Row */}
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs text-slate-600 font-medium truncate pr-4">
-                  {item.framework}
-                </span>
-                <span className={cn(
-                  "text-xs font-semibold tabular-nums",
-                  getTextColor(item.percentage)
-                )}>
-                  {item.percentage}%
-                </span>
-              </div>
-              {/* Progress Bar */}
-              <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                <div
-                  className={cn(
-                    "h-full rounded-full transition-all duration-500 ease-out",
-                    getProgressColor(item.percentage)
-                  )}
-                  style={{ width: `${item.percentage}%` }}
-                />
-              </div>
-            </>
-          );
-
-          return onFrameworkClick && item.frameworkId ? (
-            <button
-              key={index}
-              onClick={() => onFrameworkClick(item.frameworkId!)}
-              className="group w-full text-left p-2 -m-2 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer"
-            >
-              {content}
-            </button>
-          ) : (
-            <div key={index} className="group">
-              {content}
+        {displayData.map((item, index) => (
+          <div key={index} className="group">
+            {/* Label Row */}
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs text-slate-600 font-medium truncate pr-4">
+                {item.framework}
+              </span>
+              <span className={cn(
+                "text-xs font-semibold tabular-nums",
+                getTextColor(item.percentage)
+              )}>
+                {item.percentage}%
+              </span>
             </div>
-          );
-        })}
+            {/* Progress Bar */}
+            <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+              <div
+                className={cn(
+                  "h-full rounded-full transition-all duration-500 ease-out",
+                  getProgressColor(item.percentage)
+                )}
+                style={{ width: `${item.percentage}%` }}
+              />
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* View All / View Less */}

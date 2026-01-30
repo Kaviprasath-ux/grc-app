@@ -221,9 +221,13 @@ export default function OrganizationReportsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      {/* Page Header */}
+      <div>
         <h1 className="text-2xl font-bold text-slate-800">Reports</h1>
+      </div>
+
+      {/* Actions */}
+      <div className="flex items-center justify-end">
         <Button onClick={() => setIsManagementDialogOpen(true)}>
           Get Management Report
         </Button>
@@ -245,32 +249,34 @@ export default function OrganizationReportsPage() {
 
       {/* Report Detail Dialog */}
       <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
-            <DialogHeader className="flex flex-row items-center justify-between">
-              <DialogTitle className="text-lg font-semibold text-slate-800">{selectedReport?.title}</DialogTitle>
-              <Button variant="outline" size="sm" onClick={handleExport}>
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </Button>
+            <DialogHeader>
+              <div className="flex items-center justify-between pr-8">
+                <DialogTitle className="text-lg font-semibold text-slate-800">{selectedReport?.title}</DialogTitle>
+                <Button variant="outline" size="sm" onClick={handleExport}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Export
+                </Button>
+              </div>
             </DialogHeader>
           </div>
 
           {/* Scrollable Content */}
           <div className="flex-1 overflow-auto px-6 py-6">
             {/* Table */}
-            <div className="border border-slate-200 rounded-lg overflow-hidden">
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
               {loading ? (
                 <div className="flex items-center justify-center h-64">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                 </div>
               ) : (
                 <table className="w-full">
-                  <thead className="bg-slate-50 sticky top-0">
-                    <tr>
-                      {selectedReport?.columns.map((col) => (
-                        <th key={col} className="text-left p-3 text-sm font-medium text-slate-600 border-b border-slate-100">
+                  <thead>
+                    <tr className="border-b border-slate-100 bg-slate-50/50">
+                      {selectedReport?.columns.map((col, idx, arr) => (
+                        <th key={col} className={`text-left py-4 text-xs font-semibold text-slate-600 ${idx === 0 ? "pl-4" : ""} ${idx === arr.length - 1 ? "pr-4" : ""}`}>
                           {col}
                         </th>
                       ))}
@@ -286,8 +292,8 @@ export default function OrganizationReportsPage() {
                     ) : (
                       paginatedData.map((row, idx) => (
                         <tr key={idx} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
-                          {selectedReport?.columns.map((col) => (
-                            <td key={col} className="p-3 text-sm text-slate-700">
+                          {selectedReport?.columns.map((col, colIdx, arr) => (
+                            <td key={col} className={`py-4 text-sm text-slate-700 ${colIdx === 0 ? "pl-4" : ""} ${colIdx === arr.length - 1 ? "pr-4" : ""}`}>
                               {String(row[col] || "")}
                             </td>
                           ))}
@@ -354,7 +360,7 @@ export default function OrganizationReportsPage() {
 
       {/* Management Report Parameters Dialog */}
       <Dialog open={isManagementDialogOpen} onOpenChange={setIsManagementDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0">
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>

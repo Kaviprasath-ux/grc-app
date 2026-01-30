@@ -598,21 +598,17 @@ export default function BIAPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header with breadcrumb */}
-      <div className="flex items-center gap-2 text-sm">
+      {/* Page Header with Back Button */}
+      <div className="flex items-center gap-3">
         <Button
           variant="ghost"
-          size="sm"
-          className="gap-1 text-muted-foreground hover:text-foreground"
-          onClick={() => router.back()}
+          size="icon"
+          className="h-9 w-9 text-slate-600 hover:text-slate-800"
+          onClick={() => router.push("/organization/process")}
         >
-          <ChevronLeft className="h-4 w-4" />
-          Back
+          <ChevronLeft className="h-5 w-5" />
         </Button>
-        <span className="text-muted-foreground">|</span>
-        <span className="text-muted-foreground">Process</span>
-        <span className="text-muted-foreground">|</span>
-        <span className="text-primary-600 font-medium">Business Impact Analysis</span>
+        <h1 className="text-2xl font-bold text-slate-800">Business Impact Analysis</h1>
       </div>
 
       {/* Top controls row */}

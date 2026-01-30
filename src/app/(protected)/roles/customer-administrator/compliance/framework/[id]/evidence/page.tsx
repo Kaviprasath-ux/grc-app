@@ -18,7 +18,6 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  ArrowLeft,
 } from "lucide-react";
 import { Unauthorized } from "@/components/ui/unauthorized";
 
@@ -239,25 +238,16 @@ export default function EvidenceByFrameworkPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-1">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.push("/roles/customer-administrator/compliance/framework")}
-            className="h-8 w-8 text-slate-400 hover:text-slate-600"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-800">Evidence</h1>
-            {framework && (
-              <p className="text-sm text-slate-500">
-                Framework: {framework.name}
-              </p>
-            )}
-          </div>
-        </div>
+      <div className="flex items-center gap-3">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => router.push("/roles/customer-administrator/compliance/framework")}
+          className="h-9 w-9 text-slate-600 hover:text-slate-800"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </Button>
+        <h1 className="text-2xl font-bold text-slate-800">Evidence</h1>
       </div>
 
       {/* Search Row */}
@@ -286,32 +276,32 @@ export default function EvidenceByFrameworkPage() {
         <div className="bg-white rounded-xl border border-slate-200">
           <Table>
             <TableHeader>
-              <TableRow className="bg-slate-50/50">
-                <TableHead className="text-xs font-semibold text-slate-600 py-3">Evidence Code</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-3">Evidence Name</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-3">Domain</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-3">Status</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-3">Assignee</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-3">Department</TableHead>
+              <TableRow className="border-b border-slate-100 bg-slate-50/50">
+                <TableHead className="text-xs font-semibold text-slate-600 py-4 pl-4">Evidence Code</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 py-4">Evidence Name</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 py-4">Domain</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 py-4">Status</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 py-4">Assignee</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 py-4">Department</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {paginatedEvidences.map((evidence) => (
                 <TableRow
                   key={evidence.id}
-                  className="cursor-pointer hover:bg-slate-50"
+                  className="border-b border-slate-100 last:border-0 cursor-pointer hover:bg-slate-50"
                   onDoubleClick={() => router.push(`/compliance/evidence/${evidence.id}`)}
                 >
-                  <TableCell className="font-medium text-slate-900">{evidence.evidenceCode}</TableCell>
-                  <TableCell className="text-slate-600">{evidence.name}</TableCell>
-                  <TableCell className="text-slate-600">{evidence.domain || "-"}</TableCell>
-                  <TableCell>
+                  <TableCell className="py-4 pl-4 text-sm font-medium text-slate-900">{evidence.evidenceCode}</TableCell>
+                  <TableCell className="py-4 text-sm text-slate-700">{evidence.name}</TableCell>
+                  <TableCell className="py-4 text-sm text-slate-700">{evidence.domain || "-"}</TableCell>
+                  <TableCell className="py-4">
                     <Badge className={statusColors[evidence.status] || "bg-gray-100 text-gray-800"}>
                       {evidence.status}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-slate-600">{evidence.assignee?.fullName || "-"}</TableCell>
-                  <TableCell className="text-slate-600">{evidence.department?.name || "-"}</TableCell>
+                  <TableCell className="py-4 text-sm text-slate-700">{evidence.assignee?.fullName || "-"}</TableCell>
+                  <TableCell className="py-4 text-sm text-slate-700">{evidence.department?.name || "-"}</TableCell>
                 </TableRow>
               ))}
               {paginatedEvidences.length === 0 && (
@@ -325,46 +315,48 @@ export default function EvidenceByFrameworkPage() {
           </Table>
 
           {/* Pagination */}
-          <div className="flex items-center justify-center gap-2 p-4 border-t border-slate-100">
-            <Button
-              variant="ghost"
-              size="icon"
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage(1)}
-              className="h-8 w-8"
-            >
-              <ChevronsLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage((p) => p - 1)}
-              className="h-8 w-8"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="text-sm text-slate-500 px-3 py-1">
-              {total > 0 ? `Showing ${startItem} to ${endItem} of ${total}` : "No evidence"}
+          <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
+            <span className="text-sm text-slate-500">
+              {total > 0 ? `${startItem} to ${endItem} of ${total}` : "No evidence"}
             </span>
-            <Button
-              variant="ghost"
-              size="icon"
-              disabled={currentPage >= totalPages}
-              onClick={() => setCurrentPage((p) => p + 1)}
-              className="h-8 w-8"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              disabled={currentPage >= totalPages}
-              onClick={() => setCurrentPage(totalPages)}
-              className="h-8 w-8"
-            >
-              <ChevronsRight className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(1)}
+                className="h-8 w-8"
+              >
+                <ChevronsLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((p) => p - 1)}
+                className="h-8 w-8"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                disabled={currentPage >= totalPages}
+                onClick={() => setCurrentPage((p) => p + 1)}
+                className="h-8 w-8"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                disabled={currentPage >= totalPages}
+                onClick={() => setCurrentPage(totalPages)}
+                className="h-8 w-8"
+              >
+                <ChevronsRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
       )}

@@ -268,9 +268,8 @@ export default function AuditPlanningPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => router.back()}>
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back
+          <Button variant="ghost" size="icon" onClick={() => router.back()}>
+            <ArrowLeft className="h-4 w-4" />
           </Button>
           <h1 className="text-2xl font-bold text-blue-900">Annual Audit Plan</h1>
         </div>

@@ -915,8 +915,7 @@ export default function EvidenceDetailPage() {
             onClick={() => router.push("/compliance/evidence")}
             className="text-gray-600 hover:text-gray-900"
           >
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back
+            <ArrowLeft className="h-4 w-4" />
           </Button>
           <span className="text-gray-300">|</span>
           <h1 className="text-xl font-semibold text-blue-700">

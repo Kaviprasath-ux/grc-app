@@ -589,26 +589,30 @@ export default function EvidencesMasterDataPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.push("/compliance/master-data")}
-            className="h-9 w-9"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-800">Evidences</h1>
-            <p className="text-sm text-slate-500 mt-1">Manage evidence definitions and requirements</p>
-          </div>
+      <div className="flex items-center gap-3">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => router.push("/compliance/master-data")}
+          className="h-8 w-8 text-slate-400 hover:text-slate-600"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <h1 className="text-2xl font-bold text-slate-800">Evidences</h1>
+      </div>
+
+      {/* Search and Actions - same row */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input
+            placeholder="Search evidences..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 w-[300px] bg-white border-slate-200"
+          />
         </div>
-        <div className="flex gap-2">
-          <Button size="sm" onClick={() => setIsNewDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Evidence
-          </Button>
+        <div className="flex items-center gap-2">
           <Button
             variant="outline"
             size="sm"
@@ -626,19 +630,11 @@ export default function EvidencesMasterDataPage() {
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>
-        </div>
-      </div>
-
-      {/* Search */}
-      <div className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <Input
-            placeholder="Search evidences..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 bg-white"
-          />
+          <Button size="sm" onClick={() => setIsNewDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            New Evidence
+          </Button>
+          
         </div>
       </div>
 
@@ -646,11 +642,11 @@ export default function EvidencesMasterDataPage() {
       <div className="bg-white rounded-xl border border-slate-200">
         <Table>
           <TableHeader>
-            <TableRow className="bg-slate-50/50 hover:bg-slate-50/50">
-              <TableHead className="font-semibold text-slate-700">Evidence Code</TableHead>
-              <TableHead className="font-semibold text-slate-700">Title</TableHead>
-              <TableHead className="font-semibold text-slate-700">Evidence Requirement</TableHead>
-              <TableHead className="w-[100px] font-semibold text-slate-700">Action</TableHead>
+            <TableRow className="border-b border-slate-100 bg-slate-50/50">
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4">Evidence Code</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">Title</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">Evidence Requirement</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[100px]">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -662,11 +658,11 @@ export default function EvidencesMasterDataPage() {
               </TableRow>
             ) : (
               paginatedEvidences.map((evidence) => (
-                <TableRow key={evidence.id} className="hover:bg-slate-50/50">
-                  <TableCell className="font-medium text-slate-800">{evidence.evidenceCode}</TableCell>
-                  <TableCell className="text-slate-600">{evidence.name}</TableCell>
-                  <TableCell className="text-slate-600">{evidence.description || "-"}</TableCell>
-                  <TableCell>
+                <TableRow key={evidence.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                  <TableCell className="py-3 text-sm font-medium text-slate-800 pl-4">{evidence.evidenceCode}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-600">{evidence.name}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-600">{evidence.description || "-"}</TableCell>
+                  <TableCell className="py-3 text-sm pr-4">
                     <div className="flex gap-1">
                       <Button
                         variant="ghost"
@@ -693,7 +689,7 @@ export default function EvidencesMasterDataPage() {
         </Table>
 
         {/* Pagination */}
-        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200">
+        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
           <p className="text-sm text-slate-500">
             Showing {filteredEvidences.length === 0 ? 0 : startIndex + 1} to{" "}
             {Math.min(startIndex + itemsPerPage, filteredEvidences.length)} of{" "}
@@ -748,18 +744,15 @@ export default function EvidencesMasterDataPage() {
         setIsNewDialogOpen(open);
         if (!open) resetNewForm();
       }}>
-        <DialogContent className="max-w-4xl flex flex-col max-h-[90vh]">
-          <DialogHeader className="flex-shrink-0 pb-4">
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogTitle className="text-lg font-semibold text-slate-800">
               {newStep === 1 ? "Evidence Details" : newStep === 2 ? "Controls" : "Review Information"}
             </DialogTitle>
-            <DialogDescription className="text-sm text-slate-500">
-              {newStep === 1 ? "Enter evidence details" : newStep === 2 ? "Select controls to link" : "Review and confirm"}
-            </DialogDescription>
-          </DialogHeader>
+          </div>
 
           {/* Stepper */}
-          <div className="flex items-center justify-center px-6 py-4 bg-slate-50/50 flex-shrink-0">
+          <div className="flex-shrink-0 flex items-center justify-center px-6 py-4 bg-slate-50/50 border-b border-slate-100">
             {[1, 2, 3].map((step) => (
               <div key={step} className="flex items-center">
                 <div className={`flex items-center justify-center w-8 h-8 rounded-full border-2 text-sm font-medium ${
@@ -781,10 +774,10 @@ export default function EvidencesMasterDataPage() {
             ))}
           </div>
 
-          <div className="overflow-y-auto flex-1 py-4">
+          <div className="flex-1 overflow-y-auto px-6 py-6">
             {/* Step 1: Evidence Details */}
             {newStep === 1 && (
-              <div className="space-y-4 px-1">
+              <div className="space-y-4">
                 <div>
                   <Label className="text-sm font-medium text-slate-700">
                     Evidence Requirement <span className="text-red-500">*</span>
@@ -908,7 +901,7 @@ export default function EvidencesMasterDataPage() {
 
             {/* Step 2: Controls */}
             {newStep === 2 && (
-              <div className="space-y-4 px-1">
+              <div className="space-y-4">
                 {/* Filters Row */}
                 <div className="grid grid-cols-3 gap-4">
                   <Select value={domainFilter || "_all"} onValueChange={(v) => setDomainFilter(v === "_all" ? "" : v)}>
@@ -1021,7 +1014,7 @@ export default function EvidencesMasterDataPage() {
 
             {/* Step 3: Review */}
             {newStep === 3 && (
-              <div className="space-y-4 px-1">
+              <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-6">
                   <div>
                     <Label className="text-sm font-medium text-slate-700">Evidence Name</Label>
@@ -1062,7 +1055,7 @@ export default function EvidencesMasterDataPage() {
             )}
           </div>
 
-          <div className="flex justify-end gap-2 pt-4 flex-shrink-0">
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             {newStep > 1 && (
               <Button variant="outline" size="sm" onClick={handleNewBack}>
                 Previous
@@ -1088,16 +1081,13 @@ export default function EvidencesMasterDataPage() {
           setEditControlId("");
         }
       }}>
-        <DialogContent className="max-w-5xl flex flex-col max-h-[90vh] p-0 gap-0">
-          <div className="px-6 py-5 flex-shrink-0">
-            <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Edit Evidence</DialogTitle>
-              <DialogDescription className="text-sm text-slate-500">Modify the evidence details below</DialogDescription>
-            </DialogHeader>
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogTitle className="text-lg font-semibold text-slate-800">Edit Evidence</DialogTitle>
           </div>
 
           {editingEvidence && (
-            <div className="overflow-y-auto flex-1 px-6 py-4 space-y-5">
+            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-5">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium text-slate-700">Evidence code</Label>
@@ -1422,7 +1412,7 @@ export default function EvidencesMasterDataPage() {
             </div>
           )}
 
-          <div className="flex justify-end gap-2 px-6 py-4 flex-shrink-0">
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" size="sm" onClick={() => setIsEditDialogOpen(false)}>
               Cancel
             </Button>
@@ -1433,12 +1423,12 @@ export default function EvidencesMasterDataPage() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader className="pb-4">
+        <DialogContent className="sm:max-w-[500px] p-0 gap-0">
+          <div className="px-6 py-5">
             <DialogTitle className="text-lg font-semibold text-slate-800">Confirmation</DialogTitle>
-            <DialogDescription className="text-sm text-slate-500">Are you sure you want to delete this?</DialogDescription>
-          </DialogHeader>
-          <div className="flex justify-end gap-2 pt-4">
+            <DialogDescription className="text-sm text-slate-500 mt-1">Are you sure you want to delete this?</DialogDescription>
+          </div>
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" size="sm" onClick={() => setDeleteDialogOpen(false)}>
               Cancel
             </Button>
@@ -1451,14 +1441,14 @@ export default function EvidencesMasterDataPage() {
 
       {/* Delete All Confirmation Dialog */}
       <Dialog open={deleteAllDialogOpen} onOpenChange={setDeleteAllDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader className="pb-4">
+        <DialogContent className="sm:max-w-[500px] p-0 gap-0">
+          <div className="px-6 py-5">
             <DialogTitle className="text-lg font-semibold text-slate-800">Confirmation</DialogTitle>
-            <DialogDescription className="text-sm text-slate-500">
+            <DialogDescription className="text-sm text-slate-500 mt-1">
               Are you sure you want to delete all {evidences.length} evidences?
             </DialogDescription>
-          </DialogHeader>
-          <div className="flex justify-end gap-2 pt-4">
+          </div>
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" size="sm" onClick={() => setDeleteAllDialogOpen(false)}>
               Cancel
             </Button>
@@ -1477,12 +1467,11 @@ export default function EvidencesMasterDataPage() {
           setImportFile(null);
         }
       }}>
-        <DialogContent className="max-w-lg flex flex-col max-h-[90vh]">
-          <DialogHeader className="flex-shrink-0 pb-4">
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogTitle className="text-lg font-semibold text-slate-800">Import Evidences</DialogTitle>
-            <DialogDescription className="text-sm text-slate-500">Import evidences from a CSV file</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-2 overflow-y-auto flex-1">
+          </div>
+          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
             <div>
               <Label className="text-sm font-medium text-slate-700">Name</Label>
               <Input
@@ -1502,7 +1491,7 @@ export default function EvidencesMasterDataPage() {
               />
             </div>
           </div>
-          <div className="flex justify-between pt-4 flex-shrink-0">
+          <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
               <Download className="h-4 w-4 mr-2" />
               Download Template

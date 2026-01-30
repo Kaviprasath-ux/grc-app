@@ -1470,9 +1470,8 @@ export default function FieldworkDetailsPage() {
     return (
       <div className="p-6">
         <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" size="sm" onClick={() => router.back()}>
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back
+          <Button variant="ghost" size="icon" onClick={() => router.back()}>
+            <ArrowLeft className="h-4 w-4" />
           </Button>
           <span className="text-gray-500">Internal Audit</span>
           <span className="text-[#1e3a5f] font-semibold">Field Work</span>
@@ -1488,9 +1487,8 @@ export default function FieldworkDetailsPage() {
     return (
       <div className="p-6">
         <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" size="sm" onClick={() => router.back()}>
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back
+          <Button variant="ghost" size="icon" onClick={() => router.back()}>
+            <ArrowLeft className="h-4 w-4" />
           </Button>
           <span className="text-gray-500">Internal Audit</span>
           <span className="text-[#1e3a5f] font-semibold">Field Work</span>
@@ -1514,9 +1512,8 @@ export default function FieldworkDetailsPage() {
 
       {/* Breadcrumb Header */}
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="sm" onClick={() => router.push("/internal-audit/fieldwork")}>
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          Back
+        <Button variant="ghost" size="icon" onClick={() => router.push("/internal-audit/fieldwork")}>
+          <ArrowLeft className="h-4 w-4" />
         </Button>
         <span className="text-gray-500">|</span>
         <span className="text-gray-500">Internal Audit</span>

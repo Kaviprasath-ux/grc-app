@@ -250,10 +250,9 @@ function ManagementReportContent() {
         <div className="flex items-center gap-4">
           <button
             onClick={() => router.back()}
-            className="flex items-center gap-1 text-blue-600 hover:text-blue-800"
+            className="flex items-center text-blue-600 hover:text-blue-800"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back
           </button>
           <span className="text-gray-400">|</span>
           <span className="text-gray-600">Report</span>

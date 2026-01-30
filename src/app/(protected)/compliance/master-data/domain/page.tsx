@@ -266,22 +266,42 @@ export default function DomainMasterDataPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.push("/compliance/master-data")}
-            className="h-9 w-9"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-800">Domain</h1>
-            <p className="text-sm text-slate-500 mt-1">Manage control domains</p>
-          </div>
+      <div className="flex items-center gap-3">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => router.push("/compliance/master-data")}
+          className="h-8 w-8 text-slate-400 hover:text-slate-600"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <h1 className="text-2xl font-bold text-slate-800">Domain</h1>
+      </div>
+
+      {/* Search and Actions - same row */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input
+            placeholder="Search domains..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 w-[300px] bg-white border-slate-200"
+          />
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleDeleteAll}>
+            <Trash2 className="h-4 w-4 mr-2" />
+            Delete All
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
+            <Upload className="h-4 w-4 mr-2" />
+            Import
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleExport}>
+            <Download className="h-4 w-4 mr-2" />
+            Export
+          </Button>
           <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
             <DialogTrigger asChild>
               <Button size="sm">
@@ -289,13 +309,11 @@ export default function DomainMasterDataPage() {
                 New Domain
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-xl flex flex-col max-h-[90vh] p-0 gap-0">
-              <div className="px-6 py-5 flex-shrink-0">
-                <DialogHeader>
-                  <DialogTitle className="text-lg font-semibold text-slate-800">Create New Domain</DialogTitle>
-                </DialogHeader>
+            <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+              <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+                <DialogTitle className="text-lg font-semibold text-slate-800">Create New Domain</DialogTitle>
               </div>
-              <div className="space-y-4 px-6 py-4 overflow-y-auto flex-1">
+              <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
                 <div>
                   <Label className="text-sm font-medium text-slate-700">Domain Code</Label>
                   <Input
@@ -321,7 +339,7 @@ export default function DomainMasterDataPage() {
                   />
                 </div>
               </div>
-              <div className="flex justify-end gap-2 px-6 py-4 flex-shrink-0">
+              <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
                 <Button
                   variant="outline"
                   size="sm"
@@ -338,31 +356,7 @@ export default function DomainMasterDataPage() {
               </div>
             </DialogContent>
           </Dialog>
-          <Button variant="outline" size="sm" onClick={handleDeleteAll}>
-            <Trash2 className="h-4 w-4 mr-2" />
-            Delete All
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
-            <Upload className="h-4 w-4 mr-2" />
-            Import
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleExport}>
-            <Download className="h-4 w-4 mr-2" />
-            Export
-          </Button>
-        </div>
-      </div>
-
-      {/* Search */}
-      <div className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <Input
-            placeholder="Search domains..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 bg-white"
-          />
+          
         </div>
       </div>
 
@@ -370,10 +364,10 @@ export default function DomainMasterDataPage() {
       <div className="bg-white rounded-xl border border-slate-200">
         <Table>
           <TableHeader>
-            <TableRow className="bg-slate-50/50 hover:bg-slate-50/50">
-              <TableHead className="font-semibold text-slate-700">Domain Code</TableHead>
-              <TableHead className="font-semibold text-slate-700">Domain Name</TableHead>
-              <TableHead className="w-[100px] font-semibold text-slate-700">Action</TableHead>
+            <TableRow className="border-b border-slate-100 bg-slate-50/50">
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4">Domain Code</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">Domain Name</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[100px]">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -385,10 +379,10 @@ export default function DomainMasterDataPage() {
               </TableRow>
             ) : (
               paginatedDomains.map((domain) => (
-                <TableRow key={domain.id} className="hover:bg-slate-50/50">
-                  <TableCell className="text-slate-600">{domain.code || "-"}</TableCell>
-                  <TableCell className="font-medium text-slate-800">{domain.name}</TableCell>
-                  <TableCell>
+                <TableRow key={domain.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                  <TableCell className="py-3 text-sm text-slate-600 pl-4">{domain.code || "-"}</TableCell>
+                  <TableCell className="py-3 text-sm font-medium text-slate-800">{domain.name}</TableCell>
+                  <TableCell className="py-3 text-sm pr-4">
                     <div className="flex gap-1">
                       <Button
                         variant="ghost"
@@ -415,7 +409,7 @@ export default function DomainMasterDataPage() {
         </Table>
 
         {/* Pagination */}
-        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200">
+        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
           <p className="text-sm text-slate-500">
             Showing {filteredDomains.length === 0 ? 0 : startIndex + 1} to{" "}
             {Math.min(startIndex + itemsPerPage, filteredDomains.length)} of{" "}
@@ -467,13 +461,11 @@ export default function DomainMasterDataPage() {
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-xl flex flex-col max-h-[90vh] p-0 gap-0">
-          <div className="px-6 py-5 flex-shrink-0">
-            <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Edit Domain</DialogTitle>
-            </DialogHeader>
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogTitle className="text-lg font-semibold text-slate-800">Edit Domain</DialogTitle>
           </div>
-          <div className="space-y-4 px-6 py-4 overflow-y-auto flex-1">
+          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
             <div>
               <Label className="text-sm font-medium text-slate-700">Domain Code</Label>
               <Input
@@ -497,7 +489,7 @@ export default function DomainMasterDataPage() {
               />
             </div>
           </div>
-          <div className="flex justify-end gap-2 px-6 py-4 flex-shrink-0">
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button
               variant="outline"
               size="sm"
@@ -518,19 +510,19 @@ export default function DomainMasterDataPage() {
 
       {/* Delete Confirmation */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Domain</AlertDialogTitle>
-            <AlertDialogDescription>
+        <AlertDialogContent className="p-0 gap-0">
+          <AlertDialogHeader className="px-6 py-5">
+            <AlertDialogTitle className="text-lg font-semibold text-slate-800">Delete Domain</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm text-slate-500 mt-1">
               Are you sure you want to delete &quot;{selectedDomain?.name}&quot;? This
               action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogFooter className="px-6 py-4 bg-white rounded-b-lg">
+            <AlertDialogCancel className="h-9">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-red-600 hover:bg-red-700 h-9"
             >
               Delete
             </AlertDialogAction>
@@ -540,18 +532,18 @@ export default function DomainMasterDataPage() {
 
       {/* Delete All Confirmation */}
       <AlertDialog open={deleteAllDialogOpen} onOpenChange={setDeleteAllDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete All Domains</AlertDialogTitle>
-            <AlertDialogDescription>
+        <AlertDialogContent className="p-0 gap-0">
+          <AlertDialogHeader className="px-6 py-5">
+            <AlertDialogTitle className="text-lg font-semibold text-slate-800">Delete All Domains</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm text-slate-500 mt-1">
               Are you sure you want to delete all domains? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogFooter className="px-6 py-4 bg-white rounded-b-lg">
+            <AlertDialogCancel className="h-9">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDeleteAll}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-red-600 hover:bg-red-700 h-9"
             >
               Delete All
             </AlertDialogAction>
@@ -564,13 +556,11 @@ export default function DomainMasterDataPage() {
         setImportDialogOpen(open);
         if (!open) setSelectedFile(null);
       }}>
-        <DialogContent className="max-w-xl flex flex-col max-h-[90vh] p-0 gap-0">
-          <div className="px-6 py-5 flex-shrink-0">
-            <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Import Domain</DialogTitle>
-            </DialogHeader>
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogTitle className="text-lg font-semibold text-slate-800">Import Domain</DialogTitle>
           </div>
-          <div className="space-y-4 px-6 py-4 overflow-y-auto flex-1">
+          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
             <div>
               <Label className="text-sm font-medium text-slate-700">File</Label>
               <div className="flex gap-2 mt-1.5">
@@ -599,7 +589,7 @@ export default function DomainMasterDataPage() {
               </div>
             </div>
           </div>
-          <div className="flex justify-between px-6 py-4 flex-shrink-0">
+          <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button
               variant="outline"
               size="sm"

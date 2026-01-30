@@ -132,43 +132,16 @@ export default function KPIsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      {/* Page Header */}
+      <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-bold text-slate-800">KPI Dashboard</h1>
-      </div>
-
-      {/* Search and Filter Row */}
-      <div className="flex items-center gap-3">
-        <Input
-          placeholder="Search by code, objective or description..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="max-w-md bg-white"
-        />
-        <Select
-          value={statusFilter || "all"}
-          onValueChange={(value) => setStatusFilter(value === "all" ? "" : value)}
-        >
-          <SelectTrigger className="w-[180px] bg-white">
-            <SelectValue placeholder="All Statuses" />
-          </SelectTrigger>
-          <SelectContent position="popper" sideOffset={4}>
-            <SelectItem value="all">All Statuses</SelectItem>
-            {statuses.map((s) => (
-              <SelectItem key={s} value={s}>
-                {s}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <div className="flex-1" />
       </div>
 
       {/* Summary Charts Row */}
       <div className="grid grid-cols-2 gap-6">
         {/* Status Chart Card */}
         <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <h3 className="text-lg font-semibold text-slate-800 mb-4">Status</h3>
+          <h3 className="text-base font-semibold text-slate-800 mb-4">Status</h3>
           <div className="flex items-center justify-between">
             <div className="space-y-2 flex-1">
               <div className="flex items-center gap-2">
@@ -209,7 +182,7 @@ export default function KPIsPage() {
 
         {/* Department Chart Card */}
         <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <h3 className="text-lg font-semibold text-slate-800 mb-4">Department</h3>
+          <h3 className="text-base font-semibold text-slate-800 mb-4">Department</h3>
           <div className="flex items-center justify-between">
             <div className="space-y-2 flex-1">
               {Object.entries(departmentCounts)
@@ -244,65 +217,98 @@ export default function KPIsPage() {
         </div>
       </div>
 
+      {/* Search and Filter Row */}
+      <div className="flex items-center gap-3">
+        <Input
+          placeholder="Search by code, objective or description..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="max-w-sm h-9 border-slate-200 bg-white"
+        />
+        <Select
+          value={statusFilter || "all"}
+          onValueChange={(value) => setStatusFilter(value === "all" ? "" : value)}
+        >
+          <SelectTrigger className="w-[180px] h-9 bg-white border-slate-200">
+            <SelectValue placeholder="All Statuses" />
+          </SelectTrigger>
+          <SelectContent position="popper" sideOffset={4}>
+            <SelectItem value="all">All Statuses</SelectItem>
+            {statuses.map((s) => (
+              <SelectItem key={s} value={s}>
+                {s}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <div className="flex-1" />
+      </div>
+
       {/* KPI Table */}
       <div className="bg-white rounded-xl border border-slate-200">
         <Table>
           <TableHeader>
-            <TableRow className="bg-slate-50/50">
-              <TableHead className="text-xs font-semibold text-slate-600 py-3">Code</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-3">KPI Objective</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-3">KPI Description</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-3">Expected Score</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-3">Review Date</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-3">Status</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-3">Department</TableHead>
+            <TableRow className="border-b border-slate-100 bg-slate-50/50">
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4 w-[120px]">Code</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">KPI Objective</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">KPI Description</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 w-[100px]">Expected</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 w-[110px]">Review Date</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 w-[100px]">Status</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[140px]">Department</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredKpis.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8">
-                  <BarChart3 className="h-12 w-12 mx-auto mb-2 text-slate-300" />
-                  <p className="text-slate-500">No KPIs found</p>
+                <TableCell colSpan={7} className="text-center py-12">
+                  <BarChart3 className="h-10 w-10 mx-auto mb-2 text-slate-300" />
+                  <p className="text-sm text-slate-500">No KPIs found</p>
+                  <p className="text-xs text-slate-400 mt-1">Try adjusting your search or filter</p>
                 </TableCell>
               </TableRow>
             ) : (
               filteredKpis.map((kpi) => {
-                // Use evidence code if KPI is linked to evidence, otherwise use KPI code
                 const displayCode = kpi.evidence?.evidenceCode || kpi.code;
-                // Use evidence department if KPI department is not set
                 const displayDepartment =
                   kpi.department?.name || kpi.evidence?.department?.name || "-";
-                // Use evidence reviewDate if KPI reviewDate is not set
                 const displayReviewDate = kpi.reviewDate || kpi.evidence?.reviewDate;
 
                 return (
                   <TableRow
                     key={kpi.id}
-                    className="cursor-pointer hover:bg-slate-50"
+                    className="border-b border-slate-100 last:border-0 cursor-pointer hover:bg-slate-50"
                     onClick={() => router.push(`/compliance/kpis/${kpi.id}`)}
                   >
-                    <TableCell className="font-medium text-slate-900">{displayCode}</TableCell>
-                    <TableCell className="text-slate-600">
+                    <TableCell className="py-5 text-sm font-medium text-slate-800 pl-4">
+                      {displayCode}
+                    </TableCell>
+                    <TableCell className="py-5 text-sm text-slate-700">
                       <span className="line-clamp-1">{kpi.objective || "-"}</span>
                     </TableCell>
-                    <TableCell className="text-slate-600">
-                      <span className="line-clamp-1 max-w-[200px]">
-                        {kpi.description || "-"}
-                      </span>
+                    <TableCell className="py-5 text-sm text-slate-700">
+                      <span className="line-clamp-1">{kpi.description || "-"}</span>
                     </TableCell>
-                    <TableCell className="text-slate-600">{kpi.expectedScore ?? "-"}</TableCell>
-                    <TableCell className="text-slate-600">
+                    <TableCell className="py-5 text-sm text-slate-700">
+                      {kpi.expectedScore ?? "-"}
+                    </TableCell>
+                    <TableCell className="py-5 text-sm text-slate-700">
                       {displayReviewDate
-                        ? new Date(displayReviewDate).toLocaleDateString("en-GB")
+                        ? new Date(displayReviewDate).toLocaleDateString("en-GB", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          })
                         : "-"}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="py-5 text-sm">
                       <Badge className={statusColors[kpi.status] || "bg-slate-100 text-slate-600"}>
                         {kpi.status}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-slate-600">{displayDepartment}</TableCell>
+                    <TableCell className="py-5 text-sm text-slate-700 pr-4">
+                      {displayDepartment}
+                    </TableCell>
                   </TableRow>
                 );
               })
@@ -311,7 +317,7 @@ export default function KPIsPage() {
         </Table>
 
         {/* Pagination */}
-        <div className="flex items-center justify-between p-4 border-t border-slate-100">
+        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
           <span className="text-sm text-slate-500">
             {filteredKpis.length > 0
               ? `Showing 1 to ${filteredKpis.length} of ${filteredKpis.length}`

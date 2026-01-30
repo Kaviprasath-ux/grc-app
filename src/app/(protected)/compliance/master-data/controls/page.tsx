@@ -47,6 +47,7 @@ import {
   Trash2,
   Download,
   Upload,
+  Search,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
@@ -560,38 +561,34 @@ export default function ControlsMasterDataPage() {
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-800">Control</h1>
-            <p className="text-sm text-slate-500">Manage control definitions</p>
-          </div>
+          <h1 className="text-2xl font-bold text-slate-800">Control</h1>
         </div>
       </div>
 
-      {/* Toolbar */}
-      <div className="flex items-center gap-3">
-        <Input
-          placeholder="Search controls..."
-          value={searchTerm}
-          onChange={(e) => {
-            setSearchTerm(e.target.value);
-            setPage(1);
-          }}
-          className="max-w-md bg-white"
-        />
-        <div className="flex-1" />
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setImportDialogOpen(true)}
-        >
-          <Upload className="h-4 w-4 mr-2" />
-          Import
-        </Button>
-        <Button variant="outline" size="sm" onClick={handleExport}>
-          <Download className="h-4 w-4 mr-2" />
-          Export
-        </Button>
-        <Dialog
+      {/* Search and Actions - same row */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input
+            placeholder="Search controls..."
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setPage(1);
+            }}
+            className="pl-10 w-[300px] bg-white border-slate-200"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
+            <Upload className="h-4 w-4 mr-2" />
+            Import
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleExport}>
+            <Download className="h-4 w-4 mr-2" />
+            Export
+          </Button>
+          <Dialog
           open={createDialogOpen}
           onOpenChange={(open) => {
             setCreateDialogOpen(open);
@@ -606,9 +603,9 @@ export default function ControlsMasterDataPage() {
               New Control
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0">
+          <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
             {/* Sticky Header */}
-            <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+            <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-lg font-semibold text-slate-800">
                   Control Details - Step {wizardStep} of 3
@@ -617,7 +614,7 @@ export default function ControlsMasterDataPage() {
             </div>
 
             {/* Step Indicator */}
-            <div className="flex items-center justify-center px-6 py-4 bg-slate-50/50 flex-shrink-0">
+            <div className="flex-shrink-0 flex items-center justify-center px-6 py-4 bg-slate-50/50 border-b border-slate-100">
               {[1, 2, 3].map((step) => (
                 <div key={step} className="flex items-center">
                   <div
@@ -652,7 +649,7 @@ export default function ControlsMasterDataPage() {
             </div>
 
             {/* Scrollable Content */}
-            <div className="overflow-y-auto flex-1 px-6 py-5">
+            <div className="flex-1 overflow-y-auto px-6 py-6">
               {/* Step 1: Control Information */}
               {wizardStep === 1 && (
                 <div className="space-y-4">
@@ -896,7 +893,7 @@ export default function ControlsMasterDataPage() {
             </div>
 
             {/* Sticky Footer */}
-            <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex-shrink-0">
+            <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
               {wizardStep > 1 && (
                 <Button
                   variant="outline"
@@ -933,32 +930,33 @@ export default function ControlsMasterDataPage() {
             </div>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {/* Table */}
       <div className="bg-white rounded-xl border border-slate-200">
         <Table>
           <TableHeader>
-            <TableRow className="bg-slate-50/50">
-              <TableHead className="text-xs font-semibold text-slate-600 py-3">
+            <TableRow className="border-b border-slate-100 bg-slate-50/50">
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4">
                 Control Name
               </TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-3">
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">
                 Control Domain
               </TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-3">
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">
                 Control Code
               </TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-3 max-w-[200px]">
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 max-w-[200px]">
                 Description
               </TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-3">
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">
                 Function Grouping
               </TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-3">
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">
                 Status
               </TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-3 w-[100px]">
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[100px]">
                 Action
               </TableHead>
             </TableRow>
@@ -972,23 +970,23 @@ export default function ControlsMasterDataPage() {
               </TableRow>
             ) : (
               controls.map((control) => (
-                <TableRow key={control.id} className="hover:bg-slate-50/50">
-                  <TableCell className="font-medium text-slate-800 max-w-[200px] truncate">
+                <TableRow key={control.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                  <TableCell className="py-3 text-sm font-medium text-slate-800 pl-4 max-w-[200px] truncate">
                     {control.name}
                   </TableCell>
-                  <TableCell className="text-slate-600">
+                  <TableCell className="py-3 text-sm text-slate-600">
                     {control.domain?.name || "-"}
                   </TableCell>
-                  <TableCell className="text-slate-600">
+                  <TableCell className="py-3 text-sm text-slate-600">
                     {control.controlCode}
                   </TableCell>
-                  <TableCell className="text-slate-600 max-w-[200px] truncate">
+                  <TableCell className="py-3 text-sm text-slate-600 max-w-[200px] truncate">
                     {control.description || "-"}
                   </TableCell>
-                  <TableCell className="text-slate-600">
+                  <TableCell className="py-3 text-sm text-slate-600">
                     {control.functionalGrouping || "-"}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="py-3 text-sm">
                     <Badge
                       className={
                         statusColors[control.status] ||
@@ -998,7 +996,7 @@ export default function ControlsMasterDataPage() {
                       {control.status}
                     </Badge>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="py-3 text-sm pr-4">
                     <div className="flex gap-1">
                       <Button
                         variant="ghost"
@@ -1025,7 +1023,7 @@ export default function ControlsMasterDataPage() {
         </Table>
 
         {/* Pagination */}
-        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200">
+        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
           <p className="text-sm text-slate-500">
             {total > 0
               ? `Showing ${startItem} to ${endItem} of ${total}`
@@ -1077,8 +1075,8 @@ export default function ControlsMasterDataPage() {
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0">
-          <div className="px-6 py-5 flex-shrink-0">
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">
                 Edit Control
@@ -1086,7 +1084,7 @@ export default function ControlsMasterDataPage() {
             </DialogHeader>
           </div>
 
-          <div className="overflow-y-auto flex-1 px-6 py-4 space-y-6">
+          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
             {/* Basic Information */}
             <div className="grid grid-cols-2 gap-5">
               <div>
@@ -1441,7 +1439,7 @@ export default function ControlsMasterDataPage() {
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 px-6 py-4 bg-white rounded-b-lg flex-shrink-0">
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => {
@@ -1499,8 +1497,8 @@ export default function ControlsMasterDataPage() {
           }
         }}
       >
-        <DialogContent className="max-w-xl max-h-[90vh] flex flex-col p-0 gap-0">
-          <div className="px-6 py-5 flex-shrink-0">
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">
                 Import Controls
@@ -1508,7 +1506,7 @@ export default function ControlsMasterDataPage() {
             </DialogHeader>
           </div>
 
-          <div className="overflow-y-auto flex-1 px-6 py-5 space-y-4">
+          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
             <p className="text-sm text-slate-500">
               Upload a CSV file to import controls. You can download a template
               to see the required format.
@@ -1544,7 +1542,7 @@ export default function ControlsMasterDataPage() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between px-6 py-4 bg-white rounded-b-lg flex-shrink-0">
+          <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
               <Download className="h-4 w-4 mr-2" />
               Download Template

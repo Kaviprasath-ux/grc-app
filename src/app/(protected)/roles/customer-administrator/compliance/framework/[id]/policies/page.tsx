@@ -19,7 +19,6 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  ArrowLeft,
 } from "lucide-react";
 import { Unauthorized } from "@/components/ui/unauthorized";
 
@@ -262,25 +261,16 @@ export default function PoliciesByFrameworkPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-1">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.push("/roles/customer-administrator/compliance/framework")}
-            className="h-8 w-8 text-slate-400 hover:text-slate-600"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-800">Governance</h1>
-            {framework && (
-              <p className="text-sm text-slate-500">
-                Framework: {framework.name}
-              </p>
-            )}
-          </div>
-        </div>
+      <div className="flex items-center gap-3">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => router.push("/roles/customer-administrator/compliance/framework")}
+          className="h-9 w-9 text-slate-600 hover:text-slate-800"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </Button>
+        <h1 className="text-2xl font-bold text-slate-800">Governance</h1>
       </div>
 
       {/* Tabs */}
@@ -293,7 +283,7 @@ export default function PoliciesByFrameworkPage() {
 
         {/* Tab Content - Same structure for all tabs */}
         {["Policy", "Standard", "Procedure"].map((docType) => (
-          <TabsContent key={docType} value={docType} className="mt-4 space-y-4">
+          <TabsContent key={docType} value={docType} className="mt-6 space-y-4">
             {/* Search Row */}
             <div className="flex items-center gap-4">
               <Input
@@ -320,32 +310,32 @@ export default function PoliciesByFrameworkPage() {
               <div className="bg-white rounded-xl border border-slate-200">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-slate-50/50">
-                      <TableHead className="text-xs font-semibold text-slate-600 py-3">Code</TableHead>
-                      <TableHead className="text-xs font-semibold text-slate-600 py-3">Name</TableHead>
-                      <TableHead className="text-xs font-semibold text-slate-600 py-3">Status</TableHead>
-                      <TableHead className="text-xs font-semibold text-slate-600 py-3">Assignee</TableHead>
-                      <TableHead className="text-xs font-semibold text-slate-600 py-3">Approver</TableHead>
-                      <TableHead className="text-xs font-semibold text-slate-600 py-3">Department</TableHead>
+                    <TableRow className="border-b border-slate-100 bg-slate-50/50">
+                      <TableHead className="text-xs font-semibold text-slate-600 py-4 pl-4">Code</TableHead>
+                      <TableHead className="text-xs font-semibold text-slate-600 py-4">Name</TableHead>
+                      <TableHead className="text-xs font-semibold text-slate-600 py-4">Status</TableHead>
+                      <TableHead className="text-xs font-semibold text-slate-600 py-4">Assignee</TableHead>
+                      <TableHead className="text-xs font-semibold text-slate-600 py-4">Approver</TableHead>
+                      <TableHead className="text-xs font-semibold text-slate-600 py-4">Department</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {paginatedPolicies.map((policy) => (
                       <TableRow
                         key={policy.id}
-                        className="cursor-pointer hover:bg-slate-50"
+                        className="border-b border-slate-100 last:border-0 cursor-pointer hover:bg-slate-50"
                         onDoubleClick={() => router.push(`/compliance/governance/${policy.id}`)}
                       >
-                        <TableCell className="font-medium text-slate-900">{policy.code}</TableCell>
-                        <TableCell className="text-slate-600">{policy.name}</TableCell>
-                        <TableCell>
+                        <TableCell className="py-4 pl-4 text-sm font-medium text-slate-900">{policy.code}</TableCell>
+                        <TableCell className="py-4 text-sm text-slate-700">{policy.name}</TableCell>
+                        <TableCell className="py-4">
                           <Badge className={getStatusBadgeColor(policy.status)}>
                             {policy.status}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-slate-600">{policy.assignee?.fullName || "-"}</TableCell>
-                        <TableCell className="text-slate-600">{policy.approver?.fullName || "-"}</TableCell>
-                        <TableCell className="text-slate-600">{policy.department?.name || "-"}</TableCell>
+                        <TableCell className="py-4 text-sm text-slate-700">{policy.assignee?.fullName || "-"}</TableCell>
+                        <TableCell className="py-4 text-sm text-slate-700">{policy.approver?.fullName || "-"}</TableCell>
+                        <TableCell className="py-4 text-sm text-slate-700">{policy.department?.name || "-"}</TableCell>
                       </TableRow>
                     ))}
                     {paginatedPolicies.length === 0 && (
@@ -359,46 +349,48 @@ export default function PoliciesByFrameworkPage() {
                 </Table>
 
                 {/* Pagination */}
-                <div className="flex items-center justify-center gap-2 p-4 border-t border-slate-100">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    disabled={currentPage === 1}
-                    onClick={() => setCurrentPage(1)}
-                    className="h-8 w-8"
-                  >
-                    <ChevronsLeft className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    disabled={currentPage === 1}
-                    onClick={() => setCurrentPage((p) => p - 1)}
-                    className="h-8 w-8"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <span className="text-sm text-slate-500 px-3 py-1">
-                    {total > 0 ? `Showing ${startItem} to ${endItem} of ${total}` : `No ${docType.toLowerCase()}s`}
+                <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
+                  <span className="text-sm text-slate-500">
+                    {total > 0 ? `${startItem} to ${endItem} of ${total}` : `No ${docType.toLowerCase()}s`}
                   </span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    disabled={currentPage >= totalPages}
-                    onClick={() => setCurrentPage((p) => p + 1)}
-                    className="h-8 w-8"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    disabled={currentPage >= totalPages}
-                    onClick={() => setCurrentPage(totalPages)}
-                    className="h-8 w-8"
-                  >
-                    <ChevronsRight className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage(1)}
+                      className="h-8 w-8"
+                    >
+                      <ChevronsLeft className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage((p) => p - 1)}
+                      className="h-8 w-8"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      disabled={currentPage >= totalPages}
+                      onClick={() => setCurrentPage((p) => p + 1)}
+                      className="h-8 w-8"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      disabled={currentPage >= totalPages}
+                      onClick={() => setCurrentPage(totalPages)}
+                      className="h-8 w-8"
+                    >
+                      <ChevronsRight className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             )}

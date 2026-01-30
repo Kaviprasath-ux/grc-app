@@ -241,11 +241,7 @@ export default function ReportsPage() {
     return (
       <div
         key={report.id}
-        className="bg-white rounded-xl border border-slate-200 p-5 cursor-pointer hover:border-slate-300 hover:shadow-sm transition-all"
-        onClick={() => {
-          setSelectedReport(report.id);
-          setIsGenerateDialogOpen(true);
-        }}
+        className="bg-white rounded-xl border border-slate-200 p-5"
       >
         <div className="flex items-start gap-4">
           <div className={`p-3 rounded-lg ${colors.bg}`}>
@@ -259,7 +255,15 @@ export default function ReportsPage() {
           </div>
         </div>
         <div className="mt-4">
-          <Button variant="outline" size="sm" className="w-full">
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full"
+            onClick={() => {
+              setSelectedReport(report.id);
+              setIsGenerateDialogOpen(true);
+            }}
+          >
             <BarChart3 className="h-4 w-4 mr-2" />
             Generate Report
           </Button>
@@ -270,7 +274,7 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Page Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-800">Reports</h1>
         <Button size="sm" onClick={() => setIsManagementReportOpen(true)}>
@@ -333,9 +337,9 @@ export default function ReportsPage() {
 
       {/* Generate Report Dialog */}
       <Dialog open={isGenerateDialogOpen} onOpenChange={setIsGenerateDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
-          {/* Sticky Header */}
-          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">
                 Generate Report
@@ -344,18 +348,18 @@ export default function ReportsPage() {
           </div>
 
           {/* Scrollable Content */}
-          <div className="overflow-y-auto flex-1 px-6 py-5">
+          <div className="flex-1 overflow-y-auto px-6 py-6">
             <div className="space-y-4">
               <p className="text-sm text-slate-500">
                 Configure and generate the{" "}
                 {reportTypes.find((r) => r.id === selectedReport)?.title}
               </p>
-              <div>
+              <div className="space-y-1.5">
                 <Label className="text-sm font-medium text-slate-700">
                   Report Format
                 </Label>
                 <Select value={reportFormat} onValueChange={setReportFormat}>
-                  <SelectTrigger className="mt-1.5 w-full bg-white">
+                  <SelectTrigger className="w-full bg-white border-slate-200">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
@@ -365,7 +369,7 @@ export default function ReportsPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="p-4 bg-slate-50 rounded-lg">
+              <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
                 <h4 className="font-medium text-slate-800 mb-2">
                   Report Details
                 </h4>
@@ -381,8 +385,8 @@ export default function ReportsPage() {
             </div>
           </div>
 
-          {/* Sticky Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex-shrink-0">
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => setIsGenerateDialogOpen(false)}
@@ -408,9 +412,9 @@ export default function ReportsPage() {
         open={isManagementReportOpen}
         onOpenChange={setIsManagementReportOpen}
       >
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
-          {/* Sticky Header */}
-          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">
                 Compliance Report Parameters
@@ -419,7 +423,7 @@ export default function ReportsPage() {
           </div>
 
           {/* Scrollable Content */}
-          <div className="overflow-y-auto flex-1 px-6 py-5">
+          <div className="flex-1 overflow-y-auto px-6 py-6">
             {/* Checkbox grid - 2 columns, 5 rows matching UAT layout */}
             <div className="grid grid-cols-2 gap-x-8 gap-y-4">
               {/* Row 1 */}
@@ -433,7 +437,7 @@ export default function ReportsPage() {
                 />
                 <label
                   htmlFor="overallCompliance"
-                  className="text-sm text-slate-600 cursor-pointer"
+                  className="text-sm text-slate-700 cursor-pointer"
                 >
                   Overall Compliance
                 </label>
@@ -448,7 +452,7 @@ export default function ReportsPage() {
                 />
                 <label
                   htmlFor="frameworkCompliance"
-                  className="text-sm text-slate-600 cursor-pointer"
+                  className="text-sm text-slate-700 cursor-pointer"
                 >
                   Framework Compliance
                 </label>
@@ -465,7 +469,7 @@ export default function ReportsPage() {
                 />
                 <label
                   htmlFor="controlRequirementsByFramework"
-                  className="text-sm text-slate-600 cursor-pointer"
+                  className="text-sm text-slate-700 cursor-pointer"
                 >
                   Control Requirements by Framework
                 </label>
@@ -480,7 +484,7 @@ export default function ReportsPage() {
                 />
                 <label
                   htmlFor="controlImplementationsByFramework"
-                  className="text-sm text-slate-600 cursor-pointer"
+                  className="text-sm text-slate-700 cursor-pointer"
                 >
                   Control Implementations by Framework
                 </label>
@@ -497,7 +501,7 @@ export default function ReportsPage() {
                 />
                 <label
                   htmlFor="complianceRequirementsExceptions"
-                  className="text-sm text-slate-600 cursor-pointer"
+                  className="text-sm text-slate-700 cursor-pointer"
                 >
                   Compliance Requirements Exceptions
                 </label>
@@ -512,7 +516,7 @@ export default function ReportsPage() {
                 />
                 <label
                   htmlFor="controlExceptions"
-                  className="text-sm text-slate-600 cursor-pointer"
+                  className="text-sm text-slate-700 cursor-pointer"
                 >
                   Control Exceptions
                 </label>
@@ -529,7 +533,7 @@ export default function ReportsPage() {
                 />
                 <label
                   htmlFor="frameworkWithGovernanceData"
-                  className="text-sm text-slate-600 cursor-pointer"
+                  className="text-sm text-slate-700 cursor-pointer"
                 >
                   Framework along with Governance Data
                 </label>
@@ -544,7 +548,7 @@ export default function ReportsPage() {
                 />
                 <label
                   htmlFor="complianceIssues"
-                  className="text-sm text-slate-600 cursor-pointer"
+                  className="text-sm text-slate-700 cursor-pointer"
                 >
                   Compliance Issues
                 </label>
@@ -561,18 +565,18 @@ export default function ReportsPage() {
                 />
                 <label
                   htmlFor="domainBasedProgressCompliance"
-                  className="text-sm text-slate-600 cursor-pointer"
+                  className="text-sm text-slate-700 cursor-pointer"
                 >
                   Domain based Progress Compliance (Self-Assessment model)
                 </label>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center">
                 <div className="relative flex-1">
                   <Select
                     value={selectedFrameworkId}
                     onValueChange={setSelectedFrameworkId}
                   >
-                    <SelectTrigger className="w-full bg-white pr-8">
+                    <SelectTrigger className="w-full bg-white border-slate-200 pr-8">
                       <SelectValue placeholder="Framework" />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
@@ -597,8 +601,8 @@ export default function ReportsPage() {
             </div>
           </div>
 
-          {/* Sticky Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex-shrink-0">
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => setIsManagementReportOpen(false)}

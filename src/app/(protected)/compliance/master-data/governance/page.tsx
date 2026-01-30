@@ -519,26 +519,30 @@ export default function GovernanceMasterDataPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.push("/compliance/master-data")}
-            className="h-9 w-9"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-800">Governance</h1>
-            <p className="text-sm text-slate-500 mt-1">Manage policies, standards, and procedures</p>
-          </div>
+      <div className="flex items-center gap-3">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => router.push("/compliance/master-data")}
+          className="h-8 w-8 text-slate-400 hover:text-slate-600"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <h1 className="text-2xl font-bold text-slate-800">Governance</h1>
+      </div>
+
+      {/* Search and Actions - same row */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input
+            placeholder="Search governance documents..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 w-[300px] bg-white border-slate-200"
+          />
         </div>
-        <div className="flex gap-2">
-          <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Policies
-          </Button>
+        <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
             <Upload className="h-4 w-4 mr-2" />
             Import
@@ -547,19 +551,10 @@ export default function GovernanceMasterDataPage() {
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>
-        </div>
-      </div>
-
-      {/* Search */}
-      <div className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <Input
-            placeholder="Search governance documents..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 bg-white"
-          />
+          <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            New Policies
+          </Button>
         </div>
       </div>
 
@@ -567,17 +562,17 @@ export default function GovernanceMasterDataPage() {
       <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto">
         <Table>
           <TableHeader>
-            <TableRow className="bg-slate-50/50 hover:bg-slate-50/50">
-              <TableHead className="font-semibold text-slate-700">Policy Name</TableHead>
-              <TableHead className="font-semibold text-slate-700">Status</TableHead>
-              <TableHead className="font-semibold text-slate-700">Assignee</TableHead>
-              <TableHead className="font-semibold text-slate-700">Approver</TableHead>
-              <TableHead className="font-semibold text-slate-700">Department</TableHead>
-              <TableHead className="font-semibold text-slate-700">Requirement</TableHead>
-              <TableHead className="font-semibold text-slate-700">Recurrence</TableHead>
-              <TableHead className="font-semibold text-slate-700">Code</TableHead>
-              <TableHead className="font-semibold text-slate-700">Type</TableHead>
-              <TableHead className="w-[100px] font-semibold text-slate-700">Action</TableHead>
+            <TableRow className="border-b border-slate-100 bg-slate-50/50">
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4">Policy Name</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">Status</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">Assignee</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">Approver</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">Department</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">Requirement</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">Recurrence</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">Code</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">Type</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[100px]">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -589,23 +584,23 @@ export default function GovernanceMasterDataPage() {
               </TableRow>
             ) : (
               filteredPolicies.map((policy) => (
-                <TableRow key={policy.id} className="hover:bg-slate-50/50">
-                  <TableCell className="font-medium text-slate-800">{policy.name}</TableCell>
-                  <TableCell>
+                <TableRow key={policy.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                  <TableCell className="py-3 text-sm font-medium text-slate-800 pl-4">{policy.name}</TableCell>
+                  <TableCell className="py-3 text-sm">
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[policy.status] || "bg-slate-100 text-slate-600"}`}>
                       {policy.status}
                     </span>
                   </TableCell>
-                  <TableCell className="text-slate-600">{policy.assignee?.fullName || "-"}</TableCell>
-                  <TableCell className="text-slate-600">{policy.approver?.fullName || "-"}</TableCell>
-                  <TableCell className="text-slate-600">{policy.department?.name || "-"}</TableCell>
-                  <TableCell className="text-slate-600 max-w-[150px] truncate">
+                  <TableCell className="py-3 text-sm text-slate-600">{policy.assignee?.fullName || "-"}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-600">{policy.approver?.fullName || "-"}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-600">{policy.department?.name || "-"}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-600 max-w-[150px] truncate">
                     {policy.content || "-"}
                   </TableCell>
-                  <TableCell className="text-slate-600">{policy.recurrence || "-"}</TableCell>
-                  <TableCell className="text-slate-600">{policy.code}</TableCell>
-                  <TableCell className="text-slate-600">{policy.documentType}</TableCell>
-                  <TableCell>
+                  <TableCell className="py-3 text-sm text-slate-600">{policy.recurrence || "-"}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-600">{policy.code}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-600">{policy.documentType}</TableCell>
+                  <TableCell className="py-3 text-sm pr-4">
                     <div className="flex gap-1">
                       <Button
                         variant="ghost"
@@ -632,7 +627,7 @@ export default function GovernanceMasterDataPage() {
         </Table>
 
         {/* Pagination */}
-        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200">
+        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
           <p className="text-sm text-slate-500">
             Showing {filteredPolicies.length} of {total}
           </p>
@@ -687,13 +682,13 @@ export default function GovernanceMasterDataPage() {
           resetForm();
         }
       }}>
-        <DialogContent className="max-w-4xl flex flex-col max-h-[90vh]">
-          <DialogHeader className="flex-shrink-0 pb-4">
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogTitle className="text-lg font-semibold text-slate-800">New Policies</DialogTitle>
-          </DialogHeader>
+          </div>
 
           {/* Step Indicators */}
-          <div className="flex items-center justify-center px-6 py-4 bg-slate-50/50 flex-shrink-0">
+          <div className="flex-shrink-0 flex items-center justify-center px-6 py-4 bg-slate-50/50 border-b border-slate-100">
             {[1, 2, 3].map((step) => (
               <div key={step} className="flex items-center">
                 <div className={`flex items-center justify-center w-8 h-8 rounded-full border-2 text-sm font-medium ${
@@ -715,10 +710,10 @@ export default function GovernanceMasterDataPage() {
             ))}
           </div>
 
-          <div className="overflow-y-auto flex-1 py-4">
+          <div className="flex-1 overflow-y-auto px-6 py-6">
             {/* Step 1: Policy Information */}
             {wizardStep === 1 && (
-              <div className="space-y-4 px-1">
+              <div className="space-y-4">
                 <div>
                   <Label className="text-sm font-medium text-slate-700">
                     Policy Name <span className="text-red-500">*</span>
@@ -839,7 +834,7 @@ export default function GovernanceMasterDataPage() {
 
             {/* Step 2: Assignments & Details - Link Controls */}
             {wizardStep === 2 && (
-              <div className="space-y-4 px-1">
+              <div className="space-y-4">
                 {/* Filters Row */}
                 <div className="grid grid-cols-3 gap-4">
                   <Select
@@ -952,7 +947,7 @@ export default function GovernanceMasterDataPage() {
 
             {/* Step 3: Review Information */}
             {wizardStep === 3 && (
-              <div className="space-y-4 px-1">
+              <div className="space-y-4">
                 <h4 className="font-medium text-slate-800">Policy Information</h4>
                 <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-lg">
                   <div>
@@ -1011,7 +1006,7 @@ export default function GovernanceMasterDataPage() {
           </div>
 
           {/* Footer */}
-          <div className="flex justify-end gap-2 pt-4 flex-shrink-0">
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             {wizardStep > 1 && (
               <Button variant="outline" size="sm" onClick={() => setWizardStep(wizardStep - 1)}>
                 Previous
@@ -1039,11 +1034,11 @@ export default function GovernanceMasterDataPage() {
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-4xl flex flex-col max-h-[90vh]">
-          <DialogHeader className="flex-shrink-0 pb-4">
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogTitle className="text-lg font-semibold text-slate-800">Edit Policy</DialogTitle>
-          </DialogHeader>
-          <div className="overflow-y-auto flex-1 py-2 space-y-5">
+          </div>
+          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-5">
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label className="text-sm font-medium text-slate-700">
@@ -1205,7 +1200,7 @@ export default function GovernanceMasterDataPage() {
               </Select>
             </div>
           </div>
-          <div className="flex justify-end gap-2 pt-4 flex-shrink-0">
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button
               variant="outline"
               size="sm"
@@ -1230,19 +1225,19 @@ export default function GovernanceMasterDataPage() {
 
       {/* Delete Confirmation */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Policy</AlertDialogTitle>
-            <AlertDialogDescription>
+        <AlertDialogContent className="p-0 gap-0">
+          <AlertDialogHeader className="px-6 py-5">
+            <AlertDialogTitle className="text-lg font-semibold text-slate-800">Delete Policy</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm text-slate-500 mt-1">
               Are you sure you want to delete &quot;{selectedPolicy?.name}&quot;? This
               action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogFooter className="px-6 py-4 bg-white rounded-b-lg">
+            <AlertDialogCancel className="h-9">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-red-600 hover:bg-red-700 h-9"
             >
               Delete
             </AlertDialogAction>
@@ -1260,11 +1255,11 @@ export default function GovernanceMasterDataPage() {
           }
         }
       }}>
-        <DialogContent className="max-w-lg flex flex-col max-h-[90vh]">
-          <DialogHeader className="flex-shrink-0 pb-4">
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogTitle className="text-lg font-semibold text-slate-800">Import Policies</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2 overflow-y-auto flex-1">
+          </div>
+          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
             <div>
               <Label className="text-sm font-medium text-slate-700">File</Label>
               <Input
@@ -1281,7 +1276,7 @@ export default function GovernanceMasterDataPage() {
               )}
             </div>
           </div>
-          <div className="flex justify-between pt-4 flex-shrink-0">
+          <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
               <Download className="h-4 w-4 mr-2" />
               Download Template

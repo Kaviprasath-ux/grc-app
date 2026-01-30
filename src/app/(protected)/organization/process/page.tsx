@@ -703,7 +703,7 @@ export default function ProcessPage() {
         </TabsList>
 
         {/* Repository Tab */}
-        <TabsContent value="repository" className="space-y-4">
+        <TabsContent value="repository" className="mt-6 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="relative">
@@ -783,7 +783,7 @@ export default function ProcessPage() {
         </TabsContent>
 
         {/* Business Impact Analysis Tab */}
-        <TabsContent value="bia" className="space-y-4">
+        <TabsContent value="bia" className="mt-6 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="relative">
@@ -836,7 +836,7 @@ export default function ProcessPage() {
         </TabsContent>
 
         {/* Performance Dashboard Tab - Matching UAT structure */}
-        <TabsContent value="performance" className="space-y-6">
+        <TabsContent value="performance" className="mt-6 space-y-6">
           {/* Two Donut Charts Side by Side */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Status Chart */}

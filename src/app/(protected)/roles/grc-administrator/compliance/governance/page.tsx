@@ -54,11 +54,6 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  UserPlus,
-  ListChecks,
-  CheckSquare,
-  ArrowUpFromLine,
-  UserCheck,
 } from "lucide-react";
 
 interface Policy {
@@ -104,14 +99,6 @@ const DOCUMENT_TYPES = ["Policy", "Standard", "Procedure"];
 const RECURRENCE_OPTIONS = ["Weekly", "Monthly", "Quarterly", "Yearly"];
 const ENTITIES_OPTIONS = ["Organization Wide"];
 
-interface DashboardStats {
-  notUploaded: number;
-  draft: number;
-  approved: number;
-  published: number;
-  needsReview: number;
-}
-
 export default function GRCAdminGovernancePage() {
   const router = useRouter();
   const { data: session } = useSession();
@@ -119,16 +106,7 @@ export default function GRCAdminGovernancePage() {
   const isGRCAdmin = useHasRole("GRCAdministrator");
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<string>("Dashboard");
   const [activeDocType, setActiveDocType] = useState<string>("Policy");
-  const [dashboardStats, setDashboardStats] = useState<DashboardStats>({
-    notUploaded: 0,
-    draft: 0,
-    approved: 0,
-    published: 0,
-    needsReview: 0,
-  });
-  const [statsLoading, setStatsLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -173,45 +151,8 @@ export default function GRCAdminGovernancePage() {
   }, [session?.user?.id]);
 
   useEffect(() => {
-    if (activeTab === "Dashboard") {
-      fetchDashboardStats();
-    }
-  }, [activeTab]);
-
-  useEffect(() => {
-    if (activeTab !== "Dashboard") {
-      fetchPolicies();
-    }
-  }, [activeTab, activeDocType, currentPage, frameworkFilter]);
-
-  const fetchDashboardStats = async () => {
-    try {
-      setStatsLoading(true);
-      // Fetch counts for each status
-      const statuses = ["Not Uploaded", "Draft", "Approved", "Published", "Needs Review"];
-      const counts = await Promise.all(
-        statuses.map(async (status) => {
-          const response = await fetch(`/api/policies?status=${encodeURIComponent(status)}&limit=1`);
-          if (response.ok) {
-            const data = await response.json();
-            return data.pagination?.total || 0;
-          }
-          return 0;
-        })
-      );
-      setDashboardStats({
-        notUploaded: counts[0],
-        draft: counts[1],
-        approved: counts[2],
-        published: counts[3],
-        needsReview: counts[4],
-      });
-    } catch (error) {
-      console.error("Error fetching dashboard stats:", error);
-    } finally {
-      setStatsLoading(false);
-    }
-  };
+    fetchPolicies();
+  }, [activeDocType, currentPage, frameworkFilter]);
 
   const fetchFilterOptions = async () => {
     try {
@@ -397,13 +338,10 @@ export default function GRCAdminGovernancePage() {
   });
 
   const handleTabChange = (tab: string) => {
-    setActiveTab(tab);
-    if (tab !== "Dashboard" && tab !== "Information Security Vault") {
-      setActiveDocType(tab);
-      setCurrentPage(1);
-      setSearch("");
-      setFrameworkFilter("all");
-    }
+    setActiveDocType(tab);
+    setCurrentPage(1);
+    setSearch("");
+    setFrameworkFilter("all");
   };
 
   const canProceedStep1 = newPolicy.name && newPolicy.documentType && newPolicy.recurrence && newPolicy.entities;
@@ -459,234 +397,14 @@ export default function GRCAdminGovernancePage() {
       </div>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={handleTabChange}>
+      <Tabs value={activeDocType} onValueChange={handleTabChange}>
         <TabsList>
-          <TabsTrigger value="Dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="Policy">Policy</TabsTrigger>
           <TabsTrigger value="Standard">Standards</TabsTrigger>
           <TabsTrigger value="Procedure">Procedures</TabsTrigger>
-          <TabsTrigger value="Information Security Vault">Information Security Vault</TabsTrigger>
         </TabsList>
 
-        {/* Dashboard Tab Content */}
-        <TabsContent value="Dashboard" className="mt-4">
-          {statsLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-              {/* Not Uploaded Card */}
-              <div className="relative overflow-hidden rounded-xl p-6 h-48 flex flex-col items-center justify-center text-center"
-                style={{
-                  background: "linear-gradient(135deg, #0a0a5c 0%, #1a1a8c 50%, #0d0d6b 100%)",
-                }}>
-                {/* Wave pattern overlay */}
-                <div className="absolute inset-0 opacity-20">
-                  <svg className="w-full h-full" viewBox="0 0 200 200" preserveAspectRatio="none">
-                    <defs>
-                      <linearGradient id="wave1" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#4f46e5" stopOpacity="0.3"/>
-                        <stop offset="100%" stopColor="#7c3aed" stopOpacity="0.1"/>
-                      </linearGradient>
-                    </defs>
-                    <path d="M0,100 Q50,50 100,100 T200,100 L200,200 L0,200 Z" fill="url(#wave1)"/>
-                    <path d="M0,120 Q50,80 100,120 T200,120 L200,200 L0,200 Z" fill="url(#wave1)" opacity="0.5"/>
-                  </svg>
-                </div>
-                {/* Particle dots */}
-                <div className="absolute inset-0 opacity-30">
-                  <svg className="w-full h-full" viewBox="0 0 100 100">
-                    <circle cx="20" cy="30" r="1" fill="white"/>
-                    <circle cx="80" cy="20" r="0.5" fill="white"/>
-                    <circle cx="60" cy="70" r="0.8" fill="white"/>
-                    <circle cx="30" cy="80" r="0.6" fill="white"/>
-                    <circle cx="90" cy="60" r="0.7" fill="white"/>
-                  </svg>
-                </div>
-                {/* Icon with dashed circle */}
-                <div className="relative z-10 mb-3">
-                  <div className="w-16 h-16 rounded-full border-2 border-dashed border-white/40 flex items-center justify-center">
-                    <UserPlus className="h-7 w-7 text-white" />
-                  </div>
-                </div>
-                {/* Count */}
-                <div className="relative z-10 text-4xl font-bold text-white mb-1">
-                  {dashboardStats.notUploaded}
-                </div>
-                {/* Label */}
-                <div className="relative z-10 text-white text-sm font-medium">
-                  Not Uploaded
-                </div>
-              </div>
-
-              {/* Draft Card */}
-              <div className="relative overflow-hidden rounded-xl p-6 h-48 flex flex-col items-center justify-center text-center"
-                style={{
-                  background: "linear-gradient(135deg, #0a0a5c 0%, #1a1a8c 50%, #0d0d6b 100%)",
-                }}>
-                <div className="absolute inset-0 opacity-20">
-                  <svg className="w-full h-full" viewBox="0 0 200 200" preserveAspectRatio="none">
-                    <defs>
-                      <linearGradient id="wave2" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#4f46e5" stopOpacity="0.3"/>
-                        <stop offset="100%" stopColor="#7c3aed" stopOpacity="0.1"/>
-                      </linearGradient>
-                    </defs>
-                    <path d="M0,100 Q50,50 100,100 T200,100 L200,200 L0,200 Z" fill="url(#wave2)"/>
-                    <path d="M0,120 Q50,80 100,120 T200,120 L200,200 L0,200 Z" fill="url(#wave2)" opacity="0.5"/>
-                  </svg>
-                </div>
-                <div className="absolute inset-0 opacity-30">
-                  <svg className="w-full h-full" viewBox="0 0 100 100">
-                    <circle cx="15" cy="25" r="0.8" fill="white"/>
-                    <circle cx="75" cy="35" r="0.6" fill="white"/>
-                    <circle cx="55" cy="75" r="1" fill="white"/>
-                    <circle cx="25" cy="85" r="0.5" fill="white"/>
-                    <circle cx="85" cy="55" r="0.7" fill="white"/>
-                  </svg>
-                </div>
-                <div className="relative z-10 mb-3">
-                  <div className="w-16 h-16 rounded-full border-2 border-dashed border-white/40 flex items-center justify-center">
-                    <ListChecks className="h-7 w-7 text-white" />
-                  </div>
-                </div>
-                <div className="relative z-10 text-4xl font-bold text-white mb-1">
-                  {dashboardStats.draft}
-                </div>
-                <div className="relative z-10 text-white text-sm font-medium">
-                  Draft
-                </div>
-              </div>
-
-              {/* Approved Card */}
-              <div className="relative overflow-hidden rounded-xl p-6 h-48 flex flex-col items-center justify-center text-center"
-                style={{
-                  background: "linear-gradient(135deg, #0a0a5c 0%, #1a1a8c 50%, #0d0d6b 100%)",
-                }}>
-                <div className="absolute inset-0 opacity-20">
-                  <svg className="w-full h-full" viewBox="0 0 200 200" preserveAspectRatio="none">
-                    <defs>
-                      <linearGradient id="wave3" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#4f46e5" stopOpacity="0.3"/>
-                        <stop offset="100%" stopColor="#7c3aed" stopOpacity="0.1"/>
-                      </linearGradient>
-                    </defs>
-                    <path d="M0,100 Q50,50 100,100 T200,100 L200,200 L0,200 Z" fill="url(#wave3)"/>
-                    <path d="M0,120 Q50,80 100,120 T200,120 L200,200 L0,200 Z" fill="url(#wave3)" opacity="0.5"/>
-                  </svg>
-                </div>
-                <div className="absolute inset-0 opacity-30">
-                  <svg className="w-full h-full" viewBox="0 0 100 100">
-                    <circle cx="10" cy="40" r="0.7" fill="white"/>
-                    <circle cx="70" cy="25" r="0.9" fill="white"/>
-                    <circle cx="50" cy="80" r="0.6" fill="white"/>
-                    <circle cx="35" cy="70" r="0.8" fill="white"/>
-                    <circle cx="90" cy="50" r="0.5" fill="white"/>
-                  </svg>
-                </div>
-                <div className="relative z-10 mb-3">
-                  <div className="w-16 h-16 rounded-full border-2 border-dashed border-white/40 flex items-center justify-center">
-                    <CheckSquare className="h-7 w-7 text-white" />
-                  </div>
-                </div>
-                <div className="relative z-10 text-4xl font-bold text-white mb-1">
-                  {dashboardStats.approved}
-                </div>
-                <div className="relative z-10 text-white text-sm font-medium">
-                  Approved
-                </div>
-              </div>
-
-              {/* Published Card */}
-              <div className="relative overflow-hidden rounded-xl p-6 h-48 flex flex-col items-center justify-center text-center"
-                style={{
-                  background: "linear-gradient(135deg, #0a0a5c 0%, #1a1a8c 50%, #0d0d6b 100%)",
-                }}>
-                <div className="absolute inset-0 opacity-20">
-                  <svg className="w-full h-full" viewBox="0 0 200 200" preserveAspectRatio="none">
-                    <defs>
-                      <linearGradient id="wave4" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#4f46e5" stopOpacity="0.3"/>
-                        <stop offset="100%" stopColor="#7c3aed" stopOpacity="0.1"/>
-                      </linearGradient>
-                    </defs>
-                    <path d="M0,100 Q50,50 100,100 T200,100 L200,200 L0,200 Z" fill="url(#wave4)"/>
-                    <path d="M0,120 Q50,80 100,120 T200,120 L200,200 L0,200 Z" fill="url(#wave4)" opacity="0.5"/>
-                  </svg>
-                </div>
-                <div className="absolute inset-0 opacity-30">
-                  <svg className="w-full h-full" viewBox="0 0 100 100">
-                    <circle cx="25" cy="35" r="0.6" fill="white"/>
-                    <circle cx="85" cy="30" r="0.8" fill="white"/>
-                    <circle cx="45" cy="85" r="0.7" fill="white"/>
-                    <circle cx="20" cy="75" r="0.9" fill="white"/>
-                    <circle cx="80" cy="65" r="0.5" fill="white"/>
-                  </svg>
-                </div>
-                <div className="relative z-10 mb-3">
-                  <div className="w-16 h-16 rounded-full border-2 border-dashed border-white/40 flex items-center justify-center">
-                    <ArrowUpFromLine className="h-7 w-7 text-white" />
-                  </div>
-                </div>
-                <div className="relative z-10 text-4xl font-bold text-white mb-1">
-                  {dashboardStats.published}
-                </div>
-                <div className="relative z-10 text-white text-sm font-medium">
-                  Published
-                </div>
-              </div>
-
-              {/* Needs Review Card */}
-              <div className="relative overflow-hidden rounded-xl p-6 h-48 flex flex-col items-center justify-center text-center"
-                style={{
-                  background: "linear-gradient(135deg, #0a0a5c 0%, #1a1a8c 50%, #0d0d6b 100%)",
-                }}>
-                <div className="absolute inset-0 opacity-20">
-                  <svg className="w-full h-full" viewBox="0 0 200 200" preserveAspectRatio="none">
-                    <defs>
-                      <linearGradient id="wave5" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#4f46e5" stopOpacity="0.3"/>
-                        <stop offset="100%" stopColor="#7c3aed" stopOpacity="0.1"/>
-                      </linearGradient>
-                    </defs>
-                    <path d="M0,100 Q50,50 100,100 T200,100 L200,200 L0,200 Z" fill="url(#wave5)"/>
-                    <path d="M0,120 Q50,80 100,120 T200,120 L200,200 L0,200 Z" fill="url(#wave5)" opacity="0.5"/>
-                  </svg>
-                </div>
-                <div className="absolute inset-0 opacity-30">
-                  <svg className="w-full h-full" viewBox="0 0 100 100">
-                    <circle cx="30" cy="20" r="0.8" fill="white"/>
-                    <circle cx="70" cy="40" r="0.6" fill="white"/>
-                    <circle cx="60" cy="65" r="0.9" fill="white"/>
-                    <circle cx="15" cy="80" r="0.5" fill="white"/>
-                    <circle cx="95" cy="45" r="0.7" fill="white"/>
-                  </svg>
-                </div>
-                <div className="relative z-10 mb-3">
-                  <div className="w-16 h-16 rounded-full border-2 border-dashed border-white/40 flex items-center justify-center">
-                    <UserCheck className="h-7 w-7 text-white" />
-                  </div>
-                </div>
-                <div className="relative z-10 text-4xl font-bold text-white mb-1">
-                  {dashboardStats.needsReview}
-                </div>
-                <div className="relative z-10 text-white text-sm font-medium">
-                  Needs Review
-                </div>
-              </div>
-            </div>
-          )}
-        </TabsContent>
-
-        {/* Information Security Vault Tab Content */}
-        <TabsContent value="Information Security Vault" className="mt-4">
-          <div className="flex items-center justify-center py-12 text-muted-foreground">
-            Information Security Vault content coming soon
-          </div>
-        </TabsContent>
-
-        {/* Tab Content - Same structure for Policy, Standard, Procedure tabs */}
+        {/* Tab Content - Same structure for all tabs */}
         {["Policy", "Standard", "Procedure"].map((docType) => (
           <TabsContent key={docType} value={docType} className="mt-4 space-y-4">
             {/* Search and Filter Row */}

@@ -10,7 +10,6 @@ export const GET = withAuth(
       const status = searchParams.get("status");
       const documentType = searchParams.get("documentType");
       const departmentId = searchParams.get("departmentId");
-      const frameworkId = searchParams.get("frameworkId");
       const search = searchParams.get("search");
       const page = parseInt(searchParams.get("page") || "1");
       const limit = parseInt(searchParams.get("limit") || "50");
@@ -20,16 +19,6 @@ export const GET = withAuth(
       if (status) where.status = status;
       if (documentType) where.documentType = documentType;
       if (departmentId) where.departmentId = departmentId;
-      // Filter by framework through PolicyControl -> Control -> Framework relationship
-      if (frameworkId) {
-        where.policyControls = {
-          some: {
-            control: {
-              frameworkId: frameworkId,
-            },
-          },
-        };
-      }
       if (search) {
         where.OR = [
           { name: { contains: search } },

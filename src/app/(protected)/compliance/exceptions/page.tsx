@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -41,7 +41,6 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  ArrowLeft,
 } from "lucide-react";
 import { DatePicker } from "@/components/ui/date-picker";
 import {
@@ -138,10 +137,8 @@ const statuses = [
   "Closed",
 ];
 
-function ExceptionsPageContent() {
+export default function ExceptionsPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const fromDashboard = searchParams.get("from") === "dashboard";
   const { data: session } = useSession();
   const { canView, canCreate, canEdit, canDelete, isLoading: permissionsLoading } = usePermissions('compliance.exceptions');
   const [exceptions, setExceptions] = useState<Exception[]>([]);
@@ -451,89 +448,23 @@ function ExceptionsPageContent() {
 
   return (
     <div className="space-y-6">
-      {/* Back to Dashboard Button */}
-      {fromDashboard && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => router.push("/dashboard")}
-          className="flex items-center gap-2 text-slate-600 hover:text-slate-800 -ml-2"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Dashboard
-        </Button>
-      )}
-
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      {/* Page Header */}
+      <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-bold text-slate-800">Exceptions</h1>
-      </div>
-
-      {/* Search, Filter, and Action Buttons Row */}
-      <div className="flex items-center gap-3">
-        <Input
-          placeholder="Search by name, code or requester..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="max-w-md bg-white"
-        />
-        <Select
-          value={filters.status || "all"}
-          onValueChange={(value) =>
-            setFilters({ ...filters, status: value === "all" ? "" : value })
-          }
-        >
-          <SelectTrigger className="w-[180px] bg-white">
-            <SelectValue placeholder="All Statuses" />
-          </SelectTrigger>
-          <SelectContent position="popper" sideOffset={4}>
-            <SelectItem value="all">All Statuses</SelectItem>
-            {statuses.map((s) => (
-              <SelectItem key={s} value={s}>
-                {s}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select
-          value={filters.category || "all"}
-          onValueChange={(value) =>
-            setFilters({ ...filters, category: value === "all" ? "" : value })
-          }
-        >
-          <SelectTrigger className="w-[180px] bg-white">
-            <SelectValue placeholder="All Categories" />
-          </SelectTrigger>
-          <SelectContent position="popper" sideOffset={4}>
-            <SelectItem value="all">All Categories</SelectItem>
-            {categories.map((c) => (
-              <SelectItem key={c} value={c}>
-                {c}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <div className="flex-1" />
-        <PermissionGate resource="compliance.exceptions" action="create">
-          <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Exception
-          </Button>
-        </PermissionGate>
       </div>
 
       {/* Create Exception Dialog */}
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
-          {/* Sticky Header */}
-          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">New Exception</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Scrollable Content */}
-          <div className="overflow-y-auto flex-1 px-6 py-5">
+          <div className="flex-1 overflow-y-auto px-6 py-6">
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -762,8 +693,8 @@ function ExceptionsPageContent() {
             </div>
           </div>
 
-          {/* Sticky Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex-shrink-0">
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => {
@@ -785,13 +716,13 @@ function ExceptionsPageContent() {
 
       {/* Approver Selection Dialog */}
       <Dialog open={approverDialogOpen} onOpenChange={setApproverDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
-          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">Select Approver</DialogTitle>
             </DialogHeader>
           </div>
-          <div className="overflow-y-auto flex-1 px-6 py-5">
+          <div className="flex-1 overflow-y-auto px-6 py-6">
             <p className="text-sm text-slate-500 mb-4">
               Double-click to select an approver
             </p>
@@ -825,7 +756,7 @@ function ExceptionsPageContent() {
       <div className="grid grid-cols-3 gap-6">
         {/* Status Chart Card */}
         <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <h3 className="text-lg font-semibold text-slate-800 mb-4">Status</h3>
+          <h3 className="text-base font-semibold text-slate-800 mb-4">Status</h3>
           <div className="flex items-center justify-between">
             <div className="space-y-2 flex-1">
               <div className="flex items-center gap-2">
@@ -866,7 +797,7 @@ function ExceptionsPageContent() {
 
         {/* Type/Category Chart Card */}
         <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <h3 className="text-lg font-semibold text-slate-800 mb-4">Type</h3>
+          <h3 className="text-base font-semibold text-slate-800 mb-4">Type</h3>
           <div className="flex items-center justify-between">
             <div className="space-y-2 flex-1">
               {Object.entries(categoryCounts)
@@ -900,7 +831,7 @@ function ExceptionsPageContent() {
 
         {/* Department Chart Card */}
         <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <h3 className="text-lg font-semibold text-slate-800 mb-4">Department</h3>
+          <h3 className="text-base font-semibold text-slate-800 mb-4">Department</h3>
           <div className="flex items-center justify-between">
             <div className="space-y-2 flex-1">
               {Object.entries(departmentCounts)
@@ -935,6 +866,59 @@ function ExceptionsPageContent() {
         </div>
       </div>
 
+      {/* Search, Filters, and Action Button Row */}
+      <div className="flex items-center gap-3">
+        <Input
+          placeholder="Search by name, code or requester..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="max-w-sm h-9 border-slate-200 bg-white"
+        />
+        <Select
+          value={filters.status || "all"}
+          onValueChange={(value) =>
+            setFilters({ ...filters, status: value === "all" ? "" : value })
+          }
+        >
+          <SelectTrigger className="w-[160px] bg-white">
+            <SelectValue placeholder="All Statuses" />
+          </SelectTrigger>
+          <SelectContent position="popper" sideOffset={4}>
+            <SelectItem value="all">All Statuses</SelectItem>
+            {statuses.map((s) => (
+              <SelectItem key={s} value={s}>
+                {s}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select
+          value={filters.category || "all"}
+          onValueChange={(value) =>
+            setFilters({ ...filters, category: value === "all" ? "" : value })
+          }
+        >
+          <SelectTrigger className="w-[160px] bg-white">
+            <SelectValue placeholder="All Categories" />
+          </SelectTrigger>
+          <SelectContent position="popper" sideOffset={4}>
+            <SelectItem value="all">All Categories</SelectItem>
+            {categories.map((c) => (
+              <SelectItem key={c} value={c}>
+                {c}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <div className="flex-1" />
+        <PermissionGate resource="compliance.exceptions" action="create">
+          <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            New Exception
+          </Button>
+        </PermissionGate>
+      </div>
+
       {/* Exceptions Table */}
       {loading ? (
         <div className="flex items-center justify-center py-8">
@@ -947,8 +931,8 @@ function ExceptionsPageContent() {
         <div className="bg-white rounded-xl border border-slate-200">
           <Table>
             <TableHeader>
-              <TableRow className="bg-slate-50/50">
-                <TableHead className="text-xs font-semibold text-slate-600 py-3">Exception Code</TableHead>
+              <TableRow className="border-b border-slate-100 bg-slate-50/50">
+                <TableHead className="text-xs font-semibold text-slate-600 py-3 pl-4">Exception Code</TableHead>
                 <TableHead className="text-xs font-semibold text-slate-600 py-3">Exception</TableHead>
                 <TableHead className="text-xs font-semibold text-slate-600 py-3">Category</TableHead>
                 <TableHead className="text-xs font-semibold text-slate-600 py-3">Reference</TableHead>
@@ -956,7 +940,7 @@ function ExceptionsPageContent() {
                 <TableHead className="text-xs font-semibold text-slate-600 py-3">End Date</TableHead>
                 <TableHead className="text-xs font-semibold text-slate-600 py-3">Department</TableHead>
                 <TableHead className="text-xs font-semibold text-slate-600 py-3">Status</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-3">Action</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 py-3">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -971,16 +955,16 @@ function ExceptionsPageContent() {
                 exceptions.map((exception) => (
                   <TableRow
                     key={exception.id}
-                    className="hover:bg-slate-50 cursor-pointer"
+                    className="border-b border-slate-100 last:border-0 hover:bg-slate-50 cursor-pointer"
                     onClick={() => router.push(`/compliance/exceptions/${exception.id}`)}
                   >
-                    <TableCell className="font-medium text-slate-900">
+                    <TableCell className="py-3 text-sm font-medium text-slate-800 pl-4">
                       {exception.exceptionCode}
                     </TableCell>
-                    <TableCell className="text-slate-600">
+                    <TableCell className="py-3 text-sm text-slate-700">
                       <span className="line-clamp-1">{exception.name}</span>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="py-3 text-sm">
                       <Badge
                         className={
                           categoryColors[exception.category] || "bg-slate-100 text-slate-600"
@@ -989,22 +973,22 @@ function ExceptionsPageContent() {
                         {exception.category}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-slate-600">{getReference(exception)}</TableCell>
-                    <TableCell className="text-slate-600">
+                    <TableCell className="py-3 text-sm text-slate-700">{getReference(exception)}</TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700">
                       {exception.requester?.fullName ||
                         exception.requester?.userName ||
                         exception.requester?.name ||
                         "-"}
                     </TableCell>
-                    <TableCell className="text-slate-600">
+                    <TableCell className="py-3 text-sm text-slate-700">
                       {exception.endDate
                         ? new Date(exception.endDate).toLocaleDateString(
                             "en-GB"
                           )
                         : "-"}
                     </TableCell>
-                    <TableCell className="text-slate-600">{exception.department?.name || "-"}</TableCell>
-                    <TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700">{exception.department?.name || "-"}</TableCell>
+                    <TableCell className="py-3 text-sm">
                       <Badge
                         className={
                           statusColors[exception.status] || "bg-slate-100 text-slate-600"
@@ -1013,7 +997,7 @@ function ExceptionsPageContent() {
                         {exception.status}
                       </Badge>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="py-3 text-sm">
                       <div className="flex items-center gap-1">
                         <PermissionGate resource="compliance.exceptions" action="edit">
                           <Button
@@ -1021,7 +1005,7 @@ function ExceptionsPageContent() {
                             size="icon"
                             onClick={(e) => handleOpenEdit(exception, e)}
                             title="Edit"
-                            className="h-8 w-8"
+                            className="h-8 w-8 text-slate-400 hover:text-slate-600"
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
@@ -1032,7 +1016,7 @@ function ExceptionsPageContent() {
                             size="icon"
                             onClick={(e) => handleOpenDelete(exception, e)}
                             title="Delete"
-                            className="h-8 w-8 text-semantic-error hover:text-semantic-error hover:bg-red-50"
+                            className="h-8 w-8 text-slate-400 hover:text-semantic-error"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -1046,7 +1030,7 @@ function ExceptionsPageContent() {
           </Table>
 
           {/* Pagination */}
-          <div className="flex items-center justify-between p-4 border-t border-slate-100">
+          <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
             <span className="text-sm text-slate-500">
               {exceptions.length > 0 ? `Showing 1 to ${exceptions.length} of ${exceptions.length}` : "No exceptions"}
             </span>
@@ -1090,16 +1074,16 @@ function ExceptionsPageContent() {
 
       {/* Edit Exception Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
-          {/* Sticky Header */}
-          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">Edit Exception</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Scrollable Content */}
-          <div className="overflow-y-auto flex-1 px-6 py-5">
+          <div className="flex-1 overflow-y-auto px-6 py-6">
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -1356,8 +1340,8 @@ function ExceptionsPageContent() {
             </div>
           </div>
 
-          {/* Sticky Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex-shrink-0">
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => {
@@ -1371,7 +1355,7 @@ function ExceptionsPageContent() {
               onClick={handleEdit}
               disabled={!editForm.name || !editForm.category}
             >
-              Update
+              Save
             </Button>
           </div>
         </DialogContent>
@@ -1400,23 +1384,5 @@ function ExceptionsPageContent() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  );
-}
-
-export default function ExceptionsPage() {
-  return (
-    <Suspense fallback={
-      <div className="flex items-center justify-center h-[60vh]">
-        <div className="flex flex-col items-center gap-4">
-          <div className="relative">
-            <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
-            <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
-          </div>
-          <p className="text-sm text-slate-500 font-medium">Loading exceptions...</p>
-        </div>
-      </div>
-    }>
-      <ExceptionsPageContent />
-    </Suspense>
   );
 }

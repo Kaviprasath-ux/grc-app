@@ -301,10 +301,7 @@ export default function FrameworkMasterDataPage() {
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-800">Integrated Frameworks</h1>
-            <p className="text-sm text-slate-500">Manage compliance frameworks</p>
-          </div>
+          <h1 className="text-2xl font-bold text-slate-800">Integrated Frameworks</h1>
         </div>
       </div>
 
@@ -350,12 +347,11 @@ export default function FrameworkMasterDataPage() {
                 New Framework (AI)
               </Button>
             </DialogTrigger>
-            <DialogContent className="p-0 gap-0 max-w-lg">
-              <div className="px-6 py-5 border-b border-slate-100">
+            <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+              <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
                 <DialogTitle className="text-lg font-semibold text-slate-800">AI Framework Generator</DialogTitle>
-                <p className="text-sm text-slate-500 mt-1">Generate a framework using AI assistance</p>
               </div>
-              <div className="px-6 py-5 space-y-4">
+              <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
                 <p className="text-sm text-slate-600">
                   This feature will use AI to help generate framework requirements based on your inputs.
                 </p>
@@ -374,7 +370,7 @@ export default function FrameworkMasterDataPage() {
                   />
                 </div>
               </div>
-              <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2">
+              <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
                 <Button variant="outline" size="sm" onClick={() => setAiDialogOpen(false)}>
                   Cancel
                 </Button>
@@ -395,18 +391,15 @@ export default function FrameworkMasterDataPage() {
                 New Framework
               </Button>
             </DialogTrigger>
-            <DialogContent className="p-0 gap-0 max-w-4xl max-h-[90vh] overflow-y-auto">
-              <div className="px-6 py-5">
+            <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+              <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
                 <DialogTitle className="text-lg font-semibold text-slate-800">
                   {wizardStep === 1 ? "Create Integrated Framework" : "Import Requirement"}
                 </DialogTitle>
-                <p className="text-sm text-slate-500 mt-1">
-                  {wizardStep === 1 ? "Define framework details" : "Upload requirements file"}
-                </p>
               </div>
 
               {/* Stepper */}
-              <div className="flex items-center justify-center px-6 py-4 bg-slate-50/50 flex-shrink-0">
+              <div className="flex-shrink-0 flex items-center justify-center px-6 py-4 bg-slate-50/50 border-b border-slate-100">
                 {[1, 2].map((step) => (
                   <div key={step} className="flex items-center">
                     <div className={`flex items-center justify-center w-8 h-8 rounded-full border-2 text-sm font-medium ${
@@ -430,7 +423,7 @@ export default function FrameworkMasterDataPage() {
 
               {/* Step 1: Framework Details */}
               {wizardStep === 1 && (
-                <div className="px-6 py-5 space-y-4">
+                <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
                   <p className="text-sm text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-100">
                     Note: Custom framework will be automatically added in grey color to differentiate between Subscribed Frameworks.
                   </p>
@@ -503,7 +496,7 @@ export default function FrameworkMasterDataPage() {
 
               {/* Step 2: Import Requirements */}
               {wizardStep === 2 && (
-                <div className="px-6 py-5 space-y-4">
+                <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-slate-700">File</Label>
                     <div className="flex gap-2">
@@ -554,7 +547,7 @@ export default function FrameworkMasterDataPage() {
               )}
 
               {/* Footer */}
-              <div className="px-6 py-4 bg-white rounded-b-lg flex justify-end gap-2">
+              <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
                 {wizardStep === 2 && (
                   <Button variant="outline" size="sm" onClick={handlePreviousStep}>
                     Previous
@@ -594,11 +587,11 @@ export default function FrameworkMasterDataPage() {
       <div className="bg-white rounded-xl border border-slate-200">
         <Table>
           <TableHeader>
-            <TableRow className="hover:bg-transparent">
-              <TableHead className="bg-slate-50/50 text-xs font-semibold text-slate-600 py-3">Framework Name</TableHead>
-              <TableHead className="bg-slate-50/50 text-xs font-semibold text-slate-600 py-3">Type</TableHead>
-              <TableHead className="bg-slate-50/50 text-xs font-semibold text-slate-600 py-3">Status</TableHead>
-              <TableHead className="bg-slate-50/50 text-xs font-semibold text-slate-600 py-3 w-[100px]">Action</TableHead>
+            <TableRow className="border-b border-slate-100 bg-slate-50/50">
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4">Framework Name</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">Type</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">Status</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[100px]">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -610,14 +603,14 @@ export default function FrameworkMasterDataPage() {
               </TableRow>
             ) : (
               paginatedFrameworks.map((framework) => (
-                <TableRow key={framework.id} className="hover:bg-slate-50/50">
-                  <TableCell className="font-medium text-slate-800">
+                <TableRow key={framework.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                  <TableCell className="py-3 text-sm font-medium text-slate-800 pl-4">
                     {framework.name}
                   </TableCell>
-                  <TableCell className="text-slate-600">
+                  <TableCell className="py-3 text-sm text-slate-600">
                     {framework.type}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="py-3 text-sm">
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                       framework.status === 'Subscribed'
                         ? 'bg-success-light text-success-dark'
@@ -628,7 +621,7 @@ export default function FrameworkMasterDataPage() {
                       {framework.status}
                     </span>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="py-3 text-sm pr-4">
                     <div className="flex gap-1">
                       <Button
                         variant="ghost"
@@ -653,7 +646,7 @@ export default function FrameworkMasterDataPage() {
             )}
           </TableBody>
         </Table>
-        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200">
+        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
           <p className="text-sm text-slate-500">
             Showing {filteredFrameworks.length === 0 ? 0 : startIndex + 1} to{" "}
             {Math.min(startIndex + itemsPerPage, filteredFrameworks.length)} of{" "}
@@ -705,12 +698,11 @@ export default function FrameworkMasterDataPage() {
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="p-0 gap-0 max-w-4xl max-h-[90vh] overflow-y-auto">
-          <div className="px-6 py-5">
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogTitle className="text-lg font-semibold text-slate-800">Edit Integrated Framework</DialogTitle>
-            <p className="text-sm text-slate-500 mt-1">Update framework details</p>
           </div>
-          <div className="px-6 py-5 space-y-4">
+          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
             <div className="space-y-2">
               <Label className="text-sm font-medium text-slate-700">Integrated Framework Name *</Label>
               <Input
@@ -772,7 +764,7 @@ export default function FrameworkMasterDataPage() {
               </div>
             </div>
           </div>
-          <div className="px-6 py-4 bg-white rounded-b-lg flex justify-end gap-2">
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button
               variant="outline"
               size="sm"
