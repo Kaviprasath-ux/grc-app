@@ -61,6 +61,7 @@ export async function GET() {
       ).length;
       const compliantPercent = total > 0 ? Math.round((compliant / total) * 100) : 0;
       return {
+        frameworkId: framework.id,
         framework: framework.name.length > 15
           ? framework.name.substring(0, 15) + "..."
           : framework.name,

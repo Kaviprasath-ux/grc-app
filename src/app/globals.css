@@ -130,6 +130,12 @@
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar: var(--sidebar);
 
+  /* GRC Custom Colors */
+  --color-grc-primary: var(--primary);
+  --color-grc-bg: var(--surface-secondary);
+  --color-grc-text: var(--text-primary);
+  --color-grc-link: var(--text-link);
+
   /* Border Radius */
   --radius-sm: 0.25rem;
   --radius-default: 0.375rem;

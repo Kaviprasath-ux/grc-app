@@ -39,36 +39,42 @@ const settingCategories = [
     title: "BIA",
     description: "Business Impact Analysis settings",
     icon: BarChart3,
+    iconElement: <BarChart3 className="h-12 w-12" />,
   },
   {
     id: "location",
     title: "Location",
     description: "Manage organization locations",
     icon: MapPin,
+    iconElement: <MapPin className="h-12 w-12" />,
   },
   {
     id: "implementation",
     title: "Nature of Implementation",
     description: "Implementation type settings",
     icon: Settings2,
+    iconElement: <Settings2 className="h-12 w-12" />,
   },
   {
     id: "document-types",
     title: "User Document Types",
     description: "Document type configurations",
     icon: FileType,
+    iconElement: <FileType className="h-12 w-12" />,
   },
   {
     id: "frequency",
     title: "Process Frequency",
     description: "Process frequency options",
     icon: Clock,
+    iconElement: <Clock className="h-12 w-12" />,
   },
   {
     id: "designation",
     title: "Designation",
     description: "Employee designation settings",
     icon: Briefcase,
+    iconElement: <Briefcase className="h-12 w-12" />,
   },
 ];
 
@@ -377,49 +383,42 @@ export default function OrganizationSettingsPage() {
 
   // Show settings grid view
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* Page Header */}
       <div>
         <h1 className="text-2xl font-bold text-slate-800">Organization Settings</h1>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {settingCategories.map((category) => {
-          const Icon = category.icon;
-          const itemCount = settingsData[category.id]?.length || 0;
-
-          return (
-            <div
-              key={category.id}
-              className="cursor-pointer bg-white rounded-xl border border-slate-200 p-5"
-              onClick={() => {
-                // Navigate to dedicated BIA settings page
-                if (category.id === "bia") {
-                  router.push("/organization/settings/bia");
-                } else {
-                  setActiveCategory(category.id);
-                }
-              }}
-            >
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-primary-50 rounded-lg">
-                  <Icon className="h-6 w-6 text-primary-600" />
-                </div>
-                <div>
-                  <h3 className="text-base font-semibold text-slate-800">{category.title}</h3>
-                  <p className="text-sm text-slate-500">
-                    {category.description}
-                  </p>
-                </div>
-              </div>
-              <div className="mt-4 pt-3 border-t border-slate-100">
-                <span className="text-sm text-slate-500">
-                  {itemCount} {itemCount === 1 ? "item" : "items"}
-                </span>
-              </div>
+      {/* Settings Card Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {settingCategories.map((category) => (
+          <button
+            key={category.id}
+            onClick={() => {
+              // Navigate to dedicated BIA settings page
+              if (category.id === "bia") {
+                router.push("/organization/settings/bia");
+              } else {
+                setActiveCategory(category.id);
+              }
+            }}
+            className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 p-8 text-white shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          >
+            {/* Background pattern */}
+            <div className="absolute inset-0 opacity-10">
+              <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/20" />
+              <div className="absolute -left-10 -bottom-10 h-32 w-32 rounded-full bg-white/10" />
             </div>
-          );
-        })}
+
+            {/* Content */}
+            <div className="relative flex flex-col items-center justify-center space-y-4">
+              <div className="rounded-full bg-white/10 p-4 group-hover:bg-white/20 transition-colors">
+                {category.iconElement}
+              </div>
+              <h4 className="text-lg font-semibold text-center">{category.title}</h4>
+            </div>
+          </button>
+        ))}
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useCallback, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -41,6 +41,7 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  ArrowLeft,
 } from "lucide-react";
 import { DatePicker } from "@/components/ui/date-picker";
 import {
@@ -137,8 +138,10 @@ const statuses = [
   "Closed",
 ];
 
-export default function ExceptionsPage() {
+function ExceptionsPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const fromDashboard = searchParams.get("from") === "dashboard";
   const { data: session } = useSession();
   const { canView, canCreate, canEdit, canDelete, isLoading: permissionsLoading } = usePermissions('compliance.exceptions');
   const [exceptions, setExceptions] = useState<Exception[]>([]);
@@ -448,6 +451,19 @@ export default function ExceptionsPage() {
 
   return (
     <div className="space-y-6">
+      {/* Back to Dashboard Button */}
+      {fromDashboard && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => router.push("/dashboard")}
+          className="flex items-center gap-2 text-slate-600 hover:text-slate-800 -ml-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Dashboard
+        </Button>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-800">Exceptions</h1>
@@ -1384,5 +1400,23 @@ export default function ExceptionsPage() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+  );
+}
+
+export default function ExceptionsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center h-[60vh]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative">
+            <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
+            <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+          </div>
+          <p className="text-sm text-slate-500 font-medium">Loading exceptions...</p>
+        </div>
+      </div>
+    }>
+      <ExceptionsPageContent />
+    </Suspense>
   );
 }

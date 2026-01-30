@@ -118,6 +118,7 @@ function RiskRegisterContent() {
   const { canView, canCreate, canEdit, canDelete, isLoading: permissionsLoading } = usePermissions('risk.register');
   const initialStatus = searchParams.get("status") || "";
   const initialRating = searchParams.get("riskRating") || "";
+  const fromDashboard = searchParams.get("from") === "dashboard";
 
   // Check if user is DepartmentReviewer or DepartmentContributor (department-scoped)
   const isDepartmentRole = userRoles.some(
@@ -422,6 +423,19 @@ function RiskRegisterContent() {
 
   return (
     <div className="space-y-6">
+      {/* Back to Dashboard Button */}
+      {fromDashboard && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => router.push("/dashboard")}
+          className="flex items-center gap-2 text-slate-600 hover:text-slate-800 -ml-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Dashboard
+        </Button>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">

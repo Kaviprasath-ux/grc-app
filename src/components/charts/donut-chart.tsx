@@ -16,16 +16,21 @@ interface DonutChartProps {
   centerLabel?: string | number;
   centerSubLabel?: string;
   className?: string;
+  onClick?: () => void;
 }
 
-export function DonutChart({ title, data, centerLabel, centerSubLabel, className }: DonutChartProps) {
+export function DonutChart({ title, data, centerLabel, centerSubLabel, className, onClick }: DonutChartProps) {
   const total = data.reduce((sum, item) => sum + item.value, 0);
 
   return (
-    <div className={cn(
-      "bg-white rounded-xl border border-slate-200 p-5",
-      className
-    )}>
+    <div
+      className={cn(
+        "bg-white rounded-xl border border-slate-200 p-5",
+        onClick && "cursor-pointer hover:shadow-md transition-shadow",
+        className
+      )}
+      onClick={onClick}
+    >
       {/* Header */}
       {title && (
         <div className="flex items-center justify-between mb-4">

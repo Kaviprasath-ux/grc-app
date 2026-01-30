@@ -327,14 +327,14 @@ export default function DepartmentsPage() {
             <div>
               <Label htmlFor="headId">Department Head</Label>
               <Select
-                value={formData.headId}
-                onValueChange={(value) => setFormData({ ...formData, headId: value })}
+                value={formData.headId || "none"}
+                onValueChange={(value) => setFormData({ ...formData, headId: value === "none" ? "" : value })}
               >
                 <SelectTrigger className="mt-2">
                   <SelectValue placeholder="Select department head (optional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   {users.map((user) => (
                     <SelectItem key={user.id} value={user.id}>
                       {user.fullName}

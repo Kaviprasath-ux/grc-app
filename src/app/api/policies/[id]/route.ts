@@ -34,6 +34,11 @@ export const GET = withAuth(
               exception: true,
             },
           },
+          vaultDocumentLinks: {
+            include: {
+              document: true,
+            },
+          },
         },
       });
 

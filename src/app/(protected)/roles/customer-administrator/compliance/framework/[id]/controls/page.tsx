@@ -63,6 +63,7 @@ interface FrameworkData {
   name: string;
   code?: string;
   requirements: Requirement[];
+  controls?: Control[]; // Direct controls linked to framework
 }
 
 const ITEMS_PER_PAGE = 20;
@@ -120,17 +121,27 @@ export default function ControlsByFrameworkPage() {
         // Store framework info including status for access control
         setFramework({ id: frameworkData.id, name: frameworkData.name, status: (frameworkData as { status?: string }).status || "Subscribed" });
 
-        // Step 2: Extract Controls from all Requirements
-        // Data path: framework.requirements[].controls[].control
+        // Step 2: Extract Controls from multiple sources and de-duplicate
         const controlsMap = new Map<string, Control>();
 
+        // Source 1: Direct controls linked to framework (framework.controls)
+        if (frameworkData.controls && Array.isArray(frameworkData.controls)) {
+          for (const control of frameworkData.controls) {
+            if (control && control.id) {
+              if (!controlsMap.has(control.id)) {
+                controlsMap.set(control.id, control);
+              }
+            }
+          }
+        }
+
+        // Source 2: Controls via requirements (framework.requirements[].controls[].control)
         if (frameworkData.requirements && Array.isArray(frameworkData.requirements)) {
           for (const requirement of frameworkData.requirements) {
             if (requirement.controls && Array.isArray(requirement.controls)) {
               for (const reqControl of requirement.controls) {
                 if (reqControl.control && reqControl.control.id) {
-                  // Step 3: De-duplicate by control ID
-                  // If control already exists in map, skip (first occurrence wins)
+                  // De-duplicate by control ID
                   if (!controlsMap.has(reqControl.control.id)) {
                     controlsMap.set(reqControl.control.id, reqControl.control);
                   }

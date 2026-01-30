@@ -461,10 +461,14 @@ CREATE TABLE "Process" (
     "natureOfImplementation" TEXT,
     "riskRating" TEXT,
     "assetDependency" BOOLEAN NOT NULL DEFAULT false,
+    "assetId" TEXT,
     "externalDependency" BOOLEAN NOT NULL DEFAULT false,
+    "externalParty" TEXT,
     "location" TEXT,
     "kpiMeasurementRequired" BOOLEAN NOT NULL DEFAULT false,
     "piiCapture" BOOLEAN NOT NULL DEFAULT false,
+    "recurrence" TEXT,
+    "reviewDate" TIMESTAMP(3),
     "operationalComplexity" TEXT,
     "lastAuditDate" TIMESTAMP(3),
     "responsibleId" TEXT,
@@ -1546,6 +1550,42 @@ CREATE TABLE "AuditType" (
 );
 
 -- CreateTable
+CREATE TABLE "AuditLocation" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
+    "auditHeadId" TEXT,
+    "name" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "AuditLocation_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ProcessFrequency" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
+    "auditHeadId" TEXT,
+    "name" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "ProcessFrequency_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "NatureOfImplementation" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
+    "auditHeadId" TEXT,
+    "name" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "NatureOfImplementation_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "InternalAuditRisk" (
     "id" TEXT NOT NULL,
     "customerAccountId" TEXT NOT NULL,
@@ -2343,6 +2383,33 @@ CREATE INDEX "AuditType_auditHeadId_idx" ON "AuditType"("auditHeadId");
 CREATE UNIQUE INDEX "AuditType_auditHeadId_name_key" ON "AuditType"("auditHeadId", "name");
 
 -- CreateIndex
+CREATE INDEX "AuditLocation_customerAccountId_idx" ON "AuditLocation"("customerAccountId");
+
+-- CreateIndex
+CREATE INDEX "AuditLocation_auditHeadId_idx" ON "AuditLocation"("auditHeadId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "AuditLocation_auditHeadId_name_key" ON "AuditLocation"("auditHeadId", "name");
+
+-- CreateIndex
+CREATE INDEX "ProcessFrequency_customerAccountId_idx" ON "ProcessFrequency"("customerAccountId");
+
+-- CreateIndex
+CREATE INDEX "ProcessFrequency_auditHeadId_idx" ON "ProcessFrequency"("auditHeadId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ProcessFrequency_auditHeadId_name_key" ON "ProcessFrequency"("auditHeadId", "name");
+
+-- CreateIndex
+CREATE INDEX "NatureOfImplementation_customerAccountId_idx" ON "NatureOfImplementation"("customerAccountId");
+
+-- CreateIndex
+CREATE INDEX "NatureOfImplementation_auditHeadId_idx" ON "NatureOfImplementation"("auditHeadId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "NatureOfImplementation_auditHeadId_name_key" ON "NatureOfImplementation"("auditHeadId", "name");
+
+-- CreateIndex
 CREATE INDEX "InternalAuditRisk_customerAccountId_idx" ON "InternalAuditRisk"("customerAccountId");
 
 -- CreateIndex
@@ -2548,6 +2615,9 @@ ALTER TABLE "Process" ADD CONSTRAINT "Process_departmentId_fkey" FOREIGN KEY ("d
 
 -- AddForeignKey
 ALTER TABLE "Process" ADD CONSTRAINT "Process_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Process" ADD CONSTRAINT "Process_assetId_fkey" FOREIGN KEY ("assetId") REFERENCES "Asset"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Process" ADD CONSTRAINT "Process_responsibleId_fkey" FOREIGN KEY ("responsibleId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -2941,6 +3011,24 @@ ALTER TABLE "AuditType" ADD CONSTRAINT "AuditType_customerAccountId_fkey" FOREIG
 
 -- AddForeignKey
 ALTER TABLE "AuditType" ADD CONSTRAINT "AuditType_auditHeadId_fkey" FOREIGN KEY ("auditHeadId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AuditLocation" ADD CONSTRAINT "AuditLocation_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AuditLocation" ADD CONSTRAINT "AuditLocation_auditHeadId_fkey" FOREIGN KEY ("auditHeadId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ProcessFrequency" ADD CONSTRAINT "ProcessFrequency_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ProcessFrequency" ADD CONSTRAINT "ProcessFrequency_auditHeadId_fkey" FOREIGN KEY ("auditHeadId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "NatureOfImplementation" ADD CONSTRAINT "NatureOfImplementation_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "NatureOfImplementation" ADD CONSTRAINT "NatureOfImplementation_auditHeadId_fkey" FOREIGN KEY ("auditHeadId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "InternalAuditRisk" ADD CONSTRAINT "InternalAuditRisk_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

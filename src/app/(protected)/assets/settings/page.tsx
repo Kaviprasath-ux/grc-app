@@ -101,18 +101,21 @@ const settingCategories = [
     title: "CIA",
     description: "Configure CIA ratings and scoring",
     icon: Settings2,
+    iconElement: <Settings2 className="h-12 w-12" />,
   },
   {
     id: "asset",
     title: "Asset",
     description: "Manage asset entities and configurations",
     icon: FolderTree,
+    iconElement: <FolderTree className="h-12 w-12" />,
   },
   {
     id: "lifecycle",
     title: "Lifecycle Status",
     description: "Define asset lifecycle stages",
     icon: Clock,
+    iconElement: <Clock className="h-12 w-12" />,
   },
 ];
 
@@ -123,30 +126,35 @@ const entitySubCategories = [
     title: "Asset",
     description: "View and manage all assets",
     icon: FolderOpen,
+    iconElement: <FolderOpen className="h-12 w-12" />,
   },
   {
     id: "subcategories",
     title: "Asset Sub Category",
     description: "Sub-categories under main categories",
     icon: Layers,
+    iconElement: <Layers className="h-12 w-12" />,
   },
   {
     id: "groups",
     title: "Asset Group",
     description: "Logical groupings for assets",
     icon: Group,
+    iconElement: <Group className="h-12 w-12" />,
   },
   {
     id: "categories",
     title: "Asset Category",
     description: "Top-level asset categories (e.g., Hardware, Software)",
     icon: FolderOpen,
+    iconElement: <FolderOpen className="h-12 w-12" />,
   },
   {
     id: "sensitivity",
     title: "Asset Sensitivity",
     description: "Asset sensitivity levels",
     icon: Lock,
+    iconElement: <Lock className="h-12 w-12" />,
   },
 ];
 
@@ -866,8 +874,9 @@ export default function AssetSettingsPage() {
   };
 
   // Get export handler based on entity type
-  const getExportHandler = () => {
-    switch (entitySubTab) {
+  const getExportHandler = (tab?: string) => {
+    const activeTab = tab || entitySubTab;
+    switch (activeTab) {
       case "categories": return handleExportCategories;
       case "subcategories": return handleExportSubCategories;
       case "groups": return handleExportGroups;
@@ -1194,10 +1203,12 @@ export default function AssetSettingsPage() {
     );
   }
 
-  // Show entity sub-category list (Asset, Asset Sub Category, Asset Group, Asset Category, Asset Sensitivity)
-  if (activeCategory === "asset" && entitySubTab) {
+  // Show entity sub-category list with sidebar (Asset, Asset Sub Category, Asset Group, Asset Category, Asset Sensitivity)
+  if (activeCategory === "asset") {
+    // Default to first item if none selected
+    const currentTab = entitySubTab || "asset-list";
     const getData = () => {
-      switch (entitySubTab) {
+      switch (currentTab) {
         case "asset-list":
           return assets.filter(a => a.name.toLowerCase().includes(searchTerm.toLowerCase()) || a.assetId.toLowerCase().includes(searchTerm.toLowerCase()));
         case "categories":
@@ -1214,7 +1225,7 @@ export default function AssetSettingsPage() {
     };
 
     const getColumns = () => {
-      switch (entitySubTab) {
+      switch (currentTab) {
         case "asset-list":
           return assetSettingsColumns;
         case "categories":
@@ -1231,7 +1242,7 @@ export default function AssetSettingsPage() {
     };
 
     const getAddButtonLabel = () => {
-      switch (entitySubTab) {
+      switch (currentTab) {
         case "asset-list": return "New Asset";
         case "subcategories": return "New Asset Sub Category";
         case "groups": return "New Asset Group";
@@ -1241,102 +1252,139 @@ export default function AssetSettingsPage() {
       }
     };
 
+    const currentEntitySub = entitySubCategories.find(s => s.id === currentTab);
+
     return (
       <div className="space-y-6">
         <PageHeader
-          title={currentEntitySub?.title || "Settings"}
+          title="Asset Settings"
           backAction={{
             label: "Back",
             variant: "outline",
             icon: ArrowLeft,
-            onClick: () => setEntitySubTab(null),
+            onClick: () => {
+              setEntitySubTab(null);
+              setActiveCategory(null);
+            },
           }}
         />
 
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 w-[250px]"
+        <div className="flex gap-6">
+          {/* Left Sidebar - Entity List */}
+          <div className="w-64 flex-shrink-0">
+            <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+              {entitySubCategories.map((sub) => {
+                const Icon = sub.icon;
+                const isActive = currentTab === sub.id;
+                return (
+                  <button
+                    key={sub.id}
+                    onClick={() => {
+                      setEntitySubTab(sub.id);
+                      setSearchTerm("");
+                    }}
+                    className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors border-b border-slate-100 last:border-b-0 ${
+                      isActive
+                        ? "bg-blue-50 text-blue-700 border-l-4 border-l-blue-600"
+                        : "hover:bg-slate-50 text-slate-700"
+                    }`}
+                  >
+                    <Icon className={`h-5 w-5 ${isActive ? "text-blue-600" : "text-slate-400"}`} />
+                    <span className="font-medium text-sm">{sub.title}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Right Content Area */}
+          <div className="flex-1 space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 w-[250px]"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                {currentTab === "categories" && (
+                  <label>
+                    <input
+                      type="file"
+                      accept=".csv"
+                      onChange={handleImportCategories}
+                      className="hidden"
+                    />
+                    <Button variant="outline" size="sm" asChild>
+                      <span>
+                        <Upload className="h-4 w-4 mr-2" />
+                        Import
+                      </span>
+                    </Button>
+                  </label>
+                )}
+                <Button variant="outline" size="sm" onClick={getExportHandler(currentTab)}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Export
+                </Button>
+                <Button onClick={() => {
+                  if (currentTab === "categories") {
+                    setCategoryForm({ name: "", description: "", status: "Active" });
+                  } else if (currentTab === "subcategories") {
+                    setSubCategoryForm({ name: "", description: "", categoryId: "", status: "Active" });
+                  } else if (currentTab === "groups") {
+                    setGroupForm({ name: "", description: "", status: "Active" });
+                  } else if (currentTab === "sensitivity") {
+                    setSensitivityForm({ name: "", description: "" });
+                  } else if (currentTab === "asset-list") {
+                    setAssetForm({
+                      name: "",
+                      assetId: "",
+                      location: "",
+                      categoryId: "",
+                      subCategoryId: "",
+                      groupId: "",
+                      sensitivityId: "",
+                      lifecycleStatusId: "",
+                      value: 0
+                    });
+                  }
+                  setIsAddOpen(true);
+                }}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  {getAddButtonLabel()}
+                </Button>
+              </div>
+            </div>
+
+            <DataGrid
+              columns={getColumns() as ColumnDef<AssetCategory | AssetSubCategory | AssetGroup | AssetSensitivity | Asset>[]}
+              data={getData()}
+              hideSearch={true}
             />
           </div>
-          <div className="flex items-center gap-2">
-            {entitySubTab === "categories" && (
-              <label>
-                <input
-                  type="file"
-                  accept=".csv"
-                  onChange={handleImportCategories}
-                  className="hidden"
-                />
-                <Button variant="outline" size="sm" asChild>
-                  <span>
-                    <Upload className="h-4 w-4 mr-2" />
-                    Import
-                  </span>
-                </Button>
-              </label>
-            )}
-            <Button variant="outline" size="sm" onClick={getExportHandler()}>
-              <Download className="h-4 w-4 mr-2" />
-              Export
-            </Button>
-            <Button onClick={() => {
-              if (entitySubTab === "categories") {
-                setCategoryForm({ name: "", description: "", status: "Active" });
-              } else if (entitySubTab === "subcategories") {
-                setSubCategoryForm({ name: "", description: "", categoryId: "", status: "Active" });
-              } else if (entitySubTab === "groups") {
-                setGroupForm({ name: "", description: "", status: "Active" });
-              } else if (entitySubTab === "sensitivity") {
-                setSensitivityForm({ name: "", description: "" });
-              } else if (entitySubTab === "asset-list") {
-                setAssetForm({
-                  name: "",
-                  assetId: "",
-                  location: "",
-                  categoryId: "",
-                  subCategoryId: "",
-                  groupId: "",
-                  sensitivityId: "",
-                  lifecycleStatusId: "",
-                  value: 0
-                });
-              }
-              setIsAddOpen(true);
-            }}>
-              <Plus className="h-4 w-4 mr-2" />
-              {getAddButtonLabel()}
-            </Button>
-          </div>
         </div>
-
-        <DataGrid
-          columns={getColumns() as ColumnDef<AssetCategory | AssetSubCategory | AssetGroup | AssetSensitivity | Asset>[]}
-          data={getData()}
-          hideSearch={true}
-        />
 
         {/* Add Dialog for Entity List */}
         <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
-                Add {entitySubTab === "categories" ? "Category" :
-                     entitySubTab === "subcategories" ? "Sub Category" :
-                     entitySubTab === "groups" ? "Group" :
-                     entitySubTab === "sensitivity" ? "Sensitivity" :
-                     entitySubTab === "asset-list" ? "Asset" : "Item"}
+                Add {currentTab === "categories" ? "Category" :
+                     currentTab === "subcategories" ? "Sub Category" :
+                     currentTab === "groups" ? "Group" :
+                     currentTab === "sensitivity" ? "Sensitivity" :
+                     currentTab === "asset-list" ? "Asset" : "Item"}
               </DialogTitle>
               <DialogDescription>
                 Enter the details for the new item
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
-              {entitySubTab === "asset-list" && (
+              {currentTab === "asset-list" && (
                 <>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -1474,7 +1522,7 @@ export default function AssetSettingsPage() {
                 </>
               )}
 
-              {entitySubTab === "categories" && (
+              {currentTab === "categories" && (
                 <>
                   <div className="space-y-2">
                     <Label>Name *</Label>
@@ -1511,7 +1559,7 @@ export default function AssetSettingsPage() {
                 </>
               )}
 
-              {entitySubTab === "subcategories" && (
+              {currentTab === "subcategories" && (
                 <>
                   <div className="space-y-2">
                     <Label>Category *</Label>
@@ -1551,7 +1599,7 @@ export default function AssetSettingsPage() {
                 </>
               )}
 
-              {entitySubTab === "groups" && (
+              {currentTab === "groups" && (
                 <>
                   <div className="space-y-2">
                     <Label>Name *</Label>
@@ -1573,7 +1621,7 @@ export default function AssetSettingsPage() {
                 </>
               )}
 
-              {entitySubTab === "sensitivity" && (
+              {currentTab === "sensitivity" && (
                 <>
                   <div className="space-y-2">
                     <Label>Name *</Label>
@@ -1600,15 +1648,15 @@ export default function AssetSettingsPage() {
                 Cancel
               </Button>
               <Button onClick={() => {
-                if (entitySubTab === "asset-list") {
+                if (currentTab === "asset-list") {
                   handleAddAsset();
-                } else if (entitySubTab === "categories") {
+                } else if (currentTab === "categories") {
                   handleAddCategory();
-                } else if (entitySubTab === "subcategories") {
+                } else if (currentTab === "subcategories") {
                   handleAddSubCategory();
-                } else if (entitySubTab === "groups") {
+                } else if (currentTab === "groups") {
                   handleAddGroup();
-                } else if (entitySubTab === "sensitivity") {
+                } else if (currentTab === "sensitivity") {
                   handleAddSensitivity();
                 }
               }}>
@@ -1623,17 +1671,17 @@ export default function AssetSettingsPage() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>
-                Edit {entitySubTab === "categories" ? "Category" :
-                      entitySubTab === "subcategories" ? "Sub Category" :
-                      entitySubTab === "groups" ? "Group" :
-                      entitySubTab === "sensitivity" ? "Sensitivity" : "Item"}
+                Edit {currentTab === "categories" ? "Category" :
+                      currentTab === "subcategories" ? "Sub Category" :
+                      currentTab === "groups" ? "Group" :
+                      currentTab === "sensitivity" ? "Sensitivity" : "Item"}
               </DialogTitle>
               <DialogDescription>
                 Update the details
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
-              {entitySubTab === "categories" && (
+              {currentTab === "categories" && (
                 <>
                   <div className="space-y-2">
                     <Label>Name *</Label>
@@ -1670,7 +1718,7 @@ export default function AssetSettingsPage() {
                 </>
               )}
 
-              {entitySubTab === "subcategories" && (
+              {currentTab === "subcategories" && (
                 <>
                   <div className="space-y-2">
                     <Label>Category *</Label>
@@ -1710,7 +1758,7 @@ export default function AssetSettingsPage() {
                 </>
               )}
 
-              {entitySubTab === "groups" && (
+              {currentTab === "groups" && (
                 <>
                   <div className="space-y-2">
                     <Label>Name *</Label>
@@ -1732,7 +1780,7 @@ export default function AssetSettingsPage() {
                 </>
               )}
 
-              {entitySubTab === "sensitivity" && (
+              {currentTab === "sensitivity" && (
                 <>
                   <div className="space-y-2">
                     <Label>Name *</Label>
@@ -1759,13 +1807,13 @@ export default function AssetSettingsPage() {
                 Cancel
               </Button>
               <Button onClick={() => {
-                if (entitySubTab === "categories") {
+                if (currentTab === "categories") {
                   handleEditCategory();
-                } else if (entitySubTab === "subcategories") {
+                } else if (currentTab === "subcategories") {
                   handleEditSubCategory();
-                } else if (entitySubTab === "groups") {
+                } else if (currentTab === "groups") {
                   handleEditGroup();
-                } else if (entitySubTab === "sensitivity") {
+                } else if (currentTab === "sensitivity") {
                   handleEditSensitivity();
                 }
               }}>
@@ -1789,13 +1837,13 @@ export default function AssetSettingsPage() {
                 Cancel
               </Button>
               <Button variant="destructive" onClick={() => {
-                if (entitySubTab === "categories") {
+                if (currentTab === "categories") {
                   handleDeleteCategory();
-                } else if (entitySubTab === "subcategories") {
+                } else if (currentTab === "subcategories") {
                   handleDeleteSubCategory();
-                } else if (entitySubTab === "groups") {
+                } else if (currentTab === "groups") {
                   handleDeleteGroup();
-                } else if (entitySubTab === "sensitivity") {
+                } else if (currentTab === "sensitivity") {
                   handleDeleteSensitivity();
                 }
               }}>
@@ -1804,63 +1852,6 @@ export default function AssetSettingsPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
-    );
-  }
-
-  // Show entity sub-navigation (Asset, Asset Sub Category, Asset Group, Asset Category, Asset Sensitivity)
-  if (activeCategory === "asset") {
-    return (
-      <div className="space-y-6">
-        <PageHeader
-          title="Asset Settings"
-          backAction={{
-            label: "Back",
-            variant: "outline",
-            icon: ArrowLeft,
-            onClick: () => setActiveCategory(null),
-          }}
-        />
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {entitySubCategories.map((sub) => {
-            const Icon = sub.icon;
-            const itemCount = getEntitySubCount(sub.id);
-
-            return (
-              <Card
-                key={sub.id}
-                className="cursor-pointer hover:border-blue-300 hover:shadow-md transition-all"
-                onClick={() => {
-                  setEntitySubTab(sub.id);
-                  setSearchTerm("");
-                }}
-              >
-                <CardHeader className="flex flex-row items-center gap-4">
-                  <div className="p-3 bg-blue-50 rounded-lg">
-                    <Icon className="h-6 w-6 text-blue-600" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-base">{sub.title}</CardTitle>
-                    <CardDescription className="text-sm">
-                      {sub.description}
-                    </CardDescription>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">
-                      {itemCount} {itemCount === 1 ? "item" : "items"}
-                    </span>
-                    <Button variant="ghost" size="sm" className="text-blue-600">
-                      Manage
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
       </div>
     );
   }
@@ -2639,47 +2630,35 @@ export default function AssetSettingsPage() {
 
   // Show main settings grid view (default)
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       <PageHeader title="Asset Settings" />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {settingCategories.map((category) => {
-          const Icon = category.icon;
-          const itemCount = getItemCount(category.id);
+      {/* Settings Card Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {settingCategories.map((category) => (
+          <button
+            key={category.id}
+            onClick={() => {
+              setActiveCategory(category.id);
+              setSearchTerm("");
+            }}
+            className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 p-8 text-white shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          >
+            {/* Background pattern */}
+            <div className="absolute inset-0 opacity-10">
+              <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/20" />
+              <div className="absolute -left-10 -bottom-10 h-32 w-32 rounded-full bg-white/10" />
+            </div>
 
-          return (
-            <Card
-              key={category.id}
-              className="cursor-pointer hover:border-blue-300 hover:shadow-md transition-all"
-              onClick={() => {
-                setActiveCategory(category.id);
-                setSearchTerm("");
-              }}
-            >
-              <CardHeader className="flex flex-row items-center gap-4">
-                <div className="p-3 bg-blue-50 rounded-lg">
-                  <Icon className="h-6 w-6 text-blue-600" />
-                </div>
-                <div>
-                  <CardTitle className="text-base">{category.title}</CardTitle>
-                  <CardDescription className="text-sm">
-                    {category.description}
-                  </CardDescription>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">
-                    {itemCount} {itemCount === 1 ? "item" : "items"}
-                  </span>
-                  <Button variant="ghost" size="sm" className="text-blue-600">
-                    Manage
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+            {/* Content */}
+            <div className="relative flex flex-col items-center justify-center space-y-4">
+              <div className="rounded-full bg-white/10 p-4 group-hover:bg-white/20 transition-colors">
+                {category.iconElement}
+              </div>
+              <h4 className="text-lg font-semibold text-center">{category.title}</h4>
+            </div>
+          </button>
+        ))}
       </div>
 
       {/* Add Dialog */}

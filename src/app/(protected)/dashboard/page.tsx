@@ -23,7 +23,7 @@ interface DashboardData {
     risks: number;
     exceptions: number;
   };
-  complianceData: { framework: string; compliant: number; nonCompliant: number }[];
+  complianceData: { frameworkId: string; framework: string; compliant: number; nonCompliant: number }[];
   riskAssessmentData: { category: string; total: number; closed: number }[];
   issueByCategoryData: { name: string; value: number; color: string }[];
   issueByDepartmentData: { name: string; value: number; color: string }[];
@@ -137,37 +137,37 @@ export default function DashboardPage() {
         <StatsCard
           label="Departments"
           value={dashboardStats.departments}
-          href="/organization/profile?tab=departments"
+          href="/organization/profile?tab=departments&from=dashboard"
           icon={Building2}
         />
         <StatsCard
           label="Stakeholders"
           value={dashboardStats.stakeholders}
-          href="/organization/context"
+          href="/organization/context?from=dashboard"
           icon={Users}
         />
         <StatsCard
           label="Regulations"
           value={dashboardStats.regulations}
-          href="/organization/profile?tab=regulations"
+          href="/organization/profile?tab=regulations&from=dashboard"
           icon={Scale}
         />
         <StatsCard
           label="Issues"
           value={dashboardStats.issues}
-          href="/organization/context"
+          href="/organization/context?tab=issuelist&from=dashboard"
           icon={AlertTriangle}
         />
         <StatsCard
           label="Risks"
           value={dashboardStats.risks}
-          href="/risks/register"
+          href="/risks/register?from=dashboard"
           icon={ShieldAlert}
         />
         <StatsCard
           label="Exceptions"
           value={dashboardStats.exceptions}
-          href="/compliance/exception"
+          href="/compliance/exceptions?from=dashboard"
           icon={FileWarning}
         />
       </div>
@@ -177,6 +177,7 @@ export default function DashboardPage() {
         <ComplianceProgressBar
           title="Overall Compliance Status"
           data={complianceData}
+          onFrameworkClick={(frameworkId) => router.push(`/compliance/control?frameworkId=${frameworkId}`)}
         />
         <HorizontalBarChart
           title="Risk Assessment Overview"
@@ -186,6 +187,7 @@ export default function DashboardPage() {
             { dataKey: "closed", fill: "#10B981", name: "Closed" },
             { dataKey: "total", fill: "#6366F1", name: "Total" },
           ]}
+          onClick={() => router.push("/risks/assessment")}
         />
       </div>
 
@@ -196,24 +198,28 @@ export default function DashboardPage() {
           data={issueByCategoryData}
           centerLabel={issueCategoryTotal}
           centerSubLabel="Total"
+          onClick={() => router.push("/organization/context?tab=issuelist")}
         />
         <DonutChart
           title="Issue By Department"
           data={issueByDepartmentData}
           centerLabel={issueDepartmentTotal}
           centerSubLabel="Total"
+          onClick={() => router.push("/organization/context?tab=issuelist")}
         />
         <DonutChart
           title="Issue By Domain"
           data={issueByDomainData}
           centerLabel={issueDomainTotal}
           centerSubLabel="Total"
+          onClick={() => router.push("/organization/context?tab=issuelist")}
         />
         <DonutChart
           title="Exceptions"
           data={exceptionByTypeData}
           centerLabel={exceptionTotal}
           centerSubLabel="Total"
+          onClick={() => router.push("/compliance/exceptions")}
         />
       </div>
 

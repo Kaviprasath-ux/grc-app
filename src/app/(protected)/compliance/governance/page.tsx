@@ -53,6 +53,14 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  UserPlus,
+  ListChecks,
+  CheckSquare,
+  ArrowUpFromLine,
+  UserCheck,
+  Download,
+  Link2,
+  FileText,
   Upload,
 } from "lucide-react";
 
@@ -120,6 +128,33 @@ interface Domain {
 const DOCUMENT_TYPES = ["Policy", "Standard", "Procedure"];
 const RECURRENCE_OPTIONS = ["Weekly", "Monthly", "Quarterly", "Yearly"];
 
+interface DashboardStats {
+  notUploaded: number;
+  draft: number;
+  approved: number;
+  published: number;
+  needsReview: number;
+}
+
+interface VaultDocument {
+  id: string;
+  documentCode: string;
+  fileName: string;
+  fileType: string | null;
+  fileSize: number | null;
+  filePath: string;
+  status: string;
+  uploadedAt: string;
+  source: "vault" | "policy";
+  linkedPolicies: Array<{
+    id: string;
+    code: string;
+    name: string;
+    documentType: string;
+    linkedAt: string;
+  }>;
+}
+
 export default function GovernancePage() {
   const router = useRouter();
   const { data: session } = useSession();
@@ -128,7 +163,23 @@ export default function GovernancePage() {
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<string>("Dashboard");
   const [activeDocType, setActiveDocType] = useState<string>("Policy");
+  const [dashboardStats, setDashboardStats] = useState<DashboardStats>({
+    notUploaded: 0,
+    draft: 0,
+    approved: 0,
+    published: 0,
+    needsReview: 0,
+  });
+  const [tabStats, setTabStats] = useState<DashboardStats>({
+    notUploaded: 0,
+    draft: 0,
+    approved: 0,
+    published: 0,
+    needsReview: 0,
+  });
+  const [statsLoading, setStatsLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -137,6 +188,7 @@ export default function GovernancePage() {
 
   // Filters
   const [frameworkFilter, setFrameworkFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   // Filter options
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -172,13 +224,95 @@ export default function GovernancePage() {
   const [importFile, setImportFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
+  // Vault states (Customer Admin only)
+  const [vaultDocuments, setVaultDocuments] = useState<VaultDocument[]>([]);
+  const [vaultLoading, setVaultLoading] = useState(false);
+  const [vaultFile, setVaultFile] = useState<File | null>(null);
+  const [vaultUploading, setVaultUploading] = useState(false);
+  const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
+  const [documentToLink, setDocumentToLink] = useState<VaultDocument | null>(null);
+  const [selectedPolicyIds, setSelectedPolicyIds] = useState<string[]>([]);
+  const [isDeleteVaultDocDialogOpen, setIsDeleteVaultDocDialogOpen] = useState(false);
+  const [vaultDocToDelete, setVaultDocToDelete] = useState<VaultDocument | null>(null);
+  const [allGovernanceRecords, setAllGovernanceRecords] = useState<Policy[]>([]);
+  const [linkDialogLoading, setLinkDialogLoading] = useState(false);
+
   useEffect(() => {
     fetchFilterOptions();
   }, [session?.user?.id]);
 
   useEffect(() => {
-    fetchPolicies();
-  }, [activeDocType, currentPage, frameworkFilter]);
+    if (activeTab === "Dashboard") {
+      fetchDashboardStats();
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab !== "Dashboard" && activeTab !== "Information Security Vault") {
+      fetchTabStats(activeDocType);
+      fetchPolicies();
+    }
+  }, [activeTab, activeDocType, currentPage, frameworkFilter, statusFilter]);
+
+  // Fetch vault documents when Customer Admin views the vault tab
+  useEffect(() => {
+    if (activeTab === "Information Security Vault" && isCustomerAdmin) {
+      fetchVaultDocuments();
+    }
+  }, [activeTab, isCustomerAdmin]);
+
+  const fetchDashboardStats = async () => {
+    try {
+      setStatsLoading(true);
+      const statuses = ["Not Uploaded", "Draft", "Approved", "Published", "Needs Review"];
+      const counts = await Promise.all(
+        statuses.map(async (status) => {
+          const response = await fetch(`/api/policies?status=${encodeURIComponent(status)}&limit=1`);
+          if (response.ok) {
+            const data = await response.json();
+            return data.pagination?.total || 0;
+          }
+          return 0;
+        })
+      );
+      setDashboardStats({
+        notUploaded: counts[0],
+        draft: counts[1],
+        approved: counts[2],
+        published: counts[3],
+        needsReview: counts[4],
+      });
+    } catch (error) {
+      console.error("Error fetching dashboard stats:", error);
+    } finally {
+      setStatsLoading(false);
+    }
+  };
+
+  const fetchTabStats = async (documentType: string) => {
+    try {
+      const statuses = ["Not Uploaded", "Draft", "Approved", "Published", "Needs Review"];
+      const counts = await Promise.all(
+        statuses.map(async (status) => {
+          const response = await fetch(`/api/policies?status=${encodeURIComponent(status)}&documentType=${encodeURIComponent(documentType)}&limit=1`);
+          if (response.ok) {
+            const data = await response.json();
+            return data.pagination?.total || 0;
+          }
+          return 0;
+        })
+      );
+      setTabStats({
+        notUploaded: counts[0],
+        draft: counts[1],
+        approved: counts[2],
+        published: counts[3],
+        needsReview: counts[4],
+      });
+    } catch (error) {
+      console.error("Error fetching tab stats:", error);
+    }
+  };
 
   const fetchFilterOptions = async () => {
     try {
@@ -230,6 +364,7 @@ export default function GovernancePage() {
       params.set("limit", itemsPerPage.toString());
       params.set("documentType", activeDocType);
       if (frameworkFilter && frameworkFilter !== "all") params.set("frameworkId", frameworkFilter);
+      if (statusFilter && statusFilter !== "all") params.set("status", statusFilter);
       if (search) params.set("search", search);
 
       const response = await fetch(`/api/policies?${params.toString()}`);
@@ -244,7 +379,7 @@ export default function GovernancePage() {
     } finally {
       setLoading(false);
     }
-  }, [activeDocType, currentPage, frameworkFilter, search]);
+  }, [activeDocType, currentPage, frameworkFilter, statusFilter, search]);
 
   const handleSearch = () => {
     setCurrentPage(1);
@@ -358,6 +493,131 @@ export default function GovernancePage() {
     }
   };
 
+  // Vault functions (Customer Admin only)
+  const fetchVaultDocuments = async () => {
+    try {
+      setVaultLoading(true);
+      const response = await fetch("/api/governance-vault");
+      if (response.ok) {
+        const data = await response.json();
+        setVaultDocuments(data.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching vault documents:", error);
+    } finally {
+      setVaultLoading(false);
+    }
+  };
+
+  const handleVaultUpload = async () => {
+    if (!vaultFile) return;
+    try {
+      setVaultUploading(true);
+      const formData = new FormData();
+      formData.append("file", vaultFile);
+
+      const response = await fetch("/api/governance-vault", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (response.ok) {
+        setVaultFile(null);
+        fetchVaultDocuments();
+      }
+    } catch (error) {
+      console.error("Error uploading vault document:", error);
+    } finally {
+      setVaultUploading(false);
+    }
+  };
+
+  const handleOpenLinkDialog = async (doc: VaultDocument) => {
+    setDocumentToLink(doc);
+    setSelectedPolicyIds(doc.linkedPolicies.map((p) => p.id));
+    setIsLinkDialogOpen(true);
+    setLinkDialogLoading(true);
+
+    try {
+      // Fetch all governance records (policies, standards, procedures)
+      const response = await fetch("/api/policies?limit=500");
+      if (response.ok) {
+        const data = await response.json();
+        setAllGovernanceRecords(data.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching governance records:", error);
+    } finally {
+      setLinkDialogLoading(false);
+    }
+  };
+
+  const handleSaveLinks = async () => {
+    if (!documentToLink) return;
+    try {
+      const response = await fetch(`/api/governance-vault/${documentToLink.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ policyIds: selectedPolicyIds }),
+      });
+
+      if (response.ok) {
+        setIsLinkDialogOpen(false);
+        setDocumentToLink(null);
+        setSelectedPolicyIds([]);
+        fetchVaultDocuments();
+      }
+    } catch (error) {
+      console.error("Error updating links:", error);
+    }
+  };
+
+  const handleDeleteVaultDoc = async () => {
+    if (!vaultDocToDelete) return;
+    try {
+      let response;
+      if (vaultDocToDelete.source === "vault") {
+        // Delete vault document
+        response = await fetch(`/api/governance-vault/${vaultDocToDelete.id}`, {
+          method: "DELETE",
+        });
+      } else {
+        // Delete policy attachment - need to call the policy attachment API
+        const policyId = vaultDocToDelete.linkedPolicies[0]?.id;
+        if (policyId) {
+          response = await fetch(`/api/policies/${policyId}/attachments?attachmentId=${vaultDocToDelete.id}`, {
+            method: "DELETE",
+          });
+        }
+      }
+
+      if (response?.ok) {
+        setIsDeleteVaultDocDialogOpen(false);
+        setVaultDocToDelete(null);
+        fetchVaultDocuments();
+      }
+    } catch (error) {
+      console.error("Error deleting vault document:", error);
+    }
+  };
+
+  const handleDownloadVaultDoc = (doc: VaultDocument) => {
+    // Create a temporary link to trigger download
+    const link = document.createElement("a");
+    link.href = doc.filePath;
+    link.download = doc.fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const formatFileSize = (bytes: number | null) => {
+    if (!bytes) return "-";
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
       case "Published": return "bg-green-100 text-green-800";
@@ -399,10 +659,14 @@ export default function GovernancePage() {
   })();
 
   const handleTabChange = (tab: string) => {
-    setActiveDocType(tab);
-    setCurrentPage(1);
-    setSearch("");
-    setFrameworkFilter("all");
+    setActiveTab(tab);
+    if (tab !== "Dashboard" && tab !== "Information Security Vault") {
+      setActiveDocType(tab);
+      setCurrentPage(1);
+      setSearch("");
+      setFrameworkFilter("all");
+      setStatusFilter("all");
+    }
   };
 
   const canProceedStep1 = newPolicy.name && newPolicy.departmentId && newPolicy.documentType && newPolicy.recurrence && newPolicy.assigneeId;
@@ -432,29 +696,281 @@ export default function GovernancePage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">Governance</h1>
+        <h1 className="text-2xl font-bold">Governance</h1>
+        <div className="flex gap-2">
+          {/* Show New Governance button for Customer Admin or users with create permission */}
+          {isCustomerAdmin ? (
+            <Button onClick={() => {
+              setNewPolicy({ ...newPolicy, documentType: activeDocType });
+              setIsCreateDialogOpen(true);
+            }}>
+              <Plus className="h-4 w-4 mr-2" />
+              New Governance
+            </Button>
+          ) : (
+            <PermissionGate resource="compliance.governance" action="create">
+              <Button onClick={() => {
+                setNewPolicy({ ...newPolicy, documentType: activeDocType });
+                setIsCreateDialogOpen(true);
+              }}>
+                <Plus className="h-4 w-4 mr-2" />
+                New Governance
+              </Button>
+            </PermissionGate>
+          )}
+          <PermissionGate resource="compliance.governance" action="create">
+            <Button variant="outline" onClick={() => setIsImportDialogOpen(true)}>
+              <Upload className="h-4 w-4 mr-2" />
+              Import
+            </Button>
+          </PermissionGate>
+          <PermissionGate resource="compliance.governance" action="delete">
+            <Button variant="outline" onClick={() => setIsDeleteAllDialogOpen(true)}>
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete All
+            </Button>
+          </PermissionGate>
+        </div>
       </div>
 
       {/* Tabs */}
-      <Tabs value={activeDocType} onValueChange={handleTabChange}>
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList>
+          <TabsTrigger value="Dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="Policy">Policy</TabsTrigger>
           <TabsTrigger value="Standard">Standards</TabsTrigger>
           <TabsTrigger value="Procedure">Procedures</TabsTrigger>
+          <TabsTrigger value="Information Security Vault">Information Security Vault</TabsTrigger>
         </TabsList>
 
-        {/* Tab Content - Same structure for all tabs */}
+        {/* Tab Content - Same structure for Policy, Standard, Procedure tabs */}
         {["Policy", "Standard", "Procedure"].map((docType) => (
           <TabsContent key={docType} value={docType} className="mt-4 space-y-4">
-            {/* Search, Filter, and Action Buttons Row */}
-            <div className="flex items-center gap-3">
-              <Input
-                placeholder={`Search by ${docType.toLowerCase()} name or code...`}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                className="max-w-md bg-white"
-              />
+            {/* Dashboard Cards - Same style as Dashboard tab */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              {/* Not Uploaded Card */}
+              <div
+                className={`relative overflow-hidden rounded-xl p-6 h-48 flex flex-col items-center justify-center text-center cursor-pointer transition-all hover:scale-[1.02] ${statusFilter === "Not Uploaded" ? "ring-2 ring-white ring-offset-2" : ""}`}
+                style={{
+                  background: "linear-gradient(135deg, #0a0a5c 0%, #1a1a8c 50%, #0d0d6b 100%)",
+                }}
+                onClick={() => setStatusFilter(statusFilter === "Not Uploaded" ? "all" : "Not Uploaded")}
+              >
+                <div className="absolute inset-0 opacity-20">
+                  <svg className="w-full h-full" viewBox="0 0 200 200" preserveAspectRatio="none">
+                    <defs>
+                      <linearGradient id={`wave1-${docType}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#4f46e5" stopOpacity="0.3"/>
+                        <stop offset="100%" stopColor="#7c3aed" stopOpacity="0.1"/>
+                      </linearGradient>
+                    </defs>
+                    <path d="M0,100 Q50,50 100,100 T200,100 L200,200 L0,200 Z" fill={`url(#wave1-${docType})`}/>
+                    <path d="M0,120 Q50,80 100,120 T200,120 L200,200 L0,200 Z" fill={`url(#wave1-${docType})`} opacity="0.5"/>
+                  </svg>
+                </div>
+                <div className="absolute inset-0 opacity-30">
+                  <svg className="w-full h-full" viewBox="0 0 100 100">
+                    <circle cx="20" cy="30" r="1" fill="white"/>
+                    <circle cx="80" cy="20" r="0.5" fill="white"/>
+                    <circle cx="60" cy="70" r="0.8" fill="white"/>
+                    <circle cx="30" cy="80" r="0.6" fill="white"/>
+                    <circle cx="90" cy="60" r="0.7" fill="white"/>
+                  </svg>
+                </div>
+                <div className="relative z-10 mb-3">
+                  <div className="w-16 h-16 rounded-full border-2 border-dashed border-white/40 flex items-center justify-center">
+                    <UserPlus className="h-7 w-7 text-white" />
+                  </div>
+                </div>
+                <div className="relative z-10 text-4xl font-bold text-white mb-1">
+                  {tabStats.notUploaded}
+                </div>
+                <div className="relative z-10 text-white text-sm font-medium">
+                  Not Uploaded
+                </div>
+              </div>
+
+              {/* Draft Card */}
+              <div
+                className={`relative overflow-hidden rounded-xl p-6 h-48 flex flex-col items-center justify-center text-center cursor-pointer transition-all hover:scale-[1.02] ${statusFilter === "Draft" ? "ring-2 ring-white ring-offset-2" : ""}`}
+                style={{
+                  background: "linear-gradient(135deg, #0a0a5c 0%, #1a1a8c 50%, #0d0d6b 100%)",
+                }}
+                onClick={() => setStatusFilter(statusFilter === "Draft" ? "all" : "Draft")}
+              >
+                <div className="absolute inset-0 opacity-20">
+                  <svg className="w-full h-full" viewBox="0 0 200 200" preserveAspectRatio="none">
+                    <defs>
+                      <linearGradient id={`wave2-${docType}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#4f46e5" stopOpacity="0.3"/>
+                        <stop offset="100%" stopColor="#7c3aed" stopOpacity="0.1"/>
+                      </linearGradient>
+                    </defs>
+                    <path d="M0,100 Q50,50 100,100 T200,100 L200,200 L0,200 Z" fill={`url(#wave2-${docType})`}/>
+                    <path d="M0,120 Q50,80 100,120 T200,120 L200,200 L0,200 Z" fill={`url(#wave2-${docType})`} opacity="0.5"/>
+                  </svg>
+                </div>
+                <div className="absolute inset-0 opacity-30">
+                  <svg className="w-full h-full" viewBox="0 0 100 100">
+                    <circle cx="15" cy="25" r="0.8" fill="white"/>
+                    <circle cx="75" cy="35" r="0.6" fill="white"/>
+                    <circle cx="55" cy="75" r="1" fill="white"/>
+                    <circle cx="25" cy="85" r="0.5" fill="white"/>
+                    <circle cx="85" cy="55" r="0.7" fill="white"/>
+                  </svg>
+                </div>
+                <div className="relative z-10 mb-3">
+                  <div className="w-16 h-16 rounded-full border-2 border-dashed border-white/40 flex items-center justify-center">
+                    <ListChecks className="h-7 w-7 text-white" />
+                  </div>
+                </div>
+                <div className="relative z-10 text-4xl font-bold text-white mb-1">
+                  {tabStats.draft}
+                </div>
+                <div className="relative z-10 text-white text-sm font-medium">
+                  Draft
+                </div>
+              </div>
+
+              {/* Approved Card */}
+              <div
+                className={`relative overflow-hidden rounded-xl p-6 h-48 flex flex-col items-center justify-center text-center cursor-pointer transition-all hover:scale-[1.02] ${statusFilter === "Approved" ? "ring-2 ring-white ring-offset-2" : ""}`}
+                style={{
+                  background: "linear-gradient(135deg, #0a0a5c 0%, #1a1a8c 50%, #0d0d6b 100%)",
+                }}
+                onClick={() => setStatusFilter(statusFilter === "Approved" ? "all" : "Approved")}
+              >
+                <div className="absolute inset-0 opacity-20">
+                  <svg className="w-full h-full" viewBox="0 0 200 200" preserveAspectRatio="none">
+                    <defs>
+                      <linearGradient id={`wave3-${docType}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#4f46e5" stopOpacity="0.3"/>
+                        <stop offset="100%" stopColor="#7c3aed" stopOpacity="0.1"/>
+                      </linearGradient>
+                    </defs>
+                    <path d="M0,100 Q50,50 100,100 T200,100 L200,200 L0,200 Z" fill={`url(#wave3-${docType})`}/>
+                    <path d="M0,120 Q50,80 100,120 T200,120 L200,200 L0,200 Z" fill={`url(#wave3-${docType})`} opacity="0.5"/>
+                  </svg>
+                </div>
+                <div className="absolute inset-0 opacity-30">
+                  <svg className="w-full h-full" viewBox="0 0 100 100">
+                    <circle cx="10" cy="40" r="0.7" fill="white"/>
+                    <circle cx="70" cy="25" r="0.9" fill="white"/>
+                    <circle cx="50" cy="80" r="0.6" fill="white"/>
+                    <circle cx="35" cy="70" r="0.8" fill="white"/>
+                    <circle cx="90" cy="50" r="0.5" fill="white"/>
+                  </svg>
+                </div>
+                <div className="relative z-10 mb-3">
+                  <div className="w-16 h-16 rounded-full border-2 border-dashed border-white/40 flex items-center justify-center">
+                    <CheckSquare className="h-7 w-7 text-white" />
+                  </div>
+                </div>
+                <div className="relative z-10 text-4xl font-bold text-white mb-1">
+                  {tabStats.approved}
+                </div>
+                <div className="relative z-10 text-white text-sm font-medium">
+                  Approved
+                </div>
+              </div>
+
+              {/* Published Card */}
+              <div
+                className={`relative overflow-hidden rounded-xl p-6 h-48 flex flex-col items-center justify-center text-center cursor-pointer transition-all hover:scale-[1.02] ${statusFilter === "Published" ? "ring-2 ring-white ring-offset-2" : ""}`}
+                style={{
+                  background: "linear-gradient(135deg, #0a0a5c 0%, #1a1a8c 50%, #0d0d6b 100%)",
+                }}
+                onClick={() => setStatusFilter(statusFilter === "Published" ? "all" : "Published")}
+              >
+                <div className="absolute inset-0 opacity-20">
+                  <svg className="w-full h-full" viewBox="0 0 200 200" preserveAspectRatio="none">
+                    <defs>
+                      <linearGradient id={`wave4-${docType}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#4f46e5" stopOpacity="0.3"/>
+                        <stop offset="100%" stopColor="#7c3aed" stopOpacity="0.1"/>
+                      </linearGradient>
+                    </defs>
+                    <path d="M0,100 Q50,50 100,100 T200,100 L200,200 L0,200 Z" fill={`url(#wave4-${docType})`}/>
+                    <path d="M0,120 Q50,80 100,120 T200,120 L200,200 L0,200 Z" fill={`url(#wave4-${docType})`} opacity="0.5"/>
+                  </svg>
+                </div>
+                <div className="absolute inset-0 opacity-30">
+                  <svg className="w-full h-full" viewBox="0 0 100 100">
+                    <circle cx="25" cy="35" r="0.6" fill="white"/>
+                    <circle cx="85" cy="30" r="0.8" fill="white"/>
+                    <circle cx="45" cy="85" r="0.7" fill="white"/>
+                    <circle cx="20" cy="75" r="0.9" fill="white"/>
+                    <circle cx="80" cy="65" r="0.5" fill="white"/>
+                  </svg>
+                </div>
+                <div className="relative z-10 mb-3">
+                  <div className="w-16 h-16 rounded-full border-2 border-dashed border-white/40 flex items-center justify-center">
+                    <ArrowUpFromLine className="h-7 w-7 text-white" />
+                  </div>
+                </div>
+                <div className="relative z-10 text-4xl font-bold text-white mb-1">
+                  {tabStats.published}
+                </div>
+                <div className="relative z-10 text-white text-sm font-medium">
+                  Published
+                </div>
+              </div>
+
+              {/* Needs Review Card */}
+              <div
+                className={`relative overflow-hidden rounded-xl p-6 h-48 flex flex-col items-center justify-center text-center cursor-pointer transition-all hover:scale-[1.02] ${statusFilter === "Needs Review" ? "ring-2 ring-white ring-offset-2" : ""}`}
+                style={{
+                  background: "linear-gradient(135deg, #0a0a5c 0%, #1a1a8c 50%, #0d0d6b 100%)",
+                }}
+                onClick={() => setStatusFilter(statusFilter === "Needs Review" ? "all" : "Needs Review")}
+              >
+                <div className="absolute inset-0 opacity-20">
+                  <svg className="w-full h-full" viewBox="0 0 200 200" preserveAspectRatio="none">
+                    <defs>
+                      <linearGradient id={`wave5-${docType}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#4f46e5" stopOpacity="0.3"/>
+                        <stop offset="100%" stopColor="#7c3aed" stopOpacity="0.1"/>
+                      </linearGradient>
+                    </defs>
+                    <path d="M0,100 Q50,50 100,100 T200,100 L200,200 L0,200 Z" fill={`url(#wave5-${docType})`}/>
+                    <path d="M0,120 Q50,80 100,120 T200,120 L200,200 L0,200 Z" fill={`url(#wave5-${docType})`} opacity="0.5"/>
+                  </svg>
+                </div>
+                <div className="absolute inset-0 opacity-30">
+                  <svg className="w-full h-full" viewBox="0 0 100 100">
+                    <circle cx="30" cy="20" r="0.8" fill="white"/>
+                    <circle cx="70" cy="40" r="0.6" fill="white"/>
+                    <circle cx="60" cy="65" r="0.9" fill="white"/>
+                    <circle cx="15" cy="80" r="0.5" fill="white"/>
+                    <circle cx="95" cy="45" r="0.7" fill="white"/>
+                  </svg>
+                </div>
+                <div className="relative z-10 mb-3">
+                  <div className="w-16 h-16 rounded-full border-2 border-dashed border-white/40 flex items-center justify-center">
+                    <UserCheck className="h-7 w-7 text-white" />
+                  </div>
+                </div>
+                <div className="relative z-10 text-4xl font-bold text-white mb-1">
+                  {tabStats.needsReview}
+                </div>
+                <div className="relative z-10 text-white text-sm font-medium">
+                  Needs Review
+                </div>
+              </div>
+            </div>
+
+            {/* Search and Filter Row */}
+            <div className="flex items-center gap-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder={`Search By ${docType} Name, ${docType} Code`}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                  className="pl-10"
+                />
+              </div>
               <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
                 <SelectTrigger className="w-[200px] bg-white">
                   <SelectValue placeholder="Integrated Framework" />
@@ -466,6 +982,10 @@ export default function GovernancePage() {
                   ))}
                 </SelectContent>
               </Select>
+              <Button variant="outline">
+                <Upload className="h-4 w-4 mr-2" />
+                Export
+              </Button>
               <div className="flex-1" />
               <PermissionGate resource="compliance.governance" action="create">
                 <Button variant="outline" size="sm" onClick={() => setIsImportDialogOpen(true)}>
@@ -1040,6 +1560,130 @@ export default function GovernancePage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Link / Delink Vault Document to Governance Dialog */}
+      <Dialog open={isLinkDialogOpen} onOpenChange={(open) => {
+        if (!open) {
+          setIsLinkDialogOpen(false);
+          setDocumentToLink(null);
+          setSelectedPolicyIds([]);
+        }
+      }}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Link / Delink Governance</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            {documentToLink && (
+              <div className="mb-4 p-3 bg-muted rounded-lg">
+                <p className="text-sm text-muted-foreground">Document:</p>
+                <p className="font-medium">{documentToLink.fileName}</p>
+              </div>
+            )}
+            <p className="text-sm text-muted-foreground mb-4">
+              Check to link, uncheck to delink. Changes are applied on save.
+            </p>
+            <div className="border rounded-lg max-h-[300px] overflow-y-auto">
+              {linkDialogLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[50px]"></TableHead>
+                      <TableHead>Code</TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Type</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {allGovernanceRecords.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                          No governance records found. Please create governance first.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      allGovernanceRecords.map((policy) => (
+                        <TableRow
+                          key={policy.id}
+                          className="cursor-pointer"
+                          onClick={() => {
+                            setSelectedPolicyIds((prev) =>
+                              prev.includes(policy.id)
+                                ? prev.filter((id) => id !== policy.id)
+                                : [...prev, policy.id]
+                            );
+                          }}
+                        >
+                          <TableCell>
+                            <Checkbox
+                              checked={selectedPolicyIds.includes(policy.id)}
+                              onCheckedChange={(checked) => {
+                                setSelectedPolicyIds((prev) =>
+                                  checked
+                                    ? [...prev, policy.id]
+                                    : prev.filter((id) => id !== policy.id)
+                                );
+                              }}
+                            />
+                          </TableCell>
+                          <TableCell className="font-medium">{policy.code}</TableCell>
+                          <TableCell>{policy.name}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{policy.documentType}</Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
+            {selectedPolicyIds.length > 0 && (
+              <p className="text-sm text-muted-foreground mt-2">
+                {selectedPolicyIds.length} governance record(s) selected
+              </p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setIsLinkDialogOpen(false);
+              setDocumentToLink(null);
+              setSelectedPolicyIds([]);
+            }}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveLinks}>
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Vault Document Dialog */}
+      <AlertDialog open={isDeleteVaultDocDialogOpen} onOpenChange={setIsDeleteVaultDocDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Document</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this document?
+              <br /><br />
+              <strong>&quot;{vaultDocToDelete?.fileName}&quot;</strong>
+              <br /><br />
+              This will permanently remove the document from the vault and all linked governance records. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setVaultDocToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteVaultDoc} className="bg-red-600 hover:bg-red-700">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

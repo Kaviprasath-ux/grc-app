@@ -56,6 +56,7 @@ model CustomerAccount {
   internalAuditCAPAs     InternalAuditCAPA[]
   auditReports           AuditReport[]
   internalAuditDocuments InternalAuditDocument[]
+  governanceVaultDocuments GovernanceVaultDocument[]
   subscriptionPlans      SubscriptionPlan[]
   // Master data relations (tenant-specific)
   regulations            Regulation[]
@@ -93,6 +94,9 @@ model CustomerAccount {
   auditPeriodicities     AuditPeriodicity[]
   auditEscalationConfigs AuditEscalationConfig[]
   auditTypes             AuditType[]
+  auditLocations         AuditLocation[]
+  processFrequencies     ProcessFrequency[]
+  natureOfImplementations NatureOfImplementation[]
 }
 
 // Subscription Plan for Customer Accounts
@@ -339,6 +343,9 @@ model User {
   ownedPeriodicities      AuditPeriodicity[]       @relation("AuditHeadPeriodicities")
   ownedEscalationConfigs  AuditEscalationConfig[]  @relation("AuditHeadEscalationConfigs")
   ownedAuditTypes         AuditType[]              @relation("AuditHeadTypes")
+  ownedLocations          AuditLocation[]          @relation("AuditHeadLocations")
+  ownedProcessFrequencies ProcessFrequency[]       @relation("AuditHeadProcessFrequencies")
+  ownedNatureOfImplementations NatureOfImplementation[] @relation("AuditHeadNatureOfImplementations")
   // Process RACI relations
   responsibleProcesses Process[]          @relation("ProcessResponsible")
   accountableProcesses Process[]          @relation("ProcessAccountable")
@@ -712,10 +719,15 @@ model Process {
   natureOfImplementation String?         // Manual, Automated, Manual + Automated
   riskRating             String?         // Low, Medium, High, Not Assessed
   assetDependency        Boolean         @default(false)
+  assetId                String?         // Link to Asset when assetDependency is true
+  asset                  Asset?          @relation("ProcessAsset", fields: [assetId], references: [id])
   externalDependency     Boolean         @default(false)
+  externalParty          String?         // Name of external party when externalDependency is true
   location               String?         // JSON array of locations
   kpiMeasurementRequired Boolean         @default(false)
   piiCapture             Boolean         @default(false)
+  recurrence             String?         // Daily, Weekly, Monthly, Quarterly, Annually
+  reviewDate             DateTime?       // Review date for KPI or PII
   operationalComplexity  String?         // Low, Medium, High
   lastAuditDate          DateTime?
   // RACI fields
@@ -907,6 +919,7 @@ model Policy {
   policyControls        PolicyControl[]
   policyExceptions      PolicyException[]
   exceptions            Exception[]        @relation("PolicyExceptions")
+  vaultDocumentLinks    GovernanceVaultDocumentLink[]
 
   @@unique([customerAccountId, code])
   @@index([customerAccountId])
@@ -1125,6 +1138,39 @@ model PolicyAttachment {
   policy     Policy   @relation(fields: [policyId], references: [id], onDelete: Cascade)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+}
+
+// Governance Vault Document (Information Security Vault)
+model GovernanceVaultDocument {
+  id                String                        @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String
+  customerAccount   CustomerAccount               @relation(fields: [customerAccountId], references: [id])
+  documentCode      String                        // Auto-generated code like VD-001
+  fileName          String
+  fileType          String?                       // pdf, docx, xlsx, etc.
+  fileSize          Int?
+  filePath          String
+  status            String                        @default("Active") // Active, Archived
+  uploadedAt        DateTime                      @default(now())
+  createdAt         DateTime                      @default(now())
+  updatedAt         DateTime                      @updatedAt
+  linkedPolicies    GovernanceVaultDocumentLink[]
+
+  @@unique([customerAccountId, documentCode])
+  @@index([customerAccountId])
+}
+
+// Junction table for linking vault documents to policies (many-to-many)
+model GovernanceVaultDocumentLink {
+  id         String                  @id @default(cuid())
+  documentId String
+  document   GovernanceVaultDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  policyId   String
+  policy     Policy                  @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  linkedAt   DateTime                @default(now())
+
+  @@unique([documentId, policyId])
 }
 
 // Evidence Attachments (Artifacts)
@@ -1368,6 +1414,8 @@ model Asset {
   updatedAt         DateTime              @updatedAt
   // Risks impacted by this asset
   impactedByRisks   Risk[]                @relation("RiskImpactedAsset")
+  // Processes that depend on this asset
+  processes         Process[]             @relation("ProcessAsset")
 
   @@unique([customerAccountId, assetId])
   @@index([customerAccountId])
@@ -2118,6 +2166,60 @@ model AuditType {
   updatedAt           DateTime            @updatedAt
   internalAuditRisks  InternalAuditRisk[]
   engagements         AuditEngagement[]   @relation("EngagementAuditType")
+
+  @@unique([auditHeadId, name])
+  @@index([customerAccountId])
+  @@index([auditHeadId])
+}
+
+// Location (e.g., Head Office, Branch A, Remote)
+model AuditLocation {
+  id                String           @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  // Audit Head isolation: each Audit Head has their own settings
+  auditHeadId       String?
+  auditHead         User?            @relation("AuditHeadLocations", fields: [auditHeadId], references: [id])
+  name              String
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@unique([auditHeadId, name])
+  @@index([customerAccountId])
+  @@index([auditHeadId])
+}
+
+// Process Frequency (e.g., Daily, Weekly, Monthly, Quarterly, Annually)
+model ProcessFrequency {
+  id                String           @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  // Audit Head isolation: each Audit Head has their own settings
+  auditHeadId       String?
+  auditHead         User?            @relation("AuditHeadProcessFrequencies", fields: [auditHeadId], references: [id])
+  name              String
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@unique([auditHeadId, name])
+  @@index([customerAccountId])
+  @@index([auditHeadId])
+}
+
+// Nature of Implementation (e.g., Manual, Automated, Manual + Automated)
+model NatureOfImplementation {
+  id                String           @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  // Audit Head isolation: each Audit Head has their own settings
+  auditHeadId       String?
+  auditHead         User?            @relation("AuditHeadNatureOfImplementations", fields: [auditHeadId], references: [id])
+  name              String
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
 
   @@unique([auditHeadId, name])
   @@index([customerAccountId])

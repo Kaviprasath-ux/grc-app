@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { usePermissions, useHasRole } from "@/hooks/usePermissions";
 import { PermissionGate } from "@/components/ui/permission-gate";
 import { Unauthorized } from "@/components/ui/unauthorized";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -53,6 +54,8 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Check,
+  Link2,
+  FileText,
 } from "lucide-react";
 
 interface Evidence {
@@ -114,6 +117,26 @@ interface ControlDomain {
   name: string;
 }
 
+interface ArtifactDocument {
+  id: string;
+  documentCode: string;
+  fileName: string;
+  fileType: string | null;
+  fileSize: number | null;
+  filePath: string;
+  status: string;
+  uploadedAt: string;
+  uploadedBy: string | null;
+  source: "artifact" | "attachment";
+  linkedEvidences: Array<{
+    id: string;
+    code: string;
+    name: string;
+    status: string;
+    linkedAt: string;
+  }>;
+}
+
 const statusColors: Record<string, string> = {
   "Not Uploaded": "bg-slate-100 text-slate-600",
   Draft: "bg-warning-light text-warning-dark",
@@ -129,6 +152,7 @@ export default function EvidencePage() {
   const { data: session } = useSession();
   const { canView, canCreate, canDelete, isLoading: permissionsLoading } = usePermissions('compliance.evidence');
   const isCustomerAdmin = useHasRole("CustomerAdministrator");
+  const isGRCAdmin = useHasRole("GRCAdministrator");
   const [evidences, setEvidences] = useState<Evidence[]>([]);
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [loading, setLoading] = useState(true);
@@ -148,6 +172,7 @@ export default function EvidencePage() {
 
   // Filters
   const [frameworkFilter, setFrameworkFilter] = useState<string>("all");
+  const [departmentFilter, setDepartmentFilter] = useState<string>("all");
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -180,11 +205,28 @@ export default function EvidencePage() {
     search: "",
   });
 
+  // Tab state (for Customer Admin only)
+  const [activeTab, setActiveTab] = useState<string>("Evidence Request List");
+
+  // Artifact states (Customer Admin only)
+  const [artifacts, setArtifacts] = useState<ArtifactDocument[]>([]);
+  const [artifactsLoading, setArtifactsLoading] = useState(false);
+  const [artifactFile, setArtifactFile] = useState<File | null>(null);
+  const [artifactUploading, setArtifactUploading] = useState(false);
+  const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
+  const [artifactToLink, setArtifactToLink] = useState<ArtifactDocument | null>(null);
+  const [selectedEvidenceIds, setSelectedEvidenceIds] = useState<string[]>([]);
+  const [isDeleteArtifactDialogOpen, setIsDeleteArtifactDialogOpen] = useState(false);
+  const [artifactToDelete, setArtifactToDelete] = useState<ArtifactDocument | null>(null);
+  const [allEvidenceRecords, setAllEvidenceRecords] = useState<Evidence[]>([]);
+  const [linkDialogLoading, setLinkDialogLoading] = useState(false);
+
   const fetchEvidences = useCallback(async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams();
       if (frameworkFilter && frameworkFilter !== "all") params.append("frameworkId", frameworkFilter);
+      if (departmentFilter && departmentFilter !== "all") params.append("departmentId", departmentFilter);
       if (searchTerm) params.append("search", searchTerm);
       params.append("page", currentPage.toString());
       params.append("limit", itemsPerPage.toString());
@@ -201,7 +243,7 @@ export default function EvidencePage() {
     } finally {
       setLoading(false);
     }
-  }, [frameworkFilter, searchTerm, currentPage]);
+  }, [frameworkFilter, departmentFilter, searchTerm, currentPage]);
 
   const fetchReferenceData = useCallback(async () => {
     try {
@@ -257,6 +299,125 @@ export default function EvidencePage() {
   useEffect(() => {
     fetchEvidences();
   }, [fetchEvidences]);
+
+  // Fetch artifacts when Customer Admin views the Artifacts tab
+  useEffect(() => {
+    if (activeTab === "Artifacts" && !isGRCAdmin) {
+      fetchArtifacts();
+    }
+  }, [activeTab, isGRCAdmin]);
+
+  // Artifact functions (Customer Admin only)
+  const fetchArtifacts = async () => {
+    try {
+      setArtifactsLoading(true);
+      const response = await fetch("/api/evidence-artifacts");
+      if (response.ok) {
+        const data = await response.json();
+        setArtifacts(data.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching artifacts:", error);
+    } finally {
+      setArtifactsLoading(false);
+    }
+  };
+
+  const handleArtifactUpload = async () => {
+    if (!artifactFile) return;
+    try {
+      setArtifactUploading(true);
+      const formData = new FormData();
+      formData.append("file", artifactFile);
+
+      const response = await fetch("/api/evidence-artifacts", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (response.ok) {
+        setArtifactFile(null);
+        fetchArtifacts();
+      }
+    } catch (error) {
+      console.error("Error uploading artifact:", error);
+    } finally {
+      setArtifactUploading(false);
+    }
+  };
+
+  const handleOpenLinkDialog = async (artifact: ArtifactDocument) => {
+    setArtifactToLink(artifact);
+    setSelectedEvidenceIds(artifact.linkedEvidences.map((e) => e.id));
+    setIsLinkDialogOpen(true);
+    setLinkDialogLoading(true);
+
+    try {
+      // Fetch all evidence records
+      const response = await fetch("/api/evidences?limit=500");
+      if (response.ok) {
+        const data = await response.json();
+        setAllEvidenceRecords(data.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching evidence records:", error);
+    } finally {
+      setLinkDialogLoading(false);
+    }
+  };
+
+  const handleSaveArtifactLinks = async () => {
+    if (!artifactToLink) return;
+    try {
+      const response = await fetch(`/api/evidence-artifacts/${artifactToLink.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ evidenceIds: selectedEvidenceIds }),
+      });
+
+      if (response.ok) {
+        setIsLinkDialogOpen(false);
+        setArtifactToLink(null);
+        setSelectedEvidenceIds([]);
+        fetchArtifacts();
+      }
+    } catch (error) {
+      console.error("Error updating artifact links:", error);
+    }
+  };
+
+  const handleDeleteArtifact = async () => {
+    if (!artifactToDelete) return;
+    try {
+      const response = await fetch(`/api/evidence-artifacts/${artifactToDelete.id}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        setIsDeleteArtifactDialogOpen(false);
+        setArtifactToDelete(null);
+        fetchArtifacts();
+      }
+    } catch (error) {
+      console.error("Error deleting artifact:", error);
+    }
+  };
+
+  const handleDownloadArtifact = (artifact: ArtifactDocument) => {
+    const link = document.createElement("a");
+    link.href = artifact.filePath;
+    link.download = artifact.fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const formatFileSize = (bytes: number | null) => {
+    if (!bytes) return "-";
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
 
   // The /api/users and /api/departments endpoints already apply tenant filtering,
   // so data is already scoped to the user's customerAccountId.
@@ -446,149 +607,437 @@ export default function EvidencePage() {
         <h1 className="text-2xl font-bold text-slate-800">Evidence</h1>
       </div>
 
-      {/* Search, Filter, and Action Buttons Row */}
-      <div className="flex items-center gap-3">
-        <Input
-          placeholder="Search by name, domain or assignee..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-          className="max-w-md bg-white"
-        />
-        <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
-          <SelectTrigger className="w-[200px] bg-white">
-            <SelectValue placeholder="Integrated Framework" />
-          </SelectTrigger>
-          <SelectContent position="popper" sideOffset={4}>
-            <SelectItem value="all">Integrated Framework</SelectItem>
-            {frameworks.map((f) => (
-              <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <div className="flex-1" />
-        <PermissionGate resource="compliance.evidence" action="create">
-          <Button variant="outline" size="sm" onClick={() => setIsImportDialogOpen(true)}>
-            <FileSpreadsheet className="h-4 w-4 mr-2" />
-            Import
-          </Button>
-        </PermissionGate>
-        <PermissionGate resource="compliance.evidence" action="delete">
-          <Button variant="outline" size="sm" className="text-semantic-error hover:text-semantic-error hover:bg-red-50" onClick={() => setIsDeleteAllDialogOpen(true)}>
-            <Trash2 className="h-4 w-4 mr-2" />
-            Delete All
-          </Button>
-        </PermissionGate>
-        {isCustomerAdmin ? (
-          <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Evidence
-          </Button>
-        ) : (
-          <PermissionGate resource="compliance.evidence" action="create">
-            <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              New Evidence
-            </Button>
-          </PermissionGate>
-        )}
-      </div>
-
-      {/* Table */}
-      {loading ? (
-        <div className="flex items-center justify-center py-8">
-          <div className="relative h-8 w-8">
-            <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
-            <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
-          </div>
-        </div>
-      ) : (
-        <div className="bg-white rounded-xl border border-slate-200">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-slate-50/50">
-                <TableHead className="text-xs font-semibold text-slate-600 py-3">Evidence Code</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-3">Evidence Name</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-3">Domain</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-3">Status</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-3">Assignee</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-3">Department Name</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {evidences.map((evidence) => (
-                <TableRow
-                  key={evidence.id}
-                  className="cursor-pointer hover:bg-slate-50"
-                  onDoubleClick={() => router.push(`/compliance/evidence/${evidence.id}`)}
-                >
-                  <TableCell className="font-medium text-slate-900">{evidence.evidenceCode}</TableCell>
-                  <TableCell className="text-slate-600">{evidence.name}</TableCell>
-                  <TableCell className="text-slate-600">{evidence.domain || "-"}</TableCell>
-                  <TableCell>
-                    <Badge className={statusColors[evidence.status] || "bg-gray-100 text-gray-800"}>
-                      {evidence.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-slate-600">{evidence.assignee?.fullName || "-"}</TableCell>
-                  <TableCell className="text-slate-600">{evidence.department?.name || "-"}</TableCell>
-                </TableRow>
-              ))}
-              {evidences.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-slate-500">
-                    No evidence records found
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-
-          {/* Pagination */}
-          <div className="flex items-center justify-between p-4 border-t border-slate-100">
-            <span className="text-sm text-slate-500">
-              {total > 0 ? `Showing ${startItem} to ${endItem} of ${total}` : "No evidence"}
-            </span>
-            <div className="flex items-center gap-1">
+      {/* Tabs for Customer Admin, no tabs for GRC Admin */}
+      {isGRCAdmin ? (
+        // GRC Admin: Show evidence list without tabs
+        <>
+          {/* Search and Filter Row */}
+          <div className="flex items-center gap-4">
+            <div className="flex-1 relative">
+              <Input
+                placeholder="Search by Name, Domain and Assignee"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                className="pr-10"
+              />
               <Button
                 variant="ghost"
                 size="icon"
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage(1)}
-                className="h-8 w-8"
+                className="absolute right-0 top-0 h-full"
+                onClick={handleSearch}
               >
-                <ChevronsLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage((p) => p - 1)}
-                className="h-8 w-8"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                disabled={currentPage >= totalPages}
-                onClick={() => setCurrentPage((p) => p + 1)}
-                className="h-8 w-8"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                disabled={currentPage >= totalPages}
-                onClick={() => setCurrentPage(totalPages)}
-                className="h-8 w-8"
-              >
-                <ChevronsRight className="h-4 w-4" />
+                <Search className="h-4 w-4" />
               </Button>
             </div>
+            <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
+              <SelectTrigger className="w-[250px]">
+                <SelectValue placeholder="Integrated Framework" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Integrated Framework</SelectItem>
+                {frameworks.map((f) => (
+                  <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-        </div>
+
+          {/* Table for GRC Admin */}
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+            </div>
+          ) : (
+            <>
+              <div className="border rounded-lg">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Evidence Code</TableHead>
+                      <TableHead>Evidence Name</TableHead>
+                      <TableHead>Domain</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Assignee</TableHead>
+                      <TableHead>Department Name</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {evidences.map((evidence) => (
+                      <TableRow
+                        key={evidence.id}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onDoubleClick={() => router.push(`/compliance/evidence/${evidence.id}`)}
+                      >
+                        <TableCell className="font-medium">{evidence.evidenceCode}</TableCell>
+                        <TableCell>{evidence.name}</TableCell>
+                        <TableCell>{evidence.domain || ""}</TableCell>
+                        <TableCell>
+                          <Badge className={statusColors[evidence.status] || "bg-gray-100 text-gray-800"}>
+                            {evidence.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{evidence.assignee?.fullName || ""}</TableCell>
+                        <TableCell>{evidence.department?.name || ""}</TableCell>
+                      </TableRow>
+                    ))}
+                    {evidences.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                          No evidence records found
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Pagination for GRC Admin */}
+              <div className="flex items-center justify-center gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(1)}
+                >
+                  <ChevronsLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((p) => p - 1)}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-sm text-muted-foreground px-4">
+                  Currently showing {startItem} to {endItem} of {total}
+                </span>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setCurrentPage((p) => p + 1)}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setCurrentPage(totalPages)}
+                >
+                  <ChevronsRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </>
+          )}
+        </>
+      ) : (
+        // Customer Admin and other customer roles: Show tabs
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList>
+            <TabsTrigger value="Evidence Request List">Evidence Request List</TabsTrigger>
+            <TabsTrigger value="Artifacts">Artifacts</TabsTrigger>
+          </TabsList>
+
+          {/* Evidence Request List Tab */}
+          <TabsContent value="Evidence Request List" className="mt-4 space-y-4">
+            {/* Search and Filter Row */}
+            <div className="flex items-center gap-4">
+              <div className="flex-1 relative">
+                <Input
+                  placeholder="Search by Name, Domain and Assignee"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                  className="pr-10"
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full"
+                  onClick={handleSearch}
+                >
+                  <Search className="h-4 w-4" />
+                </Button>
+              </div>
+              <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Department" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Departments</SelectItem>
+                  {departments.map((d) => (
+                    <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
+                <SelectTrigger className="w-[250px]">
+                  <SelectValue placeholder="Integrated Framework" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Integrated Framework</SelectItem>
+                  {frameworks.map((f) => (
+                    <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Table */}
+            {loading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+              </div>
+            ) : (
+              <>
+                <div className="border rounded-lg">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Evidence Code</TableHead>
+                        <TableHead>Evidence Name</TableHead>
+                        <TableHead>Domain</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Assignee</TableHead>
+                        <TableHead>Department Name</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {evidences.map((evidence) => (
+                        <TableRow
+                          key={evidence.id}
+                          className="cursor-pointer hover:bg-muted/50"
+                          onDoubleClick={() => router.push(`/compliance/evidence/${evidence.id}`)}
+                        >
+                          <TableCell className="font-medium">{evidence.evidenceCode}</TableCell>
+                          <TableCell>{evidence.name}</TableCell>
+                          <TableCell>{evidence.domain || ""}</TableCell>
+                          <TableCell>
+                            <Badge className={statusColors[evidence.status] || "bg-gray-100 text-gray-800"}>
+                              {evidence.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{evidence.assignee?.fullName || ""}</TableCell>
+                          <TableCell>{evidence.department?.name || ""}</TableCell>
+                        </TableRow>
+                      ))}
+                      {evidences.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                            No evidence records found
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                {/* Pagination */}
+                <div className="flex items-center justify-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(1)}
+                  >
+                    <ChevronsLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((p) => p - 1)}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <span className="text-sm text-muted-foreground px-4">
+                    Currently showing {startItem} to {endItem} of {total}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    disabled={currentPage >= totalPages}
+                    onClick={() => setCurrentPage((p) => p + 1)}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    disabled={currentPage >= totalPages}
+                    onClick={() => setCurrentPage(totalPages)}
+                  >
+                    <ChevronsRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </>
+            )}
+          </TabsContent>
+
+          {/* Artifacts Tab */}
+          <TabsContent value="Artifacts" className="mt-4">
+            <div className="space-y-6">
+              {/* File Upload Section */}
+              <div className="border rounded-lg p-6">
+                <h3 className="text-lg font-medium mb-4">Upload Artifact</h3>
+                <div className="flex items-center gap-4">
+                  <div className="flex-1">
+                    <Input
+                      type="file"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) setArtifactFile(file);
+                      }}
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.png,.jpg,.jpeg"
+                    />
+                  </div>
+                  <Button
+                    onClick={handleArtifactUpload}
+                    disabled={!artifactFile || artifactUploading}
+                  >
+                    {artifactUploading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Uploading...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="h-4 w-4 mr-2" />
+                        Upload
+                      </>
+                    )}
+                  </Button>
+                </div>
+                {artifactFile && (
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Selected: {artifactFile.name}
+                  </p>
+                )}
+              </div>
+
+              {/* Artifacts Listing */}
+              {artifactsLoading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                </div>
+              ) : (
+                <div className="border rounded-lg">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Document ID</TableHead>
+                        <TableHead>Document Name</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Linked To</TableHead>
+                        <TableHead>Date Uploaded</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {artifacts.map((artifact) => (
+                        <TableRow key={`${artifact.source}-${artifact.id}`}>
+                          <TableCell className="font-medium">{artifact.documentCode}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <FileText className="h-4 w-4 text-muted-foreground" />
+                              {artifact.fileName}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">
+                              {artifact.fileType?.toUpperCase() || "FILE"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={artifact.status === "Active" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}>
+                              {artifact.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {artifact.linkedEvidences.length > 0 ? (
+                              <div className="flex flex-wrap gap-1">
+                                {artifact.linkedEvidences.slice(0, 2).map((e) => (
+                                  <Badge key={e.id} variant="secondary" className="text-xs">
+                                    {e.code}
+                                  </Badge>
+                                ))}
+                                {artifact.linkedEvidences.length > 2 && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    +{artifact.linkedEvidences.length - 2}
+                                  </Badge>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground text-sm">Not linked</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {new Date(artifact.uploadedAt).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-1">
+                              {artifact.source === "artifact" ? (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  title="Link / Delink Evidence"
+                                  onClick={() => handleOpenLinkDialog(artifact)}
+                                >
+                                  <Link2 className="h-4 w-4" />
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  disabled
+                                  title={`Already linked to ${artifact.linkedEvidences[0]?.code || 'evidence'}`}
+                                >
+                                  <Link2 className="h-4 w-4 text-muted-foreground" />
+                                </Button>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title="Download"
+                                onClick={() => handleDownloadArtifact(artifact)}
+                              >
+                                <Download className="h-4 w-4" />
+                              </Button>
+                              {artifact.source === "artifact" && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  title="Delete"
+                                  onClick={() => {
+                                    setArtifactToDelete(artifact);
+                                    setIsDeleteArtifactDialogOpen(true);
+                                  }}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {artifacts.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                            No artifacts in the vault. Upload your first artifact above.
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
       )}
 
       {/* Create Evidence Dialog - 3 Step Wizard */}
@@ -957,7 +1406,7 @@ export default function EvidencePage() {
             <Button onClick={handleImportSubmit} disabled={!importFile || importing}>
               {importing ? "Importing..." : "Import"}
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

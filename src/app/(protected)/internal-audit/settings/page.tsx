@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { PageHeader } from "@/components/shared";
 import {
   ClipboardList,
   Network,
@@ -15,48 +16,66 @@ import {
 
 const settingsCategories = [
   {
-    name: "Audit Category",
+    id: "categories",
+    title: "Audit Category",
     icon: ClipboardList,
+    iconElement: <ClipboardList className="h-12 w-12" />,
     href: "/internal-audit/settings/categories",
   },
   {
-    name: "Nature of Controls",
+    id: "nature-of-controls",
+    title: "Nature of Controls",
     icon: Network,
+    iconElement: <Network className="h-12 w-12" />,
     href: "/internal-audit/settings/nature-of-controls",
   },
   {
-    name: "Risk Assessment Configuration",
+    id: "risk-assessment",
+    title: "Risk Assessment Configuration",
     icon: Activity,
+    iconElement: <Activity className="h-12 w-12" />,
     href: "/internal-audit/settings/risk-assessment",
   },
   {
-    name: "Periodicity",
+    id: "periodicity",
+    title: "Periodicity",
     icon: Clock,
+    iconElement: <Clock className="h-12 w-12" />,
     href: "/internal-audit/settings/periodicity",
   },
   {
-    name: "Escalation Configuration",
+    id: "escalation",
+    title: "Escalation Configuration",
     icon: AlertTriangle,
+    iconElement: <AlertTriangle className="h-12 w-12" />,
     href: "/internal-audit/settings/escalation",
   },
   {
-    name: "Audit Type",
+    id: "audit-types",
+    title: "Audit Type",
     icon: FileType,
+    iconElement: <FileType className="h-12 w-12" />,
     href: "/internal-audit/settings/audit-types",
   },
   {
-    name: "User Management",
+    id: "user-management",
+    title: "User Management",
     icon: Users,
+    iconElement: <Users className="h-12 w-12" />,
     href: "/internal-audit/settings/user-management",
   },
   {
-    name: "Department",
+    id: "departments",
+    title: "Department",
     icon: Building2,
+    iconElement: <Building2 className="h-12 w-12" />,
     href: "/internal-audit/settings/departments",
   },
   {
-    name: "Process",
+    id: "process",
+    title: "Process",
     icon: GitBranch,
+    iconElement: <GitBranch className="h-12 w-12" />,
     href: "/internal-audit/settings/process",
   },
 ];
@@ -65,39 +84,31 @@ export default function InternalAuditSettingsPage() {
   const router = useRouter();
 
   return (
-    <div className="p-6">
-      {/* Settings Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+    <div className="space-y-6 p-6">
+      <PageHeader title="Internal Audit Settings" />
+
+      {/* Settings Card Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {settingsCategories.map((category) => (
-          <div
-            key={category.name}
+          <button
+            key={category.id}
             onClick={() => router.push(category.href)}
-            className="cursor-pointer group"
+            className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 p-8 text-white shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           >
-            <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-900 via-blue-800 to-blue-900 p-6 h-48 flex flex-col items-center justify-center text-center transition-transform hover:scale-105 hover:shadow-xl">
-              {/* Background pattern */}
-              <div className="absolute inset-0 opacity-10">
-                <svg className="w-full h-full" viewBox="0 0 100 100">
-                  <defs>
-                    <pattern id={`pattern-${category.name}`} x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
-                      <circle cx="10" cy="10" r="1" fill="white" />
-                    </pattern>
-                  </defs>
-                  <rect width="100" height="100" fill={`url(#pattern-${category.name})`} />
-                </svg>
-              </div>
-
-              {/* Icon */}
-              <div className="relative z-10 mb-4 p-4 rounded-full bg-white/10 border border-white/20">
-                <category.icon className="h-10 w-10 text-white" />
-              </div>
-
-              {/* Title */}
-              <h3 className="relative z-10 text-white font-semibold text-sm leading-tight">
-                {category.name}
-              </h3>
+            {/* Background pattern */}
+            <div className="absolute inset-0 opacity-10">
+              <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/20" />
+              <div className="absolute -left-10 -bottom-10 h-32 w-32 rounded-full bg-white/10" />
             </div>
-          </div>
+
+            {/* Content */}
+            <div className="relative flex flex-col items-center justify-center space-y-4">
+              <div className="rounded-full bg-white/10 p-4 group-hover:bg-white/20 transition-colors">
+                {category.iconElement}
+              </div>
+              <h4 className="text-lg font-semibold text-center">{category.title}</h4>
+            </div>
+          </button>
         ))}
       </div>
     </div>
