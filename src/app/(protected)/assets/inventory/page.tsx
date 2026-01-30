@@ -803,7 +803,7 @@ export default function AssetInventoryPage() {
             />
           </div>
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="w-[150px]">
+            <SelectTrigger className="w-[150px] hidden">
               <SelectValue placeholder="Category" />
             </SelectTrigger>
             <SelectContent>
@@ -829,7 +829,7 @@ export default function AssetInventoryPage() {
             </SelectContent>
           </Select>
           <Select value={lifecycleFilter} onValueChange={setLifecycleFilter}>
-            <SelectTrigger className="w-[160px]">
+            <SelectTrigger className="w-[160px] hidden">
               <SelectValue placeholder="All Status" />
             </SelectTrigger>
             <SelectContent>
