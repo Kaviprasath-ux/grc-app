@@ -241,10 +241,11 @@ export default function KPIDetailsPage() {
       id: "actions",
       header: "Action",
       cell: ({ row }) => (
-        <div className="flex gap-2">
+        <div className="flex gap-1">
           <Button
             variant="ghost"
             size="icon"
+            className="h-8 w-8 text-slate-400 hover:text-slate-600"
             onClick={() => {
               setEditingRecord(row.original);
               setIsEditDialogOpen(true);
@@ -255,7 +256,7 @@ export default function KPIDetailsPage() {
           <Button
             variant="ghost"
             size="icon"
-            className="text-destructive"
+            className="h-8 w-8 text-slate-400 hover:text-semantic-error"
             onClick={() => handleDeleteRecord(row.original.id)}
           >
             <Trash2 className="h-4 w-4" />
@@ -275,21 +276,17 @@ export default function KPIDetailsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header with breadcrumb */}
-      <div className="flex items-center gap-2 text-sm">
+      {/* Page Header with Back Button */}
+      <div className="flex items-center gap-3">
         <Button
           variant="ghost"
-          size="sm"
-          className="gap-1 text-muted-foreground hover:text-foreground"
-          onClick={() => router.back()}
+          size="icon"
+          className="h-9 w-9 text-slate-600 hover:text-slate-800"
+          onClick={() => router.push("/organization/process")}
         >
-          <ChevronLeft className="h-4 w-4" />
-          Back
+          <ChevronLeft className="h-5 w-5" />
         </Button>
-        <span className="text-muted-foreground">|</span>
-        <span className="text-muted-foreground">KPI</span>
-        <span className="text-muted-foreground">|</span>
-        <span className="text-primary-600 font-medium">{process?.name}</span>
+        <h1 className="text-2xl font-bold text-slate-800">KPI Details - {process?.name}</h1>
       </div>
 
       {/* Main Content Card */}

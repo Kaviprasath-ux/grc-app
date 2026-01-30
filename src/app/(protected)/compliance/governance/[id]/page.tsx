@@ -123,18 +123,6 @@ interface Policy {
       code: string;
     };
   }>;
-  vaultDocumentLinks?: Array<{
-    document: {
-      id: string;
-      documentCode: string;
-      fileName: string;
-      fileType: string | null;
-      fileSize: number | null;
-      filePath: string;
-      uploadedAt: string;
-    };
-    linkedAt: string;
-  }>;
 }
 
 interface Framework {
@@ -954,7 +942,7 @@ export default function GovernanceDetailPage() {
             {policy.status}
           </Badge>
         </div>
-        <p className="text-muted-foreground">{policy.code}</p>
+        <p className="text-slate-400">{policy.code}</p>
       </div>
 
       {/* Framework Tags */}
@@ -997,7 +985,7 @@ export default function GovernanceDetailPage() {
                     className={`flex flex-col items-center gap-2 p-3 rounded-lg transition-colors ${
                       isStepActive
                         ? "bg-green-100 text-green-800"
-                        : "bg-muted text-muted-foreground"
+                        : "bg-muted text-slate-400"
                     }`}
                   >
                     <Icon className="h-6 w-6" />
@@ -1024,7 +1012,7 @@ export default function GovernanceDetailPage() {
           <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
             {/* Department - Inline Dropdown (editable only with permission) */}
             <div>
-              <Label className="text-muted-foreground text-sm">Department</Label>
+              <Label className="text-slate-400 text-sm">Department</Label>
               {canEdit ? (
                 <Select
                   value={selectedDepartmentId}
@@ -1049,7 +1037,7 @@ export default function GovernanceDetailPage() {
 
             {/* Assigned To - With Edit Button (only with edit permission) */}
             <div>
-              <Label className="text-muted-foreground text-sm">Assigned To</Label>
+              <Label className="text-slate-400 text-sm">Assigned To</Label>
               <div className="flex items-center gap-2 mt-1">
                 <span className="font-medium">{policy.assignee?.fullName || "-"}</span>
                 <PermissionGate resource="compliance.governance" action="edit">
@@ -1090,7 +1078,7 @@ export default function GovernanceDetailPage() {
 
             {/* Approvers - With Add Button (only with edit permission) */}
             <div>
-              <Label className="text-muted-foreground text-sm">Approvers</Label>
+              <Label className="text-slate-400 text-sm">Approvers</Label>
               <div className="flex items-center gap-2 mt-1">
                 <span className="font-medium">{policy.approver?.fullName || "-"}</span>
                 <PermissionGate resource="compliance.governance" action="edit">
@@ -1131,7 +1119,7 @@ export default function GovernanceDetailPage() {
 
             {/* Recurrence - Inline Dropdown (editable only with permission) */}
             <div>
-              <Label className="text-muted-foreground text-sm">Recurrence</Label>
+              <Label className="text-slate-400 text-sm">Recurrence</Label>
               {canEdit ? (
                 <Select
                   value={selectedRecurrence}
@@ -1156,7 +1144,7 @@ export default function GovernanceDetailPage() {
 
             {/* Review Date - Inline Date Picker (editable only with permission) */}
             <div>
-              <Label className="text-muted-foreground text-sm">Review Date</Label>
+              <Label className="text-slate-400 text-sm">Review Date</Label>
               <div className="flex items-center gap-2 mt-1">
                 {canEdit ? (
                   <Input
@@ -1176,14 +1164,14 @@ export default function GovernanceDetailPage() {
 
             {/* Version - Read-only */}
             <div>
-              <Label className="text-muted-foreground text-sm">Version</Label>
+              <Label className="text-slate-400 text-sm">Version</Label>
               <p className="font-medium mt-1">{policy.version || "-"}</p>
             </div>
           </div>
 
           {policy.description && (
             <div className="mt-6">
-              <Label className="text-muted-foreground text-sm">Description</Label>
+              <Label className="text-slate-400 text-sm">Description</Label>
               <p className="mt-1">{policy.description}</p>
             </div>
           )}
@@ -1200,7 +1188,7 @@ export default function GovernanceDetailPage() {
         </CardHeader>
         <CardContent>
           {!policy.aiReviewStatus || policy.aiReviewStatus === "Pending" ? (
-            <div className="text-center py-4 text-muted-foreground">
+            <div className="text-center py-4 text-slate-400">
               <p>AI Review has not been performed yet</p>
             </div>
           ) : policy.aiReviewStatus === "In Progress" ? (
@@ -1211,7 +1199,7 @@ export default function GovernanceDetailPage() {
           ) : (
             <div className="grid grid-cols-3 gap-6">
               <div>
-                <Label className="text-muted-foreground text-sm">Status</Label>
+                <Label className="text-slate-400 text-sm">Status</Label>
                 <div className="mt-1">
                   <Badge className={aiStatusColors[policy.aiReviewStatus] || "bg-gray-100"}>
                     {policy.aiReviewStatus}
@@ -1220,7 +1208,7 @@ export default function GovernanceDetailPage() {
               </div>
               {policy.aiReviewScore !== null && (
                 <div>
-                  <Label className="text-muted-foreground text-sm">Score</Label>
+                  <Label className="text-slate-400 text-sm">Score</Label>
                   <div className="mt-1">
                     <span className={`text-2xl font-bold ${
                       policy.aiReviewScore >= 80
@@ -1236,7 +1224,7 @@ export default function GovernanceDetailPage() {
               )}
               {policy.aiReviewJustification && (
                 <div className="col-span-3">
-                  <Label className="text-muted-foreground text-sm">Justification</Label>
+                  <Label className="text-slate-400 text-sm">Justification</Label>
                   <p className="mt-1 p-3 bg-muted rounded-lg">{policy.aiReviewJustification}</p>
                 </div>
               )}
@@ -1284,7 +1272,7 @@ export default function GovernanceDetailPage() {
               <div className="space-y-4">
                 {/* Published On */}
                 <div>
-                  <Label className="text-muted-foreground text-sm">Published On</Label>
+                  <Label className="text-slate-400 text-sm">Published On</Label>
                   <p className="font-medium mt-1">
                     {(() => {
                       // Try to get stored publishedAt from localStorage, fallback to updatedAt
@@ -1305,20 +1293,20 @@ export default function GovernanceDetailPage() {
 
                 {/* Published Document */}
                 <div>
-                  <Label className="text-muted-foreground text-sm">Published Document</Label>
+                  <Label className="text-slate-400 text-sm">Published Document</Label>
                   {attachments.length > 0 ? (
                     <div className="flex items-center gap-2 mt-1 p-2 bg-muted rounded-lg">
                       <FileText className="h-5 w-5 text-blue-600" />
                       <span className="font-medium">{attachments[0].fileName}</span>
                     </div>
                   ) : (
-                    <p className="text-muted-foreground mt-1">No document attached</p>
+                    <p className="text-slate-400 mt-1">No document attached</p>
                   )}
                 </div>
 
                 {/* Approver Details */}
                 <div>
-                  <Label className="text-muted-foreground text-sm">Approved By</Label>
+                  <Label className="text-slate-400 text-sm">Approved By</Label>
                   {policy.approver ? (
                     <div className="mt-1 p-3 bg-muted rounded-lg space-y-1">
                       <p className="font-medium">{policy.approver.fullName}</p>
@@ -1328,12 +1316,12 @@ export default function GovernanceDetailPage() {
                         return (
                           <>
                             {approverUser?.department && (
-                              <p className="text-sm text-muted-foreground">
+                              <p className="text-sm text-slate-400">
                                 Department: {approverUser.department.name}
                               </p>
                             )}
                             {approverUser?.designation && (
-                              <p className="text-sm text-muted-foreground">
+                              <p className="text-sm text-slate-400">
                                 Designation: {approverUser.designation}
                               </p>
                             )}
@@ -1342,14 +1330,14 @@ export default function GovernanceDetailPage() {
                       })()}
                     </div>
                   ) : (
-                    <p className="text-muted-foreground mt-1">-</p>
+                    <p className="text-slate-400 mt-1">-</p>
                   )}
                 </div>
               </div>
 
               {/* Right Column - Signature */}
               <div>
-                <Label className="text-muted-foreground text-sm">Signature</Label>
+                <Label className="text-slate-400 text-sm">Signature</Label>
                 <div className="mt-1 border rounded-lg p-4 bg-white min-h-[150px] flex items-center justify-center">
                   {storedSignature ? (
                     <img
@@ -1358,7 +1346,7 @@ export default function GovernanceDetailPage() {
                       className="max-w-full max-h-[140px] object-contain"
                     />
                   ) : (
-                    <p className="text-muted-foreground text-sm">Signature not available</p>
+                    <p className="text-slate-400 text-sm">Signature not available</p>
                   )}
                 </div>
               </div>
@@ -1419,7 +1407,7 @@ export default function GovernanceDetailPage() {
                     {uploadFile && (
                       <div className="p-3 bg-muted rounded-lg">
                         <p className="text-sm font-medium">{uploadFile.name}</p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-slate-400">
                           {(uploadFile.size / 1024).toFixed(2)} KB
                         </p>
                       </div>
@@ -1463,7 +1451,7 @@ export default function GovernanceDetailPage() {
         </CardHeader>
         <CardContent>
           {attachments.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className="text-center py-8 text-slate-400">
               <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
               <p>No attachments uploaded</p>
             </div>
@@ -1528,48 +1516,6 @@ export default function GovernanceDetailPage() {
         </CardContent>
       </Card>
 
-      {/* Vault Documents Section (Documents linked from Information Security Vault) */}
-      {isCustomerAdmin && policy.vaultDocumentLinks && policy.vaultDocumentLinks.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Vault Documents</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Document Code</TableHead>
-                  <TableHead>File Name</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Linked At</TableHead>
-                  <TableHead className="w-[100px]">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {policy.vaultDocumentLinks.map((link) => (
-                  <TableRow key={link.document.id}>
-                    <TableCell className="font-medium">{link.document.documentCode}</TableCell>
-                    <TableCell>{link.document.fileName}</TableCell>
-                    <TableCell>{link.document.fileType?.toUpperCase() || "FILE"}</TableCell>
-                    <TableCell>{new Date(link.linkedAt).toLocaleDateString()}</TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => window.open(link.document.filePath, "_blank")}
-                        title="Download"
-                      >
-                        <Download className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Signature Publish Dialog */}
       <Dialog open={signatureDialogOpen} onOpenChange={(open) => {
         setSignatureDialogOpen(open);
@@ -1580,7 +1526,7 @@ export default function GovernanceDetailPage() {
             <DialogTitle>{typeLabels[policy.type] || "Policy"} signature Publish</DialogTitle>
           </DialogHeader>
           <div className="py-4 space-y-4">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-slate-400">
               Please sign below to publish this {(policy.type || "document").toLowerCase()}.
             </p>
             <div className="border rounded-lg p-2 bg-white">
@@ -1604,7 +1550,7 @@ export default function GovernanceDetailPage() {
               >
                 Clear Signature
               </Button>
-              <span className="text-xs text-muted-foreground">
+              <span className="text-xs text-slate-400">
                 Draw your signature above
               </span>
             </div>
@@ -1694,7 +1640,7 @@ export default function GovernanceDetailPage() {
           </CardHeader>
           <CardContent>
             {linkedControls.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
+              <div className="text-center py-8 text-slate-400">
                 <Link2 className="h-12 w-12 mx-auto mb-2 opacity-50" />
                 <p>No controls linked to this {(policy.type || "policy").toLowerCase()}</p>
               </div>
@@ -1748,7 +1694,7 @@ export default function GovernanceDetailPage() {
           </CardHeader>
           <CardContent>
             {linkedExceptions.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
+              <div className="text-center py-8 text-slate-400">
                 <AlertTriangle className="h-12 w-12 mx-auto mb-2 opacity-50" />
                 <p>No exceptions linked to this {(policy.type || "policy").toLowerCase()}</p>
               </div>
@@ -1795,7 +1741,7 @@ export default function GovernanceDetailPage() {
           </CardHeader>
           <CardContent>
             {linkedDocuments.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
+              <div className="text-center py-8 text-slate-400">
                 <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
                 <p>No documents linked to this {(policy.type || "policy").toLowerCase()}</p>
               </div>

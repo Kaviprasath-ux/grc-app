@@ -127,9 +127,7 @@ export default function DashboardPage() {
       {/* Page Header */}
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-bold text-slate-800">Dashboard Overview</h1>
-        <p className="text-sm text-slate-500">
-          Welcome back, {session?.user?.name}. Here&apos;s your organization&apos;s GRC status.
-        </p>
+      
       </div>
 
       {/* Key Metrics */}

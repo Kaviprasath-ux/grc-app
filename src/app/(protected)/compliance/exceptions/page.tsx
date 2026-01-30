@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { usePermissions } from "@/hooks/usePermissions";
 import { PermissionGate } from "@/components/ui/permission-gate";
 import { Unauthorized } from "@/components/ui/unauthorized";
@@ -24,7 +23,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Table,
@@ -35,13 +33,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  Search,
   Plus,
   AlertTriangle,
   Pencil,
   Trash2,
-  ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
 } from "lucide-react";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -109,20 +110,20 @@ interface Exception {
 }
 
 const statusColors: Record<string, string> = {
-  Pending: "bg-yellow-100 text-yellow-800",
-  Approved: "bg-green-100 text-green-800",
-  Authorised: "bg-blue-100 text-blue-800",
-  "Submitted for Closure": "bg-purple-100 text-purple-800",
-  Overdue: "bg-orange-100 text-orange-800",
-  RiskAccepted: "bg-pink-100 text-pink-800",
-  Closed: "bg-gray-100 text-gray-800",
+  Pending: "bg-warning-light text-warning-dark",
+  Approved: "bg-success-light text-success-dark",
+  Authorised: "bg-info-light text-info-dark",
+  "Submitted for Closure": "bg-primary-100 text-primary-700",
+  Overdue: "bg-error-light text-error-dark",
+  RiskAccepted: "bg-risk-medium-bg text-risk-medium",
+  Closed: "bg-slate-100 text-slate-600",
 };
 
 const categoryColors: Record<string, string> = {
-  Policy: "bg-purple-100 text-purple-800",
-  Control: "bg-blue-100 text-blue-800",
-  Compliance: "bg-green-100 text-green-800",
-  Risk: "bg-orange-100 text-orange-800",
+  Policy: "bg-primary-100 text-primary-700",
+  Control: "bg-info-light text-info-dark",
+  Compliance: "bg-success-light text-success-dark",
+  Risk: "bg-risk-high-bg text-risk-high",
 };
 
 const categories = ["Policy", "Control", "Compliance", "Risk"];
@@ -136,10 +137,8 @@ const statuses = [
   "Closed",
 ];
 
-function ExceptionsPageContent() {
+export default function ExceptionsPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const fromDashboard = searchParams.get("from") === "dashboard";
   const { data: session } = useSession();
   const { canView, canCreate, canEdit, canDelete, isLoading: permissionsLoading } = usePermissions('compliance.exceptions');
   const [exceptions, setExceptions] = useState<Exception[]>([]);
@@ -431,10 +430,13 @@ function ExceptionsPageContent() {
   );
 
   // Show loading state while permissions are being fetched
-  if (permissionsLoading || loading) {
+  if (permissionsLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="relative h-8 w-8">
+          <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
+          <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+        </div>
       </div>
     );
   }
@@ -445,71 +447,58 @@ function ExceptionsPageContent() {
   }
 
   return (
-    <div className="space-y-6 p-6">
-      {/* Back to Dashboard Button */}
-      {fromDashboard && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => router.push("/dashboard")}
-          className="flex items-center gap-2 text-slate-600 hover:text-slate-800 -ml-2"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Dashboard
-        </Button>
-      )}
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold text-slate-800">Exceptions</h1>
+      </div>
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Exception Dashboard</h1>
-        </div>
-        <PermissionGate resource="compliance.exceptions" action="create">
-          <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                New Exception
-              </Button>
-            </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      {/* Create Exception Dialog */}
+      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle>New Exception</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">New Exception</DialogTitle>
             </DialogHeader>
+          </div>
 
-            <div className="space-y-4 py-4">
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="font-medium">Exception Code</Label>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Exception Code</Label>
                   <Input
                     value="Auto-generated"
                     disabled
-                    className="bg-gray-100"
+                    className="mt-1.5 w-full bg-slate-50"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label className="font-medium">Exception Name *</Label>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Exception Name *</Label>
                   <Input
                     value={createForm.name}
                     onChange={(e) =>
                       setCreateForm({ ...createForm, name: e.target.value })
                     }
                     placeholder="Enter exception name"
+                    className="mt-1.5 w-full bg-white"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="font-medium">Requested By</Label>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Requested By</Label>
                   <Input
                     value={currentUserName}
                     disabled
-                    className="bg-gray-100"
+                    className="mt-1.5 w-full bg-slate-50"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label className="font-medium">Category *</Label>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Category *</Label>
                   <Select
                     value={createForm.category}
                     onValueChange={(value) =>
@@ -522,10 +511,10 @@ function ExceptionsPageContent() {
                       })
                     }
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="mt-1.5 w-full bg-white">
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" sideOffset={4}>
                       {categories.map((c) => (
                         <SelectItem key={c} value={c}>
                           {c}
@@ -538,18 +527,18 @@ function ExceptionsPageContent() {
 
               {/* Category-specific reference selection */}
               {createForm.category === "Control" && (
-                <div className="space-y-2">
-                  <Label className="font-medium">Select Control</Label>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Select Control</Label>
                   <Select
                     value={createForm.controlId}
                     onValueChange={(value) =>
                       setCreateForm({ ...createForm, controlId: value })
                     }
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="mt-1.5 w-full bg-white">
                       <SelectValue placeholder="Select control" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" sideOffset={4}>
                       {controls.map((c) => (
                         <SelectItem key={c.id} value={c.id}>
                           {c.controlId} - {c.name}
@@ -561,18 +550,18 @@ function ExceptionsPageContent() {
               )}
 
               {createForm.category === "Policy" && (
-                <div className="space-y-2">
-                  <Label className="font-medium">Select Policy</Label>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Select Policy</Label>
                   <Select
                     value={createForm.policyId}
                     onValueChange={(value) =>
                       setCreateForm({ ...createForm, policyId: value })
                     }
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="mt-1.5 w-full bg-white">
                       <SelectValue placeholder="Select policy" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" sideOffset={4}>
                       {policies.map((p) => (
                         <SelectItem key={p.id} value={p.id}>
                           {p.code} - {p.name}
@@ -584,18 +573,18 @@ function ExceptionsPageContent() {
               )}
 
               {createForm.category === "Risk" && (
-                <div className="space-y-2">
-                  <Label className="font-medium">Select Risk</Label>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Select Risk</Label>
                   <Select
                     value={createForm.riskId}
                     onValueChange={(value) =>
                       setCreateForm({ ...createForm, riskId: value })
                     }
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="mt-1.5 w-full bg-white">
                       <SelectValue placeholder="Select risk" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" sideOffset={4}>
                       {risks.map((r) => (
                         <SelectItem key={r.id} value={r.id}>
                           {r.riskCode} - {r.name}
@@ -606,8 +595,8 @@ function ExceptionsPageContent() {
                 </div>
               )}
 
-              <div className="space-y-2">
-                <Label className="font-medium">Reason For Exception</Label>
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Reason For Exception</Label>
                 <Textarea
                   value={createForm.description}
                   onChange={(e) =>
@@ -618,22 +607,23 @@ function ExceptionsPageContent() {
                   }
                   placeholder="Enter reason for exception"
                   rows={3}
+                  className="mt-1.5 w-full bg-white"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="font-medium">Department</Label>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Department</Label>
                   <Select
                     value={createForm.departmentId}
                     onValueChange={(value) =>
                       setCreateForm({ ...createForm, departmentId: value, approverId: "" })
                     }
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="mt-1.5 w-full bg-white">
                       <SelectValue placeholder="Select department" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" sideOffset={4}>
                       {departments.map((d) => (
                         <SelectItem key={d.id} value={d.id}>
                           {d.name}
@@ -642,8 +632,8 @@ function ExceptionsPageContent() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label className="font-medium">Select Approver</Label>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Select Approver</Label>
                   <Select
                     value={createForm.approverId}
                     onValueChange={(value) =>
@@ -651,10 +641,10 @@ function ExceptionsPageContent() {
                     }
                     disabled={!createForm.departmentId}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="mt-1.5 w-full bg-white">
                       <SelectValue placeholder={createForm.departmentId ? "Select approver" : "Select department first"} />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" sideOffset={4}>
                       {users
                         .filter((u) =>
                           u.departmentId === createForm.departmentId &&
@@ -669,7 +659,7 @@ function ExceptionsPageContent() {
                         u.departmentId === createForm.departmentId &&
                         u.userRoles?.some((ur) => ur.role.name === "DepartmentReviewer")
                       ).length === 0 && createForm.departmentId && (
-                        <div className="px-2 py-1.5 text-sm text-gray-500">
+                        <div className="px-2 py-1.5 text-sm text-slate-500">
                           No department reviewers found
                         </div>
                       )}
@@ -679,332 +669,335 @@ function ExceptionsPageContent() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="font-medium">Status</Label>
-                  <Input value="Pending" disabled className="bg-gray-100" />
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Status</Label>
+                  <Input value="Pending" disabled className="mt-1.5 w-full bg-slate-50" />
                 </div>
-                <div className="space-y-2">
-                  <Label className="font-medium">End date</Label>
-                  <Input
-                    type="date"
-                    value={createForm.endDate}
-                    onChange={(e) =>
-                      setCreateForm({ ...createForm, endDate: e.target.value })
-                    }
-                  />
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">End Date</Label>
+                  <div className="mt-1.5">
+                    <DatePicker
+                      value={createForm.endDate}
+                      onChange={(date) =>
+                        setCreateForm({
+                          ...createForm,
+                          endDate: date ? date.toISOString().split("T")[0] : "",
+                        })
+                      }
+                      placeholder="Select end date"
+                      className="w-full bg-white"
+                    />
+                  </div>
                 </div>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-4">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setCreateDialogOpen(false);
-                    resetCreateForm();
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleCreate}
-                  disabled={!createForm.name || !createForm.category}
-                >
-                  Save
-                </Button>
               </div>
             </div>
-          </DialogContent>
-        </Dialog>
-        </PermissionGate>
+          </div>
 
-        {/* Approver Selection Dialog */}
-        <Dialog open={approverDialogOpen} onOpenChange={setApproverDialogOpen}>
-          <DialogContent className="max-w-md">
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setCreateDialogOpen(false);
+                resetCreateForm();
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreate}
+              disabled={!createForm.name || !createForm.category}
+            >
+              Save
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Approver Selection Dialog */}
+      <Dialog open={approverDialogOpen} onOpenChange={setApproverDialogOpen}>
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle>Select Approver</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Select Approver</DialogTitle>
             </DialogHeader>
-            <p className="text-sm text-gray-500 mb-4">
+          </div>
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            <p className="text-sm text-slate-500 mb-4">
               Double-click to select an approver
             </p>
-            <div className="max-h-64 overflow-y-auto border rounded-lg">
+            <div className="max-h-64 overflow-y-auto border border-slate-200 rounded-lg">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
+                  <TableRow className="bg-slate-50/50">
+                    <TableHead className="text-xs font-semibold text-slate-600 py-3">Name</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600 py-3">Email</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {users.map((user) => (
                     <TableRow
                       key={user.id}
-                      className="cursor-pointer hover:bg-gray-100"
+                      className="cursor-pointer hover:bg-slate-50"
                       onDoubleClick={() => handleSelectApprover(user)}
                     >
-                      <TableCell>{user.fullName || user.userName || user.name || "-"}</TableCell>
-                      <TableCell>{user.email || "-"}</TableCell>
+                      <TableCell className="text-slate-600">{user.fullName || user.userName || user.name || "-"}</TableCell>
+                      <TableCell className="text-slate-600">{user.email || "-"}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
             </div>
-          </DialogContent>
-        </Dialog>
-      </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Summary Charts Row */}
       <div className="grid grid-cols-3 gap-6">
         {/* Status Chart Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Status</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div className="space-y-2 flex-1">
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded-full bg-yellow-500" />
-                  <span className="text-sm">Pending</span>
-                  <span className="text-sm font-medium ml-auto">
-                    {statusCounts.pending}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded-full bg-green-500" />
-                  <span className="text-sm">Approved</span>
-                  <span className="text-sm font-medium ml-auto">
-                    {statusCounts.approved}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded-full bg-blue-500" />
-                  <span className="text-sm">Authorised</span>
-                  <span className="text-sm font-medium ml-auto">
-                    {statusCounts.authorised}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded-full bg-orange-500" />
-                  <span className="text-sm">Overdue</span>
-                  <span className="text-sm font-medium ml-auto">
-                    {statusCounts.overdue}
-                  </span>
-                </div>
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <h3 className="text-base font-semibold text-slate-800 mb-4">Status</h3>
+          <div className="flex items-center justify-between">
+            <div className="space-y-2 flex-1">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded-full bg-warning" />
+                <span className="text-sm text-slate-600">Pending</span>
+                <span className="text-sm font-medium text-slate-800 ml-auto">
+                  {statusCounts.pending}
+                </span>
               </div>
-              <div className="text-center ml-8">
-                <p className="text-sm text-gray-500">Total</p>
-                <p className="text-3xl font-bold">{statusCounts.total}</p>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded-full bg-success" />
+                <span className="text-sm text-slate-600">Approved</span>
+                <span className="text-sm font-medium text-slate-800 ml-auto">
+                  {statusCounts.approved}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded-full bg-info" />
+                <span className="text-sm text-slate-600">Authorised</span>
+                <span className="text-sm font-medium text-slate-800 ml-auto">
+                  {statusCounts.authorised}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded-full bg-error" />
+                <span className="text-sm text-slate-600">Overdue</span>
+                <span className="text-sm font-medium text-slate-800 ml-auto">
+                  {statusCounts.overdue}
+                </span>
               </div>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Type/Category Chart Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Type</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div className="space-y-2 flex-1">
-                {Object.entries(categoryCounts)
-                  .slice(0, 4)
-                  .map(([cat, count], idx) => (
-                    <div key={cat} className="flex items-center gap-2">
-                      <div
-                        className={`w-4 h-4 rounded-full ${
-                          idx === 0
-                            ? "bg-purple-500"
-                            : idx === 1
-                              ? "bg-blue-500"
-                              : idx === 2
-                                ? "bg-green-500"
-                                : "bg-orange-500"
-                        }`}
-                      />
-                      <span className="text-sm">{cat}</span>
-                      <span className="text-sm font-medium ml-auto">
-                        {count}
-                      </span>
-                    </div>
-                  ))}
-              </div>
-              <div className="text-center ml-8">
-                <p className="text-sm text-gray-500">Total</p>
-                <p className="text-3xl font-bold">{statusCounts.total}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Department Chart Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Department</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div className="space-y-2 flex-1">
-                {Object.entries(departmentCounts)
-                  .slice(0, 4)
-                  .map(([dept, count], idx) => (
-                    <div key={dept} className="flex items-center gap-2">
-                      <div
-                        className={`w-4 h-4 rounded-full ${
-                          idx === 0
-                            ? "bg-blue-500"
-                            : idx === 1
-                              ? "bg-green-500"
-                              : idx === 2
-                                ? "bg-yellow-500"
-                                : "bg-purple-500"
-                        }`}
-                      />
-                      <span className="text-sm truncate max-w-[100px]">
-                        {dept}
-                      </span>
-                      <span className="text-sm font-medium ml-auto">
-                        {count}
-                      </span>
-                    </div>
-                  ))}
-              </div>
-              <div className="text-center ml-8">
-                <p className="text-sm text-gray-500">Total</p>
-                <p className="text-3xl font-bold">{statusCounts.total}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filters and Table */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <Label className="text-sm">Status</Label>
-              <Select
-                value={filters.status || "all"}
-                onValueChange={(value) =>
-                  setFilters({ ...filters, status: value === "all" ? "" : value })
-                }
-              >
-                <SelectTrigger className="w-[150px]">
-                  <SelectValue placeholder="All" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  {statuses.map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {s}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center gap-2">
-              <Label className="text-sm">Category</Label>
-              <Select
-                value={filters.category || "all"}
-                onValueChange={(value) =>
-                  setFilters({ ...filters, category: value === "all" ? "" : value })
-                }
-              >
-                <SelectTrigger className="w-[150px]">
-                  <SelectValue placeholder="All" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  {categories.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {c}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="text-center ml-8">
+              <p className="text-sm text-slate-500">Total</p>
+              <p className="text-3xl font-bold text-slate-800">{statusCounts.total}</p>
             </div>
           </div>
+        </div>
 
-          {/* Exceptions Table */}
+        {/* Type/Category Chart Card */}
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <h3 className="text-base font-semibold text-slate-800 mb-4">Type</h3>
+          <div className="flex items-center justify-between">
+            <div className="space-y-2 flex-1">
+              {Object.entries(categoryCounts)
+                .slice(0, 4)
+                .map(([cat, count], idx) => (
+                  <div key={cat} className="flex items-center gap-2">
+                    <div
+                      className={`w-4 h-4 rounded-full ${
+                        idx === 0
+                          ? "bg-primary-500"
+                          : idx === 1
+                            ? "bg-info"
+                            : idx === 2
+                              ? "bg-success"
+                              : "bg-risk-high"
+                      }`}
+                    />
+                    <span className="text-sm text-slate-600">{cat}</span>
+                    <span className="text-sm font-medium text-slate-800 ml-auto">
+                      {count}
+                    </span>
+                  </div>
+                ))}
+            </div>
+            <div className="text-center ml-8">
+              <p className="text-sm text-slate-500">Total</p>
+              <p className="text-3xl font-bold text-slate-800">{statusCounts.total}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Department Chart Card */}
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <h3 className="text-base font-semibold text-slate-800 mb-4">Department</h3>
+          <div className="flex items-center justify-between">
+            <div className="space-y-2 flex-1">
+              {Object.entries(departmentCounts)
+                .slice(0, 4)
+                .map(([dept, count], idx) => (
+                  <div key={dept} className="flex items-center gap-2">
+                    <div
+                      className={`w-4 h-4 rounded-full ${
+                        idx === 0
+                          ? "bg-info"
+                          : idx === 1
+                            ? "bg-success"
+                            : idx === 2
+                              ? "bg-warning"
+                              : "bg-primary-500"
+                      }`}
+                    />
+                    <span className="text-sm text-slate-600 truncate max-w-[100px]">
+                      {dept}
+                    </span>
+                    <span className="text-sm font-medium text-slate-800 ml-auto">
+                      {count}
+                    </span>
+                  </div>
+                ))}
+            </div>
+            <div className="text-center ml-8">
+              <p className="text-sm text-slate-500">Total</p>
+              <p className="text-3xl font-bold text-slate-800">{statusCounts.total}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Search, Filters, and Action Button Row */}
+      <div className="flex items-center gap-3">
+        <Input
+          placeholder="Search by name, code or requester..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="max-w-sm h-9 border-slate-200 bg-white"
+        />
+        <Select
+          value={filters.status || "all"}
+          onValueChange={(value) =>
+            setFilters({ ...filters, status: value === "all" ? "" : value })
+          }
+        >
+          <SelectTrigger className="w-[160px] bg-white">
+            <SelectValue placeholder="All Statuses" />
+          </SelectTrigger>
+          <SelectContent position="popper" sideOffset={4}>
+            <SelectItem value="all">All Statuses</SelectItem>
+            {statuses.map((s) => (
+              <SelectItem key={s} value={s}>
+                {s}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select
+          value={filters.category || "all"}
+          onValueChange={(value) =>
+            setFilters({ ...filters, category: value === "all" ? "" : value })
+          }
+        >
+          <SelectTrigger className="w-[160px] bg-white">
+            <SelectValue placeholder="All Categories" />
+          </SelectTrigger>
+          <SelectContent position="popper" sideOffset={4}>
+            <SelectItem value="all">All Categories</SelectItem>
+            {categories.map((c) => (
+              <SelectItem key={c} value={c}>
+                {c}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <div className="flex-1" />
+        <PermissionGate resource="compliance.exceptions" action="create">
+          <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            New Exception
+          </Button>
+        </PermissionGate>
+      </div>
+
+      {/* Exceptions Table */}
+      {loading ? (
+        <div className="flex items-center justify-center py-8">
+          <div className="relative h-8 w-8">
+            <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl border border-slate-200">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>Exception code</TableHead>
-                <TableHead>Exception</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Reference</TableHead>
-                <TableHead>Requester</TableHead>
-                <TableHead>End date</TableHead>
-                <TableHead>Department Name</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Action</TableHead>
+              <TableRow className="border-b border-slate-100 bg-slate-50/50">
+                <TableHead className="text-xs font-semibold text-slate-600 py-3 pl-4">Exception Code</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 py-3">Exception</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 py-3">Category</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 py-3">Reference</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 py-3">Requester</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 py-3">End Date</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 py-3">Department</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 py-3">Status</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 py-3">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {exceptions.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={9} className="text-center py-8">
-                    <AlertTriangle className="h-12 w-12 mx-auto mb-2 text-gray-300" />
-                    <p className="text-gray-500">No exceptions found</p>
+                    <AlertTriangle className="h-12 w-12 mx-auto mb-2 text-slate-300" />
+                    <p className="text-slate-500">No exceptions found</p>
                   </TableCell>
                 </TableRow>
               ) : (
                 exceptions.map((exception) => (
                   <TableRow
                     key={exception.id}
-                    className="hover:bg-gray-50 cursor-pointer"
+                    className="border-b border-slate-100 last:border-0 hover:bg-slate-50 cursor-pointer"
                     onClick={() => router.push(`/compliance/exceptions/${exception.id}`)}
                   >
-                    <TableCell className="font-medium">
+                    <TableCell className="py-3 text-sm font-medium text-slate-800 pl-4">
                       {exception.exceptionCode}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700">
                       <span className="line-clamp-1">{exception.name}</span>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="py-3 text-sm">
                       <Badge
                         className={
-                          categoryColors[exception.category] || "bg-gray-100"
+                          categoryColors[exception.category] || "bg-slate-100 text-slate-600"
                         }
                       >
                         {exception.category}
                       </Badge>
                     </TableCell>
-                    <TableCell>{getReference(exception)}</TableCell>
-                    <TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700">{getReference(exception)}</TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700">
                       {exception.requester?.fullName ||
                         exception.requester?.userName ||
                         exception.requester?.name ||
                         "-"}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700">
                       {exception.endDate
                         ? new Date(exception.endDate).toLocaleDateString(
                             "en-GB"
                           )
                         : "-"}
                     </TableCell>
-                    <TableCell>{exception.department?.name || "-"}</TableCell>
-                    <TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700">{exception.department?.name || "-"}</TableCell>
+                    <TableCell className="py-3 text-sm">
                       <Badge
                         className={
-                          statusColors[exception.status] || "bg-gray-100"
+                          statusColors[exception.status] || "bg-slate-100 text-slate-600"
                         }
                       >
                         {exception.status}
                       </Badge>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="py-3 text-sm">
                       <div className="flex items-center gap-1">
                         <PermissionGate resource="compliance.exceptions" action="edit">
                           <Button
@@ -1012,6 +1005,7 @@ function ExceptionsPageContent() {
                             size="icon"
                             onClick={(e) => handleOpenEdit(exception, e)}
                             title="Edit"
+                            className="h-8 w-8 text-slate-400 hover:text-slate-600"
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
@@ -1022,7 +1016,7 @@ function ExceptionsPageContent() {
                             size="icon"
                             onClick={(e) => handleOpenDelete(exception, e)}
                             title="Delete"
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            className="h-8 w-8 text-slate-400 hover:text-semantic-error"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -1036,284 +1030,333 @@ function ExceptionsPageContent() {
           </Table>
 
           {/* Pagination */}
-          <div className="flex items-center justify-between mt-4 text-sm text-gray-500">
-            <span>
-              Currently showing 1 to {exceptions.length} of {exceptions.length}
+          <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
+            <span className="text-sm text-slate-500">
+              {exceptions.length > 0 ? `Showing 1 to ${exceptions.length} of ${exceptions.length}` : "No exceptions"}
             </span>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                disabled={true}
+                className="h-8 w-8"
+              >
+                <ChevronsLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                disabled={true}
+                className="h-8 w-8"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                disabled={true}
+                className="h-8 w-8"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                disabled={true}
+                className="h-8 w-8"
+              >
+                <ChevronsRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      )}
 
       {/* Edit Exception Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit Exception</DialogTitle>
-          </DialogHeader>
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Edit Exception</DialogTitle>
+            </DialogHeader>
+          </div>
 
-          <div className="space-y-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="font-medium">Exception Code</Label>
-                <Input
-                  value={selectedException?.exceptionCode || ""}
-                  disabled
-                  className="bg-gray-100"
-                />
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Exception Code</Label>
+                  <Input
+                    value={selectedException?.exceptionCode || ""}
+                    disabled
+                    className="mt-1.5 w-full bg-slate-50"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Exception Name *</Label>
+                  <Input
+                    value={editForm.name}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, name: e.target.value })
+                    }
+                    placeholder="Enter exception name"
+                    className="mt-1.5 w-full bg-white"
+                  />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label className="font-medium">Exception Name *</Label>
-                <Input
-                  value={editForm.name}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, name: e.target.value })
-                  }
-                  placeholder="Enter exception name"
-                />
-              </div>
-            </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="font-medium">Requested By</Label>
-                <Select
-                  value={editForm.requesterId}
-                  onValueChange={(value) =>
-                    setEditForm({ ...editForm, requesterId: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select requester" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {users.map((u) => (
-                      <SelectItem key={u.id} value={u.id}>
-                        {u.fullName || u.userName || u.name || "-"}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label className="font-medium">Category *</Label>
-                <Select
-                  value={editForm.category}
-                  onValueChange={(value) =>
-                    setEditForm({
-                      ...editForm,
-                      category: value,
-                      controlId: "",
-                      policyId: "",
-                      riskId: "",
-                    })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((c) => (
-                      <SelectItem key={c} value={c}>
-                        {c}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Category-specific reference selection */}
-            {editForm.category === "Control" && (
-              <div className="space-y-2">
-                <Label className="font-medium">Select Control</Label>
-                <Select
-                  value={editForm.controlId}
-                  onValueChange={(value) =>
-                    setEditForm({ ...editForm, controlId: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select control" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {controls.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.controlId} - {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            {editForm.category === "Policy" && (
-              <div className="space-y-2">
-                <Label className="font-medium">Select Policy</Label>
-                <Select
-                  value={editForm.policyId}
-                  onValueChange={(value) =>
-                    setEditForm({ ...editForm, policyId: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select policy" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {policies.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.code} - {p.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            {editForm.category === "Risk" && (
-              <div className="space-y-2">
-                <Label className="font-medium">Select Risk</Label>
-                <Select
-                  value={editForm.riskId}
-                  onValueChange={(value) =>
-                    setEditForm({ ...editForm, riskId: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select risk" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {risks.map((r) => (
-                      <SelectItem key={r.id} value={r.id}>
-                        {r.riskCode} - {r.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <Label className="font-medium">Reason For Exception</Label>
-              <Textarea
-                value={editForm.description}
-                onChange={(e) =>
-                  setEditForm({
-                    ...editForm,
-                    description: e.target.value,
-                  })
-                }
-                placeholder="Enter reason for exception"
-                rows={3}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="font-medium">Department</Label>
-                <Select
-                  value={editForm.departmentId}
-                  onValueChange={(value) =>
-                    setEditForm({ ...editForm, departmentId: value, approverId: "" })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select department" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {departments.map((d) => (
-                      <SelectItem key={d.id} value={d.id}>
-                        {d.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label className="font-medium">Select Approver</Label>
-                <Select
-                  value={editForm.approverId}
-                  onValueChange={(value) =>
-                    setEditForm({ ...editForm, approverId: value })
-                  }
-                  disabled={!editForm.departmentId}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={editForm.departmentId ? "Select approver" : "Select department first"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {users
-                      .filter((u) =>
-                        u.departmentId === editForm.departmentId &&
-                        u.userRoles?.some((ur) => ur.role.name === "DepartmentReviewer")
-                      )
-                      .map((u) => (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Requested By</Label>
+                  <Select
+                    value={editForm.requesterId}
+                    onValueChange={(value) =>
+                      setEditForm({ ...editForm, requesterId: value })
+                    }
+                  >
+                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                      <SelectValue placeholder="Select requester" />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4}>
+                      {users.map((u) => (
                         <SelectItem key={u.id} value={u.id}>
-                          {u.fullName || u.name}
+                          {u.fullName || u.userName || u.name || "-"}
                         </SelectItem>
                       ))}
-                    {users.filter((u) =>
-                      u.departmentId === editForm.departmentId &&
-                      u.userRoles?.some((ur) => ur.role.name === "DepartmentReviewer")
-                    ).length === 0 && editForm.departmentId && (
-                      <div className="px-2 py-1.5 text-sm text-gray-500">
-                        No department reviewers found
-                      </div>
-                    )}
-                  </SelectContent>
-                </Select>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Category *</Label>
+                  <Select
+                    value={editForm.category}
+                    onValueChange={(value) =>
+                      setEditForm({
+                        ...editForm,
+                        category: value,
+                        controlId: "",
+                        policyId: "",
+                        riskId: "",
+                      })
+                    }
+                  >
+                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4}>
+                      {categories.map((c) => (
+                        <SelectItem key={c} value={c}>
+                          {c}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-            </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="font-medium">Status</Label>
-                <Select
-                  value={editForm.status}
-                  onValueChange={(value) =>
-                    setEditForm({ ...editForm, status: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {statuses.map((s) => (
-                      <SelectItem key={s} value={s}>
-                        {s}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label className="font-medium">End date</Label>
-                <Input
-                  type="date"
-                  value={editForm.endDate}
+              {/* Category-specific reference selection */}
+              {editForm.category === "Control" && (
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Select Control</Label>
+                  <Select
+                    value={editForm.controlId}
+                    onValueChange={(value) =>
+                      setEditForm({ ...editForm, controlId: value })
+                    }
+                  >
+                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                      <SelectValue placeholder="Select control" />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4}>
+                      {controls.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.controlId} - {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {editForm.category === "Policy" && (
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Select Policy</Label>
+                  <Select
+                    value={editForm.policyId}
+                    onValueChange={(value) =>
+                      setEditForm({ ...editForm, policyId: value })
+                    }
+                  >
+                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                      <SelectValue placeholder="Select policy" />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4}>
+                      {policies.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.code} - {p.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {editForm.category === "Risk" && (
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Select Risk</Label>
+                  <Select
+                    value={editForm.riskId}
+                    onValueChange={(value) =>
+                      setEditForm({ ...editForm, riskId: value })
+                    }
+                  >
+                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                      <SelectValue placeholder="Select risk" />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4}>
+                      {risks.map((r) => (
+                        <SelectItem key={r.id} value={r.id}>
+                          {r.riskCode} - {r.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Reason For Exception</Label>
+                <Textarea
+                  value={editForm.description}
                   onChange={(e) =>
-                    setEditForm({ ...editForm, endDate: e.target.value })
+                    setEditForm({
+                      ...editForm,
+                      description: e.target.value,
+                    })
                   }
+                  placeholder="Enter reason for exception"
+                  rows={3}
+                  className="mt-1.5 w-full bg-white"
                 />
               </div>
-            </div>
 
-            <div className="flex justify-end gap-2 pt-4">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setEditDialogOpen(false);
-                  setSelectedException(null);
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleEdit}
-                disabled={!editForm.name || !editForm.category}
-              >
-                Update
-              </Button>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Department</Label>
+                  <Select
+                    value={editForm.departmentId}
+                    onValueChange={(value) =>
+                      setEditForm({ ...editForm, departmentId: value, approverId: "" })
+                    }
+                  >
+                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                      <SelectValue placeholder="Select department" />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4}>
+                      {departments.map((d) => (
+                        <SelectItem key={d.id} value={d.id}>
+                          {d.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Select Approver</Label>
+                  <Select
+                    value={editForm.approverId}
+                    onValueChange={(value) =>
+                      setEditForm({ ...editForm, approverId: value })
+                    }
+                    disabled={!editForm.departmentId}
+                  >
+                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                      <SelectValue placeholder={editForm.departmentId ? "Select approver" : "Select department first"} />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4}>
+                      {users
+                        .filter((u) =>
+                          u.departmentId === editForm.departmentId &&
+                          u.userRoles?.some((ur) => ur.role.name === "DepartmentReviewer")
+                        )
+                        .map((u) => (
+                          <SelectItem key={u.id} value={u.id}>
+                            {u.fullName || u.name}
+                          </SelectItem>
+                        ))}
+                      {users.filter((u) =>
+                        u.departmentId === editForm.departmentId &&
+                        u.userRoles?.some((ur) => ur.role.name === "DepartmentReviewer")
+                      ).length === 0 && editForm.departmentId && (
+                        <div className="px-2 py-1.5 text-sm text-slate-500">
+                          No department reviewers found
+                        </div>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Status</Label>
+                  <Select
+                    value={editForm.status}
+                    onValueChange={(value) =>
+                      setEditForm({ ...editForm, status: value })
+                    }
+                  >
+                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4}>
+                      {statuses.map((s) => (
+                        <SelectItem key={s} value={s}>
+                          {s}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">End Date</Label>
+                  <div className="mt-1.5">
+                    <DatePicker
+                      value={editForm.endDate}
+                      onChange={(date) =>
+                        setEditForm({
+                          ...editForm,
+                          endDate: date ? date.toISOString().split("T")[0] : "",
+                        })
+                      }
+                      placeholder="Select end date"
+                      className="w-full bg-white"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
+          </div>
+
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setEditDialogOpen(false);
+                setSelectedException(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleEdit}
+              disabled={!editForm.name || !editForm.category}
+            >
+              Save
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -1341,23 +1384,5 @@ function ExceptionsPageContent() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  );
-}
-
-export default function ExceptionsPage() {
-  return (
-    <Suspense fallback={
-      <div className="flex items-center justify-center h-[60vh]">
-        <div className="flex flex-col items-center gap-4">
-          <div className="relative">
-            <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
-            <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
-          </div>
-          <p className="text-sm text-slate-500 font-medium">Loading exceptions...</p>
-        </div>
-      </div>
-    }>
-      <ExceptionsPageContent />
-    </Suspense>
   );
 }

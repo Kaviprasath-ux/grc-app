@@ -3,8 +3,7 @@
 import { useState, useEffect, Suspense, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Download } from "lucide-react";
+import { ChevronLeft, Download } from "lucide-react";
 import {
   PieChart,
   Pie,
@@ -209,23 +208,19 @@ function ManagementReportContent() {
   }
 
   return (
-    <div className="p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
+    <div className="space-y-6">
+      {/* Page Header with Back Button */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
           <Button
             variant="ghost"
-            size="sm"
+            size="icon"
+            className="h-9 w-9 text-slate-600 hover:text-slate-800"
             onClick={() => router.push("/organization/reports")}
-            className="flex items-center gap-2"
           >
-            <ArrowLeft className="h-4 w-4" />
-            Back
+            <ChevronLeft className="h-5 w-5" />
           </Button>
-          <div>
-            <span className="text-sm text-muted-foreground">Report</span>
-            <h1 className="text-xl font-semibold">Management Report</h1>
-          </div>
+          <h1 className="text-2xl font-bold text-slate-800">Management Report</h1>
         </div>
         <Button onClick={handleDownloadReport}>
           <Download className="h-4 w-4 mr-2" />
@@ -234,17 +229,21 @@ function ManagementReportContent() {
       </div>
 
       {/* Report Content */}
-      <div ref={reportRef} className="space-y-6 bg-white">
-        <h2 className="text-lg font-semibold border-b pb-2">Process Management Report</h2>
+      <div ref={reportRef} className="space-y-6">
+        {/* Report Title Card */}
+        <div className="bg-white rounded-xl border border-slate-200 px-6 py-4">
+          <h2 className="text-lg font-semibold text-slate-800">Process Management Report</h2>
+          <p className="text-sm text-slate-500 mt-1">Generated on {new Date().toLocaleDateString()}</p>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Process by Department - Pie Chart */}
           {selectedOptions.includes("process-by-department") && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Process by Department</CardTitle>
-              </CardHeader>
-              <CardContent>
+            <div className="bg-white rounded-xl border border-slate-200">
+              <div className="px-6 py-4 border-b border-slate-100">
+                <h3 className="text-base font-semibold text-slate-800">Process by Department</h3>
+              </div>
+              <div className="p-6">
                 {processByDepartmentData.length > 0 ? (
                   <ResponsiveContainer width="100%" height={250}>
                     <PieChart>
@@ -266,19 +265,19 @@ function ManagementReportContent() {
                     </PieChart>
                   </ResponsiveContainer>
                 ) : (
-                  <p className="text-sm text-muted-foreground text-center py-8">No data available</p>
+                  <p className="text-sm text-slate-500 text-center py-8">No data available</p>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           )}
 
           {/* Process by Criticality - Pie Chart */}
           {selectedOptions.includes("process-by-criticality") && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Process by Criticality</CardTitle>
-              </CardHeader>
-              <CardContent>
+            <div className="bg-white rounded-xl border border-slate-200">
+              <div className="px-6 py-4 border-b border-slate-100">
+                <h3 className="text-base font-semibold text-slate-800">Process by Criticality</h3>
+              </div>
+              <div className="p-6">
                 {processByCriticalityData.length > 0 ? (
                   <ResponsiveContainer width="100%" height={250}>
                     <PieChart>
@@ -300,19 +299,19 @@ function ManagementReportContent() {
                     </PieChart>
                   </ResponsiveContainer>
                 ) : (
-                  <p className="text-sm text-muted-foreground text-center py-8">No data available</p>
+                  <p className="text-sm text-slate-500 text-center py-8">No data available</p>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           )}
 
           {/* KPI Measurement by Department - Pie Chart */}
           {selectedOptions.includes("kpi-by-measurement") && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">KPI Measurement by Department</CardTitle>
-              </CardHeader>
-              <CardContent>
+            <div className="bg-white rounded-xl border border-slate-200">
+              <div className="px-6 py-4 border-b border-slate-100">
+                <h3 className="text-base font-semibold text-slate-800">KPI Measurement by Department</h3>
+              </div>
+              <div className="p-6">
                 {kpiByMeasurementData.length > 0 ? (
                   <ResponsiveContainer width="100%" height={250}>
                     <PieChart>
@@ -334,19 +333,19 @@ function ManagementReportContent() {
                     </PieChart>
                   </ResponsiveContainer>
                 ) : (
-                  <p className="text-sm text-muted-foreground text-center py-8">No KPI data available</p>
+                  <p className="text-sm text-slate-500 text-center py-8">No KPI data available</p>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           )}
 
           {/* Process by Risk - Pie Chart */}
           {selectedOptions.includes("process-by-risk") && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Process by Risk</CardTitle>
-              </CardHeader>
-              <CardContent>
+            <div className="bg-white rounded-xl border border-slate-200">
+              <div className="px-6 py-4 border-b border-slate-100">
+                <h3 className="text-base font-semibold text-slate-800">Process by Risk</h3>
+              </div>
+              <div className="p-6">
                 {processByRiskData.length > 0 ? (
                   <ResponsiveContainer width="100%" height={250}>
                     <PieChart>
@@ -368,56 +367,54 @@ function ManagementReportContent() {
                     </PieChart>
                   </ResponsiveContainer>
                 ) : (
-                  <p className="text-sm text-muted-foreground text-center py-8">No risk data available</p>
+                  <p className="text-sm text-slate-500 text-center py-8">No risk data available</p>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           )}
         </div>
 
         {/* Top 5 Process Risk - List */}
         {selectedOptions.includes("top-5-process-risk") && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Top 5 Process Risk</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-2 text-sm font-medium">#</th>
-                    <th className="text-left p-2 text-sm font-medium">Process Name</th>
-                    <th className="text-left p-2 text-sm font-medium">Risk Score</th>
+          <div className="bg-white rounded-xl border border-slate-200">
+            <div className="px-6 py-4 border-b border-slate-100">
+              <h3 className="text-base font-semibold text-slate-800">Top 5 Process Risk</h3>
+            </div>
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-slate-100 bg-slate-50/50">
+                  <th className="text-left py-4 pl-4 text-xs font-semibold text-slate-600">#</th>
+                  <th className="text-left py-4 text-xs font-semibold text-slate-600">Process Name</th>
+                  <th className="text-left py-4 pr-4 text-xs font-semibold text-slate-600">Risk Score</th>
+                </tr>
+              </thead>
+              <tbody>
+                {top5ProcessRisk.map((process, idx) => (
+                  <tr key={process.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                    <td className="py-4 pl-4 text-sm text-slate-700">#{idx + 1}</td>
+                    <td className="py-4 text-sm text-slate-700">{process.name}</td>
+                    <td className="py-4 pr-4 text-sm text-slate-700">{process.riskScore || 0}</td>
                   </tr>
-                </thead>
-                <tbody>
-                  {top5ProcessRisk.map((process, idx) => (
-                    <tr key={process.id} className="border-b">
-                      <td className="p-2 text-sm">#{idx + 1}</td>
-                      <td className="p-2 text-sm">{process.name}</td>
-                      <td className="p-2 text-sm">{process.riskScore || 0}</td>
-                    </tr>
-                  ))}
-                  {top5ProcessRisk.length === 0 && (
-                    <tr>
-                      <td colSpan={3} className="p-4 text-center text-muted-foreground">
-                        No process risk data available
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </CardContent>
-          </Card>
+                ))}
+                {top5ProcessRisk.length === 0 && (
+                  <tr>
+                    <td colSpan={3} className="py-8 text-center text-slate-500">
+                      No process risk data available
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         )}
 
         {/* KPI Performance by Department - Bar Chart (Full Width at Bottom) */}
         {selectedOptions.includes("kpi-by-performance") && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">KPI Performance by Department</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <div className="bg-white rounded-xl border border-slate-200">
+            <div className="px-6 py-4 border-b border-slate-100">
+              <h3 className="text-base font-semibold text-slate-800">KPI Performance by Department</h3>
+            </div>
+            <div className="p-6">
               {kpiByPerformanceData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart
@@ -437,29 +434,29 @@ function ManagementReportContent() {
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
-                <p className="text-sm text-muted-foreground text-center py-8">No KPI performance data available</p>
+                <p className="text-sm text-slate-500 text-center py-8">No KPI performance data available</p>
               )}
               {/* Legend */}
               <div className="flex gap-4 mt-4 text-xs justify-center">
                 <div className="flex items-center gap-1">
                   <div className="w-3 h-3 bg-orange-500 rounded"></div>
-                  <span>Overdue</span>
+                  <span className="text-slate-600">Overdue</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <div className="w-3 h-3 bg-green-500 rounded"></div>
-                  <span>Achieved</span>
+                  <span className="text-slate-600">Achieved</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <div className="w-3 h-3 bg-red-500 rounded"></div>
-                  <span>Missed</span>
+                  <span className="text-slate-600">Missed</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <div className="w-3 h-3 bg-blue-500 rounded"></div>
-                  <span>Scheduled</span>
+                  <span className="text-slate-600">Scheduled</span>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
       </div>
     </div>

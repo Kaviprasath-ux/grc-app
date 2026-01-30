@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Plus, Pencil, Trash2, ArrowLeft, Search, Upload, Download, FolderTree, Clock, Settings2, Lock, CheckCircle, RefreshCw, Layers, FolderOpen, Group } from "lucide-react";
-import { PageHeader, DataGrid } from "@/components/shared";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { DataGrid } from "@/components/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,6 +25,13 @@ import {
 } from "@/components/ui/dialog";
 import { ColumnDef } from "@tanstack/react-table";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 interface AssetCategory {
   id: string;
@@ -101,21 +107,18 @@ const settingCategories = [
     title: "CIA",
     description: "Configure CIA ratings and scoring",
     icon: Settings2,
-    iconElement: <Settings2 className="h-12 w-12" />,
   },
   {
     id: "asset",
     title: "Asset",
     description: "Manage asset entities and configurations",
     icon: FolderTree,
-    iconElement: <FolderTree className="h-12 w-12" />,
   },
   {
     id: "lifecycle",
     title: "Lifecycle Status",
     description: "Define asset lifecycle stages",
     icon: Clock,
-    iconElement: <Clock className="h-12 w-12" />,
   },
 ];
 
@@ -126,35 +129,30 @@ const entitySubCategories = [
     title: "Asset",
     description: "View and manage all assets",
     icon: FolderOpen,
-    iconElement: <FolderOpen className="h-12 w-12" />,
   },
   {
     id: "subcategories",
     title: "Asset Sub Category",
     description: "Sub-categories under main categories",
     icon: Layers,
-    iconElement: <Layers className="h-12 w-12" />,
   },
   {
     id: "groups",
     title: "Asset Group",
     description: "Logical groupings for assets",
     icon: Group,
-    iconElement: <Group className="h-12 w-12" />,
   },
   {
     id: "categories",
     title: "Asset Category",
     description: "Top-level asset categories (e.g., Hardware, Software)",
     icon: FolderOpen,
-    iconElement: <FolderOpen className="h-12 w-12" />,
   },
   {
     id: "sensitivity",
     title: "Asset Sensitivity",
     description: "Asset sensitivity levels",
     icon: Lock,
-    iconElement: <Lock className="h-12 w-12" />,
   },
 ];
 
@@ -874,9 +872,8 @@ export default function AssetSettingsPage() {
   };
 
   // Get export handler based on entity type
-  const getExportHandler = (tab?: string) => {
-    const activeTab = tab || entitySubTab;
-    switch (activeTab) {
+  const getExportHandler = () => {
+    switch (entitySubTab) {
       case "categories": return handleExportCategories;
       case "subcategories": return handleExportSubCategories;
       case "groups": return handleExportGroups;
@@ -1197,18 +1194,22 @@ export default function AssetSettingsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Loading...</p>
+      <div className="flex items-center justify-center h-[60vh]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative">
+            <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
+            <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+          </div>
+          <p className="text-sm text-slate-500 font-medium">Loading settings...</p>
+        </div>
       </div>
     );
   }
 
-  // Show entity sub-category list with sidebar (Asset, Asset Sub Category, Asset Group, Asset Category, Asset Sensitivity)
-  if (activeCategory === "asset") {
-    // Default to first item if none selected
-    const currentTab = entitySubTab || "asset-list";
+  // Show entity sub-category list (Asset, Asset Sub Category, Asset Group, Asset Category, Asset Sensitivity)
+  if (activeCategory === "asset" && entitySubTab) {
     const getData = () => {
-      switch (currentTab) {
+      switch (entitySubTab) {
         case "asset-list":
           return assets.filter(a => a.name.toLowerCase().includes(searchTerm.toLowerCase()) || a.assetId.toLowerCase().includes(searchTerm.toLowerCase()));
         case "categories":
@@ -1225,7 +1226,7 @@ export default function AssetSettingsPage() {
     };
 
     const getColumns = () => {
-      switch (currentTab) {
+      switch (entitySubTab) {
         case "asset-list":
           return assetSettingsColumns;
         case "categories":
@@ -1242,7 +1243,7 @@ export default function AssetSettingsPage() {
     };
 
     const getAddButtonLabel = () => {
-      switch (currentTab) {
+      switch (entitySubTab) {
         case "asset-list": return "New Asset";
         case "subcategories": return "New Asset Sub Category";
         case "groups": return "New Asset Group";
@@ -1252,139 +1253,100 @@ export default function AssetSettingsPage() {
       }
     };
 
-    const currentEntitySub = entitySubCategories.find(s => s.id === currentTab);
-
     return (
       <div className="space-y-6">
-        <PageHeader
-          title="Asset Settings"
-          backAction={{
-            label: "Back",
-            variant: "outline",
-            icon: ArrowLeft,
-            onClick: () => {
-              setEntitySubTab(null);
-              setActiveCategory(null);
-            },
-          }}
-        />
+        {/* Page Header with Back Button */}
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => setEntitySubTab(null)}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <h1 className="text-2xl font-bold text-slate-800">{currentEntitySub?.title || "Settings"}</h1>
+        </div>
 
-        <div className="flex gap-6">
-          {/* Left Sidebar - Entity List */}
-          <div className="w-64 flex-shrink-0">
-            <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
-              {entitySubCategories.map((sub) => {
-                const Icon = sub.icon;
-                const isActive = currentTab === sub.id;
-                return (
-                  <button
-                    key={sub.id}
-                    onClick={() => {
-                      setEntitySubTab(sub.id);
-                      setSearchTerm("");
-                    }}
-                    className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors border-b border-slate-100 last:border-b-0 ${
-                      isActive
-                        ? "bg-blue-50 text-blue-700 border-l-4 border-l-blue-600"
-                        : "hover:bg-slate-50 text-slate-700"
-                    }`}
-                  >
-                    <Icon className={`h-5 w-5 ${isActive ? "text-blue-600" : "text-slate-400"}`} />
-                    <span className="font-medium text-sm">{sub.title}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Right Content Area */}
-          <div className="flex-1 space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 w-[250px]"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                {currentTab === "categories" && (
-                  <label>
-                    <input
-                      type="file"
-                      accept=".csv"
-                      onChange={handleImportCategories}
-                      className="hidden"
-                    />
-                    <Button variant="outline" size="sm" asChild>
-                      <span>
-                        <Upload className="h-4 w-4 mr-2" />
-                        Import
-                      </span>
-                    </Button>
-                  </label>
-                )}
-                <Button variant="outline" size="sm" onClick={getExportHandler(currentTab)}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Export
-                </Button>
-                <Button onClick={() => {
-                  if (currentTab === "categories") {
-                    setCategoryForm({ name: "", description: "", status: "Active" });
-                  } else if (currentTab === "subcategories") {
-                    setSubCategoryForm({ name: "", description: "", categoryId: "", status: "Active" });
-                  } else if (currentTab === "groups") {
-                    setGroupForm({ name: "", description: "", status: "Active" });
-                  } else if (currentTab === "sensitivity") {
-                    setSensitivityForm({ name: "", description: "" });
-                  } else if (currentTab === "asset-list") {
-                    setAssetForm({
-                      name: "",
-                      assetId: "",
-                      location: "",
-                      categoryId: "",
-                      subCategoryId: "",
-                      groupId: "",
-                      sensitivityId: "",
-                      lifecycleStatusId: "",
-                      value: 0
-                    });
-                  }
-                  setIsAddOpen(true);
-                }}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  {getAddButtonLabel()}
-                </Button>
-              </div>
-            </div>
-
-            <DataGrid
-              columns={getColumns() as ColumnDef<AssetCategory | AssetSubCategory | AssetGroup | AssetSensitivity | Asset>[]}
-              data={getData()}
-              hideSearch={true}
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Input
+              placeholder="Search..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 w-[250px] bg-white border-slate-200"
             />
+          </div>
+          <div className="flex items-center gap-2">
+            {entitySubTab === "categories" && (
+              <label>
+                <input
+                  type="file"
+                  accept=".csv"
+                  onChange={handleImportCategories}
+                  className="hidden"
+                />
+                <Button variant="outline" size="sm" asChild>
+                  <span>
+                    <Download className="h-4 w-4 mr-2" />
+                    Import
+                  </span>
+                </Button>
+              </label>
+            )}
+            <Button variant="outline" size="sm" onClick={getExportHandler()}>
+              <Upload className="h-4 w-4 mr-2" />
+              Export
+            </Button>
+            <Button size="sm" onClick={() => {
+              if (entitySubTab === "categories") {
+                setCategoryForm({ name: "", description: "", status: "Active" });
+              } else if (entitySubTab === "subcategories") {
+                setSubCategoryForm({ name: "", description: "", categoryId: "", status: "Active" });
+              } else if (entitySubTab === "groups") {
+                setGroupForm({ name: "", description: "", status: "Active" });
+              } else if (entitySubTab === "sensitivity") {
+                setSensitivityForm({ name: "", description: "" });
+              } else if (entitySubTab === "asset-list") {
+                setAssetForm({
+                  name: "",
+                  assetId: "",
+                  location: "",
+                  categoryId: "",
+                  subCategoryId: "",
+                  groupId: "",
+                  sensitivityId: "",
+                  lifecycleStatusId: "",
+                  value: 0
+                });
+              }
+              setIsAddOpen(true);
+            }}>
+              <Plus className="h-4 w-4 mr-2" />
+              {getAddButtonLabel()}
+            </Button>
           </div>
         </div>
 
+        <DataGrid
+          columns={getColumns() as ColumnDef<AssetCategory | AssetSubCategory | AssetGroup | AssetSensitivity | Asset>[]}
+          data={getData()}
+          hideSearch={true}
+        />
+
         {/* Add Dialog for Entity List */}
         <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto" onOpenAutoFocus={(e) => e.preventDefault()}>
             <DialogHeader>
               <DialogTitle>
-                Add {currentTab === "categories" ? "Category" :
-                     currentTab === "subcategories" ? "Sub Category" :
-                     currentTab === "groups" ? "Group" :
-                     currentTab === "sensitivity" ? "Sensitivity" :
-                     currentTab === "asset-list" ? "Asset" : "Item"}
+                Add {entitySubTab === "categories" ? "Category" :
+                     entitySubTab === "subcategories" ? "Sub Category" :
+                     entitySubTab === "groups" ? "Group" :
+                     entitySubTab === "sensitivity" ? "Sensitivity" :
+                     entitySubTab === "asset-list" ? "Asset" : "Item"}
               </DialogTitle>
               <DialogDescription>
                 Enter the details for the new item
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
-              {currentTab === "asset-list" && (
+              {entitySubTab === "asset-list" && (
                 <>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -1522,7 +1484,7 @@ export default function AssetSettingsPage() {
                 </>
               )}
 
-              {currentTab === "categories" && (
+              {entitySubTab === "categories" && (
                 <>
                   <div className="space-y-2">
                     <Label>Name *</Label>
@@ -1559,7 +1521,7 @@ export default function AssetSettingsPage() {
                 </>
               )}
 
-              {currentTab === "subcategories" && (
+              {entitySubTab === "subcategories" && (
                 <>
                   <div className="space-y-2">
                     <Label>Category *</Label>
@@ -1599,7 +1561,7 @@ export default function AssetSettingsPage() {
                 </>
               )}
 
-              {currentTab === "groups" && (
+              {entitySubTab === "groups" && (
                 <>
                   <div className="space-y-2">
                     <Label>Name *</Label>
@@ -1621,7 +1583,7 @@ export default function AssetSettingsPage() {
                 </>
               )}
 
-              {currentTab === "sensitivity" && (
+              {entitySubTab === "sensitivity" && (
                 <>
                   <div className="space-y-2">
                     <Label>Name *</Label>
@@ -1648,15 +1610,15 @@ export default function AssetSettingsPage() {
                 Cancel
               </Button>
               <Button onClick={() => {
-                if (currentTab === "asset-list") {
+                if (entitySubTab === "asset-list") {
                   handleAddAsset();
-                } else if (currentTab === "categories") {
+                } else if (entitySubTab === "categories") {
                   handleAddCategory();
-                } else if (currentTab === "subcategories") {
+                } else if (entitySubTab === "subcategories") {
                   handleAddSubCategory();
-                } else if (currentTab === "groups") {
+                } else if (entitySubTab === "groups") {
                   handleAddGroup();
-                } else if (currentTab === "sensitivity") {
+                } else if (entitySubTab === "sensitivity") {
                   handleAddSensitivity();
                 }
               }}>
@@ -1668,45 +1630,51 @@ export default function AssetSettingsPage() {
 
         {/* Edit Dialog for Entity List */}
         <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>
-                Edit {currentTab === "categories" ? "Category" :
-                      currentTab === "subcategories" ? "Sub Category" :
-                      currentTab === "groups" ? "Group" :
-                      currentTab === "sensitivity" ? "Sensitivity" : "Item"}
-              </DialogTitle>
-              <DialogDescription>
-                Update the details
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              {currentTab === "categories" && (
+          <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+            {/* Fixed Header */}
+            <div className="px-6 py-5 border-b border-slate-100">
+              <DialogHeader>
+                <DialogTitle className="text-lg font-semibold text-slate-800">
+                  Edit {entitySubTab === "categories" ? "Category" :
+                        entitySubTab === "subcategories" ? "Sub Category" :
+                        entitySubTab === "groups" ? "Group" :
+                        entitySubTab === "sensitivity" ? "Sensitivity" : "Item"}
+                </DialogTitle>
+                <DialogDescription>
+                  Update the details
+                </DialogDescription>
+              </DialogHeader>
+            </div>
+
+            {/* Content */}
+            <div className="px-6 py-6 space-y-5">
+              {entitySubTab === "categories" && (
                 <>
-                  <div className="space-y-2">
-                    <Label>Name *</Label>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Name *</Label>
                     <Input
                       value={categoryForm.name}
                       onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
                       placeholder="e.g., Hardware, Software, Data"
+                      className="mt-1.5"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label>Description</Label>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Description</Label>
                     <textarea
                       value={categoryForm.description}
                       onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
                       placeholder="Enter description"
-                      className="w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
+                      className="mt-1.5 w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label>Status</Label>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Status</Label>
                     <Select
                       value={categoryForm.status}
                       onValueChange={(value) => setCategoryForm({ ...categoryForm, status: value })}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="mt-1.5 w-full">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -1718,15 +1686,15 @@ export default function AssetSettingsPage() {
                 </>
               )}
 
-              {currentTab === "subcategories" && (
+              {entitySubTab === "subcategories" && (
                 <>
-                  <div className="space-y-2">
-                    <Label>Category *</Label>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Category *</Label>
                     <Select
                       value={subCategoryForm.categoryId}
                       onValueChange={(value) => setSubCategoryForm({ ...subCategoryForm, categoryId: value })}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="mt-1.5 w-full">
                         <SelectValue placeholder="Select category" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1738,120 +1706,186 @@ export default function AssetSettingsPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Name *</Label>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Name *</Label>
                     <Input
                       value={subCategoryForm.name}
                       onChange={(e) => setSubCategoryForm({ ...subCategoryForm, name: e.target.value })}
                       placeholder="e.g., Server, Firewall, Router"
+                      className="mt-1.5"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label>Description</Label>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Description</Label>
                     <textarea
                       value={subCategoryForm.description}
                       onChange={(e) => setSubCategoryForm({ ...subCategoryForm, description: e.target.value })}
                       placeholder="Enter description"
-                      className="w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
+                      className="mt-1.5 w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
                     />
                   </div>
                 </>
               )}
 
-              {currentTab === "groups" && (
+              {entitySubTab === "groups" && (
                 <>
-                  <div className="space-y-2">
-                    <Label>Name *</Label>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Name *</Label>
                     <Input
                       value={groupForm.name}
                       onChange={(e) => setGroupForm({ ...groupForm, name: e.target.value })}
                       placeholder="e.g., Security Tools, Payment Systems"
+                      className="mt-1.5"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label>Description</Label>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Description</Label>
                     <textarea
                       value={groupForm.description}
                       onChange={(e) => setGroupForm({ ...groupForm, description: e.target.value })}
                       placeholder="Enter description"
-                      className="w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
+                      className="mt-1.5 w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
                     />
                   </div>
                 </>
               )}
 
-              {currentTab === "sensitivity" && (
+              {entitySubTab === "sensitivity" && (
                 <>
-                  <div className="space-y-2">
-                    <Label>Name *</Label>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Name *</Label>
                     <Input
                       value={sensitivityForm.name}
                       onChange={(e) => setSensitivityForm({ ...sensitivityForm, name: e.target.value })}
                       placeholder="e.g., High, Medium, Low"
+                      className="mt-1.5"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label>Description</Label>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Description</Label>
                     <textarea
                       value={sensitivityForm.description}
                       onChange={(e) => setSensitivityForm({ ...sensitivityForm, description: e.target.value })}
                       placeholder="Enter description"
-                      className="w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
+                      className="mt-1.5 w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
                     />
                   </div>
                 </>
               )}
             </div>
-            <DialogFooter>
+
+            {/* Fixed Footer */}
+            <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
               <Button variant="outline" onClick={() => setIsEditOpen(false)}>
                 Cancel
               </Button>
               <Button onClick={() => {
-                if (currentTab === "categories") {
+                if (entitySubTab === "categories") {
                   handleEditCategory();
-                } else if (currentTab === "subcategories") {
+                } else if (entitySubTab === "subcategories") {
                   handleEditSubCategory();
-                } else if (currentTab === "groups") {
+                } else if (entitySubTab === "groups") {
                   handleEditGroup();
-                } else if (currentTab === "sensitivity") {
+                } else if (entitySubTab === "sensitivity") {
                   handleEditSensitivity();
                 }
               }}>
                 Save Changes
               </Button>
-            </DialogFooter>
+            </div>
           </DialogContent>
         </Dialog>
 
         {/* Delete Confirmation Dialog */}
         <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Confirm Delete</DialogTitle>
-              <DialogDescription>
-                Are you sure you want to delete this item? This action cannot be undone.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
+          <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+            {/* Fixed Header */}
+            <div className="px-6 py-5 border-b border-slate-100">
+              <DialogHeader>
+                <DialogTitle className="text-lg font-semibold text-slate-800">Confirm Delete</DialogTitle>
+                <DialogDescription>
+                  Are you sure you want to delete this item? This action cannot be undone.
+                </DialogDescription>
+              </DialogHeader>
+            </div>
+
+            {/* Fixed Footer */}
+            <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
               <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>
                 Cancel
               </Button>
               <Button variant="destructive" onClick={() => {
-                if (currentTab === "categories") {
+                if (entitySubTab === "categories") {
                   handleDeleteCategory();
-                } else if (currentTab === "subcategories") {
+                } else if (entitySubTab === "subcategories") {
                   handleDeleteSubCategory();
-                } else if (currentTab === "groups") {
+                } else if (entitySubTab === "groups") {
                   handleDeleteGroup();
-                } else if (currentTab === "sensitivity") {
+                } else if (entitySubTab === "sensitivity") {
                   handleDeleteSensitivity();
                 }
               }}>
                 Delete
               </Button>
-            </DialogFooter>
+            </div>
           </DialogContent>
         </Dialog>
+      </div>
+    );
+  }
+
+  // Show entity sub-navigation (Asset, Asset Sub Category, Asset Group, Asset Category, Asset Sensitivity)
+  if (activeCategory === "asset") {
+    return (
+      <div className="space-y-6">
+        {/* Page Header */}
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => setActiveCategory(null)}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <h1 className="text-2xl font-bold text-slate-800">Asset Settings</h1>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {entitySubCategories.map((sub) => {
+            const Icon = sub.icon;
+            const itemCount = getEntitySubCount(sub.id);
+
+            return (
+              <div
+                key={sub.id}
+                className="bg-white rounded-xl border border-slate-200 p-5"
+              >
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="p-3 bg-blue-50 rounded-lg">
+                    <Icon className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <h4 className="text-base font-semibold text-slate-800">{sub.title}</h4>
+                    <p className="text-sm text-slate-500">
+                      {sub.description}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+                  <span className="text-sm text-slate-500">
+                    {itemCount} {itemCount === 1 ? "item" : "items"}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setEntitySubTab(sub.id);
+                      setSearchTerm("");
+                    }}
+                  >
+                    Manage
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     );
   }
@@ -1864,15 +1898,13 @@ export default function AssetSettingsPage() {
 
     return (
       <div className="space-y-6">
-        <PageHeader
-          title="Lifecycle Status"
-          backAction={{
-            label: "Back",
-            variant: "outline",
-            icon: ArrowLeft,
-            onClick: () => setActiveCategory(null),
-          }}
-        />
+        {/* Page Header */}
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => setActiveCategory(null)}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <h1 className="text-2xl font-bold text-slate-800">Lifecycle Status</h1>
+        </div>
 
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="relative">
@@ -1881,7 +1913,7 @@ export default function AssetSettingsPage() {
               placeholder="Search..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 w-[250px]"
+              className="pl-10 w-[250px] bg-white border-slate-200"
             />
           </div>
           <div className="flex items-center gap-2">
@@ -1894,16 +1926,16 @@ export default function AssetSettingsPage() {
               />
               <Button variant="outline" size="sm" asChild>
                 <span>
-                  <Upload className="h-4 w-4 mr-2" />
+                  <Download className="h-4 w-4 mr-2" />
                   Import
                 </span>
               </Button>
             </label>
             <Button variant="outline" size="sm" onClick={handleExportLifecycleStatuses}>
-              <Download className="h-4 w-4 mr-2" />
+              <Upload className="h-4 w-4 mr-2" />
               Export
             </Button>
-            <Button onClick={() => {
+            <Button size="sm" onClick={() => {
               setLifecycleForm({ name: "", description: "", order: lifecycleStatuses.length });
               setIsAddOpen(true);
             }}>
@@ -1921,114 +1953,137 @@ export default function AssetSettingsPage() {
 
         {/* Add Lifecycle Status Dialog */}
         <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add Lifecycle Status</DialogTitle>
-              <DialogDescription>
-                Enter the details for the new lifecycle status
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label>Name *</Label>
+          <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+            {/* Fixed Header */}
+            <div className="px-6 py-5 border-b border-slate-100">
+              <DialogHeader>
+                <DialogTitle className="text-lg font-semibold text-slate-800">Add Lifecycle Status</DialogTitle>
+                <DialogDescription>
+                  Enter the details for the new lifecycle status
+                </DialogDescription>
+              </DialogHeader>
+            </div>
+
+            {/* Content */}
+            <div className="px-6 py-6 space-y-5">
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Name *</Label>
                 <Input
                   value={lifecycleForm.name}
                   onChange={(e) => setLifecycleForm({ ...lifecycleForm, name: e.target.value })}
                   placeholder="e.g., Active, In Use, Retired"
+                  className="mt-1.5"
                 />
               </div>
-              <div className="space-y-2">
-                <Label>Description</Label>
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Description</Label>
                 <textarea
                   value={lifecycleForm.description}
                   onChange={(e) => setLifecycleForm({ ...lifecycleForm, description: e.target.value })}
                   placeholder="Enter description"
-                  className="w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
+                  className="mt-1.5 w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
                 />
               </div>
-              <div className="space-y-2">
-                <Label>Order</Label>
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Order</Label>
                 <Input
                   type="number"
                   value={lifecycleForm.order}
                   onChange={(e) => setLifecycleForm({ ...lifecycleForm, order: parseInt(e.target.value) || 0 })}
+                  className="mt-1.5"
                 />
               </div>
             </div>
-            <DialogFooter>
+
+            {/* Fixed Footer */}
+            <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
               <Button variant="outline" onClick={() => setIsAddOpen(false)}>
                 Cancel
               </Button>
               <Button onClick={handleAddLifecycle}>
                 Save
               </Button>
-            </DialogFooter>
+            </div>
           </DialogContent>
         </Dialog>
 
         {/* Edit Lifecycle Status Dialog */}
         <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Edit Lifecycle Status</DialogTitle>
-              <DialogDescription>
-                Update the lifecycle status details
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label>Name *</Label>
+          <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+            {/* Fixed Header */}
+            <div className="px-6 py-5 border-b border-slate-100">
+              <DialogHeader>
+                <DialogTitle className="text-lg font-semibold text-slate-800">Edit Lifecycle Status</DialogTitle>
+                <DialogDescription>
+                  Update the lifecycle status details
+                </DialogDescription>
+              </DialogHeader>
+            </div>
+
+            {/* Content */}
+            <div className="px-6 py-6 space-y-5">
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Name *</Label>
                 <Input
                   value={lifecycleForm.name}
                   onChange={(e) => setLifecycleForm({ ...lifecycleForm, name: e.target.value })}
+                  className="mt-1.5"
                 />
               </div>
-              <div className="space-y-2">
-                <Label>Description</Label>
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Description</Label>
                 <textarea
                   value={lifecycleForm.description}
                   onChange={(e) => setLifecycleForm({ ...lifecycleForm, description: e.target.value })}
                   placeholder="Enter description"
-                  className="w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
+                  className="mt-1.5 w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
                 />
               </div>
-              <div className="space-y-2">
-                <Label>Order</Label>
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Order</Label>
                 <Input
                   type="number"
                   value={lifecycleForm.order}
                   onChange={(e) => setLifecycleForm({ ...lifecycleForm, order: parseInt(e.target.value) || 0 })}
+                  className="mt-1.5"
                 />
               </div>
             </div>
-            <DialogFooter>
+
+            {/* Fixed Footer */}
+            <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
               <Button variant="outline" onClick={() => setIsEditOpen(false)}>
                 Cancel
               </Button>
               <Button onClick={handleEditLifecycle}>
                 Save
               </Button>
-            </DialogFooter>
+            </div>
           </DialogContent>
         </Dialog>
 
         {/* Delete Lifecycle Status Dialog */}
         <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Delete Lifecycle Status</DialogTitle>
-              <DialogDescription>
-                Are you sure you want to delete this lifecycle status? This action cannot be undone.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
+          <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+            {/* Fixed Header */}
+            <div className="px-6 py-5 border-b border-slate-100">
+              <DialogHeader>
+                <DialogTitle className="text-lg font-semibold text-slate-800">Delete Lifecycle Status</DialogTitle>
+                <DialogDescription>
+                  Are you sure you want to delete this lifecycle status? This action cannot be undone.
+                </DialogDescription>
+              </DialogHeader>
+            </div>
+
+            {/* Fixed Footer */}
+            <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
               <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>
                 Cancel
               </Button>
               <Button variant="destructive" onClick={handleDeleteLifecycle}>
                 Delete
               </Button>
-            </DialogFooter>
+            </div>
           </DialogContent>
         </Dialog>
       </div>
@@ -2039,15 +2094,13 @@ export default function AssetSettingsPage() {
   if (activeCategory === "cia") {
     return (
       <div className="space-y-6">
-        <PageHeader
-          title="CIA Configuration"
-          backAction={{
-            label: "Back",
-            variant: "outline",
-            icon: ArrowLeft,
-            onClick: () => setActiveCategory(null),
-          }}
-        />
+        {/* Page Header */}
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => setActiveCategory(null)}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <h1 className="text-2xl font-bold text-slate-800">CIA Configuration</h1>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Confidentiality */}
@@ -2369,54 +2422,63 @@ export default function AssetSettingsPage() {
 
         {/* Scoring Config Edit Dialog */}
         <Dialog open={isScoringEditOpen} onOpenChange={setIsScoringEditOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Edit Scoring Configuration</DialogTitle>
-              <DialogDescription>
-                Update the score range and color for this criticality level
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label>Criticality Level</Label>
+          <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+            {/* Fixed Header */}
+            <div className="px-6 py-5 border-b border-slate-100">
+              <DialogHeader>
+                <DialogTitle className="text-lg font-semibold text-slate-800">Edit Scoring Configuration</DialogTitle>
+                <DialogDescription>
+                  Update the score range and color for this criticality level
+                </DialogDescription>
+              </DialogHeader>
+            </div>
+
+            {/* Content */}
+            <div className="px-6 py-6 space-y-5">
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Criticality Level</Label>
                 <Input
                   value={scoringConfigForm.level}
                   onChange={(e) => setScoringConfigForm({ ...scoringConfigForm, level: e.target.value })}
                   placeholder="e.g., Critical, High, Medium, Low"
+                  className="mt-1.5"
                 />
               </div>
               {scoringCalculationType === "high_of_all" ? (
-                <div className="space-y-2">
-                  <Label>High range</Label>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">High range</Label>
                   <Input
                     type="number"
                     value={scoringConfigForm.maxScore}
                     onChange={(e) => setScoringConfigForm({ ...scoringConfigForm, maxScore: parseInt(e.target.value) || 0 })}
+                    className="mt-1.5"
                   />
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Low range</Label>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Low range</Label>
                     <Input
                       type="number"
                       value={scoringConfigForm.minScore}
                       onChange={(e) => setScoringConfigForm({ ...scoringConfigForm, minScore: parseInt(e.target.value) || 0 })}
+                      className="mt-1.5"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label>High range</Label>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">High range</Label>
                     <Input
                       type="number"
                       value={scoringConfigForm.maxScore}
                       onChange={(e) => setScoringConfigForm({ ...scoringConfigForm, maxScore: parseInt(e.target.value) || 0 })}
+                      className="mt-1.5"
                     />
                   </div>
                 </div>
               )}
-              <div className="space-y-2">
-                <Label>Color</Label>
-                <div className="flex items-center gap-2">
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Color</Label>
+                <div className="flex items-center gap-2 mt-1.5">
                   <input
                     type="color"
                     value={scoringConfigForm.color}
@@ -2432,65 +2494,76 @@ export default function AssetSettingsPage() {
                 </div>
               </div>
             </div>
-            <DialogFooter>
+
+            {/* Fixed Footer */}
+            <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
               <Button variant="outline" onClick={() => setIsScoringEditOpen(false)}>
                 Cancel
               </Button>
               <Button onClick={handleUpdateScoringConfig}>Save Changes</Button>
-            </DialogFooter>
+            </div>
           </DialogContent>
         </Dialog>
 
         {/* Scoring Config Add Dialog */}
         <Dialog open={isScoringAddOpen} onOpenChange={setIsScoringAddOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add Scoring Configuration</DialogTitle>
-              <DialogDescription>
-                Add a new scoring configuration for criticality rating
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label>Rating *</Label>
+          <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+            {/* Fixed Header */}
+            <div className="px-6 py-5 border-b border-slate-100">
+              <DialogHeader>
+                <DialogTitle className="text-lg font-semibold text-slate-800">Add Scoring Configuration</DialogTitle>
+                <DialogDescription>
+                  Add a new scoring configuration for criticality rating
+                </DialogDescription>
+              </DialogHeader>
+            </div>
+
+            {/* Content */}
+            <div className="px-6 py-6 space-y-5">
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Rating *</Label>
                 <Input
                   value={scoringConfigForm.level}
                   onChange={(e) => setScoringConfigForm({ ...scoringConfigForm, level: e.target.value })}
                   placeholder="e.g., Critical, High, Medium, Low"
+                  className="mt-1.5"
                 />
               </div>
               {scoringCalculationType === "high_of_all" ? (
-                <div className="space-y-2">
-                  <Label>High range</Label>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">High range</Label>
                   <Input
                     type="number"
                     value={scoringConfigForm.maxScore}
                     onChange={(e) => setScoringConfigForm({ ...scoringConfigForm, maxScore: parseInt(e.target.value) || 0 })}
+                    className="mt-1.5"
                   />
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Low range</Label>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Low range</Label>
                     <Input
                       type="number"
                       value={scoringConfigForm.minScore}
                       onChange={(e) => setScoringConfigForm({ ...scoringConfigForm, minScore: parseInt(e.target.value) || 0 })}
+                      className="mt-1.5"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label>High range</Label>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">High range</Label>
                     <Input
                       type="number"
                       value={scoringConfigForm.maxScore}
                       onChange={(e) => setScoringConfigForm({ ...scoringConfigForm, maxScore: parseInt(e.target.value) || 0 })}
+                      className="mt-1.5"
                     />
                   </div>
                 </div>
               )}
-              <div className="space-y-2">
-                <Label>Color</Label>
-                <div className="flex items-center gap-2">
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Color</Label>
+                <div className="flex items-center gap-2 mt-1.5">
                   <input
                     type="color"
                     value={scoringConfigForm.color}
@@ -2506,122 +2579,152 @@ export default function AssetSettingsPage() {
                 </div>
               </div>
             </div>
-            <DialogFooter>
+
+            {/* Fixed Footer */}
+            <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
               <Button variant="outline" onClick={() => setIsScoringAddOpen(false)}>
                 Cancel
               </Button>
               <Button onClick={handleAddScoringConfig}>Add</Button>
-            </DialogFooter>
+            </div>
           </DialogContent>
         </Dialog>
 
         {/* Scoring Config Delete Dialog */}
         <Dialog open={isScoringDeleteOpen} onOpenChange={setIsScoringDeleteOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Delete Scoring Configuration</DialogTitle>
-              <DialogDescription>
-                Are you sure you want to delete the "{selectedScoringConfig?.level}" scoring configuration? This action cannot be undone.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
+          <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+            {/* Fixed Header */}
+            <div className="px-6 py-5 border-b border-slate-100">
+              <DialogHeader>
+                <DialogTitle className="text-lg font-semibold text-slate-800">Delete Scoring Configuration</DialogTitle>
+                <DialogDescription>
+                  Are you sure you want to delete the "{selectedScoringConfig?.level}" scoring configuration? This action cannot be undone.
+                </DialogDescription>
+              </DialogHeader>
+            </div>
+
+            {/* Fixed Footer */}
+            <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
               <Button variant="outline" onClick={() => setIsScoringDeleteOpen(false)}>
                 Cancel
               </Button>
               <Button variant="destructive" onClick={handleDeleteScoringConfig}>Delete</Button>
-            </DialogFooter>
+            </div>
           </DialogContent>
         </Dialog>
 
         {/* CIA Rating Add Dialog */}
         <Dialog open={isCiaAddOpen} onOpenChange={setIsCiaAddOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>New {ciaRatingType}</DialogTitle>
-              <DialogDescription>
-                Add a new {ciaRatingType.toLowerCase()} rating level
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label>Label *</Label>
+          <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+            {/* Fixed Header */}
+            <div className="px-6 py-5 border-b border-slate-100">
+              <DialogHeader>
+                <DialogTitle className="text-lg font-semibold text-slate-800">New {ciaRatingType}</DialogTitle>
+                <DialogDescription>
+                  Add a new {ciaRatingType.toLowerCase()} rating level
+                </DialogDescription>
+              </DialogHeader>
+            </div>
+
+            {/* Content */}
+            <div className="px-6 py-6 space-y-5">
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Label *</Label>
                 <Input
                   value={ciaRatingForm.label}
                   onChange={(e) => setCiaRatingForm({ ...ciaRatingForm, label: e.target.value })}
                   placeholder="e.g., high, medium, low"
+                  className="mt-1.5"
                 />
               </div>
-              <div className="space-y-2">
-                <Label>Value *</Label>
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Value *</Label>
                 <Input
                   type="number"
                   value={ciaRatingForm.value}
                   onChange={(e) => setCiaRatingForm({ ...ciaRatingForm, value: parseInt(e.target.value) || 0 })}
                   placeholder="e.g., 10, 5, 1"
+                  className="mt-1.5"
                 />
               </div>
             </div>
-            <DialogFooter>
+
+            {/* Fixed Footer */}
+            <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
               <Button variant="outline" onClick={() => setIsCiaAddOpen(false)}>
                 Cancel
               </Button>
               <Button onClick={handleAddCiaRating}>Add</Button>
-            </DialogFooter>
+            </div>
           </DialogContent>
         </Dialog>
 
         {/* CIA Rating Edit Dialog */}
         <Dialog open={isCiaEditOpen} onOpenChange={setIsCiaEditOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Edit Rating</DialogTitle>
-              <DialogDescription>
-                Update the rating details
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label>Label *</Label>
+          <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+            {/* Fixed Header */}
+            <div className="px-6 py-5 border-b border-slate-100">
+              <DialogHeader>
+                <DialogTitle className="text-lg font-semibold text-slate-800">Edit Rating</DialogTitle>
+                <DialogDescription>
+                  Update the rating details
+                </DialogDescription>
+              </DialogHeader>
+            </div>
+
+            {/* Content */}
+            <div className="px-6 py-6 space-y-5">
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Label *</Label>
                 <Input
                   value={ciaRatingForm.label}
                   onChange={(e) => setCiaRatingForm({ ...ciaRatingForm, label: e.target.value })}
+                  className="mt-1.5"
                 />
               </div>
-              <div className="space-y-2">
-                <Label>Value *</Label>
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Value *</Label>
                 <Input
                   type="number"
                   value={ciaRatingForm.value}
                   onChange={(e) => setCiaRatingForm({ ...ciaRatingForm, value: parseInt(e.target.value) || 0 })}
+                  className="mt-1.5"
                 />
               </div>
             </div>
-            <DialogFooter>
+
+            {/* Fixed Footer */}
+            <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
               <Button variant="outline" onClick={() => setIsCiaEditOpen(false)}>
                 Cancel
               </Button>
               <Button onClick={handleEditCiaRating}>Save Changes</Button>
-            </DialogFooter>
+            </div>
           </DialogContent>
         </Dialog>
 
         {/* CIA Rating Delete Dialog */}
         <Dialog open={isCiaDeleteOpen} onOpenChange={setIsCiaDeleteOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Confirm Delete</DialogTitle>
-              <DialogDescription>
-                Are you sure you want to delete this rating? This action cannot be undone.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
+          <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+            {/* Fixed Header */}
+            <div className="px-6 py-5 border-b border-slate-100">
+              <DialogHeader>
+                <DialogTitle className="text-lg font-semibold text-slate-800">Confirm Delete</DialogTitle>
+                <DialogDescription>
+                  Are you sure you want to delete this rating? This action cannot be undone.
+                </DialogDescription>
+              </DialogHeader>
+            </div>
+
+            {/* Fixed Footer */}
+            <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
               <Button variant="outline" onClick={() => setIsCiaDeleteOpen(false)}>
                 Cancel
               </Button>
               <Button variant="destructive" onClick={handleDeleteCiaRating}>
                 Delete
               </Button>
-            </DialogFooter>
+            </div>
           </DialogContent>
         </Dialog>
       </div>
@@ -2630,35 +2733,51 @@ export default function AssetSettingsPage() {
 
   // Show main settings grid view (default)
   return (
-    <div className="space-y-6 p-6">
-      <PageHeader title="Asset Settings" />
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold text-slate-800">Asset Settings</h1>
+      </div>
 
-      {/* Settings Card Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {settingCategories.map((category) => (
-          <button
-            key={category.id}
-            onClick={() => {
-              setActiveCategory(category.id);
-              setSearchTerm("");
-            }}
-            className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 p-8 text-white shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          >
-            {/* Background pattern */}
-            <div className="absolute inset-0 opacity-10">
-              <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/20" />
-              <div className="absolute -left-10 -bottom-10 h-32 w-32 rounded-full bg-white/10" />
-            </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {settingCategories.map((category) => {
+          const Icon = category.icon;
+          const itemCount = getItemCount(category.id);
 
-            {/* Content */}
-            <div className="relative flex flex-col items-center justify-center space-y-4">
-              <div className="rounded-full bg-white/10 p-4 group-hover:bg-white/20 transition-colors">
-                {category.iconElement}
+          return (
+            <div
+              key={category.id}
+              className="bg-white rounded-xl border border-slate-200 p-5"
+            >
+              <div className="flex items-center gap-4 mb-4">
+                <div className="p-3 bg-blue-50 rounded-lg">
+                  <Icon className="h-6 w-6 text-blue-600" />
+                </div>
+                <div>
+                  <h4 className="text-base font-semibold text-slate-800">{category.title}</h4>
+                  <p className="text-sm text-slate-500">
+                    {category.description}
+                  </p>
+                </div>
               </div>
-              <h4 className="text-lg font-semibold text-center">{category.title}</h4>
+              <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+                <span className="text-sm text-slate-500">
+                  {itemCount} {itemCount === 1 ? "item" : "items"}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setActiveCategory(category.id);
+                    setSearchTerm("");
+                  }}
+                >
+                  Manage
+                </Button>
+              </div>
             </div>
-          </button>
-        ))}
+          );
+        })}
       </div>
 
       {/* Add Dialog */}
@@ -3041,93 +3160,116 @@ export default function AssetSettingsPage() {
 
       {/* CIA Rating Add Dialog */}
       <Dialog open={isCiaAddOpen} onOpenChange={setIsCiaAddOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>New {ciaRatingType}</DialogTitle>
-            <DialogDescription>
-              Add a new {ciaRatingType.toLowerCase()} rating level
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>Label *</Label>
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">New {ciaRatingType}</DialogTitle>
+              <DialogDescription>
+                Add a new {ciaRatingType.toLowerCase()} rating level
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+
+          {/* Content */}
+          <div className="px-6 py-6 space-y-5">
+            <div>
+              <Label className="text-sm font-medium text-slate-700">Label *</Label>
               <Input
                 value={ciaRatingForm.label}
                 onChange={(e) => setCiaRatingForm({ ...ciaRatingForm, label: e.target.value })}
                 placeholder="e.g., high, medium, low"
+                className="mt-1.5"
               />
             </div>
-            <div className="space-y-2">
-              <Label>Value *</Label>
+            <div>
+              <Label className="text-sm font-medium text-slate-700">Value *</Label>
               <Input
                 type="number"
                 value={ciaRatingForm.value}
                 onChange={(e) => setCiaRatingForm({ ...ciaRatingForm, value: parseInt(e.target.value) || 0 })}
                 placeholder="e.g., 10, 5, 1"
+                className="mt-1.5"
               />
             </div>
           </div>
-          <DialogFooter>
+
+          {/* Fixed Footer */}
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsCiaAddOpen(false)}>
               Cancel
             </Button>
             <Button onClick={handleAddCiaRating}>Add</Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* CIA Rating Edit Dialog */}
       <Dialog open={isCiaEditOpen} onOpenChange={setIsCiaEditOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Rating</DialogTitle>
-            <DialogDescription>
-              Update the rating details
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>Label *</Label>
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Edit Rating</DialogTitle>
+              <DialogDescription>
+                Update the rating details
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+
+          {/* Content */}
+          <div className="px-6 py-6 space-y-5">
+            <div>
+              <Label className="text-sm font-medium text-slate-700">Label *</Label>
               <Input
                 value={ciaRatingForm.label}
                 onChange={(e) => setCiaRatingForm({ ...ciaRatingForm, label: e.target.value })}
+                className="mt-1.5"
               />
             </div>
-            <div className="space-y-2">
-              <Label>Value *</Label>
+            <div>
+              <Label className="text-sm font-medium text-slate-700">Value *</Label>
               <Input
                 type="number"
                 value={ciaRatingForm.value}
                 onChange={(e) => setCiaRatingForm({ ...ciaRatingForm, value: parseInt(e.target.value) || 0 })}
+                className="mt-1.5"
               />
             </div>
           </div>
-          <DialogFooter>
+
+          {/* Fixed Footer */}
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsCiaEditOpen(false)}>
               Cancel
             </Button>
             <Button onClick={handleEditCiaRating}>Save Changes</Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* CIA Rating Delete Dialog */}
       <Dialog open={isCiaDeleteOpen} onOpenChange={setIsCiaDeleteOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirm Delete</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete this rating? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Confirm Delete</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete this rating? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+
+          {/* Fixed Footer */}
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsCiaDeleteOpen(false)}>
               Cancel
             </Button>
             <Button variant="destructive" onClick={handleDeleteCiaRating}>
               Delete
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

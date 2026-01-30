@@ -8,9 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -371,31 +369,31 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
         <h1 className="text-2xl font-bold">{control.name}</h1>
         <Badge className={getStatusBadgeColor(control.status)}>{control.status}</Badge>
       </div>
-      <p className="text-muted-foreground">{control.controlCode}</p>
+      <p className="text-slate-400">{control.controlCode}</p>
 
       {/* Control Details Card with Inline Editable Fields */}
-      <Card>
+      <Card className="shadow-none">
         <CardHeader>
           <CardTitle>Control Details</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
-              <Label className="text-muted-foreground">Domain</Label>
+              <Label className="text-slate-400">Domain</Label>
               <p className="font-medium">{control.domain?.name || "-"}</p>
             </div>
             <div>
-              <Label className="text-muted-foreground">Framework</Label>
+              <Label className="text-slate-400">Framework</Label>
               <p className="font-medium">{control.framework?.name || "-"}</p>
             </div>
             {/* Inline Editable Department */}
             <div>
-              <Label className="text-muted-foreground">Department</Label>
+              <Label className="text-slate-400">Department</Label>
               <Select value={inlineDepartmentId} onValueChange={handleInlineDepartmentChange}>
                 <SelectTrigger className="mt-1">
                   <SelectValue placeholder="Select department" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent position="popper" sideOffset={4} className="max-h-[200px] overflow-y-auto">
                   {departments.map((d) => (
                     <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                   ))}
@@ -403,21 +401,21 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
               </Select>
             </div>
             <div>
-              <Label className="text-muted-foreground">Functional Grouping</Label>
+              <Label className="text-slate-400">Functional Grouping</Label>
               <p className="font-medium">{control.functionalGrouping || "-"}</p>
             </div>
             <div>
-              <Label className="text-muted-foreground">Owner</Label>
+              <Label className="text-slate-400">Owner</Label>
               <p className="font-medium">{control.owner?.fullName || "-"}</p>
             </div>
             {/* Inline Editable Assignee */}
             <div>
-              <Label className="text-muted-foreground">Assigned To</Label>
+              <Label className="text-slate-400">Assigned To</Label>
               <Select value={inlineAssigneeId} onValueChange={handleInlineAssigneeChange}>
                 <SelectTrigger className="mt-1">
                   <SelectValue placeholder="Select assignee" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent position="popper" sideOffset={4} className="max-h-[200px] overflow-y-auto">
                   {users.map((u) => (
                     <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
                   ))}
@@ -425,11 +423,11 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
               </Select>
             </div>
             <div>
-              <Label className="text-muted-foreground">Entities</Label>
+              <Label className="text-slate-400">Entities</Label>
               <p className="font-medium">{control.entities || "Organization Wide"}</p>
             </div>
             <div>
-              <Label className="text-muted-foreground">Scope</Label>
+              <Label className="text-slate-400">Scope</Label>
               <p className="font-medium">{control.scope || "-"}</p>
             </div>
           </div>
@@ -447,7 +445,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
           {/* Risk Multi-Select with + Button */}
           <div className="mt-4">
             <div className="flex items-center justify-between mb-2">
-              <Label className="text-muted-foreground">Risk</Label>
+              <Label className="text-slate-400">Risk</Label>
               <Button variant="outline" size="sm" onClick={() => setIsRiskDialogOpen(true)}>
                 <Plus className="h-4 w-4" />
               </Button>
@@ -469,20 +467,20 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
                 </Badge>
               ))}
               {(!control.controlRisks || control.controlRisks.length === 0) && (
-                <span className="text-muted-foreground text-sm">No risks linked</span>
+                <span className="text-slate-400 text-sm">No risks linked</span>
               )}
             </div>
           </div>
 
           {control.description && (
             <div className="mt-4">
-              <Label className="text-muted-foreground">Description</Label>
+              <Label className="text-slate-400">Description</Label>
               <p className="mt-1">{control.description}</p>
             </div>
           )}
           {control.controlQuestion && (
             <div className="mt-4">
-              <Label className="text-muted-foreground">Control Question</Label>
+              <Label className="text-slate-400">Control Question</Label>
               <p className="mt-1">{control.controlQuestion}</p>
             </div>
           )}
@@ -490,7 +488,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
       </Card>
 
       {/* Tabs for related entities */}
-      <Card>
+      <Card className="shadow-none">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="w-full justify-start border-b rounded-none h-auto p-0">
             <TabsTrigger value="requirements" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
@@ -534,7 +532,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
                 ))}
                 {(!control.requirements || control.requirements.length === 0) && (
                   <TableRow>
-                    <TableCell colSpan={3} className="text-center text-muted-foreground">
+                    <TableCell colSpan={3} className="text-center text-slate-400">
                       No linked requirements
                     </TableCell>
                   </TableRow>
@@ -566,7 +564,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
                 ))}
                 {(!control.policyControls || control.policyControls.length === 0) && (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground">
+                    <TableCell colSpan={4} className="text-center text-slate-400">
                       No linked policies
                     </TableCell>
                   </TableRow>
@@ -600,7 +598,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
                 ))}
                 {(!control.evidences || control.evidences.length === 0) && (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground">
+                    <TableCell colSpan={5} className="text-center text-slate-400">
                       No linked evidences
                     </TableCell>
                   </TableRow>
@@ -634,7 +632,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
                 ))}
                 {(!control.exceptions || control.exceptions.length === 0) && (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground">
+                    <TableCell colSpan={5} className="text-center text-slate-400">
                       No linked exceptions
                     </TableCell>
                   </TableRow>
@@ -672,7 +670,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
                 ))}
                 {(!control.controlRisks || control.controlRisks.length === 0) && (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground">
+                    <TableCell colSpan={5} className="text-center text-slate-400">
                       No linked risks
                     </TableCell>
                   </TableRow>
@@ -685,12 +683,13 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
 
       {/* Edit Dialog with All Fields */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
+          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
             <DialogTitle>Edit Control</DialogTitle>
-          </DialogHeader>
+          </div>
 
-          <div className="grid grid-cols-2 gap-4 py-4">
+          <div className="overflow-y-auto flex-1 px-6 py-5">
+          <div className="grid grid-cols-2 gap-4">
             {/* Control Name */}
             <div>
               <Label>Control Name *</Label>
@@ -869,7 +868,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
                 <SelectTrigger>
                   <SelectValue placeholder="Select scope" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent position="popper" sideOffset={4} className="max-h-[200px] overflow-y-auto">
                   {SCOPE_OPTIONS.map((s) => (
                     <SelectItem key={s} value={s}>{s}</SelectItem>
                   ))}
@@ -887,7 +886,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
                 <SelectTrigger>
                   <SelectValue placeholder="Select domain" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent position="popper" sideOffset={4} className="max-h-[200px] overflow-y-auto">
                   {domains.map((d) => (
                     <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                   ))}
@@ -919,30 +918,31 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
                   </div>
                 ))}
                 {allRequirements.length === 0 && (
-                  <p className="text-muted-foreground text-sm">No requirements available</p>
+                  <p className="text-slate-400 text-sm">No requirements available</p>
                 )}
               </div>
             </div>
           </div>
+          </div>
 
-          <DialogFooter>
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex-shrink-0">
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
               Cancel
             </Button>
             <Button onClick={handleUpdateControl}>
               Save Changes
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Risk Selection Dialog */}
       <Dialog open={isRiskDialogOpen} onOpenChange={setIsRiskDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
+          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
             <DialogTitle>Select Risks</DialogTitle>
-          </DialogHeader>
-          <div className="max-h-64 overflow-y-auto">
+          </div>
+          <div className="overflow-y-auto flex-1 px-6 py-5">
             {allRisks.map((risk) => (
               <div key={risk.id} className="flex items-center space-x-2 py-2">
                 <Checkbox
@@ -962,17 +962,17 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
               </div>
             ))}
             {allRisks.length === 0 && (
-              <p className="text-muted-foreground">No risks available</p>
+              <p className="text-slate-400">No risks available</p>
             )}
           </div>
-          <DialogFooter>
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex-shrink-0">
             <Button variant="outline" onClick={() => setIsRiskDialogOpen(false)}>
               Cancel
             </Button>
             <Button onClick={handleAddRisks}>
               Add Selected
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

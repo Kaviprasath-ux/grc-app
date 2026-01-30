@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { Plus, Pencil, Trash2, Download, Upload, Search, Package, Server, Monitor, Database, Users, Building, Wrench, Calendar } from "lucide-react";
-import { PageHeader, DataGrid } from "@/components/shared";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DataGrid } from "@/components/shared";
+import { DatePicker } from "@/components/ui/date-picker";
+import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -710,8 +711,14 @@ export default function MyAssetInventoryPage() {
   // Show loading state while permissions or data is being fetched
   if (permissionsLoading || loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Loading...</p>
+      <div className="flex items-center justify-center h-[60vh]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative">
+            <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
+            <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+          </div>
+          <p className="text-sm text-slate-500 font-medium">Loading assets...</p>
+        </div>
       </div>
     );
   }
@@ -723,70 +730,51 @@ export default function MyAssetInventoryPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Asset Inventory" />
+      {/* Page Header */}
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold text-slate-800">My Asset Inventory</h1>
+      </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Assets
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{stats.total}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Active Assets
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-green-600">{stats.active}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Critical Assets
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-red-600">{stats.critical}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
-              <Calendar className="h-4 w-4" />
-              Needs Review
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-orange-600">{stats.needsReview}</div>
-          </CardContent>
-        </Card>
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <p className="text-sm font-medium text-slate-500 mb-1">Total Assets</p>
+          <p className="text-3xl font-bold text-slate-800">{stats.total}</p>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <p className="text-sm font-medium text-slate-500 mb-1">Active Assets</p>
+          <p className="text-3xl font-bold text-green-600">{stats.active}</p>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <p className="text-sm font-medium text-slate-500 mb-1">Critical Assets</p>
+          <p className="text-3xl font-bold text-red-600">{stats.critical}</p>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <p className="text-sm font-medium text-slate-500 mb-1 flex items-center gap-1">
+            <Calendar className="h-4 w-4" />
+            Needs Review
+          </p>
+          <p className="text-3xl font-bold text-orange-600">{stats.needsReview}</p>
+        </div>
       </div>
 
       {/* Filters and Actions */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-4">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input
               placeholder="Search assets..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 w-[250px]"
+              className="pl-10 w-[250px] border-slate-200"
             />
           </div>
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
             <SelectTrigger className="w-[150px]">
               <SelectValue placeholder="Category" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent position="popper" sideOffset={4}>
               <SelectItem value="all">Category</SelectItem>
               {categories.map((cat) => (
                 <SelectItem key={cat.id} value={cat.id}>
@@ -799,7 +787,7 @@ export default function MyAssetInventoryPage() {
             <SelectTrigger className="w-[160px]">
               <SelectValue placeholder="All Status" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent position="popper" sideOffset={4}>
               <SelectItem value="all">Status</SelectItem>
               {lifecycleStatuses.map((ls) => (
                 <SelectItem key={ls.id} value={ls.id}>
@@ -831,7 +819,7 @@ export default function MyAssetInventoryPage() {
             Export
           </Button>
           <PermissionGate resource="asset.my-inventory" action="create">
-            <Button onClick={() => {
+            <Button size="sm" onClick={() => {
               setNewAsset({
                 ...newAsset,
                 assetId: generateAssetId(),
@@ -852,321 +840,49 @@ export default function MyAssetInventoryPage() {
 
       {/* Add Asset Dialog */}
       <Dialog open={isAddAssetOpen} onOpenChange={setIsAddAssetOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Add New Asset</DialogTitle>
-            <DialogDescription>
-              Enter the details for the new asset
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            {/* Basic Info - Row 1 */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="assetId">Asset ID</Label>
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Add New Asset</DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            <div className="space-y-5">
+              {/* Asset Name - Full Width */}
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Asset Name <span className="text-semantic-error">*</span></Label>
                 <Input
-                  id="assetId"
-                  value={newAsset.assetId}
-                  disabled
-                  className="bg-muted"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="name">Asset Name</Label>
-                <Input
-                  id="name"
                   value={newAsset.name}
                   onChange={(e) => setNewAsset({ ...newAsset, name: e.target.value })}
                   placeholder="Enter Asset Name"
+                  className="mt-1.5"
                 />
               </div>
-            </div>
 
-            {/* Department & Owner - Row 2 (auto-populated, read-only for department users) */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Department</Label>
-                <Select
-                  value={newAsset.departmentId}
-                  onValueChange={(value) => setNewAsset({ ...newAsset, departmentId: value, ownerId: currentUserId || "" })}
-                  disabled={!!userDepartmentId}
-                >
-                  <SelectTrigger className={userDepartmentId ? "bg-muted" : ""}>
-                    <SelectValue placeholder="Select Department" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {departments.map((dept) => (
-                      <SelectItem key={dept.id} value={dept.id}>
-                        {dept.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Asset Owner</Label>
-                <Input
-                  value={session?.user?.name || session?.user?.email || "Current User"}
-                  disabled
-                  className="bg-muted"
-                />
-              </div>
-            </div>
-
-            {/* Category & Sub Category - Row 3 */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Asset Category</Label>
-                <div className="flex gap-2">
-                  <Select
-                    value={newAsset.categoryId}
-                    onValueChange={(value) => setNewAsset({ ...newAsset, categoryId: value, subCategoryId: "" })}
-                  >
-                    <SelectTrigger className="flex-1">
-                      <SelectValue placeholder="Select Type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((cat) => (
-                        <SelectItem key={cat.id} value={cat.id}>
-                          {cat.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setIsAddCategoryOpen(true)}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Asset Sub Category</Label>
-                <div className="flex gap-2">
-                  <Select
-                    value={newAsset.subCategoryId}
-                    onValueChange={(value) => setNewAsset({ ...newAsset, subCategoryId: value })}
-                    disabled={!newAsset.categoryId}
-                  >
-                    <SelectTrigger className="flex-1">
-                      <SelectValue placeholder="Select Category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {filteredSubCategories.map((sc) => (
-                        <SelectItem key={sc.id} value={sc.id}>
-                          {sc.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setIsAddSubCategoryOpen(true)}
-                    disabled={!newAsset.categoryId}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            {/* Group & Custodian - Row 4 */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Asset Group</Label>
-                <div className="flex gap-2">
-                  <Select
-                    value={newAsset.groupId}
-                    onValueChange={(value) => setNewAsset({ ...newAsset, groupId: value })}
-                  >
-                    <SelectTrigger className="flex-1">
-                      <SelectValue placeholder="Select Asset Group" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {groups.map((g) => (
-                        <SelectItem key={g.id} value={g.id}>
-                          {g.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setIsAddGroupOpen(true)}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Asset Custodian</Label>
-                <Select
-                  value={newAsset.custodianId}
-                  onValueChange={(value) => setNewAsset({ ...newAsset, custodianId: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Asset Custodian" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {users.map((user) => (
-                      <SelectItem key={user.id} value={user.id}>
-                        {user.fullName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Criticality & Sensitivity (Computed fields) - Row 5 */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Asset Criticality</Label>
-                <Input
-                  value="N/A"
-                  disabled
-                  className="bg-muted"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Asset Sensitivity</Label>
-                <Input
-                  value=""
-                  disabled
-                  className="bg-muted"
-                />
-              </div>
-            </div>
-
-            {/* Lifecycle Status & Location - Row 6 */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Lifecycle Status</Label>
-                <div className="flex gap-2">
-                  <Select
-                    value={newAsset.lifecycleStatusId}
-                    onValueChange={(value) => setNewAsset({ ...newAsset, lifecycleStatusId: value })}
-                  >
-                    <SelectTrigger className="flex-1">
-                      <SelectValue placeholder="Select Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {lifecycleStatuses.map((ls) => (
-                        <SelectItem key={ls.id} value={ls.id}>
-                          {ls.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setIsAddLifecycleOpen(true)}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="location">Asset Location</Label>
-                <Input
-                  id="location"
-                  value={newAsset.location}
-                  onChange={(e) => setNewAsset({ ...newAsset, location: e.target.value })}
-                  placeholder="Enter Location"
-                />
-              </div>
-            </div>
-
-            {/* Dates - Row 7 */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="acquisitionDate">Acquisition date</Label>
-                <Input
-                  id="acquisitionDate"
-                  type="date"
-                  value={newAsset.acquisitionDate}
-                  onChange={(e) => setNewAsset({ ...newAsset, acquisitionDate: e.target.value })}
-                  placeholder="Select Acquistion Date"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="nextReviewDate">Next review date</Label>
-                <Input
-                  id="nextReviewDate"
-                  type="date"
-                  value={newAsset.nextReviewDate}
-                  onChange={(e) => setNewAsset({ ...newAsset, nextReviewDate: e.target.value })}
-                  placeholder="Next Review Date"
-                />
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              resetForm();
-              setIsAddAssetOpen(false);
-            }}>
-              Cancel
-            </Button>
-            <Button onClick={handleAddAsset}>Save</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Asset Dialog */}
-      <Dialog open={isEditAssetOpen} onOpenChange={setIsEditAssetOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit Asset</DialogTitle>
-            <DialogDescription>
-              Update the asset details
-            </DialogDescription>
-          </DialogHeader>
-          {editingAsset && (
-            <div className="space-y-4 py-4">
-              {/* Basic Info - Row 1 */}
+              {/* Asset ID & Department */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-assetId">Asset ID</Label>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Asset ID</Label>
                   <Input
-                    id="edit-assetId"
-                    value={editingAsset.assetId}
+                    value={newAsset.assetId}
                     disabled
-                    className="bg-muted"
+                    className="mt-1.5 bg-slate-50"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-name">Asset Name</Label>
-                  <Input
-                    id="edit-name"
-                    value={editingAsset.name}
-                    onChange={(e) => setEditingAsset({ ...editingAsset, name: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              {/* Department & Owner - Row 2 */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Department</Label>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Department</Label>
                   <Select
-                    value={editingAsset.departmentId || ""}
-                    onValueChange={(value) => setEditingAsset({ ...editingAsset, departmentId: value, ownerId: null })}
+                    value={newAsset.departmentId}
+                    onValueChange={(value) => setNewAsset({ ...newAsset, departmentId: value, ownerId: currentUserId || "" })}
                     disabled={!!userDepartmentId}
                   >
-                    <SelectTrigger className={userDepartmentId ? "bg-muted" : ""}>
+                    <SelectTrigger className={`mt-1.5 ${userDepartmentId ? "bg-slate-50" : ""}`}>
                       <SelectValue placeholder="Select Department" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" sideOffset={4}>
                       {departments.map((dept) => (
                         <SelectItem key={dept.id} value={dept.id}>
                           {dept.name}
@@ -1175,29 +891,31 @@ export default function MyAssetInventoryPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label>Asset Owner</Label>
-                  <Input
-                    value={editingAsset.owner?.fullName || session?.user?.name || session?.user?.email || "Current User"}
-                    disabled
-                    className="bg-muted"
-                  />
-                </div>
               </div>
 
-              {/* Category & Sub Category - Row 3 */}
+              {/* Asset Owner - Full Width */}
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Asset Owner</Label>
+                <Input
+                  value={session?.user?.name || session?.user?.email || "Current User"}
+                  disabled
+                  className="mt-1.5 bg-slate-50"
+                />
+              </div>
+
+              {/* Category & Sub Category */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Asset Category</Label>
-                  <div className="flex gap-2">
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Asset Category</Label>
+                  <div className="flex gap-2 mt-1.5">
                     <Select
-                      value={editingAsset.categoryId || ""}
-                      onValueChange={(value) => setEditingAsset({ ...editingAsset, categoryId: value, subCategoryId: null })}
+                      value={newAsset.categoryId}
+                      onValueChange={(value) => setNewAsset({ ...newAsset, categoryId: value, subCategoryId: "" })}
                     >
                       <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="Select Type" />
+                        <SelectValue placeholder="Select Category" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent position="popper" sideOffset={4}>
                         {categories.map((cat) => (
                           <SelectItem key={cat.id} value={cat.id}>
                             {cat.name}
@@ -1205,61 +923,50 @@ export default function MyAssetInventoryPage() {
                         ))}
                       </SelectContent>
                     </Select>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      onClick={() => setIsAddCategoryOpen(true)}
-                    >
+                    <Button type="button" variant="outline" size="icon" onClick={() => setIsAddCategoryOpen(true)}>
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>Asset Sub Category</Label>
-                  <div className="flex gap-2">
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Asset Sub Category</Label>
+                  <div className="flex gap-2 mt-1.5">
                     <Select
-                      value={editingAsset.subCategoryId || ""}
-                      onValueChange={(value) => setEditingAsset({ ...editingAsset, subCategoryId: value })}
-                      disabled={!editingAsset.categoryId}
+                      value={newAsset.subCategoryId}
+                      onValueChange={(value) => setNewAsset({ ...newAsset, subCategoryId: value })}
+                      disabled={!newAsset.categoryId}
                     >
                       <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="Select Category" />
+                        <SelectValue placeholder="Select Sub Category" />
                       </SelectTrigger>
-                      <SelectContent>
-                        {editFilteredSubCategories.map((sc) => (
+                      <SelectContent position="popper" sideOffset={4}>
+                        {filteredSubCategories.map((sc) => (
                           <SelectItem key={sc.id} value={sc.id}>
                             {sc.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      onClick={() => setIsAddSubCategoryOpen(true)}
-                      disabled={!editingAsset.categoryId}
-                    >
+                    <Button type="button" variant="outline" size="icon" onClick={() => setIsAddSubCategoryOpen(true)} disabled={!newAsset.categoryId}>
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
               </div>
 
-              {/* Group & Custodian - Row 4 */}
+              {/* Group & Custodian */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Asset Group</Label>
-                  <div className="flex gap-2">
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Asset Group</Label>
+                  <div className="flex gap-2 mt-1.5">
                     <Select
-                      value={editingAsset.groupId || ""}
-                      onValueChange={(value) => setEditingAsset({ ...editingAsset, groupId: value })}
+                      value={newAsset.groupId}
+                      onValueChange={(value) => setNewAsset({ ...newAsset, groupId: value })}
                     >
                       <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="Select Asset Group" />
+                        <SelectValue placeholder="Select Group" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent position="popper" sideOffset={4}>
                         {groups.map((g) => (
                           <SelectItem key={g.id} value={g.id}>
                             {g.name}
@@ -1267,26 +974,21 @@ export default function MyAssetInventoryPage() {
                         ))}
                       </SelectContent>
                     </Select>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      onClick={() => setIsAddGroupOpen(true)}
-                    >
+                    <Button type="button" variant="outline" size="icon" onClick={() => setIsAddGroupOpen(true)}>
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>Asset Custodian</Label>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Asset Custodian</Label>
                   <Select
-                    value={editingAsset.custodianId || ""}
-                    onValueChange={(value) => setEditingAsset({ ...editingAsset, custodianId: value })}
+                    value={newAsset.custodianId}
+                    onValueChange={(value) => setNewAsset({ ...newAsset, custodianId: value })}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Asset Custodian" />
+                    <SelectTrigger className="mt-1.5">
+                      <SelectValue placeholder="Select Custodian" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" sideOffset={4}>
                       {users.map((user) => (
                         <SelectItem key={user.id} value={user.id}>
                           {user.fullName}
@@ -1297,39 +999,19 @@ export default function MyAssetInventoryPage() {
                 </div>
               </div>
 
-              {/* Criticality & Sensitivity (Computed fields) */}
+              {/* Lifecycle Status & Location */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Asset Criticality</Label>
-                  <Input
-                    value="N/A"
-                    disabled
-                    className="bg-muted"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Asset Sensitivity</Label>
-                  <Input
-                    value=""
-                    disabled
-                    className="bg-muted"
-                  />
-                </div>
-              </div>
-
-              {/* Lifecycle Status & Location - Row 6 */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Lifecycle Status</Label>
-                  <div className="flex gap-2">
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Lifecycle Status</Label>
+                  <div className="flex gap-2 mt-1.5">
                     <Select
-                      value={editingAsset.lifecycleStatusId || ""}
-                      onValueChange={(value) => setEditingAsset({ ...editingAsset, lifecycleStatusId: value })}
+                      value={newAsset.lifecycleStatusId}
+                      onValueChange={(value) => setNewAsset({ ...newAsset, lifecycleStatusId: value })}
                     >
                       <SelectTrigger className="flex-1">
                         <SelectValue placeholder="Select Status" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent position="popper" sideOffset={4}>
                         {lifecycleStatuses.map((ls) => (
                           <SelectItem key={ls.id} value={ls.id}>
                             {ls.name}
@@ -1337,207 +1019,427 @@ export default function MyAssetInventoryPage() {
                         ))}
                       </SelectContent>
                     </Select>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      onClick={() => setIsAddLifecycleOpen(true)}
-                    >
+                    <Button type="button" variant="outline" size="icon" onClick={() => setIsAddLifecycleOpen(true)}>
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-location">Asset Location</Label>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Asset Location</Label>
                   <Input
-                    id="edit-location"
-                    value={editingAsset.location || ""}
-                    onChange={(e) => setEditingAsset({ ...editingAsset, location: e.target.value })}
+                    value={newAsset.location}
+                    onChange={(e) => setNewAsset({ ...newAsset, location: e.target.value })}
                     placeholder="Enter Location"
+                    className="mt-1.5"
                   />
                 </div>
               </div>
 
-              {/* Dates - Row 7 */}
+              {/* Criticality & Sensitivity */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-acquisitionDate">Acquisition date</Label>
-                  <Input
-                    id="edit-acquisitionDate"
-                    type="date"
-                    value={editingAsset.acquisitionDate || ""}
-                    onChange={(e) => setEditingAsset({ ...editingAsset, acquisitionDate: e.target.value })}
-                  />
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Asset Criticality</Label>
+                  <Input value="N/A" disabled className="mt-1.5 bg-slate-50" />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-nextReviewDate">Next review date</Label>
-                  <Input
-                    id="edit-nextReviewDate"
-                    type="date"
-                    value={editingAsset.nextReviewDate || ""}
-                    onChange={(e) => setEditingAsset({ ...editingAsset, nextReviewDate: e.target.value })}
-                  />
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Asset Sensitivity</Label>
+                  <Input value="" disabled className="mt-1.5 bg-slate-50" />
+                </div>
+              </div>
+
+              {/* Dates */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Acquisition Date</Label>
+                  <div className="mt-1.5">
+                    <DatePicker
+                      value={newAsset.acquisitionDate}
+                      onChange={(date) => setNewAsset({ ...newAsset, acquisitionDate: date ? format(date, "yyyy-MM-dd") : "" })}
+                      placeholder="Select Acquisition Date"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Next Review Date</Label>
+                  <div className="mt-1.5">
+                    <DatePicker
+                      value={newAsset.nextReviewDate}
+                      onChange={(date) => setNewAsset({ ...newAsset, nextReviewDate: date ? format(date, "yyyy-MM-dd") : "" })}
+                      placeholder="Select Review Date"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              setIsEditAssetOpen(false);
-              setEditingAsset(null);
-            }}>
-              Cancel
-            </Button>
+          </div>
+
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <Button variant="outline" onClick={() => { resetForm(); setIsAddAssetOpen(false); }}>Cancel</Button>
+            <Button onClick={handleAddAsset}>Save</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Asset Dialog */}
+      <Dialog open={isEditAssetOpen} onOpenChange={setIsEditAssetOpen}>
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Edit Asset</DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            {editingAsset && (
+              <div className="space-y-5">
+                {/* Asset Name - Full Width */}
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Asset Name <span className="text-semantic-error">*</span></Label>
+                  <Input
+                    value={editingAsset.name}
+                    onChange={(e) => setEditingAsset({ ...editingAsset, name: e.target.value })}
+                    className="mt-1.5"
+                  />
+                </div>
+
+                {/* Asset ID & Department */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Asset ID</Label>
+                    <Input value={editingAsset.assetId} disabled className="mt-1.5 bg-slate-50" />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Department</Label>
+                    <Select
+                      value={editingAsset.departmentId || ""}
+                      onValueChange={(value) => setEditingAsset({ ...editingAsset, departmentId: value, ownerId: null })}
+                      disabled={!!userDepartmentId}
+                    >
+                      <SelectTrigger className={`mt-1.5 ${userDepartmentId ? "bg-slate-50" : ""}`}>
+                        <SelectValue placeholder="Select Department" />
+                      </SelectTrigger>
+                      <SelectContent position="popper" sideOffset={4}>
+                        {departments.map((dept) => (
+                          <SelectItem key={dept.id} value={dept.id}>
+                            {dept.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Asset Owner - Full Width */}
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Asset Owner</Label>
+                  <Input
+                    value={editingAsset.owner?.fullName || session?.user?.name || session?.user?.email || "Current User"}
+                    disabled
+                    className="mt-1.5 bg-slate-50"
+                  />
+                </div>
+
+                {/* Category & Sub Category */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Asset Category</Label>
+                    <div className="flex gap-2 mt-1.5">
+                      <Select
+                        value={editingAsset.categoryId || ""}
+                        onValueChange={(value) => setEditingAsset({ ...editingAsset, categoryId: value, subCategoryId: null })}
+                      >
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="Select Category" />
+                        </SelectTrigger>
+                        <SelectContent position="popper" sideOffset={4}>
+                          {categories.map((cat) => (
+                            <SelectItem key={cat.id} value={cat.id}>
+                              {cat.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button type="button" variant="outline" size="icon" onClick={() => setIsAddCategoryOpen(true)}>
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Asset Sub Category</Label>
+                    <div className="flex gap-2 mt-1.5">
+                      <Select
+                        value={editingAsset.subCategoryId || ""}
+                        onValueChange={(value) => setEditingAsset({ ...editingAsset, subCategoryId: value })}
+                        disabled={!editingAsset.categoryId}
+                      >
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="Select Sub Category" />
+                        </SelectTrigger>
+                        <SelectContent position="popper" sideOffset={4}>
+                          {editFilteredSubCategories.map((sc) => (
+                            <SelectItem key={sc.id} value={sc.id}>
+                              {sc.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button type="button" variant="outline" size="icon" onClick={() => setIsAddSubCategoryOpen(true)} disabled={!editingAsset.categoryId}>
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Group & Custodian */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Asset Group</Label>
+                    <div className="flex gap-2 mt-1.5">
+                      <Select
+                        value={editingAsset.groupId || ""}
+                        onValueChange={(value) => setEditingAsset({ ...editingAsset, groupId: value })}
+                      >
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="Select Group" />
+                        </SelectTrigger>
+                        <SelectContent position="popper" sideOffset={4}>
+                          {groups.map((g) => (
+                            <SelectItem key={g.id} value={g.id}>
+                              {g.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button type="button" variant="outline" size="icon" onClick={() => setIsAddGroupOpen(true)}>
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Asset Custodian</Label>
+                    <Select
+                      value={editingAsset.custodianId || ""}
+                      onValueChange={(value) => setEditingAsset({ ...editingAsset, custodianId: value })}
+                    >
+                      <SelectTrigger className="mt-1.5">
+                        <SelectValue placeholder="Select Custodian" />
+                      </SelectTrigger>
+                      <SelectContent position="popper" sideOffset={4}>
+                        {users.map((user) => (
+                          <SelectItem key={user.id} value={user.id}>
+                            {user.fullName}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Lifecycle Status & Location */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Lifecycle Status</Label>
+                    <div className="flex gap-2 mt-1.5">
+                      <Select
+                        value={editingAsset.lifecycleStatusId || ""}
+                        onValueChange={(value) => setEditingAsset({ ...editingAsset, lifecycleStatusId: value })}
+                      >
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="Select Status" />
+                        </SelectTrigger>
+                        <SelectContent position="popper" sideOffset={4}>
+                          {lifecycleStatuses.map((ls) => (
+                            <SelectItem key={ls.id} value={ls.id}>
+                              {ls.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button type="button" variant="outline" size="icon" onClick={() => setIsAddLifecycleOpen(true)}>
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Asset Location</Label>
+                    <Input
+                      value={editingAsset.location || ""}
+                      onChange={(e) => setEditingAsset({ ...editingAsset, location: e.target.value })}
+                      placeholder="Enter Location"
+                      className="mt-1.5"
+                    />
+                  </div>
+                </div>
+
+                {/* Criticality & Sensitivity */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Asset Criticality</Label>
+                    <Input value="N/A" disabled className="mt-1.5 bg-slate-50" />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Asset Sensitivity</Label>
+                    <Input value="" disabled className="mt-1.5 bg-slate-50" />
+                  </div>
+                </div>
+
+                {/* Dates */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Acquisition Date</Label>
+                    <div className="mt-1.5">
+                      <DatePicker
+                        value={editingAsset.acquisitionDate || ""}
+                        onChange={(date) => setEditingAsset({ ...editingAsset, acquisitionDate: date ? format(date, "yyyy-MM-dd") : null })}
+                        placeholder="Select Acquisition Date"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Next Review Date</Label>
+                    <div className="mt-1.5">
+                      <DatePicker
+                        value={editingAsset.nextReviewDate || ""}
+                        onChange={(date) => setEditingAsset({ ...editingAsset, nextReviewDate: date ? format(date, "yyyy-MM-dd") : null })}
+                        placeholder="Select Review Date"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <Button variant="outline" onClick={() => { setIsEditAssetOpen(false); setEditingAsset(null); }}>Cancel</Button>
             <Button onClick={handleEditAsset}>Save Changes</Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirm Delete</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete this asset? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={handleDeleteAsset}>
-              Delete
-            </Button>
-          </DialogFooter>
+        <DialogContent className="sm:max-w-[400px] p-0 gap-0">
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Confirm Delete</DialogTitle>
+              <DialogDescription className="text-sm text-slate-500 mt-1">
+                Are you sure you want to delete this asset? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="flex justify-end gap-2 px-6 py-4">
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDeleteAsset}>Delete</Button>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Inline Add Category Dialog */}
       <Dialog open={isAddCategoryOpen} onOpenChange={setIsAddCategoryOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Add Asset Category</DialogTitle>
-            <DialogDescription>
-              Create a new asset category
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="new-category-name">Category Name</Label>
+        <DialogContent className="sm:max-w-[400px] p-0 gap-0">
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Add Asset Category</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="px-6 py-6">
+            <div>
+              <Label className="text-sm font-medium text-slate-700">Category Name <span className="text-semantic-error">*</span></Label>
               <Input
-                id="new-category-name"
                 value={newCategoryName}
                 onChange={(e) => setNewCategoryName(e.target.value)}
                 placeholder="Enter category name"
+                className="mt-1.5"
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              setNewCategoryName("");
-              setIsAddCategoryOpen(false);
-            }}>
-              Cancel
-            </Button>
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100">
+            <Button variant="outline" onClick={() => { setNewCategoryName(""); setIsAddCategoryOpen(false); }}>Cancel</Button>
             <Button onClick={handleAddCategory}>Save</Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Inline Add Sub Category Dialog */}
       <Dialog open={isAddSubCategoryOpen} onOpenChange={setIsAddSubCategoryOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Add Asset Sub Category</DialogTitle>
-            <DialogDescription>
-              Create a new asset sub category
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="new-subcategory-name">Sub Category Name</Label>
+        <DialogContent className="sm:max-w-[400px] p-0 gap-0">
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Add Asset Sub Category</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="px-6 py-6">
+            <div>
+              <Label className="text-sm font-medium text-slate-700">Sub Category Name <span className="text-semantic-error">*</span></Label>
               <Input
-                id="new-subcategory-name"
                 value={newSubCategoryName}
                 onChange={(e) => setNewSubCategoryName(e.target.value)}
                 placeholder="Enter sub category name"
+                className="mt-1.5"
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              setNewSubCategoryName("");
-              setIsAddSubCategoryOpen(false);
-            }}>
-              Cancel
-            </Button>
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100">
+            <Button variant="outline" onClick={() => { setNewSubCategoryName(""); setIsAddSubCategoryOpen(false); }}>Cancel</Button>
             <Button onClick={handleAddSubCategory}>Save</Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Inline Add Group Dialog */}
       <Dialog open={isAddGroupOpen} onOpenChange={setIsAddGroupOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Add Asset Group</DialogTitle>
-            <DialogDescription>
-              Create a new asset group
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="new-group-name">Group Name</Label>
+        <DialogContent className="sm:max-w-[400px] p-0 gap-0">
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Add Asset Group</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="px-6 py-6">
+            <div>
+              <Label className="text-sm font-medium text-slate-700">Group Name <span className="text-semantic-error">*</span></Label>
               <Input
-                id="new-group-name"
                 value={newGroupName}
                 onChange={(e) => setNewGroupName(e.target.value)}
                 placeholder="Enter group name"
+                className="mt-1.5"
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              setNewGroupName("");
-              setIsAddGroupOpen(false);
-            }}>
-              Cancel
-            </Button>
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100">
+            <Button variant="outline" onClick={() => { setNewGroupName(""); setIsAddGroupOpen(false); }}>Cancel</Button>
             <Button onClick={handleAddGroup}>Save</Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Inline Add Lifecycle Status Dialog */}
       <Dialog open={isAddLifecycleOpen} onOpenChange={setIsAddLifecycleOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Add Lifecycle Status</DialogTitle>
-            <DialogDescription>
-              Create a new lifecycle status
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="new-lifecycle-name">Status Name</Label>
+        <DialogContent className="sm:max-w-[400px] p-0 gap-0">
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Add Lifecycle Status</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="px-6 py-6">
+            <div>
+              <Label className="text-sm font-medium text-slate-700">Status Name <span className="text-semantic-error">*</span></Label>
               <Input
-                id="new-lifecycle-name"
                 value={newLifecycleName}
                 onChange={(e) => setNewLifecycleName(e.target.value)}
                 placeholder="Enter status name"
+                className="mt-1.5"
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              setNewLifecycleName("");
-              setIsAddLifecycleOpen(false);
-            }}>
-              Cancel
-            </Button>
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100">
+            <Button variant="outline" onClick={() => { setNewLifecycleName(""); setIsAddLifecycleOpen(false); }}>Cancel</Button>
             <Button onClick={handleAddLifecycle}>Save</Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

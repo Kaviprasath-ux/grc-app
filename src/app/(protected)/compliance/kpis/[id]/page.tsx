@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, use, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -98,10 +97,10 @@ interface KPI {
 }
 
 const statusColors: Record<string, string> = {
-  Scheduled: "bg-blue-100 text-blue-800",
-  Missed: "bg-red-100 text-red-800",
-  Overdue: "bg-orange-100 text-orange-800",
-  Achieved: "bg-green-100 text-green-800",
+  Scheduled: "bg-info-light text-info-dark",
+  Missed: "bg-error-light text-error-dark",
+  Overdue: "bg-warning-light text-warning-dark",
+  Achieved: "bg-success-light text-success-dark",
 };
 
 // Generate years dynamically (current year + 2 years ahead and 5 years back)
@@ -488,377 +487,387 @@ export default function KPIDetailPage({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="relative h-8 w-8">
+          <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
+          <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+        </div>
       </div>
     );
   }
 
   if (!kpi) {
     return (
-      <div className="p-6">
-        <p className="text-gray-500">KPI not found</p>
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <p className="text-slate-500">KPI not found</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.push("/compliance/kpis")}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold">KPI Detail Page</h1>
-            <p className="text-gray-600">View and manage KPI details</p>
-          </div>
+      <div className="flex items-center gap-3">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          onClick={() => router.push("/compliance/kpis")}
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <h1 className="text-2xl font-bold text-slate-800">KPI Detail</h1>
+      </div>
+
+      {/* KPI Summary Cards */}
+      <div className="grid grid-cols-5 gap-4">
+        <div className="bg-white rounded-xl border border-slate-200 p-4">
+          <p className="text-xs font-medium text-slate-500 mb-1">KPI Code</p>
+          <p className="text-sm font-semibold text-slate-800">{kpi.evidence?.evidenceCode || kpi.code}</p>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 p-4">
+          <p className="text-xs font-medium text-slate-500 mb-1">Status</p>
+          <Badge className={statusColors[kpi.status] || "bg-slate-100 text-slate-600"}>
+            {kpi.status}
+          </Badge>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 p-4">
+          <p className="text-xs font-medium text-slate-500 mb-1">Expected Score</p>
+          <p className="text-sm font-semibold text-slate-800">{expectedScore ?? "-"}</p>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 p-4">
+          <p className="text-xs font-medium text-slate-500 mb-1">Actual Score</p>
+          <p className="text-sm font-semibold text-slate-800">{kpi.actualScore ?? "-"}</p>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 p-4">
+          <p className="text-xs font-medium text-slate-500 mb-1">Department</p>
+          <p className="text-sm font-semibold text-slate-800">{kpi.department?.name || kpi.evidence?.name || "-"}</p>
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* Chart and Review History Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left Column - Chart and Form */}
-        <div className="space-y-6">
-          {/* Year Filter and Chart Section */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>KPI</CardTitle>
-                <div className="flex items-center gap-2">
-                  <Label className="text-sm font-medium">Year</Label>
-                  <Select value={selectedYear} onValueChange={setSelectedYear}>
-                    <SelectTrigger className="w-[120px]">
-                      <SelectValue placeholder="Year" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {years.map((year) => (
-                        <SelectItem key={year} value={year}>
-                          {year}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {/* Line Chart - Actual Score vs Expected Score */}
-              <div className="h-64">
-                {chartData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart
-                      data={chartData}
-                      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-                      <YAxis domain={[0, "auto"]} tick={{ fontSize: 12 }} />
-                      <Tooltip
-                        formatter={(value, name) => [
-                          value,
-                          name === "actualScore" ? "Actual Score" : "Expected Score",
-                        ]}
-                        labelFormatter={(label) => `Review Date: ${label}`}
-                      />
-                      <Legend />
-                      {/* Expected Score as horizontal reference line */}
-                      {expectedScore !== null && (
-                        <ReferenceLine
-                          y={expectedScore}
-                          stroke="#22c55e"
-                          strokeDasharray="5 5"
-                          strokeWidth={2}
-                          label={{
-                            value: `Expected: ${expectedScore}`,
-                            fill: "#22c55e",
-                            fontSize: 12,
-                            position: "right",
-                          }}
-                        />
-                      )}
-                      {/* Actual Score line with dots */}
-                      <Line
-                        type="linear"
-                        dataKey="actualScore"
-                        name="Actual Score"
-                        stroke="#3b82f6"
-                        strokeWidth={2}
-                        dot={{ r: 6, fill: "#3b82f6", strokeWidth: 2 }}
-                        activeDot={{ r: 8 }}
-                        connectNulls
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="h-full bg-gray-50 rounded-lg flex items-center justify-center border">
-                    <div className="text-center text-gray-500">
-                      <p className="text-sm">No review data available</p>
-                      <p className="text-xs">Add actual scores to see the chart</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div className="flex items-center gap-4 mt-4 text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-blue-500 rounded" />
-                  <span>Actual Score</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-0.5 bg-green-500" style={{ borderStyle: "dashed" }} />
-                  <span>Expected Score ({expectedScore ?? "-"})</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* KPI Form */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="font-medium">KPI Objective</Label>
-                  <Input
-                    placeholder="Enter Objective"
-                    value={formData.objective}
-                    onChange={(e) =>
-                      setFormData({ ...formData, objective: e.target.value })
-                    }
+        {/* Chart Section */}
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-semibold text-slate-800">Performance Trend</h3>
+            <Select value={selectedYear} onValueChange={setSelectedYear}>
+              <SelectTrigger className="w-[120px] h-9 bg-white border-slate-200">
+                <SelectValue placeholder="Year" />
+              </SelectTrigger>
+              <SelectContent position="popper" sideOffset={4}>
+                {years.map((year) => (
+                  <SelectItem key={year} value={year}>
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="h-56">
+            {chartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart
+                  data={chartData}
+                  margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#64748b" }} />
+                  <YAxis domain={[0, "auto"]} tick={{ fontSize: 11, fill: "#64748b" }} />
+                  <Tooltip
+                    formatter={(value, name) => [
+                      value,
+                      name === "actualScore" ? "Actual Score" : "Expected Score",
+                    ]}
+                    labelFormatter={(label) => `Review Date: ${label}`}
+                    contentStyle={{ borderRadius: "8px", border: "1px solid #e2e8f0" }}
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label className="font-medium">KPI Description</Label>
-                  <Input
-                    value={formData.description}
-                    onChange={(e) =>
-                      setFormData({ ...formData, description: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="font-medium">KPI Data Source</Label>
-                  <Input
-                    placeholder="Enter Data Source"
-                    value={formData.dataSource}
-                    onChange={(e) =>
-                      setFormData({ ...formData, dataSource: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="font-medium">KPI Calculation Formula</Label>
-                  <Input
-                    placeholder="Enter the KPI Calculation Formula"
-                    value={formData.calculationFormula}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        calculationFormula: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="font-medium">KPI Expected Score</Label>
-                  <Input
-                    type="number"
-                    value={formData.expectedScore}
-                    onChange={(e) =>
-                      setFormData({ ...formData, expectedScore: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="font-medium">KPI Actual Score</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      type="number"
-                      value={formData.actualScore}
-                      onChange={(e) =>
-                        setFormData({ ...formData, actualScore: e.target.value })
-                      }
+                  {expectedScore !== null && (
+                    <ReferenceLine
+                      y={expectedScore}
+                      stroke="#22c55e"
+                      strokeDasharray="5 5"
+                      strokeWidth={2}
                     />
-                    <Button variant="outline" size="icon">
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  )}
+                  <Line
+                    type="linear"
+                    dataKey="actualScore"
+                    name="Actual Score"
+                    stroke="#3b82f6"
+                    strokeWidth={2}
+                    dot={{ r: 5, fill: "#3b82f6", strokeWidth: 2 }}
+                    activeDot={{ r: 7 }}
+                    connectNulls
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full bg-slate-50 rounded-lg flex items-center justify-center border border-slate-200">
+                <div className="text-center text-slate-500">
+                  <p className="text-sm">No review data available</p>
+                  <p className="text-xs mt-1">Add actual scores to see the chart</p>
                 </div>
               </div>
-              <div className="mt-4 flex justify-end">
-                <Button onClick={handleSave} disabled={saving}>
-                  {saving ? "Saving..." : "Save"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+            )}
+          </div>
+          <div className="flex items-center gap-6 mt-3 pt-3 border-t border-slate-100">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-info rounded-full" />
+              <span className="text-xs text-slate-600">Actual Score</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-0 border-t-2 border-dashed border-success" />
+              <span className="text-xs text-slate-600">Expected ({expectedScore ?? "-"})</span>
+            </div>
+          </div>
         </div>
 
-        {/* Right Column - Review History */}
-        <Card>
-          <CardContent className="pt-6">
-            {/* Next Due Review Date Info and Add Button */}
-            <div className="flex items-center justify-between mb-4 p-3 bg-gray-50 rounded-lg border">
-              <div>
-                <p className="text-sm font-medium text-gray-700">
-                  Next Due Review Date
-                </p>
-                <p className="text-lg font-semibold text-gray-900">
-                  {nextDueReviewDate
-                    ? nextDueReviewDate.toLocaleDateString("en-GB", {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                      })
-                    : "Not scheduled"}
-                </p>
-                {kpi.evidence?.recurrence && (
-                  <p className="text-xs text-gray-500">
-                    Recurrence: {kpi.evidence.recurrence}
-                  </p>
-                )}
-              </div>
-              <Button
-                onClick={() => setAddScoreDialogOpen(true)}
-                disabled={!nextDueReviewDate}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Actual Score
-              </Button>
+        {/* Next Review & Quick Actions */}
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <h3 className="text-base font-semibold text-slate-800 mb-4">Next Review</h3>
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="bg-slate-50 rounded-lg p-4 border border-slate-100">
+              <p className="text-xs font-medium text-slate-500 mb-1">Due Date</p>
+              <p className="text-lg font-semibold text-slate-800">
+                {nextDueReviewDate
+                  ? nextDueReviewDate.toLocaleDateString("en-GB", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    })
+                  : "Not scheduled"}
+              </p>
             </div>
+            <div className="bg-slate-50 rounded-lg p-4 border border-slate-100">
+              <p className="text-xs font-medium text-slate-500 mb-1">Recurrence</p>
+              <p className="text-lg font-semibold text-slate-800">
+                {kpi.evidence?.recurrence || "Monthly"}
+              </p>
+            </div>
+          </div>
+          <Button
+            onClick={() => setAddScoreDialogOpen(true)}
+            disabled={!nextDueReviewDate}
+            className="w-full bg-primary-600 hover:bg-primary-700"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Actual Score
+          </Button>
+        </div>
+      </div>
 
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Review Date</TableHead>
-                  <TableHead>Kpi Actual Score</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Document</TableHead>
-                  <TableHead>Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredReviews.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8">
-                      <p className="text-gray-500">No review history found</p>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredReviews.map((review) => (
-                    <TableRow key={review.id}>
-                      <TableCell>
-                        {new Date(review.reviewDate).toLocaleDateString("en-GB")}
-                      </TableCell>
-                      <TableCell>{review.actualScore ?? "-"}</TableCell>
-                      <TableCell>
-                        <Badge
-                          className={statusColors[review.status] || "bg-gray-100"}
+      {/* KPI Details Form */}
+      <div className="bg-white rounded-xl border border-slate-200 p-5">
+        <h3 className="text-base font-semibold text-slate-800 mb-4">KPI Details</h3>
+        <div className="grid grid-cols-3 gap-4">
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium text-slate-500">KPI Objective</Label>
+            <Input
+              placeholder="Enter Objective"
+              value={formData.objective}
+              onChange={(e) => setFormData({ ...formData, objective: e.target.value })}
+              className="h-9 border-slate-200"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium text-slate-500">KPI Description</Label>
+            <Input
+              placeholder="Enter Description"
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              className="h-9 border-slate-200"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium text-slate-500">Data Source</Label>
+            <Input
+              placeholder="Enter Data Source"
+              value={formData.dataSource}
+              onChange={(e) => setFormData({ ...formData, dataSource: e.target.value })}
+              className="h-9 border-slate-200"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium text-slate-500">Calculation Formula</Label>
+            <Input
+              placeholder="Enter Formula"
+              value={formData.calculationFormula}
+              onChange={(e) => setFormData({ ...formData, calculationFormula: e.target.value })}
+              className="h-9 border-slate-200"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium text-slate-500">Expected Score</Label>
+            <Input
+              type="number"
+              placeholder="0"
+              value={formData.expectedScore}
+              onChange={(e) => setFormData({ ...formData, expectedScore: e.target.value })}
+              className="h-9 border-slate-200"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium text-slate-500">Actual Score</Label>
+            <Input
+              type="number"
+              placeholder="0"
+              value={formData.actualScore}
+              onChange={(e) => setFormData({ ...formData, actualScore: e.target.value })}
+              className="h-9 border-slate-200"
+            />
+          </div>
+        </div>
+        <div className="mt-4 pt-4 border-t border-slate-100 flex justify-end">
+          <Button onClick={handleSave} disabled={saving} className="bg-primary-600 hover:bg-primary-700">
+            {saving ? "Saving..." : "Save Changes"}
+          </Button>
+        </div>
+      </div>
+
+      {/* Review History Table */}
+      <div className="bg-white rounded-xl border border-slate-200">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+          <h3 className="text-base font-semibold text-slate-800">Review History</h3>
+          <span className="text-xs text-slate-500">
+            {selectedYear && `Filtered by ${selectedYear}`}
+          </span>
+        </div>
+        <Table>
+          <TableHeader>
+            <TableRow className="border-b border-slate-100 bg-slate-50/50">
+              <TableHead className="text-xs font-semibold text-slate-600 py-3 pl-4">Review Date</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-3">Actual Score</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-3">Status</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-3">Document</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-3 text-right pr-4">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredReviews.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-12">
+                  <div className="text-slate-400">
+                    <Calendar className="h-10 w-10 mx-auto mb-2" />
+                    <p className="text-sm text-slate-500">No review history found</p>
+                    <p className="text-xs text-slate-400 mt-1">Add your first actual score to start tracking</p>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredReviews.map((review) => (
+                <TableRow key={review.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                  <TableCell className="py-3 text-sm font-medium text-slate-800 pl-4">
+                    {new Date(review.reviewDate).toLocaleDateString("en-GB", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700">{review.actualScore ?? "-"}</TableCell>
+                  <TableCell className="py-3 text-sm">
+                    <Badge className={statusColors[review.status] || "bg-slate-100 text-slate-600"}>
+                      {review.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="py-3 text-sm">
+                    {review.documentName ? (
+                      <a href={review.documentPath || "#"} className="text-primary-600 hover:underline">
+                        {review.documentName}
+                      </a>
+                    ) : (
+                      <span className="text-slate-400">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="py-3 text-sm pr-4">
+                    <div className="flex items-center justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title="Edit"
+                        className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                        onClick={() => handleOpenUpdateDialog(review)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title="Delete"
+                        className="h-8 w-8 text-slate-400 hover:text-error"
+                        onClick={() => {
+                          setReviewToDelete(review.id);
+                          setDeleteDialogOpen(true);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                      {review.status === "Missed" && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Add Action Plan"
+                          className="h-8 w-8 text-slate-400 hover:text-primary-600"
+                          onClick={() => handleOpenActionPlanDialog(review.id)}
                         >
-                          {review.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {review.documentName ? (
-                          <a
-                            href={review.documentPath || "#"}
-                            className="text-blue-600 hover:underline text-sm"
-                          >
-                            {review.documentName}
-                          </a>
-                        ) : (
-                          "-"
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            title="Update Actual score"
-                            onClick={() => handleOpenUpdateDialog(review)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            title="Delete"
-                            onClick={() => {
-                              setReviewToDelete(review.id);
-                              setDeleteDialogOpen(true);
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                          {review.status === "Missed" && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              title="Add Action Plan"
-                              onClick={() => handleOpenActionPlanDialog(review.id)}
-                            >
-                              <Plus className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-
-            {/* Pagination */}
-            <div className="flex items-center justify-between mt-4 text-sm text-gray-500">
-              <span>
-                Currently showing 1 to {filteredReviews.length} of {filteredReviews.length}
-                {selectedYear && ` (filtered by ${selectedYear})`}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
+          <span className="text-sm text-slate-500">
+            Showing {filteredReviews.length} {filteredReviews.length === 1 ? "entry" : "entries"}
+          </span>
+        </div>
       </div>
 
       {/* Update Actual Score Dialog */}
       <Dialog open={updateDialogOpen} onOpenChange={setUpdateDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Update Actual Score</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label className="font-medium">Actual Score</Label>
-              <Input
-                type="number"
-                value={updateForm.actualScore}
-                onChange={(e) =>
-                  setUpdateForm({ ...updateForm, actualScore: e.target.value })
-                }
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="font-medium">Upload document</Label>
-              <div className="border-2 border-dashed rounded-lg p-6 text-center">
-                <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-                <p className="text-sm text-gray-500">
-                  Drag and drop or select file.
-                </p>
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Update Actual Score</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-slate-700">Actual Score</Label>
+                <Input
+                  type="number"
+                  value={updateForm.actualScore}
+                  onChange={(e) =>
+                    setUpdateForm({ ...updateForm, actualScore: e.target.value })
+                  }
+                  className="h-9 border-slate-200"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-slate-700">Upload document</Label>
+                <div className="border-2 border-dashed border-slate-200 rounded-lg p-6 text-center">
+                  <Upload className="h-8 w-8 mx-auto text-slate-400 mb-2" />
+                  <p className="text-sm text-slate-500">
+                    Drag and drop or select file.
+                  </p>
+                </div>
               </div>
             </div>
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setUpdateDialogOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button onClick={handleUpdateReview}>Save</Button>
-            </div>
+          </div>
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <Button
+              variant="outline"
+              onClick={() => setUpdateDialogOpen(false)}
+              className="border-slate-200"
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleUpdateReview} className="bg-primary-600 hover:bg-primary-700">Save</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -881,211 +890,227 @@ export default function KPIDetailPage({
 
       {/* Add Action Plan Dialog */}
       <Dialog open={actionPlanDialogOpen} onOpenChange={setActionPlanDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Update Plan Action</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label className="font-medium">
-                Planned Action <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                placeholder="Enter planned action"
-                value={actionPlanForm.plannedAction}
-                onChange={(e) =>
-                  setActionPlanForm({
-                    ...actionPlanForm,
-                    plannedAction: e.target.value,
-                  })
-                }
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="font-medium">Description</Label>
-              <Textarea
-                placeholder="Enter description"
-                value={actionPlanForm.description}
-                onChange={(e) =>
-                  setActionPlanForm({
-                    ...actionPlanForm,
-                    description: e.target.value,
-                  })
-                }
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="font-medium">
-                Percentage Completed <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                type="number"
-                min="0"
-                max="100"
-                placeholder="0"
-                value={actionPlanForm.percentageCompleted}
-                onChange={(e) =>
-                  setActionPlanForm({
-                    ...actionPlanForm,
-                    percentageCompleted: e.target.value,
-                  })
-                }
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="font-medium">
-                Start Date <span className="text-red-500">*</span>
-              </Label>
-              <div className="relative">
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Update Plan Action</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-slate-700">
+                  Planned Action <span className="text-error">*</span>
+                </Label>
                 <Input
-                  type="date"
-                  value={actionPlanForm.startDate}
+                  placeholder="Enter planned action"
+                  value={actionPlanForm.plannedAction}
                   onChange={(e) =>
                     setActionPlanForm({
                       ...actionPlanForm,
-                      startDate: e.target.value,
+                      plannedAction: e.target.value,
                     })
                   }
+                  className="h-9 border-slate-200"
                 />
-                <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-slate-700">Description</Label>
+                <Textarea
+                  placeholder="Enter description"
+                  value={actionPlanForm.description}
+                  onChange={(e) =>
+                    setActionPlanForm({
+                      ...actionPlanForm,
+                      description: e.target.value,
+                    })
+                  }
+                  className="border-slate-200"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-slate-700">
+                  Percentage Completed <span className="text-error">*</span>
+                </Label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  placeholder="0"
+                  value={actionPlanForm.percentageCompleted}
+                  onChange={(e) =>
+                    setActionPlanForm({
+                      ...actionPlanForm,
+                      percentageCompleted: e.target.value,
+                    })
+                  }
+                  className="h-9 border-slate-200"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-slate-700">
+                  Start Date <span className="text-error">*</span>
+                </Label>
+                <div className="relative">
+                  <Input
+                    type="date"
+                    value={actionPlanForm.startDate}
+                    onChange={(e) =>
+                      setActionPlanForm({
+                        ...actionPlanForm,
+                        startDate: e.target.value,
+                      })
+                    }
+                    className="h-9 border-slate-200"
+                  />
+                  <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-slate-700">
+                  Status <span className="text-error">*</span>
+                </Label>
+                <Select
+                  value={actionPlanForm.status}
+                  onValueChange={(value) =>
+                    setActionPlanForm({ ...actionPlanForm, status: value })
+                  }
+                >
+                  <SelectTrigger className="h-9 bg-white border-slate-200">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent position="popper" sideOffset={4}>
+                    <SelectItem value="Open">Open</SelectItem>
+                    <SelectItem value="In-Progress">In-Progress</SelectItem>
+                    <SelectItem value="Completed">Completed</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
-            <div className="space-y-2">
-              <Label className="font-medium">
-                Status <span className="text-red-500">*</span>
-              </Label>
-              <Select
-                value={actionPlanForm.status}
-                onValueChange={(value) =>
-                  setActionPlanForm({ ...actionPlanForm, status: value })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Open">Open</SelectItem>
-                  <SelectItem value="In-Progress">In-Progress</SelectItem>
-                  <SelectItem value="Completed">Completed</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex justify-end gap-2 pt-4">
-              <Button
-                variant="outline"
-                onClick={() => setActionPlanDialogOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleCreateActionPlan}
-                disabled={
-                  !actionPlanForm.plannedAction ||
-                  !actionPlanForm.percentageCompleted ||
-                  !actionPlanForm.startDate
-                }
-              >
-                Save
-              </Button>
-            </div>
+          </div>
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <Button
+              variant="outline"
+              onClick={() => setActionPlanDialogOpen(false)}
+              className="border-slate-200"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreateActionPlan}
+              disabled={
+                !actionPlanForm.plannedAction ||
+                !actionPlanForm.percentageCompleted ||
+                !actionPlanForm.startDate
+              }
+              className="bg-primary-600 hover:bg-primary-700"
+            >
+              Save
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
 
       {/* Add Actual Score Dialog */}
       <Dialog open={addScoreDialogOpen} onOpenChange={setAddScoreDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add KPI Actual Score</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            {/* Display Review Date Context */}
-            <div className="p-3 bg-gray-50 rounded-lg border">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="text-gray-500">Review Date</p>
-                  <p className="font-medium">
-                    {nextDueReviewDate
-                      ? nextDueReviewDate.toLocaleDateString("en-GB", {
-                          day: "2-digit",
-                          month: "short",
-                          year: "numeric",
-                        })
-                      : "-"}
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Add KPI Actual Score</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            <div className="space-y-4">
+              {/* Display Review Date Context */}
+              <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-slate-500">Review Date</p>
+                    <p className="font-medium text-slate-800">
+                      {nextDueReviewDate
+                        ? nextDueReviewDate.toLocaleDateString("en-GB", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          })
+                        : "-"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-slate-500">Expected Score</p>
+                    <p className="font-medium text-slate-800">{expectedScore ?? "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-slate-500">Recurrence</p>
+                    <p className="font-medium text-slate-800">
+                      {kpi?.evidence?.recurrence || "Monthly"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Actual Score Input */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-slate-700">
+                  Actual Score <span className="text-error">*</span>
+                </Label>
+                <Input
+                  type="number"
+                  placeholder="Enter actual score"
+                  value={addScoreForm.actualScore}
+                  onChange={(e) =>
+                    setAddScoreForm({ actualScore: e.target.value })
+                  }
+                  className="h-9 border-slate-200"
+                />
+                {addScoreForm.actualScore && expectedScore !== null && (
+                  <p className="text-sm">
+                    Status:{" "}
+                    <Badge
+                      className={
+                        parseFloat(addScoreForm.actualScore) >= expectedScore
+                          ? "bg-success-light text-success-dark"
+                          : "bg-error-light text-error-dark"
+                      }
+                    >
+                      {parseFloat(addScoreForm.actualScore) >= expectedScore
+                        ? "Achieved"
+                        : "Missed"}
+                    </Badge>
                   </p>
-                </div>
-                <div>
-                  <p className="text-gray-500">Expected Score</p>
-                  <p className="font-medium">{expectedScore ?? "-"}</p>
-                </div>
-                <div>
-                  <p className="text-gray-500">Recurrence</p>
-                  <p className="font-medium">
-                    {kpi?.evidence?.recurrence || "Monthly"}
+                )}
+              </div>
+
+              {/* Upload Document (optional) */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-slate-700">Upload Document (Optional)</Label>
+                <div className="border-2 border-dashed border-slate-200 rounded-lg p-6 text-center">
+                  <Upload className="h-8 w-8 mx-auto text-slate-400 mb-2" />
+                  <p className="text-sm text-slate-500">
+                    Drag and drop or select file.
                   </p>
                 </div>
               </div>
             </div>
-
-            {/* Actual Score Input */}
-            <div className="space-y-2">
-              <Label className="font-medium">
-                Actual Score <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                type="number"
-                placeholder="Enter actual score"
-                value={addScoreForm.actualScore}
-                onChange={(e) =>
-                  setAddScoreForm({ actualScore: e.target.value })
-                }
-              />
-              {addScoreForm.actualScore && expectedScore !== null && (
-                <p className="text-sm">
-                  Status:{" "}
-                  <Badge
-                    className={
-                      parseFloat(addScoreForm.actualScore) >= expectedScore
-                        ? "bg-green-100 text-green-800"
-                        : "bg-red-100 text-red-800"
-                    }
-                  >
-                    {parseFloat(addScoreForm.actualScore) >= expectedScore
-                      ? "Achieved"
-                      : "Missed"}
-                  </Badge>
-                </p>
-              )}
-            </div>
-
-            {/* Upload Document (optional) */}
-            <div className="space-y-2">
-              <Label className="font-medium">Upload Document (Optional)</Label>
-              <div className="border-2 border-dashed rounded-lg p-6 text-center">
-                <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-                <p className="text-sm text-gray-500">
-                  Drag and drop or select file.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-4">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setAddScoreDialogOpen(false);
-                  setAddScoreForm({ actualScore: "" });
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleAddActualScore}
-                disabled={!addScoreForm.actualScore || addingScore}
-              >
-                {addingScore ? "Saving..." : "Save"}
-              </Button>
-            </div>
+          </div>
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setAddScoreDialogOpen(false);
+                setAddScoreForm({ actualScore: "" });
+              }}
+              className="border-slate-200"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAddActualScore}
+              disabled={!addScoreForm.actualScore || addingScore}
+              className="bg-primary-600 hover:bg-primary-700"
+            >
+              {addingScore ? "Saving..." : "Save"}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

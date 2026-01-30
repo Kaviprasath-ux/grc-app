@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Plus, MoreVertical, Pencil, Trash2, Search, Upload, Download } from "lucide-react";
-import { PageHeader, DataGrid, FilterBar } from "@/components/shared";
+import { DataGrid, FilterBar } from "@/components/shared";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -685,7 +685,7 @@ export default function UsersPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-slate-400">Loading...</p>
       </div>
     );
   }
@@ -694,7 +694,9 @@ export default function UsersPage() {
   if (isDeptRole) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Account Overview" />
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800">Account Overview</h1>
+        </div>
 
         <div className="space-y-4">
           {currentDepartment && (
@@ -714,20 +716,10 @@ export default function UsersPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Users"
-        actions={
-          activeTab === "user-management"
-            ? [
-                {
-                  label: "New Account",
-                  icon: Plus,
-                  onClick: () => setIsAddUserOpen(true),
-                },
-              ]
-            : []
-        }
-      />
+      {/* Page Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-slate-800">Users</h1>
+      </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
@@ -736,11 +728,11 @@ export default function UsersPage() {
         </TabsList>
 
         {/* Account Overview Tab */}
-        <TabsContent value="account-overview" className="space-y-4">
+        <TabsContent value="account-overview" className="mt-6 space-y-4">
           {/* Header with search and action buttons */}
           <div className="flex items-center justify-between gap-4">
             <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
                 placeholder="Search by Department Name"
                 value={departmentSearchTerm}
@@ -750,11 +742,11 @@ export default function UsersPage() {
             </div>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={handleExport}>
-                <Upload className="h-4 w-4 mr-2" />
+                <Download className="h-4 w-4 mr-2" />
                 Export
               </Button>
               <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)}>
-                <Download className="h-4 w-4 mr-2" />
+                <Upload className="h-4 w-4 mr-2" />
                 Import
               </Button>
               <Button size="sm" onClick={() => setIsAddUserOpen(true)}>
@@ -783,24 +775,24 @@ export default function UsersPage() {
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="border-b border-slate-100 bg-slate-50/50">
-                            <th className="text-left py-3 pl-4 text-xs font-semibold text-slate-600">Full Name</th>
-                            <th className="text-left py-3 text-xs font-semibold text-slate-600">Designation Name</th>
-                            <th className="text-left py-3 text-xs font-semibold text-slate-600">Reporting Manager</th>
-                            <th className="text-left py-3 text-xs font-semibold text-slate-600">Email ID</th>
-                            <th className="text-left py-3 text-xs font-semibold text-slate-600">Last Login</th>
-                            <th className="text-center py-3 text-xs font-semibold text-slate-600">Actions</th>
+                            <th className="text-left py-4 pl-4 text-xs font-semibold text-slate-600">Full Name</th>
+                            <th className="text-left py-4 text-xs font-semibold text-slate-600">Designation Name</th>
+                            <th className="text-left py-4 text-xs font-semibold text-slate-600">Reporting Manager</th>
+                            <th className="text-left py-4 text-xs font-semibold text-slate-600">Email ID</th>
+                            <th className="text-left py-4 text-xs font-semibold text-slate-600">Last Login</th>
+                            <th className="text-center py-4 text-xs font-semibold text-slate-600">Actions</th>
                           </tr>
                         </thead>
                         <tbody className="bg-white">
                           {dept.users.map((user) => (
                             <tr key={user.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
-                              <td className="py-3 pl-4 text-sm text-slate-700">{user.fullName}</td>
-                              <td className="py-3 text-sm text-slate-700">{user.designation || "-"}</td>
-                              <td className="py-3 text-sm text-slate-700">{user.reportingManager?.fullName || "-"}</td>
-                              <td className="py-3 text-sm text-slate-700">{user.email}</td>
-                              <td className="py-3 text-sm text-slate-700">-</td>
-                              <td className="py-3">
-                                <div className="flex items-center justify-center gap-2">
+                              <td className="py-4 pl-4 text-sm text-slate-700">{user.fullName}</td>
+                              <td className="py-4 text-sm text-slate-700">{user.designation || "-"}</td>
+                              <td className="py-4 text-sm text-slate-700">{user.reportingManager?.fullName || "-"}</td>
+                              <td className="py-4 text-sm text-slate-700">{user.email}</td>
+                              <td className="py-4 text-sm text-slate-700">-</td>
+                              <td className="py-4">
+                                <div className="flex items-center justify-center gap-1">
                                   <Button
                                     variant="ghost"
                                     size="icon"
@@ -818,7 +810,7 @@ export default function UsersPage() {
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-8 w-8 text-slate-400 hover:text-error"
+                                    className="h-8 w-8 text-slate-400 hover:text-semantic-error"
                                     onClick={() => openDeleteDialog(user)}
                                   >
                                     <Trash2 className="h-4 w-4" />
@@ -850,34 +842,42 @@ export default function UsersPage() {
         </TabsContent>
 
         {/* User Management Tab */}
-        <TabsContent value="user-management" className="space-y-4">
-          <FilterBar
-            searchPlaceholder="Search user..."
-            searchValue={searchTerm}
-            onSearchChange={setSearchTerm}
-            filters={[
-              {
-                id: "role",
-                label: "Role",
-                options: [
-                  { value: "all", label: "All Roles" },
-                  ...allUserRoles.map((role) => ({ value: role, label: role })),
-                ],
-                value: roleFilter,
-                onChange: setRoleFilter,
-              },
-              {
-                id: "department",
-                label: "Department",
-                options: [
-                  { value: "all", label: "All Departments" },
-                  ...departments.map((d) => ({ value: d.name, label: d.name })),
-                ],
-                value: departmentFilter,
-                onChange: setDepartmentFilter,
-              },
-            ]}
-          />
+        <TabsContent value="user-management" className="mt-6 space-y-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex-1">
+              <FilterBar
+                searchPlaceholder="Search user..."
+                searchValue={searchTerm}
+                onSearchChange={setSearchTerm}
+                filters={[
+                  {
+                    id: "role",
+                    label: "Role",
+                    options: [
+                      { value: "all", label: "All Roles" },
+                      ...allUserRoles.map((role) => ({ value: role, label: role })),
+                    ],
+                    value: roleFilter,
+                    onChange: setRoleFilter,
+                  },
+                  {
+                    id: "department",
+                    label: "Department",
+                    options: [
+                      { value: "all", label: "All Departments" },
+                      ...departments.map((d) => ({ value: d.name, label: d.name })),
+                    ],
+                    value: departmentFilter,
+                    onChange: setDepartmentFilter,
+                  },
+                ]}
+              />
+            </div>
+            <Button size="sm" onClick={() => setIsAddUserOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              New Account
+            </Button>
+          </div>
           <DataGrid
             columns={userColumns}
             data={filteredUsers}
@@ -910,11 +910,15 @@ export default function UsersPage() {
           });
         }
       }}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>New Account</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-6 py-4">
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">New Account</DialogTitle>
+            </DialogHeader>
+          </div>
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
             {/* Account Credentials Section */}
             <div className="space-y-4">
               <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">Account Credentials</h4>
@@ -1233,7 +1237,8 @@ export default function UsersPage() {
               </div>
             </div>
           </div>
-          <DialogFooter>
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => {
               setIsAddUserOpen(false);
               setUserForm({
@@ -1258,18 +1263,22 @@ export default function UsersPage() {
               Cancel
             </Button>
             <Button onClick={handleAddUser}>Save</Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Edit User Dialog */}
       <Dialog open={isEditUserOpen} onOpenChange={setIsEditUserOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit Account</DialogTitle>
-          </DialogHeader>
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Edit Account</DialogTitle>
+            </DialogHeader>
+          </div>
+          {/* Scrollable Content */}
           {editingUser && (
-            <div className="space-y-4 py-4">
+            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
               {/* User ID - Read Only */}
               <div className="grid grid-cols-[140px_1fr] items-center gap-4">
                 <Label className="text-right">User ID</Label>
@@ -1576,12 +1585,13 @@ export default function UsersPage() {
               </div>
             </div>
           )}
-          <DialogFooter>
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsEditUserOpen(false)}>
               Cancel
             </Button>
             <Button onClick={handleEditUser}>Save</Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -1595,17 +1605,21 @@ export default function UsersPage() {
           }
         }
       }}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Import Users</DialogTitle>
-            <DialogDescription>
-              Import users from a CSV file. The file should have columns: Username, Email, Password, First Name, Last Name, Full Name, Designation, Function, Role, Department, Language, Timezone.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0">
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Import Users</DialogTitle>
+              <DialogDescription>
+                Import users from a CSV file. The file should have columns: Username, Email, Password, First Name, Last Name, Full Name, Designation, Function, Role, Department, Language, Timezone.
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          {/* Content */}
+          <div className="px-6 py-6 space-y-5">
             <div>
-              <Label>File</Label>
-              <div className="flex gap-2 mt-1">
+              <Label className="text-sm font-medium text-slate-700">File</Label>
+              <div className="flex gap-2 mt-1.5">
                 <Input
                   type="file"
                   accept=".csv"
@@ -1615,36 +1629,37 @@ export default function UsersPage() {
                 />
               </div>
               {importFile && (
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-sm text-slate-500 mt-1">
                   Selected: {importFile.name}
                 </p>
               )}
             </div>
-            <div className="flex justify-between gap-2 pt-4">
-              <Button variant="outline" onClick={handleDownloadTemplate}>
-                <Download className="h-4 w-4 mr-2" />
-                Download Template
+          </div>
+          {/* Fixed Footer */}
+          <div className="flex justify-between gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <Button variant="outline" onClick={handleDownloadTemplate}>
+              <Download className="h-4 w-4 mr-2" />
+              Download Template
+            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowImportDialog(false);
+                  setImportFile(null);
+                  if (fileInputRef.current) {
+                    fileInputRef.current.value = "";
+                  }
+                }}
+              >
+                Cancel
               </Button>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setShowImportDialog(false);
-                    setImportFile(null);
-                    if (fileInputRef.current) {
-                      fileInputRef.current.value = "";
-                    }
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleImport}
-                  disabled={!importFile || importing}
-                >
-                  {importing ? "Importing..." : "Import"}
-                </Button>
-              </div>
+              <Button
+                onClick={handleImport}
+                disabled={!importFile || importing}
+              >
+                {importing ? "Importing..." : "Import"}
+              </Button>
             </div>
           </div>
         </DialogContent>
@@ -1660,14 +1675,18 @@ export default function UsersPage() {
           }
         }}
       >
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Change Password</DialogTitle>
-            <DialogDescription>
-              Enter a new password for {editingUser?.fullName || editingUser?.userName}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0">
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Change Password</DialogTitle>
+              <DialogDescription>
+                Enter a new password for {editingUser?.fullName || editingUser?.userName}
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          {/* Content */}
+          <div className="px-6 py-6 space-y-5">
             <div>
               <Label htmlFor="newPassword" className="text-sm font-medium text-slate-700">New Password *</Label>
               <Input
@@ -1703,7 +1722,8 @@ export default function UsersPage() {
               />
             </div>
           </div>
-          <DialogFooter>
+          {/* Fixed Footer */}
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => {
@@ -1716,7 +1736,7 @@ export default function UsersPage() {
             <Button onClick={handleChangePassword} disabled={changingPassword}>
               {changingPassword ? "Changing..." : "Change Password"}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

@@ -612,9 +612,7 @@ function ProfilePageContent() {
       {/* Page Header */}
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-bold text-slate-800">Organization Profile</h1>
-        <p className="text-sm text-slate-500">
-          Manage your organization information, services, regulations, and departments.
-        </p>
+        
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>

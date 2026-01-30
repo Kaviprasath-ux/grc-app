@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Pencil, Trash2, Sparkles, Search, Download, Upload } from "lucide-react";
-import { PageHeader, DataGrid } from "@/components/shared";
+import { Plus, Pencil, Trash2, Sparkles, Search, Download,Upload } from "lucide-react";
+import { DataGrid } from "@/components/shared";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -400,7 +400,7 @@ export default function AssetClassificationPage() {
       id: "actions",
       header: "Action",
       cell: ({ row }) => (
-        <div className="flex gap-2">
+        <div className="flex gap-1">
           <Button
             variant="outline"
             size="sm"
@@ -412,6 +412,7 @@ export default function AssetClassificationPage() {
           <Button
             variant="ghost"
             size="icon"
+            className="h-8 w-8 text-slate-400 hover:text-slate-600"
             onClick={() => openEditDialog(row.original)}
           >
             <Pencil className="h-4 w-4" />
@@ -419,7 +420,7 @@ export default function AssetClassificationPage() {
           <Button
             variant="ghost"
             size="icon"
-            className="text-destructive"
+            className="h-8 w-8 text-slate-400 hover:text-semantic-error"
             onClick={() => openDeleteDialog(row.original)}
           >
             <Trash2 className="h-4 w-4" />
@@ -431,33 +432,42 @@ export default function AssetClassificationPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Loading...</p>
+      <div className="flex items-center justify-center h-[60vh]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative">
+            <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
+            <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+          </div>
+          <p className="text-sm text-slate-500 font-medium">Loading classifications...</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Asset Classification" />
+      {/* Page Header */}
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold text-slate-800">Asset Classification</h1>
+      </div>
 
       {/* Search and Actions - aligned on same row */}
       <div className="flex items-center justify-between gap-4">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input
             placeholder="Search by Group, Sub Category, Confidentiality, Availability, Integrity, Criticality"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 w-[500px]"
+            className="pl-10 w-[500px] bg-white border-slate-200"
           />
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={handleExport}>
-            <Download className="h-4 w-4 mr-2" />
+          <Button variant="outline" size="sm" onClick={handleExport}>
+            <Upload className="h-4 w-4 mr-2" />
             Export
           </Button>
-          <Button onClick={() => {
+          <Button size="sm" onClick={() => {
             resetForm();
             setIsAddOpen(true);
           }}>
@@ -474,459 +484,474 @@ export default function AssetClassificationPage() {
         hideSearch={true}
       />
 
-      {/* Add Classification Dialog - matching UAT */}
+      {/* Add Classification Dialog */}
       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Add Asset Classification</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            {/* Asset Sub Category */}
-            <div className="space-y-2">
-              <Label>Asset Sub Category</Label>
-              <Select
-                value={formData.subCategoryId}
-                onValueChange={(value) => setFormData({ ...formData, subCategoryId: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select" />
-                </SelectTrigger>
-                <SelectContent>
-                  {subCategories.map((sc) => (
-                    <SelectItem key={sc.id} value={sc.id}>
-                      {sc.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Add Asset Classification</DialogTitle>
+            </DialogHeader>
+          </div>
 
-            {/* Asset Group */}
-            <div className="space-y-2">
-              <Label>Asset Group</Label>
-              <Select
-                value={formData.groupId}
-                onValueChange={(value) => setFormData({ ...formData, groupId: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select" />
-                </SelectTrigger>
-                <SelectContent>
-                  {groups.map((g) => (
-                    <SelectItem key={g.id} value={g.id}>
-                      {g.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Asset Sensitivity with inline add */}
-            <div className="space-y-2">
-              <Label>Asset Sensitivity</Label>
-              <div className="flex gap-2">
-                <Select
-                  value={formData.sensitivityId}
-                  onValueChange={(value) => setFormData({ ...formData, sensitivityId: value })}
-                >
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Select" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {sensitivities.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setIsAddSensitivityOpen(true)}
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            <div className="space-y-5">
+              {/* Asset Sub Category & Asset Group */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Asset Sub Category <span className="text-semantic-error">*</span></Label>
+                  <Select
+                    value={formData.subCategoryId}
+                    onValueChange={(value) => setFormData({ ...formData, subCategoryId: value })}
+                  >
+                    <SelectTrigger className="mt-1.5 w-full">
+                      <SelectValue placeholder="Select Sub Category" />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4}>
+                      {subCategories.map((sc) => (
+                        <SelectItem key={sc.id} value={sc.id}>
+                          {sc.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Asset Group <span className="text-semantic-error">*</span></Label>
+                  <Select
+                    value={formData.groupId}
+                    onValueChange={(value) => setFormData({ ...formData, groupId: value })}
+                  >
+                    <SelectTrigger className="mt-1.5 w-full">
+                      <SelectValue placeholder="Select Group" />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4}>
+                      {groups.map((g) => (
+                        <SelectItem key={g.id} value={g.id}>
+                          {g.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-            </div>
 
-            {/* Confidentiality with inline add */}
-            <div className="space-y-2">
-              <Label>Confidentiality</Label>
-              <div className="flex gap-2">
-                <Select
-                  value={formData.confidentiality}
-                  onValueChange={(value) => updateCIAValue("confidentiality", value)}
-                >
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Select" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {getRatingsByType("Confidentiality").map((r) => (
-                      <SelectItem key={r.id} value={r.label}>
-                        {r.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => {
-                    setNewCIARatingType("Confidentiality");
-                    setIsAddCIARatingOpen(true);
-                  }}
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
+              {/* Asset Sensitivity with inline add */}
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Asset Sensitivity</Label>
+                <div className="flex gap-2 mt-1.5">
+                  <Select
+                    value={formData.sensitivityId}
+                    onValueChange={(value) => setFormData({ ...formData, sensitivityId: value })}
+                  >
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Select Sensitivity" />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4}>
+                      {sensitivities.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setIsAddSensitivityOpen(true)}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
-            </div>
 
-            {/* Integrity with inline add */}
-            <div className="space-y-2">
-              <Label>Integrity</Label>
-              <div className="flex gap-2">
-                <Select
-                  value={formData.integrity}
-                  onValueChange={(value) => updateCIAValue("integrity", value)}
-                >
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Select" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {getRatingsByType("Integrity").map((r) => (
-                      <SelectItem key={r.id} value={r.label}>
-                        {r.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => {
-                    setNewCIARatingType("Integrity");
-                    setIsAddCIARatingOpen(true);
-                  }}
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
+              {/* Confidentiality & Integrity */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Confidentiality</Label>
+                  <div className="flex gap-2 mt-1.5">
+                    <Select
+                      value={formData.confidentiality}
+                      onValueChange={(value) => updateCIAValue("confidentiality", value)}
+                    >
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Select" />
+                      </SelectTrigger>
+                      <SelectContent position="popper" sideOffset={4}>
+                        {getRatingsByType("Confidentiality").map((r) => (
+                          <SelectItem key={r.id} value={r.label}>
+                            {r.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => {
+                        setNewCIARatingType("Confidentiality");
+                        setIsAddCIARatingOpen(true);
+                      }}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Integrity</Label>
+                  <div className="flex gap-2 mt-1.5">
+                    <Select
+                      value={formData.integrity}
+                      onValueChange={(value) => updateCIAValue("integrity", value)}
+                    >
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Select" />
+                      </SelectTrigger>
+                      <SelectContent position="popper" sideOffset={4}>
+                        {getRatingsByType("Integrity").map((r) => (
+                          <SelectItem key={r.id} value={r.label}>
+                            {r.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => {
+                        setNewCIARatingType("Integrity");
+                        setIsAddCIARatingOpen(true);
+                      }}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
               </div>
-            </div>
 
-            {/* Availability with inline add */}
-            <div className="space-y-2">
-              <Label>Availability</Label>
-              <div className="flex gap-2">
-                <Select
-                  value={formData.availability}
-                  onValueChange={(value) => updateCIAValue("availability", value)}
-                >
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Select" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {getRatingsByType("Availability").map((r) => (
-                      <SelectItem key={r.id} value={r.label}>
-                        {r.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => {
-                    setNewCIARatingType("Availability");
-                    setIsAddCIARatingOpen(true);
-                  }}
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
+              {/* Availability */}
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Availability</Label>
+                <div className="flex gap-2 mt-1.5">
+                  <Select
+                    value={formData.availability}
+                    onValueChange={(value) => updateCIAValue("availability", value)}
+                  >
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4}>
+                      {getRatingsByType("Availability").map((r) => (
+                        <SelectItem key={r.id} value={r.label}>
+                          {r.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => {
+                      setNewCIARatingType("Availability");
+                      setIsAddCIARatingOpen(true);
+                    }}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
-          <DialogFooter>
+
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <Button variant="outline" onClick={() => setIsAddOpen(false)}>Cancel</Button>
             <Button onClick={handleAdd}>Save</Button>
-            <Button variant="outline" onClick={() => setIsAddOpen(false)}>
-              Cancel
-            </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
-      {/* Edit Classification Dialog - matching UAT */}
+      {/* Edit Classification Dialog */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit Asset Classification</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            {/* Asset Sub Category */}
-            <div className="space-y-2">
-              <Label>Asset Sub Category</Label>
-              <Select
-                value={formData.subCategoryId}
-                onValueChange={(value) => setFormData({ ...formData, subCategoryId: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select" />
-                </SelectTrigger>
-                <SelectContent>
-                  {subCategories.map((sc) => (
-                    <SelectItem key={sc.id} value={sc.id}>
-                      {sc.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Edit Asset Classification</DialogTitle>
+            </DialogHeader>
+          </div>
 
-            {/* Asset Group */}
-            <div className="space-y-2">
-              <Label>Asset Group</Label>
-              <Select
-                value={formData.groupId}
-                onValueChange={(value) => setFormData({ ...formData, groupId: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select" />
-                </SelectTrigger>
-                <SelectContent>
-                  {groups.map((g) => (
-                    <SelectItem key={g.id} value={g.id}>
-                      {g.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Asset Sensitivity with inline add */}
-            <div className="space-y-2">
-              <Label>Asset Sensitivity</Label>
-              <div className="flex gap-2">
-                <Select
-                  value={formData.sensitivityId}
-                  onValueChange={(value) => setFormData({ ...formData, sensitivityId: value })}
-                >
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Select" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {sensitivities.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setIsAddSensitivityOpen(true)}
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            <div className="space-y-5">
+              {/* Asset Sub Category & Asset Group */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Asset Sub Category <span className="text-semantic-error">*</span></Label>
+                  <Select
+                    value={formData.subCategoryId}
+                    onValueChange={(value) => setFormData({ ...formData, subCategoryId: value })}
+                  >
+                    <SelectTrigger className="mt-1.5 w-full">
+                      <SelectValue placeholder="Select Sub Category" />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4}>
+                      {subCategories.map((sc) => (
+                        <SelectItem key={sc.id} value={sc.id}>
+                          {sc.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Asset Group <span className="text-semantic-error">*</span></Label>
+                  <Select
+                    value={formData.groupId}
+                    onValueChange={(value) => setFormData({ ...formData, groupId: value })}
+                  >
+                    <SelectTrigger className="mt-1.5 w-full">
+                      <SelectValue placeholder="Select Group" />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4}>
+                      {groups.map((g) => (
+                        <SelectItem key={g.id} value={g.id}>
+                          {g.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-            </div>
 
-            {/* Confidentiality with inline add */}
-            <div className="space-y-2">
-              <Label>Confidentiality</Label>
-              <div className="flex gap-2">
-                <Select
-                  value={formData.confidentiality}
-                  onValueChange={(value) => updateCIAValue("confidentiality", value)}
-                >
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Select" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {getRatingsByType("Confidentiality").map((r) => (
-                      <SelectItem key={r.id} value={r.label}>
-                        {r.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => {
-                    setNewCIARatingType("Confidentiality");
-                    setIsAddCIARatingOpen(true);
-                  }}
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
+              {/* Asset Sensitivity with inline add */}
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Asset Sensitivity</Label>
+                <div className="flex gap-2 mt-1.5">
+                  <Select
+                    value={formData.sensitivityId}
+                    onValueChange={(value) => setFormData({ ...formData, sensitivityId: value })}
+                  >
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Select Sensitivity" />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4}>
+                      {sensitivities.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setIsAddSensitivityOpen(true)}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
-            </div>
 
-            {/* Integrity with inline add */}
-            <div className="space-y-2">
-              <Label>Integrity</Label>
-              <div className="flex gap-2">
-                <Select
-                  value={formData.integrity}
-                  onValueChange={(value) => updateCIAValue("integrity", value)}
-                >
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Select" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {getRatingsByType("Integrity").map((r) => (
-                      <SelectItem key={r.id} value={r.label}>
-                        {r.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => {
-                    setNewCIARatingType("Integrity");
-                    setIsAddCIARatingOpen(true);
-                  }}
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
+              {/* Confidentiality & Integrity */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Confidentiality</Label>
+                  <div className="flex gap-2 mt-1.5">
+                    <Select
+                      value={formData.confidentiality}
+                      onValueChange={(value) => updateCIAValue("confidentiality", value)}
+                    >
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Select" />
+                      </SelectTrigger>
+                      <SelectContent position="popper" sideOffset={4}>
+                        {getRatingsByType("Confidentiality").map((r) => (
+                          <SelectItem key={r.id} value={r.label}>
+                            {r.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => {
+                        setNewCIARatingType("Confidentiality");
+                        setIsAddCIARatingOpen(true);
+                      }}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Integrity</Label>
+                  <div className="flex gap-2 mt-1.5">
+                    <Select
+                      value={formData.integrity}
+                      onValueChange={(value) => updateCIAValue("integrity", value)}
+                    >
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Select" />
+                      </SelectTrigger>
+                      <SelectContent position="popper" sideOffset={4}>
+                        {getRatingsByType("Integrity").map((r) => (
+                          <SelectItem key={r.id} value={r.label}>
+                            {r.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => {
+                        setNewCIARatingType("Integrity");
+                        setIsAddCIARatingOpen(true);
+                      }}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
               </div>
-            </div>
 
-            {/* Availability with inline add */}
-            <div className="space-y-2">
-              <Label>Availability</Label>
-              <div className="flex gap-2">
-                <Select
-                  value={formData.availability}
-                  onValueChange={(value) => updateCIAValue("availability", value)}
-                >
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Select" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {getRatingsByType("Availability").map((r) => (
-                      <SelectItem key={r.id} value={r.label}>
-                        {r.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => {
-                    setNewCIARatingType("Availability");
-                    setIsAddCIARatingOpen(true);
-                  }}
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
+              {/* Availability */}
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Availability</Label>
+                <div className="flex gap-2 mt-1.5">
+                  <Select
+                    value={formData.availability}
+                    onValueChange={(value) => updateCIAValue("availability", value)}
+                  >
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4}>
+                      {getRatingsByType("Availability").map((r) => (
+                        <SelectItem key={r.id} value={r.label}>
+                          {r.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => {
+                      setNewCIARatingType("Availability");
+                      setIsAddCIARatingOpen(true);
+                    }}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
-          <DialogFooter>
+
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <Button variant="outline" onClick={() => setIsEditOpen(false)}>Cancel</Button>
             <Button onClick={handleEdit}>Save</Button>
-            <Button variant="outline" onClick={() => setIsEditOpen(false)}>
-              Cancel
-            </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirm Delete</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete this classification? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              Delete
-            </Button>
-          </DialogFooter>
+        <DialogContent className="sm:max-w-[400px] p-0 gap-0">
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Confirm Delete</DialogTitle>
+              <DialogDescription className="text-sm text-slate-500 mt-1">
+                Are you sure you want to delete this classification? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="flex justify-end gap-2 px-6 py-4">
+            <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDelete}>Delete</Button>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Add Asset Sensitivity Dialog - inline add */}
       <Dialog open={isAddSensitivityOpen} onOpenChange={setIsAddSensitivityOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Add Asset Sensitivity</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>Name</Label>
+        <DialogContent className="sm:max-w-[400px] p-0 gap-0">
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Add Asset Sensitivity</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="px-6 py-6">
+            <div>
+              <Label className="text-sm font-medium text-slate-700">Name <span className="text-semantic-error">*</span></Label>
               <Input
                 value={newSensitivityName}
                 onChange={(e) => setNewSensitivityName(e.target.value)}
                 placeholder="Enter sensitivity name"
+                className="mt-1.5"
               />
             </div>
           </div>
-          <DialogFooter>
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100">
             <Button variant="outline" onClick={() => {
               setNewSensitivityName("");
               setIsAddSensitivityOpen(false);
-            }}>
-              Cancel
-            </Button>
+            }}>Cancel</Button>
             <Button onClick={handleAddSensitivity}>Save</Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Add CIA Rating Dialog - inline add */}
       <Dialog open={isAddCIARatingOpen} onOpenChange={setIsAddCIARatingOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Add {newCIARatingType}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>Label</Label>
+        <DialogContent className="sm:max-w-[400px] p-0 gap-0">
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Add {newCIARatingType}</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="px-6 py-6 space-y-5">
+            <div>
+              <Label className="text-sm font-medium text-slate-700">Label <span className="text-semantic-error">*</span></Label>
               <Input
                 value={newCIARatingLabel}
                 onChange={(e) => setNewCIARatingLabel(e.target.value)}
                 placeholder="e.g., high, medium, low"
+                className="mt-1.5"
               />
             </div>
-            <div className="space-y-2">
-              <Label>Value</Label>
+            <div>
+              <Label className="text-sm font-medium text-slate-700">Value <span className="text-semantic-error">*</span></Label>
               <Input
                 type="number"
                 value={newCIARatingValue}
                 onChange={(e) => setNewCIARatingValue(parseInt(e.target.value) || 0)}
                 placeholder="Score value"
+                className="mt-1.5"
               />
             </div>
           </div>
-          <DialogFooter>
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100">
             <Button variant="outline" onClick={() => {
               setNewCIARatingLabel("");
               setNewCIARatingValue(0);
               setIsAddCIARatingOpen(false);
-            }}>
-              Cancel
-            </Button>
+            }}>Cancel</Button>
             <Button onClick={handleAddCIARating}>Save</Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
