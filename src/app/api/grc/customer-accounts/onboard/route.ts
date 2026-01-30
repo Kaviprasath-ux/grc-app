@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import bcrypt from "bcryptjs";
 
 interface SubscriptionPlanInput {
   startDate: string;
@@ -98,6 +99,9 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // Hash the password before storing
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     // Use a transaction to create CustomerAccount, User, and SubscriptionPlans together
     const result = await prisma.$transaction(async (tx) => {
       // 1. Create the CustomerAccount
@@ -115,7 +119,7 @@ export async function POST(req: NextRequest) {
           userId: `USR-${Date.now()}-${userName.substring(0, 4).toUpperCase()}`,
           userName,
           email,
-          password, // In production, this should be hashed
+          password: hashedPassword,
           firstName: customerName.split(" ")[0] || customerName,
           lastName: customerName.split(" ").slice(1).join(" ") || "",
           fullName: customerName,

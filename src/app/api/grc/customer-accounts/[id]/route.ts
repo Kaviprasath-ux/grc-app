@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import bcrypt from "bcryptjs";
 
 /**
  * GET /api/grc/customer-accounts/[id]
@@ -118,9 +119,9 @@ export async function PUT(
       timezone: timeZone || existingUser.timezone || "Asia/Qatar",
     };
 
-    // Only update password if provided
+    // Only update password if provided (hash it first)
     if (password) {
-      updateData.password = password; // In production, this should be hashed
+      updateData.password = await bcrypt.hash(password, 10);
     }
 
     // Update user
