@@ -7,8 +7,39 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+// ==================== MULTI-TENANCY ====================
+
+model CustomerAccount {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  users             User[]
+  subscriptionPlans SubscriptionPlan[]
+}
+
+// Subscription Plan for Customer Accounts
+model SubscriptionPlan {
+  id                   String          @id @default(cuid())
+  customerAccountId    String
+  customerAccount      CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+  startDate            DateTime
+  expiryDate           DateTime
+  maxFrameworksAllowed Int             @default(0)
+  maxAccountsAllowed   Int             @default(0)
+  frameworksUsed       Int             @default(0)
+  accountsUsed         Int             @default(0)
+  status               String          @default("Active") // Active, Expired, Cancelled
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
 }
 
 // ==================== ROLE-BASED ACCESS CONTROL (RBAC) ====================
@@ -177,7 +208,7 @@ model User {
   timezone            String      @default("UTC")
   isActive            Boolean     @default(true)
   isBlocked           Boolean     @default(false)
-  // Multi-tenant: Link user to customer account
+  // Multi-tenancy
   customerAccountId   String?
   customerAccount     CustomerAccount? @relation(fields: [customerAccountId], references: [id])
   // CustomerAdmin fields
