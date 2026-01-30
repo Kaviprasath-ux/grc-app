@@ -48,31 +48,24 @@ next-env.d.ts
 # Claude Code configuration
 .claude/
 
-#database
+# Database
+*.db
+*.sqlite
+*.sqlite3
 prisma/dev.db
+prisma/dev.db-journal
+prisma/*.db
+prisma/*.sqlite
+
+# Prisma migrations (local database specific)
+prisma/migrations/
+
+# Temp files
+tmpclaude-*
 nul
+backup-local-files/
 
-# Debug/test scripts
-check-capa.ts
-check-user.ts
-test-auth.ts
-cookies.txt
-
-# Prisma debug/migration scripts
-prisma/assign-orphaned-data.ts
-prisma/check-audit-head-data.ts
-prisma/check-audit-isolation.ts
-prisma/create-ah-test-data.ts
-prisma/debug-session-id.ts
-prisma/find-deepika.ts
-prisma/list-audit-heads.ts
-prisma/migrate-audit-head-data.ts
-prisma/migrate-settings-to-audit-heads.ts
-
-# Debug API routes
-src/app/api/debug-session/
-
-# Uploads
-uploads/
-
-.env*.local
+# Playwright test files
+.playwright-mcp/
+playwright-report/
+test-results/

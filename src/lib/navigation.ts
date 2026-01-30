@@ -118,7 +118,6 @@ export const navigation: NavItem[] = [
     permission: "asset.dashboard:view",
     children: [
       { name: "Asset Inventory", href: "/assets/inventory", icon: Package, permission: "asset.inventory:view" },
-      { name: "Asset Inventory", href: "/assets/my-inventory", icon: Package, permission: "asset.my-inventory:view" },
       { name: "Asset Classification", href: "/assets/classification", icon: Layers, permission: "asset.classification:view" },
       { name: "Asset Settings", href: "/assets/settings", icon: Settings2, permission: "asset.settings:view" },
       { name: "Reports", href: "/assets/reports", icon: FileText, permission: "asset.reports:view" },
@@ -295,8 +294,8 @@ const ROLE_PATH_MAP: Record<string, string> = {
  */
 const ROLE_SPECIFIC_PATHS: Record<string, string[]> = {
   // CustomerAdministrator has unique card-grid UI with subscription management
-  // DepartmentReviewer and GRCReviewer also use this page (with restricted UI)
-  "/compliance/framework": ["CustomerAdministrator", "DepartmentReviewer", "GRCReviewer"],
+  // (vs table view for other roles) - keep as exception
+  "/compliance/framework": ["CustomerAdministrator"],
   // GRCAdministrator has separate Controls page with broader scope (all customers)
   "/compliance/control": ["GRCAdministrator"],
   // GRCAdministrator has separate Governance page with broader scope (all customers)
@@ -305,17 +304,6 @@ const ROLE_SPECIFIC_PATHS: Record<string, string[]> = {
   "/compliance/evidence": ["GRCAdministrator"],
   // GRCAdministrator has separate Master Data page with GRC-specific card routes
   "/compliance/master-data": ["GRCAdministrator"],
-};
-
-/**
- * Role redirects for specific paths - maps a role to use another role's page
- * Format: { "path": { "sourceRole": "targetRolePath" } }
- */
-const ROLE_PATH_REDIRECTS: Record<string, Record<string, string>> = {
-  "/compliance/framework": {
-    "DepartmentReviewer": "customer-administrator",
-    "GRCReviewer": "customer-administrator",
-  },
 };
 
 /**
@@ -329,12 +317,6 @@ function getRoleSpecificPath(originalPath: string, userRole: string): string {
 
   // If this role has a specific version of the page
   if (rolesForPath.includes(userRole)) {
-    // Check if this role should be redirected to another role's page
-    const redirects = ROLE_PATH_REDIRECTS[originalPath];
-    if (redirects && redirects[userRole]) {
-      return `/roles/${redirects[userRole]}${originalPath}`;
-    }
-
     const rolePath = ROLE_PATH_MAP[userRole];
     if (rolePath) {
       return `/roles/${rolePath}${originalPath}`;

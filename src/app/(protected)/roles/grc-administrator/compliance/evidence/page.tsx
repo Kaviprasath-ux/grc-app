@@ -54,6 +54,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Check,
+  Download,
 } from "lucide-react";
 
 interface Evidence {
@@ -68,7 +69,6 @@ interface Evidence {
   assigneeId: string | null;
   department?: { id: string; name: string } | null;
   assignee?: { id: string; fullName: string } | null;
-  customerAccount?: { id: string; code: string; name: string } | null;
 }
 
 interface Control {
@@ -92,12 +92,6 @@ interface User {
   fullName: string;
   departmentId: string | null;
   customerCode?: string;
-}
-
-interface CustomerAccount {
-  id: string;
-  code: string;
-  name: string;
 }
 
 interface Framework {
@@ -143,7 +137,6 @@ export default function GRCAdminEvidencePage() {
 
   // Filters
   const [frameworkFilter, setFrameworkFilter] = useState<string>("all");
-  const [customerFilter, setCustomerFilter] = useState<string>("all");
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -157,7 +150,6 @@ export default function GRCAdminEvidencePage() {
   const [frameworks, setFrameworks] = useState<Framework[]>([]);
   const [controls, setControls] = useState<Control[]>([]);
   const [controlDomains, setControlDomains] = useState<ControlDomain[]>([]);
-  const [customerAccounts, setCustomerAccounts] = useState<CustomerAccount[]>([]);
 
   // Create form
   const [createForm, setCreateForm] = useState({
@@ -166,7 +158,6 @@ export default function GRCAdminEvidencePage() {
     recurrence: "",
     departmentId: "",
     assigneeId: "",
-    customerAccountId: "",
   });
 
   // Step 2 - Control selection
@@ -183,7 +174,6 @@ export default function GRCAdminEvidencePage() {
       setLoading(true);
       const params = new URLSearchParams();
       if (frameworkFilter && frameworkFilter !== "all") params.append("frameworkId", frameworkFilter);
-      if (customerFilter && customerFilter !== "all") params.append("customerAccountId", customerFilter);
       if (searchTerm) params.append("search", searchTerm);
       params.append("page", currentPage.toString());
       params.append("limit", itemsPerPage.toString());
@@ -200,17 +190,16 @@ export default function GRCAdminEvidencePage() {
     } finally {
       setLoading(false);
     }
-  }, [frameworkFilter, customerFilter, searchTerm, currentPage]);
+  }, [frameworkFilter, searchTerm, currentPage]);
 
   const fetchReferenceData = useCallback(async () => {
     try {
-      const [deptRes, usersRes, fwRes, controlsRes, domainsRes, customerRes] = await Promise.all([
+      const [deptRes, usersRes, fwRes, controlsRes, domainsRes] = await Promise.all([
         fetch("/api/departments"),
         fetch("/api/users"),
         fetch("/api/frameworks"),
         fetch("/api/controls?limit=500"),
         fetch("/api/control-domains"),
-        fetch("/api/customer-accounts"),
       ]);
 
       if (deptRes.ok) {
@@ -234,10 +223,6 @@ export default function GRCAdminEvidencePage() {
         const data = await domainsRes.json();
         setControlDomains(data.data || data || []);
       }
-      if (customerRes.ok) {
-        const data = await customerRes.json();
-        setCustomerAccounts(data.data || data || []);
-      }
     } catch (error) {
       console.error("Error fetching reference data:", error);
     }
@@ -251,29 +236,10 @@ export default function GRCAdminEvidencePage() {
     fetchEvidences();
   }, [fetchEvidences]);
 
-  // Filter users by selected customer account (for GRC Admin)
+  // GRC Admin sees all users and departments (no customer scoping)
   const filteredUsers = (() => {
-    if (!createForm.customerAccountId) return users;
-    const customerCode = customerAccounts.find(c => c.id === createForm.customerAccountId)?.code;
-    return users.filter((u) => u.customerCode === customerCode);
-  })();
-
-  // Filter departments by selected customer account (for GRC Admin)
-  const filteredDepartments = (() => {
-    if (!createForm.customerAccountId) return departments;
-    const customerCode = customerAccounts.find(c => c.id === createForm.customerAccountId)?.code;
-    const customerUserDeptIds = new Set(
-      users
-        .filter((u) => u.customerCode === customerCode && u.departmentId)
-        .map((u) => u.departmentId)
-    );
-    return departments.filter((d) => customerUserDeptIds.has(d.id));
-  })();
-
-  // Filter users by department
-  const departmentFilteredUsers = (() => {
-    if (!createForm.departmentId) return filteredUsers;
-    return filteredUsers.filter((u) => u.departmentId === createForm.departmentId);
+    if (!createForm.departmentId) return users;
+    return users.filter((u) => u.departmentId === createForm.departmentId);
   })();
 
   // Filtered controls for step 2
@@ -306,7 +272,6 @@ export default function GRCAdminEvidencePage() {
           recurrence: createForm.recurrence,
           departmentId: createForm.departmentId || null,
           assigneeId: createForm.assigneeId || null,
-          customerAccountId: createForm.customerAccountId || null,
           controlIds: selectedControlIds,
           status: "Not Uploaded",
         }),
@@ -330,7 +295,6 @@ export default function GRCAdminEvidencePage() {
       recurrence: "",
       departmentId: "",
       assigneeId: "",
-      customerAccountId: "",
     });
     setSelectedControlIds([]);
     setControlFilters({
@@ -343,11 +307,7 @@ export default function GRCAdminEvidencePage() {
 
   const handleDeleteAll = async () => {
     try {
-      const params = new URLSearchParams();
-      if (customerFilter && customerFilter !== "all") {
-        params.set("customerAccountId", customerFilter);
-      }
-      const response = await fetch(`/api/evidences/delete-all?${params.toString()}`, {
+      const response = await fetch("/api/evidences/delete-all", {
         method: "DELETE",
       });
       if (response.ok) {
@@ -393,9 +353,6 @@ export default function GRCAdminEvidencePage() {
     try {
       const formData = new FormData();
       formData.append("file", importFile);
-      if (createForm.customerAccountId) {
-        formData.append("customerAccountId", createForm.customerAccountId);
-      }
 
       const response = await fetch("/api/evidences/import", {
         method: "POST",
@@ -425,7 +382,7 @@ export default function GRCAdminEvidencePage() {
     );
   };
 
-  const canProceedStep1 = createForm.name && createForm.recurrence && createForm.departmentId && createForm.assigneeId && createForm.customerAccountId;
+  const canProceedStep1 = createForm.name && createForm.recurrence && createForm.departmentId && createForm.assigneeId;
 
   // Pagination helpers
   const startItem = total > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0;
@@ -440,20 +397,18 @@ export default function GRCAdminEvidencePage() {
     );
   }
 
-  // Show unauthorized if user is not GRC Admin or doesn't have view permission
-  if (!isGRCAdmin || !canView) {
-    return <Unauthorized description="You don't have permission to access GRC Admin Evidence." />;
+  // Show unauthorized if user doesn't have view permission or is not GRC Admin
+  if (!canView || !isGRCAdmin) {
+    return <Unauthorized description="You don't have permission to access Evidence." />;
   }
 
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Evidence</h1>
-          <p className="text-muted-foreground text-sm">GRC Administrator View - All Customer Accounts</p>
-        </div>
+        <h1 className="text-2xl font-bold">Evidence</h1>
         <div className="flex gap-2">
+          {/* GRC Admin can create evidence */}
           <PermissionGate resource="compliance.evidence" action="create">
             <Button onClick={() => setCreateDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
@@ -494,17 +449,6 @@ export default function GRCAdminEvidencePage() {
             <Search className="h-4 w-4" />
           </Button>
         </div>
-        <Select value={customerFilter} onValueChange={setCustomerFilter}>
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="All Customers" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Customers</SelectItem>
-            {customerAccounts.map((c) => (
-              <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
         <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
           <SelectTrigger className="w-[250px]">
             <SelectValue placeholder="Integrated Framework" />
@@ -531,11 +475,10 @@ export default function GRCAdminEvidencePage() {
                 <TableRow>
                   <TableHead>Evidence Code</TableHead>
                   <TableHead>Evidence Name</TableHead>
-                  <TableHead>Customer</TableHead>
                   <TableHead>Domain</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Assignee</TableHead>
-                  <TableHead>Department</TableHead>
+                  <TableHead>Department Name</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -547,11 +490,6 @@ export default function GRCAdminEvidencePage() {
                   >
                     <TableCell className="font-medium">{evidence.evidenceCode}</TableCell>
                     <TableCell>{evidence.name}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">
-                        {evidence.customerAccount?.name || "-"}
-                      </Badge>
-                    </TableCell>
                     <TableCell>{evidence.domain || ""}</TableCell>
                     <TableCell>
                       <Badge className={statusColors[evidence.status] || "bg-gray-100 text-gray-800"}>
@@ -564,7 +502,7 @@ export default function GRCAdminEvidencePage() {
                 ))}
                 {evidences.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                       No evidence records found
                     </TableCell>
                   </TableRow>
@@ -651,19 +589,6 @@ export default function GRCAdminEvidencePage() {
             {createStep === 1 && (
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="customerAccountId">Customer Account *</Label>
-                  <Select value={createForm.customerAccountId} onValueChange={(v) => setCreateForm({ ...createForm, customerAccountId: v, departmentId: "", assigneeId: "" })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select customer account" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {customerAccounts.map((c) => (
-                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
                   <Label htmlFor="name">Evidence Requirement *</Label>
                   <Input
                     id="name"
@@ -688,16 +613,12 @@ export default function GRCAdminEvidencePage() {
                   </div>
                   <div>
                     <Label htmlFor="departmentId">Department *</Label>
-                    <Select
-                      value={createForm.departmentId}
-                      onValueChange={(v) => setCreateForm({ ...createForm, departmentId: v, assigneeId: "" })}
-                      disabled={!createForm.customerAccountId}
-                    >
+                    <Select value={createForm.departmentId} onValueChange={(v) => setCreateForm({ ...createForm, departmentId: v, assigneeId: "" })}>
                       <SelectTrigger>
-                        <SelectValue placeholder={createForm.customerAccountId ? "Select department" : "Select customer first"} />
+                        <SelectValue placeholder="Select department" />
                       </SelectTrigger>
                       <SelectContent>
-                        {filteredDepartments.map((d) => (
+                        {departments.map((d) => (
                           <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                         ))}
                       </SelectContent>
@@ -706,16 +627,12 @@ export default function GRCAdminEvidencePage() {
                 </div>
                 <div>
                   <Label htmlFor="assigneeId">Assignee *</Label>
-                  <Select
-                    value={createForm.assigneeId}
-                    onValueChange={(v) => setCreateForm({ ...createForm, assigneeId: v })}
-                    disabled={!createForm.departmentId}
-                  >
+                  <Select value={createForm.assigneeId} onValueChange={(v) => setCreateForm({ ...createForm, assigneeId: v })} disabled={!createForm.departmentId}>
                     <SelectTrigger>
                       <SelectValue placeholder={createForm.departmentId ? "Select assignee" : "Select department first"} />
                     </SelectTrigger>
                     <SelectContent>
-                      {departmentFilteredUsers.map((u) => (
+                      {filteredUsers.map((u) => (
                         <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
                       ))}
                     </SelectContent>
@@ -837,12 +754,6 @@ export default function GRCAdminEvidencePage() {
 
                 <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
                   <div>
-                    <Label className="text-muted-foreground text-sm">Customer Account</Label>
-                    <p className="font-medium">
-                      {customerAccounts.find((c) => c.id === createForm.customerAccountId)?.name || "-"}
-                    </p>
-                  </div>
-                  <div>
                     <Label className="text-muted-foreground text-sm">Evidence Name</Label>
                     <p className="font-medium">{createForm.name}</p>
                   </div>
@@ -853,20 +764,20 @@ export default function GRCAdminEvidencePage() {
                   <div>
                     <Label className="text-muted-foreground text-sm">Department</Label>
                     <p className="font-medium">
-                      {filteredDepartments.find((d) => d.id === createForm.departmentId)?.name || "-"}
+                      {departments.find((d) => d.id === createForm.departmentId)?.name || "-"}
                     </p>
                   </div>
                   <div>
                     <Label className="text-muted-foreground text-sm">Assignee</Label>
                     <p className="font-medium">
-                      {filteredUsers.find((u) => u.id === createForm.assigneeId)?.fullName || "-"}
+                      {users.find((u) => u.id === createForm.assigneeId)?.fullName || "-"}
                     </p>
                   </div>
                   <div>
                     <Label className="text-muted-foreground text-sm">Linked Controls</Label>
                     <p className="font-medium">{selectedControlIds.length} controls</p>
                   </div>
-                  <div className="col-span-2">
+                  <div>
                     <Label className="text-muted-foreground text-sm">Description</Label>
                     <p className="font-medium">{createForm.description || "-"}</p>
                   </div>
@@ -920,7 +831,7 @@ export default function GRCAdminEvidencePage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete All Evidence</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete all evidence records{customerFilter !== "all" ? ` for the selected customer` : ""}? This action cannot be undone.
+              Are you sure you want to delete all evidence records? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -938,20 +849,7 @@ export default function GRCAdminEvidencePage() {
           <DialogHeader>
             <DialogTitle>Import Evidence</DialogTitle>
           </DialogHeader>
-          <div className="py-4 space-y-4">
-            <div>
-              <Label htmlFor="importCustomerAccountId">Customer Account *</Label>
-              <Select value={createForm.customerAccountId} onValueChange={(v) => setCreateForm({ ...createForm, customerAccountId: v })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select customer account" />
-                </SelectTrigger>
-                <SelectContent>
-                  {customerAccounts.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="py-4">
             <div
               className={`border-2 border-dashed rounded-lg p-8 text-center ${
                 isDragging ? "border-primary bg-primary/5" : "border-muted-foreground/25"
@@ -995,7 +893,7 @@ export default function GRCAdminEvidencePage() {
             }}>
               Cancel
             </Button>
-            <Button onClick={handleImportSubmit} disabled={!importFile || !createForm.customerAccountId || importing}>
+            <Button onClick={handleImportSubmit} disabled={!importFile || importing}>
               {importing ? "Importing..." : "Import"}
             </Button>
           </DialogFooter>

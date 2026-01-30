@@ -159,7 +159,7 @@ export default function CustomerAdminFrameworkPage() {
         try {
           // Call AI generation service
           const result = await generateFrameworkComplete(
-            formData, // Pass the entire formData object
+            formData.name,
             uploadedFile,
             undefined,
             (status: FrameworkJobStatus) => {

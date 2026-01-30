@@ -14,14 +14,15 @@ import axiosRetry from 'axios-retry';
 
 // ==================== CONFIGURATION ====================
 
-const PYTHON_BACKEND_URL = process.env.PYTHON_BACKEND_URL || '';
-const PYTHON_API_SECRET = process.env.PYTHON_API_SECRET || '';
+const PYTHON_BACKEND_URL = process.env.PYTHON_BACKEND_URL;
+const PYTHON_API_SECRET = process.env.PYTHON_API_SECRET;
 
-// Flag to check if AI features are available
-export const isAiAvailable = Boolean(PYTHON_BACKEND_URL && PYTHON_API_SECRET);
+if (!PYTHON_BACKEND_URL) {
+    throw new Error('PYTHON_BACKEND_URL environment variable is not set');
+}
 
-if (!isAiAvailable) {
-    console.warn('[AI API] PYTHON_BACKEND_URL or PYTHON_API_SECRET not configured. AI features will be disabled.');
+if (!PYTHON_API_SECRET) {
+    throw new Error('PYTHON_API_SECRET environment variable is not set');
 }
 
 // ==================== AXIOS INSTANCE ====================

@@ -2,10 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, Trash2, Download, Upload, Search, Sparkles, FileText, Eye, BarChart3, Link2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Download, Upload, Search, Sparkles, FileText, Eye, BarChart3 } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import { PageHeader, DataGrid } from "@/components/shared";
-import { generateProcessRisks, submitSemanticMatching, pollSemanticMatching } from "@/services/ai-risk-service";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -136,10 +135,8 @@ export default function ProcessPage() {
   const [isAIEvaluationOpen, setIsAIEvaluationOpen] = useState(false);
   const [evaluatingProcess, setEvaluatingProcess] = useState<Process | null>(null);
   const [aiRiskLoading, setAiRiskLoading] = useState(false);
-  const [aiRiskError, setAiRiskError] = useState<string | null>(null);
   const [aiRiskResults, setAiRiskResults] = useState<RiskGenerationResponse | null>(null);
-  const [matchingLoading, setMatchingLoading] = useState(false);
-  const [matchingResults, setMatchingResults] = useState<any>(null);
+  const [aiRiskError, setAiRiskError] = useState<string | null>(null);
   const [isBIAFormOpen, setIsBIAFormOpen] = useState(false);
   const [biaProcess, setBiaProcess] = useState<Process | null>(null);
   const [biaRatings, setBiaRatings] = useState<BIARating[]>([
@@ -287,9 +284,9 @@ export default function ProcessPage() {
 
   // AI Risk Evaluation functions
   const handleOpenAIEvaluation = (process: Process) => {
+    setEvaluatingProcess(process);
     setAiRiskResults(null);
     setAiRiskError(null);
-    setMatchingResults(null);
     setIsAIEvaluationOpen(true);
 
     // Automatically trigger risk generation when dialog opens
@@ -302,27 +299,33 @@ export default function ProcessPage() {
     setAiRiskResults(null);
 
     try {
-      const data = await generateProcessRisks({
-        Process_Details: {
-          Process_name: process.name,
-          Process_description: process.description || `Business process: ${process.name}. Department: ${process.department?.name || 'General'}. Type: ${process.processType || 'Standard'}.`,
-          Department: process.department?.name || 'General',
+      const response = await fetch('/api/ai/risk-evaluation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          Process_Details: {
+            Process_name: process.name,
+            Process_description: process.description || `Business process: ${process.name}. Department: ${process.department?.name || 'General'}. Type: ${process.processType || 'Standard'}.`,
+            Department: process.department?.name || 'General',
+          },
+          // Note: API requires EITHER Process_Details OR Assets_Details, not both
+        }),
       });
 
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to generate risks');
+      }
+
+      const data = await response.json();
       setAiRiskResults(data);
 
       toast({
         title: 'Success',
         description: `Generated ${(data.risks || data.generated_risks || []).length} risk${(data.risks || data.generated_risks || []).length !== 1 ? 's' : ''} for ${process.name}`,
       });
-
-      // Automatically trigger semantic matching after risk generation
-      if ((data.risks || data.generated_risks || []).length > 0) {
-        // Use a small timeout to ensure state is updated if needed, 
-        // though handleSemanticMatching uses the closure variable 'data' internally anyway if we pass it
-        setTimeout(() => handleSemanticMatching(data), 500);
-      }
     } catch (error: any) {
       console.error('Error generating risks:', error);
       setAiRiskError(error.message || 'Failed to generate risk evaluation');
@@ -334,42 +337,6 @@ export default function ProcessPage() {
       });
     } finally {
       setAiRiskLoading(false);
-    }
-  };
-
-  const handleSemanticMatching = async (existingRisks?: RiskGenerationResponse) => {
-    const risksToMatch = existingRisks || aiRiskResults;
-    if (!risksToMatch || !(risksToMatch.risks || risksToMatch.generated_risks)) return;
-
-    const risksList = (risksToMatch.risks || risksToMatch.generated_risks) as any[];
-
-    setMatchingLoading(true);
-    try {
-      // 1. Fetch library
-      const libRes = await fetch('/api/ai/library');
-      if (!libRes.ok) throw new Error('Failed to fetch risk library');
-      const library = await libRes.json();
-
-      // 2. Submit matching job
-      const job = await submitSemanticMatching(library, { risks: risksList });
-
-      // 3. Poll for results
-      const results = await pollSemanticMatching(job.job_id);
-      setMatchingResults(results);
-
-      toast({
-        title: 'Success',
-        description: 'Semantic matching completed successfully',
-      });
-    } catch (error: any) {
-      console.error('Error in semantic matching:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to perform semantic matching',
-        variant: 'destructive',
-      });
-    } finally {
-      setMatchingLoading(false);
     }
   };
 
@@ -1020,76 +987,15 @@ export default function ProcessPage() {
                 </div>
               </div>
             )}
-            {matchingResults && !matchingLoading && (
-              <div className="space-y-4">
-                <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                  <h4 className="font-medium text-blue-900 mb-2">Semantic Matching Results</h4>
-                  <p className="text-sm text-blue-700">
-                    Aligned generated risks with your organization's library.
-                  </p>
-                </div>
-
-                <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                  {(matchingResults.results?.risks || []).map((risk: any, index: number) => (
-                    <div key={index} className="p-3 bg-white rounded-lg border border-gray-200 shadow-sm">
-                      <div className="flex justify-between items-start mb-2">
-                        <h5 className="font-medium text-sm">{risk.Risk_name}</h5>
-                        {risk.Is_Matched ? (
-                          <Badge className="bg-green-600">
-                            Matched: {risk.Matched_Risk_Code} ({Math.round(risk.Similarity_Score * 100)}%)
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline">New Risk</Badge>
-                        )}
-                      </div>
-                      <p className="text-xs text-muted-foreground mb-3">{risk.Risk_description}</p>
-
-                      {/* Threats/Controls matching */}
-                      <div className="space-y-2 pl-4 border-l-2 border-blue-100">
-                        {risk.Threats?.map((threat: any, tIdx: number) => (
-                          <div key={tIdx} className="text-xs">
-                            <div className="flex justify-between font-medium">
-                              <span>Threat: {threat.threat_name}</span>
-                              {threat.Is_Matched && <span className="text-blue-600">Matched: {threat.Matched_Threat_Code}</span>}
-                            </div>
-                            {threat.controls?.map((ctrl: any, cIdx: number) => (
-                              <div key={cIdx} className="ml-4 mt-1 text-gray-600 flex justify-between">
-                                <span>• {ctrl.ControlName}</span>
-                                {ctrl.Is_Matched && <span className="text-green-600 font-medium">Library Code: {ctrl.Matched_Control_Code}</span>}
-                              </div>
-                            ))}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAIEvaluationOpen(false)}>
               Close
             </Button>
-            {aiRiskResults && !aiRiskLoading && !matchingResults && (
-              <>
-                <Button variant="secondary" onClick={() => handleGenerateRisks(evaluatingProcess!)}>
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  Regenerate
-                </Button>
-                <Button onClick={handleSemanticMatching} disabled={matchingLoading}>
-                  {matchingLoading ? (
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  ) : (
-                    <Link2 className="h-4 w-4 mr-2" />
-                  )}
-                  {matchingLoading ? 'Matching...' : 'Match with Library'}
-                </Button>
-              </>
-            )}
-            {matchingResults && (
-              <Button onClick={() => setMatchingResults(null)}>
-                Back to Results
+            {aiRiskResults && !aiRiskLoading && (
+              <Button onClick={() => handleGenerateRisks(evaluatingProcess!)}>
+                <Sparkles className="h-4 w-4 mr-2" />
+                Regenerate
               </Button>
             )}
           </DialogFooter>
