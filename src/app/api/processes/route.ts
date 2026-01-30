@@ -1,149 +1,144 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
 
 // GET all processes
-export const GET = withAuth(
-  async (req, context, session) => {
-    try {
-      const tenantFilter = getTenantFilter(session);
-      const processes = await prisma.process.findMany({
-        where: tenantFilter,
-        include: {
-          department: true,
-          owner: true,
-        },
-        orderBy: { processCode: "asc" },
-      });
-      return NextResponse.json(processes);
-    } catch (error) {
-      console.error("Error fetching processes:", error);
-      return NextResponse.json(
-        { error: "Failed to fetch processes" },
-        { status: 500 }
-      );
-    }
-  },
-  { resource: "organization.process", action: "view" }
-);
+export async function GET() {
+  try {
+    const processes = await prisma.process.findMany({
+      include: {
+        department: true,
+        owner: true,
+      },
+      orderBy: { processCode: "asc" },
+    });
+    return NextResponse.json(processes);
+  } catch (error) {
+    console.error("Error fetching processes:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch processes" },
+      { status: 500 }
+    );
+  }
+}
 
 // POST create new process
-export const POST = withAuth(
-  async (req, context, session) => {
-    try {
-      const body = await req.json();
-      const {
-        processCode,
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const {
+      processCode,
+      name,
+      description,
+      processType,
+      departmentId,
+      ownerId,
+      status,
+      processFrequency,
+      natureOfImplementation,
+      riskRating,
+      assetDependency,
+      externalDependency,
+      location,
+      kpiMeasurementRequired,
+      piiCapture,
+      operationalComplexity,
+      lastAuditDate,
+      responsibleId,
+      accountableId,
+      consultedId,
+      informedId,
+      controls, // Array of extracted controls { title, description }
+    } = body;
+
+    if (!name) {
+      return NextResponse.json(
+        { error: "Process name is required" },
+        { status: 400 }
+      );
+    }
+
+    // Generate process code if not provided
+    let finalProcessCode = processCode;
+    if (!finalProcessCode) {
+      const lastProcess = await prisma.process.findFirst({
+        orderBy: { processCode: "desc" },
+      });
+      const lastNum = lastProcess
+        ? parseInt(lastProcess.processCode.replace("PRO", "")) || 0
+        : 0;
+      finalProcessCode = `PRO${lastNum + 1}`;
+    }
+
+    // Check if process code already exists
+    const existingProcess = await prisma.process.findUnique({
+      where: { processCode: finalProcessCode },
+    });
+
+    if (existingProcess) {
+      console.log(`Process code ${finalProcessCode} already exists`);
+      return NextResponse.json(
+        { error: `Process code ${finalProcessCode} already exists` },
+        { status: 400 }
+      );
+    }
+
+    const process = await prisma.process.create({
+      data: {
+        processCode: finalProcessCode,
         name,
         description,
-        processType,
-        departmentId,
-        ownerId,
-        status,
+        processType: processType || "Primary",
+        departmentId: departmentId || null,
+        ownerId: ownerId || null,
+        status: status || "Active",
         processFrequency,
         natureOfImplementation,
         riskRating,
-        assetDependency,
-        assetId,
-        externalDependency,
-        externalParty,
+        assetDependency: assetDependency || false,
+        externalDependency: externalDependency || false,
         location,
-        kpiMeasurementRequired,
-        piiCapture,
-        recurrence,
-        reviewDate,
+        kpiMeasurementRequired: kpiMeasurementRequired || false,
+        piiCapture: piiCapture || false,
         operationalComplexity,
-        lastAuditDate,
-        responsibleId,
-        accountableId,
-        consultedId,
-        informedId,
-      } = body;
+        lastAuditDate: lastAuditDate ? new Date(lastAuditDate) : null,
+        responsibleId: responsibleId || null,
+        accountableId: accountableId || null,
+        consultedId: consultedId || null,
+        informedId: informedId || null,
+        processControls: controls && Array.isArray(controls) ? {
+          create: await Promise.all(controls.map(async (c: any, index: number) => {
+            // Generate a temporary/new control code for extracted controls
+            const lastControl = await prisma.control.findFirst({
+              orderBy: { controlCode: 'desc' },
+            });
+            const lastNum = lastControl ? parseInt(lastControl.controlCode.replace('CTRL', '')) || 0 : 0;
+            const newCode = `CTRL-EXT-${Date.now()}-${index}`; // Unique code for extracted
 
-      if (!name) {
-        return NextResponse.json(
-          { error: "Process name is required" },
-          { status: 400 }
-        );
-      }
+            return {
+              control: {
+                create: {
+                  controlCode: newCode,
+                  name: c.title || c.name,
+                  description: c.description,
+                  status: 'Non Compliant',
+                }
+              }
+            };
+          }))
+        } : undefined,
+      },
+      include: {
+        department: true,
+        owner: true,
+      },
+    });
 
-      const customerAccountId = getCustomerAccountId(session);
-      const tenantFilter = getTenantFilter(session);
-
-      // Generate process code if not provided
-      let finalProcessCode = processCode;
-      if (!finalProcessCode) {
-        const lastProcess = await prisma.process.findFirst({
-          where: tenantFilter,
-          orderBy: { processCode: "desc" },
-        });
-        const lastNum = lastProcess
-          ? parseInt(lastProcess.processCode.replace("PRO", "")) || 0
-          : 0;
-        finalProcessCode = `PRO${lastNum + 1}`;
-      }
-
-      // Check if process code already exists for this tenant
-      const existingProcess = await prisma.process.findUnique({
-        where: {
-          customerAccountId_processCode: {
-            customerAccountId,
-            processCode: finalProcessCode,
-          },
-        },
-      });
-
-      if (existingProcess) {
-        console.log(`Process code ${finalProcessCode} already exists`);
-        return NextResponse.json(
-          { error: `Process code ${finalProcessCode} already exists` },
-          { status: 400 }
-        );
-      }
-
-      const process = await prisma.process.create({
-        data: {
-          customerAccountId,
-          processCode: finalProcessCode,
-          name,
-          description,
-          processType: processType || "Primary",
-          departmentId: departmentId || null,
-          ownerId: ownerId || null,
-          status: status || "Active",
-          processFrequency,
-          natureOfImplementation,
-          riskRating,
-          assetDependency: assetDependency || false,
-          assetId: assetId || null,
-          externalDependency: externalDependency || false,
-          externalParty: externalParty || null,
-          location,
-          kpiMeasurementRequired: kpiMeasurementRequired || false,
-          piiCapture: piiCapture || false,
-          recurrence: recurrence || null,
-          reviewDate: reviewDate ? new Date(reviewDate) : null,
-          operationalComplexity,
-          lastAuditDate: lastAuditDate ? new Date(lastAuditDate) : null,
-          responsibleId: responsibleId || null,
-          accountableId: accountableId || null,
-          consultedId: consultedId || null,
-          informedId: informedId || null,
-        },
-        include: {
-          department: true,
-          owner: true,
-        },
-      });
-
-      return NextResponse.json(process, { status: 201 });
-    } catch (error: unknown) {
-      console.error("Error creating process:", error);
-      return NextResponse.json(
-        { error: (error as Error).message || "Failed to create process" },
-        { status: 500 }
-      );
-    }
-  },
-  { resource: "organization.process", action: "create" }
-);
+    return NextResponse.json(process, { status: 201 });
+  } catch (error: any) {
+    console.error("Error creating process:", error);
+    return NextResponse.json(
+      { error: error.message || "Failed to create process" },
+      { status: 500 }
+    );
+  }
+}

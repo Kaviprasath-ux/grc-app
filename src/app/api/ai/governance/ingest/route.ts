@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
         const runpodFormData = new FormData();
         runpodFormData.append("base_id", policyId);
         runpodFormData.append("doc_type", "policy");
-        runpodFormData.append("file_code", policy.policyCode || `POL-${policyId.substring(0, 8)}`);
+        runpodFormData.append("file_code", policy.code || `POL-${policyId.substring(0, 8)}`);
         runpodFormData.append("document_id", policyId);
         runpodFormData.append("files", file); // OpenAPI expects 'files' array
 
@@ -53,13 +53,13 @@ export async function POST(req: NextRequest) {
             requestBody: {
                 base_id: policyId,
                 doc_type: "policy",
-                file_code: policy.policyCode,
+                file_code: policy.code,
                 fileName: file.name
             },
             userId,
         });
 
-        console.log(`[Governance Ingest] Ingesting policy ${policy.policyCode} (RunPod Contract Sync)`);
+        console.log(`[Governance Ingest] Ingesting policy ${policy.code} (RunPod Contract Sync)`);
 
         // Step 2: Call RunPod via aiApiClient
         const response = await aiApiClient.post("/api/grc_ingest", runpodFormData, {

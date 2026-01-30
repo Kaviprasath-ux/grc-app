@@ -25,9 +25,17 @@ export async function POST(req: NextRequest) {
         });
 
         // Step 2: Call RunPod via aiApiClient
-        const response = await aiApiClient.post("/api/semanticMatch_process_asset_riskV2", formData, {
+        // Use URLSearchParams for application/x-www-form-urlencoded
+        const params = new URLSearchParams();
+        for (const [key, value] of formData.entries()) {
+            if (typeof value === "string") {
+                params.append(key, value);
+            }
+        }
+
+        const response = await aiApiClient.post("/api/semanticMatch_process_asset_riskV2", params, {
             headers: {
-                "Content-Type": "multipart/form-data",
+                "Content-Type": "application/x-www-form-urlencoded",
             },
         });
 

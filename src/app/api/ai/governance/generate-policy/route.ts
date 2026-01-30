@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
             userId,
         });
 
-        console.log(`[Governance Generate] Generating policy ${policy.policyCode} (0-Dummy Sync)`);
+        console.log(`[Governance Generate] Generating policy ${policy.code} (0-Dummy Sync)`);
 
         // Load actual template if it exists, otherwise use the prompt as a base
         let templateBuffer: Buffer | null = null;
@@ -73,7 +73,9 @@ export async function POST(req: NextRequest) {
         formData.append("document_name", name || policy.name || "Generated Policy");
 
         // Use actual framework names from DB (JSON to Array)
-        const frameworkNames: string[] = policy.frameworkNames ? JSON.parse(policy.frameworkNames as string) : ["General"];
+        // TODO: frameworkNames field doesn't exist on Policy model yet - needs schema migration
+        // const frameworkNames: string[] = policy.frameworkNames ? JSON.parse(policy.frameworkNames as string) : ["General"];
+        const frameworkNames: string[] = ["General"]; // Default until schema is updated
         frameworkNames.forEach(f => formData.append("framework_names", f));
 
         // Map requirements/controls
@@ -81,7 +83,7 @@ export async function POST(req: NextRequest) {
 
         // 0-Dummy: Use actual buffer if available, or a minimal valid PDF-ish blob if forced
         const finalBlob = templateBuffer
-            ? new Blob([templateBuffer], { type: "application/pdf" })
+            ? new Blob([new Uint8Array(templateBuffer)], { type: "application/pdf" })
             : new Blob(["%PDF-1.4\n%...Prompt: " + prompt], { type: "application/pdf" });
 
         formData.append("template", finalBlob, templateFileName);

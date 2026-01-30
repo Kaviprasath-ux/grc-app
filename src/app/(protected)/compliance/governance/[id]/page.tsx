@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { usePermissions, useHasRole } from "@/hooks/usePermissions";
+import { usePermissions } from "@/hooks/usePermissions";
 import { PermissionGate } from "@/components/ui/permission-gate";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -25,16 +24,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import {
   Table,
   TableBody,
@@ -57,12 +46,7 @@ import {
   Download,
   Calendar,
   ChevronLeft,
-  FileUp,
-  FileDown,
-  RefreshCw,
-  Eraser,
 } from "lucide-react";
-import * as ComplianceService from "@/services/ai-compliance-service";
 
 interface Policy {
   id: string;
@@ -84,7 +68,6 @@ interface Policy {
   departmentId: string | null;
   assigneeId: string | null;
   approverId: string | null;
-  updatedAt: string;
   framework?: { id: string; name: string } | null;
   department?: { id: string; name: string } | null;
   assignee?: { id: string; fullName: string } | null;
@@ -103,7 +86,6 @@ interface Policy {
     fileName: string;
     fileType: string;
     fileSize: number;
-    filePath: string;
     uploadedAt: string;
   }>;
   policyExceptions?: Array<{
@@ -128,17 +110,14 @@ interface Policy {
       code: string;
     };
   }>;
-  vaultDocumentLinks?: Array<{
-    document: {
-      id: string;
-      documentCode: string;
-      fileName: string;
-      fileType: string | null;
-      fileSize: number | null;
-      filePath: string;
-      uploadedAt: string;
-    };
-    linkedAt: string;
+  policyAIReviews?: Array<{
+    id: string;
+    status: string;
+    score: number | null;
+    critique: string | null;
+    gaps: string | null;
+    recommendations: string | null;
+    createdAt: string;
   }>;
 }
 
@@ -157,8 +136,6 @@ interface User {
   id: string;
   fullName: string;
   departmentId?: string;
-  designation?: string;
-  department?: { id: string; name: string };
 }
 
 interface Control {
@@ -194,40 +171,18 @@ const typeLabels: Record<string, string> = {
 
 const RECURRENCE_OPTIONS = ["Weekly", "Monthly", "Quarterly", "Yearly"];
 
-// Status workflow steps - 3 visual steps with status mapping
-// Step 1 (Upload): Active when status is Draft, Approved, or Published
-// Step 2 (Draft): Active when status is Approved or Published
-// Step 3 (Publish): Active when status is Published
+// Status workflow steps
 const STATUS_WORKFLOW = [
-  { key: "Upload", label: "Upload", icon: Upload },
+  { key: "Not Uploaded", label: "Upload", icon: Upload },
   { key: "Draft", label: "Draft", icon: FileText },
-  { key: "Publish", label: "Publish", icon: Check },
+  { key: "Published", label: "Publish", icon: Check },
 ];
-
-// Helper to determine which steps are active/completed based on status
-const getStepStates = (status: string) => {
-  switch (status) {
-    case "Not Uploaded":
-      return { upload: false, draft: false, publish: false };
-    case "Draft":
-      return { upload: true, draft: false, publish: false };
-    case "Approved":
-      return { upload: true, draft: true, publish: false };
-    case "Published":
-      return { upload: true, draft: true, publish: true };
-    default:
-      return { upload: false, draft: false, publish: false };
-  }
-};
 
 export default function GovernanceDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
-  const { data: session } = useSession();
-  const currentUserId = session?.user?.id as string | undefined;
   const { canEdit, canApprove, canDelete, isLoading: permissionsLoading } = usePermissions('compliance.governance');
-  const isCustomerAdmin = useHasRole('CustomerAdministrator');
 
   const [policy, setPolicy] = useState<Policy | null>(null);
   const [loading, setLoading] = useState(true);
@@ -236,33 +191,6 @@ export default function GovernanceDetailPage() {
   const [linkControlDialogOpen, setLinkControlDialogOpen] = useState(false);
   const [assigneeDialogOpen, setAssigneeDialogOpen] = useState(false);
   const [approverDialogOpen, setApproverDialogOpen] = useState(false);
-  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
-  const [uploadFile, setUploadFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [publishDialogOpen, setPublishDialogOpen] = useState(false);
-  const [signatureDialogOpen, setSignatureDialogOpen] = useState(false);
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [hasSignature, setHasSignature] = useState(false);
-  const [unpublishDialogOpen, setUnpublishDialogOpen] = useState(false);
-  const [storedSignature, setStoredSignature] = useState<string | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  // AI Feature Dialog States
-  const [ingestDialogOpen, setIngestDialogOpen] = useState(false);
-  const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
-  const [regenerateDialogOpen, setRegenerateDialogOpen] = useState(false);
-  const [cleanupDialogOpen, setCleanupDialogOpen] = useState(false);
-  const [selfAssessmentDialogOpen, setSelfAssessmentDialogOpen] = useState(false);
-
-  // AI Feature Loading States
-  const [ingestLoading, setIngestLoading] = useState(false);
-  const [ingestStatus, setIngestStatus] = useState<string>("");
-  const [generateLoading, setGenerateLoading] = useState(false);
-  const [regenerateLoading, setRegenerateLoading] = useState(false);
-  const [cleanupLoading, setCleanupLoading] = useState(false);
-  const [selfAssessmentLoading, setSelfAssessmentLoading] = useState(false);
-  const [selfAssessmentQuestion, setSelfAssessmentQuestion] = useState("");
-  const [selfAssessmentAnswer, setSelfAssessmentAnswer] = useState("");
 
   // Edit form state
   const [editForm, setEditForm] = useState({
@@ -359,16 +287,6 @@ export default function GovernanceDetailPage() {
     fetchPolicy();
     fetchReferenceData();
   }, [fetchPolicy, fetchReferenceData]);
-
-  // Load stored signature from localStorage when policy is loaded and Published
-  useEffect(() => {
-    if (policy?.id && policy.status === "Published") {
-      const signature = localStorage.getItem(`policy-signature-${policy.id}`);
-      setStoredSignature(signature);
-    } else {
-      setStoredSignature(null);
-    }
-  }, [policy?.id, policy?.status]);
 
   const handleSave = async () => {
     try {
@@ -478,197 +396,20 @@ export default function GovernanceDetailPage() {
 
   const handleTriggerAIReview = async () => {
     try {
-      const response = await fetch(`/api/policies/${id}`, {
-        method: "PUT",
+      const response = await fetch("/api/ai/governance/review", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          aiReviewStatus: "In Progress",
-        }),
+        body: JSON.stringify({ policyId: id }),
       });
 
       if (response.ok) {
-        // Simulate AI review completion after delay
-        setTimeout(async () => {
-          await fetch(`/api/policies/${id}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              aiReviewStatus: "Completed",
-              aiReviewScore: Math.floor(Math.random() * 30) + 70,
-              aiReviewJustification:
-                "The document meets compliance requirements with minor recommendations for improvement in clarity and scope definition.",
-            }),
-          });
-          fetchPolicy();
-        }, 2000);
         fetchPolicy();
       } else {
         const error = await response.json();
         console.error("AI Review failed:", error);
-        alert(`AI Review failed: ${error.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error("Error triggering AI review:", error);
-      alert("Failed to trigger AI review");
-    }
-  };
-
-  // AI Feature Handlers
-  const handlePolicyIngest = async (files: FileList | null) => {
-    if (!files || files.length === 0 || !policy) return;
-
-    setIngestLoading(true);
-    setIngestStatus("Uploading documents...");
-
-    try {
-      const fileArray = Array.from(files);
-      const result = await ComplianceService.ingestPolicyDocuments({
-        base_id: id,
-        doc_type: "policy",
-        file_code: policy.code || `POL-${id.substring(0, 8)}`,
-        document_id: id,
-        files: fileArray,
-      });
-
-      if (result.job_id) {
-        // Async job - poll for status
-        setIngestStatus("Processing documents...");
-        await ComplianceService.pollIngestJob(result.job_id, {
-          onStatusUpdate: (status) => {
-            setIngestStatus(`Status: ${status.status}`);
-          },
-        });
-        setIngestStatus("Ingest completed successfully!");
-        alert("Policy documents ingested successfully!");
-      } else {
-        setIngestStatus("Ingest completed!");
-        alert("Policy documents ingested successfully!");
-      }
-
-      setIngestDialogOpen(false);
-      fetchPolicy();
-    } catch (error: any) {
-      console.error("Error ingesting policy:", error);
-      setIngestStatus("");
-      alert(`Failed to ingest policy: ${error.message}`);
-    } finally {
-      setIngestLoading(false);
-    }
-  };
-
-  const handleGeneratePolicy = async (formData: FormData) => {
-    setGenerateLoading(true);
-    try {
-      const result = await ComplianceService.generatePolicy({
-        document_type: formData.get("document_type") as string,
-        document_name: formData.get("document_name") as string,
-        framework_names: formData.getAll("framework_names") as string[],
-        mapped_controls: formData.getAll("mapped_controls") as string[],
-        template: formData.get("template") as File,
-      });
-
-      // Download generated policy
-      if (result.policy_document_base64) {
-        const blob = new Blob([Buffer.from(result.policy_document_base64, 'base64')], {
-          type: 'application/pdf'
-        });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${formData.get("document_name")}_generated.pdf`;
-        a.click();
-        URL.revokeObjectURL(url);
-      }
-
-      alert("Policy generated successfully!");
-      setGenerateDialogOpen(false);
-    } catch (error: any) {
-      console.error("Error generating policy:", error);
-      alert(`Failed to generate policy: ${error.message}`);
-    } finally {
-      setGenerateLoading(false);
-    }
-  };
-
-  const handleRegeneratePolicy = async (formData: FormData) => {
-    setRegenerateLoading(true);
-    try {
-      const result = await ComplianceService.regeneratePolicy({
-        document_type: formData.get("document_type") as string,
-        document_name: formData.get("document_name") as string,
-        framework_names: formData.getAll("framework_names") as string[],
-        missing_controls: formData.getAll("missing_controls") as string[],
-        policy_document: formData.get("policy_document") as File,
-      });
-
-      // Download regenerated policy
-      if (result.regenerated_policy_base64) {
-        const blob = new Blob([Buffer.from(result.regenerated_policy_base64, 'base64')], {
-          type: 'application/pdf'
-        });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${formData.get("document_name")}_regenerated.pdf`;
-        a.click();
-        URL.revokeObjectURL(url);
-      }
-
-      alert("Policy regenerated successfully!");
-      setRegenerateDialogOpen(false);
-    } catch (error: any) {
-      console.error("Error regenerating policy:", error);
-      alert(`Failed to regenerate policy: ${error.message}`);
-    } finally {
-      setRegenerateLoading(false);
-    }
-  };
-
-  const handleCleanupAIData = async () => {
-    if (!policy) return;
-    if (!confirm("Are you sure you want to delete all AI embeddings for this policy? This action cannot be undone.")) {
-      return;
-    }
-
-    setCleanupLoading(true);
-    try {
-      await ComplianceService.cleanupPolicyAIData({
-        base_id: id,
-        doc_type: "policy",
-        document_id: id,
-        file_name: policy.code || `POL-${id.substring(0, 8)}`,
-      });
-
-      alert("AI data cleaned up successfully!");
-      setCleanupDialogOpen(false);
-      fetchPolicy();
-    } catch (error: any) {
-      console.error("Error cleaning up AI data:", error);
-      alert(`Failed to cleanup AI data: ${error.message}`);
-    } finally {
-      setCleanupLoading(false);
-    }
-  };
-
-  const handleSelfAssessment = async () => {
-    if (!selfAssessmentQuestion.trim()) {
-      alert("Please enter a question");
-      return;
-    }
-
-    setSelfAssessmentLoading(true);
-    try {
-      const result = await ComplianceService.runSelfAssessment(
-        selfAssessmentQuestion,
-        "current-user-id" // TODO: Get from session
-      );
-
-      setSelfAssessmentAnswer(result.answer || "No answer received");
-    } catch (error: any) {
-      console.error("Error running self-assessment:", error);
-      alert(`Failed to run self-assessment: ${error.message}`);
-    } finally {
-      setSelfAssessmentLoading(false);
     }
   };
 
@@ -680,173 +421,6 @@ export default function GovernanceDetailPage() {
   const handleSaveApprover = async () => {
     await handleInlineUpdate("approverId", selectedApproverId);
     setApproverDialogOpen(false);
-  };
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setUploadFile(file);
-    }
-  };
-
-  const handleUploadAttachment = async () => {
-    if (!uploadFile) return;
-
-    setUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append("file", uploadFile);
-
-      const response = await fetch(`/api/policies/${id}/attachments`, {
-        method: "POST",
-        body: formData,
-      });
-
-      if (response.ok) {
-        setUploadDialogOpen(false);
-        setUploadFile(null);
-
-        // Auto-transition to Draft status when first attachment is uploaded
-        // Also set approver = assignee if not already set
-        if (policy?.status === "Not Uploaded") {
-          const updateData: Record<string, string | null> = { status: "Draft" };
-
-          // Auto-set approver to assignee if approver is not set
-          if (!policy.approverId && policy.assigneeId) {
-            updateData.approverId = policy.assigneeId;
-          }
-
-          await fetch(`/api/policies/${id}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(updateData),
-          });
-        }
-
-        fetchPolicy(); // Refresh policy data including attachments
-      } else {
-        const error = await response.json();
-        console.error("Upload failed:", error);
-      }
-    } catch (error) {
-      console.error("Error uploading attachment:", error);
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const handleDeleteAttachment = async (attachmentId: string) => {
-    try {
-      const response = await fetch(`/api/policies/${id}/attachments?attachmentId=${attachmentId}`, {
-        method: "DELETE",
-      });
-
-      if (response.ok) {
-        fetchPolicy(); // Refresh policy data
-      }
-    } catch (error) {
-      console.error("Error deleting attachment:", error);
-    }
-  };
-
-  const handlePublish = async () => {
-    try {
-      // Save signature to localStorage before publishing
-      const canvas = canvasRef.current;
-      if (canvas && hasSignature) {
-        const signatureDataUrl = canvas.toDataURL("image/png");
-        localStorage.setItem(`policy-signature-${id}`, signatureDataUrl);
-        // Also store the publish timestamp
-        localStorage.setItem(`policy-publishedAt-${id}`, new Date().toISOString());
-      }
-
-      const response = await fetch(`/api/policies/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "Published" }),
-      });
-
-      if (response.ok) {
-        setPublishDialogOpen(false);
-        setSignatureDialogOpen(false);
-        clearSignature();
-        fetchPolicy();
-      }
-    } catch (error) {
-      console.error("Error publishing policy:", error);
-    }
-  };
-
-  const handleUnpublish = async () => {
-    try {
-      const response = await fetch(`/api/policies/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "Approved" }),
-      });
-
-      if (response.ok) {
-        // Clear stored signature and publishedAt from localStorage
-        localStorage.removeItem(`policy-signature-${id}`);
-        localStorage.removeItem(`policy-publishedAt-${id}`);
-        setStoredSignature(null);
-        setUnpublishDialogOpen(false);
-        fetchPolicy();
-      }
-    } catch (error) {
-      console.error("Error unpublishing policy:", error);
-    }
-  };
-
-  // Signature canvas functions
-  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    setIsDrawing(true);
-    setHasSignature(true);
-    const ctx = canvas.getContext("2d");
-    if (ctx) {
-      const rect = canvas.getBoundingClientRect();
-      ctx.beginPath();
-      ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
-    }
-  };
-
-  const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDrawing) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext("2d");
-    if (ctx) {
-      const rect = canvas.getBoundingClientRect();
-      ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
-      ctx.strokeStyle = "#000";
-      ctx.lineWidth = 2;
-      ctx.lineCap = "round";
-      ctx.stroke();
-    }
-  };
-
-  const stopDrawing = () => {
-    setIsDrawing(false);
-  };
-
-  const clearSignature = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext("2d");
-    if (ctx) {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      setHasSignature(false);
-    }
-  };
-
-  const openSignatureDialog = () => {
-    setSignatureDialogOpen(true);
-    setHasSignature(false);
   };
 
   if (loading) {
@@ -873,24 +447,8 @@ export default function GovernanceDetailPage() {
   const linkedDocuments = policy.linkedDocuments || [];
   const policyFrameworks = policy.policyFrameworks || [];
 
-  // Get step states based on current status
-  const stepStates = getStepStates(policy.status);
-
-  // Approve button visibility: Only CustomerAdmin who is the Approver can approve
-  // And only when status is Draft
-  const canShowApproveButton =
-    isCustomerAdmin &&
-    currentUserId &&
-    policy.approverId &&
-    currentUserId === policy.approverId &&
-    policy.status === "Draft";
-
-  // Publish button visibility: Only when status is Approved
-  // And only if user is Assignee OR CustomerAdmin
-  const canShowPublishButton =
-    policy.status === "Approved" &&
-    currentUserId &&
-    (currentUserId === policy.assigneeId || isCustomerAdmin);
+  // Get current status step index
+  const currentStatusIndex = STATUS_WORKFLOW.findIndex(s => s.key === policy.status);
 
   const tabs = [
     {
@@ -929,21 +487,15 @@ export default function GovernanceDetailPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Approve Button - Only CustomerAdmin who is the Approver can see */}
-          {canShowApproveButton && (
-            <Button variant="outline" onClick={handleApprove}>
-              <Check className="h-4 w-4 mr-2" />
-              Approve
-            </Button>
-          )}
-
-          {/* Publish Button - Only when Approved, visible to Assignee or CustomerAdmin */}
-          {canShowPublishButton && (
-            <Button onClick={openSignatureDialog}>
-              <Check className="h-4 w-4 mr-2" />
-              Publish
-            </Button>
-          )}
+          {/* Approve Button - Only show if user can approve */}
+          <PermissionGate resource="compliance.governance" action="approve">
+            {policy.status !== "Approved" && policy.status !== "Published" && (
+              <Button variant="outline" onClick={handleApprove}>
+                <Check className="h-4 w-4 mr-2" />
+                Approve
+              </Button>
+            )}
+          </PermissionGate>
 
           {/* Start AI Review Button - Requires edit permission */}
           <PermissionGate resource="compliance.governance" action="edit">
@@ -1159,37 +711,32 @@ export default function GovernanceDetailPage() {
         </div>
       )}
 
-      {/* Status Workflow Steps - Visual display of current state */}
+      {/* Status Workflow Steps - Only clickable with edit permission */}
       <Card>
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
             {STATUS_WORKFLOW.map((step, index) => {
-              // Determine step state based on status
-              const isStepActive =
-                (step.key === "Upload" && stepStates.upload) ||
-                (step.key === "Draft" && stepStates.draft) ||
-                (step.key === "Publish" && stepStates.publish);
-
-              // Determine if connecting line should be green
-              const isLineGreen =
-                (index === 0 && stepStates.upload) ||
-                (index === 1 && stepStates.draft);
-
+              const isActive = step.key === policy.status;
+              const isCompleted = currentStatusIndex > index;
               const Icon = step.icon;
 
               return (
                 <div key={step.key} className="flex items-center flex-1">
-                  <div
-                    className={`flex flex-col items-center gap-2 p-3 rounded-lg transition-colors ${isStepActive
-                      ? "bg-green-100 text-green-800"
-                      : "bg-muted text-muted-foreground"
-                      }`}
+                  <button
+                    onClick={() => canEdit && handleStatusChange(step.key)}
+                    disabled={!canEdit}
+                    className={`flex flex-col items-center gap-2 p-3 rounded-lg transition-colors ${isActive
+                      ? "bg-primary text-primary-foreground"
+                      : isCompleted
+                        ? "bg-green-100 text-green-800 hover:bg-green-200"
+                        : "bg-muted text-muted-foreground hover:bg-muted/80"
+                      } ${!canEdit ? "cursor-not-allowed opacity-60" : ""}`}
                   >
                     <Icon className="h-6 w-6" />
                     <span className="text-sm font-medium">{step.label}</span>
-                  </div>
+                  </button>
                   {index < STATUS_WORKFLOW.length - 1 && (
-                    <div className={`flex-1 h-1 mx-2 ${isLineGreen ? "bg-green-500" : "bg-muted"
+                    <div className={`flex-1 h-1 mx-2 ${isCompleted || isActive ? "bg-green-500" : "bg-muted"
                       }`} />
                   )}
                 </div>
@@ -1393,34 +940,78 @@ export default function GovernanceDetailPage() {
               <p>AI Review in progress...</p>
             </div>
           ) : (
-            <div className="grid grid-cols-3 gap-6">
-              <div>
-                <Label className="text-muted-foreground text-sm">Status</Label>
-                <div className="mt-1">
-                  <Badge className={aiStatusColors[policy.aiReviewStatus] || "bg-gray-100"}>
-                    {policy.aiReviewStatus}
-                  </Badge>
+            <div className="space-y-6">
+              <div className="grid grid-cols-3 gap-6">
+                <div>
+                  <Label className="text-muted-foreground text-sm">Status</Label>
+                  <div className="mt-1">
+                    <Badge className={aiStatusColors[policy.aiReviewStatus || "Pending"] || "bg-gray-100"}>
+                      {policy.aiReviewStatus}
+                    </Badge>
+                  </div>
+                </div>
+                {policy.aiReviewScore !== null && (
+                  <div>
+                    <Label className="text-muted-foreground text-sm">Score</Label>
+                    <div className="mt-1">
+                      <span className={`text-2xl font-bold ${policy.aiReviewScore >= 80
+                        ? "text-green-600"
+                        : policy.aiReviewScore >= 60
+                          ? "text-yellow-600"
+                          : "text-red-600"
+                        }`}>
+                        {policy.aiReviewScore}%
+                      </span>
+                    </div>
+                  </div>
+                )}
+                <div className="col-span-1 flex items-end">
+                  <span className="text-sm text-gray-500">
+                    Last reviewed: {policy.policyAIReviews?.[0] ? new Date(policy.policyAIReviews[0].createdAt).toLocaleDateString() : 'Never'}
+                  </span>
                 </div>
               </div>
-              {policy.aiReviewScore !== null && (
+
+              {policy.aiReviewJustification && (
                 <div>
-                  <Label className="text-muted-foreground text-sm">Score</Label>
-                  <div className="mt-1">
-                    <span className={`text-2xl font-bold ${policy.aiReviewScore >= 80
-                      ? "text-green-600"
-                      : policy.aiReviewScore >= 60
-                        ? "text-yellow-600"
-                        : "text-red-600"
-                      }`}>
-                      {policy.aiReviewScore}%
-                    </span>
+                  <Label className="text-muted-foreground text-sm">Critique & Analysis</Label>
+                  <p className="mt-1 p-3 bg-muted rounded-lg text-sm leading-relaxed whitespace-pre-wrap">
+                    {policy.aiReviewJustification}
+                  </p>
+                </div>
+              )}
+
+              {policy.policyAIReviews?.[0]?.gaps && (
+                <div>
+                  <Label className="text-muted-foreground text-sm">Identified Gaps</Label>
+                  <div className="mt-1 p-3 border border-red-100 bg-red-50/50 rounded-lg text-sm">
+                    {policy.policyAIReviews[0].gaps.startsWith('[') ? (
+                      <ul className="list-disc pl-4 space-y-1">
+                        {JSON.parse(policy.policyAIReviews[0].gaps).map((gap: string, idx: number) => (
+                          <li key={idx} className="text-red-800">{gap}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-red-800">{policy.policyAIReviews[0].gaps}</p>
+                    )}
                   </div>
                 </div>
               )}
-              {policy.aiReviewJustification && (
-                <div className="col-span-3">
-                  <Label className="text-muted-foreground text-sm">Justification</Label>
-                  <p className="mt-1 p-3 bg-muted rounded-lg">{policy.aiReviewJustification}</p>
+
+              {policy.policyAIReviews?.[0]?.recommendations && (
+                <div>
+                  <Label className="text-muted-foreground text-sm">Recommendations</Label>
+                  <div className="mt-1 p-3 border border-blue-100 bg-blue-50/50 rounded-lg text-sm">
+                    {policy.policyAIReviews[0].recommendations.startsWith('[') ? (
+                      <ul className="list-disc pl-4 space-y-1">
+                        {JSON.parse(policy.policyAIReviews[0].recommendations).map((rec: string, idx: number) => (
+                          <li key={idx} className="text-blue-800">{rec}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-blue-800">{policy.policyAIReviews[0].recommendations}</p>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -1428,220 +1019,15 @@ export default function GovernanceDetailPage() {
         </CardContent>
       </Card>
 
-      {/* Published Section - Only show when status is Published */}
-      {policy.status === "Published" && (
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Check className="h-5 w-5 text-green-600" />
-              Published
-            </CardTitle>
-            <div className="flex items-center gap-2">
-              {/* Download Published Document Button */}
-              {attachments.length > 0 && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => window.open(attachments[0].filePath, "_blank")}
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Download
-                </Button>
-              )}
-              {/* Unpublish Button */}
-              <PermissionGate resource="compliance.governance" action="edit">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setUnpublishDialogOpen(true)}
-                  className="text-orange-600 hover:text-orange-700"
-                >
-                  Unpublish
-                </Button>
-              </PermissionGate>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Left Column - Published Info */}
-              <div className="space-y-4">
-                {/* Published On */}
-                <div>
-                  <Label className="text-muted-foreground text-sm">Published On</Label>
-                  <p className="font-medium mt-1">
-                    {(() => {
-                      // Try to get stored publishedAt from localStorage, fallback to updatedAt
-                      const storedPublishedAt = localStorage.getItem(`policy-publishedAt-${policy.id}`);
-                      const publishDate = storedPublishedAt
-                        ? new Date(storedPublishedAt)
-                        : new Date(policy.updatedAt);
-                      return publishDate.toLocaleString("en-US", {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      });
-                    })()}
-                  </p>
-                </div>
-
-                {/* Published Document */}
-                <div>
-                  <Label className="text-muted-foreground text-sm">Published Document</Label>
-                  {attachments.length > 0 ? (
-                    <div className="flex items-center gap-2 mt-1 p-2 bg-muted rounded-lg">
-                      <FileText className="h-5 w-5 text-blue-600" />
-                      <span className="font-medium">{attachments[0].fileName}</span>
-                    </div>
-                  ) : (
-                    <p className="text-muted-foreground mt-1">No document attached</p>
-                  )}
-                </div>
-
-                {/* Approver Details */}
-                <div>
-                  <Label className="text-muted-foreground text-sm">Approved By</Label>
-                  {policy.approver ? (
-                    <div className="mt-1 p-3 bg-muted rounded-lg space-y-1">
-                      <p className="font-medium">{policy.approver.fullName}</p>
-                      {(() => {
-                        // Find the approver in users array to get full details
-                        const approverUser = users.find(u => u.id === policy.approverId);
-                        return (
-                          <>
-                            {approverUser?.department && (
-                              <p className="text-sm text-muted-foreground">
-                                Department: {approverUser.department.name}
-                              </p>
-                            )}
-                            {approverUser?.designation && (
-                              <p className="text-sm text-muted-foreground">
-                                Designation: {approverUser.designation}
-                              </p>
-                            )}
-                          </>
-                        );
-                      })()}
-                    </div>
-                  ) : (
-                    <p className="text-muted-foreground mt-1">-</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Right Column - Signature */}
-              <div>
-                <Label className="text-muted-foreground text-sm">Signature</Label>
-                <div className="mt-1 border rounded-lg p-4 bg-white min-h-[150px] flex items-center justify-center">
-                  {storedSignature ? (
-                    <img
-                      src={storedSignature}
-                      alt="Signature"
-                      className="max-w-full max-h-[140px] object-contain"
-                    />
-                  ) : (
-                    <p className="text-muted-foreground text-sm">Signature not available</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Unpublish Confirmation Dialog */}
-      <AlertDialog open={unpublishDialogOpen} onOpenChange={setUnpublishDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Unpublish {typeLabels[policy.type] || "Document"}?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will revert the status from Published to Approved. The document will need to be published again after any changes.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleUnpublish} className="bg-orange-600 hover:bg-orange-700">
-              Unpublish
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
       {/* Attachments Section */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Attachments</CardTitle>
           <PermissionGate resource="compliance.governance" action="edit">
-            {isCustomerAdmin ? (
-              /* Customer Admin: Upload dialog with full functionality */
-              <Dialog open={uploadDialogOpen} onOpenChange={(open) => {
-                setUploadDialogOpen(open);
-                if (!open) setUploadFile(null);
-              }}>
-                <DialogTrigger asChild>
-                  <Button size="sm">
-                    <Upload className="h-4 w-4 mr-2" />
-                    Upload
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Upload Document</DialogTitle>
-                  </DialogHeader>
-                  <div className="py-4 space-y-4">
-                    <div>
-                      <Label>Select File</Label>
-                      <Input
-                        type="file"
-                        onChange={handleFileSelect}
-                        className="mt-2"
-                        accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
-                      />
-                    </div>
-                    {uploadFile && (
-                      <div className="p-3 bg-muted rounded-lg">
-                        <p className="text-sm font-medium">{uploadFile.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {(uploadFile.size / 1024).toFixed(2)} KB
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setUploadDialogOpen(false);
-                        setUploadFile(null);
-                      }}
-                      disabled={uploading}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={handleUploadAttachment}
-                      disabled={!uploadFile || uploading}
-                    >
-                      {uploading ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                          Uploading...
-                        </>
-                      ) : (
-                        "Upload"
-                      )}
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            ) : (
-              /* GRC Admin / Other roles: Original simple button (no functionality) */
-              <Button size="sm">
-                <Upload className="h-4 w-4 mr-2" />
-                Upload
-              </Button>
-            )}
+            <Button size="sm">
+              <Upload className="h-4 w-4 mr-2" />
+              Upload
+            </Button>
           </PermissionGate>
         </CardHeader>
         <CardContent>
@@ -1668,38 +1054,13 @@ export default function GovernanceDetailPage() {
                     <TableCell>{new Date(att.uploadedAt).toLocaleDateString()}</TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        {isCustomerAdmin ? (
-                          /* Customer Admin: Functional download button */
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => window.open(att.filePath, "_blank")}
-                            title="Download"
-                          >
-                            <Download className="h-4 w-4" />
-                          </Button>
-                        ) : (
-                          /* GRC Admin / Other: Original button (no functionality) */
-                          <Button variant="ghost" size="icon">
-                            <Download className="h-4 w-4" />
-                          </Button>
-                        )}
+                        <Button variant="ghost" size="icon">
+                          <Download className="h-4 w-4" />
+                        </Button>
                         <PermissionGate resource="compliance.governance" action="delete">
-                          {isCustomerAdmin ? (
-                            /* Customer Admin: Functional delete button */
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleDeleteAttachment(att.id)}
-                            >
-                              <Trash2 className="h-4 w-4 text-red-500" />
-                            </Button>
-                          ) : (
-                            /* GRC Admin / Other: Original button (no functionality) */
-                            <Button variant="ghost" size="icon">
-                              <Trash2 className="h-4 w-4 text-red-500" />
-                            </Button>
-                          )}
+                          <Button variant="ghost" size="icon">
+                            <Trash2 className="h-4 w-4 text-red-500" />
+                          </Button>
                         </PermissionGate>
                       </div>
                     </TableCell>
@@ -1710,101 +1071,6 @@ export default function GovernanceDetailPage() {
           )}
         </CardContent>
       </Card>
-
-      {/* Vault Documents Section (Documents linked from Information Security Vault) */}
-      {isCustomerAdmin && policy.vaultDocumentLinks && policy.vaultDocumentLinks.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Vault Documents</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Document Code</TableHead>
-                  <TableHead>File Name</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Linked At</TableHead>
-                  <TableHead className="w-[100px]">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {policy.vaultDocumentLinks.map((link) => (
-                  <TableRow key={link.document.id}>
-                    <TableCell className="font-medium">{link.document.documentCode}</TableCell>
-                    <TableCell>{link.document.fileName}</TableCell>
-                    <TableCell>{link.document.fileType?.toUpperCase() || "FILE"}</TableCell>
-                    <TableCell>{new Date(link.linkedAt).toLocaleDateString()}</TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => window.open(link.document.filePath, "_blank")}
-                        title="Download"
-                      >
-                        <Download className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Signature Publish Dialog */}
-      <Dialog open={signatureDialogOpen} onOpenChange={(open) => {
-        setSignatureDialogOpen(open);
-        if (!open) clearSignature();
-      }}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{typeLabels[policy.type] || "Policy"} signature Publish</DialogTitle>
-          </DialogHeader>
-          <div className="py-4 space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Please sign below to publish this {(policy.type || "document").toLowerCase()}.
-            </p>
-            <div className="border rounded-lg p-2 bg-white">
-              <canvas
-                ref={canvasRef}
-                width={400}
-                height={150}
-                className="w-full border border-dashed border-gray-300 rounded cursor-crosshair"
-                onMouseDown={startDrawing}
-                onMouseMove={draw}
-                onMouseUp={stopDrawing}
-                onMouseLeave={stopDrawing}
-              />
-            </div>
-            <div className="flex justify-between items-center">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearSignature}
-                disabled={!hasSignature}
-              >
-                Clear Signature
-              </Button>
-              <span className="text-xs text-muted-foreground">
-                Draw your signature above
-              </span>
-            </div>
-          </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => {
-              setSignatureDialogOpen(false);
-              clearSignature();
-            }}>
-              Cancel
-            </Button>
-            <Button onClick={handlePublish} disabled={!hasSignature}>
-              Publish
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Tabs */}
       <div className="border-b">
