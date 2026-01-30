@@ -1,18 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
 
 // GET all asset sensitivities
+// NOTE: AssetSensitivity model doesn't have customerAccountId yet - tenant filtering disabled
 export async function GET() {
   try {
-    const session = await auth();
-    const userRoles = session?.user?.roles || [];
-    const isGRCAdmin = userRoles.includes("GRCAdministrator");
-    const customerAccountId = session?.user?.customerAccountId;
-    const tenantFilter = !isGRCAdmin && customerAccountId ? { customerAccountId } : {};
-
     const sensitivities = await prisma.assetSensitivity.findMany({
-      where: tenantFilter,
       include: {
         _count: {
           select: { assets: true },
@@ -31,11 +24,9 @@ export async function GET() {
 }
 
 // POST create new asset sensitivity
+// NOTE: AssetSensitivity model doesn't have customerAccountId yet - tenant filtering disabled
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth();
-    const customerAccountId = session?.user?.customerAccountId;
-
     const body = await request.json();
     const { name, description } = body;
 
@@ -46,12 +37,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check for duplicate within the same tenant
+    // Check for duplicate
     const existing = await prisma.assetSensitivity.findFirst({
-      where: {
-        name: name.trim(),
-        ...(customerAccountId ? { customerAccountId } : {}),
-      },
+      where: { name: name.trim() },
     });
 
     if (existing) {
@@ -65,7 +53,6 @@ export async function POST(request: NextRequest) {
       data: {
         name: name.trim(),
         description: description?.trim() || null,
-        ...(customerAccountId ? { customerAccountId } : {}),
       },
       include: {
         _count: {

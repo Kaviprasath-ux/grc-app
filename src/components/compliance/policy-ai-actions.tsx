@@ -8,7 +8,7 @@ import {
     Trash2,
     RefreshCw,
     MessageSquare,
-    Shield_Alert
+    ShieldAlert
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {

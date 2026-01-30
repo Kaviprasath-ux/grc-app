@@ -131,8 +131,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           customerAccountId: user.customerAccountId,
           customerAccountCode: user.customerAccount?.code || null,
           customerAccountName: user.customerAccount?.name || null,
-          // Audit Head isolation: Store auditHeadId for subordinate users
-          auditHeadId: user.auditHeadId,
+          // Note: User model doesn't have auditHeadId field yet
           roles: effectiveRoles,
           permissions: [], // Placeholder - expanded in session callback
         };
@@ -158,8 +157,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.customerAccountId = user.customerAccountId;
         token.customerAccountCode = user.customerAccountCode;
         token.customerAccountName = user.customerAccountName;
-        // Audit Head isolation: Store auditHeadId for subordinate users
-        token.auditHeadId = user.auditHeadId;
+        // Note: User model doesn't have auditHeadId field yet
         token.roles = user.roles;
         // Don't store permissions in JWT - they'll be expanded in session callback
       }
@@ -176,8 +174,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.customerAccountId = token.customerAccountId as string | null;
         session.user.customerAccountCode = token.customerAccountCode as string | null;
         session.user.customerAccountName = token.customerAccountName as string | null;
-        // Audit Head isolation: Include auditHeadId for subordinate users
-        session.user.auditHeadId = token.auditHeadId as string | null;
+        // Note: User model doesn't have auditHeadId field yet
         session.user.roles = (token.roles as string[]) || [];
 
         // Expand permissions from roles here (session callback runs server-side)

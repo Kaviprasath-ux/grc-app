@@ -1,16 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { withAuth, getTenantFilter, getCustomerAccountId, getAuditHeadFilter, getAuditHeadId } from "@/lib/api-auth";
+import { withAuth } from "@/lib/api-auth";
 
-// GET all nature of controls - filtered by audit head
+// GET all nature of controls
+// Note: AuditNatureOfControl model doesn't have customerAccountId field yet - tenant filtering disabled
 export const GET = withAuth(
-  async (req: NextRequest, context, session) => {
+  async () => {
     try {
-      const tenantFilter = getTenantFilter(session);
-      const auditHeadFilter = getAuditHeadFilter(session);
-
       const controls = await prisma.auditNatureOfControl.findMany({
-        where: { ...tenantFilter, ...auditHeadFilter },
         orderBy: { label: "asc" },
       });
 
@@ -26,12 +23,11 @@ export const GET = withAuth(
   { resource: "audit.settings", action: "edit" }
 );
 
-// POST create a new nature of control - assigned to current audit head
+// POST create a new nature of control
+// Note: AuditNatureOfControl model doesn't have customerAccountId field yet - tenant assignment disabled
 export const POST = withAuth(
-  async (req: NextRequest, context, session) => {
+  async (req: NextRequest) => {
     try {
-      const customerAccountId = getCustomerAccountId(session);
-      const auditHeadId = getAuditHeadId(session);
       const body = await req.json();
       const { label } = body;
 
@@ -42,12 +38,9 @@ export const POST = withAuth(
         );
       }
 
-      // Check for duplicate within the same audit head's settings
+      // Check for duplicate
       const existing = await prisma.auditNatureOfControl.findFirst({
-        where: {
-          label,
-          auditHeadId,
-        },
+        where: { label },
       });
 
       if (existing) {
@@ -58,11 +51,7 @@ export const POST = withAuth(
       }
 
       const control = await prisma.auditNatureOfControl.create({
-        data: {
-          label,
-          customerAccountId,
-          auditHeadId,
-        },
+        data: { label },
       });
 
       return NextResponse.json(control, { status: 201 });

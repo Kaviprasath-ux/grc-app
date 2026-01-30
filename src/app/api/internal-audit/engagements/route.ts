@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { withAuth, getCustomerAccountId, getTenantFilter, getAuditHeadFilter, getAuditHeadId } from '@/lib/api-auth';
+import { withAuth, getCustomerAccountId, getTenantFilter } from '@/lib/api-auth';
 
 // GET /api/internal-audit/engagements - Get all audit engagements
+// NOTE: AuditEngagement doesn't have auditHeadId - using tenant filter only
 export const GET = withAuth(
   async (req, context, session) => {
     try {
@@ -13,8 +14,7 @@ export const GET = withAuth(
       const search = url.searchParams.get('search');
 
       const tenantFilter = getTenantFilter(session);
-      const auditHeadFilter = getAuditHeadFilter(session);
-      const whereClause: Record<string, unknown> = { ...tenantFilter, ...auditHeadFilter };
+      const whereClause: Record<string, unknown> = { ...tenantFilter };
       const andConditions: Record<string, unknown>[] = [];
 
       // Check if user is an Auditee (and not also an Audit Head or other audit role)
@@ -130,6 +130,7 @@ export const GET = withAuth(
 );
 
 // POST /api/internal-audit/engagements - Create a new audit engagement
+// NOTE: AuditEngagement doesn't have auditHeadId - using tenant filter only
 export const POST = withAuth(
   async (req, context, session) => {
     try {
@@ -149,12 +150,10 @@ export const POST = withAuth(
         targetDate,
         initialObservation,
         relatedPolicies,
-        tasks,
         plannedHours,
       } = body;
 
       const customerAccountId = getCustomerAccountId(session);
-      const auditHeadId = getAuditHeadId(session);
 
       // Generate audit ID
       const count = await prisma.auditEngagement.count();
@@ -178,8 +177,7 @@ export const POST = withAuth(
           plannedHours: plannedHours || 0,
           actualHours: 0,
           status: 'Planned',
-          customerAccountId,
-          auditHeadId,
+          ...(customerAccountId ? { customerAccountId } : {}),
         },
         include: {
           department: {

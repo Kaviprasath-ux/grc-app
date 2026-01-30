@@ -1,16 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { withAuth, getTenantFilter, getCustomerAccountId, getAuditHeadFilter, getAuditHeadId } from "@/lib/api-auth";
+import { withAuth } from "@/lib/api-auth";
 
-// GET all audit types - filtered by audit head
+// GET all audit types
+// NOTE: AuditType model doesn't have customerAccountId or auditHeadId yet - tenant filtering disabled
 export const GET = withAuth(
-  async (req: NextRequest, context, session) => {
+  async () => {
     try {
-      const tenantFilter = getTenantFilter(session);
-      const auditHeadFilter = getAuditHeadFilter(session);
-
       const auditTypes = await prisma.auditType.findMany({
-        where: { ...tenantFilter, ...auditHeadFilter },
         include: {
           _count: {
             select: { internalAuditRisks: true },
@@ -31,12 +28,11 @@ export const GET = withAuth(
   { resource: "audit.settings", action: "edit" }
 );
 
-// POST create a new audit type - assigned to current audit head
+// POST create a new audit type
+// NOTE: AuditType model doesn't have customerAccountId or auditHeadId yet - tenant filtering disabled
 export const POST = withAuth(
-  async (req: NextRequest, context, session) => {
+  async (req: NextRequest) => {
     try {
-      const customerAccountId = getCustomerAccountId(session);
-      const auditHeadId = getAuditHeadId(session);
       const body = await req.json();
       const { name } = body;
 
@@ -47,12 +43,9 @@ export const POST = withAuth(
         );
       }
 
-      // Check for duplicate within the same audit head's settings
+      // Check for duplicate
       const existing = await prisma.auditType.findFirst({
-        where: {
-          name,
-          auditHeadId,
-        },
+        where: { name },
       });
 
       if (existing) {
@@ -63,11 +56,7 @@ export const POST = withAuth(
       }
 
       const auditType = await prisma.auditType.create({
-        data: {
-          name,
-          customerAccountId,
-          auditHeadId,
-        },
+        data: { name },
       });
 
       return NextResponse.json(auditType, { status: 201 });

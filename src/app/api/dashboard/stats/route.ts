@@ -198,19 +198,51 @@ export async function GET() {
       };
     });
 
-    // Evidence KPI and Process KPI - sample data for visualization
-    const evidenceKPIData = [
-      { department: "IT Operations", achieved: 8, scheduled: 3, missed: 1, overdue: 2 },
-      { department: "Compliance", achieved: 12, scheduled: 5, missed: 0, overdue: 1 },
-      { department: "HR", achieved: 6, scheduled: 2, missed: 2, overdue: 0 },
-      { department: "Finance", achieved: 10, scheduled: 4, missed: 1, overdue: 1 },
-    ];
-    const processKPIData = [
-      { department: "IT Operations", achieved: 5, scheduled: 4, missed: 2, overdue: 1 },
-      { department: "Compliance", achieved: 8, scheduled: 3, missed: 1, overdue: 0 },
-      { department: "HR", achieved: 4, scheduled: 2, missed: 0, overdue: 2 },
-      { department: "Finance", achieved: 7, scheduled: 5, missed: 1, overdue: 1 },
-    ];
+    // Evidence KPI - fetch from database with tenant filtering
+    // Get departments for this tenant and their evidence counts
+    const departments = await prisma.department.findMany({
+      where: tenantFilter,
+      select: { id: true, name: true },
+    });
+
+    const evidenceKPIData = await Promise.all(
+      departments.map(async (dept) => {
+        const evidences = await prisma.evidence.findMany({
+          where: {
+            ...tenantFilter,
+            departmentId: dept.id,
+          },
+          select: { status: true },
+        });
+        return {
+          department: dept.name,
+          achieved: evidences.filter((e) => e.status === "Approved" || e.status === "Completed").length,
+          scheduled: evidences.filter((e) => e.status === "Scheduled" || e.status === "Pending").length,
+          missed: evidences.filter((e) => e.status === "Missed" || e.status === "Rejected").length,
+          overdue: evidences.filter((e) => e.status === "Overdue").length,
+        };
+      })
+    );
+
+    // Process KPI - fetch from database with tenant filtering
+    const processKPIData = await Promise.all(
+      departments.map(async (dept) => {
+        const processes = await prisma.process.findMany({
+          where: {
+            ...tenantFilter,
+            departmentId: dept.id,
+          },
+          select: { status: true },
+        });
+        return {
+          department: dept.name,
+          achieved: processes.filter((p) => p.status === "Approved" || p.status === "Active").length,
+          scheduled: processes.filter((p) => p.status === "Scheduled" || p.status === "Draft").length,
+          missed: processes.filter((p) => p.status === "Missed" || p.status === "Inactive").length,
+          overdue: processes.filter((p) => p.status === "Overdue").length,
+        };
+      })
+    );
 
     return NextResponse.json({
       dashboardStats,

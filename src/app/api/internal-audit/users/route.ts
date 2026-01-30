@@ -41,6 +41,7 @@ export const GET = withAuth(
         ];
       }
 
+      // Note: User model doesn't have auditHead relation - removed
       const users = await prisma.user.findMany({
         where: whereClause,
         include: {
@@ -53,9 +54,6 @@ export const GET = withAuth(
                 select: { id: true, name: true },
               },
             },
-          },
-          auditHead: {
-            select: { id: true, fullName: true },
           },
         },
         orderBy: { fullName: "asc" },
@@ -159,6 +157,7 @@ export const POST = withAuth(
         }
       }
 
+      // Note: User model doesn't have auditHeadId field - removed
       const user = await prisma.user.create({
         data: {
           userId,
@@ -177,8 +176,6 @@ export const POST = withAuth(
           isBlocked: false,
           departmentId: departmentId || null,
           customerAccountId,
-          // Set auditHeadId for multi-tenant isolation within audit module
-          auditHeadId: auditHeadIdToSet,
           // Create UserRole entries for each role
           userRoles: {
             create: roleRecords.map((r) => ({
@@ -196,9 +193,6 @@ export const POST = withAuth(
                 select: { id: true, name: true },
               },
             },
-          },
-          auditHead: {
-            select: { id: true, fullName: true },
           },
         },
       });

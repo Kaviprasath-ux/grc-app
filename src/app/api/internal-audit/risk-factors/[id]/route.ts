@@ -49,11 +49,11 @@ export async function PUT(
     }
 
     // Check for duplicate label if label is being changed
+    // Note: AuditRiskFactor model doesn't have customerAccountId field yet
     if (label && label !== existing.label) {
       const duplicate = await prisma.auditRiskFactor.findFirst({
         where: {
           label,
-          customerAccountId: existing.customerAccountId,
           id: { not: id }
         },
       });

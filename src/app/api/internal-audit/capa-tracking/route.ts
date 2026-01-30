@@ -51,6 +51,7 @@ export const GET = withAuth(
       const total = await prisma.internalAuditFinding.count({ where });
 
       // Get findings with relations
+      // NOTE: attachments and AI review fields are not in the schema yet
       const findings = await prisma.internalAuditFinding.findMany({
         where,
         include: {
@@ -66,9 +67,6 @@ export const GET = withAuth(
               name: true,
             },
           },
-          attachments: {
-            orderBy: { uploadedAt: 'desc' },
-          },
         },
         orderBy: { createdAt: 'desc' },
         skip,
@@ -77,16 +75,6 @@ export const GET = withAuth(
 
       // Transform findings for the response
       const transformedFindings = findings.map((finding) => {
-        // Determine if user can see AI review results
-        // Audit team (AuditHead, AuditManager, Auditor) can always see AI review
-        // Auditee can only see AI review after Audit Head has approved it
-        const canSeeAiReview = isAuditTeam || finding.aiReviewApproved;
-
-        // Debug logging for AI review
-        if (finding.aiReviewStatus) {
-          console.log('[CAPA-GET] Finding', finding.findingId, 'has AI review:', finding.aiReviewStatus, 'canSeeAiReview:', canSeeAiReview);
-        }
-
         return {
           id: finding.id,
           findingId: finding.findingId,
@@ -110,15 +98,15 @@ export const GET = withAuth(
           effect: finding.effect,
           recommendation: finding.recommendation,
           auditeeComment: finding.description, // Map description to auditeeComment for now
-          // Attachments
-          attachments: finding.attachments || [],
-          // AI Review fields (role-based visibility)
-          aiReviewStatus: canSeeAiReview ? finding.aiReviewStatus : null,
-          aiReviewDescription: canSeeAiReview ? finding.aiReviewDescription : null,
-          aiReviewedAt: canSeeAiReview ? finding.aiReviewedAt : null,
-          aiReviewApproved: finding.aiReviewApproved,
-          aiApprovedAt: finding.aiReviewApproved ? finding.aiApprovedAt : null,
-          aiApprovedBy: finding.aiReviewApproved ? finding.aiApprovedBy : null,
+          // Attachments - not in schema yet
+          attachments: [],
+          // AI Review fields - not in schema yet
+          aiReviewStatus: null,
+          aiReviewDescription: null,
+          aiReviewedAt: null,
+          aiReviewApproved: false,
+          aiApprovedAt: null,
+          aiApprovedBy: null,
         };
       });
 

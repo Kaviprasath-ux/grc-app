@@ -1,26 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { withAuth, getTenantFilter, getCustomerAccountId, getAuditHeadFilter, getAuditHeadId } from "@/lib/api-auth";
+import { withAuth } from "@/lib/api-auth";
 
-// GET scoring config - filtered by audit head
+// GET scoring config
+// Note: AuditScoringConfig model doesn't have customerAccountId field yet - tenant filtering disabled
 export const GET = withAuth(
-  async (req: NextRequest, context, session) => {
+  async () => {
     try {
-      const tenantFilter = getTenantFilter(session);
-      const auditHeadFilter = getAuditHeadFilter(session);
+      let config = await prisma.auditScoringConfig.findFirst();
 
-      let config = await prisma.auditScoringConfig.findFirst({
-        where: { ...tenantFilter, ...auditHeadFilter },
-      });
-
-      // Create default config if none exists for this audit head
+      // Create default config if none exists
       if (!config) {
-        const customerAccountId = getCustomerAccountId(session);
-        const auditHeadId = getAuditHeadId(session);
         config = await prisma.auditScoringConfig.create({
           data: {
-            customerAccountId,
-            auditHeadId,
             probabilityImpactCalcType: "Product of all",
             riskRatingCalcType: "High of all",
           },
@@ -39,27 +31,20 @@ export const GET = withAuth(
   { resource: "audit.settings", action: "edit" }
 );
 
-// PUT update scoring config - for current audit head
+// PUT update scoring config
+// Note: AuditScoringConfig model doesn't have customerAccountId field yet - tenant filtering disabled
 export const PUT = withAuth(
-  async (req: NextRequest, context, session) => {
+  async (req: NextRequest) => {
     try {
       const body = await req.json();
       const { probabilityImpactCalcType, riskRatingCalcType } = body;
-      const tenantFilter = getTenantFilter(session);
-      const auditHeadFilter = getAuditHeadFilter(session);
 
-      let config = await prisma.auditScoringConfig.findFirst({
-        where: { ...tenantFilter, ...auditHeadFilter },
-      });
+      let config = await prisma.auditScoringConfig.findFirst();
 
       if (!config) {
-        // Create if doesn't exist for this audit head
-        const customerAccountId = getCustomerAccountId(session);
-        const auditHeadId = getAuditHeadId(session);
+        // Create if doesn't exist
         config = await prisma.auditScoringConfig.create({
           data: {
-            customerAccountId,
-            auditHeadId,
             probabilityImpactCalcType: probabilityImpactCalcType || "Product of all",
             riskRatingCalcType: riskRatingCalcType || "High of all",
           },

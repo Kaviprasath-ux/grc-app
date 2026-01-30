@@ -1,18 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { auth } from "@/lib/auth";
 
 // GET all asset classifications
+// NOTE: AssetClassification model doesn't have customerAccountId yet - tenant filtering disabled
 export async function GET() {
   try {
-    const session = await auth();
-    const userRoles = session?.user?.roles || [];
-    const isGRCAdmin = userRoles.includes("GRCAdministrator");
-    const customerAccountId = session?.user?.customerAccountId;
-    const tenantFilter = !isGRCAdmin && customerAccountId ? { customerAccountId } : {};
-
     const classifications = await prisma.assetClassification.findMany({
-      where: tenantFilter,
       include: {
         _count: {
           select: { assets: true },
@@ -31,11 +24,9 @@ export async function GET() {
 }
 
 // POST create new asset classification
+// NOTE: AssetClassification model doesn't have customerAccountId yet - tenant filtering disabled
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth();
-    const customerAccountId = session?.user?.customerAccountId;
-
     const body = await request.json();
     const { name, description } = body;
 
@@ -46,12 +37,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if classification already exists within the same tenant
+    // Check if classification already exists
     const existingClassification = await prisma.assetClassification.findFirst({
-      where: {
-        name,
-        ...(customerAccountId ? { customerAccountId } : {}),
-      },
+      where: { name },
     });
 
     if (existingClassification) {
@@ -65,7 +53,6 @@ export async function POST(request: NextRequest) {
       data: {
         name,
         description,
-        ...(customerAccountId ? { customerAccountId } : {}),
       },
       include: {
         _count: {

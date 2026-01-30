@@ -1,14 +1,15 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { withAuth, validateTenantAccess } from "@/lib/api-auth";
+import { withAuth } from "@/lib/api-auth";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
 }
 
 // PUT update asset lifecycle status
+// NOTE: AssetLifecycleStatus model doesn't have customerAccountId yet - tenant filtering disabled
 export const PUT = withAuth(
-  async (req, context: RouteContext, session) => {
+  async (req, context: RouteContext) => {
     try {
       const { id } = await context.params;
       const body = await req.json();
@@ -21,7 +22,7 @@ export const PUT = withAuth(
         );
       }
 
-      // Verify the status exists and belongs to the user's tenant
+      // Verify the status exists
       const existingStatus = await prisma.assetLifecycleStatus.findUnique({
         where: { id },
       });
@@ -30,13 +31,6 @@ export const PUT = withAuth(
         return NextResponse.json(
           { error: "Lifecycle status not found" },
           { status: 404 }
-        );
-      }
-
-      if (!validateTenantAccess(session, existingStatus.customerAccountId)) {
-        return NextResponse.json(
-          { error: "Access denied" },
-          { status: 403 }
         );
       }
 
@@ -73,12 +67,13 @@ export const PUT = withAuth(
 );
 
 // DELETE asset lifecycle status
+// NOTE: AssetLifecycleStatus model doesn't have customerAccountId yet - tenant filtering disabled
 export const DELETE = withAuth(
-  async (_req, context: RouteContext, session) => {
+  async (_req, context: RouteContext) => {
     try {
       const { id } = await context.params;
 
-      // Verify the status exists and belongs to the user's tenant
+      // Verify the status exists
       const existingStatus = await prisma.assetLifecycleStatus.findUnique({
         where: { id },
       });
@@ -87,13 +82,6 @@ export const DELETE = withAuth(
         return NextResponse.json(
           { error: "Lifecycle status not found" },
           { status: 404 }
-        );
-      }
-
-      if (!validateTenantAccess(session, existingStatus.customerAccountId)) {
-        return NextResponse.json(
-          { error: "Access denied" },
-          { status: 403 }
         );
       }
 

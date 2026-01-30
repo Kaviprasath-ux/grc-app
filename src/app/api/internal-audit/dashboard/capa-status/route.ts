@@ -1,23 +1,18 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { withAuth, getTenantFilter, getAuditHeadFilter } from "@/lib/api-auth";
+import { withAuth, getTenantFilter } from "@/lib/api-auth";
 
 // GET CAPA status overview by department
+// NOTE: AuditEngagement doesn't have auditHeadId - using simplified filter
 export const GET = withAuth(
-  async (request: NextRequest, context, session) => {
+  async (request, context, session) => {
     try {
-      // Multi-tenant + AuditHead filtering
+      // Multi-tenant filtering
       const tenantFilter = getTenantFilter(session);
-      const auditHeadFilter = getAuditHeadFilter(session);
 
-      // Get all CAPAs with their findings and departments (with tenant and audit head filter)
+      // Get all CAPAs with their findings and departments
       const capas = await prisma.internalAuditCAPA.findMany({
-        where: {
-          ...tenantFilter,
-          finding: {
-            engagement: auditHeadFilter,
-          },
-        },
+        where: tenantFilter,
         include: {
           finding: {
             include: {

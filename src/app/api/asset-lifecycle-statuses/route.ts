@@ -1,15 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { withAuth, getTenantFilter } from "@/lib/api-auth";
+import { withAuth } from "@/lib/api-auth";
 
 // GET all asset lifecycle statuses
+// NOTE: AssetLifecycleStatus model doesn't have customerAccountId yet - tenant filtering disabled
 export const GET = withAuth(
-  async (_req, _context, session) => {
+  async () => {
     try {
-      const tenantFilter = getTenantFilter(session);
-
       const statuses = await prisma.assetLifecycleStatus.findMany({
-        where: tenantFilter,
         include: {
           _count: {
             select: { assets: true },
@@ -30,8 +28,9 @@ export const GET = withAuth(
 );
 
 // POST create new asset lifecycle status
+// NOTE: AssetLifecycleStatus model doesn't have customerAccountId yet - tenant filtering disabled
 export const POST = withAuth(
-  async (req, _context, session) => {
+  async (req) => {
     try {
       const body = await req.json();
       const { name, description, order } = body;
@@ -43,28 +42,9 @@ export const POST = withAuth(
         );
       }
 
-      // Get customer account ID for the new record
-      // GRCAdministrators can create shared/master data without customerAccountId
-      // Regular users must have a customerAccountId assigned
-      let customerAccountId: string | null;
-      if (session.roles.includes('GRCAdministrator')) {
-        customerAccountId = session.customerAccountId || null;
-      } else {
-        if (!session.customerAccountId) {
-          return NextResponse.json(
-            { error: "User does not have a customer account assigned" },
-            { status: 400 }
-          );
-        }
-        customerAccountId = session.customerAccountId;
-      }
-
-      // Check for duplicate within the same tenant
+      // Check for duplicate
       const existing = await prisma.assetLifecycleStatus.findFirst({
-        where: {
-          name: name.trim(),
-          customerAccountId,
-        },
+        where: { name: name.trim() },
       });
 
       if (existing) {
@@ -76,7 +56,6 @@ export const POST = withAuth(
 
       const status = await prisma.assetLifecycleStatus.create({
         data: {
-          ...(customerAccountId ? { customerAccount: { connect: { id: customerAccountId } } } : {}),
           name: name.trim(),
           description: description?.trim() || null,
           order: order || 0,

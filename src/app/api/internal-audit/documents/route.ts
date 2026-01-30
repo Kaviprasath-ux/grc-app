@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { withAuth, getTenantFilter, getAuditHeadFilter, getCustomerAccountId, getAuditHeadId } from "@/lib/api-auth";
+import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 
 // GET documents organized by category with pagination
-// Documents are specific to each Audit Head - NOT shared between Audit Heads
+// NOTE: InternalAuditDocument doesn't have auditHeadId - using tenant filter only
 export const GET = withAuth(
   async (request: NextRequest, context, session) => {
     try {
@@ -15,14 +15,9 @@ export const GET = withAuth(
       const limit = parseInt(searchParams.get("limit") || "10");
       const skip = (page - 1) * limit;
 
-      // Apply tenant and audit head filters
+      // Apply tenant filter only (model doesn't have auditHeadId)
       const tenantFilter = getTenantFilter(session);
-      const auditHeadFilter = getAuditHeadFilter(session);
-
-      const baseWhere = {
-        ...tenantFilter,
-        ...auditHeadFilter,
-      };
+      const baseWhere = { ...tenantFilter };
 
       const where = category ? { ...baseWhere, category } : baseWhere;
 
@@ -82,7 +77,7 @@ export const GET = withAuth(
 );
 
 // POST - Upload a new document
-// Documents are specific to each Audit Head - NOT shared between Audit Heads
+// NOTE: InternalAuditDocument doesn't have auditHeadId - using tenant filter only
 export const POST = withAuth(
   async (request: NextRequest, context, session) => {
     try {
@@ -92,9 +87,8 @@ export const POST = withAuth(
       const name = formData.get("name") as string;
       const description = formData.get("description") as string;
 
-      // Get tenant and audit head IDs for data isolation
+      // Get tenant ID for data isolation
       const customerAccountId = getCustomerAccountId(session);
-      const auditHeadId = getAuditHeadId(session);
 
       if (!file) {
         return NextResponse.json(
@@ -135,7 +129,7 @@ export const POST = withAuth(
       }
       const documentCode = `DOC-${String(nextNum).padStart(4, "0")}`;
 
-      // Create document record in database with auditHeadId for isolation
+      // Create document record in database
       const document = await prisma.internalAuditDocument.create({
         data: {
           documentCode,
@@ -147,8 +141,7 @@ export const POST = withAuth(
           fileSize: buffer.length,
           filePath: `/uploads/documents/${uniqueFileName}`,
           uploadedAt: new Date(),
-          customerAccountId,
-          auditHeadId,
+          ...(customerAccountId ? { customerAccountId } : {}),
         },
       });
 

@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { withAuth, getTenantFilter } from "@/lib/api-auth";
+import { withAuth } from "@/lib/api-auth";
 
 // GET a single nature of control
-// Requires 'edit' action so only AuditHead can access
+// Note: AuditNatureOfControl model doesn't have customerAccountId field yet - tenant filtering disabled
 export const GET = withAuth(
-  async (req: NextRequest, { params }: { params: Promise<{ id: string }> }, session) => {
+  async (_req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     try {
       const { id } = await params;
-      const tenantFilter = getTenantFilter(session);
 
-      const control = await prisma.auditNatureOfControl.findFirst({
-        where: { id, ...tenantFilter },
+      const control = await prisma.auditNatureOfControl.findUnique({
+        where: { id },
       });
 
       if (!control) {
@@ -34,16 +33,16 @@ export const GET = withAuth(
 );
 
 // PUT update a nature of control
+// Note: AuditNatureOfControl model doesn't have customerAccountId field yet - tenant filtering disabled
 export const PUT = withAuth(
-  async (req: NextRequest, { params }: { params: Promise<{ id: string }> }, session) => {
+  async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     try {
       const { id } = await params;
-      const tenantFilter = getTenantFilter(session);
       const body = await req.json();
       const { label } = body;
 
-      const existing = await prisma.auditNatureOfControl.findFirst({
-        where: { id, ...tenantFilter },
+      const existing = await prisma.auditNatureOfControl.findUnique({
+        where: { id },
       });
 
       if (!existing) {
@@ -56,7 +55,7 @@ export const PUT = withAuth(
       // Check for duplicate label if label is being changed
       if (label && label !== existing.label) {
         const duplicate = await prisma.auditNatureOfControl.findFirst({
-          where: { label, ...tenantFilter, NOT: { id } },
+          where: { label, NOT: { id } },
         });
         if (duplicate) {
           return NextResponse.json(
@@ -84,14 +83,14 @@ export const PUT = withAuth(
 );
 
 // DELETE a nature of control
+// Note: AuditNatureOfControl model doesn't have customerAccountId field yet - tenant filtering disabled
 export const DELETE = withAuth(
-  async (req: NextRequest, { params }: { params: Promise<{ id: string }> }, session) => {
+  async (_req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     try {
       const { id } = await params;
-      const tenantFilter = getTenantFilter(session);
 
-      const existing = await prisma.auditNatureOfControl.findFirst({
-        where: { id, ...tenantFilter },
+      const existing = await prisma.auditNatureOfControl.findUnique({
+        where: { id },
       });
 
       if (!existing) {

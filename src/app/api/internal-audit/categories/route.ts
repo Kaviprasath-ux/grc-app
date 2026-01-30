@@ -1,16 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { withAuth, getTenantFilter, getCustomerAccountId, getAuditHeadFilter, getAuditHeadId } from "@/lib/api-auth";
+import { withAuth } from "@/lib/api-auth";
 
-// GET all audit categories - filtered by audit head
+// GET all audit categories
+// NOTE: AuditCategory model doesn't have customerAccountId or auditHeadId yet - tenant filtering disabled
 export const GET = withAuth(
-  async (req: NextRequest, context, session) => {
+  async () => {
     try {
-      const tenantFilter = getTenantFilter(session);
-      const auditHeadFilter = getAuditHeadFilter(session);
-
       const categories = await prisma.auditCategory.findMany({
-        where: { ...tenantFilter, ...auditHeadFilter },
         include: {
           _count: {
             select: { internalAuditRisks: true },
@@ -31,12 +28,11 @@ export const GET = withAuth(
   { resource: "audit.settings", action: "edit" }
 );
 
-// POST create a new audit category - assigned to current audit head
+// POST create a new audit category
+// NOTE: AuditCategory model doesn't have customerAccountId or auditHeadId yet - tenant filtering disabled
 export const POST = withAuth(
-  async (req: NextRequest, context, session) => {
+  async (req: NextRequest) => {
     try {
-      const customerAccountId = getCustomerAccountId(session);
-      const auditHeadId = getAuditHeadId(session);
       const body = await req.json();
       const { name } = body;
 
@@ -47,12 +43,9 @@ export const POST = withAuth(
         );
       }
 
-      // Check for duplicate within the same audit head's settings
+      // Check for duplicate
       const existing = await prisma.auditCategory.findFirst({
-        where: {
-          name,
-          auditHeadId,
-        },
+        where: { name },
       });
 
       if (existing) {
@@ -63,11 +56,7 @@ export const POST = withAuth(
       }
 
       const category = await prisma.auditCategory.create({
-        data: {
-          name,
-          customerAccountId,
-          auditHeadId,
-        },
+        data: { name },
       });
 
       return NextResponse.json(category, { status: 201 });

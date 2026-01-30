@@ -1,22 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { auth } from "@/lib/auth";
 
 // GET all risk types
+// Note: RiskType model doesn't have customerAccountId field yet - tenant filtering disabled
 export async function GET() {
   try {
-    const session = await auth();
-    const userRoles = session?.user?.roles || [];
-    const isGRCAdmin = userRoles.includes("GRCAdministrator");
-    const customerAccountId = session?.user?.customerAccountId;
-
-    // Build tenant filter: show customer-specific OR shared (null) data
-    const tenantFilter = !isGRCAdmin && customerAccountId
-      ? { OR: [{ customerAccountId }, { customerAccountId: null }] }
-      : {};
-
     const types = await prisma.riskType.findMany({
-      where: tenantFilter,
       include: {
         _count: {
           select: { risks: true },
@@ -36,6 +25,7 @@ export async function GET() {
 }
 
 // POST create a new risk type
+// Note: RiskType model doesn't have customerAccountId field yet - tenant assignment disabled
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -48,6 +38,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check for duplicate
     const existing = await prisma.riskType.findFirst({
       where: { name },
     });

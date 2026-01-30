@@ -54,6 +54,7 @@ export async function PUT(
       });
     }
 
+    // Note: User model doesn't have reportingManagerId field - removed
     const user = await prisma.user.update({
       where: { id },
       data: {
@@ -70,20 +71,12 @@ export async function PUT(
         isActive,
         isBlocked,
         departmentId,
-        reportingManagerId: reportingManagerId !== undefined ? (reportingManagerId || null) : undefined,
       },
       include: {
         department: true,
         userRoles: {
           include: {
             role: true,
-          },
-        },
-        reportingManager: {
-          select: {
-            id: true,
-            fullName: true,
-            designation: true,
           },
         },
       },

@@ -2,15 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 
-// GET all users (with optional role, department, and auditHeadId filters)
+// GET all users (with optional role and department filters)
+// Note: User model doesn't have auditHeadId or reportingManagerId fields - those filters removed
 export async function GET(request: NextRequest) {
   try {
     const session = await auth();
     const { searchParams } = new URL(request.url);
     const role = searchParams.get("role");
     const departmentId = searchParams.get("departmentId");
-    const auditHeadId = searchParams.get("auditHeadId");
-    const forAuditHead = searchParams.get("forAuditHead"); // 'auditees' or 'auditors'
 
     // Build where clause for role filtering and multi-tenant isolation
     const where: any = {};
@@ -29,56 +28,6 @@ export async function GET(request: NextRequest) {
       where.departmentId = departmentId;
     }
 
-    // Filter by auditHeadId - get users managed by this audit head
-    if (auditHeadId) {
-      where.auditHeadId = auditHeadId;
-    }
-
-    // Special filter for Audit Head: get auditees or auditors associated with them
-    if (forAuditHead && session?.user?.id) {
-      const currentUserId = session.user.id;
-      const currentUserRoles = session.user.roles || [];
-      const isAuditHead = currentUserRoles.includes("AuditHead");
-      const isAuditManager = currentUserRoles.includes("AuditManager");
-      const currentUserAuditHeadId = (session.user as any).auditHeadId;
-
-      // Determine the audit head ID to filter by
-      const effectiveAuditHeadId = isAuditHead ? currentUserId : currentUserAuditHeadId;
-
-      if (forAuditHead === "auditees") {
-        // Get auditees managed by this Audit Head
-        where.userRoles = {
-          some: {
-            role: {
-              name: "Auditee",
-            },
-          },
-        };
-        // Filter by auditHeadId to only show auditees under this Audit Head
-        if (effectiveAuditHeadId) {
-          where.auditHeadId = effectiveAuditHeadId;
-        }
-      } else if (forAuditHead === "auditors") {
-        // Get audit team members managed by this Audit Head + the Audit Head themselves
-        // For auditors dropdown (to assign as auditor on an engagement)
-        where.OR = [
-          // The Audit Head themselves
-          { id: effectiveAuditHeadId },
-          // Audit Managers and Auditors under this Audit Head
-          {
-            auditHeadId: effectiveAuditHeadId,
-            userRoles: {
-              some: {
-                role: {
-                  name: { in: ["AuditManager", "Auditor"] },
-                },
-              },
-            },
-          },
-        ];
-      }
-    }
-
     // Multi-tenant: Filter users by customerAccountId if user is not GRCAdministrator
     const userRoles = session?.user?.roles || [];
     if (!userRoles.includes("GRCAdministrator") && session?.user?.customerAccountId) {
@@ -94,13 +43,6 @@ export async function GET(request: NextRequest) {
             role: true,
           },
         },
-        reportingManager: {
-          select: {
-            id: true,
-            fullName: true,
-            designation: true,
-          },
-        },
       },
       orderBy: { fullName: "asc" },
     });
@@ -114,6 +56,7 @@ export async function GET(request: NextRequest) {
 }
 
 // POST create new user
+// Note: User model doesn't have reportingManagerId field - removed
 export async function POST(request: NextRequest) {
   try {
     const session = await auth();
@@ -134,7 +77,6 @@ export async function POST(request: NextRequest) {
       isActive,
       isBlocked,
       departmentId,
-      reportingManagerId,
     } = body;
 
     if (!userId || !userName || !email || !password || !firstName || !lastName || !fullName) {
@@ -186,9 +128,6 @@ export async function POST(request: NextRequest) {
         ...(departmentId && {
           department: { connect: { id: departmentId } },
         }),
-        ...(reportingManagerId && {
-          reportingManager: { connect: { id: reportingManagerId } },
-        }),
         ...(customerAccountId && {
           customerAccount: { connect: { id: customerAccountId } },
         }),
@@ -206,13 +145,6 @@ export async function POST(request: NextRequest) {
         userRoles: {
           include: {
             role: true,
-          },
-        },
-        reportingManager: {
-          select: {
-            id: true,
-            fullName: true,
-            designation: true,
           },
         },
       },

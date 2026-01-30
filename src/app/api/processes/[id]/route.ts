@@ -9,32 +9,14 @@ export async function GET(
   try {
     const { id } = await params;
 
-    // Try to include attachments, but fall back if table doesn't exist yet
-    let process;
-    try {
-      process = await prisma.process.findUnique({
-        where: { id },
-        include: {
-          department: true,
-          owner: true,
-          attachments: {
-            orderBy: { uploadedAt: "desc" },
-          },
-        },
-      });
-    } catch {
-      // Fallback without attachments if table doesn't exist
-      process = await prisma.process.findUnique({
-        where: { id },
-        include: {
-          department: true,
-          owner: true,
-        },
-      });
-      if (process) {
-        (process as Record<string, unknown>).attachments = [];
-      }
-    }
+    // Note: Process model doesn't have attachments relation yet
+    const process = await prisma.process.findUnique({
+      where: { id },
+      include: {
+        department: true,
+        owner: true,
+      },
+    });
 
     if (!process) {
       return NextResponse.json(

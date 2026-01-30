@@ -42,6 +42,7 @@ export const GET = withAuth(
         whereClause.AND = [auditUserFilter];
       }
 
+      // Note: User model doesn't have auditHead relation - removed
       const user = await prisma.user.findFirst({
         where: whereClause,
         include: {
@@ -54,9 +55,6 @@ export const GET = withAuth(
                 select: { id: true, name: true },
               },
             },
-          },
-          auditHead: {
-            select: { id: true, fullName: true },
           },
         },
       });
@@ -207,6 +205,7 @@ export const PUT = withAuth(
         updateData.auditHeadId = auditHeadIdToSet;
       }
 
+      // Note: User model doesn't have auditHead relation - removed
       const user = await prisma.user.update({
         where: { id },
         data: updateData,
@@ -220,9 +219,6 @@ export const PUT = withAuth(
                 select: { id: true, name: true },
               },
             },
-          },
-          auditHead: {
-            select: { id: true, fullName: true },
           },
         },
       });

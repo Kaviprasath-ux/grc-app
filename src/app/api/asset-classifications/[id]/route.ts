@@ -62,12 +62,12 @@ export async function PUT(
       );
     }
 
-    // Check if new name conflicts with another classification in the same tenant
+    // Check if new name conflicts with another classification
+    // NOTE: AssetClassification model doesn't have customerAccountId yet - tenant filtering disabled
     if (name && name !== existingClassification.name) {
       const conflictingClassification = await prisma.assetClassification.findFirst({
         where: {
           name,
-          customerAccountId: existingClassification.customerAccountId,
           id: { not: id }
         },
       });

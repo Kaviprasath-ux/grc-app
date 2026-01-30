@@ -1,24 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { auth } from "@/lib/auth";
 
-// GET all risk categories (filtered by tenant)
+// GET all risk categories
+// Note: RiskCategory model doesn't have customerAccountId field yet - tenant filtering disabled
 export async function GET() {
   try {
-    const session = await auth();
-
-    // Multi-tenant: Build filter based on customerAccountId
-    const userRoles = session?.user?.roles || [];
-    const isGRCAdmin = userRoles.includes("GRCAdministrator");
-    const customerAccountId = session?.user?.customerAccountId;
-
-    // Build tenant filter: show customer-specific OR shared (null) data
-    const tenantFilter = !isGRCAdmin && customerAccountId
-      ? { OR: [{ customerAccountId }, { customerAccountId: null }] }
-      : {};
-
     const categories = await prisma.riskCategory.findMany({
-      where: tenantFilter,
       include: {
         _count: {
           select: { risks: true },
@@ -37,12 +24,10 @@ export async function GET() {
   }
 }
 
-// POST create a new risk category (with tenant assignment)
+// POST create a new risk category
+// Note: RiskCategory model doesn't have customerAccountId field yet - tenant assignment disabled
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth();
-    const customerAccountId = session?.user?.customerAccountId;
-
     const body = await request.json();
     const { name, description, color } = body;
 
@@ -53,12 +38,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check for duplicate within tenant
+    // Check for duplicate
     const existing = await prisma.riskCategory.findFirst({
-      where: {
-        customerAccountId: customerAccountId || null,
-        name,
-      },
+      where: { name },
     });
 
     if (existing) {
@@ -70,7 +52,6 @@ export async function POST(request: NextRequest) {
 
     const category = await prisma.riskCategory.create({
       data: {
-        customerAccountId,
         name,
         description,
         color,

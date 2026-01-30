@@ -26,6 +26,7 @@ export const GET = withAuth(
         );
       }
 
+      // NOTE: Clarification fields are not in the schema yet
       return NextResponse.json({
         id: evidenceRequest.id,
         title: evidenceRequest.title,
@@ -36,10 +37,10 @@ export const GET = withAuth(
         auditeeId: evidenceRequest.auditeeId || null,
         numberOfSamples: evidenceRequest.sampleSize || null,
         aiReviewStatus: evidenceRequest.aiReviewStatus || null,
-        clarificationComment: evidenceRequest.clarificationComment || null,
-        clarificationDocumentName: evidenceRequest.clarificationDocumentName || null,
-        clarificationByUserName: evidenceRequest.clarificationByUserName || null,
-        clarificationSentAt: evidenceRequest.clarificationSentAt?.toISOString() || null,
+        clarificationComment: null,
+        clarificationDocumentName: null,
+        clarificationByUserName: null,
+        clarificationSentAt: null,
         attachments: evidenceRequest.attachments.map(att => ({
           id: att.id,
           fileName: att.fileName,
@@ -90,6 +91,7 @@ export const PATCH = withAuth(
         }
       }
 
+      // NOTE: Clarification fields are not in the schema yet - excluded from update
       const updatedRequest = await prisma.fieldworkEvidenceRequest.update({
         where: { id: requestId },
         data: {
@@ -101,12 +103,6 @@ export const PATCH = withAuth(
           auditeeName: auditeeName !== undefined ? auditeeName : undefined,
           sampleSize: body.numberOfSamples !== undefined ? (body.numberOfSamples ? String(body.numberOfSamples) : null) : undefined,
           aiReviewStatus: body.aiReviewStatus !== undefined ? body.aiReviewStatus : undefined,
-          // Clarification fields
-          clarificationComment: body.clarificationComment !== undefined ? body.clarificationComment : undefined,
-          clarificationDocumentName: body.clarificationDocumentName !== undefined ? body.clarificationDocumentName : undefined,
-          clarificationByUserId: body.clarificationByUserId !== undefined ? body.clarificationByUserId : undefined,
-          clarificationByUserName: body.clarificationByUserName !== undefined ? body.clarificationByUserName : undefined,
-          clarificationSentAt: body.clarificationSentAt !== undefined ? (body.clarificationSentAt ? new Date(body.clarificationSentAt) : null) : undefined,
         },
       });
 
@@ -120,10 +116,10 @@ export const PATCH = withAuth(
         auditeeId: updatedRequest.auditeeId || null,
         numberOfSamples: updatedRequest.sampleSize || null,
         aiReviewStatus: updatedRequest.aiReviewStatus || null,
-        clarificationComment: updatedRequest.clarificationComment || null,
-        clarificationDocumentName: updatedRequest.clarificationDocumentName || null,
-        clarificationByUserName: updatedRequest.clarificationByUserName || null,
-        clarificationSentAt: updatedRequest.clarificationSentAt?.toISOString() || null,
+        clarificationComment: null,
+        clarificationDocumentName: null,
+        clarificationByUserName: null,
+        clarificationSentAt: null,
       });
     } catch (error) {
       console.error('Error updating evidence request:', error);

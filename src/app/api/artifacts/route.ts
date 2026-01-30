@@ -124,17 +124,22 @@ export const POST = withAuth(
       // Generate artifact code
       const artifactCode = `ART-${Date.now()}`;
 
+      // Build data object with optional customer account connection
+      const artifactData = {
+        artifactCode,
+        name,
+        fileName,
+        fileType,
+        fileSize,
+        filePath,
+        uploadedBy,
+        uploadedById,
+      };
+
       const artifact = await prisma.artifact.create({
-        data: {
-          artifactCode,
-          name,
-          fileName,
-          fileType,
-          fileSize,
-          filePath,
-          uploadedBy,
-          uploadedById,
-        },
+        data: customerAccountId
+          ? { ...artifactData, customerAccount: { connect: { id: customerAccountId } } }
+          : artifactData as Parameters<typeof prisma.artifact.create>[0]["data"],
         include: {
           uploader: {
             select: {

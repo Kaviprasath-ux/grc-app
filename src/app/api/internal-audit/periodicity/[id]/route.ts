@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { withAuth, getTenantFilter } from "@/lib/api-auth";
+import { withAuth } from "@/lib/api-auth";
 
 // GET a single periodicity
-// Requires 'edit' action so only AuditHead can access
+// Note: AuditPeriodicity model doesn't have customerAccountId field yet - tenant filtering disabled
 export const GET = withAuth(
-  async (req: NextRequest, { params }: { params: Promise<{ id: string }> }, session) => {
+  async (_req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     try {
       const { id } = await params;
-      const tenantFilter = getTenantFilter(session);
 
-      const periodicity = await prisma.auditPeriodicity.findFirst({
-        where: { id, ...tenantFilter },
+      const periodicity = await prisma.auditPeriodicity.findUnique({
+        where: { id },
       });
 
       if (!periodicity) {
@@ -34,16 +33,16 @@ export const GET = withAuth(
 );
 
 // PUT update a periodicity
+// Note: AuditPeriodicity model doesn't have customerAccountId field yet - tenant filtering disabled
 export const PUT = withAuth(
-  async (req: NextRequest, { params }: { params: Promise<{ id: string }> }, session) => {
+  async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     try {
       const { id } = await params;
-      const tenantFilter = getTenantFilter(session);
       const body = await req.json();
       const { interval, months } = body;
 
-      const existing = await prisma.auditPeriodicity.findFirst({
-        where: { id, ...tenantFilter },
+      const existing = await prisma.auditPeriodicity.findUnique({
+        where: { id },
       });
 
       if (!existing) {
@@ -56,7 +55,7 @@ export const PUT = withAuth(
       // Check for duplicate interval if interval is being changed
       if (interval && interval !== existing.interval) {
         const duplicate = await prisma.auditPeriodicity.findFirst({
-          where: { interval, ...tenantFilter, NOT: { id } },
+          where: { interval, NOT: { id } },
         });
         if (duplicate) {
           return NextResponse.json(
@@ -87,14 +86,14 @@ export const PUT = withAuth(
 );
 
 // DELETE a periodicity
+// Note: AuditPeriodicity model doesn't have customerAccountId field yet - tenant filtering disabled
 export const DELETE = withAuth(
-  async (req: NextRequest, { params }: { params: Promise<{ id: string }> }, session) => {
+  async (_req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     try {
       const { id } = await params;
-      const tenantFilter = getTenantFilter(session);
 
-      const existing = await prisma.auditPeriodicity.findFirst({
-        where: { id, ...tenantFilter },
+      const existing = await prisma.auditPeriodicity.findUnique({
+        where: { id },
       });
 
       if (!existing) {

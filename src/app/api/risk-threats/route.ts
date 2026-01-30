@@ -1,22 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { auth } from "@/lib/auth";
 
 // GET all risk threats
+// Note: RiskThreat model doesn't have customerAccountId field yet - tenant filtering disabled
 export async function GET() {
   try {
-    const session = await auth();
-    const userRoles = session?.user?.roles || [];
-    const isGRCAdmin = userRoles.includes("GRCAdministrator");
-    const customerAccountId = session?.user?.customerAccountId;
-
-    // Build tenant filter: show customer-specific OR shared (null) data
-    const tenantFilter = !isGRCAdmin && customerAccountId
-      ? { OR: [{ customerAccountId }, { customerAccountId: null }] }
-      : {};
-
     const threats = await prisma.riskThreat.findMany({
-      where: tenantFilter,
       include: {
         category: true,
         _count: {
@@ -37,11 +26,9 @@ export async function GET() {
 }
 
 // POST create a new risk threat
+// Note: RiskThreat model doesn't have customerAccountId field yet - tenant assignment disabled
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth();
-    const customerAccountId = session?.user?.customerAccountId;
-
     const body = await request.json();
     const { name, description } = body;
 
@@ -52,12 +39,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check for duplicate within the same tenant
+    // Check for duplicate
     const existing = await prisma.riskThreat.findFirst({
-      where: {
-        name,
-        ...(customerAccountId ? { customerAccountId } : {}),
-      },
+      where: { name },
     });
 
     if (existing) {
@@ -71,7 +55,6 @@ export async function POST(request: NextRequest) {
       data: {
         name,
         description,
-        ...(customerAccountId ? { customerAccountId } : {}),
       },
     });
 

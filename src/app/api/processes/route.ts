@@ -1,10 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 
-// GET all processes
+// GET all processes - filtered by tenant
 export async function GET() {
   try {
+    const session = await auth();
+    const userRoles = session?.user?.roles || [];
+    const isGRCAdmin = userRoles.includes("GRCAdministrator");
+    const customerAccountId = session?.user?.customerAccountId;
+
+    // Build tenant filter (strict isolation)
+    const tenantFilter = !isGRCAdmin && customerAccountId
+      ? { customerAccountId }
+      : {};
+
     const processes = await prisma.process.findMany({
+      where: tenantFilter,
       include: {
         department: true,
         owner: true,
@@ -21,9 +33,12 @@ export async function GET() {
   }
 }
 
-// POST create new process
+// POST create new process - with tenant assignment
 export async function POST(request: NextRequest) {
   try {
+    const session = await auth();
+    const customerAccountId = session?.user?.customerAccountId;
+
     const body = await request.json();
     const {
       processCode,
@@ -69,9 +84,12 @@ export async function POST(request: NextRequest) {
       finalProcessCode = `PRO${lastNum + 1}`;
     }
 
-    // Check if process code already exists
-    const existingProcess = await prisma.process.findUnique({
-      where: { processCode: finalProcessCode },
+    // Check if process code already exists within the same tenant
+    const existingProcess = await prisma.process.findFirst({
+      where: {
+        processCode: finalProcessCode,
+        ...(customerAccountId ? { customerAccountId } : {}),
+      },
     });
 
     if (existingProcess) {
@@ -91,6 +109,7 @@ export async function POST(request: NextRequest) {
         departmentId: departmentId || null,
         ownerId: ownerId || null,
         status: status || "Active",
+        customerAccountId: customerAccountId || undefined,
         processFrequency,
         natureOfImplementation,
         riskRating,

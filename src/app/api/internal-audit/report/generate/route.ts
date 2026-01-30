@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { withAuth, getCustomerAccountId, getTenantFilter, getAuditHeadFilter, getAuditHeadId } from '@/lib/api-auth';
+import { withAuth, getCustomerAccountId, getTenantFilter } from '@/lib/api-auth';
 
 // Helper function to generate report code (format: RPT-NNN - unique serial)
 async function generateReportCode(): Promise<string> {
@@ -37,8 +37,6 @@ export const POST = withAuth(
       const { engagementId, overallResult } = body;
       const tenantFilter = getTenantFilter(session);
       const customerAccountId = getCustomerAccountId(session);
-      const auditHeadFilter = getAuditHeadFilter(session);
-      const auditHeadId = getAuditHeadId(session);
 
       if (!engagementId) {
         return NextResponse.json(
@@ -55,9 +53,8 @@ export const POST = withAuth(
       }
 
       // Check if engagement exists and is completed
-      // Apply auditHeadFilter to ensure user can only generate reports for their engagements
       const engagement = await prisma.auditEngagement.findFirst({
-        where: { id: engagementId, ...tenantFilter, ...auditHeadFilter },
+        where: { id: engagementId, ...tenantFilter },
         include: {
           department: true,
           assignedAuditor: true,
@@ -136,8 +133,8 @@ This audit was part of the Annual Internal Audit Plan for FY. Designed to provid
       // Generate scope
       const scope = `This audit will cover the organizational structure, roles and responsibilities, decision-making processes, and compliance with relevant policies and regulations.`;
 
-      // Create the report with auditHeadId for data isolation
-      // Reports are NOT shared between Audit Heads
+      // Create the report with tenant assignment
+      // Note: AuditReport model doesn't have auditHeadId field - using customerAccountId only
       const report = await prisma.auditReport.create({
         data: {
           reportCode,
@@ -152,7 +149,6 @@ This audit was part of the Annual Internal Audit Plan for FY. Designed to provid
           status: 'Draft',
           draftGeneratedAt: new Date(),
           customerAccountId,
-          auditHeadId: auditHeadId || engagement.auditHeadId,
         },
       });
 

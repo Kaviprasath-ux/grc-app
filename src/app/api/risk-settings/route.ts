@@ -39,9 +39,10 @@ const defaultSettings = {
   },
 };
 
-// GET all risk settings - viewable by anyone with risk.settings view permission
+// GET all risk settings
+// Note: RiskSetting model doesn't have customerAccountId field yet - tenant filtering disabled
 export const GET = withAuthOnly(
-  async (req, context, session) => {
+  async (req) => {
     try {
       const { searchParams } = new URL(req.url);
       const category = searchParams.get("category");
@@ -93,8 +94,9 @@ export const GET = withAuthOnly(
 );
 
 // POST create or update risk settings - admin only (CustomerAdministrator or GRCAdministrator)
+// Note: RiskSetting model doesn't have customerAccountId field yet - tenant assignment disabled
 export const POST = withAuth(
-  async (req, context, session) => {
+  async (req) => {
     try {
       const body = await req.json();
       const { category, settings } = body;
@@ -119,28 +121,36 @@ export const POST = withAuth(
             },
             index: number
           ) => {
-            return prisma.riskSetting.upsert({
+            // First check if a setting exists
+            const existingSetting = await prisma.riskSetting.findFirst({
               where: {
-                category_key: {
-                  category,
-                  key: setting.key,
-                },
-              },
-              update: {
-                value: JSON.stringify(setting.value),
-                label: setting.label,
-                description: setting.description,
-                sortOrder: setting.sortOrder ?? index,
-              },
-              create: {
                 category,
                 key: setting.key,
-                value: JSON.stringify(setting.value),
-                label: setting.label,
-                description: setting.description,
-                sortOrder: setting.sortOrder ?? index,
               },
             });
+
+            if (existingSetting) {
+              return prisma.riskSetting.update({
+                where: { id: existingSetting.id },
+                data: {
+                  value: JSON.stringify(setting.value),
+                  label: setting.label,
+                  description: setting.description,
+                  sortOrder: setting.sortOrder ?? index,
+                },
+              });
+            } else {
+              return prisma.riskSetting.create({
+                data: {
+                  category,
+                  key: setting.key,
+                  value: JSON.stringify(setting.value),
+                  label: setting.label,
+                  description: setting.description,
+                  sortOrder: setting.sortOrder ?? index,
+                },
+              });
+            }
           }
         )
       );
@@ -161,8 +171,9 @@ export const POST = withAuth(
 );
 
 // PUT update specific setting - admin only
+// Note: RiskSetting model doesn't have customerAccountId field yet - tenant validation disabled
 export const PUT = withAuth(
-  async (req, context, session) => {
+  async (req) => {
     try {
       const body = await req.json();
       const { id, value, label, description } = body;
@@ -171,6 +182,18 @@ export const PUT = withAuth(
         return NextResponse.json(
           { error: "Setting ID is required" },
           { status: 400 }
+        );
+      }
+
+      // Verify setting exists
+      const existingSetting = await prisma.riskSetting.findUnique({
+        where: { id },
+      });
+
+      if (!existingSetting) {
+        return NextResponse.json(
+          { error: "Setting not found" },
+          { status: 404 }
         );
       }
 
@@ -196,8 +219,9 @@ export const PUT = withAuth(
 );
 
 // DELETE a setting - admin only
+// Note: RiskSetting model doesn't have customerAccountId field yet - tenant validation disabled
 export const DELETE = withAuth(
-  async (req, context, session) => {
+  async (req) => {
     try {
       const { searchParams } = new URL(req.url);
       const id = searchParams.get("id");
@@ -206,6 +230,18 @@ export const DELETE = withAuth(
         return NextResponse.json(
           { error: "Setting ID is required" },
           { status: 400 }
+        );
+      }
+
+      // Verify setting exists
+      const existingSetting = await prisma.riskSetting.findUnique({
+        where: { id },
+      });
+
+      if (!existingSetting) {
+        return NextResponse.json(
+          { error: "Setting not found" },
+          { status: 404 }
         );
       }
 

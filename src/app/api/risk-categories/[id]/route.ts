@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
 // GET a single risk category
+// Note: RiskCategory model doesn't have customerAccountId field yet - tenant validation disabled
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -45,6 +46,7 @@ export async function GET(
 }
 
 // PUT update a risk category
+// Note: RiskCategory model doesn't have customerAccountId field yet - tenant validation disabled
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -67,7 +69,6 @@ export async function PUT(
       const duplicate = await prisma.riskCategory.findFirst({
         where: {
           name,
-          customerAccountId: existing.customerAccountId,
           id: { not: id }
         },
       });
@@ -99,6 +100,7 @@ export async function PUT(
 }
 
 // DELETE a risk category
+// Note: RiskCategory model doesn't have customerAccountId field yet - tenant validation disabled
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

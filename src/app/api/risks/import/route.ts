@@ -65,6 +65,8 @@ export const GET = withAuthOnly(async () => {
 });
 
 // POST - Import risks from uploaded data
+// Note: Some related models (RiskCategory, RiskThreat, RiskVulnerability) don't have customerAccountId
+// field yet - tenant filtering disabled for those entities
 export const POST = withAuth(
   async (request: NextRequest, context, session) => {
     try {
@@ -106,20 +108,15 @@ export const POST = withAuth(
         }
       }
 
-      // Fetch existing lookup data for caching (will be updated as we create new entities)
+      // Fetch existing lookup data for caching
+      // Note: RiskCategory, RiskThreat, RiskVulnerability don't have customerAccountId
       const [existingCategories, existingDepartments, existingThreats, existingVulnerabilities] = await Promise.all([
-        prisma.riskCategory.findMany({
-          where: { customerAccountId },
-        }),
+        prisma.riskCategory.findMany(),
         prisma.department.findMany({
           where: { customerAccountId },
         }),
-        prisma.riskThreat.findMany({
-          where: { customerAccountId },
-        }),
-        prisma.riskVulnerability.findMany({
-          where: { customerAccountId },
-        }),
+        prisma.riskThreat.findMany(),
+        prisma.riskVulnerability.findMany(),
       ]);
 
       // Mutable caches for created entities during import
@@ -168,7 +165,7 @@ export const POST = withAuth(
             continue;
           }
 
-          // Handle Department - find existing or create new (multi-tenant isolated)
+          // Handle Department - find existing or create new (tenant-scoped)
           let department = null;
           if (departmentName) {
             department = departmentsCache.find(
@@ -187,7 +184,7 @@ export const POST = withAuth(
             }
           }
 
-          // Handle Risk Category - find existing or create new (multi-tenant isolated)
+          // Handle Risk Category - find existing or create new (global - no tenant scope)
           let category = null;
           if (riskCategoryName) {
             category = categoriesCache.find(
@@ -195,10 +192,9 @@ export const POST = withAuth(
             );
 
             if (!category) {
-              // Create new category for this tenant
+              // Create new category (global - no customerAccountId)
               category = await prisma.riskCategory.create({
                 data: {
-                  customerAccountId,
                   name: riskCategoryName,
                   status: "Active",
                 },
@@ -241,7 +237,7 @@ export const POST = withAuth(
             },
           });
 
-          // Handle Potential Threat - find existing or create new (multi-tenant isolated)
+          // Handle Potential Threat - find existing or create new (global - no tenant scope)
           if (potentialThreat) {
             const threatNames = potentialThreat.split(",").map((t) => t.trim()).filter(Boolean);
 
@@ -251,10 +247,9 @@ export const POST = withAuth(
               );
 
               if (!threat) {
-                // Create new threat for this tenant
+                // Create new threat (global - no customerAccountId)
                 threat = await prisma.riskThreat.create({
                   data: {
-                    customerAccountId,
                     name: threatName,
                   },
                 });
@@ -278,7 +273,7 @@ export const POST = withAuth(
             }
           }
 
-          // Handle Associated Vulnerabilities - find existing or create new (multi-tenant isolated)
+          // Handle Associated Vulnerabilities - find existing or create new (global - no tenant scope)
           if (associatedVulnerabilities) {
             const vulnNames = associatedVulnerabilities.split(",").map((v) => v.trim()).filter(Boolean);
 
@@ -288,10 +283,9 @@ export const POST = withAuth(
               );
 
               if (!vulnerability) {
-                // Create new vulnerability for this tenant
+                // Create new vulnerability (global - no customerAccountId)
                 vulnerability = await prisma.riskVulnerability.create({
                   data: {
-                    customerAccountId,
                     name: vulnName,
                   },
                 });

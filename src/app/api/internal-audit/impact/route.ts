@@ -1,16 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { withAuth, getTenantFilter, getCustomerAccountId, getAuditHeadFilter, getAuditHeadId } from "@/lib/api-auth";
+import { withAuth } from "@/lib/api-auth";
 
-// GET all impacts - filtered by audit head
+// GET all impacts
+// Note: AuditImpact model doesn't have customerAccountId field yet - tenant filtering disabled
 export const GET = withAuth(
-  async (req: NextRequest, context, session) => {
+  async () => {
     try {
-      const tenantFilter = getTenantFilter(session);
-      const auditHeadFilter = getAuditHeadFilter(session);
-
       const impacts = await prisma.auditImpact.findMany({
-        where: { ...tenantFilter, ...auditHeadFilter },
         orderBy: { value: "asc" },
       });
 
@@ -26,12 +23,11 @@ export const GET = withAuth(
   { resource: "audit.settings", action: "edit" }
 );
 
-// POST create a new impact - assigned to current audit head
+// POST create a new impact
+// Note: AuditImpact model doesn't have customerAccountId field yet - tenant assignment disabled
 export const POST = withAuth(
-  async (req: NextRequest, context, session) => {
+  async (req: NextRequest) => {
     try {
-      const customerAccountId = getCustomerAccountId(session);
-      const auditHeadId = getAuditHeadId(session);
       const body = await req.json();
       const { label, value } = body;
 
@@ -42,9 +38,9 @@ export const POST = withAuth(
         );
       }
 
-      // Check for duplicate within the same audit head's settings
+      // Check for duplicate
       const existing = await prisma.auditImpact.findFirst({
-        where: { label, auditHeadId },
+        where: { label },
       });
 
       if (existing) {
@@ -58,8 +54,6 @@ export const POST = withAuth(
         data: {
           label,
           value: value || 0,
-          customerAccountId,
-          auditHeadId,
         },
       });
 

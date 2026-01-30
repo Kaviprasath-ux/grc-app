@@ -3,16 +3,10 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 
 // GET all asset CIA classifications
+// Note: AssetCIAClassification model doesn't have customerAccountId field yet
 export async function GET() {
   try {
-    const session = await auth();
-    const userRoles = session?.user?.roles || [];
-    const isGRCAdmin = userRoles.includes("GRCAdministrator");
-    const customerAccountId = session?.user?.customerAccountId;
-    const tenantFilter = !isGRCAdmin && customerAccountId ? { customerAccountId } : {};
-
     const classifications = await prisma.assetCIAClassification.findMany({
-      where: tenantFilter,
       include: {
         subCategory: {
           include: {

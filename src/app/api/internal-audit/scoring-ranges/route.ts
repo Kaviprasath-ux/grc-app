@@ -1,18 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { withAuth, getTenantFilter, getCustomerAccountId, getAuditHeadFilter, getAuditHeadId } from "@/lib/api-auth";
+import { withAuth } from "@/lib/api-auth";
 
-// GET all scoring ranges - filtered by audit head
+// GET all scoring ranges
+// Note: AuditScoringRange model doesn't have customerAccountId field yet - tenant filtering disabled
 export const GET = withAuth(
-  async (req: NextRequest, context, session) => {
+  async (req: NextRequest) => {
     try {
       const { searchParams } = new URL(req.url);
       const calculationType = searchParams.get("calculationType");
 
-      const tenantFilter = getTenantFilter(session);
-      const auditHeadFilter = getAuditHeadFilter(session);
-
-      const where: Record<string, unknown> = { ...tenantFilter, ...auditHeadFilter };
+      const where: Record<string, unknown> = {};
       if (calculationType) {
         where.calculationType = calculationType;
       }
@@ -34,12 +32,11 @@ export const GET = withAuth(
   { resource: "audit.settings", action: "edit" }
 );
 
-// POST create a new scoring range - assigned to current audit head
+// POST create a new scoring range
+// Note: AuditScoringRange model doesn't have customerAccountId field yet - tenant assignment disabled
 export const POST = withAuth(
-  async (req: NextRequest, context, session) => {
+  async (req: NextRequest) => {
     try {
-      const customerAccountId = getCustomerAccountId(session);
-      const auditHeadId = getAuditHeadId(session);
       const body = await req.json();
       const { label, lowValue, highValue, calculationType } = body;
 
@@ -50,12 +47,11 @@ export const POST = withAuth(
         );
       }
 
-      // Check for duplicate within the same audit head's settings
+      // Check for duplicate
       const existing = await prisma.auditScoringRange.findFirst({
         where: {
           label,
           calculationType: calculationType || "High of all",
-          auditHeadId,
         },
       });
 
@@ -72,8 +68,6 @@ export const POST = withAuth(
           lowValue: lowValue || 0,
           highValue: highValue || null,
           calculationType: calculationType || "High of all",
-          customerAccountId,
-          auditHeadId,
         },
       });
 

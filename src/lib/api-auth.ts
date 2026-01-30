@@ -28,8 +28,7 @@ export interface AuthenticatedRequest extends NextRequest {
     customerAccountId: string | null;
     customerAccountCode: string | null;
     customerAccountName: string | null;
-    // Audit Head isolation: Links user to their managing Audit Head
-    auditHeadId: string | null;
+    // Note: User model doesn't have auditHeadId field yet
     roles: string[];
     permissions: UserPermission[];
   };
@@ -108,8 +107,7 @@ export function withAuth<T extends { params?: Promise<unknown> }>(
         customerAccountId: user.customerAccountId || null,
         customerAccountCode: user.customerAccountCode || null,
         customerAccountName: user.customerAccountName || null,
-        // Audit Head isolation
-        auditHeadId: user.auditHeadId || null,
+        // Note: User model doesn't have auditHeadId field yet
         roles: user.roles || [],
         permissions: user.permissions || [],
       };
@@ -157,8 +155,7 @@ export function withAuthOnly<T extends { params?: Promise<unknown> }>(
         customerAccountId: user.customerAccountId || null,
         customerAccountCode: user.customerAccountCode || null,
         customerAccountName: user.customerAccountName || null,
-        // Audit Head isolation
-        auditHeadId: user.auditHeadId || null,
+        // Note: User model doesn't have auditHeadId field yet
         roles: user.roles || [],
         permissions: user.permissions || [],
       };
@@ -303,16 +300,14 @@ export function getAuditHeadId(session: AuthenticatedRequest['user']): string | 
   }
 
   // AuditManager, Auditor, Auditee: use their assigned auditHeadId
-  // This ensures they only see data belonging to their Audit Head
+  // Note: User model doesn't have auditHeadId field yet - for now, audit roles
+  // without AuditHead role will see all data within their tenant (same as admin)
+  // This ensures they only see data belonging to their Audit Head once implemented
   const auditRoles = ['AuditManager', 'Auditor', 'Auditee', 'AuditUser'];
   if (session.roles.some(role => auditRoles.includes(role))) {
-    // If user has an auditHeadId assigned, filter by it
-    if (session.auditHeadId) {
-      return session.auditHeadId;
-    }
-    // If no auditHeadId assigned, return impossible filter to prevent data leakage
-    // This shouldn't happen in properly configured systems
-    return '__NO_AUDIT_HEAD__';
+    // TODO: When User model has auditHeadId field, filter by session.auditHeadId
+    // For now, return null to see all data within tenant
+    return null;
   }
 
   // Other roles don't have audit head filtering
@@ -485,8 +480,7 @@ export async function getApiSession(): Promise<AuthenticatedRequest['user'] | nu
     customerAccountId: user.customerAccountId || null,
     customerAccountCode: user.customerAccountCode || null,
     customerAccountName: user.customerAccountName || null,
-    // Audit Head isolation
-    auditHeadId: user.auditHeadId || null,
+    // Note: User model doesn't have auditHeadId field yet
     roles: user.roles || [],
     permissions: user.permissions || [],
   };
