@@ -66,6 +66,9 @@ model UserRole {
 // Organization Profile
 model Organization {
   id                 String           @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId  String           @default("customer-account-1") // Temporary default to fix migration
+  customerAccount    CustomerAccount  @relation(fields: [customerAccountId], references: [id])
   name               String
   email              String?
   phone              String?
@@ -130,6 +133,9 @@ model CloudProvider {
 // Departments
 model Department {
   id                    String                 @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId     String                 @default("customer-account-1") // Temporary default to fix migration
+  customerAccount       CustomerAccount        @relation(fields: [customerAccountId], references: [id])
   name                  String                 @unique
   description           String?
   headId                String?
@@ -171,6 +177,9 @@ model User {
   timezone            String      @default("UTC")
   isActive            Boolean     @default(true)
   isBlocked           Boolean     @default(false)
+  // Multi-tenant: Link user to customer account
+  customerAccountId   String?
+  customerAccount     CustomerAccount? @relation(fields: [customerAccountId], references: [id])
   // CustomerAdmin fields
   customerCode        String?     // Customer account code (e.g., GRC_001)
   logoUrl             String?     // Customer logo URL
@@ -212,6 +221,9 @@ model User {
 // Stakeholders
 model Stakeholder {
   id           String             @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String        @default("customer-account-1") 
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id])
   name         String
   email        String?
   type         String             @default("Internal") // Internal, External, Third Party
@@ -226,6 +238,9 @@ model Stakeholder {
 // Issues
 model Issue {
   id           String             @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String        @default("customer-account-1") 
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id])
   title        String
   description  String?
   domain       String // Internal, External, IT, GRC
@@ -316,6 +331,9 @@ model IssueStakeholder {
 // Services
 model Service {
   id              String   @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String @default("customer-account-1") // Temporary default to fix migration
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id])
   title           String
   description     String?
   serviceUser     String // Internal, External, Public
@@ -330,6 +348,9 @@ model Service {
 // Frameworks
 model Framework {
   id                    String                @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId     String                @default("customer-account-1") 
+  customerAccount       CustomerAccount       @relation(fields: [customerAccountId], references: [id])
   code                  String?
   name                  String                @unique
   description           String?
@@ -355,6 +376,9 @@ model Framework {
 // Requirement Categories (Domains/Chapters in a framework)
 model RequirementCategory {
   id           String        @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String        @default("customer-account-1") 
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id])
   name         String
   code         String?
   description  String?
@@ -371,6 +395,9 @@ model RequirementCategory {
 // Requirements (Framework Requirements with hierarchy)
 model Requirement {
   id                   String                 @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId    String                 @default("customer-account-1") 
+  customerAccount      CustomerAccount        @relation(fields: [customerAccountId], references: [id])
   code                 String
   name                 String
   description          String?
@@ -414,6 +441,9 @@ model RequirementControl {
 // Requirement Exceptions (for compliance exceptions from requirements)
 model RequirementException {
   id            String      @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String      @default("customer-account-1") 
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id])
   code          String      @unique
   name          String
   description   String?
@@ -432,6 +462,9 @@ model RequirementException {
 // Regulations (legacy - keeping for backwards compatibility)
 model Regulation {
   id                     String            @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId      String?           @default("customer-account-1") 
+  customerAccount        CustomerAccount?  @relation(fields: [customerAccountId], references: [id])
   name                   String            @unique
   version                String?
   sa1Date                String?
@@ -449,6 +482,9 @@ model Regulation {
 // Control Domains
 model ControlDomain {
   id        String    @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?   @default("customer-account-1") 
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
   code      String?
   name      String    @unique
   createdAt DateTime  @default(now())
@@ -459,6 +495,9 @@ model ControlDomain {
 // Controls
 model Control {
   id                       String               @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId        String               @default("customer-account-1") 
+  customerAccount          CustomerAccount      @relation(fields: [customerAccountId], references: [id])
   controlCode              String               @unique
   name                     String
   description              String?
@@ -501,6 +540,9 @@ model Control {
 // Processes
 model Process {
   id                     String       @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId      String       @default("customer-account-1") 
+  customerAccount        CustomerAccount @relation(fields: [customerAccountId], references: [id])
   processCode            String       @unique
   name                   String
   description            String?
@@ -675,6 +717,9 @@ model ProcessBIARating {
 // Governance - Policies, Standards, Procedures
 model Policy {
   id                    String             @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId     String?            @default("customer-account-1") 
+  customerAccount       CustomerAccount?   @relation(fields: [customerAccountId], references: [id])
   code                  String             @unique
   name                  String
   version               String             @default("1.0")
@@ -706,6 +751,9 @@ model Policy {
 // Evidence
 model Evidence {
   id                    String               @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId     String?              @default("customer-account-1") 
+  customerAccount       CustomerAccount?     @relation(fields: [customerAccountId], references: [id])
   evidenceCode          String               @unique
   name                  String
   description           String?
@@ -754,6 +802,9 @@ model EvidenceControl {
 // Standalone Artifact for the Artifacts tab
 model Artifact {
   id              String            @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?           @default("customer-account-1") 
+  customerAccount   CustomerAccount?  @relation(fields: [customerAccountId], references: [id])
   artifactCode    String            @unique
   name            String
   fileName        String
@@ -786,6 +837,9 @@ model EvidenceArtifact {
 // Exceptions
 model Exception {
   id               String             @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String            @default("customer-account-1") 
+  customerAccount   CustomerAccount   @relation(fields: [customerAccountId], references: [id])
   exceptionCode    String             @unique
   name             String
   description      String? // Reason For Exception
@@ -833,6 +887,9 @@ model ExceptionComment {
 // KPI (Key Performance Indicators)
 model KPI {
   id                 String      @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String      @default("customer-account-1") 
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id])
   code               String      @unique
   objective          String? // KPI Objective
   description        String? // KPI Description
@@ -1053,6 +1110,9 @@ model AssetClassification {
 // Assets
 model Asset {
   id                String                @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String                @default("customer-account-1") 
+  customerAccount   CustomerAccount       @relation(fields: [customerAccountId], references: [id])
   assetId           String                @unique
   name              String
   description       String?
@@ -1190,6 +1250,9 @@ model RiskCauseMapping {
 // Risks
 model Risk {
   id                  String        @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId   String        @default("customer-account-1") 
+  customerAccount     CustomerAccount @relation(fields: [customerAccountId], references: [id])
   riskId              String        @unique
   name                String
   description         String?
@@ -1243,6 +1306,9 @@ model Risk {
 // Risk Assessment Records
 model RiskAssessment {
   id                 String   @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String    @default("customer-account-1") 
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id])
   assessmentId       String   @unique
   riskId             String
   risk               Risk     @relation(fields: [riskId], references: [id], onDelete: Cascade)
@@ -1272,6 +1338,9 @@ model RiskAssessment {
 // Risk Response Records
 model RiskResponse {
   id               String    @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String    @default("customer-account-1") 
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id])
   responseId       String    @unique
   riskId           String
   risk             Risk      @relation(fields: [riskId], references: [id], onDelete: Cascade)
@@ -1308,6 +1377,9 @@ model RiskSetting {
 // Vulnerability Category (for categorizing vulnerabilities)
 model VulnerabilityCategory {
   id              String            @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?           @default("customer-account-1") 
+  customerAccount   CustomerAccount?  @relation(fields: [customerAccountId], references: [id])
   name            String            @unique
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
@@ -1317,6 +1389,9 @@ model VulnerabilityCategory {
 // Threat Category (for categorizing threats)
 model ThreatCategory {
   id        String       @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?      @default("customer-account-1") 
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
   name      String       @unique
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
@@ -1326,6 +1401,9 @@ model ThreatCategory {
 // Control Strength (effectiveness rating of controls)
 model ControlStrength {
   id        String   @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?  @default("customer-account-1") 
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
   name      String   @unique
   score     Int      @default(0)
   createdAt DateTime @default(now())
@@ -1335,6 +1413,9 @@ model ControlStrength {
 // Risk Likelihood (probability scale)
 model RiskLikelihood {
   id          String   @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?  @default("customer-account-1") 
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
   title       String   @unique
   score       Int      @default(0)
   timeFrame   String?  // e.g., "Within 1 year", "Within 5 years"
@@ -1346,6 +1427,9 @@ model RiskLikelihood {
 // Impact Category (types of impact)
 model ImpactCategory {
   id        String   @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?  @default("customer-account-1") 
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
   name      String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1354,6 +1438,9 @@ model ImpactCategory {
 // Impact Rating (severity scale)
 model ImpactRating {
   id          String   @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?  @default("customer-account-1") 
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
   name        String   @unique
   score       Int      @default(0)
   description String?
@@ -1364,6 +1451,9 @@ model ImpactRating {
 // Vulnerability Rating (severity of vulnerabilities)
 model VulnerabilityRating {
   id        String   @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?  @default("customer-account-1") 
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
   label     String   @unique
   score     Int      @default(0)
   createdAt DateTime @default(now())
@@ -1373,6 +1463,9 @@ model VulnerabilityRating {
 // Risk Sub Category
 model RiskSubCategory {
   id        String   @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?  @default("customer-account-1") 
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
   type      String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1381,6 +1474,9 @@ model RiskSubCategory {
 // Risk Range (risk rating thresholds with colors and timelines)
 model RiskRange {
   id           String   @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?  @default("customer-account-1") 
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
   title        String   @unique
   color        String?  // Hex color code
   lowRange     Int      @default(0)
@@ -1394,6 +1490,9 @@ model RiskRange {
 // Risk Score Configuration (formula settings)
 model RiskScoreConfig {
   id                    String   @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId     String?    @default("customer-account-1") 
+  customerAccount       CustomerAccount? @relation(fields: [customerAccountId], references: [id])
   useLikelihood         Boolean  @default(true)
   useImpact             Boolean  @default(true)
   useAssetScore         Boolean  @default(false)
@@ -1423,6 +1522,9 @@ model RiskActivityLog {
 // Legacy Audits (keeping for backwards compatibility)
 model Audit {
   id           String         @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String         @default("customer-account-1") 
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id])
   auditId      String         @unique
   name         String
   description  String?
@@ -1442,6 +1544,9 @@ model Audit {
 // Audit Findings
 model AuditFinding {
   id          String   @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String   @default("customer-account-1") 
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id])
   findingId   String   @unique
   title       String
   description String?
@@ -1457,6 +1562,9 @@ model AuditFinding {
 // CAPA (Corrective and Preventive Actions)
 model CAPA {
   id          String        @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String        @default("customer-account-1") 
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id])
   capaId      String        @unique
   title       String
   description String?
@@ -1571,6 +1679,9 @@ model AuditType {
 // Internal Audit Risk (separate from general Risk for the Internal Audit module)
 model InternalAuditRisk {
   id                   String         @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId    String         @default("customer-account-1") 
+  customerAccount      CustomerAccount @relation(fields: [customerAccountId], references: [id])
   riskId               String         @unique // Auto-generated RID001, RID002, etc.
   riskName             String
   departmentId         String?
@@ -1613,6 +1724,9 @@ model InternalAuditRisk {
 // Auditable Entity (items within departments that can be audited)
 model AuditableEntity {
   id              String            @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String            @default("customer-account-1") 
+  customerAccount   CustomerAccount   @relation(fields: [customerAccountId], references: [id])
   entityCode      String            @unique
   name            String
   description     String?
@@ -1634,6 +1748,9 @@ model AuditableEntity {
 // Audit Engagement (Annual Audit Plan items)
 model AuditEngagement {
   id                  String           @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId   String           @default("customer-account-1") 
+  customerAccount     CustomerAccount  @relation(fields: [customerAccountId], references: [id])
   auditId             String           @unique // Auto-generated AUD001, AUD002
   engagementTitle     String
   engagementObjective String?
@@ -1765,6 +1882,9 @@ model FieldworkEvidenceAttachment {
 // Audit Report
 model AuditReport {
   id                  String          @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId   String          @default("customer-account-1") 
+  customerAccount     CustomerAccount @relation(fields: [customerAccountId], references: [id])
   reportCode          String          @unique // Auto-generated RPT001, RPT002
   engagementId        String          @unique
   engagement          AuditEngagement @relation(fields: [engagementId], references: [id], onDelete: Cascade)
@@ -1803,6 +1923,9 @@ model AuditReport {
 // Internal Audit Finding (linked to engagement, separate from general AuditFinding)
 model InternalAuditFinding {
   id                 String                @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId  String                @default("customer-account-1") 
+  customerAccount    CustomerAccount       @relation(fields: [customerAccountId], references: [id])
   findingId          String                @unique // Auto-generated FND001, FND002
   engagementId       String
   engagement         AuditEngagement       @relation(fields: [engagementId], references: [id], onDelete: Cascade)
@@ -1836,6 +1959,9 @@ model InternalAuditFinding {
 // Internal Audit CAPA (Corrective and Preventive Actions for internal audit findings)
 model InternalAuditCAPA {
   id              String                @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String                @default("customer-account-1") 
+  customerAccount   CustomerAccount       @relation(fields: [customerAccountId], references: [id])
   capaId          String                @unique // Auto-generated CAPA001, CAPA002
   findingId       String
   finding         InternalAuditFinding  @relation(fields: [findingId], references: [id], onDelete: Cascade)
@@ -1862,6 +1988,9 @@ model InternalAuditCAPA {
 // Internal Audit Document (for document library)
 model InternalAuditDocument {
   id           String   @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String   @default("customer-account-1") 
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id])
   documentCode String   @unique
   name         String
   description  String?
@@ -1984,4 +2113,76 @@ model AuditLog {
   userName   String?
   changes    String? // JSON string of old/new values
   createdAt  DateTime @default(now())
+}
+
+// ==================== RESTORED MULTI-TENANT MODELS ====================
+
+model CustomerAccount {
+  id                     String                   @id @default(cuid())
+  code                   String                   @unique
+  name                   String
+  logoUrl                String?
+  isActive               Boolean                  @default(true)
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @updatedAt
+  users                  User[]
+  organizations          Organization[]
+  departments            Department[]
+  services               Service[]
+  subscriptionPlans      SubscriptionPlan[]
+  stakeholders           Stakeholder[]
+  issues                 Issue[]
+  frameworks             Framework[]
+  requirementCategories  RequirementCategory[]
+  requirements           Requirement[]
+  requirementExceptions  RequirementException[]
+  controls               Control[]
+  processes              Process[]
+  policies               Policy[]
+  evidences              Evidence[]
+  artifacts              Artifact[]
+  assets                 Asset[]
+  risks                  Risk[]
+  audits                 Audit[]
+  auditFindings          AuditFinding[]
+  capas                  CAPA[]
+  auditableEntities      AuditableEntity[]
+  auditEngagements       AuditEngagement[]
+  auditReports           AuditReport[]
+  internalAuditFindings  InternalAuditFinding[]
+  internalAuditCAPAs     InternalAuditCAPA[]
+  internalAuditDocuments InternalAuditDocument[]
+  regulations            Regulation[]
+  controlDomains         ControlDomain[]
+  kpis                   KPI[]
+  riskResponses          RiskResponse[]
+  riskAssessments        RiskAssessment[]
+  vulnerabilityCategories VulnerabilityCategory[]
+  threatCategories       ThreatCategory[]
+  controlStrengths       ControlStrength[]
+  riskLikelihoods        RiskLikelihood[]
+  impactCategories       ImpactCategory[]
+  impactRatings          ImpactRating[]
+  vulnerabilityRatings   VulnerabilityRating[]
+  riskSubCategories      RiskSubCategory[]
+  riskRanges             RiskRange[]
+  riskScoreConfigs       RiskScoreConfig[]
+  internalAuditRisks     InternalAuditRisk[]
+  exceptions             Exception[]
+  // Partial restoration - adding back essential relations first to unlock Auth
+}
+
+model SubscriptionPlan {
+  id                  String          @id @default(cuid())
+  customerAccountId   String
+  customerAccount     CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+  startDate           DateTime
+  expiryDate          DateTime
+  maxFrameworksAllowed Int            @default(0)
+  maxAccountsAllowed   Int            @default(0)
+  frameworksUsed      Int             @default(0)
+  accountsUsed        Int             @default(0)
+  status              String          @default("Active")
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
 }
