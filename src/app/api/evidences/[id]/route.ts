@@ -36,10 +36,6 @@ export async function GET(
             artifact: true,
           },
         },
-        evidenceAIReviews: {
-          orderBy: { createdAt: "desc" },
-          take: 5,
-        },
       },
     });
 

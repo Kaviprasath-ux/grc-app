@@ -29,10 +29,6 @@ export async function GET(
             exception: true,
           },
         },
-        policyAIReviews: {
-          orderBy: { createdAt: "desc" },
-          take: 1
-        }
       },
     });
 
