@@ -57,7 +57,12 @@ import {
   Download,
   Calendar,
   ChevronLeft,
+  FileUp,
+  FileDown,
+  RefreshCw,
+  Eraser,
 } from "lucide-react";
+import * as ComplianceService from "@/services/ai-compliance-service";
 
 interface Policy {
   id: string;
@@ -241,6 +246,23 @@ export default function GovernanceDetailPage() {
   const [unpublishDialogOpen, setUnpublishDialogOpen] = useState(false);
   const [storedSignature, setStoredSignature] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // AI Feature Dialog States
+  const [ingestDialogOpen, setIngestDialogOpen] = useState(false);
+  const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
+  const [regenerateDialogOpen, setRegenerateDialogOpen] = useState(false);
+  const [cleanupDialogOpen, setCleanupDialogOpen] = useState(false);
+  const [selfAssessmentDialogOpen, setSelfAssessmentDialogOpen] = useState(false);
+
+  // AI Feature Loading States
+  const [ingestLoading, setIngestLoading] = useState(false);
+  const [ingestStatus, setIngestStatus] = useState<string>("");
+  const [generateLoading, setGenerateLoading] = useState(false);
+  const [regenerateLoading, setRegenerateLoading] = useState(false);
+  const [cleanupLoading, setCleanupLoading] = useState(false);
+  const [selfAssessmentLoading, setSelfAssessmentLoading] = useState(false);
+  const [selfAssessmentQuestion, setSelfAssessmentQuestion] = useState("");
+  const [selfAssessmentAnswer, setSelfAssessmentAnswer] = useState("");
 
   // Edit form state
   const [editForm, setEditForm] = useState({
@@ -480,9 +502,173 @@ export default function GovernanceDetailPage() {
           fetchPolicy();
         }, 2000);
         fetchPolicy();
+      } else {
+        const error = await response.json();
+        console.error("AI Review failed:", error);
+        alert(`AI Review failed: ${error.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error("Error triggering AI review:", error);
+      alert("Failed to trigger AI review");
+    }
+  };
+
+  // AI Feature Handlers
+  const handlePolicyIngest = async (files: FileList | null) => {
+    if (!files || files.length === 0 || !policy) return;
+
+    setIngestLoading(true);
+    setIngestStatus("Uploading documents...");
+
+    try {
+      const fileArray = Array.from(files);
+      const result = await ComplianceService.ingestPolicyDocuments({
+        base_id: id,
+        doc_type: "policy",
+        file_code: policy.code || `POL-${id.substring(0, 8)}`,
+        document_id: id,
+        files: fileArray,
+      });
+
+      if (result.job_id) {
+        // Async job - poll for status
+        setIngestStatus("Processing documents...");
+        await ComplianceService.pollIngestJob(result.job_id, {
+          onStatusUpdate: (status) => {
+            setIngestStatus(`Status: ${status.status}`);
+          },
+        });
+        setIngestStatus("Ingest completed successfully!");
+        alert("Policy documents ingested successfully!");
+      } else {
+        setIngestStatus("Ingest completed!");
+        alert("Policy documents ingested successfully!");
+      }
+
+      setIngestDialogOpen(false);
+      fetchPolicy();
+    } catch (error: any) {
+      console.error("Error ingesting policy:", error);
+      setIngestStatus("");
+      alert(`Failed to ingest policy: ${error.message}`);
+    } finally {
+      setIngestLoading(false);
+    }
+  };
+
+  const handleGeneratePolicy = async (formData: FormData) => {
+    setGenerateLoading(true);
+    try {
+      const result = await ComplianceService.generatePolicy({
+        document_type: formData.get("document_type") as string,
+        document_name: formData.get("document_name") as string,
+        framework_names: formData.getAll("framework_names") as string[],
+        mapped_controls: formData.getAll("mapped_controls") as string[],
+        template: formData.get("template") as File,
+      });
+
+      // Download generated policy
+      if (result.policy_document_base64) {
+        const blob = new Blob([Buffer.from(result.policy_document_base64, 'base64')], {
+          type: 'application/pdf'
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${formData.get("document_name")}_generated.pdf`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
+      alert("Policy generated successfully!");
+      setGenerateDialogOpen(false);
+    } catch (error: any) {
+      console.error("Error generating policy:", error);
+      alert(`Failed to generate policy: ${error.message}`);
+    } finally {
+      setGenerateLoading(false);
+    }
+  };
+
+  const handleRegeneratePolicy = async (formData: FormData) => {
+    setRegenerateLoading(true);
+    try {
+      const result = await ComplianceService.regeneratePolicy({
+        document_type: formData.get("document_type") as string,
+        document_name: formData.get("document_name") as string,
+        framework_names: formData.getAll("framework_names") as string[],
+        missing_controls: formData.getAll("missing_controls") as string[],
+        policy_document: formData.get("policy_document") as File,
+      });
+
+      // Download regenerated policy
+      if (result.regenerated_policy_base64) {
+        const blob = new Blob([Buffer.from(result.regenerated_policy_base64, 'base64')], {
+          type: 'application/pdf'
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${formData.get("document_name")}_regenerated.pdf`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
+      alert("Policy regenerated successfully!");
+      setRegenerateDialogOpen(false);
+    } catch (error: any) {
+      console.error("Error regenerating policy:", error);
+      alert(`Failed to regenerate policy: ${error.message}`);
+    } finally {
+      setRegenerateLoading(false);
+    }
+  };
+
+  const handleCleanupAIData = async () => {
+    if (!policy) return;
+    if (!confirm("Are you sure you want to delete all AI embeddings for this policy? This action cannot be undone.")) {
+      return;
+    }
+
+    setCleanupLoading(true);
+    try {
+      await ComplianceService.cleanupPolicyAIData({
+        base_id: id,
+        doc_type: "policy",
+        document_id: id,
+        file_name: policy.code || `POL-${id.substring(0, 8)}`,
+      });
+
+      alert("AI data cleaned up successfully!");
+      setCleanupDialogOpen(false);
+      fetchPolicy();
+    } catch (error: any) {
+      console.error("Error cleaning up AI data:", error);
+      alert(`Failed to cleanup AI data: ${error.message}`);
+    } finally {
+      setCleanupLoading(false);
+    }
+  };
+
+  const handleSelfAssessment = async () => {
+    if (!selfAssessmentQuestion.trim()) {
+      alert("Please enter a question");
+      return;
+    }
+
+    setSelfAssessmentLoading(true);
+    try {
+      const result = await ComplianceService.runSelfAssessment(
+        selfAssessmentQuestion,
+        "current-user-id" // TODO: Get from session
+      );
+
+      setSelfAssessmentAnswer(result.answer || "No answer received");
+    } catch (error: any) {
+      console.error("Error running self-assessment:", error);
+      alert(`Failed to run self-assessment: ${error.message}`);
+    } finally {
+      setSelfAssessmentLoading(false);
     }
   };
 
@@ -778,170 +964,170 @@ export default function GovernanceDetailPage() {
                   Edit
                 </Button>
               </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Edit {typeLabels[policy.type]}</DialogTitle>
-              </DialogHeader>
-              <div className="grid grid-cols-2 gap-4 py-4">
-                <div className="col-span-2">
-                  <Label>Name</Label>
-                  <Input
-                    value={editForm.name}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, name: e.target.value })
-                    }
-                  />
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Edit {typeLabels[policy.type]}</DialogTitle>
+                </DialogHeader>
+                <div className="grid grid-cols-2 gap-4 py-4">
+                  <div className="col-span-2">
+                    <Label>Name</Label>
+                    <Input
+                      value={editForm.name}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, name: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <Label>Description</Label>
+                    <Textarea
+                      value={editForm.description}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, description: e.target.value })
+                      }
+                      rows={3}
+                    />
+                  </div>
+                  <div>
+                    <Label>Type</Label>
+                    <Select
+                      value={editForm.type}
+                      onValueChange={(value) =>
+                        setEditForm({ ...editForm, type: value })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Policy">Policy</SelectItem>
+                        <SelectItem value="Standard">Standard</SelectItem>
+                        <SelectItem value="Procedure">Procedure</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Status</Label>
+                    <Select
+                      value={editForm.status}
+                      onValueChange={(value) =>
+                        setEditForm({ ...editForm, status: value })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Not Uploaded">Not Uploaded</SelectItem>
+                        <SelectItem value="Draft">Draft</SelectItem>
+                        <SelectItem value="Under Review">Under Review</SelectItem>
+                        <SelectItem value="Approved">Approved</SelectItem>
+                        <SelectItem value="Published">Published</SelectItem>
+                        <SelectItem value="Needs Review">Needs Review</SelectItem>
+                        <SelectItem value="Archived">Archived</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Version</Label>
+                    <Input
+                      value={editForm.version}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, version: e.target.value })
+                      }
+                      placeholder="e.g., 1.0"
+                    />
+                  </div>
+                  <div>
+                    <Label>Recurrence</Label>
+                    <Select
+                      value={editForm.recurrence}
+                      onValueChange={(value) =>
+                        setEditForm({ ...editForm, recurrence: value })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select recurrence" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {RECURRENCE_OPTIONS.map((r) => (
+                          <SelectItem key={r} value={r}>{r}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Framework</Label>
+                    <Select
+                      value={editForm.frameworkId}
+                      onValueChange={(value) =>
+                        setEditForm({ ...editForm, frameworkId: value })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select framework" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {frameworks.map((f) => (
+                          <SelectItem key={f.id} value={f.id}>
+                            {f.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Department</Label>
+                    <Select
+                      value={editForm.departmentId}
+                      onValueChange={(value) =>
+                        setEditForm({ ...editForm, departmentId: value })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select department" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {departments.map((d) => (
+                          <SelectItem key={d.id} value={d.id}>
+                            {d.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Effective Date</Label>
+                    <Input
+                      type="date"
+                      value={editForm.effectiveDate}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, effectiveDate: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label>Review Date</Label>
+                    <Input
+                      type="date"
+                      value={editForm.reviewDate}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, reviewDate: e.target.value })
+                      }
+                    />
+                  </div>
                 </div>
-                <div className="col-span-2">
-                  <Label>Description</Label>
-                  <Textarea
-                    value={editForm.description}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, description: e.target.value })
-                    }
-                    rows={3}
-                  />
-                </div>
-                <div>
-                  <Label>Type</Label>
-                  <Select
-                    value={editForm.type}
-                    onValueChange={(value) =>
-                      setEditForm({ ...editForm, type: value })
-                    }
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setEditDialogOpen(false)}
                   >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Policy">Policy</SelectItem>
-                      <SelectItem value="Standard">Standard</SelectItem>
-                      <SelectItem value="Procedure">Procedure</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleSave}>Save Changes</Button>
                 </div>
-                <div>
-                  <Label>Status</Label>
-                  <Select
-                    value={editForm.status}
-                    onValueChange={(value) =>
-                      setEditForm({ ...editForm, status: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Not Uploaded">Not Uploaded</SelectItem>
-                      <SelectItem value="Draft">Draft</SelectItem>
-                      <SelectItem value="Under Review">Under Review</SelectItem>
-                      <SelectItem value="Approved">Approved</SelectItem>
-                      <SelectItem value="Published">Published</SelectItem>
-                      <SelectItem value="Needs Review">Needs Review</SelectItem>
-                      <SelectItem value="Archived">Archived</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Version</Label>
-                  <Input
-                    value={editForm.version}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, version: e.target.value })
-                    }
-                    placeholder="e.g., 1.0"
-                  />
-                </div>
-                <div>
-                  <Label>Recurrence</Label>
-                  <Select
-                    value={editForm.recurrence}
-                    onValueChange={(value) =>
-                      setEditForm({ ...editForm, recurrence: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select recurrence" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {RECURRENCE_OPTIONS.map((r) => (
-                        <SelectItem key={r} value={r}>{r}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Framework</Label>
-                  <Select
-                    value={editForm.frameworkId}
-                    onValueChange={(value) =>
-                      setEditForm({ ...editForm, frameworkId: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select framework" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {frameworks.map((f) => (
-                        <SelectItem key={f.id} value={f.id}>
-                          {f.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Department</Label>
-                  <Select
-                    value={editForm.departmentId}
-                    onValueChange={(value) =>
-                      setEditForm({ ...editForm, departmentId: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select department" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {departments.map((d) => (
-                        <SelectItem key={d.id} value={d.id}>
-                          {d.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Effective Date</Label>
-                  <Input
-                    type="date"
-                    value={editForm.effectiveDate}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, effectiveDate: e.target.value })
-                    }
-                  />
-                </div>
-                <div>
-                  <Label>Review Date</Label>
-                  <Input
-                    type="date"
-                    value={editForm.reviewDate}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, reviewDate: e.target.value })
-                    }
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setEditDialogOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button onClick={handleSave}>Save Changes</Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+              </DialogContent>
+            </Dialog>
           </PermissionGate>
         </div>
       </div>
@@ -994,19 +1180,17 @@ export default function GovernanceDetailPage() {
               return (
                 <div key={step.key} className="flex items-center flex-1">
                   <div
-                    className={`flex flex-col items-center gap-2 p-3 rounded-lg transition-colors ${
-                      isStepActive
-                        ? "bg-green-100 text-green-800"
-                        : "bg-muted text-muted-foreground"
-                    }`}
+                    className={`flex flex-col items-center gap-2 p-3 rounded-lg transition-colors ${isStepActive
+                      ? "bg-green-100 text-green-800"
+                      : "bg-muted text-muted-foreground"
+                      }`}
                   >
                     <Icon className="h-6 w-6" />
                     <span className="text-sm font-medium">{step.label}</span>
                   </div>
                   {index < STATUS_WORKFLOW.length - 1 && (
-                    <div className={`flex-1 h-1 mx-2 ${
-                      isLineGreen ? "bg-green-500" : "bg-muted"
-                    }`} />
+                    <div className={`flex-1 h-1 mx-2 ${isLineGreen ? "bg-green-500" : "bg-muted"
+                      }`} />
                   )}
                 </div>
               );
@@ -1222,13 +1406,12 @@ export default function GovernanceDetailPage() {
                 <div>
                   <Label className="text-muted-foreground text-sm">Score</Label>
                   <div className="mt-1">
-                    <span className={`text-2xl font-bold ${
-                      policy.aiReviewScore >= 80
-                        ? "text-green-600"
-                        : policy.aiReviewScore >= 60
+                    <span className={`text-2xl font-bold ${policy.aiReviewScore >= 80
+                      ? "text-green-600"
+                      : policy.aiReviewScore >= 60
                         ? "text-yellow-600"
                         : "text-red-600"
-                    }`}>
+                      }`}>
                       {policy.aiReviewScore}%
                     </span>
                   </div>
@@ -1630,11 +1813,10 @@ export default function GovernanceDetailPage() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 border-b-2 transition-colors ${
-                activeTab === tab.id
-                  ? "border-primary text-primary"
-                  : "border-transparent text-gray-500 hover:text-gray-700"
-              }`}
+              className={`flex items-center gap-2 px-4 py-2 border-b-2 transition-colors ${activeTab === tab.id
+                ? "border-primary text-primary"
+                : "border-transparent text-gray-500 hover:text-gray-700"
+                }`}
             >
               <tab.icon className="h-4 w-4" />
               {tab.label}
