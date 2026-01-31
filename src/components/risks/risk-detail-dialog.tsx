@@ -291,15 +291,19 @@ export function RiskDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader className="border-b pb-4">
-          <div className="flex items-center justify-between">
-            <DialogTitle className="flex items-center gap-3">
-              <span className="text-xl font-bold">{risk.riskId}</span>
-              <RiskRatingBadge rating={editMode ? riskRating : risk.riskRating} />
-              <RiskStatusBadge status={editMode ? formData.status : risk.status} />
-            </DialogTitle>
-            <div className="flex gap-2">
+      <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+        <DialogHeader className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <DialogTitle className="text-lg font-semibold text-slate-800 mb-2">
+                {risk.riskId} - {risk.name}
+              </DialogTitle>
+              <div className="flex items-center gap-2 flex-wrap">
+                <RiskRatingBadge rating={editMode ? riskRating : risk.riskRating} />
+                <RiskStatusBadge status={editMode ? formData.status : risk.status} />
+              </div>
+            </div>
+            <div className="flex-shrink-0 flex gap-2">
               {!editMode ? (
                 <PermissionGate resource="risk.register" action="edit">
                   <Button variant="outline" size="sm" onClick={() => onEditModeChange(true)}>
@@ -324,7 +328,7 @@ export function RiskDetailDialog({
         </DialogHeader>
 
         {/* Carousel Navigation */}
-        <div className="flex items-center justify-between py-3 border-b">
+        <div className="flex-shrink-0 flex items-center justify-between px-6 py-3 border-b border-slate-100">
           <Button variant="ghost" size="sm" onClick={goToPrevSection}>
             <ChevronLeft className="h-4 w-4 mr-1" />
             Previous
@@ -338,8 +342,8 @@ export function RiskDetailDialog({
                 className={cn(
                   "w-2.5 h-2.5 rounded-full transition-all",
                   activeSection === index
-                    ? "bg-primary w-8"
-                    : "bg-gray-300 hover:bg-gray-400"
+                    ? "bg-primary-500 w-8"
+                    : "bg-slate-300 hover:bg-slate-400"
                 )}
                 title={section.label}
               />
@@ -353,19 +357,19 @@ export function RiskDetailDialog({
         </div>
 
         {/* Section Header */}
-        <div className="flex items-center gap-2 py-3 px-1">
-          <CurrentIcon className="h-5 w-5 text-primary" />
-          <h3 className="text-lg font-semibold">{sections[activeSection].label}</h3>
+        <div className="flex-shrink-0 flex items-center gap-2 px-6 py-3">
+          <CurrentIcon className="h-5 w-5 text-primary-500" />
+          <h3 className="text-lg font-semibold text-slate-800">{sections[activeSection].label}</h3>
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 overflow-y-auto px-1 pb-4">
+        <div className="flex-1 overflow-y-auto px-6 pb-6">
           {/* Risk Overview Section */}
           {activeSection === 0 && (
-            <div className="space-y-4">
+            <div className="space-y-5">
               {editMode ? (
                 <>
-                  <div>
+                  <div className="space-y-1.5">
                     <Label htmlFor="name">Risk Name *</Label>
                     <Input
                       id="name"
@@ -374,13 +378,13 @@ export function RiskDetailDialog({
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <div>
+                    <div className="space-y-1.5">
                       <Label>Department</Label>
                       <Select
                         value={formData.departmentId}
                         onValueChange={(value) => handleInputChange("departmentId", value)}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="w-full">
                           <SelectValue placeholder="Select department" />
                         </SelectTrigger>
                         <SelectContent>
@@ -392,13 +396,13 @@ export function RiskDetailDialog({
                         </SelectContent>
                       </Select>
                     </div>
-                    <div>
+                    <div className="space-y-1.5">
                       <Label>Risk Owner</Label>
                       <Select
                         value={formData.ownerId}
                         onValueChange={(value) => handleInputChange("ownerId", value)}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="w-full">
                           <SelectValue placeholder="Select owner" />
                         </SelectTrigger>
                         <SelectContent>
@@ -411,13 +415,13 @@ export function RiskDetailDialog({
                       </Select>
                     </div>
                   </div>
-                  <div>
+                  <div className="space-y-1.5">
                     <Label>Status</Label>
                     <Select
                       value={formData.status}
                       onValueChange={(value) => handleInputChange("status", value)}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -432,33 +436,30 @@ export function RiskDetailDialog({
                 </>
               ) : (
                 <div className="space-y-4">
-                  <div>
-                    <h4 className="text-lg font-semibold">{risk.name}</h4>
-                  </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="p-3 bg-gray-50 rounded-lg">
+                    <div className="p-3 bg-slate-50 rounded-lg">
                       <p className="text-xs text-muted-foreground uppercase">Risk ID</p>
                       <p className="font-medium">{risk.riskId}</p>
                     </div>
-                    <div className="p-3 bg-gray-50 rounded-lg">
+                    <div className="p-3 bg-slate-50 rounded-lg">
                       <p className="text-xs text-muted-foreground uppercase">Status</p>
                       <RiskStatusBadge status={risk.status} className="mt-1" />
                     </div>
-                    <div className="p-3 bg-gray-50 rounded-lg">
+                    <div className="p-3 bg-slate-50 rounded-lg">
                       <p className="text-xs text-muted-foreground uppercase">Risk Rating</p>
                       <RiskRatingBadge rating={risk.riskRating} className="mt-1" />
                     </div>
-                    <div className="p-3 bg-gray-50 rounded-lg">
+                    <div className="p-3 bg-slate-50 rounded-lg">
                       <p className="text-xs text-muted-foreground uppercase">Risk Score</p>
                       <p className="font-bold text-lg">{risk.riskScore}</p>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="p-3 bg-gray-50 rounded-lg">
+                    <div className="p-3 bg-slate-50 rounded-lg">
                       <p className="text-xs text-muted-foreground uppercase">Department</p>
                       <p className="font-medium">{risk.department?.name || "-"}</p>
                     </div>
-                    <div className="p-3 bg-gray-50 rounded-lg">
+                    <div className="p-3 bg-slate-50 rounded-lg">
                       <p className="text-xs text-muted-foreground uppercase">Risk Owner</p>
                       <p className="font-medium">{risk.owner?.fullName || "-"}</p>
                       {risk.owner?.email && (
@@ -467,13 +468,13 @@ export function RiskDetailDialog({
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="p-3 bg-gray-50 rounded-lg">
+                    <div className="p-3 bg-slate-50 rounded-lg">
                       <p className="text-xs text-muted-foreground uppercase">Created</p>
                       <p className="font-medium">
                         {new Date(risk.createdAt).toLocaleDateString()}
                       </p>
                     </div>
-                    <div className="p-3 bg-gray-50 rounded-lg">
+                    <div className="p-3 bg-slate-50 rounded-lg">
                       <p className="text-xs text-muted-foreground uppercase">Last Updated</p>
                       <p className="font-medium">
                         {new Date(risk.updatedAt).toLocaleDateString()}
@@ -487,10 +488,10 @@ export function RiskDetailDialog({
 
           {/* Risk Context Section */}
           {activeSection === 1 && (
-            <div className="space-y-4">
+            <div className="space-y-5">
               {editMode ? (
                 <>
-                  <div>
+                  <div className="space-y-1.5">
                     <Label htmlFor="description">Risk Description</Label>
                     <Textarea
                       id="description"
@@ -499,7 +500,7 @@ export function RiskDetailDialog({
                       rows={4}
                     />
                   </div>
-                  <div>
+                  <div className="space-y-1.5">
                     <Label htmlFor="riskSources">Risk Sources</Label>
                     <Textarea
                       id="riskSources"
@@ -510,13 +511,13 @@ export function RiskDetailDialog({
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <div>
+                    <div className="space-y-1.5">
                       <Label>Risk Category</Label>
                       <Select
                         value={formData.categoryId}
                         onValueChange={(value) => handleInputChange("categoryId", value)}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="w-full">
                           <SelectValue placeholder="Select category" />
                         </SelectTrigger>
                         <SelectContent>
@@ -528,13 +529,13 @@ export function RiskDetailDialog({
                         </SelectContent>
                       </Select>
                     </div>
-                    <div>
+                    <div className="space-y-1.5">
                       <Label>Risk Type</Label>
                       <Select
                         value={formData.typeId}
                         onValueChange={(value) => handleInputChange("typeId", value)}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="w-full">
                           <SelectValue placeholder="Select type" />
                         </SelectTrigger>
                         <SelectContent>
@@ -550,20 +551,20 @@ export function RiskDetailDialog({
                 </>
               ) : (
                 <div className="space-y-4">
-                  <div className="p-4 bg-gray-50 rounded-lg">
+                  <div className="p-4 bg-slate-50 rounded-lg">
                     <p className="text-xs text-muted-foreground uppercase mb-2">Description</p>
                     <p className="text-sm">{risk.description || "No description provided"}</p>
                   </div>
-                  <div className="p-4 bg-gray-50 rounded-lg">
+                  <div className="p-4 bg-slate-50 rounded-lg">
                     <p className="text-xs text-muted-foreground uppercase mb-2">Risk Sources</p>
                     <p className="text-sm">{risk.riskSources || "No sources specified"}</p>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="p-3 bg-gray-50 rounded-lg">
+                    <div className="p-3 bg-slate-50 rounded-lg">
                       <p className="text-xs text-muted-foreground uppercase">Category</p>
                       <p className="font-medium">{risk.category?.name || "-"}</p>
                     </div>
-                    <div className="p-3 bg-gray-50 rounded-lg">
+                    <div className="p-3 bg-slate-50 rounded-lg">
                       <p className="text-xs text-muted-foreground uppercase">Risk Type</p>
                       <p className="font-medium">{risk.type?.name || "-"}</p>
                     </div>
@@ -571,7 +572,7 @@ export function RiskDetailDialog({
 
                   {/* Threats */}
                   {risk.threats && risk.threats.length > 0 && (
-                    <div className="p-4 bg-gray-50 rounded-lg">
+                    <div className="p-4 bg-slate-50 rounded-lg">
                       <p className="text-xs text-muted-foreground uppercase mb-2">Threats</p>
                       <div className="flex flex-wrap gap-2">
                         {risk.threats.map((t) => (
@@ -588,7 +589,7 @@ export function RiskDetailDialog({
 
                   {/* Vulnerabilities */}
                   {risk.vulnerabilities && risk.vulnerabilities.length > 0 && (
-                    <div className="p-4 bg-gray-50 rounded-lg">
+                    <div className="p-4 bg-slate-50 rounded-lg">
                       <p className="text-xs text-muted-foreground uppercase mb-2">Vulnerabilities</p>
                       <div className="flex flex-wrap gap-2">
                         {risk.vulnerabilities.map((v) => (
@@ -605,7 +606,7 @@ export function RiskDetailDialog({
 
                   {/* Causes */}
                   {risk.causes && risk.causes.length > 0 && (
-                    <div className="p-4 bg-gray-50 rounded-lg">
+                    <div className="p-4 bg-slate-50 rounded-lg">
                       <p className="text-xs text-muted-foreground uppercase mb-2">Causes</p>
                       <div className="flex flex-wrap gap-2">
                         {risk.causes.map((c) => (
@@ -626,10 +627,10 @@ export function RiskDetailDialog({
 
           {/* Risk Assessment Section */}
           {activeSection === 2 && (
-            <div className="space-y-4">
+            <div className="space-y-5">
               {editMode ? (
                 <>
-                  <div>
+                  <div className="space-y-2">
                     <Label>
                       Likelihood: {formData.likelihood} - {likelihoodLabels[formData.likelihood]}
                     </Label>
@@ -639,14 +640,13 @@ export function RiskDetailDialog({
                       min={1}
                       max={5}
                       step={1}
-                      className="mt-2"
                     />
-                    <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                    <div className="flex justify-between text-xs text-slate-500">
                       <span>Rare</span>
                       <span>Almost Certain</span>
                     </div>
                   </div>
-                  <div>
+                  <div className="space-y-2">
                     <Label>
                       Impact: {formData.impact} - {impactLabels[formData.impact]}
                     </Label>
@@ -656,20 +656,19 @@ export function RiskDetailDialog({
                       min={1}
                       max={5}
                       step={1}
-                      className="mt-2"
                     />
-                    <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                    <div className="flex justify-between text-xs text-slate-500">
                       <span>Insignificant</span>
                       <span>Catastrophic</span>
                     </div>
                   </div>
-                  <div className="p-4 bg-gray-100 rounded-lg">
+                  <div className="p-4 bg-slate-100 rounded-lg">
                     <div className="flex justify-between items-center">
-                      <span className="font-medium">Risk Score:</span>
-                      <span className="text-2xl font-bold">{riskScore}</span>
+                      <span className="font-medium text-slate-700">Risk Score:</span>
+                      <span className="text-2xl font-bold text-slate-800">{riskScore}</span>
                     </div>
                     <div className="flex justify-between items-center mt-2">
-                      <span className="font-medium">Risk Rating:</span>
+                      <span className="font-medium text-slate-700">Risk Rating:</span>
                       <RiskRatingBadge rating={riskRating} />
                     </div>
                   </div>
@@ -688,7 +687,7 @@ export function RiskDetailDialog({
                       <p className="text-3xl font-bold text-purple-600">{risk.impact}</p>
                       <p className="text-sm text-purple-600">{impactLabels[risk.impact]}</p>
                     </div>
-                    <div className="p-4 bg-gray-100 rounded-lg text-center">
+                    <div className="p-4 bg-slate-100 rounded-lg text-center">
                       <p className="text-xs text-muted-foreground uppercase">Risk Score</p>
                       <p className="text-3xl font-bold">{risk.riskScore}</p>
                       <RiskRatingBadge rating={risk.riskRating} className="mt-1" />
@@ -750,7 +749,7 @@ export function RiskDetailDialog({
                         {risk.assessments.map((assessment) => (
                           <div
                             key={assessment.id}
-                            className="flex justify-between items-center p-3 bg-gray-50 rounded-lg"
+                            className="flex justify-between items-center p-3 bg-slate-50 rounded-lg"
                           >
                             <span className="text-sm font-medium">{assessment.assessmentId}</span>
                             <span className="text-sm text-muted-foreground">
@@ -790,16 +789,16 @@ export function RiskDetailDialog({
 
           {/* Risk Response Section */}
           {activeSection === 4 && (
-            <div className="space-y-4">
+            <div className="space-y-5">
               {editMode ? (
                 <>
-                  <div>
+                  <div className="space-y-1.5">
                     <Label>Response Strategy</Label>
                     <Select
                       value={formData.responseStrategy}
                       onValueChange={(value) => handleInputChange("responseStrategy", value)}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full">
                         <SelectValue placeholder="Select strategy" />
                       </SelectTrigger>
                       <SelectContent>
@@ -810,7 +809,7 @@ export function RiskDetailDialog({
                       </SelectContent>
                     </Select>
                   </div>
-                  <div>
+                  <div className="space-y-1.5">
                     <Label>Treatment Plan</Label>
                     <Textarea
                       value={formData.treatmentPlan}
@@ -819,7 +818,7 @@ export function RiskDetailDialog({
                       placeholder="Describe the treatment plan..."
                     />
                   </div>
-                  <div>
+                  <div className="space-y-1.5">
                     <Label>Treatment Due Date</Label>
                     <Input
                       type="date"
@@ -831,13 +830,13 @@ export function RiskDetailDialog({
               ) : (
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="p-4 bg-gray-50 rounded-lg">
+                    <div className="p-4 bg-slate-50 rounded-lg">
                       <p className="text-xs text-muted-foreground uppercase">Response Strategy</p>
                       <p className="font-medium text-lg">
                         {risk.responseStrategy || "Not defined"}
                       </p>
                     </div>
-                    <div className="p-4 bg-gray-50 rounded-lg">
+                    <div className="p-4 bg-slate-50 rounded-lg">
                       <p className="text-xs text-muted-foreground uppercase">Treatment Due Date</p>
                       <p className="font-medium text-lg">
                         {risk.treatmentDueDate
@@ -846,14 +845,14 @@ export function RiskDetailDialog({
                       </p>
                     </div>
                   </div>
-                  <div className="p-4 bg-gray-50 rounded-lg">
+                  <div className="p-4 bg-slate-50 rounded-lg">
                     <p className="text-xs text-muted-foreground uppercase mb-2">Treatment Plan</p>
                     <p className="text-sm">
                       {risk.treatmentPlan || "No treatment plan defined"}
                     </p>
                   </div>
                   {risk.treatmentStatus && (
-                    <div className="p-4 bg-gray-50 rounded-lg">
+                    <div className="p-4 bg-slate-50 rounded-lg">
                       <p className="text-xs text-muted-foreground uppercase">Treatment Status</p>
                       <p className="font-medium">{risk.treatmentStatus}</p>
                     </div>
@@ -867,7 +866,7 @@ export function RiskDetailDialog({
                         {risk.responses.map((response) => (
                           <div
                             key={response.id}
-                            className="flex justify-between items-center p-3 bg-gray-50 rounded-lg"
+                            className="flex justify-between items-center p-3 bg-slate-50 rounded-lg"
                           >
                             <div>
                               <span className="font-medium">{response.actionTitle}</span>
@@ -882,7 +881,7 @@ export function RiskDetailDialog({
                                   ? "bg-green-100 text-green-800"
                                   : response.status === "In Progress"
                                   ? "bg-blue-100 text-blue-800"
-                                  : "bg-gray-100 text-gray-800"
+                                  : "bg-slate-100 text-slate-800"
                               )}
                             >
                               {response.status}
@@ -907,7 +906,7 @@ export function RiskDetailDialog({
               {activityLogs && activityLogs.length > 0 ? (
                 <div className="space-y-3">
                   {activityLogs.map((log) => (
-                    <div key={log.id} className="flex gap-3 p-3 bg-gray-50 rounded-lg">
+                    <div key={log.id} className="flex gap-3 p-3 bg-slate-50 rounded-lg">
                       <div className="w-2 h-2 mt-2 rounded-full bg-primary flex-shrink-0" />
                       <div className="flex-1">
                         <div className="flex justify-between items-start">
@@ -944,8 +943,8 @@ export function RiskDetailDialog({
         </div>
 
         {/* Footer with section indicators */}
-        <div className="border-t pt-3 flex justify-center">
-          <p className="text-sm text-muted-foreground">
+        <div className="flex-shrink-0 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-center">
+          <p className="text-sm text-slate-500">
             {activeSection + 1} of {sections.length}: {sections[activeSection].label}
           </p>
         </div>

@@ -247,29 +247,28 @@ function ManagementReportContent() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="relative h-8 w-8">
+          <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
+          <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
-            size="sm"
+            size="icon"
             onClick={() => router.push("/risks/reports")}
-            className="flex items-center gap-2"
+            className="h-8 w-8 text-slate-600 hover:text-slate-800"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back
           </Button>
-          <div>
-            <span className="text-sm text-muted-foreground">Report</span>
-            <h1 className="text-xl font-semibold">Management Report</h1>
-          </div>
+          <h1 className="text-2xl font-bold text-slate-800">Management Report</h1>
         </div>
         <Button onClick={handleDownloadReport}>
           <Download className="h-4 w-4 mr-2" />
@@ -278,8 +277,8 @@ function ManagementReportContent() {
       </div>
 
       {/* Report Content */}
-      <div ref={reportRef} className="space-y-6 bg-white">
-        <h2 className="text-lg font-semibold border-b pb-2">Risk Management Report</h2>
+      <div ref={reportRef} className="space-y-6">
+        <h2 className="text-lg font-semibold text-slate-800 border-b border-slate-200 pb-2">Risk Management Report</h2>
 
         {/* Average Risks Row */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -320,7 +319,7 @@ function ManagementReportContent() {
                   return (
                     <div key={rating} className="flex items-center gap-3">
                       <div className="w-24 text-sm">{rating}</div>
-                      <div className="flex-1 bg-gray-100 rounded h-6">
+                      <div className="flex-1 bg-slate-100 rounded h-6">
                         <div
                           className={`h-6 rounded ${
                             rating === "Low Risk" ? "bg-green-500" :
@@ -350,7 +349,7 @@ function ManagementReportContent() {
             <CardContent>
               <table className="w-full">
                 <thead>
-                  <tr className="border-b">
+                  <tr className="border-b border-slate-200">
                     <th className="text-left p-2 text-sm font-medium">#</th>
                     <th className="text-left p-2 text-sm font-medium">Name</th>
                     <th className="text-left p-2 text-sm font-medium">Rating</th>
@@ -358,7 +357,7 @@ function ManagementReportContent() {
                 </thead>
                 <tbody>
                   {top5Risks.map((risk, idx) => (
-                    <tr key={risk.id} className="border-b">
+                    <tr key={risk.id} className="border-b border-slate-200">
                       <td className="p-2 text-sm">#{idx + 1}</td>
                       <td className="p-2 text-sm">{risk.name}</td>
                       <td className="p-2 text-sm">{risk.riskRating || "-"}</td>
@@ -366,7 +365,7 @@ function ManagementReportContent() {
                   ))}
                   {top5Risks.length === 0 && (
                     <tr>
-                      <td colSpan={3} className="p-4 text-center text-muted-foreground">
+                      <td colSpan={3} className="p-4 text-center text-slate-500">
                         No risk data available
                       </td>
                     </tr>
@@ -388,21 +387,21 @@ function ManagementReportContent() {
               <CardContent>
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b">
+                    <tr className="border-b border-slate-200">
                       <th className="text-left p-2 text-sm font-medium">#</th>
                       <th className="text-left p-2 text-sm font-medium">Name</th>
                     </tr>
                   </thead>
                   <tbody>
                     {top5Assets.map((asset, idx) => (
-                      <tr key={asset.name} className="border-b">
+                      <tr key={asset.name} className="border-b border-slate-200">
                         <td className="p-2 text-sm">#{idx + 1}</td>
                         <td className="p-2 text-sm">{asset.name}</td>
                       </tr>
                     ))}
                     {top5Assets.length === 0 && (
                       <tr>
-                        <td colSpan={2} className="p-4 text-center text-muted-foreground">
+                        <td colSpan={2} className="p-4 text-center text-slate-500">
                           No asset data available
                         </td>
                       </tr>
@@ -422,14 +421,14 @@ function ManagementReportContent() {
               <CardContent>
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b">
+                    <tr className="border-b border-slate-200">
                       <th className="text-left p-2 text-sm font-medium">#</th>
                       <th className="text-left p-2 text-sm font-medium">Name</th>
                     </tr>
                   </thead>
                   <tbody>
                     {top5Departments.map((dept, idx) => (
-                      <tr key={dept.name} className="border-b">
+                      <tr key={dept.name} className="border-b border-slate-200">
                         <td className="p-2 text-sm">#{idx + 1}</td>
                         <td className="p-2 text-sm">{dept.name}</td>
                       </tr>
@@ -449,21 +448,21 @@ function ManagementReportContent() {
               <CardContent>
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b">
+                    <tr className="border-b border-slate-200">
                       <th className="text-left p-2 text-sm font-medium">#</th>
                       <th className="text-left p-2 text-sm font-medium">Name</th>
                     </tr>
                   </thead>
                   <tbody>
                     {top5Threats.map((threat, idx) => (
-                      <tr key={threat.name} className="border-b">
+                      <tr key={threat.name} className="border-b border-slate-200">
                         <td className="p-2 text-sm">#{idx + 1}</td>
                         <td className="p-2 text-sm">{threat.name}</td>
                       </tr>
                     ))}
                     {top5Threats.length === 0 && (
                       <tr>
-                        <td colSpan={2} className="p-4 text-center text-muted-foreground">
+                        <td colSpan={2} className="p-4 text-center text-slate-500">
                           No threat data available
                         </td>
                       </tr>
@@ -483,14 +482,14 @@ function ManagementReportContent() {
               <CardContent>
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b">
+                    <tr className="border-b border-slate-200">
                       <th className="text-left p-2 text-sm font-medium">#</th>
                       <th className="text-left p-2 text-sm font-medium">Name</th>
                     </tr>
                   </thead>
                   <tbody>
                     {top5Owners.map((owner, idx) => (
-                      <tr key={owner.name} className="border-b">
+                      <tr key={owner.name} className="border-b border-slate-200">
                         <td className="p-2 text-sm">#{idx + 1}</td>
                         <td className="p-2 text-sm">{owner.name}</td>
                       </tr>
@@ -566,7 +565,7 @@ function ManagementReportContent() {
               <CardHeader>
                 <CardTitle className="text-base flex items-center justify-between">
                   <span>Risk Activity based on Timeline</span>
-                  <span className="text-sm font-normal text-muted-foreground">{filterYear}</span>
+                  <span className="text-sm font-normal text-slate-500">{filterYear}</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>

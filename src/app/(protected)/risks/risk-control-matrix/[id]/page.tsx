@@ -873,6 +873,7 @@ export default function RiskDetailPage() {
                           onClick={() =>
                             router.push(`/compliance/control/${cr.control.id}`)
                           }
+                          className="h-8 w-8 text-slate-400 hover:text-slate-600"
                         >
                           <Shield className="h-4 w-4" />
                         </Button>
@@ -881,8 +882,9 @@ export default function RiskDetailPage() {
                             variant="ghost"
                             size="icon"
                             onClick={() => handleUnlinkControl(cr.id)}
+                            className="h-8 w-8 text-slate-400 hover:text-semantic-error"
                           >
-                            <Trash2 className="h-4 w-4 text-red-500" />
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </PermissionGate>
                       </div>

@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import {
   Collapsible,
@@ -20,7 +20,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { ChevronDown, ChevronLeft, Plus } from "lucide-react";
+import { ChevronDown, ArrowLeft, Plus } from "lucide-react";
 import { AddControlDialog } from "@/components/risks/add-control-dialog";
 import { ChooseControlDialog } from "@/components/risks/choose-control-dialog";
 import {
@@ -304,7 +304,7 @@ export default function RiskViewPage() {
       case "High": return "text-orange-600";
       case "Very high": return "text-red-600";
       case "Catastrophic": return "text-red-800";
-      default: return "text-gray-600";
+      default: return "text-slate-600";
     }
   };
 
@@ -312,7 +312,10 @@ export default function RiskViewPage() {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <div className="relative h-8 w-8">
+            <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+          </div>
         </div>
       </div>
     );
@@ -321,19 +324,17 @@ export default function RiskViewPage() {
   if (!risk) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Button variant="link" className="p-0 h-auto" onClick={() => router.back()}>
-            <ChevronLeft className="h-4 w-4 mr-1" />
-            Back
-          </Button>
-          <span>|</span>
-          <span className="font-medium text-primary">Risk View</span>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => router.back()}
+          className="h-8 w-8 text-slate-600 hover:text-slate-800"
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <div className="bg-white rounded-lg border border-slate-200 py-8 text-center text-slate-500">
+          Risk not found
         </div>
-        <Card>
-          <CardContent className="py-8 text-center text-muted-foreground">
-            Risk not found
-          </CardContent>
-        </Card>
       </div>
     );
   }
@@ -391,16 +392,19 @@ export default function RiskViewPage() {
     <div className="space-y-6">
       {/* Header with Back button */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm">
-          <Button variant="link" className="p-0 h-auto text-muted-foreground" onClick={() => router.back()}>
-            <ChevronLeft className="h-4 w-4 mr-1" />
-            Back
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.back()}
+            className="h-8 w-8 text-slate-600 hover:text-slate-800"
+          >
+            <ArrowLeft className="h-4 w-4" />
           </Button>
-          <span className="text-muted-foreground">|</span>
-          <span className="font-semibold text-primary text-lg">Risk View</span>
+          <h1 className="text-xl font-semibold text-slate-800">Risk View</h1>
           {/* Show current status badge */}
           <span className={cn(
-            "ml-2 px-2 py-1 rounded text-xs font-medium",
+            "px-2 py-1 rounded text-xs font-medium",
             currentStatus === "Open" && "bg-blue-100 text-blue-800",
             currentStatus === "In-Progress" && "bg-yellow-100 text-yellow-800",
             currentStatus === "Awaiting Approval" && "bg-purple-100 text-purple-800",
@@ -416,249 +420,227 @@ export default function RiskViewPage() {
       {/* Charts - 2x2 Grid Layout */}
       <div className="grid grid-cols-2 gap-6">
         {/* Risk Treatment - Donut Chart */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base text-primary font-semibold">Risk Treatment</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Card className="border shadow-sm">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Task Progress</CardTitle>
-              </CardHeader>
-              <CardContent className="pb-4">
-                <div className="flex items-center gap-4">
-                  <div className="relative w-32 h-32">
-                    <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                      <PieChart>
-                        <Pie
-                          data={[
-                            { name: "Completed", value: 0 },
-                            { name: "Remaining", value: 100 },
-                          ]}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={35}
-                          outerRadius={50}
-                          dataKey="value"
-                          startAngle={90}
-                          endAngle={-270}
-                        >
-                          <Cell fill="#3B82F6" />
-                          <Cell fill="#E5E7EB" />
-                        </Pie>
-                      </PieChart>
-                    </ResponsiveContainer>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <span className="text-xs text-muted-foreground">Total</span>
-                      <span className="text-lg font-bold">100%</span>
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-2 text-xs">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-blue-500 rounded-sm"></div>
-                      <span>Completed</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-gray-200 rounded-sm"></div>
-                      <span>Total</span>
-                    </div>
-                  </div>
+        <div className="bg-white rounded-lg border border-slate-200 p-4">
+          <h3 className="text-base text-primary font-semibold mb-3">Risk Treatment</h3>
+          <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+            <p className="text-sm font-medium text-slate-700 mb-3">Task Progress</p>
+            <div className="flex items-center gap-4">
+              <div className="relative w-32 h-32">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: "Completed", value: 0 },
+                        { name: "Remaining", value: 100 },
+                      ]}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={35}
+                      outerRadius={50}
+                      dataKey="value"
+                      startAngle={90}
+                      endAngle={-270}
+                    >
+                      <Cell fill="#3B82F6" />
+                      <Cell fill="#E2E8F0" />
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-xs text-slate-500">Total</span>
+                  <span className="text-lg font-bold text-slate-800">100%</span>
                 </div>
-              </CardContent>
-            </Card>
-          </CardContent>
-        </Card>
+              </div>
+              <div className="flex flex-col gap-2 text-xs">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-blue-500 rounded-sm"></div>
+                  <span className="text-slate-600">Completed</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-slate-200 rounded-sm"></div>
+                  <span className="text-slate-600">Total</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Budget Allocation Vs Used */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base text-primary font-semibold">Budget Allocation Vs Used</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-48 flex flex-col justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Allocated</p>
-                <p className="text-3xl font-bold">0</p>
+        <div className="bg-white rounded-lg border border-slate-200 p-4">
+          <h3 className="text-base text-primary font-semibold mb-3">Budget Allocation Vs Used</h3>
+          <div className="h-48 flex flex-col justify-between">
+            <div>
+              <p className="text-sm text-slate-500">Allocated</p>
+              <p className="text-3xl font-bold text-slate-800">0</p>
+            </div>
+            <div className="flex items-center gap-6 text-sm">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-yellow-500"></div>
+                <span className="text-slate-600">Used - 0</span>
               </div>
-              <div className="flex items-center gap-6 text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-yellow-500"></div>
-                  <span>Used - 0</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-gray-200"></div>
-                  <span>Remaining - 0</span>
-                </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-slate-200"></div>
+                <span className="text-slate-600">Remaining - 0</span>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Days Remaining - Bar Chart */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base text-primary font-semibold">Days Remaining</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-48 flex items-center justify-center">
-              <div className="w-full">
-                {/* Simple bar representation */}
-                <div className="flex items-end justify-center gap-1 h-32">
-                  {[0, 2, 4, 6].map((val, idx) => (
-                    <div
-                      key={idx}
-                      className={cn(
-                        "w-8 bg-blue-500 rounded-t",
-                        daysRemaining >= val ? "opacity-100" : "opacity-30"
-                      )}
-                      style={{ height: `${(val + 1) * 15}%` }}
-                    />
-                  ))}
-                </div>
-                <div className="flex justify-center gap-1 mt-2 text-xs text-muted-foreground">
-                  <span className="w-8 text-center">0</span>
-                  <span className="w-8 text-center">2</span>
-                  <span className="w-8 text-center">4</span>
-                  <span className="w-8 text-center">6</span>
-                </div>
+        <div className="bg-white rounded-lg border border-slate-200 p-4">
+          <h3 className="text-base text-primary font-semibold mb-3">Days Remaining</h3>
+          <div className="h-48 flex items-center justify-center">
+            <div className="w-full">
+              {/* Simple bar representation */}
+              <div className="flex items-end justify-center gap-1 h-32">
+                {[0, 2, 4, 6].map((val, idx) => (
+                  <div
+                    key={idx}
+                    className={cn(
+                      "w-8 bg-blue-500 rounded-t",
+                      daysRemaining >= val ? "opacity-100" : "opacity-30"
+                    )}
+                    style={{ height: `${(val + 1) * 15}%` }}
+                  />
+                ))}
+              </div>
+              <div className="flex justify-center gap-1 mt-2 text-xs text-slate-500">
+                <span className="w-8 text-center">0</span>
+                <span className="w-8 text-center">2</span>
+                <span className="w-8 text-center">4</span>
+                <span className="w-8 text-center">6</span>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Residual Risk Rating */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base text-primary font-semibold">Residual Risk Rating</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-48 flex flex-col justify-between">
-              {/* Gauge-like display */}
+        <div className="bg-white rounded-lg border border-slate-200 p-4">
+          <h3 className="text-base text-primary font-semibold mb-3">Residual Risk Rating</h3>
+          <div className="h-48 flex flex-col justify-between">
+            {/* Gauge-like display */}
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-full border-4 border-orange-500 flex items-center justify-center">
+                <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+              </div>
+              <span className={cn("text-lg font-semibold", getRiskRatingColor(risk.riskRating))}>
+                {risk.riskRating} (35.00)
+              </span>
+            </div>
+
+            {/* Planned Residual Risk Rating */}
+            <div className="border-t border-slate-100 pt-4">
+              <p className="text-sm text-primary font-medium mb-2">Planned Residual Risk Rating</p>
               <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-full border-4 border-orange-500 flex items-center justify-center">
-                  <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+                <div className="w-12 h-12 rounded-full border-4 border-orange-500 flex items-center justify-center">
+                  <div className="w-2 h-2 rounded-full bg-orange-500"></div>
                 </div>
-                <span className={cn("text-lg font-semibold", getRiskRatingColor(risk.riskRating))}>
+                <span className={cn("font-semibold", getRiskRatingColor(risk.riskRating))}>
                   {risk.riskRating} (35.00)
                 </span>
               </div>
-
-              {/* Planned Residual Risk Rating */}
-              <div className="border-t pt-4">
-                <p className="text-sm text-primary font-medium mb-2">Planned Residual Risk Rating</p>
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full border-4 border-orange-500 flex items-center justify-center">
-                    <div className="w-2 h-2 rounded-full bg-orange-500"></div>
-                  </div>
-                  <span className={cn("font-semibold", getRiskRatingColor(risk.riskRating))}>
-                    {risk.riskRating} (35.00)
-                  </span>
-                </div>
-              </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
       {/* Risk Details */}
-      <Card>
-        <CardContent className="py-6">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="font-bold text-lg text-primary">{risk.riskId}</span>
-            <span className="text-muted-foreground">|</span>
-            <span className="font-medium text-lg">{risk.name}</span>
-          </div>
-          <p className="text-muted-foreground mb-6">{risk.description}</p>
+      <div className="bg-white rounded-lg border border-slate-200 p-6">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="font-bold text-lg text-primary">{risk.riskId}</span>
+          <span className="text-slate-400">|</span>
+          <span className="font-medium text-lg text-slate-800">{risk.name}</span>
+        </div>
+        <p className="text-slate-500 mb-6">{risk.description}</p>
 
-          <div className="grid grid-cols-3 gap-6 mb-6">
-            <div>
-              <p className="text-sm text-muted-foreground">Risk Owner</p>
-              <p className="font-medium">{risk.owner?.fullName || "No items found"}</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Likelihood</p>
-              <p className="font-medium">{getLikelihoodLabel(risk.likelihood)}</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Impact</p>
-              <p className="font-medium">{getImpactLabel(risk.impact)}</p>
-            </div>
+        <div className="grid grid-cols-3 gap-6 mb-6">
+          <div>
+            <p className="text-sm text-slate-500">Risk Owner</p>
+            <p className="font-medium text-slate-800">{risk.owner?.fullName || "No items found"}</p>
           </div>
+          <div>
+            <p className="text-sm text-slate-500">Likelihood</p>
+            <p className="font-medium text-slate-800">{getLikelihoodLabel(risk.likelihood)}</p>
+          </div>
+          <div>
+            <p className="text-sm text-slate-500">Impact</p>
+            <p className="font-medium text-slate-800">{getImpactLabel(risk.impact)}</p>
+          </div>
+        </div>
 
-          <div className="grid grid-cols-3 gap-6 mb-6">
-            <div>
-              <p className="text-sm text-muted-foreground">Inherent Risk Rating</p>
-              <p className="font-medium">-</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Residual Risk Rating</p>
-              <span className={cn("font-medium", getRiskRatingColor(risk.riskRating))}>
-                {risk.riskRating}
-              </span>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Control Rating</p>
-              <p className="font-medium">-</p>
-            </div>
+        <div className="grid grid-cols-3 gap-6 mb-6">
+          <div>
+            <p className="text-sm text-slate-500">Inherent Risk Rating</p>
+            <p className="font-medium text-slate-800">-</p>
           </div>
+          <div>
+            <p className="text-sm text-slate-500">Residual Risk Rating</p>
+            <span className={cn("font-medium", getRiskRatingColor(risk.riskRating))}>
+              {risk.riskRating}
+            </span>
+          </div>
+          <div>
+            <p className="text-sm text-slate-500">Control Rating</p>
+            <p className="font-medium text-slate-800">-</p>
+          </div>
+        </div>
 
-          <div className="grid grid-cols-3 gap-6">
-            <div>
-              <p className="text-sm text-muted-foreground">Risk Response Strategy</p>
-              <p className="font-medium">{risk.responseStrategy || "Treat"}</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Assessment Date</p>
-              <p className="font-medium">{new Date().toLocaleDateString("en-GB")}</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Next Review Date</p>
-              <p className="font-medium">-</p>
-            </div>
+        <div className="grid grid-cols-3 gap-6">
+          <div>
+            <p className="text-sm text-slate-500">Risk Response Strategy</p>
+            <p className="font-medium text-slate-800">{risk.responseStrategy || "Treat"}</p>
           </div>
-        </CardContent>
-      </Card>
+          <div>
+            <p className="text-sm text-slate-500">Assessment Date</p>
+            <p className="font-medium text-slate-800">{new Date().toLocaleDateString("en-GB")}</p>
+          </div>
+          <div>
+            <p className="text-sm text-slate-500">Next Review Date</p>
+            <p className="font-medium text-slate-800">-</p>
+          </div>
+        </div>
+      </div>
 
       {/* Existing Controls */}
       <div>
-        <p className="text-muted-foreground mb-3">Existing Controls</p>
+        <p className="text-slate-500 mb-3">Existing Controls</p>
         <div className="space-y-2">
           {controls.map((control) => (
-            <Card key={control.id}>
+            <div key={control.id} className="bg-white rounded-lg border border-slate-200">
               <Collapsible
                 open={expandedControls.includes(control.id)}
                 onOpenChange={() => toggleControl(control.id)}
               >
                 <CollapsibleTrigger asChild>
-                  <Button variant="ghost" className="w-full justify-between p-4 h-auto hover:bg-transparent">
+                  <Button variant="ghost" className="w-full justify-between p-4 h-auto hover:bg-slate-50">
                     <span className="flex items-center gap-2">
                       <ChevronDown className={cn(
-                        "h-4 w-4 transition-transform text-muted-foreground",
+                        "h-4 w-4 transition-transform text-slate-400",
                         expandedControls.includes(control.id) && "rotate-180"
                       )} />
-                      <span>{control.controlId} - {control.name}</span>
+                      <span className="text-slate-800">{control.controlId} - {control.name}</span>
                     </span>
                   </Button>
                 </CollapsibleTrigger>
                 <CollapsibleContent>
-                  <CardContent className="pt-0 pb-4">
-                    <div className="border rounded-lg p-4 bg-gray-50">
-                      <p className="text-sm text-muted-foreground mb-4">{control.description}</p>
+                  <div className="px-4 pb-4">
+                    <div className="border border-slate-100 rounded-lg p-4 bg-slate-50">
+                      <p className="text-sm text-slate-500 mb-4">{control.description}</p>
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm font-medium">Department</p>
-                          <p className="text-sm font-medium">Assigned To:</p>
+                          <p className="text-sm font-medium text-slate-700">Department</p>
+                          <p className="text-sm font-medium text-slate-700">Assigned To:</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-2xl font-bold">{control.effectiveness}%</p>
-                          <p className="text-sm text-muted-foreground">partially effective</p>
+                          <p className="text-2xl font-bold text-slate-800">{control.effectiveness}%</p>
+                          <p className="text-sm text-slate-500">partially effective</p>
                         </div>
                       </div>
                     </div>
-                  </CardContent>
+                  </div>
                 </CollapsibleContent>
               </Collapsible>
-            </Card>
+            </div>
           ))}
         </div>
       </div>
@@ -680,37 +662,35 @@ export default function RiskViewPage() {
           )}
         </div>
         {plannedControls.length === 0 ? (
-          <Card>
-            <CardContent className="py-4 text-center text-muted-foreground">
-              No items found
-            </CardContent>
-          </Card>
+          <div className="bg-white rounded-lg border border-slate-200 py-4 text-center text-slate-500">
+            No items found
+          </div>
         ) : (
           <div className="space-y-2">
             {plannedControls.map((control) => (
-              <Card key={control.id}>
+              <div key={control.id} className="bg-white rounded-lg border border-slate-200">
                 <Collapsible
                   open={expandedPlannedControls.includes(control.id)}
                   onOpenChange={() => togglePlannedControl(control.id)}
                 >
                   <CollapsibleTrigger asChild>
-                    <Button variant="ghost" className="w-full justify-between p-4 h-auto hover:bg-transparent">
+                    <Button variant="ghost" className="w-full justify-between p-4 h-auto hover:bg-slate-50">
                       <span className="flex items-center gap-2">
                         <ChevronDown className={cn(
-                          "h-4 w-4 transition-transform text-muted-foreground",
+                          "h-4 w-4 transition-transform text-slate-400",
                           expandedPlannedControls.includes(control.id) && "rotate-180"
                         )} />
-                        <span>{control.controlId} - {control.name}</span>
+                        <span className="text-slate-800">{control.controlId} - {control.name}</span>
                       </span>
                     </Button>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
-                    <CardContent className="pt-0 pb-4">
-                      <div className="border rounded-lg p-4 bg-gray-50">
-                        <p className="text-sm text-muted-foreground mb-4">{control.description}</p>
+                    <div className="px-4 pb-4">
+                      <div className="border border-slate-100 rounded-lg p-4 bg-slate-50">
+                        <p className="text-sm text-slate-500 mb-4">{control.description}</p>
                         <div className="flex items-center gap-4 text-sm">
                           {control.domain && (
-                            <span className="bg-gray-100 px-2 py-1 rounded text-xs">
+                            <span className="bg-slate-100 px-2 py-1 rounded text-xs text-slate-600">
                               {control.domain}
                             </span>
                           )}
@@ -721,10 +701,10 @@ export default function RiskViewPage() {
                           )}
                         </div>
                       </div>
-                    </CardContent>
+                    </div>
                   </CollapsibleContent>
                 </Collapsible>
-              </Card>
+              </div>
             ))}
           </div>
         )}
@@ -746,17 +726,17 @@ export default function RiskViewPage() {
 
       {/* Success Dialog */}
       <AlertDialog open={successDialogOpen} onOpenChange={setSuccessDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Information</AlertDialogTitle>
-            <AlertDialogDescription>
+        <AlertDialogContent className="p-0 gap-0">
+          <AlertDialogHeader className="px-6 py-5 border-b border-slate-100">
+            <AlertDialogTitle className="text-lg font-semibold text-slate-800">Information</AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-500">
               {currentStatus === "Completed" && "Risk Approved Successfully!"}
               {currentStatus === "Awaiting Approval" && "Risk Submitted for Approval Successfully!"}
               {currentStatus === "Sent Back" && "Risk Sent Back Successfully!"}
               {!["Completed", "Awaiting Approval", "Sent Back"].includes(currentStatus) && "Action completed successfully!"}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="px-6 py-4 border-t border-slate-100">
             <AlertDialogAction onClick={() => setSuccessDialogOpen(false)}>
               OK
             </AlertDialogAction>
@@ -769,26 +749,26 @@ export default function RiskViewPage() {
         setShowSendBackDialog(open);
         if (!open) setSendBackComment("");
       }}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Send Back Risk Response</DialogTitle>
-            <DialogDescription>
+        <DialogContent className="sm:max-w-[500px] p-0 gap-0">
+          <DialogHeader className="px-6 py-5 border-b border-slate-100">
+            <DialogTitle className="text-lg font-semibold text-slate-800">Send Back Risk Response</DialogTitle>
+            <DialogDescription className="text-slate-500">
               Add a comment explaining why this risk response is being sent back
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="sendBackComment">Comment *</Label>
-              <textarea
+          <div className="px-6 py-5">
+            <div className="space-y-1.5">
+              <Label htmlFor="sendBackComment" className="text-sm font-medium text-slate-700">Comment *</Label>
+              <Textarea
                 id="sendBackComment"
-                className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className="min-h-[100px] w-full bg-white"
                 placeholder="Enter your feedback..."
                 value={sendBackComment}
                 onChange={(e) => setSendBackComment(e.target.value)}
               />
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="px-6 py-4 border-t border-slate-100">
             <Button variant="outline" onClick={() => setShowSendBackDialog(false)}>
               Cancel
             </Button>
@@ -801,24 +781,20 @@ export default function RiskViewPage() {
 
       {/* Show Comments Section if Sent Back */}
       {currentStatus === "Sent Back" && risk.activityLogs && risk.activityLogs.length > 0 && (
-        <Card className="border-red-200 bg-red-50">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base text-red-800">Reviewer Comments</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {risk.activityLogs.map((log) => (
-                <div key={log.id} className="bg-white p-3 rounded-md border">
-                  <p className="text-sm whitespace-pre-wrap">{log.description}</p>
-                  <div className="flex justify-between text-xs text-muted-foreground mt-2">
-                    <span>By: {log.actor}</span>
-                    <span>{new Date(log.createdAt).toLocaleDateString()}</span>
-                  </div>
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+          <h3 className="text-base font-semibold text-red-800 mb-3">Reviewer Comments</h3>
+          <div className="space-y-3">
+            {risk.activityLogs.map((log) => (
+              <div key={log.id} className="bg-white p-3 rounded-lg border border-slate-100">
+                <p className="text-sm text-slate-700 whitespace-pre-wrap">{log.description}</p>
+                <div className="flex justify-between text-xs text-slate-500 mt-2">
+                  <span>By: {log.actor}</span>
+                  <span>{new Date(log.createdAt).toLocaleDateString()}</span>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );

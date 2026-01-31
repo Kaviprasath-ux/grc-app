@@ -42,8 +42,11 @@ export default function RiskDashboardPage() {
 
   if (permissionsLoading || loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-grc-primary"></div>
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="relative h-8 w-8">
+          <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
+          <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+        </div>
       </div>
     );
   }
@@ -74,37 +77,45 @@ export default function RiskDashboardPage() {
   const riskByStatus = stats?.charts?.riskByStatus || [];
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* Risk by Status - Donut Chart (Top Left) */}
-      <DonutChart
-        title="Risk by Status"
-        data={riskByStatus}
-        centerLabel={totalRisks}
-      />
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold text-slate-800">Risk Dashboard</h1>
+      </div>
 
-      {/* Risk by Strategy - Horizontal Bar Chart (Top Right) */}
-      <HorizontalBarChart
-        title="Risk by Strategy"
-        data={riskByStrategyData}
-        yAxisDataKey="category"
-        bars={[{ dataKey: "value", fill: "#146FF4", name: "Risks" }]}
-      />
+      {/* Charts Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Risk by Status - Donut Chart (Top Left) */}
+        <DonutChart
+          title="Risk by Status"
+          data={riskByStatus}
+          centerLabel={totalRisks}
+        />
 
-      {/* Risk by Rating - Horizontal Bar Chart (Bottom Left) */}
-      <HorizontalBarChart
-        title="Risk by Rating"
-        data={riskByRatingData}
-        yAxisDataKey="category"
-        bars={[{ dataKey: "value", fill: "#146FF4", name: "Risks" }]}
-      />
+        {/* Risk by Strategy - Horizontal Bar Chart (Top Right) */}
+        <HorizontalBarChart
+          title="Risk by Strategy"
+          data={riskByStrategyData}
+          yAxisDataKey="category"
+          bars={[{ dataKey: "value", fill: "#146FF4", name: "Risks" }]}
+        />
 
-      {/* Risk by Category - Horizontal Bar Chart (Bottom Right) */}
-      <HorizontalBarChart
-        title="Risk by Category"
-        data={riskByCategoryData}
-        yAxisDataKey="category"
-        bars={[{ dataKey: "value", fill: "#146FF4", name: "Risks" }]}
-      />
+        {/* Risk by Rating - Horizontal Bar Chart (Bottom Left) */}
+        <HorizontalBarChart
+          title="Risk by Rating"
+          data={riskByRatingData}
+          yAxisDataKey="category"
+          bars={[{ dataKey: "value", fill: "#146FF4", name: "Risks" }]}
+        />
+
+        {/* Risk by Category - Horizontal Bar Chart (Bottom Right) */}
+        <HorizontalBarChart
+          title="Risk by Category"
+          data={riskByCategoryData}
+          yAxisDataKey="category"
+          bars={[{ dataKey: "value", fill: "#146FF4", name: "Risks" }]}
+        />
+      </div>
     </div>
   );
 }

@@ -141,7 +141,7 @@ export function DataGrid<TData, TValue>({
       <Table>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id} className="border-b border-slate-100 bg-slate-50/50">
+            <TableRow key={headerGroup.id} className="h-12 border-b border-slate-100 bg-slate-50/50 hover:bg-slate-50/50">
               {headerGroup.headers.map((header, index) => (
                 <TableHead
                   key={header.id}

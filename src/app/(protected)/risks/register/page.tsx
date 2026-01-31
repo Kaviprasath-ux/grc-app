@@ -27,13 +27,11 @@ import {
   Upload,
   Activity,
   Search,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
   ArrowLeft,
+  Eye,
 } from "lucide-react";
 import { RiskDetailDialog } from "@/components/risks/risk-detail-dialog";
+import { NewRiskWizard } from "@/components/risks/new-risk-wizard";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -155,6 +153,8 @@ function RiskRegisterContent() {
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [importLoading, setImportLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [newRiskDialogOpen, setNewRiskDialogOpen] = useState(false);
+  const [riskToEdit, setRiskToEdit] = useState<Risk | null>(null);
 
   const fetchRisks = useCallback(async () => {
     try {
@@ -253,7 +253,20 @@ function RiskRegisterContent() {
   };
 
   const handleEditRisk = (risk: Risk) => {
-    router.push(`/risks/register/${risk.id}/edit`);
+    setRiskToEdit(risk);
+    setNewRiskDialogOpen(true);
+  };
+
+  const handleNewRisk = () => {
+    setRiskToEdit(null);
+    setNewRiskDialogOpen(true);
+  };
+
+  const handleRiskWizardSuccess = () => {
+    setNewRiskDialogOpen(false);
+    setRiskToEdit(null);
+    fetchRisks();
+    fetchStats();
   };
 
   const handleDeleteClick = (risk: Risk) => {
@@ -318,7 +331,7 @@ function RiskRegisterContent() {
       accessorKey: "riskId",
       header: "Risk ID",
       cell: ({ row }) => (
-        <span className="font-medium text-grc-primary">{row.getValue("riskId")}</span>
+        <span className="font-medium text-slate-800">{row.getValue("riskId")}</span>
       ),
     },
     {
@@ -370,11 +383,22 @@ function RiskRegisterContent() {
     },
     {
       id: "actions",
-      header: "",
+      header: "Action",
       cell: ({ row }) => {
         const risk = row.original;
         return (
           <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleViewRisk(risk);
+              }}
+              className="h-8 w-8 text-slate-400 hover:text-slate-600"
+            >
+              <Eye className="h-4 w-4" />
+            </Button>
             {canEdit && (
               <Button
                 variant="ghost"
@@ -383,7 +407,7 @@ function RiskRegisterContent() {
                   e.stopPropagation();
                   handleEditRisk(risk);
                 }}
-                className="h-8 w-8"
+                className="h-8 w-8 text-slate-400 hover:text-slate-600"
               >
                 <Pencil className="h-4 w-4" />
               </Button>
@@ -396,7 +420,7 @@ function RiskRegisterContent() {
                   e.stopPropagation();
                   handleDeleteClick(risk);
                 }}
-                className="h-8 w-8 text-red-600 hover:text-red-700"
+                className="h-8 w-8 text-slate-400 hover:text-semantic-error"
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
@@ -411,7 +435,10 @@ function RiskRegisterContent() {
   if (permissionsLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="relative h-8 w-8">
+          <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
+          <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+        </div>
       </div>
     );
   }
@@ -436,143 +463,131 @@ function RiskRegisterContent() {
         </Button>
       )}
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => router.back()}
-            className="h-9 w-9"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div>
-            <div className="text-sm text-muted-foreground mb-1">
-              Risk Management
-            </div>
-            <h1 className="text-2xl font-semibold text-grc-text">Risk Register</h1>
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex items-center gap-2">
-          <PermissionGate resource="risk.register" action="create">
-            <Button onClick={() => router.push("/risks/register/new")} className="gap-2">
-              <Plus className="h-4 w-4" />
-              New Risk
-            </Button>
-          </PermissionGate>
-          <Button variant="outline" onClick={handleExport} className="gap-2">
-            <Download className="h-4 w-4" />
-            Export
-          </Button>
-          <PermissionGate resource="risk.register" action="create">
-            <Button variant="outline" onClick={() => setImportDialogOpen(true)} className="gap-2">
-              <Upload className="h-4 w-4" />
-              Import
-            </Button>
-          </PermissionGate>
-          <Button variant="outline" onClick={handleActivityLogOpen} className="gap-2">
-            <Activity className="h-4 w-4" />
-            Activity Log
-          </Button>
-        </div>
+      {/* Page Header */}
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold text-slate-800">Risk Register</h1>
       </div>
 
-      {/* Summary Cards */}
-      <div className="flex items-center gap-4">
-        <div className="bg-white rounded-lg border p-4 min-w-[100px] text-center">
-          <div className="text-2xl font-bold">{stats.totalRisks}</div>
-          <div className="text-sm text-muted-foreground">Total</div>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <p className="text-sm font-medium text-slate-500 mb-1">Total Risks</p>
+          <p className="text-3xl font-bold text-slate-800">{stats.totalRisks}</p>
         </div>
         <button
           onClick={() => handleStatusCardClick("Open")}
           className={cn(
-            "bg-white rounded-lg border p-4 min-w-[100px] text-center transition-all hover:border-red-300",
+            "bg-white rounded-xl border border-slate-200 p-5 text-left",
             statusFilter === "Open" && "border-red-500 ring-2 ring-red-200"
           )}
         >
-          <div className="text-2xl font-bold text-red-600">{stats.openRisks}</div>
-          <div className="text-sm text-muted-foreground">Open</div>
+          <p className="text-sm font-medium text-slate-500 mb-1">Open Risks</p>
+          <p className="text-3xl font-bold text-semantic-error">{stats.openRisks}</p>
         </button>
         <button
           onClick={() => handleStatusCardClick("In Progress")}
           className={cn(
-            "bg-white rounded-lg border p-4 min-w-[100px] text-center transition-all hover:border-amber-300",
+            "bg-white rounded-xl border border-slate-200 p-5 text-left",
             statusFilter === "In Progress" && "border-amber-500 ring-2 ring-amber-200"
           )}
         >
-          <div className="text-2xl font-bold text-amber-600">{stats.inProgressRisks}</div>
-          <div className="text-sm text-muted-foreground">In Progress</div>
+          <p className="text-sm font-medium text-slate-500 mb-1">In Progress</p>
+          <p className="text-3xl font-bold text-warning-600">{stats.inProgressRisks}</p>
         </button>
         <button
           onClick={() => handleStatusCardClick("Closed")}
           className={cn(
-            "bg-white rounded-lg border p-4 min-w-[100px] text-center transition-all hover:border-green-300",
+            "bg-white rounded-xl border border-slate-200 p-5 text-left",
             statusFilter === "Closed" && "border-green-500 ring-2 ring-green-200"
           )}
         >
-          <div className="text-2xl font-bold text-green-600">{stats.closedRisks}</div>
-          <div className="text-sm text-muted-foreground">Closed</div>
+          <p className="text-sm font-medium text-slate-500 mb-1">Closed Risks</p>
+          <p className="text-3xl font-bold text-semantic-success">{stats.closedRisks}</p>
         </button>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-4">
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search By ID, Name, Risk Rating"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
+      {/* Filters and Actions - All in one row */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search risks..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-10 w-[200px] bg-white"
+            />
+          </div>
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger className="w-[150px] bg-white">
+              <SelectValue placeholder="All Categories" />
+            </SelectTrigger>
+            <SelectContent position="popper" sideOffset={4}>
+              <SelectItem value="all">All Categories</SelectItem>
+              {categories.map((cat) => (
+                <SelectItem key={cat.id} value={cat.id}>
+                  {cat.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger className="w-[140px] bg-white">
+              <SelectValue placeholder="All Types" />
+            </SelectTrigger>
+            <SelectContent position="popper" sideOffset={4}>
+              <SelectItem value="all">All Types</SelectItem>
+              {riskTypes.map((type) => (
+                <SelectItem key={type.id} value={type.id}>
+                  {type.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={ratingFilter} onValueChange={setRatingFilter}>
+            <SelectTrigger className="w-[140px] bg-white">
+              <SelectValue placeholder="All Ratings" />
+            </SelectTrigger>
+            <SelectContent position="popper" sideOffset={4}>
+              <SelectItem value="all">All Ratings</SelectItem>
+              <SelectItem value="Catastrophic">Catastrophic</SelectItem>
+              <SelectItem value="Very high">Very high</SelectItem>
+              <SelectItem value="High">High</SelectItem>
+              <SelectItem value="Low Risk">Low Risk</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Category" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Category</SelectItem>
-            {categories.map((cat) => (
-              <SelectItem key={cat.id} value={cat.id}>
-                {cat.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Risk type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Risk type</SelectItem>
-            {riskTypes.map((type) => (
-              <SelectItem key={type.id} value={type.id}>
-                {type.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={ratingFilter} onValueChange={setRatingFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Risk Rating" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Risk Rating</SelectItem>
-            <SelectItem value="Catastrophic">Catastrophic</SelectItem>
-            <SelectItem value="Very high">Very high</SelectItem>
-            <SelectItem value="High">High</SelectItem>
-            <SelectItem value="Low Risk">Low Risk</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <PermissionGate resource="risk.register" action="create">
+            <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
+              <Upload className="h-4 w-4 mr-2" />
+              Import
+            </Button>
+          </PermissionGate>
+          <Button variant="outline" size="sm" onClick={handleExport}>
+            <Download className="h-4 w-4 mr-2" />
+            Export
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleActivityLogOpen}>
+            <Activity className="h-4 w-4 mr-2" />
+            Activity Log
+          </Button>
+          <PermissionGate resource="risk.register" action="create">
+            <Button size="sm" onClick={handleNewRisk}>
+              <Plus className="h-4 w-4 mr-2" />
+              New Risk
+            </Button>
+          </PermissionGate>
+        </div>
       </div>
 
       {/* Data Grid */}
       {loading ? (
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-grc-primary"></div>
+          <div className="relative h-8 w-8">
+            <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+          </div>
         </div>
       ) : (
         <DataGrid
@@ -580,8 +595,7 @@ function RiskRegisterContent() {
           data={isDepartmentRole && userDepartmentId
             ? risks.filter(r => r.department?.id === userDepartmentId)
             : risks}
-          onRowClick={handleViewRisk}
-          showColumnSelector
+          hideSearch
           pageSize={20}
         />
       )}
@@ -602,62 +616,72 @@ function RiskRegisterContent() {
         departments={departments}
       />
 
+      {/* New/Edit Risk Wizard Dialog */}
+      <NewRiskWizard
+        open={newRiskDialogOpen}
+        onOpenChange={setNewRiskDialogOpen}
+        onSuccess={handleRiskWizardSuccess}
+        categories={categories}
+        departments={departments}
+        editData={riskToEdit}
+      />
+
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
+        <AlertDialogContent className="p-0 gap-0">
+          <AlertDialogHeader className="px-6 py-5 border-b border-slate-100">
             <AlertDialogTitle>Confirmation</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this?
+              Are you sure you want to delete this risk?
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
-              className="bg-grc-primary hover:bg-grc-primary/90"
+              className="bg-red-600 hover:bg-red-700"
             >
-              OK
+              Delete
             </AlertDialogAction>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
       {/* Activity Log Dialog */}
       <Dialog open={activityLogOpen} onOpenChange={setActivityLogOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          <DialogHeader className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogTitle>Activity Log</DialogTitle>
+            <p className="text-sm text-slate-500">
+              Showing {activityLogs.length} of {activityLogsTotal} activities
+            </p>
           </DialogHeader>
-          <div className="text-sm text-muted-foreground mb-4">
-            Showing {activityLogs.length} of {activityLogsTotal} activities
-          </div>
-          <div className="flex-1 overflow-auto">
+          <div className="flex-1 overflow-y-auto">
             <table className="w-full">
-              <thead className="bg-gray-50 sticky top-0">
-                <tr>
-                  <th className="text-left p-3 font-medium">Date</th>
-                  <th className="text-left p-3 font-medium">Risk</th>
-                  <th className="text-left p-3 font-medium">Activity</th>
-                  <th className="text-left p-3 font-medium">Actor</th>
+              <thead className="bg-slate-50 sticky top-0">
+                <tr className="h-12">
+                  <th className="text-left px-6 py-3 font-medium text-slate-700">Date</th>
+                  <th className="text-left px-6 py-3 font-medium text-slate-700">Risk</th>
+                  <th className="text-left px-6 py-3 font-medium text-slate-700">Activity</th>
+                  <th className="text-left px-6 py-3 font-medium text-slate-700">Actor</th>
                 </tr>
               </thead>
-              <tbody className="divide-y">
+              <tbody className="divide-y divide-slate-100">
                 {activityLogs.map((log) => (
-                  <tr key={log.id} className="hover:bg-gray-50">
-                    <td className="p-3 text-sm">
+                  <tr key={log.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-6 py-3 text-sm text-slate-600">
                       {new Date(log.createdAt).toLocaleDateString("en-GB")}
                     </td>
-                    <td className="p-3 text-sm font-medium text-grc-primary">
+                    <td className="px-6 py-3 text-sm font-medium text-primary-600">
                       {log.risk.riskId}
                     </td>
-                    <td className="p-3 text-sm">{log.activity}</td>
-                    <td className="p-3 text-sm">{log.actor}</td>
+                    <td className="px-6 py-3 text-sm text-slate-600">{log.activity}</td>
+                    <td className="px-6 py-3 text-sm text-slate-600">{log.actor}</td>
                   </tr>
                 ))}
                 {activityLogs.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="p-8 text-center text-muted-foreground">
+                    <td colSpan={4} className="px-6 py-8 text-center text-slate-500">
                       No activity logs found
                     </td>
                   </tr>
@@ -675,223 +699,228 @@ function RiskRegisterContent() {
           setSelectedFile(null);
         }
       }}>
-        <DialogContent>
-          <DialogHeader>
+        <DialogContent className="sm:max-w-[700px] flex flex-col p-0 gap-0">
+          <DialogHeader className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogTitle>Import Risks</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Upload a CSV file to import risks. Download the template first to see the required format.
-            </p>
-            <div className="bg-muted/50 p-3 rounded-md text-sm">
-              <p className="font-medium mb-1">Required columns:</p>
-              <p className="text-muted-foreground">
-                Risk name, Risk description, Department, Risk sources, Risk category, Potential threat, Associated vulnerabilities
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            <div className="space-y-4">
+              <p className="text-sm text-slate-500">
+                Upload a CSV file to import risks. Download the template first to see the required format.
               </p>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={async () => {
-                  try {
-                    const response = await fetch("/api/risks/import");
-                    if (response.ok) {
-                      const blob = await response.blob();
-                      const url = window.URL.createObjectURL(blob);
-                      const a = document.createElement("a");
-                      a.href = url;
-                      a.download = "Risk-Import-Template.csv";
-                      document.body.appendChild(a);
-                      a.click();
-                      window.URL.revokeObjectURL(url);
-                      document.body.removeChild(a);
-                    } else {
+              <div className="bg-slate-50 p-3 rounded-md text-sm">
+                <p className="font-medium mb-1 text-slate-700">Required columns:</p>
+                <p className="text-slate-500">
+                  Risk name, Risk description, Department, Risk sources, Risk category, Potential threat, Associated vulnerabilities
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={async () => {
+                    try {
+                      const response = await fetch("/api/risks/import");
+                      if (response.ok) {
+                        const blob = await response.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = "Risk-Import-Template.csv";
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        document.body.removeChild(a);
+                      } else {
+                        toast({
+                          title: "Error",
+                          description: "Failed to download template",
+                          variant: "destructive",
+                        });
+                      }
+                    } catch (error) {
+                      console.error("Failed to download template:", error);
                       toast({
                         title: "Error",
                         description: "Failed to download template",
                         variant: "destructive",
                       });
                     }
-                  } catch (error) {
-                    console.error("Failed to download template:", error);
-                    toast({
-                      title: "Error",
-                      description: "Failed to download template",
-                      variant: "destructive",
-                    });
-                  }
-                }}
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Download Template
-              </Button>
-            </div>
-            <div className="border-2 border-dashed rounded-lg p-8 text-center">
-              <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-              {selectedFile ? (
-                <p className="text-sm font-medium text-grc-primary">{selectedFile.name}</p>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  Click to select a CSV file
-                </p>
-              )}
-              <input
-                type="file"
-                accept=".csv"
-                className="hidden"
-                id="risk-file-upload"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    setSelectedFile(file);
-                  }
-                }}
-              />
-              <Button
-                variant="outline"
-                className="mt-4"
-                onClick={() => document.getElementById("risk-file-upload")?.click()}
-              >
-                Select File
-              </Button>
-            </div>
-            {selectedFile && (
-              <div className="flex justify-end gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setSelectedFile(null)}
-                  disabled={importLoading}
-                >
-                  Clear
-                </Button>
-                <Button
-                  onClick={async () => {
-                    if (!selectedFile) return;
-
-                    setImportLoading(true);
-                    try {
-                      // Parse CSV file
-                      const text = await selectedFile.text();
-                      const lines = text.split(/\r?\n/).filter(line => line.trim());
-
-                      if (lines.length < 2) {
-                        toast({
-                          title: "Error",
-                          description: "File is empty or has no data rows",
-                          variant: "destructive",
-                        });
-                        setImportLoading(false);
-                        return;
-                      }
-
-                      // Parse headers
-                      const headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g, ""));
-
-                      // Parse data rows
-                      const data = [];
-                      for (let i = 1; i < lines.length; i++) {
-                        const line = lines[i];
-                        if (!line.trim()) continue;
-
-                        // Simple CSV parsing (handles basic quoted values)
-                        const values: string[] = [];
-                        let current = "";
-                        let inQuotes = false;
-
-                        for (let j = 0; j < line.length; j++) {
-                          const char = line[j];
-                          if (char === '"') {
-                            inQuotes = !inQuotes;
-                          } else if (char === "," && !inQuotes) {
-                            values.push(current.trim().replace(/^"|"$/g, ""));
-                            current = "";
-                          } else {
-                            current += char;
-                          }
-                        }
-                        values.push(current.trim().replace(/^"|"$/g, ""));
-
-                        // Create row object
-                        const row: Record<string, string> = {};
-                        headers.forEach((header, index) => {
-                          row[header] = values[index] || "";
-                        });
-                        data.push(row);
-                      }
-
-                      // Send to API
-                      const response = await fetch("/api/risks/import", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                          data,
-                          columns: headers,
-                          actor: session?.user?.name || "System",
-                        }),
-                      });
-
-                      const result = await response.json();
-
-                      if (!response.ok) {
-                        toast({
-                          title: "Import Failed",
-                          description: result.error || "Failed to import risks",
-                          variant: "destructive",
-                        });
-
-                        // Show detailed errors if available
-                        if (result.results?.errors?.length > 0) {
-                          const errorDetails = result.results.errors
-                            .slice(0, 3)
-                            .map((e: { row: number; error: string }) => `Row ${e.row}: ${e.error}`)
-                            .join("\n");
-                          console.error("Import errors:", result.results.errors);
-                          toast({
-                            title: "Error Details",
-                            description: errorDetails,
-                            variant: "destructive",
-                          });
-                        }
-                      } else {
-                        toast({
-                          title: "Import Successful",
-                          description: result.message,
-                        });
-
-                        // Close dialog and refresh data
-                        setImportDialogOpen(false);
-                        setSelectedFile(null);
-                        fetchRisks();
-                        fetchStats();
-                      }
-                    } catch (error) {
-                      console.error("Import error:", error);
-                      toast({
-                        title: "Error",
-                        description: "Failed to process file. Please check the format.",
-                        variant: "destructive",
-                      });
-                    } finally {
-                      setImportLoading(false);
-                    }
                   }}
-                  disabled={importLoading}
                 >
-                  {importLoading ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Importing...
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="h-4 w-4 mr-2" />
-                      Import
-                    </>
-                  )}
+                  <Download className="h-4 w-4 mr-2" />
+                  Download Template
                 </Button>
               </div>
-            )}
+              <div className="border-2 border-dashed border-slate-200 rounded-lg p-8 text-center">
+                <Upload className="h-8 w-8 mx-auto mb-2 text-slate-400" />
+                {selectedFile ? (
+                  <p className="text-sm font-medium text-primary-600">{selectedFile.name}</p>
+                ) : (
+                  <p className="text-sm text-slate-500">
+                    Click to select a CSV file
+                  </p>
+                )}
+                <input
+                  type="file"
+                  accept=".csv"
+                  className="hidden"
+                  id="risk-file-upload"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setSelectedFile(file);
+                    }
+                  }}
+                />
+                <Button
+                  variant="outline"
+                  className="mt-4"
+                  onClick={() => document.getElementById("risk-file-upload")?.click()}
+                >
+                  Select File
+                </Button>
+              </div>
+            </div>
           </div>
+          {selectedFile && (
+            <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+              <Button
+                variant="outline"
+                onClick={() => setSelectedFile(null)}
+                disabled={importLoading}
+              >
+                Clear
+              </Button>
+              <Button
+                onClick={async () => {
+                  if (!selectedFile) return;
+
+                  setImportLoading(true);
+                  try {
+                    // Parse CSV file
+                    const text = await selectedFile.text();
+                    const lines = text.split(/\r?\n/).filter(line => line.trim());
+
+                    if (lines.length < 2) {
+                      toast({
+                        title: "Error",
+                        description: "File is empty or has no data rows",
+                        variant: "destructive",
+                      });
+                      setImportLoading(false);
+                      return;
+                    }
+
+                    // Parse headers
+                    const headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g, ""));
+
+                    // Parse data rows
+                    const data = [];
+                    for (let i = 1; i < lines.length; i++) {
+                      const line = lines[i];
+                      if (!line.trim()) continue;
+
+                      // Simple CSV parsing (handles basic quoted values)
+                      const values: string[] = [];
+                      let current = "";
+                      let inQuotes = false;
+
+                      for (let j = 0; j < line.length; j++) {
+                        const char = line[j];
+                        if (char === '"') {
+                          inQuotes = !inQuotes;
+                        } else if (char === "," && !inQuotes) {
+                          values.push(current.trim().replace(/^"|"$/g, ""));
+                          current = "";
+                        } else {
+                          current += char;
+                        }
+                      }
+                      values.push(current.trim().replace(/^"|"$/g, ""));
+
+                      // Create row object
+                      const row: Record<string, string> = {};
+                      headers.forEach((header, index) => {
+                        row[header] = values[index] || "";
+                      });
+                      data.push(row);
+                    }
+
+                    // Send to API
+                    const response = await fetch("/api/risks/import", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        data,
+                        columns: headers,
+                        actor: session?.user?.name || "System",
+                      }),
+                    });
+
+                    const result = await response.json();
+
+                    if (!response.ok) {
+                      toast({
+                        title: "Import Failed",
+                        description: result.error || "Failed to import risks",
+                        variant: "destructive",
+                      });
+
+                      // Show detailed errors if available
+                      if (result.results?.errors?.length > 0) {
+                        const errorDetails = result.results.errors
+                          .slice(0, 3)
+                          .map((e: { row: number; error: string }) => `Row ${e.row}: ${e.error}`)
+                          .join("\n");
+                        console.error("Import errors:", result.results.errors);
+                        toast({
+                          title: "Error Details",
+                          description: errorDetails,
+                          variant: "destructive",
+                        });
+                      }
+                    } else {
+                      toast({
+                        title: "Import Successful",
+                        description: result.message,
+                      });
+
+                      // Close dialog and refresh data
+                      setImportDialogOpen(false);
+                      setSelectedFile(null);
+                      fetchRisks();
+                      fetchStats();
+                    }
+                  } catch (error) {
+                    console.error("Import error:", error);
+                    toast({
+                      title: "Error",
+                      description: "Failed to process file. Please check the format.",
+                      variant: "destructive",
+                    });
+                  } finally {
+                    setImportLoading(false);
+                  }
+                }}
+                disabled={importLoading}
+              >
+                {importLoading ? (
+                  <>
+                    <div className="relative h-4 w-4 mr-2">
+                      <div className="absolute inset-0 rounded-full border-2 border-white/30"></div>
+                      <div className="absolute inset-0 rounded-full border-2 border-white border-t-transparent animate-spin"></div>
+                    </div>
+                    Importing...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Import
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
@@ -902,8 +931,11 @@ export default function RiskRegisterPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-grc-primary"></div>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="relative h-8 w-8">
+            <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+          </div>
         </div>
       }
     >

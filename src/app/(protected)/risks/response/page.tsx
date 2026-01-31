@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { PageHeader } from "@/components/shared";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RiskRatingBadge } from "@/components/risks/risk-rating-badge";
 import {
@@ -22,8 +20,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { cn } from "@/lib/utils";
-import { X } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useUserRoles, usePermissions } from "@/hooks/usePermissions";
 import { PermissionGate } from "@/components/ui/permission-gate";
@@ -61,27 +66,27 @@ function ProgressBar({
   return (
     <div className="flex items-center gap-4">
       <div className="flex-1">
-        <div className="h-3 bg-gray-200 rounded-sm overflow-hidden">
+        <div className="h-3 bg-slate-200 rounded-sm overflow-hidden">
           <div
-            className="h-full bg-blue-500 transition-all duration-300"
+            className="h-full bg-primary-500 transition-all duration-300"
             style={{ width: `${percentage}%` }}
           />
         </div>
-        <div className="flex items-center gap-4 mt-2 text-xs">
+        <div className="flex items-center gap-4 mt-2 text-xs text-slate-600">
           <div className="flex items-center gap-1">
-            <div className="w-3 h-3 bg-gray-300"></div>
+            <div className="w-3 h-3 bg-slate-300"></div>
             <span>Total</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-3 h-3 bg-blue-500"></div>
+            <div className="w-3 h-3 bg-primary-500"></div>
             <span>{label}</span>
           </div>
         </div>
       </div>
       <div className="text-right whitespace-nowrap">
-        <span className="text-sm">{completed}/{total}</span>
+        <span className="text-sm text-slate-700">{completed}/{total}</span>
         <br />
-        <span className="text-sm text-muted-foreground">{label}</span>
+        <span className="text-sm text-slate-500">{label}</span>
       </div>
     </div>
   );
@@ -411,15 +416,17 @@ export default function RiskResponsePage() {
   // Display risks filtered by both strategy and progress status
   const displayRisks = filteredByProgress;
 
-  const clearStrategyFilter = () => setStrategyFilter("all");
-  const clearProgressFilter = () => setProgressFilter("all");
-
   if (loading) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Risk Response Strategy" description="Risk Management" />
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-bold text-slate-800">Risk Response Strategy</h1>
+        </div>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="relative h-8 w-8">
+            <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+          </div>
         </div>
       </div>
     );
@@ -427,110 +434,90 @@ export default function RiskResponsePage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Risk Response Strategy" description="Risk Management" />
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold text-slate-800">Risk Response Strategy</h1>
+      </div>
 
       {/* Summary Cards with Progress Bars */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Risk Response Strategy Card */}
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between mb-4">
-              <span className="font-medium">Risk Response Strategy</span>
-              <div className="flex items-center border rounded">
-                <Select value={strategyFilter} onValueChange={setStrategyFilter}>
-                  <SelectTrigger className="w-32 h-8 border-0">
-                    <SelectValue placeholder="Strategy" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="Transfer">Transfer</SelectItem>
-                    <SelectItem value="Avoid">Avoid</SelectItem>
-                    <SelectItem value="Accept">Accept</SelectItem>
-                    <SelectItem value="Treat">Treat</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 px-2 border-l"
-                  onClick={clearStrategyFilter}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-            <ProgressBar
-              total={strategyTotal}
-              completed={strategyClosed}
-              label="Closed"
-            />
-          </CardContent>
-        </Card>
+        <div className="bg-white rounded-lg border border-slate-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <span className="font-medium text-slate-700">Risk Response Strategy</span>
+            <Select value={strategyFilter} onValueChange={setStrategyFilter}>
+              <SelectTrigger className="w-32 h-8 bg-white">
+                <SelectValue placeholder="Strategy" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="Transfer">Transfer</SelectItem>
+                <SelectItem value="Avoid">Avoid</SelectItem>
+                <SelectItem value="Accept">Accept</SelectItem>
+                <SelectItem value="Treat">Treat</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <ProgressBar
+            total={strategyTotal}
+            completed={strategyClosed}
+            label="Closed"
+          />
+        </div>
 
         {/* Risk Response Progress Card */}
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between mb-4">
-              <span className="font-medium">Risk Response Progress</span>
-              <div className="flex items-center border rounded">
-                <Select value={progressFilter} onValueChange={setProgressFilter}>
-                  <SelectTrigger className="w-40 h-8 border-0">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
-                    {/* DepartmentReviewer only sees Awaiting Approval, Sent Back, and Completed */}
-                    {!isDepartmentReviewer && <SelectItem value="Open">Open</SelectItem>}
-                    {!isDepartmentReviewer && <SelectItem value="In-Progress">In-Progress</SelectItem>}
-                    <SelectItem value="Awaiting Approval">Awaiting Approval</SelectItem>
-                    <SelectItem value="Sent Back">Sent Back</SelectItem>
-                    <SelectItem value="Completed">Completed</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 px-2 border-l"
-                  onClick={clearProgressFilter}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-            <ProgressBar
-              total={progressTotal}
-              completed={progressCount}
-              label={getProgressLabel()}
-            />
-          </CardContent>
-        </Card>
+        <div className="bg-white rounded-lg border border-slate-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <span className="font-medium text-slate-700">Risk Response Progress</span>
+            <Select value={progressFilter} onValueChange={setProgressFilter}>
+              <SelectTrigger className="w-40 h-8 bg-white">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                {/* DepartmentReviewer only sees Awaiting Approval, Sent Back, and Completed */}
+                {!isDepartmentReviewer && <SelectItem value="Open">Open</SelectItem>}
+                {!isDepartmentReviewer && <SelectItem value="In-Progress">In-Progress</SelectItem>}
+                <SelectItem value="Awaiting Approval">Awaiting Approval</SelectItem>
+                <SelectItem value="Sent Back">Sent Back</SelectItem>
+                <SelectItem value="Completed">Completed</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <ProgressBar
+            total={progressTotal}
+            completed={progressCount}
+            label={getProgressLabel()}
+          />
+        </div>
       </div>
 
-      {/* Risk List */}
-      <div className="space-y-3">
-        {displayRisks.length === 0 ? (
-          <Card>
-            <CardContent className="py-8 text-center text-muted-foreground">
-              No risks found
-            </CardContent>
-          </Card>
-        ) : (
-          displayRisks.map((risk) => (
-            <Card key={risk.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="py-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-primary">{risk.riskId}</span>
-                      <span className="text-muted-foreground">|</span>
-                      <span className="font-medium">{risk.name}</span>
-                    </div>
-                  </div>
-                  {getActionButtons(risk)}
-                </div>
-                <div className="grid grid-cols-4 gap-4 mt-3 text-sm">
-                  <div>
-                    <p className="text-muted-foreground">Residual Risk Rating</p>
+      {/* Risk List Table */}
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="h-12 bg-slate-50 hover:bg-slate-50">
+              <TableHead className="text-slate-700 font-medium">Risk ID</TableHead>
+              <TableHead className="text-slate-700 font-medium">Risk Name</TableHead>
+              <TableHead className="text-slate-700 font-medium">Residual Risk Rating</TableHead>
+              <TableHead className="text-slate-700 font-medium">Risk Priority</TableHead>
+              <TableHead className="text-slate-700 font-medium">Risk Due Date</TableHead>
+              <TableHead className="text-slate-700 font-medium">Response Status</TableHead>
+              <TableHead className="text-slate-700 font-medium">Action</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {displayRisks.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-8 text-slate-500">
+                  No risks found
+                </TableCell>
+              </TableRow>
+            ) : (
+              displayRisks.map((risk) => (
+                <TableRow key={risk.id} className="hover:bg-slate-50 transition-colors">
+                  <TableCell className="py-3 font-medium text-primary-600">{risk.riskId}</TableCell>
+                  <TableCell className="py-3 text-slate-800">{risk.name}</TableCell>
+                  <TableCell className="py-3">
                     <span className={cn(
                       "text-sm font-medium",
                       risk.riskRating === "Low Risk" && "text-green-600",
@@ -540,42 +527,45 @@ export default function RiskResponsePage() {
                     )}>
                       {risk.riskRating || "-"}
                     </span>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Risk Priority</p>
-                    <p className="font-medium"></p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Risk DueDate</p>
-                    <p className="font-medium">
-                      {risk.treatmentDueDate
-                        ? new Date(risk.treatmentDueDate).toLocaleDateString("en-GB")
-                        : ""}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Response Status</p>
-                    <span className="text-sm font-medium">
+                  </TableCell>
+                  <TableCell className="py-3 text-slate-600">-</TableCell>
+                  <TableCell className="py-3 text-slate-600">
+                    {risk.treatmentDueDate
+                      ? new Date(risk.treatmentDueDate).toLocaleDateString("en-GB")
+                      : "-"}
+                  </TableCell>
+                  <TableCell className="py-3">
+                    <span className={cn(
+                      "px-2 py-1 rounded text-xs font-medium",
+                      (risk.responseStatus || "Open") === "Completed" && "bg-green-100 text-green-800",
+                      (risk.responseStatus || "Open") === "Awaiting Approval" && "bg-purple-100 text-purple-800",
+                      (risk.responseStatus || "Open") === "In-Progress" && "bg-yellow-100 text-yellow-800",
+                      (risk.responseStatus || "Open") === "Sent Back" && "bg-red-100 text-red-800",
+                      (risk.responseStatus || "Open") === "Open" && "bg-blue-100 text-blue-800"
+                    )}>
                       {risk.responseStatus || "Open"}
                     </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))
-        )}
+                  </TableCell>
+                  <TableCell className="py-3">
+                    {getActionButtons(risk)}
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
       </div>
 
       {/* Success Dialog */}
       <AlertDialog open={successDialogOpen} onOpenChange={setSuccessDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
+        <AlertDialogContent className="p-0 gap-0">
+          <AlertDialogHeader className="px-6 py-5 border-b border-slate-100">
             <AlertDialogTitle>Information</AlertDialogTitle>
             <AlertDialogDescription>
               {successMessage}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <AlertDialogAction onClick={() => setSuccessDialogOpen(false)}>
               OK
             </AlertDialogAction>

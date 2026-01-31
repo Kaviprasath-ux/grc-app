@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Plus, Pencil, Trash2, ArrowLeft, Search } from "lucide-react";
-import { PageHeader, DataGrid } from "@/components/shared";
+import { DataGrid } from "@/components/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -952,9 +952,9 @@ export default function RiskSettingsCategoryPage() {
       id: "actions",
       header: "Action",
       cell: ({ row }: { row: { original: VulnerabilityCategory } }) => (
-        <div className="flex gap-2">
+        <div className="flex items-center gap-1">
           {canEdit && (
-            <Button variant="ghost" size="icon" onClick={() => {
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => {
               setActiveTab("tab1");
               setSelectedItem(row.original);
               setVulnCatForm({ name: row.original.name });
@@ -964,7 +964,7 @@ export default function RiskSettingsCategoryPage() {
             </Button>
           )}
           {canDelete && (
-            <Button variant="ghost" size="icon" className="text-destructive" onClick={() => {
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" onClick={() => {
               setActiveTab("tab1");
               setSelectedItem(row.original);
               setIsDeleteOpen(true);
@@ -983,9 +983,9 @@ export default function RiskSettingsCategoryPage() {
       id: "actions",
       header: "Action",
       cell: ({ row }: { row: { original: ThreatCategory } }) => (
-        <div className="flex gap-2">
+        <div className="flex items-center gap-1">
           {canEdit && (
-            <Button variant="ghost" size="icon" onClick={() => {
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => {
               setActiveTab("tab2");
               setSelectedItem(row.original);
               setThreatCatForm({ name: row.original.name });
@@ -995,7 +995,7 @@ export default function RiskSettingsCategoryPage() {
             </Button>
           )}
           {canDelete && (
-            <Button variant="ghost" size="icon" className="text-destructive" onClick={() => {
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" onClick={() => {
               setActiveTab("tab2");
               setSelectedItem(row.original);
               setIsDeleteOpen(true);
@@ -1015,9 +1015,9 @@ export default function RiskSettingsCategoryPage() {
       id: "actions",
       header: "Action",
       cell: ({ row }: { row: { original: ControlStrength } }) => (
-        <div className="flex gap-2">
+        <div className="flex items-center gap-1">
           {canEdit && (
-            <Button variant="ghost" size="icon" onClick={() => {
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => {
               setSelectedItem(row.original);
               setControlStrengthForm({ name: row.original.name, score: row.original.score });
               setIsEditOpen(true);
@@ -1026,7 +1026,7 @@ export default function RiskSettingsCategoryPage() {
             </Button>
           )}
           {canDelete && (
-            <Button variant="ghost" size="icon" className="text-destructive" onClick={() => {
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" onClick={() => {
               setSelectedItem(row.original);
               setIsDeleteOpen(true);
             }}>
@@ -1047,8 +1047,8 @@ export default function RiskSettingsCategoryPage() {
       id: "actions",
       header: "Action",
       cell: ({ row }) => (
-        <div className="flex gap-2">
-          <Button variant="ghost" size="icon" onClick={() => {
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => {
             setSelectedItem(row.original);
             setLikelihoodForm({
               title: row.original.title,
@@ -1060,7 +1060,7 @@ export default function RiskSettingsCategoryPage() {
           }}>
             <Pencil className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="text-destructive" onClick={() => {
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" onClick={() => {
             setSelectedItem(row.original);
             setIsDeleteOpen(true);
           }}>
@@ -1080,8 +1080,8 @@ export default function RiskSettingsCategoryPage() {
       id: "actions",
       header: "Action",
       cell: ({ row }) => (
-        <div className="flex gap-2">
-          <Button variant="ghost" size="icon" onClick={() => {
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => {
             setSelectedItem(row.original);
             setThreatForm({
               name: row.original.name,
@@ -1092,7 +1092,7 @@ export default function RiskSettingsCategoryPage() {
           }}>
             <Pencil className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="text-destructive" onClick={() => {
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" onClick={() => {
             setSelectedItem(row.original);
             setIsDeleteOpen(true);
           }}>
@@ -1112,8 +1112,8 @@ export default function RiskSettingsCategoryPage() {
       id: "actions",
       header: "Action",
       cell: ({ row }) => (
-        <div className="flex gap-2">
-          <Button variant="ghost" size="icon" onClick={() => {
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => {
             setSelectedItem(row.original);
             setVulnerabilityForm({
               name: row.original.name,
@@ -1124,7 +1124,7 @@ export default function RiskSettingsCategoryPage() {
           }}>
             <Pencil className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="text-destructive" onClick={() => {
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" onClick={() => {
             setSelectedItem(row.original);
             setIsDeleteOpen(true);
           }}>
@@ -1150,8 +1150,8 @@ export default function RiskSettingsCategoryPage() {
       id: "actions",
       header: "Action",
       cell: ({ row }) => (
-        <div className="flex gap-2">
-          <Button variant="ghost" size="icon" onClick={() => {
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => {
             setSelectedItem(row.original);
             setRiskCategoryForm({
               name: row.original.name,
@@ -1161,7 +1161,7 @@ export default function RiskSettingsCategoryPage() {
           }}>
             <Pencil className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="text-destructive" onClick={() => {
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" onClick={() => {
             setSelectedItem(row.original);
             setIsDeleteOpen(true);
           }}>
@@ -1178,15 +1178,15 @@ export default function RiskSettingsCategoryPage() {
       id: "actions",
       header: "Action",
       cell: ({ row }) => (
-        <div className="flex gap-2">
-          <Button variant="ghost" size="icon" onClick={() => {
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => {
             setSelectedItem(row.original);
             setImpactCatForm({ name: row.original.name });
             setIsEditOpen(true);
           }}>
             <Pencil className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="text-destructive" onClick={() => {
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" onClick={() => {
             setSelectedItem(row.original);
             setIsDeleteOpen(true);
           }}>
@@ -1205,8 +1205,8 @@ export default function RiskSettingsCategoryPage() {
       id: "actions",
       header: "Action",
       cell: ({ row }) => (
-        <div className="flex gap-2">
-          <Button variant="ghost" size="icon" onClick={() => {
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => {
             setSelectedItem(row.original);
             setImpactRatingForm({
               name: row.original.name,
@@ -1217,7 +1217,7 @@ export default function RiskSettingsCategoryPage() {
           }}>
             <Pencil className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="text-destructive" onClick={() => {
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" onClick={() => {
             setSelectedItem(row.original);
             setIsDeleteOpen(true);
           }}>
@@ -1235,15 +1235,15 @@ export default function RiskSettingsCategoryPage() {
       id: "actions",
       header: "Action",
       cell: ({ row }) => (
-        <div className="flex gap-2">
-          <Button variant="ghost" size="icon" onClick={() => {
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => {
             setSelectedItem(row.original);
             setVulnRatingForm({ label: row.original.label, score: row.original.score });
             setIsEditOpen(true);
           }}>
             <Pencil className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="text-destructive" onClick={() => {
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" onClick={() => {
             setSelectedItem(row.original);
             setIsDeleteOpen(true);
           }}>
@@ -1260,15 +1260,15 @@ export default function RiskSettingsCategoryPage() {
       id: "actions",
       header: "Action",
       cell: ({ row }) => (
-        <div className="flex gap-2">
-          <Button variant="ghost" size="icon" onClick={() => {
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => {
             setSelectedItem(row.original);
             setRiskSubCatForm({ type: row.original.type });
             setIsEditOpen(true);
           }}>
             <Pencil className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="text-destructive" onClick={() => {
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" onClick={() => {
             setSelectedItem(row.original);
             setIsDeleteOpen(true);
           }}>
@@ -1298,8 +1298,8 @@ export default function RiskSettingsCategoryPage() {
       id: "actions",
       header: "Action",
       cell: ({ row }) => (
-        <div className="flex gap-2">
-          <Button variant="ghost" size="icon" onClick={() => {
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => {
             setSelectedItem(row.original);
             setRiskRangeForm({
               title: row.original.title,
@@ -1313,7 +1313,7 @@ export default function RiskSettingsCategoryPage() {
           }}>
             <Pencil className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="text-destructive" onClick={() => {
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-semantic-error" onClick={() => {
             setSelectedItem(row.original);
             setIsDeleteOpen(true);
           }}>
@@ -1329,15 +1329,14 @@ export default function RiskSettingsCategoryPage() {
   // Show loading state while permissions or data is loading
   if (permissionsLoading || loading) {
     return (
-      <div className="space-y-6 p-6">
+      <div className="space-y-6">
         <div className="flex items-center gap-4">
           <Link href="/risks/settings">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-600 hover:text-slate-800">
+              <ArrowLeft className="h-4 w-4" />
             </Button>
           </Link>
-          <PageHeader title={title} />
+          <h1 className="text-2xl font-bold text-slate-800">{title}</h1>
         </div>
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -1352,23 +1351,22 @@ export default function RiskSettingsCategoryPage() {
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Link href="/risks/settings">
-          <Button variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-600 hover:text-slate-800">
+            <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
-        <PageHeader title={title} />
+        <h1 className="text-2xl font-bold text-slate-800">{title}</h1>
       </div>
 
       {/* Category: Vulnerability Category + Threat Category sections */}
       {category === "category" && (
         <div className="space-y-8">
           {/* Vulnerability Category Section */}
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
+          <div>
+            <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold">Vulnerability Category</h3>
               <Button onClick={() => { setActiveTab("tab1"); setVulnCatForm({ name: "" }); setIsAddOpen(true); }}>
                 <Plus className="h-4 w-4 mr-2" />Add Vulnerability Category
@@ -1382,8 +1380,8 @@ export default function RiskSettingsCategoryPage() {
           </div>
 
           {/* Threat Category Section */}
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
+          <div>
+            <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold">Threat Category</h3>
               <Button onClick={() => { setActiveTab("tab2"); setThreatCatForm({ name: "" }); setIsAddOpen(true); }}>
                 <Plus className="h-4 w-4 mr-2" />Add Threat Category
@@ -1400,8 +1398,8 @@ export default function RiskSettingsCategoryPage() {
 
       {/* Control Strength */}
       {category === "control-strength" && (
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
+        <div>
+          <div className="flex justify-between items-center mb-4">
             <div className="relative w-64">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Search..." className="pl-8" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
@@ -1416,8 +1414,8 @@ export default function RiskSettingsCategoryPage() {
 
       {/* Likelihood */}
       {category === "likelihood" && (
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
+        <div>
+          <div className="flex justify-between items-center mb-4">
             <div className="relative w-64">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Search..." className="pl-8" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
@@ -1432,8 +1430,8 @@ export default function RiskSettingsCategoryPage() {
 
       {/* Threat */}
       {category === "threat" && (
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
+        <div>
+          <div className="flex justify-between items-center mb-4">
             <div className="relative w-64">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Search..." className="pl-8" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
@@ -1448,8 +1446,8 @@ export default function RiskSettingsCategoryPage() {
 
       {/* Vulnerability */}
       {category === "vulnerability" && (
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
+        <div>
+          <div className="flex justify-between items-center mb-4">
             <div className="relative w-64">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Search..." className="pl-8" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
@@ -1466,9 +1464,9 @@ export default function RiskSettingsCategoryPage() {
       {category === "risk-methodology" && (
         <div className="space-y-6">
           {/* Score Configuration */}
-          <div className="space-y-4">
-            <h3 className="font-semibold">Risk Score Configuration</h3>
-            <div className="grid grid-cols-2 gap-4">
+          <div>
+            <h3 className="font-semibold mb-4">Risk Score Configuration</h3>
+            <div className="grid grid-cols-2 gap-4 mb-4">
               <div className="flex items-center justify-between p-3 border rounded">
                 <span>Use Likelihood</span>
                 <Switch
@@ -1510,8 +1508,8 @@ export default function RiskSettingsCategoryPage() {
           </div>
 
           {/* Risk Ranges */}
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
+          <div>
+            <div className="flex justify-between items-center mb-4">
               <h3 className="font-semibold">Risk Ranges</h3>
               <Button onClick={() => { setRiskRangeForm({ title: "", color: "#000000", lowRange: 0, highRange: 0, timelineDays: 0, description: "" }); setIsAddOpen(true); }}>
                 <Plus className="h-4 w-4 mr-2" />Add Risk Range
@@ -1524,8 +1522,8 @@ export default function RiskSettingsCategoryPage() {
 
       {/* Risk Category */}
       {category === "risk-category" && (
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
+        <div>
+          <div className="flex justify-between items-center mb-4">
             <div className="relative w-64">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Search..." className="pl-8" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
@@ -1540,15 +1538,15 @@ export default function RiskSettingsCategoryPage() {
 
       {/* Impact */}
       {category === "impact" && (
-        <div className="space-y-4">
+        <div>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList>
               <TabsTrigger value="tab1">Impact Categories</TabsTrigger>
               <TabsTrigger value="tab2">Impact Ratings</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="tab1" className="space-y-4">
-              <div className="flex justify-between items-center">
+            <TabsContent value="tab1" className="mt-6">
+              <div className="flex justify-between items-center mb-4">
                 <div className="relative w-64">
                   <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input placeholder="Search..." className="pl-8" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
@@ -1560,8 +1558,8 @@ export default function RiskSettingsCategoryPage() {
               <DataGrid columns={impactCatColumns} data={impactCategories.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()))} hideSearch={true} />
             </TabsContent>
 
-            <TabsContent value="tab2" className="space-y-4">
-              <div className="flex justify-between items-center">
+            <TabsContent value="tab2" className="mt-6">
+              <div className="flex justify-between items-center mb-4">
                 <div className="relative w-64">
                   <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input placeholder="Search..." className="pl-8" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
@@ -1578,8 +1576,8 @@ export default function RiskSettingsCategoryPage() {
 
       {/* Vulnerability Rating */}
       {category === "vulnerability-rating" && (
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
+        <div>
+          <div className="flex justify-between items-center mb-4">
             <div className="relative w-64">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Search..." className="pl-8" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
@@ -1594,8 +1592,8 @@ export default function RiskSettingsCategoryPage() {
 
       {/* Risk Sub Category */}
       {category === "risk-sub-category" && (
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
+        <div>
+          <div className="flex justify-between items-center mb-4">
             <div className="relative w-64">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Search..." className="pl-8" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
@@ -1610,9 +1608,9 @@ export default function RiskSettingsCategoryPage() {
 
       {/* Add Dialog */}
       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0">
+          <DialogHeader className="px-6 py-5 border-b border-slate-100">
+            <DialogTitle className="text-lg font-semibold text-slate-800">
               {category === "category" && activeTab === "tab1" && "Add Vulnerability Category"}
               {category === "category" && activeTab === "tab2" && "Add Threat Category"}
               {category === "control-strength" && "Add Control Strength"}
@@ -1627,65 +1625,65 @@ export default function RiskSettingsCategoryPage() {
               {category === "risk-sub-category" && "Add Risk Sub Category"}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="px-6 py-6 space-y-5">
             {category === "category" && activeTab === "tab1" && (
-              <div className="space-y-2">
-                <Label>Label</Label>
-                <Input value={vulnCatForm.name} onChange={(e) => setVulnCatForm({ name: e.target.value })} placeholder="Enter vulnerability category" />
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium text-slate-700">Label *</Label>
+                <Input value={vulnCatForm.name} onChange={(e) => setVulnCatForm({ name: e.target.value })} placeholder="Enter vulnerability category" className="bg-white" />
               </div>
             )}
             {category === "category" && activeTab === "tab2" && (
-              <div className="space-y-2">
-                <Label>Label</Label>
-                <Input value={threatCatForm.name} onChange={(e) => setThreatCatForm({ name: e.target.value })} placeholder="Enter threat category" />
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium text-slate-700">Label *</Label>
+                <Input value={threatCatForm.name} onChange={(e) => setThreatCatForm({ name: e.target.value })} placeholder="Enter threat category" className="bg-white" />
               </div>
             )}
             {category === "control-strength" && (
               <>
-                <div className="space-y-2">
-                  <Label>Control Strength Name</Label>
-                  <Input value={controlStrengthForm.name} onChange={(e) => setControlStrengthForm({ ...controlStrengthForm, name: e.target.value })} placeholder="Enter control strength name" />
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Control Strength Name *</Label>
+                  <Input value={controlStrengthForm.name} onChange={(e) => setControlStrengthForm({ ...controlStrengthForm, name: e.target.value })} placeholder="Enter control strength name" className="bg-white" />
                 </div>
-                <div className="space-y-2">
-                  <Label>Score</Label>
-                  <Input type="number" value={controlStrengthForm.score} onChange={(e) => setControlStrengthForm({ ...controlStrengthForm, score: parseInt(e.target.value) || 0 })} placeholder="Enter score" />
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Score *</Label>
+                  <Input type="number" value={controlStrengthForm.score} onChange={(e) => setControlStrengthForm({ ...controlStrengthForm, score: parseInt(e.target.value) || 0 })} placeholder="Enter score" className="bg-white" />
                 </div>
               </>
             )}
             {category === "likelihood" && (
               <>
-                <div className="space-y-2">
-                  <Label>Title</Label>
-                  <Input value={likelihoodForm.title} onChange={(e) => setLikelihoodForm({ ...likelihoodForm, title: e.target.value })} />
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Title *</Label>
+                  <Input value={likelihoodForm.title} onChange={(e) => setLikelihoodForm({ ...likelihoodForm, title: e.target.value })} className="bg-white" />
                 </div>
-                <div className="space-y-2">
-                  <Label>Score</Label>
-                  <Input type="number" value={likelihoodForm.score} onChange={(e) => setLikelihoodForm({ ...likelihoodForm, score: parseInt(e.target.value) || 0 })} />
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Score *</Label>
+                  <Input type="number" value={likelihoodForm.score} onChange={(e) => setLikelihoodForm({ ...likelihoodForm, score: parseInt(e.target.value) || 0 })} className="bg-white" />
                 </div>
-                <div className="space-y-2">
-                  <Label>Time Frame</Label>
-                  <Input value={likelihoodForm.timeFrame} onChange={(e) => setLikelihoodForm({ ...likelihoodForm, timeFrame: e.target.value })} />
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Time Frame</Label>
+                  <Input value={likelihoodForm.timeFrame} onChange={(e) => setLikelihoodForm({ ...likelihoodForm, timeFrame: e.target.value })} className="bg-white" />
                 </div>
-                <div className="space-y-2">
-                  <Label>Probability</Label>
-                  <Input value={likelihoodForm.probability} onChange={(e) => setLikelihoodForm({ ...likelihoodForm, probability: e.target.value })} />
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Probability</Label>
+                  <Input value={likelihoodForm.probability} onChange={(e) => setLikelihoodForm({ ...likelihoodForm, probability: e.target.value })} className="bg-white" />
                 </div>
               </>
             )}
             {category === "threat" && (
               <>
-                <div className="space-y-2">
-                  <Label>Name</Label>
-                  <Input value={threatForm.name} onChange={(e) => setThreatForm({ ...threatForm, name: e.target.value })} />
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Name *</Label>
+                  <Input value={threatForm.name} onChange={(e) => setThreatForm({ ...threatForm, name: e.target.value })} className="bg-white" />
                 </div>
-                <div className="space-y-2">
-                  <Label>Description</Label>
-                  <Input value={threatForm.description} onChange={(e) => setThreatForm({ ...threatForm, description: e.target.value })} />
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Description</Label>
+                  <Input value={threatForm.description} onChange={(e) => setThreatForm({ ...threatForm, description: e.target.value })} className="bg-white" />
                 </div>
-                <div className="space-y-2">
-                  <Label>Category</Label>
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Category</Label>
                   <Select value={threatForm.categoryId} onValueChange={(val) => setThreatForm({ ...threatForm, categoryId: val })}>
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full bg-white">
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1699,18 +1697,18 @@ export default function RiskSettingsCategoryPage() {
             )}
             {category === "vulnerability" && (
               <>
-                <div className="space-y-2">
-                  <Label>Name</Label>
-                  <Input value={vulnerabilityForm.name} onChange={(e) => setVulnerabilityForm({ ...vulnerabilityForm, name: e.target.value })} />
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Name *</Label>
+                  <Input value={vulnerabilityForm.name} onChange={(e) => setVulnerabilityForm({ ...vulnerabilityForm, name: e.target.value })} className="bg-white" />
                 </div>
-                <div className="space-y-2">
-                  <Label>Description</Label>
-                  <Input value={vulnerabilityForm.description} onChange={(e) => setVulnerabilityForm({ ...vulnerabilityForm, description: e.target.value })} />
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Description</Label>
+                  <Input value={vulnerabilityForm.description} onChange={(e) => setVulnerabilityForm({ ...vulnerabilityForm, description: e.target.value })} className="bg-white" />
                 </div>
-                <div className="space-y-2">
-                  <Label>Category</Label>
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Category</Label>
                   <Select value={vulnerabilityForm.categoryId} onValueChange={(val) => setVulnerabilityForm({ ...vulnerabilityForm, categoryId: val })}>
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full bg-white">
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1724,44 +1722,44 @@ export default function RiskSettingsCategoryPage() {
             )}
             {category === "risk-methodology" && (
               <>
-                <div className="space-y-2">
-                  <Label>Title</Label>
-                  <Input value={riskRangeForm.title} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, title: e.target.value })} />
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Title *</Label>
+                  <Input value={riskRangeForm.title} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, title: e.target.value })} className="bg-white" />
                 </div>
-                <div className="space-y-2">
-                  <Label>Color</Label>
-                  <Input type="color" value={riskRangeForm.color} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, color: e.target.value })} />
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Color</Label>
+                  <Input type="color" value={riskRangeForm.color} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, color: e.target.value })} className="bg-white h-10" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Low Range</Label>
-                    <Input type="number" value={riskRangeForm.lowRange} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, lowRange: parseInt(e.target.value) || 0 })} />
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium text-slate-700">Low Range</Label>
+                    <Input type="number" value={riskRangeForm.lowRange} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, lowRange: parseInt(e.target.value) || 0 })} className="bg-white" />
                   </div>
-                  <div className="space-y-2">
-                    <Label>High Range</Label>
-                    <Input type="number" value={riskRangeForm.highRange} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, highRange: parseInt(e.target.value) || 0 })} />
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium text-slate-700">High Range</Label>
+                    <Input type="number" value={riskRangeForm.highRange} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, highRange: parseInt(e.target.value) || 0 })} className="bg-white" />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>Timeline (Days)</Label>
-                  <Input type="number" value={riskRangeForm.timelineDays} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, timelineDays: parseInt(e.target.value) || 0 })} />
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Timeline (Days)</Label>
+                  <Input type="number" value={riskRangeForm.timelineDays} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, timelineDays: parseInt(e.target.value) || 0 })} className="bg-white" />
                 </div>
-                <div className="space-y-2">
-                  <Label>Description</Label>
-                  <Input value={riskRangeForm.description} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, description: e.target.value })} />
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Description</Label>
+                  <Input value={riskRangeForm.description} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, description: e.target.value })} className="bg-white" />
                 </div>
               </>
             )}
             {category === "risk-category" && (
               <>
-                <div className="space-y-2">
-                  <Label>Type</Label>
-                  <Input value={riskCategoryForm.name} onChange={(e) => setRiskCategoryForm({ ...riskCategoryForm, name: e.target.value })} />
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Type *</Label>
+                  <Input value={riskCategoryForm.name} onChange={(e) => setRiskCategoryForm({ ...riskCategoryForm, name: e.target.value })} className="bg-white" />
                 </div>
-                <div className="space-y-2">
-                  <Label>Status</Label>
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Status</Label>
                   <Select value={riskCategoryForm.status} onValueChange={(val) => setRiskCategoryForm({ ...riskCategoryForm, status: val })}>
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full bg-white">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -1773,47 +1771,47 @@ export default function RiskSettingsCategoryPage() {
               </>
             )}
             {category === "impact" && activeTab === "tab1" && (
-              <div className="space-y-2">
-                <Label>Name</Label>
-                <Input value={impactCatForm.name} onChange={(e) => setImpactCatForm({ name: e.target.value })} />
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium text-slate-700">Name *</Label>
+                <Input value={impactCatForm.name} onChange={(e) => setImpactCatForm({ name: e.target.value })} className="bg-white" />
               </div>
             )}
             {category === "impact" && activeTab === "tab2" && (
               <>
-                <div className="space-y-2">
-                  <Label>Name</Label>
-                  <Input value={impactRatingForm.name} onChange={(e) => setImpactRatingForm({ ...impactRatingForm, name: e.target.value })} />
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Name *</Label>
+                  <Input value={impactRatingForm.name} onChange={(e) => setImpactRatingForm({ ...impactRatingForm, name: e.target.value })} className="bg-white" />
                 </div>
-                <div className="space-y-2">
-                  <Label>Score</Label>
-                  <Input type="number" value={impactRatingForm.score} onChange={(e) => setImpactRatingForm({ ...impactRatingForm, score: parseInt(e.target.value) || 0 })} />
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Score *</Label>
+                  <Input type="number" value={impactRatingForm.score} onChange={(e) => setImpactRatingForm({ ...impactRatingForm, score: parseInt(e.target.value) || 0 })} className="bg-white" />
                 </div>
-                <div className="space-y-2">
-                  <Label>Description</Label>
-                  <Input value={impactRatingForm.description} onChange={(e) => setImpactRatingForm({ ...impactRatingForm, description: e.target.value })} />
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Description</Label>
+                  <Input value={impactRatingForm.description} onChange={(e) => setImpactRatingForm({ ...impactRatingForm, description: e.target.value })} className="bg-white" />
                 </div>
               </>
             )}
             {category === "vulnerability-rating" && (
               <>
-                <div className="space-y-2">
-                  <Label>Label</Label>
-                  <Input value={vulnRatingForm.label} onChange={(e) => setVulnRatingForm({ ...vulnRatingForm, label: e.target.value })} />
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Label *</Label>
+                  <Input value={vulnRatingForm.label} onChange={(e) => setVulnRatingForm({ ...vulnRatingForm, label: e.target.value })} className="bg-white" />
                 </div>
-                <div className="space-y-2">
-                  <Label>Score</Label>
-                  <Input type="number" value={vulnRatingForm.score} onChange={(e) => setVulnRatingForm({ ...vulnRatingForm, score: parseInt(e.target.value) || 0 })} />
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Score *</Label>
+                  <Input type="number" value={vulnRatingForm.score} onChange={(e) => setVulnRatingForm({ ...vulnRatingForm, score: parseInt(e.target.value) || 0 })} className="bg-white" />
                 </div>
               </>
             )}
             {category === "risk-sub-category" && (
-              <div className="space-y-2">
-                <Label>Type</Label>
-                <Input value={riskSubCatForm.type} onChange={(e) => setRiskSubCatForm({ type: e.target.value })} />
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium text-slate-700">Type *</Label>
+                <Input value={riskSubCatForm.type} onChange={(e) => setRiskSubCatForm({ type: e.target.value })} className="bg-white" />
               </div>
             )}
           </div>
-          <DialogFooter>
+          <DialogFooter className="px-6 py-4 border-t border-slate-100">
             <Button variant="outline" onClick={() => setIsAddOpen(false)}>Cancel</Button>
             <Button onClick={() => {
               if (category === "category" && activeTab === "tab1") handleAddVulnCat();
@@ -1835,9 +1833,9 @@ export default function RiskSettingsCategoryPage() {
 
       {/* Edit Dialog */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0">
+          <DialogHeader className="px-6 py-5 border-b border-slate-100">
+            <DialogTitle className="text-lg font-semibold text-slate-800">
               {category === "category" && activeTab === "tab1" && "Edit Vulnerability Category"}
               {category === "category" && activeTab === "tab2" && "Edit Threat Category"}
               {category === "control-strength" && "Edit Control Strength"}
@@ -1852,65 +1850,65 @@ export default function RiskSettingsCategoryPage() {
               {category === "risk-sub-category" && "Edit Risk Sub Category"}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="px-6 py-6 space-y-5">
             {category === "category" && activeTab === "tab1" && (
-              <div className="space-y-2">
-                <Label>Label</Label>
-                <Input value={vulnCatForm.name} onChange={(e) => setVulnCatForm({ name: e.target.value })} />
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium text-slate-700">Label *</Label>
+                <Input value={vulnCatForm.name} onChange={(e) => setVulnCatForm({ name: e.target.value })} className="bg-white" />
               </div>
             )}
             {category === "category" && activeTab === "tab2" && (
-              <div className="space-y-2">
-                <Label>Label</Label>
-                <Input value={threatCatForm.name} onChange={(e) => setThreatCatForm({ name: e.target.value })} />
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium text-slate-700">Label *</Label>
+                <Input value={threatCatForm.name} onChange={(e) => setThreatCatForm({ name: e.target.value })} className="bg-white" />
               </div>
             )}
             {category === "control-strength" && (
               <>
-                <div className="space-y-2">
-                  <Label>Control Strength Name</Label>
-                  <Input value={controlStrengthForm.name} onChange={(e) => setControlStrengthForm({ ...controlStrengthForm, name: e.target.value })} />
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Control Strength Name *</Label>
+                  <Input value={controlStrengthForm.name} onChange={(e) => setControlStrengthForm({ ...controlStrengthForm, name: e.target.value })} className="bg-white" />
                 </div>
-                <div className="space-y-2">
-                  <Label>Score</Label>
-                  <Input type="number" value={controlStrengthForm.score} onChange={(e) => setControlStrengthForm({ ...controlStrengthForm, score: parseInt(e.target.value) || 0 })} />
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Score *</Label>
+                  <Input type="number" value={controlStrengthForm.score} onChange={(e) => setControlStrengthForm({ ...controlStrengthForm, score: parseInt(e.target.value) || 0 })} className="bg-white" />
                 </div>
               </>
             )}
             {category === "likelihood" && (
               <>
-                <div className="space-y-2">
-                  <Label>Title</Label>
-                  <Input value={likelihoodForm.title} onChange={(e) => setLikelihoodForm({ ...likelihoodForm, title: e.target.value })} />
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Title *</Label>
+                  <Input value={likelihoodForm.title} onChange={(e) => setLikelihoodForm({ ...likelihoodForm, title: e.target.value })} className="bg-white" />
                 </div>
-                <div className="space-y-2">
-                  <Label>Score</Label>
-                  <Input type="number" value={likelihoodForm.score} onChange={(e) => setLikelihoodForm({ ...likelihoodForm, score: parseInt(e.target.value) || 0 })} />
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Score *</Label>
+                  <Input type="number" value={likelihoodForm.score} onChange={(e) => setLikelihoodForm({ ...likelihoodForm, score: parseInt(e.target.value) || 0 })} className="bg-white" />
                 </div>
-                <div className="space-y-2">
-                  <Label>Time Frame</Label>
-                  <Input value={likelihoodForm.timeFrame} onChange={(e) => setLikelihoodForm({ ...likelihoodForm, timeFrame: e.target.value })} />
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Time Frame</Label>
+                  <Input value={likelihoodForm.timeFrame} onChange={(e) => setLikelihoodForm({ ...likelihoodForm, timeFrame: e.target.value })} className="bg-white" />
                 </div>
-                <div className="space-y-2">
-                  <Label>Probability</Label>
-                  <Input value={likelihoodForm.probability} onChange={(e) => setLikelihoodForm({ ...likelihoodForm, probability: e.target.value })} />
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Probability</Label>
+                  <Input value={likelihoodForm.probability} onChange={(e) => setLikelihoodForm({ ...likelihoodForm, probability: e.target.value })} className="bg-white" />
                 </div>
               </>
             )}
             {category === "threat" && (
               <>
-                <div className="space-y-2">
-                  <Label>Name</Label>
-                  <Input value={threatForm.name} onChange={(e) => setThreatForm({ ...threatForm, name: e.target.value })} />
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Name *</Label>
+                  <Input value={threatForm.name} onChange={(e) => setThreatForm({ ...threatForm, name: e.target.value })} className="bg-white" />
                 </div>
-                <div className="space-y-2">
-                  <Label>Description</Label>
-                  <Input value={threatForm.description} onChange={(e) => setThreatForm({ ...threatForm, description: e.target.value })} />
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Description</Label>
+                  <Input value={threatForm.description} onChange={(e) => setThreatForm({ ...threatForm, description: e.target.value })} className="bg-white" />
                 </div>
-                <div className="space-y-2">
-                  <Label>Category</Label>
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Category</Label>
                   <Select value={threatForm.categoryId} onValueChange={(val) => setThreatForm({ ...threatForm, categoryId: val })}>
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full bg-white">
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1924,18 +1922,18 @@ export default function RiskSettingsCategoryPage() {
             )}
             {category === "vulnerability" && (
               <>
-                <div className="space-y-2">
-                  <Label>Name</Label>
-                  <Input value={vulnerabilityForm.name} onChange={(e) => setVulnerabilityForm({ ...vulnerabilityForm, name: e.target.value })} />
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Name *</Label>
+                  <Input value={vulnerabilityForm.name} onChange={(e) => setVulnerabilityForm({ ...vulnerabilityForm, name: e.target.value })} className="bg-white" />
                 </div>
-                <div className="space-y-2">
-                  <Label>Description</Label>
-                  <Input value={vulnerabilityForm.description} onChange={(e) => setVulnerabilityForm({ ...vulnerabilityForm, description: e.target.value })} />
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Description</Label>
+                  <Input value={vulnerabilityForm.description} onChange={(e) => setVulnerabilityForm({ ...vulnerabilityForm, description: e.target.value })} className="bg-white" />
                 </div>
-                <div className="space-y-2">
-                  <Label>Category</Label>
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Category</Label>
                   <Select value={vulnerabilityForm.categoryId} onValueChange={(val) => setVulnerabilityForm({ ...vulnerabilityForm, categoryId: val })}>
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full bg-white">
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1949,44 +1947,44 @@ export default function RiskSettingsCategoryPage() {
             )}
             {category === "risk-methodology" && (
               <>
-                <div className="space-y-2">
-                  <Label>Title</Label>
-                  <Input value={riskRangeForm.title} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, title: e.target.value })} />
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Title *</Label>
+                  <Input value={riskRangeForm.title} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, title: e.target.value })} className="bg-white" />
                 </div>
-                <div className="space-y-2">
-                  <Label>Color</Label>
-                  <Input type="color" value={riskRangeForm.color} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, color: e.target.value })} />
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Color</Label>
+                  <Input type="color" value={riskRangeForm.color} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, color: e.target.value })} className="bg-white h-10" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Low Range</Label>
-                    <Input type="number" value={riskRangeForm.lowRange} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, lowRange: parseInt(e.target.value) || 0 })} />
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium text-slate-700">Low Range</Label>
+                    <Input type="number" value={riskRangeForm.lowRange} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, lowRange: parseInt(e.target.value) || 0 })} className="bg-white" />
                   </div>
-                  <div className="space-y-2">
-                    <Label>High Range</Label>
-                    <Input type="number" value={riskRangeForm.highRange} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, highRange: parseInt(e.target.value) || 0 })} />
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium text-slate-700">High Range</Label>
+                    <Input type="number" value={riskRangeForm.highRange} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, highRange: parseInt(e.target.value) || 0 })} className="bg-white" />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>Timeline (Days)</Label>
-                  <Input type="number" value={riskRangeForm.timelineDays} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, timelineDays: parseInt(e.target.value) || 0 })} />
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Timeline (Days)</Label>
+                  <Input type="number" value={riskRangeForm.timelineDays} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, timelineDays: parseInt(e.target.value) || 0 })} className="bg-white" />
                 </div>
-                <div className="space-y-2">
-                  <Label>Description</Label>
-                  <Input value={riskRangeForm.description} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, description: e.target.value })} />
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Description</Label>
+                  <Input value={riskRangeForm.description} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, description: e.target.value })} className="bg-white" />
                 </div>
               </>
             )}
             {category === "risk-category" && (
               <>
-                <div className="space-y-2">
-                  <Label>Type</Label>
-                  <Input value={riskCategoryForm.name} onChange={(e) => setRiskCategoryForm({ ...riskCategoryForm, name: e.target.value })} />
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Type *</Label>
+                  <Input value={riskCategoryForm.name} onChange={(e) => setRiskCategoryForm({ ...riskCategoryForm, name: e.target.value })} className="bg-white" />
                 </div>
-                <div className="space-y-2">
-                  <Label>Status</Label>
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Status</Label>
                   <Select value={riskCategoryForm.status} onValueChange={(val) => setRiskCategoryForm({ ...riskCategoryForm, status: val })}>
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full bg-white">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -1998,47 +1996,47 @@ export default function RiskSettingsCategoryPage() {
               </>
             )}
             {category === "impact" && activeTab === "tab1" && (
-              <div className="space-y-2">
-                <Label>Name</Label>
-                <Input value={impactCatForm.name} onChange={(e) => setImpactCatForm({ name: e.target.value })} />
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium text-slate-700">Name *</Label>
+                <Input value={impactCatForm.name} onChange={(e) => setImpactCatForm({ name: e.target.value })} className="bg-white" />
               </div>
             )}
             {category === "impact" && activeTab === "tab2" && (
               <>
-                <div className="space-y-2">
-                  <Label>Name</Label>
-                  <Input value={impactRatingForm.name} onChange={(e) => setImpactRatingForm({ ...impactRatingForm, name: e.target.value })} />
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Name *</Label>
+                  <Input value={impactRatingForm.name} onChange={(e) => setImpactRatingForm({ ...impactRatingForm, name: e.target.value })} className="bg-white" />
                 </div>
-                <div className="space-y-2">
-                  <Label>Score</Label>
-                  <Input type="number" value={impactRatingForm.score} onChange={(e) => setImpactRatingForm({ ...impactRatingForm, score: parseInt(e.target.value) || 0 })} />
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Score *</Label>
+                  <Input type="number" value={impactRatingForm.score} onChange={(e) => setImpactRatingForm({ ...impactRatingForm, score: parseInt(e.target.value) || 0 })} className="bg-white" />
                 </div>
-                <div className="space-y-2">
-                  <Label>Description</Label>
-                  <Input value={impactRatingForm.description} onChange={(e) => setImpactRatingForm({ ...impactRatingForm, description: e.target.value })} />
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Description</Label>
+                  <Input value={impactRatingForm.description} onChange={(e) => setImpactRatingForm({ ...impactRatingForm, description: e.target.value })} className="bg-white" />
                 </div>
               </>
             )}
             {category === "vulnerability-rating" && (
               <>
-                <div className="space-y-2">
-                  <Label>Label</Label>
-                  <Input value={vulnRatingForm.label} onChange={(e) => setVulnRatingForm({ ...vulnRatingForm, label: e.target.value })} />
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Label *</Label>
+                  <Input value={vulnRatingForm.label} onChange={(e) => setVulnRatingForm({ ...vulnRatingForm, label: e.target.value })} className="bg-white" />
                 </div>
-                <div className="space-y-2">
-                  <Label>Score</Label>
-                  <Input type="number" value={vulnRatingForm.score} onChange={(e) => setVulnRatingForm({ ...vulnRatingForm, score: parseInt(e.target.value) || 0 })} />
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Score *</Label>
+                  <Input type="number" value={vulnRatingForm.score} onChange={(e) => setVulnRatingForm({ ...vulnRatingForm, score: parseInt(e.target.value) || 0 })} className="bg-white" />
                 </div>
               </>
             )}
             {category === "risk-sub-category" && (
-              <div className="space-y-2">
-                <Label>Type</Label>
-                <Input value={riskSubCatForm.type} onChange={(e) => setRiskSubCatForm({ type: e.target.value })} />
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium text-slate-700">Type *</Label>
+                <Input value={riskSubCatForm.type} onChange={(e) => setRiskSubCatForm({ type: e.target.value })} className="bg-white" />
               </div>
             )}
           </div>
-          <DialogFooter>
+          <DialogFooter className="px-6 py-4 border-t border-slate-100">
             <Button variant="outline" onClick={() => setIsEditOpen(false)}>Cancel</Button>
             <Button onClick={() => {
               if (category === "category" && activeTab === "tab1") handleEditVulnCat();
@@ -2060,14 +2058,14 @@ export default function RiskSettingsCategoryPage() {
 
       {/* Delete Dialog */}
       <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirm Delete</DialogTitle>
-            <DialogDescription>
+        <DialogContent className="sm:max-w-[500px] p-0 gap-0">
+          <DialogHeader className="px-6 py-5 border-b border-slate-100">
+            <DialogTitle className="text-lg font-semibold text-slate-800">Confirm Delete</DialogTitle>
+            <DialogDescription className="text-sm text-slate-500 mt-1">
               Are you sure you want to delete this item? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
+          <DialogFooter className="px-6 py-4 border-t border-slate-100">
             <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>Cancel</Button>
             <Button variant="destructive" onClick={() => {
               if (category === "category" && activeTab === "tab1") handleDeleteVulnCat();

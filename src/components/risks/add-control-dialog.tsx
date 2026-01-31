@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { Plus } from "lucide-react";
+import { Plus, Check } from "lucide-react";
 
 interface AddControlDialogProps {
   open: boolean;
@@ -160,42 +160,62 @@ export function AddControlDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Control Details</DialogTitle>
+      <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+        <DialogHeader className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <DialogTitle className="text-lg font-semibold text-slate-800">Control Details</DialogTitle>
         </DialogHeader>
 
         {/* Step Indicator */}
-        <div className="flex items-center justify-center gap-4 py-4">
-          <StepIndicator
-            number={1}
-            label="Control Information"
-            active={step === 1}
-            completed={step > 1}
-          />
-          <StepIndicator
-            number={2}
-            label="Assignments & Details"
-            active={step === 2}
-            completed={step > 2}
-          />
-          <StepIndicator
-            number={3}
-            label="Review informations"
-            active={step === 3}
-            completed={false}
-          />
+        <div className="flex-shrink-0 flex items-start justify-center px-6 py-4 border-b border-slate-100">
+          {[
+            { id: 1, name: "Control Info" },
+            { id: 2, name: "Assignments" },
+            { id: 3, name: "Review" },
+          ].map((stepItem, index) => (
+            <div key={stepItem.id} className="flex items-start">
+              <div className="flex flex-col items-center w-28">
+                <div
+                  className={cn(
+                    "w-9 h-9 rounded-full flex items-center justify-center text-sm font-medium transition-colors",
+                    step > stepItem.id
+                      ? "bg-success text-white"
+                      : step === stepItem.id
+                      ? "bg-primary text-white"
+                      : "bg-slate-100 text-slate-400 border border-slate-200"
+                  )}
+                >
+                  {step > stepItem.id ? <Check className="h-4 w-4" /> : stepItem.id}
+                </div>
+                <span
+                  className={cn(
+                    "mt-2 text-xs font-medium text-center",
+                    step >= stepItem.id ? "text-slate-700" : "text-slate-400"
+                  )}
+                >
+                  {stepItem.name}
+                </span>
+              </div>
+              {index < 2 && (
+                <div
+                  className={cn(
+                    "w-12 h-0.5 mt-[18px] -mx-4 transition-colors",
+                    step > stepItem.id ? "bg-success" : "bg-slate-200"
+                  )}
+                />
+              )}
+            </div>
+          ))}
         </div>
 
         {/* Step Content */}
-        <div className="space-y-4 py-4">
+        <div className="flex-1 overflow-y-auto px-6 py-5">
           {step === 1 && (
-            <>
-              <div>
-                <label className="text-sm font-medium">Control domain</label>
-                <div className="flex gap-2 mt-1">
+            <div className="space-y-5">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-slate-700">Control domain</label>
+                <div className="flex gap-2">
                   <Select value={domain} onValueChange={setDomain}>
-                    <SelectTrigger className="flex-1">
+                    <SelectTrigger className="flex-1 bg-white">
                       <SelectValue placeholder="Select Domain" />
                     </SelectTrigger>
                     <SelectContent>
@@ -212,20 +232,20 @@ export function AddControlDialog({
                 </div>
               </div>
 
-              <div>
-                <label className="text-sm font-medium">Control name</label>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-slate-700">Control name</label>
                 <Input
-                  className="mt-1"
+                  className="bg-white"
                   placeholder="Enter Control Name"
                   value={controlName}
                   onChange={(e) => setControlName(e.target.value)}
                 />
               </div>
 
-              <div>
-                <label className="text-sm font-medium">Description</label>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-slate-700">Description</label>
                 <Textarea
-                  className="mt-1"
+                  className="bg-white"
                   placeholder="Enter Description"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
@@ -233,20 +253,20 @@ export function AddControlDialog({
                 />
               </div>
 
-              <div>
-                <label className="text-sm font-medium">Control question</label>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-slate-700">Control question</label>
                 <Input
-                  className="mt-1"
+                  className="bg-white"
                   placeholder="Enter Control Question"
                   value={controlQuestion}
                   onChange={(e) => setControlQuestion(e.target.value)}
                 />
               </div>
 
-              <div>
-                <label className="text-sm font-medium">Function Grouping</label>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-slate-700">Function Grouping</label>
                 <Select value={functionalGrouping} onValueChange={setFunctionalGrouping}>
-                  <SelectTrigger className="mt-1">
+                  <SelectTrigger className="w-full bg-white">
                     <SelectValue placeholder="Select Functional Grouping" />
                   </SelectTrigger>
                   <SelectContent>
@@ -258,35 +278,35 @@ export function AddControlDialog({
                   </SelectContent>
                 </Select>
               </div>
-            </>
+            </div>
           )}
 
           {step === 2 && (
-            <>
-              <div>
-                <label className="text-sm font-medium">Department</label>
+            <div className="space-y-5">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-slate-700">Department</label>
                 <Input
-                  className="mt-1"
+                  className="bg-white"
                   placeholder="Enter Department"
                   value={department}
                   onChange={(e) => setDepartment(e.target.value)}
                 />
               </div>
 
-              <div>
-                <label className="text-sm font-medium">Assigned To</label>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-slate-700">Assigned To</label>
                 <Input
-                  className="mt-1"
+                  className="bg-white"
                   placeholder="Enter Assignee"
                   value={assignedTo}
                   onChange={(e) => setAssignedTo(e.target.value)}
                 />
               </div>
 
-              <div>
-                <label className="text-sm font-medium">Effectiveness Target (%)</label>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-slate-700">Effectiveness Target (%)</label>
                 <Input
-                  className="mt-1"
+                  className="bg-white"
                   type="number"
                   placeholder="Enter Target Effectiveness"
                   value={effectivenessTarget}
@@ -295,41 +315,41 @@ export function AddControlDialog({
                   max={100}
                 />
               </div>
-            </>
+            </div>
           )}
 
           {step === 3 && (
-            <div className="space-y-4">
+            <div className="space-y-5">
               <h4 className="font-medium text-primary">Review Control Information</h4>
 
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="text-muted-foreground">Domain</p>
-                  <p className="font-medium">{domain || "-"}</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-3 bg-slate-50 rounded-lg">
+                  <p className="text-xs text-slate-500 uppercase">Domain</p>
+                  <p className="font-medium text-slate-800">{domain || "-"}</p>
                 </div>
-                <div>
-                  <p className="text-muted-foreground">Function Grouping</p>
-                  <p className="font-medium">{functionalGrouping || "-"}</p>
+                <div className="p-3 bg-slate-50 rounded-lg">
+                  <p className="text-xs text-slate-500 uppercase">Function Grouping</p>
+                  <p className="font-medium text-slate-800">{functionalGrouping || "-"}</p>
                 </div>
-                <div className="col-span-2">
-                  <p className="text-muted-foreground">Control Name</p>
-                  <p className="font-medium">{controlName || "-"}</p>
+                <div className="col-span-2 p-3 bg-slate-50 rounded-lg">
+                  <p className="text-xs text-slate-500 uppercase">Control Name</p>
+                  <p className="font-medium text-slate-800">{controlName || "-"}</p>
                 </div>
-                <div className="col-span-2">
-                  <p className="text-muted-foreground">Description</p>
-                  <p className="font-medium">{description || "-"}</p>
+                <div className="col-span-2 p-3 bg-slate-50 rounded-lg">
+                  <p className="text-xs text-slate-500 uppercase">Description</p>
+                  <p className="font-medium text-slate-800">{description || "-"}</p>
                 </div>
-                <div className="col-span-2">
-                  <p className="text-muted-foreground">Control Question</p>
-                  <p className="font-medium">{controlQuestion || "-"}</p>
+                <div className="col-span-2 p-3 bg-slate-50 rounded-lg">
+                  <p className="text-xs text-slate-500 uppercase">Control Question</p>
+                  <p className="font-medium text-slate-800">{controlQuestion || "-"}</p>
                 </div>
-                <div>
-                  <p className="text-muted-foreground">Department</p>
-                  <p className="font-medium">{department || "-"}</p>
+                <div className="p-3 bg-slate-50 rounded-lg">
+                  <p className="text-xs text-slate-500 uppercase">Department</p>
+                  <p className="font-medium text-slate-800">{department || "-"}</p>
                 </div>
-                <div>
-                  <p className="text-muted-foreground">Assigned To</p>
-                  <p className="font-medium">{assignedTo || "-"}</p>
+                <div className="p-3 bg-slate-50 rounded-lg">
+                  <p className="text-xs text-slate-500 uppercase">Assigned To</p>
+                  <p className="font-medium text-slate-800">{assignedTo || "-"}</p>
                 </div>
               </div>
             </div>
@@ -337,7 +357,7 @@ export function AddControlDialog({
         </div>
 
         {/* Actions */}
-        <div className="flex justify-end gap-2 pt-4 border-t">
+        <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100">
           <Button variant="outline" onClick={handleClose}>
             Cancel
           </Button>
@@ -364,38 +384,3 @@ export function AddControlDialog({
   );
 }
 
-function StepIndicator({
-  number,
-  label,
-  active,
-  completed,
-}: {
-  number: number;
-  label: string;
-  active: boolean;
-  completed: boolean;
-}) {
-  return (
-    <div className="flex items-center gap-2">
-      <div
-        className={cn(
-          "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium border-2",
-          active && "bg-primary text-primary-foreground border-primary",
-          completed && "bg-primary text-primary-foreground border-primary",
-          !active && !completed && "border-gray-300 text-gray-400"
-        )}
-      >
-        {number}
-      </div>
-      <span
-        className={cn(
-          "text-sm",
-          active && "text-primary font-medium",
-          !active && "text-muted-foreground"
-        )}
-      >
-        {label}
-      </span>
-    </div>
-  );
-}
