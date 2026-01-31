@@ -49,6 +49,7 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  Upload,
 } from "lucide-react";
 
 interface Template {
@@ -83,6 +84,7 @@ export default function GovernanceTemplatesPage() {
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  const [dragOver, setDragOver] = useState(false);
 
   const [formData, setFormData] = useState({
     governanceType: "",
@@ -110,6 +112,58 @@ export default function GovernanceTemplatesPage() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
     setFormData({ ...formData, file });
+  };
+
+  const handleFileDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(true);
+  };
+
+  const handleFileDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(false);
+  };
+
+  const handleFileDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(false);
+
+    const files = e.dataTransfer.files;
+    if (files && files[0]) {
+      const file = files[0];
+      const validTypes = [
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/vnd.ms-excel",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      ];
+      const validExtensions = [".pdf", ".doc", ".docx", ".xls", ".xlsx"];
+      const fileExtension = file.name.toLowerCase().slice(file.name.lastIndexOf("."));
+
+      if (validTypes.includes(file.type) || validExtensions.includes(fileExtension)) {
+        setFormData({ ...formData, file });
+      }
+    }
+  };
+
+  const handleRemoveFile = () => {
+    setFormData({ ...formData, file: null });
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+    if (editFileInputRef.current) {
+      editFileInputRef.current.value = "";
+    }
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
   };
 
   const handleCreate = async () => {
@@ -332,16 +386,65 @@ export default function GovernanceTemplatesPage() {
                     <Label className="text-sm font-medium text-slate-700">
                       Upload Template <span className="text-red-500">*</span>
                     </Label>
-                    <Input
-                      ref={fileInputRef}
-                      type="file"
-                      accept=".pdf,.doc,.docx,.xls,.xlsx"
-                      onChange={handleFileChange}
-                      className="w-full bg-white"
-                    />
-                    <p className="text-xs text-slate-500">
-                      Supported formats: PDF, DOC, DOCX, XLS, XLSX
-                    </p>
+
+                    {/* Drag and Drop Zone */}
+                    <div
+                      className={`relative border-2 border-dashed rounded-lg p-6 transition-colors ${
+                        dragOver
+                          ? "border-primary bg-primary/5"
+                          : "border-slate-300 hover:border-slate-400"
+                      }`}
+                      onDragOver={handleFileDragOver}
+                      onDragLeave={handleFileDragLeave}
+                      onDrop={handleFileDrop}
+                    >
+                      {!formData.file ? (
+                        <div className="flex flex-col items-center text-center">
+                          <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mb-3">
+                            <Upload className="h-5 w-5 text-slate-400" />
+                          </div>
+                          <p className="text-sm text-slate-600">
+                            Drag and Drop or{" "}
+                            <label className="text-primary cursor-pointer hover:underline">
+                              Click to upload
+                              <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept=".pdf,.doc,.docx,.xls,.xlsx"
+                                className="hidden"
+                                onChange={handleFileChange}
+                              />
+                            </label>
+                          </p>
+                          <p className="text-xs text-slate-400 mt-1">
+                            Supported formats: PDF, DOC, DOCX, XLS, XLSX. Max Size: 25MB
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {/* File Item */}
+                          <div className="flex items-center gap-3 p-2 bg-slate-50 rounded-lg">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-slate-700 truncate">
+                                {formData.file.name}
+                              </p>
+                              <p className="text-xs text-slate-400">
+                                {formatFileSize(formData.file.size)}
+                              </p>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                              onClick={handleRemoveFile}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -533,16 +636,65 @@ export default function GovernanceTemplatesPage() {
                 <Label className="text-sm font-medium text-slate-700">
                   Upload New Template (optional)
                 </Label>
-                <Input
-                  ref={editFileInputRef}
-                  type="file"
-                  accept=".pdf,.doc,.docx,.xls,.xlsx"
-                  onChange={handleFileChange}
-                  className="w-full bg-white"
-                />
-                <p className="text-xs text-slate-500">
-                  Supported formats: PDF, DOC, DOCX, XLS, XLSX
-                </p>
+
+                {/* Drag and Drop Zone */}
+                <div
+                  className={`relative border-2 border-dashed rounded-lg p-6 transition-colors ${
+                    dragOver
+                      ? "border-primary bg-primary/5"
+                      : "border-slate-300 hover:border-slate-400"
+                  }`}
+                  onDragOver={handleFileDragOver}
+                  onDragLeave={handleFileDragLeave}
+                  onDrop={handleFileDrop}
+                >
+                  {!formData.file ? (
+                    <div className="flex flex-col items-center text-center">
+                      <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mb-3">
+                        <Upload className="h-5 w-5 text-slate-400" />
+                      </div>
+                      <p className="text-sm text-slate-600">
+                        Drag and Drop or{" "}
+                        <label className="text-primary cursor-pointer hover:underline">
+                          Click to upload
+                          <input
+                            ref={editFileInputRef}
+                            type="file"
+                            accept=".pdf,.doc,.docx,.xls,.xlsx"
+                            className="hidden"
+                            onChange={handleFileChange}
+                          />
+                        </label>
+                      </p>
+                      <p className="text-xs text-slate-400 mt-1">
+                        Supported formats: PDF, DOC, DOCX, XLS, XLSX. Max Size: 25MB
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {/* File Item */}
+                      <div className="flex items-center gap-3 p-2 bg-slate-50 rounded-lg">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-slate-700 truncate">
+                            {formData.file.name}
+                          </p>
+                          <p className="text-xs text-slate-400">
+                            {formatFileSize(formData.file.size)}
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                          onClick={handleRemoveFile}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
               {selectedTemplate && (
                 <div className="p-3 bg-slate-50 rounded-lg">

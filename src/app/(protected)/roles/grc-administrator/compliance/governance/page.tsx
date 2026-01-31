@@ -20,7 +20,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -46,14 +45,14 @@ import {
 import { Badge } from "@/components/ui/badge";
 import {
   Plus,
-  Search,
-  Upload,
+  FileSpreadsheet,
   Trash2,
   Pencil,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  Upload,
 } from "lucide-react";
 
 interface Policy {
@@ -74,6 +73,18 @@ interface Policy {
   _count?: { policyControls: number; attachments: number };
 }
 
+interface Department {
+  id: string;
+  name: string;
+}
+
+interface User {
+  id: string;
+  fullName: string;
+  departmentId?: string;
+  customerCode?: string;
+}
+
 interface Framework {
   id: string;
   name: string;
@@ -84,9 +95,7 @@ interface Control {
   id: string;
   controlCode: string;
   name: string;
-  description?: string;
   status: string;
-  entities?: string;
   domain?: { id: string; name: string };
 }
 
@@ -97,7 +106,6 @@ interface Domain {
 
 const DOCUMENT_TYPES = ["Policy", "Standard", "Procedure"];
 const RECURRENCE_OPTIONS = ["Weekly", "Monthly", "Quarterly", "Yearly"];
-const ENTITIES_OPTIONS = ["Organization Wide"];
 
 export default function GRCAdminGovernancePage() {
   const router = useRouter();
@@ -117,6 +125,8 @@ export default function GRCAdminGovernancePage() {
   const [frameworkFilter, setFrameworkFilter] = useState<string>("all");
 
   // Filter options
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [frameworks, setFrameworks] = useState<Framework[]>([]);
   const [controls, setControls] = useState<Control[]>([]);
   const [domains, setDomains] = useState<Domain[]>([]);
@@ -128,13 +138,15 @@ export default function GRCAdminGovernancePage() {
     name: "",
     documentType: "Policy",
     recurrence: "",
-    entities: "",
+    departmentId: "",
+    assigneeId: "",
   });
 
   // Step 2 - Control linking
   const [selectedControlIds, setSelectedControlIds] = useState<string[]>([]);
   const [controlSearch, setControlSearch] = useState("");
   const [controlDomainFilter, setControlDomainFilter] = useState<string>("all");
+  const [controlStatusFilter, setControlStatusFilter] = useState<string>("all");
 
   // Delete dialogs
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -146,6 +158,17 @@ export default function GRCAdminGovernancePage() {
   const [importFile, setImportFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
+  // Edit dialog
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingPolicy, setEditingPolicy] = useState<Policy | null>(null);
+  const [editData, setEditData] = useState({
+    name: "",
+    documentType: "",
+    recurrence: "",
+    departmentId: "",
+    assigneeId: "",
+  });
+
   useEffect(() => {
     fetchFilterOptions();
   }, [session?.user?.id]);
@@ -156,11 +179,18 @@ export default function GRCAdminGovernancePage() {
 
   const fetchFilterOptions = async () => {
     try {
-      const [frameworkRes, controlRes, domainRes] = await Promise.all([
+      const [deptRes, userRes, frameworkRes, controlRes, domainRes] = await Promise.all([
+        fetch("/api/departments"),
+        fetch("/api/users"),
         fetch("/api/frameworks"),
         fetch("/api/controls"),
         fetch("/api/control-domains"),
       ]);
+      if (deptRes.ok) setDepartments(await deptRes.json());
+      if (userRes.ok) {
+        const userData = await userRes.json();
+        setUsers(userData);
+      }
       if (frameworkRes.ok) {
         const data = await frameworkRes.json();
         setFrameworks(Array.isArray(data) ? data : data.data || []);
@@ -213,9 +243,7 @@ export default function GRCAdminGovernancePage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: newPolicy.name,
-          documentType: newPolicy.documentType,
-          recurrence: newPolicy.recurrence,
+          ...newPolicy,
           controlIds: selectedControlIds,
         }),
       });
@@ -235,11 +263,13 @@ export default function GRCAdminGovernancePage() {
       name: "",
       documentType: activeDocType,
       recurrence: "",
-      entities: "",
+      departmentId: "",
+      assigneeId: "",
     });
     setSelectedControlIds([]);
     setControlSearch("");
     setControlDomainFilter("all");
+    setControlStatusFilter("all");
   };
 
   const handleDeletePolicy = async () => {
@@ -261,9 +291,7 @@ export default function GRCAdminGovernancePage() {
 
   const handleDeleteAll = async () => {
     try {
-      const params = new URLSearchParams();
-      params.set("documentType", activeDocType);
-      const response = await fetch(`/api/policies/delete-all?${params.toString()}`, {
+      const response = await fetch(`/api/policies/delete-all?documentType=${activeDocType}`, {
         method: "DELETE",
       });
       if (response.ok) {
@@ -334,8 +362,51 @@ export default function GRCAdminGovernancePage() {
       control.name.toLowerCase().includes(controlSearch.toLowerCase()) ||
       control.controlCode.toLowerCase().includes(controlSearch.toLowerCase());
     const matchesDomain = controlDomainFilter === "all" || control.domain?.id === controlDomainFilter;
-    return matchesSearch && matchesDomain;
+    const matchesStatus = controlStatusFilter === "all" || control.status === controlStatusFilter;
+    return matchesSearch && matchesDomain && matchesStatus;
   });
+
+  // Filter users for Assignee dropdown based on selected department
+  const getFilteredUsers = () => {
+    if (!newPolicy.departmentId) return users;
+    return users.filter((u) => u.departmentId === newPolicy.departmentId);
+  };
+
+  // Filter users for Edit Assignee dropdown
+  const getFilteredEditUsers = () => {
+    if (!editData.departmentId) return users;
+    return users.filter((u) => u.departmentId === editData.departmentId);
+  };
+
+  const openEditDialog = (policy: Policy) => {
+    setEditingPolicy(policy);
+    setEditData({
+      name: policy.name,
+      documentType: policy.documentType,
+      recurrence: policy.recurrence || "",
+      departmentId: policy.department?.id || "",
+      assigneeId: policy.assignee?.id || "",
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdatePolicy = async () => {
+    if (!editingPolicy) return;
+    try {
+      const response = await fetch(`/api/policies/${editingPolicy.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editData),
+      });
+      if (response.ok) {
+        setIsEditDialogOpen(false);
+        setEditingPolicy(null);
+        fetchPolicies();
+      }
+    } catch (error) {
+      console.error("Error updating policy:", error);
+    }
+  };
 
   const handleTabChange = (tab: string) => {
     setActiveDocType(tab);
@@ -344,7 +415,7 @@ export default function GRCAdminGovernancePage() {
     setFrameworkFilter("all");
   };
 
-  const canProceedStep1 = newPolicy.name && newPolicy.documentType && newPolicy.recurrence && newPolicy.entities;
+  const canProceedStep1 = newPolicy.name && newPolicy.departmentId && newPolicy.documentType && newPolicy.recurrence && newPolicy.assigneeId;
 
   // Pagination helpers
   const startItem = total > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0;
@@ -354,46 +425,24 @@ export default function GRCAdminGovernancePage() {
   if (permissionsLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="relative h-8 w-8">
+          <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
+          <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+        </div>
       </div>
     );
   }
 
-  // Show unauthorized if user is not GRC Admin or cannot view
-  if (!isGRCAdmin || !canView) {
-    return <Unauthorized description="You don't have permission to access GRC Admin Governance." />;
+  // Show unauthorized if user cannot view
+  if (!canView) {
+    return <Unauthorized description="You don't have permission to access Governance." />;
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Governance</h1>
-        </div>
-        <div className="flex gap-2">
-          <PermissionGate resource="compliance.governance" action="create">
-            <Button onClick={() => {
-              setNewPolicy({ ...newPolicy, documentType: activeDocType });
-              setIsCreateDialogOpen(true);
-            }}>
-              <Plus className="h-4 w-4 mr-2" />
-              New Governance
-            </Button>
-          </PermissionGate>
-          <PermissionGate resource="compliance.governance" action="create">
-            <Button variant="outline" onClick={() => setIsImportDialogOpen(true)}>
-              <Upload className="h-4 w-4 mr-2" />
-              Import
-            </Button>
-          </PermissionGate>
-          <PermissionGate resource="compliance.governance" action="delete">
-            <Button variant="outline" onClick={() => setIsDeleteAllDialogOpen(true)}>
-              <Trash2 className="h-4 w-4 mr-2" />
-              Delete All
-            </Button>
-          </PermissionGate>
-        </div>
+        <h1 className="text-2xl font-bold text-slate-800">Governance</h1>
       </div>
 
       {/* Tabs */}
@@ -406,85 +455,111 @@ export default function GRCAdminGovernancePage() {
 
         {/* Tab Content - Same structure for all tabs */}
         {["Policy", "Standard", "Procedure"].map((docType) => (
-          <TabsContent key={docType} value={docType} className="mt-4 space-y-4">
-            {/* Search and Filter Row */}
-            <div className="flex items-center gap-4">
-              <div className="flex-1 relative">
-                <Input
-                  placeholder={` Search By ${docType} Name , ${docType} Code`}
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                  className="pr-10"
-                />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-0 top-0 h-full"
-                  onClick={handleSearch}
-                >
-                  <Search className="h-4 w-4" />
-                </Button>
-              </div>
+          <TabsContent key={docType} value={docType} className="mt-6 space-y-4">
+            {/* Search, Filter, and Action Buttons Row */}
+            <div className="flex items-center gap-3">
+              <Input
+                placeholder={`Search by ${docType.toLowerCase()} name or code...`}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                className="max-w-md bg-white"
+              />
               <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
-                <SelectTrigger className="w-[250px]">
+                <SelectTrigger className="w-[200px] bg-white">
                   <SelectValue placeholder="Integrated Framework" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
                   <SelectItem value="all">Integrated Framework</SelectItem>
                   {frameworks.map((f) => (
                     <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              <div className="flex-1" />
+              <PermissionGate resource="compliance.governance" action="delete">
+                <Button variant="outline" size="sm" className="text-semantic-error hover:text-semantic-error hover:bg-red-50" onClick={() => setIsDeleteAllDialogOpen(true)}>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete All
+                </Button>
+              </PermissionGate>
+              <PermissionGate resource="compliance.governance" action="create">
+                <Button variant="outline" size="sm" onClick={() => setIsImportDialogOpen(true)}>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Import
+                </Button>
+              </PermissionGate>
+              {isGRCAdmin ? (
+                <Button size="sm" onClick={() => {
+                  setNewPolicy({ ...newPolicy, documentType: activeDocType });
+                  setIsCreateDialogOpen(true);
+                }}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  New Governance
+                </Button>
+              ) : (
+                <PermissionGate resource="compliance.governance" action="create">
+                  <Button size="sm" onClick={() => {
+                    setNewPolicy({ ...newPolicy, documentType: activeDocType });
+                    setIsCreateDialogOpen(true);
+                  }}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    New Governance
+                  </Button>
+                </PermissionGate>
+              )}
             </div>
 
             {/* Table */}
             {loading ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+              <div className="flex items-center justify-center py-8">
+                <div className="relative h-8 w-8">
+                  <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
+                  <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+                </div>
               </div>
             ) : (
               <>
-                <div className="border rounded-lg">
+                <div className="bg-white rounded-xl border border-slate-200">
                   <Table>
                     <TableHeader>
-                      <TableRow>
-                        <TableHead>Code</TableHead>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Assignee</TableHead>
-                        <TableHead>Approver</TableHead>
-                        <TableHead>Department Name</TableHead>
-                        <TableHead>Action</TableHead>
+                      <TableRow className="border-b border-slate-100 bg-slate-50/50">
+                        <TableHead className="text-xs font-semibold text-slate-600 py-4 pl-4">Code</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 py-4">Name</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 py-4">Status</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 py-4">Assignee</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 py-4">Approver</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 py-4">Department Name</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 py-4">Action</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {policies.map((policy) => (
                         <TableRow
                           key={policy.id}
-                          className="cursor-pointer hover:bg-muted/50"
+                          className="border-b border-slate-100 last:border-0 cursor-pointer hover:bg-slate-50"
                           onDoubleClick={() => router.push(`/roles/grc-administrator/compliance/governance/${policy.id}`)}
                         >
-                          <TableCell className="font-medium">{policy.code}</TableCell>
-                          <TableCell>{policy.name}</TableCell>
-                          <TableCell>
+                          <TableCell className="py-3 pl-4 text-sm font-medium text-slate-900">{policy.code}</TableCell>
+                          <TableCell className="py-3 text-sm text-slate-700">{policy.name}</TableCell>
+                          <TableCell className="py-3">
                             <Badge className={getStatusBadgeColor(policy.status)}>
                               {policy.status}
                             </Badge>
                           </TableCell>
-                          <TableCell>{policy.assignee?.fullName || ""}</TableCell>
-                          <TableCell>{policy.approver?.fullName || ""}</TableCell>
-                          <TableCell>{policy.department?.name || ""}</TableCell>
-                          <TableCell>
+                          <TableCell className="py-3 text-sm text-slate-700">{policy.assignee?.fullName || "-"}</TableCell>
+                          <TableCell className="py-3 text-sm text-slate-700">{policy.approver?.fullName || "-"}</TableCell>
+                          <TableCell className="py-3 text-sm text-slate-700">{policy.department?.name || "-"}</TableCell>
+                          <TableCell className="py-3">
                             <div className="flex gap-1">
                               <PermissionGate resource="compliance.governance" action="edit">
                                 <Button
                                   variant="ghost"
                                   size="icon"
+                                  className="h-8 w-8 text-slate-400 hover:text-slate-600"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    router.push(`/roles/grc-administrator/compliance/governance/${policy.id}`);
+                                    openEditDialog(policy);
                                   }}
                                 >
                                   <Pencil className="h-4 w-4" />
@@ -494,6 +569,7 @@ export default function GRCAdminGovernancePage() {
                                 <Button
                                   variant="ghost"
                                   size="icon"
+                                  className="h-8 w-8 text-slate-400 hover:text-semantic-error"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     setPolicyToDelete(policy);
@@ -509,52 +585,58 @@ export default function GRCAdminGovernancePage() {
                       ))}
                       {policies.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                          <TableCell colSpan={7} className="h-24 text-center text-slate-500">
                             No {docType.toLowerCase()}s found
                           </TableCell>
                         </TableRow>
                       )}
                     </TableBody>
                   </Table>
-                </div>
 
-                {/* Pagination */}
-                <div className="flex items-center justify-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    disabled={currentPage === 1}
-                    onClick={() => setCurrentPage(1)}
-                  >
-                    <ChevronsLeft className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    disabled={currentPage === 1}
-                    onClick={() => setCurrentPage((p) => p - 1)}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <span className="text-sm text-muted-foreground px-4">
-                    Currently showing {startItem} to {endItem} of {total}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    disabled={currentPage >= totalPages}
-                    onClick={() => setCurrentPage((p) => p + 1)}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    disabled={currentPage >= totalPages}
-                    onClick={() => setCurrentPage(totalPages)}
-                  >
-                    <ChevronsRight className="h-4 w-4" />
-                  </Button>
+                  {/* Pagination */}
+                  <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
+                    <span className="text-sm text-slate-500">
+                      {total > 0 ? `${startItem} to ${endItem} of ${total}` : `No ${docType.toLowerCase()}s`}
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        disabled={currentPage === 1}
+                        onClick={() => setCurrentPage(1)}
+                        className="h-8 w-8"
+                      >
+                        <ChevronsLeft className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        disabled={currentPage === 1}
+                        onClick={() => setCurrentPage((p) => p - 1)}
+                        className="h-8 w-8"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        disabled={currentPage >= totalPages}
+                        onClick={() => setCurrentPage((p) => p + 1)}
+                        className="h-8 w-8"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        disabled={currentPage >= totalPages}
+                        onClick={() => setCurrentPage(totalPages)}
+                        className="h-8 w-8"
+                      >
+                        <ChevronsRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </>
             )}
@@ -567,59 +649,68 @@ export default function GRCAdminGovernancePage() {
         if (!open) resetCreateDialog();
         setIsCreateDialogOpen(open);
       }}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              New Governance - Step {createStep} of 3
-            </DialogTitle>
-          </DialogHeader>
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Sticky Header */}
+          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">New Governance - Step {createStep} of 3</DialogTitle>
+            </DialogHeader>
+          </div>
 
-          {/* Step Indicator */}
-          <div className="flex items-center justify-center gap-2 py-4">
-            {[1, 2, 3].map((step) => (
-              <div key={step} className="flex items-center">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                  step === createStep
-                    ? "bg-primary text-primary-foreground"
-                    : step < createStep
-                    ? "bg-green-500 text-white"
-                    : "bg-muted text-muted-foreground"
-                }`}>
-                  {step}
+          {/* Scrollable Content */}
+          <div className="overflow-y-auto flex-1 px-6 py-5">
+            {/* Step Indicator */}
+            <div className="flex items-center justify-center gap-2 pb-5">
+              {[1, 2, 3].map((step) => (
+                <div key={step} className="flex items-center">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                    step === createStep
+                      ? "bg-primary text-primary-foreground"
+                      : step < createStep
+                      ? "bg-green-500 text-white"
+                      : "bg-slate-100 text-slate-400"
+                  }`}>
+                    {step}
+                  </div>
+                  {step < 3 && (
+                    <div className={`w-16 h-1 mx-2 ${step < createStep ? "bg-green-500" : "bg-slate-100"}`} />
+                  )}
                 </div>
-                {step < 3 && (
-                  <div className={`w-16 h-1 mx-2 ${step < createStep ? "bg-green-500" : "bg-muted"}`} />
-                )}
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
 
-          <div className="flex justify-center gap-16 text-sm text-muted-foreground mb-4">
-            <span className={createStep === 1 ? "text-primary font-medium" : ""}>Policy Information</span>
-            <span className={createStep === 2 ? "text-primary font-medium" : ""}>Assignments & Details</span>
-            <span className={createStep === 3 ? "text-primary font-medium" : ""}>Review informations</span>
-          </div>
-
-          <div className="py-4">
-            {/* Step 1: Policy Information — UAT exact fields */}
+            {/* Step 1: Basic Information */}
             {createStep === 1 && (
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="name">Policy Name *</Label>
+                  <Label className="text-sm font-medium text-slate-700">Governance Name *</Label>
                   <Input
-                    id="name"
                     value={newPolicy.name}
                     onChange={(e) => setNewPolicy({ ...newPolicy, name: e.target.value })}
-                    placeholder="Enter policy name"
+                    placeholder="Enter governance name"
+                    className="mt-1.5 w-full"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="documentType">Document type *</Label>
+                  <Label className="text-sm font-medium text-slate-700">Department *</Label>
+                  <Select value={newPolicy.departmentId} onValueChange={(v) => setNewPolicy({ ...newPolicy, departmentId: v, assigneeId: "" })}>
+                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                      <SelectValue placeholder="Select department" />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                      {departments.map((d) => (
+                        <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Document Type *</Label>
                   <Select value={newPolicy.documentType} onValueChange={(v) => setNewPolicy({ ...newPolicy, documentType: v })}>
-                    <SelectTrigger>
+                    <SelectTrigger className="mt-1.5 w-full bg-white">
                       <SelectValue placeholder="Select document type" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
                       {DOCUMENT_TYPES.map((t) => (
                         <SelectItem key={t} value={t}>{t}</SelectItem>
                       ))}
@@ -627,12 +718,12 @@ export default function GRCAdminGovernancePage() {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="recurrence">Recurrence *</Label>
+                  <Label className="text-sm font-medium text-slate-700">Recurrence *</Label>
                   <Select value={newPolicy.recurrence} onValueChange={(v) => setNewPolicy({ ...newPolicy, recurrence: v })}>
-                    <SelectTrigger>
+                    <SelectTrigger className="mt-1.5 w-full bg-white">
                       <SelectValue placeholder="Select recurrence" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
                       {RECURRENCE_OPTIONS.map((r) => (
                         <SelectItem key={r} value={r}>{r}</SelectItem>
                       ))}
@@ -640,129 +731,184 @@ export default function GRCAdminGovernancePage() {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="entities">Entities *</Label>
-                  <Select value={newPolicy.entities} onValueChange={(v) => setNewPolicy({ ...newPolicy, entities: v })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select entities" />
+                  <Label className="text-sm font-medium text-slate-700">Assignee *</Label>
+                  <Select
+                    value={newPolicy.assigneeId}
+                    onValueChange={(v) => setNewPolicy({ ...newPolicy, assigneeId: v })}
+                    disabled={!newPolicy.departmentId}
+                  >
+                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                      <SelectValue placeholder={
+                        !newPolicy.departmentId
+                          ? "Select department first"
+                          : "Select assignee"
+                      } />
                     </SelectTrigger>
-                    <SelectContent>
-                      {ENTITIES_OPTIONS.map((e) => (
-                        <SelectItem key={e} value={e}>{e}</SelectItem>
-                      ))}
+                    <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                      {getFilteredUsers().length > 0 ? (
+                        getFilteredUsers().map((u) => (
+                          <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
+                        ))
+                      ) : (
+                        <div className="py-2 px-2 text-sm text-slate-500 text-center">
+                          No users found
+                        </div>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
               </div>
             )}
 
-            {/* Step 2: Assignments & Details — UAT exact: domain filter + search + control cards */}
+            {/* Step 2: Link Controls */}
             {createStep === 2 && (
               <div className="space-y-4">
-                {/* Domain Filter */}
-                <div className="flex justify-center">
+                <div className="flex items-center justify-between">
+                  <Label className="text-base font-semibold text-slate-800">Select Controls to Link</Label>
+                  <Badge variant="secondary">{selectedControlIds.length} selected</Badge>
+                </div>
+
+                {/* Control Filters */}
+                <div className="flex gap-4">
+                  <div className="flex-1">
+                    <Input
+                      placeholder="Search controls..."
+                      value={controlSearch}
+                      onChange={(e) => setControlSearch(e.target.value)}
+                      className="bg-white"
+                    />
+                  </div>
                   <Select value={controlDomainFilter} onValueChange={setControlDomainFilter}>
-                    <SelectTrigger className="w-[250px]">
-                      <SelectValue placeholder="Clear Filter" />
+                    <SelectTrigger className="w-[180px] bg-white">
+                      <SelectValue placeholder="Domain" />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Clear Filter</SelectItem>
+                    <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                      <SelectItem value="all">All Domains</SelectItem>
                       {domains.map((d) => (
                         <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                  <Select value={controlStatusFilter} onValueChange={setControlStatusFilter}>
+                    <SelectTrigger className="w-[180px] bg-white">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                      <SelectItem value="all">All Statuses</SelectItem>
+                      <SelectItem value="Compliant">Compliant</SelectItem>
+                      <SelectItem value="Non Compliant">Non Compliant</SelectItem>
+                      <SelectItem value="Not Applicable">Not Applicable</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
-                {/* Control Search */}
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search By Control Code , Name"
-                    value={controlSearch}
-                    onChange={(e) => setControlSearch(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-
-                {/* Controls List — Card style matching UAT */}
-                <div className="max-h-[400px] overflow-y-auto space-y-3">
-                  {filteredControls.map((control) => (
-                    <div
-                      key={control.id}
-                      className={`border rounded-lg p-4 cursor-pointer transition-colors ${
-                        selectedControlIds.includes(control.id)
-                          ? "border-primary bg-primary/5"
-                          : "border-border hover:border-primary/50"
-                      }`}
-                      onClick={() => {
-                        if (selectedControlIds.includes(control.id)) {
-                          setSelectedControlIds(selectedControlIds.filter((id) => id !== control.id));
-                        } else {
-                          setSelectedControlIds([...selectedControlIds, control.id]);
-                        }
-                      }}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-start gap-3">
-                          <Checkbox
-                            checked={selectedControlIds.includes(control.id)}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setSelectedControlIds([...selectedControlIds, control.id]);
-                              } else {
-                                setSelectedControlIds(selectedControlIds.filter((id) => id !== control.id));
-                              }
-                            }}
-                            className="mt-1"
-                          />
-                          <div>
-                            <p className="font-medium">
-                              {control.controlCode} : {control.name}
-                            </p>
-                            {control.description && (
-                              <p className="text-sm text-muted-foreground mt-1">
-                                {control.description}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                        <Badge variant="outline" className="shrink-0">
-                          {control.entities || "Organization Wide"}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                  {filteredControls.length === 0 && (
-                    <div className="text-center py-8 text-muted-foreground">
-                      No controls found
-                    </div>
-                  )}
+                {/* Controls Table */}
+                <div className="bg-white rounded-xl border border-slate-200 max-h-[300px] overflow-y-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-b border-slate-100 bg-slate-50/50">
+                        <TableHead className="w-[50px] py-4 pl-4"></TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 py-4">Control Code</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 py-4">Control Name</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 py-4">Domain</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 py-4">Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredControls.map((control) => (
+                        <TableRow key={control.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                          <TableCell className="py-3 pl-4">
+                            <Checkbox
+                              checked={selectedControlIds.includes(control.id)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setSelectedControlIds([...selectedControlIds, control.id]);
+                                } else {
+                                  setSelectedControlIds(selectedControlIds.filter((id) => id !== control.id));
+                                }
+                              }}
+                            />
+                          </TableCell>
+                          <TableCell className="py-3 text-sm font-medium text-slate-900">{control.controlCode}</TableCell>
+                          <TableCell className="py-3 text-sm text-slate-700">{control.name}</TableCell>
+                          <TableCell className="py-3 text-sm text-slate-700">{control.domain?.name || "-"}</TableCell>
+                          <TableCell className="py-3">
+                            <Badge className={getStatusBadgeColor(control.status)}>
+                              {control.status}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {filteredControls.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={5} className="h-24 text-center text-slate-500">
+                            No controls found
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
                 </div>
               </div>
             )}
 
-            {/* Step 3: Review — UAT exact fields: Policy Name, Recurrence, Entity */}
+            {/* Step 3: Review */}
             {createStep === 3 && (
               <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-4 p-4">
+                <div className="text-lg font-medium text-slate-800">Review Information</div>
+
+                <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
                   <div>
-                    <Label className="text-primary font-medium">Policy Name</Label>
-                    <p className="mt-1">{newPolicy.name}</p>
+                    <Label className="text-slate-500 text-sm">Governance Name</Label>
+                    <p className="font-medium text-slate-900">{newPolicy.name}</p>
                   </div>
                   <div>
-                    <Label className="text-primary font-medium">Recurrence</Label>
-                    <p className="mt-1">{newPolicy.recurrence}</p>
+                    <Label className="text-slate-500 text-sm">Document Type</Label>
+                    <p className="font-medium text-slate-900">{newPolicy.documentType}</p>
                   </div>
                   <div>
-                    <Label className="text-primary font-medium">Entity</Label>
-                    <p className="mt-1">{newPolicy.entities}</p>
+                    <Label className="text-slate-500 text-sm">Recurrence</Label>
+                    <p className="font-medium text-slate-900">{newPolicy.recurrence}</p>
+                  </div>
+                  <div>
+                    <Label className="text-slate-500 text-sm">Department</Label>
+                    <p className="font-medium text-slate-900">
+                      {departments.find((d) => d.id === newPolicy.departmentId)?.name || "-"}
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-slate-500 text-sm">Assignee</Label>
+                    <p className="font-medium text-slate-900">
+                      {users.find((u) => u.id === newPolicy.assigneeId)?.fullName || "-"}
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-slate-500 text-sm">Linked Controls</Label>
+                    <p className="font-medium text-slate-900">{selectedControlIds.length} controls</p>
                   </div>
                 </div>
+
+                {selectedControlIds.length > 0 && (
+                  <div>
+                    <Label className="text-slate-500 text-sm mb-2 block">Selected Controls:</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedControlIds.map((id) => {
+                        const control = controls.find((c) => c.id === id);
+                        return control ? (
+                          <Badge key={id} variant="outline">
+                            {control.controlCode}
+                          </Badge>
+                        ) : null;
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
 
-          <DialogFooter>
+          {/* Sticky Footer */}
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex-shrink-0">
             <Button variant="outline" onClick={() => {
               if (createStep > 1) setCreateStep(createStep - 1);
               else {
@@ -781,7 +927,7 @@ export default function GRCAdminGovernancePage() {
             >
               {createStep === 3 ? `Create ${newPolicy.documentType}` : "Next"}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -823,32 +969,53 @@ export default function GRCAdminGovernancePage() {
 
       {/* Import Dialog */}
       <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Import {activeDocType}s</DialogTitle>
-          </DialogHeader>
-          <div className="py-4 space-y-4">
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Sticky Header */}
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-lg font-semibold text-slate-800">
+                <FileSpreadsheet className="h-5 w-5 text-green-600" />
+                Import {activeDocType}s
+              </DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Content */}
+          <div className="px-6 py-6">
+            <p className="text-sm text-slate-500 mb-4">
+              Upload a CSV or Excel file to import {activeDocType.toLowerCase()}s.
+            </p>
             <div
-              className={`border-2 border-dashed rounded-lg p-8 text-center ${
-                isDragging ? "border-primary bg-primary/5" : "border-muted-foreground/25"
+              className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+                isDragging ? "border-primary bg-primary-50" : "border-slate-200 hover:border-slate-300"
               }`}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
+              onClick={() => document.getElementById("import-file")?.click()}
             >
               {importFile ? (
-                <div className="space-y-2">
-                  <p className="font-medium">{importFile.name}</p>
-                  <Button variant="outline" size="sm" onClick={() => setImportFile(null)}>
+                <div className="space-y-3">
+                  <FileSpreadsheet className="h-10 w-10 mx-auto text-green-600" />
+                  <p className="font-medium text-slate-800">{importFile.name}</p>
+                  <Button variant="outline" size="sm" onClick={(e) => {
+                    e.stopPropagation();
+                    setImportFile(null);
+                  }}>
                     Remove
                   </Button>
                 </div>
               ) : (
-                <div className="space-y-2">
-                  <Upload className="h-10 w-10 mx-auto text-muted-foreground" />
-                  <p className="text-muted-foreground">
-                    Drag and drop a file here, or click to browse
-                  </p>
+                <div className="space-y-3">
+                  <FileSpreadsheet className="h-10 w-10 mx-auto text-slate-300" />
+                  <div>
+                    <p className="text-sm text-slate-600">
+                      Drag and drop a file here, or click to browse
+                    </p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Supported formats: CSV, XLSX, XLS
+                    </p>
+                  </div>
                   <input
                     type="file"
                     accept=".csv,.xlsx,.xls"
@@ -861,14 +1028,13 @@ export default function GRCAdminGovernancePage() {
                       }
                     }}
                   />
-                  <Button variant="outline" onClick={() => document.getElementById("import-file")?.click()}>
-                    Browse Files
-                  </Button>
                 </div>
               )}
             </div>
           </div>
-          <DialogFooter>
+
+          {/* Sticky Footer */}
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => {
               setIsImportDialogOpen(false);
               setImportFile(null);
@@ -878,7 +1044,121 @@ export default function GRCAdminGovernancePage() {
             <Button onClick={handleImport} disabled={!importFile}>
               Import
             </Button>
-          </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
+        if (!open) {
+          setEditingPolicy(null);
+        }
+        setIsEditDialogOpen(open);
+      }}>
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Sticky Header */}
+          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Edit {editingPolicy?.documentType || "Governance"}</DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Scrollable Content */}
+          <div className="overflow-y-auto flex-1 px-6 py-5">
+            <div className="space-y-4">
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Governance Name *</Label>
+                <Input
+                  value={editData.name}
+                  onChange={(e) => setEditData({ ...editData, name: e.target.value })}
+                  placeholder="Enter governance name"
+                  className="mt-1.5 w-full"
+                />
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Department *</Label>
+                <Select value={editData.departmentId} onValueChange={(v) => setEditData({ ...editData, departmentId: v, assigneeId: "" })}>
+                  <SelectTrigger className="mt-1.5 w-full bg-white">
+                    <SelectValue placeholder="Select department" />
+                  </SelectTrigger>
+                  <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                    {departments.map((d) => (
+                      <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Document Type *</Label>
+                <Select value={editData.documentType} onValueChange={(v) => setEditData({ ...editData, documentType: v })}>
+                  <SelectTrigger className="mt-1.5 w-full bg-white">
+                    <SelectValue placeholder="Select document type" />
+                  </SelectTrigger>
+                  <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                    {DOCUMENT_TYPES.map((t) => (
+                      <SelectItem key={t} value={t}>{t}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Recurrence *</Label>
+                <Select value={editData.recurrence} onValueChange={(v) => setEditData({ ...editData, recurrence: v })}>
+                  <SelectTrigger className="mt-1.5 w-full bg-white">
+                    <SelectValue placeholder="Select recurrence" />
+                  </SelectTrigger>
+                  <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                    {RECURRENCE_OPTIONS.map((r) => (
+                      <SelectItem key={r} value={r}>{r}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Assignee *</Label>
+                <Select
+                  value={editData.assigneeId}
+                  onValueChange={(v) => setEditData({ ...editData, assigneeId: v })}
+                  disabled={!editData.departmentId}
+                >
+                  <SelectTrigger className="mt-1.5 w-full bg-white">
+                    <SelectValue placeholder={
+                      !editData.departmentId
+                        ? "Select department first"
+                        : "Select assignee"
+                    } />
+                  </SelectTrigger>
+                  <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                    {getFilteredEditUsers().length > 0 ? (
+                      getFilteredEditUsers().map((u) => (
+                        <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
+                      ))
+                    ) : (
+                      <div className="py-2 px-2 text-sm text-slate-500 text-center">
+                        No users found
+                      </div>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          {/* Sticky Footer */}
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex-shrink-0">
+            <Button variant="outline" onClick={() => {
+              setIsEditDialogOpen(false);
+              setEditingPolicy(null);
+            }}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUpdatePolicy}
+              disabled={!editData.name || !editData.departmentId || !editData.documentType || !editData.recurrence}
+            >
+              Save Changes
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

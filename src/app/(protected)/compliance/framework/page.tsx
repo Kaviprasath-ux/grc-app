@@ -754,7 +754,7 @@ export default function FrameworkOverviewPage() {
                   value={formData.type}
                   onValueChange={(value) => setFormData({ ...formData, type: value })}
                 >
-                  <SelectTrigger className="mt-1.5 bg-white">
+                  <SelectTrigger className="w-full mt-1.5 bg-white">
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent className="bg-white" position="popper" sideOffset={4}>

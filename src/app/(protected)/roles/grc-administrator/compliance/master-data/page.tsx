@@ -1,7 +1,6 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Layers,
   Shield,
@@ -17,42 +16,48 @@ const masterDataCategories = [
     description: "Manage compliance frameworks and standards",
     icon: Layers,
     href: "/roles/grc-administrator/compliance/master-data/framework",
-    color: "bg-blue-500",
+    bgColor: "bg-info-light",
+    iconColor: "text-info-dark",
   },
   {
     name: "Controls",
     description: "Manage control definitions and templates",
     icon: Shield,
     href: "/roles/grc-administrator/compliance/master-data/controls",
-    color: "bg-green-500",
+    bgColor: "bg-success-light",
+    iconColor: "text-success-dark",
   },
   {
     name: "Governance",
     description: "Manage governance document templates",
     icon: FileCheck,
     href: "/roles/grc-administrator/compliance/master-data/governance",
-    color: "bg-purple-500",
+    bgColor: "bg-primary-100",
+    iconColor: "text-primary-700",
   },
   {
     name: "Evidences",
     description: "Manage evidence definitions and requirements",
     icon: ClipboardList,
     href: "/roles/grc-administrator/compliance/master-data/evidences",
-    color: "bg-orange-500",
+    bgColor: "bg-warning-light",
+    iconColor: "text-warning-dark",
   },
   {
     name: "Domain",
     description: "Manage control domains and categories",
     icon: FolderTree,
     href: "/roles/grc-administrator/compliance/master-data/domain",
-    color: "bg-teal-500",
+    bgColor: "bg-info-light",
+    iconColor: "text-info-dark",
   },
   {
     name: "Governance Templates",
     description: "Manage policy, standard, and procedure templates",
     icon: FileText,
     href: "/roles/grc-administrator/compliance/master-data/governance-templates",
-    color: "bg-pink-500",
+    bgColor: "bg-error-light",
+    iconColor: "text-error-dark",
   },
 ];
 
@@ -60,41 +65,34 @@ export default function GRCAdminMasterDataPage() {
   const router = useRouter();
 
   return (
-    <div className="space-y-6 p-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold">Master Data</h1>
-        <p className="text-gray-600">
-          Manage master data for compliance module
-        </p>
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold text-slate-800">Master Data</h1>
       </div>
 
       {/* Category Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
         {masterDataCategories.map((category) => (
-          <Card
+          <div
             key={category.name}
-            className="cursor-pointer hover:shadow-lg transition-shadow"
+            className="bg-white rounded-xl border border-slate-200 p-6 cursor-pointer hover:bg-slate-50 transition-colors"
             onClick={() => router.push(category.href)}
           >
-            <CardContent className="p-6">
-              <div className="flex flex-col items-center text-center space-y-4">
-                <div
-                  className={`p-4 rounded-full ${category.color} bg-opacity-10`}
-                >
-                  <category.icon
-                    className={`h-8 w-8 ${category.color.replace("bg-", "text-")}`}
-                  />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold">{category.name}</h3>
-                  <p className="text-sm text-gray-500 mt-1">
-                    {category.description}
-                  </p>
-                </div>
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className={`p-4 rounded-full ${category.bgColor}`}>
+                <category.icon className={`h-8 w-8 ${category.iconColor}`} />
               </div>
-            </CardContent>
-          </Card>
+              <div>
+                <h3 className="text-lg font-semibold text-slate-800">
+                  {category.name}
+                </h3>
+                <p className="text-sm text-slate-500 mt-1">
+                  {category.description}
+                </p>
+              </div>
+            </div>
+          </div>
         ))}
       </div>
     </div>
