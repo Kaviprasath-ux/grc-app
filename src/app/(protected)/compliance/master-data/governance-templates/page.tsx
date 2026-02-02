@@ -38,6 +38,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  ArrowLeft,
   Plus,
   Pencil,
   Trash2,
@@ -49,9 +50,8 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Upload,
-  Home,
 } from "lucide-react";
-import Link from "next/link";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Template {
   id: string;
@@ -74,6 +74,7 @@ const governanceTypeColors: Record<string, string> = {
 
 export default function GovernanceTemplatesPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editFileInputRef = useRef<HTMLInputElement>(null);
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -319,23 +320,17 @@ export default function GovernanceTemplatesPage() {
 
   return (
     <div className="space-y-6">
-      {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
-        <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
-          <Home className="h-4 w-4" />
-          <span>Compliance</span>
-        </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-        <Link href="/compliance/master-data" className="text-slate-500 hover:text-primary-600 transition-colors">
-          Master Data
-        </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-        <span className="text-primary-700 font-medium">Governance Templates</span>
-      </nav>
-
-      {/* Page Header */}
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">Governance Templates</h1>
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => router.push("/compliance/master-data")}
+          className="h-8 w-8 text-slate-400 hover:text-slate-600"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Governance Templates")}</h1>
       </div>
 
       {/* Search and Actions - same row */}
@@ -343,7 +338,7 @@ export default function GovernanceTemplatesPage() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input
-            placeholder="Search templates..."
+            placeholder={t("Search templates...")}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10 w-[300px] bg-white border-slate-200"
@@ -352,26 +347,26 @@ export default function GovernanceTemplatesPage() {
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={handleExport}>
             <Download className="h-4 w-4 mr-2" />
-            Export
+            {t("Export")}
           </Button>
           <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
             <DialogTrigger asChild>
               <Button size="sm">
                 <Plus className="h-4 w-4 mr-2" />
-                New Template
+                {t("New Template")}
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
               <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
                 <DialogTitle className="text-lg font-semibold text-slate-800">
-                  Add Governance Template
+                  {t("Add Governance Template")}
                 </DialogTitle>
               </div>
               <div className="flex-1 overflow-y-auto px-6 py-6">
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-slate-700">
-                      Governance Type <span className="text-red-500">*</span>
+                      {t("Governance Type")} <span className="text-red-500">*</span>
                     </Label>
                     <Select
                       value={formData.governanceType}
@@ -380,18 +375,18 @@ export default function GovernanceTemplatesPage() {
                       }
                     >
                       <SelectTrigger className="w-full bg-white">
-                        <SelectValue placeholder="Select type" />
+                        <SelectValue placeholder={t("Select type")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
-                        <SelectItem value="Policy">Policy</SelectItem>
-                        <SelectItem value="Standard">Standard</SelectItem>
-                        <SelectItem value="Procedure">Procedure</SelectItem>
+                        <SelectItem value="Policy">{t("Policy")}</SelectItem>
+                        <SelectItem value="Standard">{t("Standard")}</SelectItem>
+                        <SelectItem value="Procedure">{t("Procedure")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-slate-700">
-                      Upload Template <span className="text-red-500">*</span>
+                      {t("Upload Template")} <span className="text-red-500">*</span>
                     </Label>
 
                     {/* Drag and Drop Zone */}
@@ -411,9 +406,9 @@ export default function GovernanceTemplatesPage() {
                             <Upload className="h-5 w-5 text-slate-400" />
                           </div>
                           <p className="text-sm text-slate-600">
-                            Drag and Drop or{" "}
+                            {t("Drag and Drop or")}{" "}
                             <label className="text-primary cursor-pointer hover:underline">
-                              Click to upload
+                              {t("Click to upload")}
                               <input
                                 ref={fileInputRef}
                                 type="file"
@@ -424,7 +419,7 @@ export default function GovernanceTemplatesPage() {
                             </label>
                           </p>
                           <p className="text-xs text-slate-400 mt-1">
-                            Supported formats: PDF, DOC, DOCX, XLS, XLSX. Max Size: 25MB
+                            {t("Supported formats: PDF, DOC, DOCX, XLS, XLSX. Max Size: 25MB")}
                           </p>
                         </div>
                       ) : (
@@ -463,13 +458,13 @@ export default function GovernanceTemplatesPage() {
                     resetForm();
                   }}
                 >
-                  Cancel
+                  {t("Cancel")}
                 </Button>
                 <Button
                   onClick={handleCreate}
                   disabled={!formData.file || !formData.governanceType}
                 >
-                  Save
+                  {t("Save")}
                 </Button>
               </div>
             </DialogContent>
@@ -482,11 +477,11 @@ export default function GovernanceTemplatesPage() {
         <Table>
           <TableHeader>
             <TableRow className="border-b border-slate-100 bg-slate-50/50">
-              <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4">Template Name</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">Governance Type</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">Uploaded By</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">Created</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[120px]">Actions</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4">{t("Template Name")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Governance Type")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Uploaded By")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Created")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[120px]">{t("Actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -494,11 +489,11 @@ export default function GovernanceTemplatesPage() {
               <TableRow>
                 <TableCell colSpan={5} className="text-center py-12">
                   <div className="flex flex-col items-center gap-2">
-                    <p className="text-slate-500">No templates found</p>
+                    <p className="text-slate-500">{t("No templates found")}</p>
                     <p className="text-sm text-slate-400">
                       {searchTerm
-                        ? "Try adjusting your search"
-                        : "Add your first governance template"}
+                        ? t("Try adjusting your search")
+                        : t("Add your first governance template")}
                     </p>
                   </div>
                 </TableCell>
@@ -562,7 +557,7 @@ export default function GovernanceTemplatesPage() {
         {/* Pagination */}
         <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
           <p className="text-sm text-slate-500">
-            Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredTemplates.length)} of{" "}
+            {t("Showing")} {startIndex + 1} {t("to")} {Math.min(startIndex + itemsPerPage, filteredTemplates.length)} {t("of")}{" "}
             {filteredTemplates.length}
           </p>
           <div className="flex items-center gap-1">
@@ -585,7 +580,7 @@ export default function GovernanceTemplatesPage() {
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <span className="text-sm text-slate-600 px-2">
-              Page {currentPage} of {totalPages || 1}
+              {t("Page")} {currentPage} {t("of")} {totalPages || 1}
             </span>
             <Button
               variant="ghost"
@@ -614,14 +609,14 @@ export default function GovernanceTemplatesPage() {
         <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogTitle className="text-lg font-semibold text-slate-800">
-              Edit Governance Template
+              {t("Edit Governance Template")}
             </DialogTitle>
           </div>
           <div className="flex-1 overflow-y-auto px-6 py-6">
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">
-                  Governance Type <span className="text-red-500">*</span>
+                  {t("Governance Type")} <span className="text-red-500">*</span>
                 </Label>
                 <Select
                   value={formData.governanceType}
@@ -630,18 +625,18 @@ export default function GovernanceTemplatesPage() {
                   }
                 >
                   <SelectTrigger className="w-full bg-white">
-                    <SelectValue placeholder="Select type" />
+                    <SelectValue placeholder={t("Select type")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
-                    <SelectItem value="Policy">Policy</SelectItem>
-                    <SelectItem value="Standard">Standard</SelectItem>
-                    <SelectItem value="Procedure">Procedure</SelectItem>
+                    <SelectItem value="Policy">{t("Policy")}</SelectItem>
+                    <SelectItem value="Standard">{t("Standard")}</SelectItem>
+                    <SelectItem value="Procedure">{t("Procedure")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">
-                  Upload New Template (optional)
+                  {t("Upload New Template (optional)")}
                 </Label>
 
                 {/* Drag and Drop Zone */}
@@ -661,9 +656,9 @@ export default function GovernanceTemplatesPage() {
                         <Upload className="h-5 w-5 text-slate-400" />
                       </div>
                       <p className="text-sm text-slate-600">
-                        Drag and Drop or{" "}
+                        {t("Drag and Drop or")}{" "}
                         <label className="text-primary cursor-pointer hover:underline">
-                          Click to upload
+                          {t("Click to upload")}
                           <input
                             ref={editFileInputRef}
                             type="file"
@@ -674,7 +669,7 @@ export default function GovernanceTemplatesPage() {
                         </label>
                       </p>
                       <p className="text-xs text-slate-400 mt-1">
-                        Supported formats: PDF, DOC, DOCX, XLS, XLSX. Max Size: 25MB
+                        {t("Supported formats: PDF, DOC, DOCX, XLS, XLSX. Max Size: 25MB")}
                       </p>
                     </div>
                   ) : (
@@ -706,7 +701,7 @@ export default function GovernanceTemplatesPage() {
               {selectedTemplate && (
                 <div className="p-3 bg-slate-50 rounded-lg">
                   <p className="text-sm text-slate-600">
-                    <span className="font-medium">Current file:</span> {selectedTemplate.fileName}
+                    <span className="font-medium">{t("Current file")}:</span> {selectedTemplate.fileName}
                   </p>
                 </div>
               )}
@@ -721,13 +716,13 @@ export default function GovernanceTemplatesPage() {
                 resetForm();
               }}
             >
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button
               onClick={handleEdit}
               disabled={!formData.governanceType}
             >
-              Save Changes
+              {t("Save Changes")}
             </Button>
           </div>
         </DialogContent>
@@ -738,20 +733,19 @@ export default function GovernanceTemplatesPage() {
         <AlertDialogContent className="p-0 gap-0">
           <AlertDialogHeader className="px-6 py-5">
             <AlertDialogTitle className="text-lg font-semibold text-slate-800">
-              Delete Template
+              {t("Delete Template")}
             </AlertDialogTitle>
             <AlertDialogDescription className="text-sm text-slate-500 mt-1">
-              Are you sure you want to delete &quot;{selectedTemplate?.name}&quot;? This
-              action cannot be undone.
+              {t("Are you sure you want to delete")} &quot;{selectedTemplate?.name}&quot;? {t("This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="px-6 py-4 bg-white rounded-b-lg">
-            <AlertDialogCancel className="h-9">Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="h-9">{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-red-600 hover:bg-red-700 h-9"
             >
-              Delete
+              {t("Delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

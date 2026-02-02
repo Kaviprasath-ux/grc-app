@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Plus, Pencil, Trash2, Upload, X, Building2, Users, MapPin, Globe, Calendar, Target, Eye, Briefcase, Scale, ArrowLeft } from "lucide-react";
 import { DataGrid } from "@/components/shared";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -116,8 +116,7 @@ interface Regulation {
 function ProfilePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const t = useTranslations("organization.profile");
-  const tCommon = useTranslations("common");
+  const { t } = useLanguage();
   const initialTab = searchParams.get("tab") || "overview";
   const fromDashboard = searchParams.get("from") === "dashboard";
   const [activeTab, setActiveTab] = useState(initialTab);
@@ -501,12 +500,12 @@ function ProfilePageContent() {
   const departmentColumns: ColumnDef<Department>[] = [
     {
       accessorKey: "name",
-      header: "Department Name",
+      header: t("Department Name"),
       cell: ({ row }) => <span className="font-medium text-slate-800">{row.getValue("name")}</span>,
     },
     {
       id: "actions",
-      header: "Actions",
+      header: t("Actions"),
       cell: ({ row }) => (
         <div className="flex gap-1">
           <Button
@@ -537,17 +536,17 @@ function ProfilePageContent() {
   const regulationColumns: ColumnDef<Regulation>[] = [
     {
       accessorKey: "name",
-      header: "Regulation Name",
+      header: t("Regulation Name"),
       cell: ({ row }) => <span className="font-medium text-slate-800">{row.getValue("name")}</span>,
     },
     {
       accessorKey: "version",
-      header: "Version",
+      header: t("Version"),
       cell: ({ row }) => <span className="text-slate-600">{row.getValue("version")}</span>,
     },
     {
       accessorKey: "status",
-      header: "Compliance Status",
+      header: t("Compliance Status"),
       cell: ({ row }) => (
         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-compliance-compliant-bg text-semantic-success-dark">
           {row.getValue("status")}
@@ -556,7 +555,7 @@ function ProfilePageContent() {
     },
     {
       id: "actions",
-      header: "Actions",
+      header: t("Actions"),
       cell: ({ row }) => (
         <div className="flex gap-1">
           <Button
@@ -591,7 +590,7 @@ function ProfilePageContent() {
             <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
             <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
           </div>
-          <p className="text-sm text-slate-500 font-medium">Loading profile...</p>
+          <p className="text-sm text-slate-500 font-medium">{t("Loading profile...")}</p>
         </div>
       </div>
     );
@@ -608,23 +607,23 @@ function ProfilePageContent() {
           className="flex items-center gap-2 text-slate-600 hover:text-slate-800 -ms-2"
         >
           <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
-          {tCommon("back")}
+          {t("Back")}
         </Button>
       )}
 
       {/* Page Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">{t("title")}</h1>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Organization Profile")}</h1>
 
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          <TabsTrigger value="overview">{t("companyInfo")}</TabsTrigger>
-          <TabsTrigger value="services">{t("services")}</TabsTrigger>
-          <TabsTrigger value="regulations">{t("regulations")}</TabsTrigger>
-          <TabsTrigger value="departments">{t("departments")}</TabsTrigger>
-          <TabsTrigger value="orgchart">{t("orgChart")}</TabsTrigger>
+          <TabsTrigger value="overview">{t("Company Info")}</TabsTrigger>
+          <TabsTrigger value="services">{t("Services")}</TabsTrigger>
+          <TabsTrigger value="regulations">{t("Regulations")}</TabsTrigger>
+          <TabsTrigger value="departments">{t("Departments")}</TabsTrigger>
+          <TabsTrigger value="orgchart">{t("Organization Chart")}</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
@@ -633,10 +632,10 @@ function ProfilePageContent() {
             <div className="bg-white rounded-xl border border-slate-200">
               {/* Header */}
               <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-                <h3 className="text-base font-semibold text-slate-800">Organization Information</h3>
+                <h3 className="text-base font-semibold text-slate-800">{t("Organization Information")}</h3>
                 <Button variant="outline" size="sm" onClick={openEditOrganization}>
-                  <Pencil className="h-4 w-4 mr-2" />
-                  Edit
+                  <Pencil className="h-4 w-4 me-2" />
+                  {t("Edit")}
                 </Button>
               </div>
 
@@ -645,35 +644,35 @@ function ProfilePageContent() {
                 {/* Basic Info Grid */}
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-8 gap-y-6">
                   <div>
-                    <p className="text-xs text-slate-500 mb-1">Organization Name</p>
+                    <p className="text-xs text-slate-500 mb-1">{t("Organization Name")}</p>
                     <p className="text-sm font-medium text-slate-800">{organization.name || "-"}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500 mb-1">Established Date</p>
+                    <p className="text-xs text-slate-500 mb-1">{t("Established Date")}</p>
                     <p className="text-sm font-medium text-slate-800">{organization.establishedDate || "-"}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500 mb-1">Employee Count</p>
+                    <p className="text-xs text-slate-500 mb-1">{t("Employee Count")}</p>
                     <p className="text-sm font-medium text-slate-800">{organization.employeeCount?.toLocaleString() || "0"}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500 mb-1">Branch Count</p>
+                    <p className="text-xs text-slate-500 mb-1">{t("Branch Count")}</p>
                     <p className="text-sm font-medium text-slate-800">{organization.branchCount || "0"}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500 mb-1">Head Office Location</p>
+                    <p className="text-xs text-slate-500 mb-1">{t("Head Office Location")}</p>
                     <p className="text-sm font-medium text-slate-800">{organization.headOfficeLocation || "-"}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500 mb-1">Head Office Address</p>
+                    <p className="text-xs text-slate-500 mb-1">{t("Head Office Address")}</p>
                     <p className="text-sm font-medium text-slate-800">{organization.headOfficeAddress || "-"}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500 mb-1">Website</p>
+                    <p className="text-xs text-slate-500 mb-1">{t("Website")}</p>
                     <p className="text-sm font-medium text-primary-600">{organization.website || "-"}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500 mb-1">Email</p>
+                    <p className="text-xs text-slate-500 mb-1">{t("Email")}</p>
                     <p className="text-sm font-medium text-slate-800">{organization.email || "-"}</p>
                   </div>
                 </div>
@@ -683,18 +682,18 @@ function ProfilePageContent() {
 
                 {/* Description */}
                 <div className="mb-6">
-                  <p className="text-xs text-slate-500 mb-1">Description</p>
+                  <p className="text-xs text-slate-500 mb-1">{t("Description")}</p>
                   <p className="text-sm text-slate-700 leading-relaxed">{organization.description || "-"}</p>
                 </div>
 
                 {/* Vision & Mission */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <p className="text-xs text-slate-500 mb-1">Vision</p>
+                    <p className="text-xs text-slate-500 mb-1">{t("Vision")}</p>
                     <p className="text-sm text-slate-700 leading-relaxed">{organization.vision || "-"}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500 mb-1">Mission</p>
+                    <p className="text-xs text-slate-500 mb-1">{t("Mission")}</p>
                     <p className="text-sm text-slate-700 leading-relaxed">{organization.mission || "-"}</p>
                   </div>
                 </div>
@@ -705,13 +704,13 @@ function ProfilePageContent() {
               <div className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center mx-auto mb-4">
                 <Building2 className="h-6 w-6 text-slate-400" />
               </div>
-              <h3 className="text-base font-semibold text-slate-800 mb-1">{t("noProfile")}</h3>
+              <h3 className="text-base font-semibold text-slate-800 mb-1">{t("No Profile")}</h3>
               <p className="text-sm text-slate-500 mb-6">
-                {t("noProfileDescription")}
+                {t("Create your organization profile to get started.")}
               </p>
               <Button onClick={openEditOrganization}>
                 <Plus className="h-4 w-4 me-2" />
-                {t("createProfile")}
+                {t("Create Profile")}
               </Button>
             </div>
           )}
@@ -721,10 +720,10 @@ function ProfilePageContent() {
         <TabsContent value="services" className="mt-6">
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-semibold text-slate-800">Services</h3>
+            <h3 className="text-base font-semibold text-slate-800">{t("Services")}</h3>
             <Button size="sm" onClick={() => setIsAddServiceOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Service
+              <Plus className="h-4 w-4 me-2" />
+              {t("Add Service")}
             </Button>
           </div>
 
@@ -761,15 +760,15 @@ function ProfilePageContent() {
                   {/* Info */}
                   <div className="space-y-2 text-xs">
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-500">User Type</span>
+                      <span className="text-slate-500">{t("User Type")}</span>
                       <span className="font-medium text-slate-700">{service.serviceUser}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-500">Category</span>
+                      <span className="text-slate-500">{t("Category")}</span>
                       <span className="font-medium text-slate-700">{service.serviceCategory}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-500">Item</span>
+                      <span className="text-slate-500">{t("Item")}</span>
                       <span className="font-medium text-slate-700">{service.serviceItem}</span>
                     </div>
                   </div>
@@ -781,13 +780,13 @@ function ProfilePageContent() {
               <div className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center mx-auto mb-4">
                 <Briefcase className="h-6 w-6 text-slate-400" />
               </div>
-              <h3 className="text-base font-semibold text-slate-800 mb-1">No Services</h3>
+              <h3 className="text-base font-semibold text-slate-800 mb-1">{t("No Services")}</h3>
               <p className="text-sm text-slate-500 mb-6">
-                Add services your organization provides.
+                {t("Add services your organization provides.")}
               </p>
               <Button onClick={() => setIsAddServiceOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Service
+                <Plus className="h-4 w-4 me-2" />
+                {t("Add Service")}
               </Button>
             </div>
           )}
@@ -797,10 +796,10 @@ function ProfilePageContent() {
         <TabsContent value="regulations" className="mt-6">
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-semibold text-slate-800">Regulations</h3>
+            <h3 className="text-base font-semibold text-slate-800">{t("Regulations")}</h3>
             <Button size="sm" onClick={() => setIsAddRegulationOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Regulation
+              <Plus className="h-4 w-4 me-2" />
+              {t("Add Regulation")}
             </Button>
           </div>
 
@@ -808,20 +807,20 @@ function ProfilePageContent() {
             <DataGrid
               columns={regulationColumns}
               data={regulations}
-              searchPlaceholder="Search regulations..."
+              searchPlaceholder={t("Search regulations...")}
             />
           ) : (
             <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
               <div className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center mx-auto mb-4">
                 <Scale className="h-6 w-6 text-slate-400" />
               </div>
-              <h3 className="text-base font-semibold text-slate-800 mb-1">No Regulations</h3>
+              <h3 className="text-base font-semibold text-slate-800 mb-1">{t("No Regulations")}</h3>
               <p className="text-sm text-slate-500 mb-6">
-                Add regulations that apply to your organization.
+                {t("Add regulations that apply to your organization.")}
               </p>
               <Button onClick={() => setIsAddRegulationOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Regulation
+                <Plus className="h-4 w-4 me-2" />
+                {t("Add Regulation")}
               </Button>
             </div>
           )}
@@ -831,10 +830,10 @@ function ProfilePageContent() {
         <TabsContent value="departments" className="mt-6">
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-semibold text-slate-800">Departments</h3>
+            <h3 className="text-base font-semibold text-slate-800">{t("Departments")}</h3>
             <Button size="sm" onClick={() => setIsAddDepartmentOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Department
+              <Plus className="h-4 w-4 me-2" />
+              {t("Add Department")}
             </Button>
           </div>
 
@@ -842,20 +841,20 @@ function ProfilePageContent() {
             <DataGrid
               columns={departmentColumns}
               data={departments}
-              searchPlaceholder="Search departments..."
+              searchPlaceholder={t("Search departments...")}
             />
           ) : (
             <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
               <div className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center mx-auto mb-4">
                 <Users className="h-6 w-6 text-slate-400" />
               </div>
-              <h3 className="text-base font-semibold text-slate-800 mb-1">No Departments</h3>
+              <h3 className="text-base font-semibold text-slate-800 mb-1">{t("No Departments")}</h3>
               <p className="text-sm text-slate-500 mb-6">
-                Add departments to organize your team structure.
+                {t("Add departments to organize your team structure.")}
               </p>
               <Button onClick={() => setIsAddDepartmentOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Department
+                <Plus className="h-4 w-4 me-2" />
+                {t("Add Department")}
               </Button>
             </div>
           )}
@@ -865,7 +864,7 @@ function ProfilePageContent() {
         <TabsContent value="orgchart" className="mt-6">
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-semibold text-slate-800">Organization Structure</h3>
+            <h3 className="text-base font-semibold text-slate-800">{t("Organization Structure")}</h3>
           </div>
 
           <div className="bg-white rounded-xl border border-slate-200 p-6">
@@ -880,17 +879,17 @@ function ProfilePageContent() {
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Add Department</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Department")}</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Content */}
           <div className="px-6 py-6">
-            <Label className="text-sm font-medium text-slate-700">Department Name</Label>
+            <Label className="text-sm font-medium text-slate-700">{t("Department Name")}</Label>
             <Input
               value={newDepartmentName}
               onChange={(e) => setNewDepartmentName(e.target.value)}
-              placeholder="Enter department name"
+              placeholder={t("Enter department name")}
               className="mt-1.5"
             />
           </div>
@@ -898,9 +897,9 @@ function ProfilePageContent() {
           {/* Fixed Footer */}
           <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsAddDepartmentOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
-            <Button onClick={handleAddDepartment}>Save</Button>
+            <Button onClick={handleAddDepartment}>{t("Save")}</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -911,18 +910,18 @@ function ProfilePageContent() {
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Edit Department</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Department")}</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Content */}
           {editingDepartment && (
             <div className="px-6 py-6">
-              <Label className="text-sm font-medium text-slate-700">Department Name</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Department Name")}</Label>
               <Input
                 value={editingDepartment.name}
                 onChange={(e) => setEditingDepartment({ ...editingDepartment, name: e.target.value })}
-                placeholder="Enter department name"
+                placeholder={t("Enter department name")}
                 className="mt-1.5"
               />
             </div>
@@ -931,9 +930,9 @@ function ProfilePageContent() {
           {/* Fixed Footer */}
           <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsEditDepartmentOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
-            <Button onClick={handleEditDepartment}>Save</Button>
+            <Button onClick={handleEditDepartment}>{t("Save")}</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -944,7 +943,7 @@ function ProfilePageContent() {
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Add Service</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Service")}</DialogTitle>
             </DialogHeader>
           </div>
 
@@ -952,22 +951,22 @@ function ProfilePageContent() {
           <div className="px-6 py-6 space-y-5">
             {/* Service Title */}
             <div>
-              <Label className="text-sm font-medium text-slate-700">Service Title</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Service Title")}</Label>
               <Input
                 value={newService.title}
                 onChange={(e) => setNewService({ ...newService, title: e.target.value })}
-                placeholder="Enter service title"
+                placeholder={t("Enter service title")}
                 className="mt-1.5"
               />
             </div>
 
             {/* Description */}
             <div>
-              <Label className="text-sm font-medium text-slate-700">Description</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
               <Textarea
                 value={newService.description}
                 onChange={(e) => setNewService({ ...newService, description: e.target.value })}
-                placeholder="Enter service description"
+                placeholder={t("Enter service description")}
                 className="mt-1.5"
                 rows={3}
               />
@@ -975,7 +974,7 @@ function ProfilePageContent() {
 
             {/* Service User */}
             <div>
-              <Label className="text-sm font-medium text-slate-700">Service User</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Service User")}</Label>
               <div className="flex gap-6 mt-2">
                 {["Internal", "External", "Public"].map((userType) => (
                   <label key={userType} className="flex items-center gap-2 cursor-pointer">
@@ -986,7 +985,7 @@ function ProfilePageContent() {
                       onChange={() => setNewService({ ...newService, serviceUser: userType })}
                       className="w-4 h-4 text-primary-600 border-slate-300 focus:ring-primary-500"
                     />
-                    <span className="text-sm text-slate-600">{userType}</span>
+                    <span className="text-sm text-slate-600">{t(userType)}</span>
                   </label>
                 ))}
               </div>
@@ -994,14 +993,14 @@ function ProfilePageContent() {
 
             {/* Service Category */}
             <div>
-              <Label className="text-sm font-medium text-slate-700">Service Category</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Service Category")}</Label>
               <div className="flex gap-2 mt-1.5">
                 <Select
                   value={newService.serviceCategory}
                   onValueChange={(value) => setNewService({ ...newService, serviceCategory: value })}
                 >
                   <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Select category" />
+                    <SelectValue placeholder={t("Select category")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
                     {serviceCategories.map((cat) => (
@@ -1025,14 +1024,14 @@ function ProfilePageContent() {
 
             {/* Service Item */}
             <div>
-              <Label className="text-sm font-medium text-slate-700">Service Item</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Service Item")}</Label>
               <div className="flex gap-2 mt-1.5">
                 <Select
                   value={newService.serviceItem}
                   onValueChange={(value) => setNewService({ ...newService, serviceItem: value })}
                 >
                   <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Select item" />
+                    <SelectValue placeholder={t("Select item")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
                     {serviceItems.map((item) => (
@@ -1058,9 +1057,9 @@ function ProfilePageContent() {
           {/* Fixed Footer */}
           <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsAddServiceOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
-            <Button onClick={handleAddService}>Save</Button>
+            <Button onClick={handleAddService}>{t("Save")}</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -1071,7 +1070,7 @@ function ProfilePageContent() {
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Edit Service</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Service")}</DialogTitle>
             </DialogHeader>
           </div>
 
@@ -1080,22 +1079,22 @@ function ProfilePageContent() {
             <div className="px-6 py-6 space-y-5">
               {/* Service Title */}
               <div>
-                <Label className="text-sm font-medium text-slate-700">Service Title</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Service Title")}</Label>
                 <Input
                   value={editingService.title}
                   onChange={(e) => setEditingService({ ...editingService, title: e.target.value })}
-                  placeholder="Enter service title"
+                  placeholder={t("Enter service title")}
                   className="mt-1.5"
                 />
               </div>
 
               {/* Description */}
               <div>
-                <Label className="text-sm font-medium text-slate-700">Description</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
                 <Textarea
                   value={editingService.description || ""}
                   onChange={(e) => setEditingService({ ...editingService, description: e.target.value })}
-                  placeholder="Enter service description"
+                  placeholder={t("Enter service description")}
                   className="mt-1.5"
                   rows={3}
                 />
@@ -1103,7 +1102,7 @@ function ProfilePageContent() {
 
               {/* Service User */}
               <div>
-                <Label className="text-sm font-medium text-slate-700">Service User</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Service User")}</Label>
                 <div className="flex gap-6 mt-2">
                   {["Internal", "External", "Public"].map((userType) => (
                     <label key={userType} className="flex items-center gap-2 cursor-pointer">
@@ -1114,7 +1113,7 @@ function ProfilePageContent() {
                         onChange={() => setEditingService({ ...editingService, serviceUser: userType })}
                         className="w-4 h-4 text-primary-600 border-slate-300 focus:ring-primary-500"
                       />
-                      <span className="text-sm text-slate-600">{userType}</span>
+                      <span className="text-sm text-slate-600">{t(userType)}</span>
                     </label>
                   ))}
                 </div>
@@ -1122,14 +1121,14 @@ function ProfilePageContent() {
 
               {/* Service Category */}
               <div>
-                <Label className="text-sm font-medium text-slate-700">Service Category</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Service Category")}</Label>
                 <div className="flex gap-2 mt-1.5">
                   <Select
                     value={editingService.serviceCategory}
                     onValueChange={(value) => setEditingService({ ...editingService, serviceCategory: value })}
                   >
                     <SelectTrigger className="flex-1">
-                      <SelectValue placeholder="Select category" />
+                      <SelectValue placeholder={t("Select category")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
                       {serviceCategories.map((cat) => (
@@ -1153,14 +1152,14 @@ function ProfilePageContent() {
 
               {/* Service Item */}
               <div>
-                <Label className="text-sm font-medium text-slate-700">Service Item</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Service Item")}</Label>
                 <div className="flex gap-2 mt-1.5">
                   <Select
                     value={editingService.serviceItem}
                     onValueChange={(value) => setEditingService({ ...editingService, serviceItem: value })}
                   >
                     <SelectTrigger className="flex-1">
-                      <SelectValue placeholder="Select item" />
+                      <SelectValue placeholder={t("Select item")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
                       {serviceItems.map((item) => (
@@ -1187,9 +1186,9 @@ function ProfilePageContent() {
           {/* Fixed Footer */}
           <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsEditServiceOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
-            <Button onClick={handleEditService}>Save</Button>
+            <Button onClick={handleEditService}>{t("Save")}</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -1200,7 +1199,7 @@ function ProfilePageContent() {
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Add Regulation</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Regulation")}</DialogTitle>
             </DialogHeader>
           </div>
 
@@ -1210,20 +1209,20 @@ function ProfilePageContent() {
               {/* Name and Version */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Regulation Name <span className="text-error">*</span></Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Regulation Name")} <span className="text-error">*</span></Label>
                   <Input
                     value={newRegulation.name}
                     onChange={(e) => setNewRegulation({ ...newRegulation, name: e.target.value })}
-                    placeholder="Enter regulation name"
+                    placeholder={t("Enter regulation name")}
                     className="mt-1.5"
                   />
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Version <span className="text-error">*</span></Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Version")} <span className="text-error">*</span></Label>
                   <Input
                     value={newRegulation.version}
                     onChange={(e) => setNewRegulation({ ...newRegulation, version: e.target.value })}
-                    placeholder="Enter version"
+                    placeholder={t("Enter version")}
                     className="mt-1.5"
                   />
                 </div>
@@ -1232,22 +1231,22 @@ function ProfilePageContent() {
               {/* SA1 and SA2 Dates */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">SA1 Date</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("SA1 Date")}</Label>
                   <div className="mt-1.5">
                     <DatePicker
                       value={newRegulation.sa1Date}
                       onChange={(date) => setNewRegulation({ ...newRegulation, sa1Date: date ? format(date, "yyyy-MM-dd") : "" })}
-                      placeholder="Select SA1 date"
+                      placeholder={t("Select SA1 date")}
                     />
                   </div>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">SA2 Date</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("SA2 Date")}</Label>
                   <div className="mt-1.5">
                     <DatePicker
                       value={newRegulation.sa2Date}
                       onChange={(date) => setNewRegulation({ ...newRegulation, sa2Date: date ? format(date, "yyyy-MM-dd") : "" })}
-                      placeholder="Select SA2 date"
+                      placeholder={t("Select SA2 date")}
                     />
                   </div>
                 </div>
@@ -1255,11 +1254,11 @@ function ProfilePageContent() {
 
               {/* Scope */}
               <div>
-                <Label className="text-sm font-medium text-slate-700">Scope</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Scope")}</Label>
                 <Textarea
                   value={newRegulation.scope}
                   onChange={(e) => setNewRegulation({ ...newRegulation, scope: e.target.value })}
-                  placeholder="Enter scope"
+                  placeholder={t("Enter scope")}
                   className="mt-1.5"
                   rows={3}
                 />
@@ -1267,11 +1266,11 @@ function ProfilePageContent() {
 
               {/* Exclusion and Justification */}
               <div>
-                <Label className="text-sm font-medium text-slate-700">Exclusion and Justification</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Exclusion and Justification")}</Label>
                 <Textarea
                   value={newRegulation.exclusionJustification}
                   onChange={(e) => setNewRegulation({ ...newRegulation, exclusionJustification: e.target.value })}
-                  placeholder="Enter exclusion and justification"
+                  placeholder={t("Enter exclusion and justification")}
                   className="mt-1.5"
                   rows={3}
                 />
@@ -1279,7 +1278,7 @@ function ProfilePageContent() {
 
               {/* Document Upload */}
               <div>
-                <Label className="text-sm font-medium text-slate-700">Document</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Document")}</Label>
                 <div className="mt-1.5 border border-dashed border-slate-200 rounded-lg p-4">
                   {documentFile ? (
                     <div className="flex items-center justify-between">
@@ -1291,13 +1290,13 @@ function ProfilePageContent() {
                         className="text-slate-400 hover:text-error"
                         onClick={() => setDocumentFile(null)}
                       >
-                        Remove
+                        {t("Remove")}
                       </Button>
                     </div>
                   ) : (
                     <label className="flex flex-col items-center cursor-pointer py-2">
                       <Upload className="h-6 w-6 text-slate-300 mb-2" />
-                      <span className="text-sm text-slate-500">Click to upload document</span>
+                      <span className="text-sm text-slate-500">{t("Click to upload document")}</span>
                       <input
                         type="file"
                         className="hidden"
@@ -1314,7 +1313,7 @@ function ProfilePageContent() {
 
               {/* Certificate Upload */}
               <div>
-                <Label className="text-sm font-medium text-slate-700">Certificate</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Certificate")}</Label>
                 <div className="mt-1.5 border border-dashed border-slate-200 rounded-lg p-4">
                   {certificateFile ? (
                     <div className="flex items-center justify-between">
@@ -1326,13 +1325,13 @@ function ProfilePageContent() {
                         className="text-slate-400 hover:text-error"
                         onClick={() => setCertificateFile(null)}
                       >
-                        Remove
+                        {t("Remove")}
                       </Button>
                     </div>
                   ) : (
                     <label className="flex flex-col items-center cursor-pointer py-2">
                       <Upload className="h-6 w-6 text-slate-300 mb-2" />
-                      <span className="text-sm text-slate-500">Click to upload certificate</span>
+                      <span className="text-sm text-slate-500">{t("Click to upload certificate")}</span>
                       <input
                         type="file"
                         className="hidden"
@@ -1352,9 +1351,9 @@ function ProfilePageContent() {
           {/* Fixed Footer */}
           <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsAddRegulationOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
-            <Button onClick={handleAddRegulation}>Save</Button>
+            <Button onClick={handleAddRegulation}>{t("Save")}</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -1365,7 +1364,7 @@ function ProfilePageContent() {
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Edit Regulation</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Regulation")}</DialogTitle>
             </DialogHeader>
           </div>
 
@@ -1376,7 +1375,7 @@ function ProfilePageContent() {
                 {/* Name and Version */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Regulation Name <span className="text-error">*</span></Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Regulation Name")} <span className="text-error">*</span></Label>
                     <Input
                       value={editingRegulation.name}
                       onChange={(e) => setEditingRegulation({ ...editingRegulation, name: e.target.value })}
@@ -1384,7 +1383,7 @@ function ProfilePageContent() {
                     />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Version <span className="text-error">*</span></Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Version")} <span className="text-error">*</span></Label>
                     <Input
                       value={editingRegulation.version}
                       onChange={(e) => setEditingRegulation({ ...editingRegulation, version: e.target.value })}
@@ -1396,22 +1395,22 @@ function ProfilePageContent() {
                 {/* SA1 and SA2 Dates */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">SA1 Date</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("SA1 Date")}</Label>
                     <div className="mt-1.5">
                       <DatePicker
                         value={editingRegulation.sa1Date}
                         onChange={(date) => setEditingRegulation({ ...editingRegulation, sa1Date: date ? format(date, "yyyy-MM-dd") : "" })}
-                        placeholder="Select SA1 date"
+                        placeholder={t("Select SA1 date")}
                       />
                     </div>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">SA2 Date</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("SA2 Date")}</Label>
                     <div className="mt-1.5">
                       <DatePicker
                         value={editingRegulation.sa2Date}
                         onChange={(date) => setEditingRegulation({ ...editingRegulation, sa2Date: date ? format(date, "yyyy-MM-dd") : "" })}
-                        placeholder="Select SA2 date"
+                        placeholder={t("Select SA2 date")}
                       />
                     </div>
                   </div>
@@ -1419,11 +1418,11 @@ function ProfilePageContent() {
 
                 {/* Scope */}
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Scope</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Scope")}</Label>
                   <Textarea
                     value={editingRegulation.scope}
                     onChange={(e) => setEditingRegulation({ ...editingRegulation, scope: e.target.value })}
-                    placeholder="Enter scope"
+                    placeholder={t("Enter scope")}
                     className="mt-1.5"
                     rows={3}
                   />
@@ -1431,11 +1430,11 @@ function ProfilePageContent() {
 
                 {/* Exclusion and Justification */}
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Exclusion and Justification</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Exclusion and Justification")}</Label>
                   <Textarea
                     value={editingRegulation.exclusionJustification}
                     onChange={(e) => setEditingRegulation({ ...editingRegulation, exclusionJustification: e.target.value })}
-                    placeholder="Enter exclusion and justification"
+                    placeholder={t("Enter exclusion and justification")}
                     className="mt-1.5"
                     rows={3}
                   />
@@ -1443,7 +1442,7 @@ function ProfilePageContent() {
 
                 {/* Document Upload */}
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Document</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Document")}</Label>
                   <div className="mt-1.5 border border-dashed border-slate-200 rounded-lg p-4">
                     {editDocumentFile ? (
                       <div className="flex items-center justify-between">
@@ -1455,14 +1454,14 @@ function ProfilePageContent() {
                           className="text-slate-400 hover:text-error"
                           onClick={() => setEditDocumentFile(null)}
                         >
-                          Remove
+                          {t("Remove")}
                         </Button>
                       </div>
                     ) : editingRegulation.document ? (
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-slate-500">{editingRegulation.document.split("/").pop()}</span>
                         <label className="cursor-pointer text-sm text-primary-600 hover:text-primary-700">
-                          Replace
+                          {t("Replace")}
                           <input
                             type="file"
                             className="hidden"
@@ -1477,7 +1476,7 @@ function ProfilePageContent() {
                     ) : (
                       <label className="flex flex-col items-center cursor-pointer py-2">
                         <Upload className="h-6 w-6 text-slate-300 mb-2" />
-                        <span className="text-sm text-slate-500">Click to upload document</span>
+                        <span className="text-sm text-slate-500">{t("Click to upload document")}</span>
                         <input
                           type="file"
                           className="hidden"
@@ -1494,7 +1493,7 @@ function ProfilePageContent() {
 
                 {/* Certificate Upload */}
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Certificate</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Certificate")}</Label>
                   <div className="mt-1.5 border border-dashed border-slate-200 rounded-lg p-4">
                     {editCertificateFile ? (
                       <div className="flex items-center justify-between">
@@ -1506,14 +1505,14 @@ function ProfilePageContent() {
                           className="text-slate-400 hover:text-error"
                           onClick={() => setEditCertificateFile(null)}
                         >
-                          Remove
+                          {t("Remove")}
                         </Button>
                       </div>
                     ) : editingRegulation.certificate ? (
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-slate-500">{editingRegulation.certificate.split("/").pop()}</span>
                         <label className="cursor-pointer text-sm text-primary-600 hover:text-primary-700">
-                          Replace
+                          {t("Replace")}
                           <input
                             type="file"
                             className="hidden"
@@ -1528,7 +1527,7 @@ function ProfilePageContent() {
                     ) : (
                       <label className="flex flex-col items-center cursor-pointer py-2">
                         <Upload className="h-6 w-6 text-slate-300 mb-2" />
-                        <span className="text-sm text-slate-500">Click to upload certificate</span>
+                        <span className="text-sm text-slate-500">{t("Click to upload certificate")}</span>
                         <input
                           type="file"
                           className="hidden"
@@ -1549,9 +1548,9 @@ function ProfilePageContent() {
           {/* Fixed Footer */}
           <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsEditRegulationOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
-            <Button onClick={handleEditRegulation}>Save</Button>
+            <Button onClick={handleEditRegulation}>{t("Save")}</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -1562,17 +1561,17 @@ function ProfilePageContent() {
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Add Service Category</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Service Category")}</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Content */}
           <div className="px-6 py-6">
-            <Label className="text-sm font-medium text-slate-700">Category Name</Label>
+            <Label className="text-sm font-medium text-slate-700">{t("Category Name")}</Label>
             <Input
               value={newCategoryName}
               onChange={(e) => setNewCategoryName(e.target.value)}
-              placeholder="Enter category name"
+              placeholder={t("Enter category name")}
               className="mt-1.5"
             />
           </div>
@@ -1580,9 +1579,9 @@ function ProfilePageContent() {
           {/* Fixed Footer */}
           <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsAddCategoryOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
-            <Button onClick={handleAddCategory}>Save</Button>
+            <Button onClick={handleAddCategory}>{t("Save")}</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -1593,17 +1592,17 @@ function ProfilePageContent() {
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Add Service Item</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Service Item")}</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Content */}
           <div className="px-6 py-6">
-            <Label className="text-sm font-medium text-slate-700">Item Name</Label>
+            <Label className="text-sm font-medium text-slate-700">{t("Item Name")}</Label>
             <Input
               value={newItemName}
               onChange={(e) => setNewItemName(e.target.value)}
-              placeholder="Enter item name"
+              placeholder={t("Enter item name")}
               className="mt-1.5"
             />
           </div>
@@ -1611,9 +1610,9 @@ function ProfilePageContent() {
           {/* Fixed Footer */}
           <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsAddItemOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
-            <Button onClick={handleAddItem}>Save</Button>
+            <Button onClick={handleAddItem}>{t("Save")}</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -1630,14 +1629,14 @@ function ProfilePageContent() {
       <AlertDialog open={!!deleteDepartmentId} onOpenChange={(open) => !open && setDeleteDepartmentId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Department</AlertDialogTitle>
+            <AlertDialogTitle>{t("Delete Department")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this department? This action cannot be undone.
+              {t("Are you sure you want to delete this department? This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteDepartment}>Delete</AlertDialogAction>
+            <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteDepartment}>{t("Delete")}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -1646,14 +1645,14 @@ function ProfilePageContent() {
       <AlertDialog open={!!deleteServiceId} onOpenChange={(open) => !open && setDeleteServiceId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Service</AlertDialogTitle>
+            <AlertDialogTitle>{t("Delete Service")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this service? This action cannot be undone.
+              {t("Are you sure you want to delete this service? This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteService}>Delete</AlertDialogAction>
+            <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteService}>{t("Delete")}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -1662,14 +1661,14 @@ function ProfilePageContent() {
       <AlertDialog open={!!deleteRegulationId} onOpenChange={(open) => !open && setDeleteRegulationId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Unsubscribe from Regulation</AlertDialogTitle>
+            <AlertDialogTitle>{t("Unsubscribe from Regulation")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to unsubscribe from this regulation? This action cannot be undone.
+              {t("Are you sure you want to unsubscribe from this regulation? This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteRegulation}>Unsubscribe</AlertDialogAction>
+            <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteRegulation}>{t("Unsubscribe")}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -1677,19 +1676,24 @@ function ProfilePageContent() {
   );
 }
 
+function LoadingFallback() {
+  const { t } = useLanguage();
+  return (
+    <div className="flex items-center justify-center h-[60vh]">
+      <div className="flex flex-col items-center gap-4">
+        <div className="relative">
+          <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
+          <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+        </div>
+        <p className="text-sm text-slate-500 font-medium">{t("Loading profile...")}</p>
+      </div>
+    </div>
+  );
+}
+
 export default function ProfilePage() {
   return (
-    <Suspense fallback={
-      <div className="flex items-center justify-center h-[60vh]">
-        <div className="flex flex-col items-center gap-4">
-          <div className="relative">
-            <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
-            <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
-          </div>
-          <p className="text-sm text-slate-500 font-medium">Loading profile...</p>
-        </div>
-      </div>
-    }>
+    <Suspense fallback={<LoadingFallback />}>
       <ProfilePageContent />
     </Suspense>
   );

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { usePermissions, useHasRole } from "@/hooks/usePermissions";
@@ -218,6 +219,7 @@ export default function GovernanceDetailPage() {
   const currentUserId = session?.user?.id as string | undefined;
   const { canEdit, canApprove, canDelete, isLoading: permissionsLoading } = usePermissions('compliance.governance');
   const isCustomerAdmin = useHasRole('CustomerAdministrator');
+  const { t } = useLanguage();
 
   const [policy, setPolicy] = useState<Policy | null>(null);
   const [loading, setLoading] = useState(true);
@@ -689,7 +691,7 @@ export default function GovernanceDetailPage() {
     return (
       <div className="p-6">
         <div className="text-center text-gray-500">
-          Governance document not found
+          {t("Governance document not found")}
         </div>
       </div>
     );
@@ -730,19 +732,19 @@ export default function GovernanceDetailPage() {
   const tabs = [
     {
       id: "controls",
-      label: "Linked Control",
+      label: t("Linked Control"),
       icon: Shield,
       count: linkedControls.length,
     },
     {
       id: "exceptions",
-      label: "Linked Exception",
+      label: t("Linked Exception"),
       icon: AlertTriangle,
       count: linkedExceptions.length,
     },
     {
       id: "documents",
-      label: "Linked Documents",
+      label: t("Linked Documents"),
       icon: FileText,
       count: linkedDocuments.length,
     },
@@ -759,7 +761,7 @@ export default function GovernanceDetailPage() {
             className="flex items-center gap-1 text-primary hover:underline"
           >
             <ChevronLeft className="h-4 w-4" />
-            <span>{typeLabels[policy.documentType] || "Policy"}</span>
+            <span>{t(typeLabels[policy.documentType] || "Policy")}</span>
           </button>
         </div>
 
@@ -768,7 +770,7 @@ export default function GovernanceDetailPage() {
           {canShowApproveButton && (
             <Button variant="outline" onClick={handleApprove}>
               <Check className="h-4 w-4 mr-2" />
-              Approve
+              {t("Approve")}
             </Button>
           )}
 
@@ -776,7 +778,7 @@ export default function GovernanceDetailPage() {
           {canShowPublishButton && (
             <Button onClick={openSignatureDialog}>
               <Check className="h-4 w-4 mr-2" />
-              Publish
+              {t("Publish")}
             </Button>
           )}
 
@@ -785,7 +787,7 @@ export default function GovernanceDetailPage() {
             {policy.aiReviewStatus !== "In Progress" && (
               <Button variant="outline" onClick={handleTriggerAIReview}>
                 <Sparkles className="h-4 w-4 mr-2" />
-                {policy.aiReviewStatus === "Completed" ? "Re-run AI Review" : "Start AI Review"}
+                {policy.aiReviewStatus === "Completed" ? t("Re-run AI Review") : t("Start AI Review")}
               </Button>
             )}
           </PermissionGate>
@@ -796,16 +798,16 @@ export default function GovernanceDetailPage() {
               <DialogTrigger asChild>
                 <Button>
                   <Edit className="h-4 w-4 mr-2" />
-                  Edit
+                  {t("Edit")}
                 </Button>
               </DialogTrigger>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Edit {typeLabels[policy.documentType]}</DialogTitle>
+                <DialogTitle>{t("Edit")} {t(typeLabels[policy.documentType])}</DialogTitle>
               </DialogHeader>
               <div className="grid grid-cols-2 gap-4 py-4">
                 <div className="col-span-2">
-                  <Label>Name</Label>
+                  <Label>{t("Name")}</Label>
                   <Input
                     value={editForm.name}
                     onChange={(e) =>
@@ -814,7 +816,7 @@ export default function GovernanceDetailPage() {
                   />
                 </div>
                 <div className="col-span-2">
-                  <Label>Description</Label>
+                  <Label>{t("Description")}</Label>
                   <Textarea
                     value={editForm.description}
                     onChange={(e) =>
@@ -824,7 +826,7 @@ export default function GovernanceDetailPage() {
                   />
                 </div>
                 <div>
-                  <Label>Type</Label>
+                  <Label>{t("Type")}</Label>
                   <Select
                     value={editForm.documentType}
                     onValueChange={(value) =>
@@ -835,14 +837,14 @@ export default function GovernanceDetailPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Policy">Policy</SelectItem>
-                      <SelectItem value="Standard">Standard</SelectItem>
-                      <SelectItem value="Procedure">Procedure</SelectItem>
+                      <SelectItem value="Policy">{t("Policy")}</SelectItem>
+                      <SelectItem value="Standard">{t("Standard")}</SelectItem>
+                      <SelectItem value="Procedure">{t("Procedure")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label>Status</Label>
+                  <Label>{t("Status")}</Label>
                   <Select
                     value={editForm.status}
                     onValueChange={(value) =>
@@ -853,28 +855,28 @@ export default function GovernanceDetailPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Not Uploaded">Not Uploaded</SelectItem>
-                      <SelectItem value="Draft">Draft</SelectItem>
-                      <SelectItem value="Under Review">Under Review</SelectItem>
-                      <SelectItem value="Approved">Approved</SelectItem>
-                      <SelectItem value="Published">Published</SelectItem>
-                      <SelectItem value="Needs Review">Needs Review</SelectItem>
-                      <SelectItem value="Archived">Archived</SelectItem>
+                      <SelectItem value="Not Uploaded">{t("Not Uploaded")}</SelectItem>
+                      <SelectItem value="Draft">{t("Draft")}</SelectItem>
+                      <SelectItem value="Under Review">{t("Under Review")}</SelectItem>
+                      <SelectItem value="Approved">{t("Approved")}</SelectItem>
+                      <SelectItem value="Published">{t("Published")}</SelectItem>
+                      <SelectItem value="Needs Review">{t("Needs Review")}</SelectItem>
+                      <SelectItem value="Archived">{t("Archived")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label>Version</Label>
+                  <Label>{t("Version")}</Label>
                   <Input
                     value={editForm.version}
                     onChange={(e) =>
                       setEditForm({ ...editForm, version: e.target.value })
                     }
-                    placeholder="e.g., 1.0"
+                    placeholder={t("e.g., 1.0")}
                   />
                 </div>
                 <div>
-                  <Label>Recurrence</Label>
+                  <Label>{t("Recurrence")}</Label>
                   <Select
                     value={editForm.recurrence}
                     onValueChange={(value) =>
@@ -882,7 +884,7 @@ export default function GovernanceDetailPage() {
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select recurrence" />
+                      <SelectValue placeholder={t("Select recurrence")} />
                     </SelectTrigger>
                     <SelectContent>
                       {RECURRENCE_OPTIONS.map((r) => (
@@ -892,7 +894,7 @@ export default function GovernanceDetailPage() {
                   </Select>
                 </div>
                 <div>
-                  <Label>Framework</Label>
+                  <Label>{t("Framework")}</Label>
                   <Select
                     value={editForm.frameworkId}
                     onValueChange={(value) =>
@@ -900,7 +902,7 @@ export default function GovernanceDetailPage() {
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select framework" />
+                      <SelectValue placeholder={t("Select framework")} />
                     </SelectTrigger>
                     <SelectContent>
                       {frameworks.map((f) => (
@@ -912,7 +914,7 @@ export default function GovernanceDetailPage() {
                   </Select>
                 </div>
                 <div>
-                  <Label>Department</Label>
+                  <Label>{t("Department")}</Label>
                   <Select
                     value={editForm.departmentId}
                     onValueChange={(value) =>
@@ -920,7 +922,7 @@ export default function GovernanceDetailPage() {
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select department" />
+                      <SelectValue placeholder={t("Select department")} />
                     </SelectTrigger>
                     <SelectContent>
                       {departments.map((d) => (
@@ -932,7 +934,7 @@ export default function GovernanceDetailPage() {
                   </Select>
                 </div>
                 <div>
-                  <Label>Effective Date</Label>
+                  <Label>{t("Effective Date")}</Label>
                   <Input
                     type="date"
                     value={editForm.effectiveDate}
@@ -942,7 +944,7 @@ export default function GovernanceDetailPage() {
                   />
                 </div>
                 <div>
-                  <Label>Review Date</Label>
+                  <Label>{t("Review Date")}</Label>
                   <Input
                     type="date"
                     value={editForm.reviewDate}
@@ -957,9 +959,9 @@ export default function GovernanceDetailPage() {
                   variant="outline"
                   onClick={() => setEditDialogOpen(false)}
                 >
-                  Cancel
+                  {t("Cancel")}
                 </Button>
-                <Button onClick={handleSave}>Save Changes</Button>
+                <Button onClick={handleSave}>{t("Save Changes")}</Button>
               </div>
             </DialogContent>
           </Dialog>
@@ -1007,7 +1009,7 @@ export default function GovernanceDetailPage() {
                     }`}
                   >
                     <Icon className="h-6 w-6" />
-                    <span className="text-sm font-medium">{step.label}</span>
+                    <span className="text-sm font-medium">{t(step.label)}</span>
                   </div>
                   {index < STATUS_WORKFLOW.length - 1 && (
                     <div className={`flex-1 h-1 mx-2 ${
@@ -1039,14 +1041,14 @@ export default function GovernanceDetailPage() {
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors">
                   <Layers className="h-4 w-4 text-blue-600" />
                   <span className="text-sm font-medium text-blue-700">
-                    Linked Frameworks: {frameworkCount}
+                    {t("Linked Frameworks")}: {frameworkCount}
                   </span>
                 </div>
               </TooltipTrigger>
               {frameworkCount > 0 && (
                 <TooltipContent side="bottom" className="max-w-xs bg-slate-800 text-white p-2">
                   <div className="space-y-1">
-                    <p className="font-medium text-xs text-slate-300">Linked Frameworks:</p>
+                    <p className="font-medium text-xs text-slate-300">{t("Linked Frameworks")}:</p>
                     {linkedFrameworks.map((fw) => (
                       <p key={fw.id} className="text-sm">{fw.name}</p>
                     ))}
@@ -1061,13 +1063,13 @@ export default function GovernanceDetailPage() {
       {/* Policy Details - Inline Editable (with permission check) */}
       <Card>
         <CardHeader>
-          <CardTitle>Policy Details</CardTitle>
+          <CardTitle>{t("Policy Details")}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
             {/* Department - Inline Dropdown (editable only with permission) */}
             <div>
-              <Label className="text-slate-400 text-sm">Department</Label>
+              <Label className="text-slate-400 text-sm">{t("Department")}</Label>
               {canEdit ? (
                 <Select
                   value={selectedDepartmentId}
@@ -1077,7 +1079,7 @@ export default function GovernanceDetailPage() {
                   }}
                 >
                   <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Select department" />
+                    <SelectValue placeholder={t("Select department")} />
                   </SelectTrigger>
                   <SelectContent>
                     {departments.map((d) => (
@@ -1092,7 +1094,7 @@ export default function GovernanceDetailPage() {
 
             {/* Assigned To - With Edit Button (only with edit permission) */}
             <div>
-              <Label className="text-slate-400 text-sm">Assigned To</Label>
+              <Label className="text-slate-400 text-sm">{t("Assigned To")}</Label>
               <div className="flex items-center gap-2 mt-1">
                 <span className="font-medium">{policy.assignee?.fullName || "-"}</span>
                 <PermissionGate resource="compliance.governance" action="edit">
@@ -1104,16 +1106,16 @@ export default function GovernanceDetailPage() {
                     </DialogTrigger>
                     <DialogContent>
                       <DialogHeader>
-                        <DialogTitle>Edit Assignee</DialogTitle>
+                        <DialogTitle>{t("Edit Assignee")}</DialogTitle>
                       </DialogHeader>
                       <div className="py-4">
-                        <Label>Select Assignee</Label>
+                        <Label>{t("Select Assignee")}</Label>
                         <p className="text-xs text-slate-500 mt-1 mb-2">
-                          Only Department Contributors and Department Reviewers from the assigned department are shown.
+                          {t("Only Department Contributors and Department Reviewers from the assigned department are shown.")}
                         </p>
                         <Select value={selectedAssigneeId} onValueChange={setSelectedAssigneeId}>
                           <SelectTrigger className="mt-2">
-                            <SelectValue placeholder="Select assignee" />
+                            <SelectValue placeholder={t("Select assignee")} />
                           </SelectTrigger>
                           <SelectContent>
                             {filteredAssigneeUsers.length > 0 ? (
@@ -1122,7 +1124,7 @@ export default function GovernanceDetailPage() {
                               ))
                             ) : (
                               <div className="py-2 px-2 text-sm text-slate-500 text-center">
-                                No eligible users found in this department
+                                {t("No eligible users found in this department")}
                               </div>
                             )}
                           </SelectContent>
@@ -1130,9 +1132,9 @@ export default function GovernanceDetailPage() {
                       </div>
                       <div className="flex justify-end gap-2">
                         <Button variant="outline" onClick={() => setAssigneeDialogOpen(false)}>
-                          Cancel
+                          {t("Cancel")}
                         </Button>
-                        <Button onClick={handleSaveAssignee} disabled={!selectedAssigneeId}>Save</Button>
+                        <Button onClick={handleSaveAssignee} disabled={!selectedAssigneeId}>{t("Save")}</Button>
                       </div>
                     </DialogContent>
                   </Dialog>
@@ -1142,7 +1144,7 @@ export default function GovernanceDetailPage() {
 
             {/* Approvers - With Add Button (only with edit permission) */}
             <div>
-              <Label className="text-slate-400 text-sm">Approvers</Label>
+              <Label className="text-slate-400 text-sm">{t("Approvers")}</Label>
               <div className="flex items-center gap-2 mt-1">
                 <span className="font-medium">{policy.approver?.fullName || "-"}</span>
                 <PermissionGate resource="compliance.governance" action="edit">
@@ -1154,16 +1156,16 @@ export default function GovernanceDetailPage() {
                     </DialogTrigger>
                     <DialogContent>
                       <DialogHeader>
-                        <DialogTitle>Add Approver</DialogTitle>
+                        <DialogTitle>{t("Add Approver")}</DialogTitle>
                       </DialogHeader>
                       <div className="py-4">
-                        <Label>Select Approver</Label>
+                        <Label>{t("Select Approver")}</Label>
                         <p className="text-xs text-slate-500 mt-1 mb-2">
-                          Only Department Reviewers from the assigned department are shown.
+                          {t("Only Department Reviewers from the assigned department are shown.")}
                         </p>
                         <Select value={selectedApproverId} onValueChange={setSelectedApproverId}>
                           <SelectTrigger className="mt-2">
-                            <SelectValue placeholder="Select approver" />
+                            <SelectValue placeholder={t("Select approver")} />
                           </SelectTrigger>
                           <SelectContent>
                             {filteredApproverUsers.length > 0 ? (
@@ -1172,7 +1174,7 @@ export default function GovernanceDetailPage() {
                               ))
                             ) : (
                               <div className="py-2 px-2 text-sm text-slate-500 text-center">
-                                No Department Reviewers found in this department
+                                {t("No Department Reviewers found in this department")}
                               </div>
                             )}
                           </SelectContent>
@@ -1180,9 +1182,9 @@ export default function GovernanceDetailPage() {
                       </div>
                       <div className="flex justify-end gap-2">
                         <Button variant="outline" onClick={() => setApproverDialogOpen(false)}>
-                          Cancel
+                          {t("Cancel")}
                         </Button>
-                        <Button onClick={handleSaveApprover} disabled={!selectedApproverId}>Save</Button>
+                        <Button onClick={handleSaveApprover} disabled={!selectedApproverId}>{t("Save")}</Button>
                       </div>
                     </DialogContent>
                   </Dialog>
@@ -1192,7 +1194,7 @@ export default function GovernanceDetailPage() {
 
             {/* Recurrence - Inline Dropdown (editable only with permission) */}
             <div>
-              <Label className="text-slate-400 text-sm">Recurrence</Label>
+              <Label className="text-slate-400 text-sm">{t("Recurrence")}</Label>
               {canEdit ? (
                 <Select
                   value={selectedRecurrence}
@@ -1202,7 +1204,7 @@ export default function GovernanceDetailPage() {
                   }}
                 >
                   <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Select recurrence" />
+                    <SelectValue placeholder={t("Select recurrence")} />
                   </SelectTrigger>
                   <SelectContent>
                     {RECURRENCE_OPTIONS.map((r) => (
@@ -1217,7 +1219,7 @@ export default function GovernanceDetailPage() {
 
             {/* Review Date - Inline Date Picker (editable only with permission) */}
             <div>
-              <Label className="text-slate-400 text-sm">Review Date</Label>
+              <Label className="text-slate-400 text-sm">{t("Review Date")}</Label>
               <div className="flex items-center gap-2 mt-1">
                 {canEdit ? (
                   <Input
@@ -1237,14 +1239,14 @@ export default function GovernanceDetailPage() {
 
             {/* Version - Read-only */}
             <div>
-              <Label className="text-slate-400 text-sm">Version</Label>
+              <Label className="text-slate-400 text-sm">{t("Version")}</Label>
               <p className="font-medium mt-1">{policy.version || "-"}</p>
             </div>
           </div>
 
           {policy.description && (
             <div className="mt-6">
-              <Label className="text-slate-400 text-sm">Description</Label>
+              <Label className="text-slate-400 text-sm">{t("Description")}</Label>
               <p className="mt-1">{policy.description}</p>
             </div>
           )}
@@ -1256,23 +1258,23 @@ export default function GovernanceDetailPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5" />
-            AI Review
+            {t("AI Review")}
           </CardTitle>
         </CardHeader>
         <CardContent>
           {!policy.aiReviewStatus || policy.aiReviewStatus === "Pending" ? (
             <div className="text-center py-4 text-slate-400">
-              <p>AI Review has not been performed yet</p>
+              <p>{t("AI Review has not been performed yet")}</p>
             </div>
           ) : policy.aiReviewStatus === "In Progress" ? (
             <div className="flex items-center gap-4">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-              <p>AI Review in progress...</p>
+              <p>{t("AI Review in progress...")}</p>
             </div>
           ) : (
             <div className="grid grid-cols-3 gap-6">
               <div>
-                <Label className="text-slate-400 text-sm">Status</Label>
+                <Label className="text-slate-400 text-sm">{t("Status")}</Label>
                 <div className="mt-1">
                   <Badge className={aiStatusColors[policy.aiReviewStatus] || "bg-gray-100"}>
                     {policy.aiReviewStatus}
@@ -1281,7 +1283,7 @@ export default function GovernanceDetailPage() {
               </div>
               {policy.aiReviewScore !== null && (
                 <div>
-                  <Label className="text-slate-400 text-sm">Score</Label>
+                  <Label className="text-slate-400 text-sm">{t("Score")}</Label>
                   <div className="mt-1">
                     <span className={`text-2xl font-bold ${
                       policy.aiReviewScore >= 80
@@ -1297,7 +1299,7 @@ export default function GovernanceDetailPage() {
               )}
               {policy.aiReviewJustification && (
                 <div className="col-span-3">
-                  <Label className="text-slate-400 text-sm">Justification</Label>
+                  <Label className="text-slate-400 text-sm">{t("Justification")}</Label>
                   <p className="mt-1 p-3 bg-muted rounded-lg">{policy.aiReviewJustification}</p>
                 </div>
               )}
@@ -1312,7 +1314,7 @@ export default function GovernanceDetailPage() {
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <Check className="h-5 w-5 text-green-600" />
-              Published
+              {t("Published")}
             </CardTitle>
             <div className="flex items-center gap-2">
               {/* Download Published Document Button */}
@@ -1323,7 +1325,7 @@ export default function GovernanceDetailPage() {
                   onClick={() => window.open(attachments[0].filePath, "_blank")}
                 >
                   <Download className="h-4 w-4 mr-2" />
-                  Download
+                  {t("Download")}
                 </Button>
               )}
               {/* Unpublish Button */}
@@ -1334,7 +1336,7 @@ export default function GovernanceDetailPage() {
                   onClick={() => setUnpublishDialogOpen(true)}
                   className="text-orange-600 hover:text-orange-700"
                 >
-                  Unpublish
+                  {t("Unpublish")}
                 </Button>
               </PermissionGate>
             </div>
@@ -1345,7 +1347,7 @@ export default function GovernanceDetailPage() {
               <div className="space-y-4">
                 {/* Published On */}
                 <div>
-                  <Label className="text-slate-400 text-sm">Published On</Label>
+                  <Label className="text-slate-400 text-sm">{t("Published On")}</Label>
                   <p className="font-medium mt-1">
                     {(() => {
                       // Try to get stored publishedAt from localStorage, fallback to updatedAt
@@ -1366,20 +1368,20 @@ export default function GovernanceDetailPage() {
 
                 {/* Published Document */}
                 <div>
-                  <Label className="text-slate-400 text-sm">Published Document</Label>
+                  <Label className="text-slate-400 text-sm">{t("Published Document")}</Label>
                   {attachments.length > 0 ? (
                     <div className="flex items-center gap-2 mt-1 p-2 bg-muted rounded-lg">
                       <FileText className="h-5 w-5 text-blue-600" />
                       <span className="font-medium">{attachments[0].fileName}</span>
                     </div>
                   ) : (
-                    <p className="text-slate-400 mt-1">No document attached</p>
+                    <p className="text-slate-400 mt-1">{t("No document attached")}</p>
                   )}
                 </div>
 
                 {/* Approver Details */}
                 <div>
-                  <Label className="text-slate-400 text-sm">Approved By</Label>
+                  <Label className="text-slate-400 text-sm">{t("Approved By")}</Label>
                   {policy.approver ? (
                     <div className="mt-1 p-3 bg-muted rounded-lg space-y-1">
                       <p className="font-medium">{policy.approver.fullName}</p>
@@ -1390,12 +1392,12 @@ export default function GovernanceDetailPage() {
                           <>
                             {approverUser?.department && (
                               <p className="text-sm text-slate-400">
-                                Department: {approverUser.department.name}
+                                {t("Department")}: {approverUser.department.name}
                               </p>
                             )}
                             {approverUser?.designation && (
                               <p className="text-sm text-slate-400">
-                                Designation: {approverUser.designation}
+                                {t("Designation")}: {approverUser.designation}
                               </p>
                             )}
                           </>
@@ -1410,16 +1412,16 @@ export default function GovernanceDetailPage() {
 
               {/* Right Column - Signature */}
               <div>
-                <Label className="text-slate-400 text-sm">Signature</Label>
+                <Label className="text-slate-400 text-sm">{t("Signature")}</Label>
                 <div className="mt-1 border rounded-lg p-4 bg-white min-h-[150px] flex items-center justify-center">
                   {storedSignature ? (
                     <img
                       src={storedSignature}
-                      alt="Signature"
+                      alt={t("Signature")}
                       className="max-w-full max-h-[140px] object-contain"
                     />
                   ) : (
-                    <p className="text-slate-400 text-sm">Signature not available</p>
+                    <p className="text-slate-400 text-sm">{t("Signature not available")}</p>
                   )}
                 </div>
               </div>
@@ -1432,15 +1434,15 @@ export default function GovernanceDetailPage() {
       <AlertDialog open={unpublishDialogOpen} onOpenChange={setUnpublishDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Unpublish {typeLabels[policy.documentType] || "Document"}?</AlertDialogTitle>
+            <AlertDialogTitle>{t("Unpublish")} {t(typeLabels[policy.documentType] || "Document")}?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will revert the status from Published to Approved. The document will need to be published again after any changes.
+              {t("This will revert the status from Published to Approved. The document will need to be published again after any changes.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleUnpublish} className="bg-orange-600 hover:bg-orange-700">
-              Unpublish
+              {t("Unpublish")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1449,7 +1451,7 @@ export default function GovernanceDetailPage() {
       {/* Attachments Section */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Attachments</CardTitle>
+          <CardTitle>{t("Attachments")}</CardTitle>
           <PermissionGate resource="compliance.governance" action="edit">
             {isCustomerAdmin ? (
               /* Customer Admin: Upload dialog with full functionality */
@@ -1460,16 +1462,16 @@ export default function GovernanceDetailPage() {
                 <DialogTrigger asChild>
                   <Button size="sm">
                     <Upload className="h-4 w-4 mr-2" />
-                    Upload
+                    {t("Upload")}
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Upload Document</DialogTitle>
+                    <DialogTitle>{t("Upload Document")}</DialogTitle>
                   </DialogHeader>
                   <div className="py-4 space-y-4">
                     <div>
-                      <Label>Select File</Label>
+                      <Label>{t("Select File")}</Label>
                       <Input
                         type="file"
                         onChange={handleFileSelect}
@@ -1495,7 +1497,7 @@ export default function GovernanceDetailPage() {
                       }}
                       disabled={uploading}
                     >
-                      Cancel
+                      {t("Cancel")}
                     </Button>
                     <Button
                       onClick={handleUploadAttachment}
@@ -1504,10 +1506,10 @@ export default function GovernanceDetailPage() {
                       {uploading ? (
                         <>
                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                          Uploading...
+                          {t("Uploading...")}
                         </>
                       ) : (
-                        "Upload"
+                        t("Upload")
                       )}
                     </Button>
                   </div>
@@ -1517,7 +1519,7 @@ export default function GovernanceDetailPage() {
               /* GRC Admin / Other roles: Original simple button (no functionality) */
               <Button size="sm">
                 <Upload className="h-4 w-4 mr-2" />
-                Upload
+                {t("Upload")}
               </Button>
             )}
           </PermissionGate>
@@ -1526,16 +1528,16 @@ export default function GovernanceDetailPage() {
           {attachments.length === 0 ? (
             <div className="text-center py-8 text-slate-400">
               <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p>No attachments uploaded</p>
+              <p>{t("No attachments uploaded")}</p>
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>File Name</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Uploaded</TableHead>
-                  <TableHead className="w-[100px]">Actions</TableHead>
+                  <TableHead>{t("File Name")}</TableHead>
+                  <TableHead>{t("Type")}</TableHead>
+                  <TableHead>{t("Uploaded")}</TableHead>
+                  <TableHead className="w-[100px]">{t("Actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1596,11 +1598,11 @@ export default function GovernanceDetailPage() {
       }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{typeLabels[policy.documentType] || "Policy"} signature Publish</DialogTitle>
+            <DialogTitle>{t(typeLabels[policy.documentType] || "Policy")} {t("signature Publish")}</DialogTitle>
           </DialogHeader>
           <div className="py-4 space-y-4">
             <p className="text-sm text-slate-400">
-              Please sign below to publish this {(policy.documentType || "document").toLowerCase()}.
+              {t("Please sign below to publish this")} {(policy.documentType || "document").toLowerCase()}.
             </p>
             <div className="border rounded-lg p-2 bg-white">
               <canvas
@@ -1621,10 +1623,10 @@ export default function GovernanceDetailPage() {
                 onClick={clearSignature}
                 disabled={!hasSignature}
               >
-                Clear Signature
+                {t("Clear Signature")}
               </Button>
               <span className="text-xs text-slate-400">
-                Draw your signature above
+                {t("Draw your signature above")}
               </span>
             </div>
           </div>
@@ -1633,10 +1635,10 @@ export default function GovernanceDetailPage() {
               setSignatureDialogOpen(false);
               clearSignature();
             }}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button onClick={handlePublish} disabled={!hasSignature}>
-              Publish
+              {t("Publish")}
             </Button>
           </div>
         </DialogContent>
@@ -1671,24 +1673,24 @@ export default function GovernanceDetailPage() {
       {activeTab === "controls" && (
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Linked Control</CardTitle>
+            <CardTitle>{t("Linked Control")}</CardTitle>
             <PermissionGate resource="compliance.governance" action="edit">
               <Dialog open={linkControlDialogOpen} onOpenChange={setLinkControlDialogOpen}>
                 <DialogTrigger asChild>
                   <Button size="sm">
                     <Plus className="h-4 w-4 mr-2" />
-                    Link Control
+                    {t("Link Control")}
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Link Control</DialogTitle>
+                    <DialogTitle>{t("Link Control")}</DialogTitle>
                   </DialogHeader>
                   <div className="py-4">
-                    <Label>Select Control</Label>
+                    <Label>{t("Select Control")}</Label>
                     <Select value={selectedControlId} onValueChange={setSelectedControlId}>
                       <SelectTrigger className="mt-2">
-                        <SelectValue placeholder="Select a control" />
+                        <SelectValue placeholder={t("Select a control")} />
                       </SelectTrigger>
                       <SelectContent>
                         {availableControls
@@ -1703,9 +1705,9 @@ export default function GovernanceDetailPage() {
                   </div>
                   <div className="flex justify-end gap-2">
                     <Button variant="outline" onClick={() => setLinkControlDialogOpen(false)}>
-                      Cancel
+                      {t("Cancel")}
                     </Button>
-                    <Button onClick={handleLinkControl}>Link</Button>
+                    <Button onClick={handleLinkControl}>{t("Link")}</Button>
                   </div>
                 </DialogContent>
               </Dialog>
@@ -1715,17 +1717,17 @@ export default function GovernanceDetailPage() {
             {linkedControls.length === 0 ? (
               <div className="text-center py-8 text-slate-400">
                 <Link2 className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p>No controls linked to this {(policy.documentType || "policy").toLowerCase()}</p>
+                <p>{t("No controls linked to this")} {(policy.documentType || "policy").toLowerCase()}</p>
               </div>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Control ID</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Domain</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="w-[80px]">Actions</TableHead>
+                    <TableHead>{t("Control ID")}</TableHead>
+                    <TableHead>{t("Name")}</TableHead>
+                    <TableHead>{t("Domain")}</TableHead>
+                    <TableHead>{t("Status")}</TableHead>
+                    <TableHead className="w-[80px]">{t("Actions")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1747,7 +1749,7 @@ export default function GovernanceDetailPage() {
                             onClick={() => handleUnlinkControl(pc.control.id)}
                             className="text-red-500 hover:text-red-700"
                           >
-                            Unlink
+                            {t("Unlink")}
                           </Button>
                         </PermissionGate>
                       </TableCell>
@@ -1763,22 +1765,22 @@ export default function GovernanceDetailPage() {
       {activeTab === "exceptions" && (
         <Card>
           <CardHeader>
-            <CardTitle>Linked Exception</CardTitle>
+            <CardTitle>{t("Linked Exception")}</CardTitle>
           </CardHeader>
           <CardContent>
             {linkedExceptions.length === 0 ? (
               <div className="text-center py-8 text-slate-400">
                 <AlertTriangle className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p>No exceptions linked to this {(policy.documentType || "policy").toLowerCase()}</p>
+                <p>{t("No exceptions linked to this")} {(policy.documentType || "policy").toLowerCase()}</p>
               </div>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Exception Code</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>{t("Exception Code")}</TableHead>
+                    <TableHead>{t("Name")}</TableHead>
+                    <TableHead>{t("Category")}</TableHead>
+                    <TableHead>{t("Status")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1804,11 +1806,11 @@ export default function GovernanceDetailPage() {
       {activeTab === "documents" && (
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Linked Documents</CardTitle>
+            <CardTitle>{t("Linked Documents")}</CardTitle>
             <PermissionGate resource="compliance.governance" action="edit">
               <Button size="sm">
                 <Plus className="h-4 w-4 mr-2" />
-                Link Document
+                {t("Link Document")}
               </Button>
             </PermissionGate>
           </CardHeader>
@@ -1816,16 +1818,16 @@ export default function GovernanceDetailPage() {
             {linkedDocuments.length === 0 ? (
               <div className="text-center py-8 text-slate-400">
                 <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p>No documents linked to this {(policy.documentType || "policy").toLowerCase()}</p>
+                <p>{t("No documents linked to this")} {(policy.documentType || "policy").toLowerCase()}</p>
               </div>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Code</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead className="w-[80px]">Actions</TableHead>
+                    <TableHead>{t("Code")}</TableHead>
+                    <TableHead>{t("Name")}</TableHead>
+                    <TableHead>{t("Type")}</TableHead>
+                    <TableHead className="w-[80px]">{t("Actions")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1837,7 +1839,7 @@ export default function GovernanceDetailPage() {
                       <TableCell>
                         <PermissionGate resource="compliance.governance" action="edit">
                           <Button variant="ghost" size="sm" className="text-red-500">
-                            Unlink
+                            {t("Unlink")}
                           </Button>
                         </PermissionGate>
                       </TableCell>

@@ -37,9 +37,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft, Plus, Pencil, Trash2, Download, Upload, Search, Check, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Home } from "lucide-react";
-import Link from "next/link";
+import { ArrowLeft, Plus, Pencil, Trash2, Download, Upload, Search, Check, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Department {
   id: string;
@@ -110,6 +110,7 @@ const functionalGroupings = ["Govern", "Identify", "Protect", "Detect", "Respond
 export default function GovernanceMasterDataPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -519,23 +520,17 @@ export default function GovernanceMasterDataPage() {
 
   return (
     <div className="space-y-6">
-      {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
-        <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
-          <Home className="h-4 w-4" />
-          <span>Compliance</span>
-        </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-        <Link href="/compliance/master-data" className="text-slate-500 hover:text-primary-600 transition-colors">
-          Master Data
-        </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-        <span className="text-primary-700 font-medium">Governance</span>
-      </nav>
-
-      {/* Page Header */}
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">Governance</h1>
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => router.push("/compliance/master-data")}
+          className="h-8 w-8 text-slate-400 hover:text-slate-600"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Governance")}</h1>
       </div>
 
       {/* Search and Actions - same row */}
@@ -543,7 +538,7 @@ export default function GovernanceMasterDataPage() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input
-            placeholder="Search governance documents..."
+            placeholder={t("Search governance documents...")}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10 w-[300px] bg-white border-slate-200"
@@ -552,15 +547,15 @@ export default function GovernanceMasterDataPage() {
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
             <Upload className="h-4 w-4 mr-2" />
-            Import
+            {t("Import")}
           </Button>
           <Button variant="outline" size="sm" onClick={handleExport}>
             <Download className="h-4 w-4 mr-2" />
-            Export
+            {t("Export")}
           </Button>
           <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
-            New Policies
+            {t("New Policies")}
           </Button>
         </div>
       </div>
@@ -570,23 +565,23 @@ export default function GovernanceMasterDataPage() {
         <Table>
           <TableHeader>
             <TableRow className="border-b border-slate-100 bg-slate-50/50">
-              <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4">Policy Name</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">Status</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">Assignee</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">Approver</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">Department</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">Requirement</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">Recurrence</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">Code</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">Type</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[100px]">Action</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4">{t("Policy Name")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Status")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Assignee")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Approver")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Department")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Requirement")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Recurrence")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Code")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Type")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[100px]">{t("Action")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredPolicies.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={10} className="text-center py-12">
-                  <p className="text-slate-500">No governance documents found</p>
+                  <p className="text-slate-500">{t("No governance documents found")}</p>
                 </TableCell>
               </TableRow>
             ) : (
@@ -636,7 +631,7 @@ export default function GovernanceMasterDataPage() {
         {/* Pagination */}
         <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
           <p className="text-sm text-slate-500">
-            Showing {filteredPolicies.length} of {total}
+            {t("Showing")} {filteredPolicies.length} {t("of")} {total}
           </p>
           <div className="flex items-center gap-1">
             <Button
@@ -658,7 +653,7 @@ export default function GovernanceMasterDataPage() {
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <span className="text-sm text-slate-600 px-2">
-              Page {page} of {totalPages || 1}
+              {t("Page")} {page} {t("of")} {totalPages || 1}
             </span>
             <Button
               variant="ghost"
@@ -691,7 +686,7 @@ export default function GovernanceMasterDataPage() {
       }}>
         <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
-            <DialogTitle className="text-lg font-semibold text-slate-800">New Policies</DialogTitle>
+            <DialogTitle className="text-lg font-semibold text-slate-800">{t("New Policies")}</DialogTitle>
           </div>
 
           {/* Step Indicators */}
@@ -710,7 +705,7 @@ export default function GovernanceMasterDataPage() {
                 <span className={`ml-2 text-sm ${
                   step === wizardStep ? "text-slate-800 font-medium" : "text-slate-500"
                 }`}>
-                  {step === 1 ? "Policy Information" : step === 2 ? "Link Controls" : "Review"}
+                  {step === 1 ? t("Policy Information") : step === 2 ? t("Link Controls") : t("Review")}
                 </span>
                 {step < 3 && <div className="w-12 h-0.5 bg-slate-200 mx-3" />}
               </div>
@@ -723,20 +718,20 @@ export default function GovernanceMasterDataPage() {
               <div className="space-y-4">
                 <div>
                   <Label className="text-sm font-medium text-slate-700">
-                    Policy Name <span className="text-red-500">*</span>
+                    {t("Policy Name")} <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     value={formData.name}
                     onChange={(e) =>
                       setFormData({ ...formData, name: e.target.value })
                     }
-                    placeholder="Enter policy name"
+                    placeholder={t("Enter policy name")}
                     className="mt-1.5 w-full bg-white"
                   />
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-slate-700">
-                    Department <span className="text-red-500">*</span>
+                    {t("Department")} <span className="text-red-500">*</span>
                   </Label>
                   <Select
                     value={formData.departmentId || "none"}
@@ -749,10 +744,10 @@ export default function GovernanceMasterDataPage() {
                     }
                   >
                     <SelectTrigger className="mt-1.5 w-full bg-white">
-                      <SelectValue placeholder="Select department" />
+                      <SelectValue placeholder={t("Select department")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
-                      <SelectItem value="none">Select department</SelectItem>
+                      <SelectItem value="none">{t("Select department")}</SelectItem>
                       {departments.map((d) => (
                         <SelectItem key={d.id} value={d.id}>
                           {d.name}
@@ -763,7 +758,7 @@ export default function GovernanceMasterDataPage() {
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-slate-700">
-                    Document type <span className="text-red-500">*</span>
+                    {t("Document type")} <span className="text-red-500">*</span>
                   </Label>
                   <Select
                     value={formData.documentType || "none"}
@@ -772,10 +767,10 @@ export default function GovernanceMasterDataPage() {
                     }
                   >
                     <SelectTrigger className="mt-1.5 w-full bg-white">
-                      <SelectValue placeholder="Select document type" />
+                      <SelectValue placeholder={t("Select document type")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
-                      <SelectItem value="none">Select document type</SelectItem>
+                      <SelectItem value="none">{t("Select document type")}</SelectItem>
                       {documentTypes.map((type) => (
                         <SelectItem key={type} value={type}>
                           {type}
@@ -786,7 +781,7 @@ export default function GovernanceMasterDataPage() {
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-slate-700">
-                    Recurrence <span className="text-red-500">*</span>
+                    {t("Recurrence")} <span className="text-red-500">*</span>
                   </Label>
                   <Select
                     value={formData.recurrence || "none"}
@@ -795,10 +790,10 @@ export default function GovernanceMasterDataPage() {
                     }
                   >
                     <SelectTrigger className="mt-1.5 w-full bg-white">
-                      <SelectValue placeholder="Select recurrence" />
+                      <SelectValue placeholder={t("Select recurrence")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
-                      <SelectItem value="none">Select recurrence</SelectItem>
+                      <SelectItem value="none">{t("Select recurrence")}</SelectItem>
                       {recurrenceOptions.map((option) => (
                         <SelectItem key={option} value={option}>
                           {option}
@@ -807,12 +802,12 @@ export default function GovernanceMasterDataPage() {
                     </SelectContent>
                   </Select>
                   {!formData.recurrence && formData.name && (
-                    <p className="text-red-500 text-sm mt-1">Please select the recurrence</p>
+                    <p className="text-red-500 text-sm mt-1">{t("Please select the recurrence")}</p>
                   )}
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-slate-700">
-                    Assignee <span className="text-red-500">*</span>
+                    {t("Assignee")} <span className="text-red-500">*</span>
                   </Label>
                   <Select
                     value={formData.assigneeId || "none"}
@@ -821,10 +816,10 @@ export default function GovernanceMasterDataPage() {
                     }
                   >
                     <SelectTrigger className="mt-1.5 w-full bg-white">
-                      <SelectValue placeholder="Select assignee" />
+                      <SelectValue placeholder={t("Select assignee")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
-                      <SelectItem value="none">Select assignee</SelectItem>
+                      <SelectItem value="none">{t("Select assignee")}</SelectItem>
                       {filteredUsers.map((u) => (
                         <SelectItem key={u.id} value={u.id}>
                           {u.fullName}
@@ -833,7 +828,7 @@ export default function GovernanceMasterDataPage() {
                     </SelectContent>
                   </Select>
                   {!formData.assigneeId && formData.departmentId && (
-                    <p className="text-red-500 text-sm mt-1">Please select the assignee</p>
+                    <p className="text-red-500 text-sm mt-1">{t("Please select the assignee")}</p>
                   )}
                 </div>
               </div>
@@ -849,10 +844,10 @@ export default function GovernanceMasterDataPage() {
                     onValueChange={(value) => setControlCategoryFilter(value === "all" ? "" : value)}
                   >
                     <SelectTrigger className="w-full bg-white">
-                      <SelectValue placeholder="All Categories" />
+                      <SelectValue placeholder={t("All Categories")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
-                      <SelectItem value="all">All Categories</SelectItem>
+                      <SelectItem value="all">{t("All Categories")}</SelectItem>
                       {policyCategories.map((cat) => (
                         <SelectItem key={cat} value={cat}>
                           {cat}
@@ -866,10 +861,10 @@ export default function GovernanceMasterDataPage() {
                     onValueChange={(value) => setFrameworkFilter(value === "all" ? "" : value)}
                   >
                     <SelectTrigger className="w-full bg-white">
-                      <SelectValue placeholder="All Frameworks" />
+                      <SelectValue placeholder={t("All Frameworks")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
-                      <SelectItem value="all">All Frameworks</SelectItem>
+                      <SelectItem value="all">{t("All Frameworks")}</SelectItem>
                       {frameworks.map((f) => (
                         <SelectItem key={f.id} value={f.id}>
                           {f.name}
@@ -883,10 +878,10 @@ export default function GovernanceMasterDataPage() {
                     onValueChange={(value) => setFunctionalGroupingFilter(value === "all" ? "" : value)}
                   >
                     <SelectTrigger className="w-full bg-white">
-                      <SelectValue placeholder="All Groupings" />
+                      <SelectValue placeholder={t("All Groupings")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
-                      <SelectItem value="all">All Groupings</SelectItem>
+                      <SelectItem value="all">{t("All Groupings")}</SelectItem>
                       {functionalGroupings.map((fg) => (
                         <SelectItem key={fg} value={fg}>
                           {fg}
@@ -900,7 +895,7 @@ export default function GovernanceMasterDataPage() {
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <Input
-                    placeholder="Search By Control Code, Name"
+                    placeholder={t("Search By Control Code, Name")}
                     value={controlSearchTerm}
                     onChange={(e) => setControlSearchTerm(e.target.value)}
                     className="pl-10 bg-white"
@@ -910,7 +905,7 @@ export default function GovernanceMasterDataPage() {
                 {/* Controls List */}
                 <div className="border border-slate-200 rounded-lg max-h-[350px] overflow-y-auto">
                   {filteredControls.length === 0 ? (
-                    <div className="p-4 text-center text-slate-500">No controls found</div>
+                    <div className="p-4 text-center text-slate-500">{t("No controls found")}</div>
                   ) : (
                     filteredControls.map((control) => (
                       <div
@@ -933,7 +928,7 @@ export default function GovernanceMasterDataPage() {
                                 {control.controlCode} : {control.name}
                               </span>
                               <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
-                                {control.entities || "Organization Wide"}
+                                {control.entities || t("Organization Wide")}
                               </span>
                             </div>
                             <p className="text-sm text-slate-600 mt-1 line-clamp-2">
@@ -947,7 +942,7 @@ export default function GovernanceMasterDataPage() {
                 </div>
 
                 <p className="text-sm text-slate-500">
-                  {selectedControlIds.size} control(s) selected
+                  {selectedControlIds.size} {t("control(s) selected")}
                 </p>
               </div>
             )}
@@ -955,42 +950,42 @@ export default function GovernanceMasterDataPage() {
             {/* Step 3: Review Information */}
             {wizardStep === 3 && (
               <div className="space-y-4">
-                <h4 className="font-medium text-slate-800">Policy Information</h4>
+                <h4 className="font-medium text-slate-800">{t("Policy Information")}</h4>
                 <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-lg">
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Policy Name</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Policy Name")}</Label>
                     <p className="text-sm text-slate-800 mt-1">{formData.name}</p>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Policy Code</Label>
-                    <p className="text-sm text-slate-500 mt-1">(Auto-generated)</p>
+                    <Label className="text-sm font-medium text-slate-700">{t("Policy Code")}</Label>
+                    <p className="text-sm text-slate-500 mt-1">({t("Auto-generated")})</p>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Document Type</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Document Type")}</Label>
                     <p className="text-sm text-slate-800 mt-1">{formData.documentType}</p>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Recurrence</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Recurrence")}</Label>
                     <p className="text-sm text-slate-800 mt-1">{formData.recurrence}</p>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Department</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Department")}</Label>
                     <p className="text-sm text-slate-800 mt-1">
                       {departments.find((d) => d.id === formData.departmentId)?.name || "-"}
                     </p>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Assignee</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Assignee")}</Label>
                     <p className="text-sm text-slate-800 mt-1">
                       {users.find((u) => u.id === formData.assigneeId)?.fullName || "-"}
                     </p>
                   </div>
                 </div>
 
-                <h4 className="font-medium text-slate-800 mt-6">Linked Controls ({selectedControlIds.size})</h4>
+                <h4 className="font-medium text-slate-800 mt-6">{t("Linked Controls")} ({selectedControlIds.size})</h4>
                 <div className="border border-slate-200 rounded-lg max-h-[200px] overflow-y-auto">
                   {selectedControlIds.size === 0 ? (
-                    <div className="p-4 text-center text-slate-500">No controls selected</div>
+                    <div className="p-4 text-center text-slate-500">{t("No controls selected")}</div>
                   ) : (
                     Array.from(selectedControlIds).map((controlId) => {
                       const control = controls.find((c) => c.id === controlId);
@@ -1001,7 +996,7 @@ export default function GovernanceMasterDataPage() {
                             {control.controlCode} : {control.name}
                           </div>
                           <div className="text-xs text-slate-500">
-                            {control.entities || "Organization Wide"}
+                            {control.entities || t("Organization Wide")}
                           </div>
                         </div>
                       );
@@ -1016,11 +1011,11 @@ export default function GovernanceMasterDataPage() {
           <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             {wizardStep > 1 && (
               <Button variant="outline" size="sm" onClick={() => setWizardStep(wizardStep - 1)}>
-                Previous
+                {t("Previous")}
               </Button>
             )}
             <Button variant="outline" size="sm" onClick={() => setCreateDialogOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             {wizardStep < 3 ? (
               <Button
@@ -1028,11 +1023,11 @@ export default function GovernanceMasterDataPage() {
                 onClick={() => setWizardStep(wizardStep + 1)}
                 disabled={wizardStep === 1 && (!formData.name || !formData.departmentId || !formData.documentType || !formData.recurrence || !formData.assigneeId)}
               >
-                Next
+                {t("Next")}
               </Button>
             ) : (
               <Button size="sm" onClick={handleCreate}>
-                Save
+                {t("Save")}
               </Button>
             )}
           </div>
@@ -1043,13 +1038,13 @@ export default function GovernanceMasterDataPage() {
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
-            <DialogTitle className="text-lg font-semibold text-slate-800">Edit Policy</DialogTitle>
+            <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Policy")}</DialogTitle>
           </div>
           <div className="flex-1 overflow-y-auto px-6 py-6 space-y-5">
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label className="text-sm font-medium text-slate-700">
-                  Policy Code <span className="text-red-500">*</span>
+                  {t("Policy Code")} <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   value={formData.code}
@@ -1060,7 +1055,7 @@ export default function GovernanceMasterDataPage() {
                 />
               </div>
               <div>
-                <Label className="text-sm font-medium text-slate-700">Document Type</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Document Type")}</Label>
                 <Select
                   value={formData.documentType || "none"}
                   onValueChange={(value) =>
@@ -1071,7 +1066,7 @@ export default function GovernanceMasterDataPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
-                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="none">{t("None")}</SelectItem>
                     {documentTypes.map((type) => (
                       <SelectItem key={type} value={type}>
                         {type}
@@ -1083,7 +1078,7 @@ export default function GovernanceMasterDataPage() {
             </div>
             <div>
               <Label className="text-sm font-medium text-slate-700">
-                Policy Name <span className="text-red-500">*</span>
+                {t("Policy Name")} <span className="text-red-500">*</span>
               </Label>
               <Input
                 value={formData.name}
@@ -1095,7 +1090,7 @@ export default function GovernanceMasterDataPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label className="text-sm font-medium text-slate-700">Department</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Department")}</Label>
                 <Select
                   value={formData.departmentId || "none"}
                   onValueChange={(value) =>
@@ -1107,10 +1102,10 @@ export default function GovernanceMasterDataPage() {
                   }
                 >
                   <SelectTrigger className="mt-1.5 w-full bg-white">
-                    <SelectValue placeholder="Select department" />
+                    <SelectValue placeholder={t("Select department")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
-                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="none">{t("None")}</SelectItem>
                     {departments.map((d) => (
                       <SelectItem key={d.id} value={d.id}>
                         {d.name}
@@ -1120,7 +1115,7 @@ export default function GovernanceMasterDataPage() {
                 </Select>
               </div>
               <div>
-                <Label className="text-sm font-medium text-slate-700">Recurrence</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Recurrence")}</Label>
                 <Select
                   value={formData.recurrence || "none"}
                   onValueChange={(value) =>
@@ -1131,7 +1126,7 @@ export default function GovernanceMasterDataPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
-                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="none">{t("None")}</SelectItem>
                     {recurrenceOptions.map((option) => (
                       <SelectItem key={option} value={option}>
                         {option}
@@ -1143,7 +1138,7 @@ export default function GovernanceMasterDataPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label className="text-sm font-medium text-slate-700">Assignee</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Assignee")}</Label>
                 <Select
                   value={formData.assigneeId || "none"}
                   onValueChange={(value) =>
@@ -1151,10 +1146,10 @@ export default function GovernanceMasterDataPage() {
                   }
                 >
                   <SelectTrigger className="mt-1.5 w-full bg-white">
-                    <SelectValue placeholder="Select assignee" />
+                    <SelectValue placeholder={t("Select assignee")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
-                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="none">{t("None")}</SelectItem>
                     {filteredUsers.map((u) => (
                       <SelectItem key={u.id} value={u.id}>
                         {u.fullName}
@@ -1164,7 +1159,7 @@ export default function GovernanceMasterDataPage() {
                 </Select>
               </div>
               <div>
-                <Label className="text-sm font-medium text-slate-700">Approver</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Approver")}</Label>
                 <Select
                   value={formData.approverId || "none"}
                   onValueChange={(value) =>
@@ -1172,10 +1167,10 @@ export default function GovernanceMasterDataPage() {
                   }
                 >
                   <SelectTrigger className="mt-1.5 w-full bg-white">
-                    <SelectValue placeholder="Select approver" />
+                    <SelectValue placeholder={t("Select approver")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
-                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="none">{t("None")}</SelectItem>
                     {users.map((u) => (
                       <SelectItem key={u.id} value={u.id}>
                         {u.fullName}
@@ -1186,7 +1181,7 @@ export default function GovernanceMasterDataPage() {
               </div>
             </div>
             <div>
-              <Label className="text-sm font-medium text-slate-700">Status</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Status")}</Label>
               <Select
                 value={formData.status}
                 onValueChange={(value) =>
@@ -1197,12 +1192,12 @@ export default function GovernanceMasterDataPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent position="popper" sideOffset={4}>
-                  <SelectItem value="Not Uploaded">Not Uploaded</SelectItem>
-                  <SelectItem value="Draft">Draft</SelectItem>
-                  <SelectItem value="Approved">Approved</SelectItem>
-                  <SelectItem value="Needs Review">Needs Review</SelectItem>
-                  <SelectItem value="Published">Published</SelectItem>
-                  <SelectItem value="Pending Approval">Pending Approval</SelectItem>
+                  <SelectItem value="Not Uploaded">{t("Not Uploaded")}</SelectItem>
+                  <SelectItem value="Draft">{t("Draft")}</SelectItem>
+                  <SelectItem value="Approved">{t("Approved")}</SelectItem>
+                  <SelectItem value="Needs Review">{t("Needs Review")}</SelectItem>
+                  <SelectItem value="Published">{t("Published")}</SelectItem>
+                  <SelectItem value="Pending Approval">{t("Pending Approval")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -1217,14 +1212,14 @@ export default function GovernanceMasterDataPage() {
                 resetForm();
               }}
             >
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button
               size="sm"
               onClick={handleEdit}
               disabled={!formData.code || !formData.name}
             >
-              Save
+              {t("Save")}
             </Button>
           </div>
         </DialogContent>
@@ -1234,19 +1229,18 @@ export default function GovernanceMasterDataPage() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent className="p-0 gap-0">
           <AlertDialogHeader className="px-6 py-5">
-            <AlertDialogTitle className="text-lg font-semibold text-slate-800">Delete Policy</AlertDialogTitle>
+            <AlertDialogTitle className="text-lg font-semibold text-slate-800">{t("Delete Policy")}</AlertDialogTitle>
             <AlertDialogDescription className="text-sm text-slate-500 mt-1">
-              Are you sure you want to delete &quot;{selectedPolicy?.name}&quot;? This
-              action cannot be undone.
+              {t("Are you sure you want to delete")} &quot;{selectedPolicy?.name}&quot;? {t("This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="px-6 py-4 bg-white rounded-b-lg">
-            <AlertDialogCancel className="h-9">Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="h-9">{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-red-600 hover:bg-red-700 h-9"
             >
-              Delete
+              {t("Delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1264,11 +1258,11 @@ export default function GovernanceMasterDataPage() {
       }}>
         <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
-            <DialogTitle className="text-lg font-semibold text-slate-800">Import Policies</DialogTitle>
+            <DialogTitle className="text-lg font-semibold text-slate-800">{t("Import Policies")}</DialogTitle>
           </div>
           <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
             <div>
-              <Label className="text-sm font-medium text-slate-700">File</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("File")}</Label>
               <Input
                 type="file"
                 accept=".csv"
@@ -1278,7 +1272,7 @@ export default function GovernanceMasterDataPage() {
               />
               {importFile && (
                 <p className="text-sm text-slate-500 mt-1">
-                  Selected: {importFile.name}
+                  {t("Selected")}: {importFile.name}
                 </p>
               )}
             </div>
@@ -1286,7 +1280,7 @@ export default function GovernanceMasterDataPage() {
           <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
               <Download className="h-4 w-4 mr-2" />
-              Download Template
+              {t("Download Template")}
             </Button>
             <div className="flex gap-2">
               <Button
@@ -1300,7 +1294,7 @@ export default function GovernanceMasterDataPage() {
                   }
                 }}
               >
-                Cancel
+                {t("Cancel")}
               </Button>
               <Button
                 size="sm"
@@ -1313,12 +1307,12 @@ export default function GovernanceMasterDataPage() {
                       <div className="absolute inset-0 rounded-full border-2 border-white/30"></div>
                       <div className="absolute inset-0 rounded-full border-2 border-white border-t-transparent animate-spin"></div>
                     </div>
-                    Importing...
+                    {t("Importing...")}
                   </>
                 ) : (
                   <>
                     <Upload className="h-4 w-4 mr-2" />
-                    Import
+                    {t("Import")}
                   </>
                 )}
               </Button>

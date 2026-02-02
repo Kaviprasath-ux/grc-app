@@ -8,6 +8,7 @@ import { ChevronDown, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { navigation, filterNavigationByPermissionsAndRole, type NavItem } from "@/lib/navigation";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface NavItemProps {
   item: NavItem;
@@ -16,6 +17,7 @@ interface NavItemProps {
 
 function NavItemComponent({ item, depth = 0 }: NavItemProps) {
   const pathname = usePathname();
+  const { t, isRTL } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
 
   // Check if any child is active
@@ -33,6 +35,9 @@ function NavItemComponent({ item, depth = 0 }: NavItemProps) {
   const isActive = item.href === pathname;
   const hasChildren = item.children && item.children.length > 0;
   const Icon = item.icon;
+
+  // Translate the item name
+  const translatedName = t(item.name);
 
   if (hasChildren) {
     return (
@@ -53,7 +58,7 @@ function NavItemComponent({ item, depth = 0 }: NavItemProps) {
               <Icon className="h-[18px] w-[18px]" />
             </div>
           )}
-          <span className="flex-1 text-left">{item.name}</span>
+          <span className="flex-1 text-start">{translatedName}</span>
           <ChevronDown className={cn(
             "h-4 w-4 text-slate-400 transition-transform duration-200",
             isOpen && "rotate-180"
@@ -87,7 +92,7 @@ function NavItemComponent({ item, depth = 0 }: NavItemProps) {
           <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-500 group-hover:bg-red-50 group-hover:text-red-500">
             <LogOut className="h-[18px] w-[18px]" />
           </div>
-          <span>{item.name}</span>
+          <span>{translatedName}</span>
         </button>
       </div>
     );
@@ -105,7 +110,7 @@ function NavItemComponent({ item, depth = 0 }: NavItemProps) {
         )}
       >
         {Icon && <Icon className="h-4 w-4 shrink-0" />}
-        <span>{item.name}</span>
+        <span>{translatedName}</span>
       </Link>
     );
   }
@@ -129,7 +134,7 @@ function NavItemComponent({ item, depth = 0 }: NavItemProps) {
             <Icon className="h-[18px] w-[18px]" />
           </div>
         )}
-        <span>{item.name}</span>
+        <span>{translatedName}</span>
       </Link>
     </div>
   );
@@ -137,6 +142,7 @@ function NavItemComponent({ item, depth = 0 }: NavItemProps) {
 
 export function Sidebar() {
   const { data: session, status } = useSession();
+  const { t } = useLanguage();
 
   // Filter navigation based on user permissions and transform paths for role
   const filteredNavigation = useMemo(() => {
@@ -164,7 +170,7 @@ export function Sidebar() {
               <path fill="currentColor" d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
             </svg>
           </div>
-          <span className="text-base font-semibold text-slate-800 tracking-tight">GRC Platform</span>
+          <span className="text-base font-semibold text-slate-800 tracking-tight">{t("GRC Platform")}</span>
         </Link>
       </div>
 
@@ -174,7 +180,7 @@ export function Sidebar() {
           {status === "loading" ? (
             <div className="flex flex-col items-center justify-center py-8 gap-3">
               <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary-500 border-t-transparent"></div>
-              <span className="text-xs text-slate-400">Loading...</span>
+              <span className="text-xs text-slate-400">{t("Loading...")}</span>
             </div>
           ) : (
             filteredNavigation.map((item) => (
@@ -187,8 +193,8 @@ export function Sidebar() {
       {/* Footer */}
       <div className="absolute bottom-0 inset-x-0 p-4 border-t border-slate-200 bg-white">
         <div className="flex items-center justify-between text-[10px] text-slate-400">
-          <span>© 2025 GRC Platform</span>
-          <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">v2.0</span>
+          <span>© 2025 {t("GRC Platform")}</span>
+          <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">{t("v2.0")}</span>
         </div>
       </div>
     </aside>

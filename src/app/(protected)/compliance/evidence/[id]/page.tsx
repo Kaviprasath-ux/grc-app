@@ -60,9 +60,8 @@ import {
   Clock,
   Loader2,
   Layers,
-  Pencil,
-  Save,
 } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // Cycle status types
 type CycleStatus = "none" | "submitted" | "validated" | "rejected";
@@ -126,7 +125,6 @@ interface Evidence {
       description: string | null;
       entities: string;
       domain?: { name: string } | null;
-      framework?: { id: string; name: string } | null;
     };
   }>;
   attachments?: Array<{
@@ -154,17 +152,10 @@ interface Department {
   name: string;
 }
 
-interface UserRole {
-  role: {
-    name: string;
-  };
-}
-
 interface User {
   id: string;
   fullName: string;
   departmentId: string | null;
-  userRoles?: UserRole[];
 }
 
 interface Framework {
@@ -230,62 +221,17 @@ const getCurrentCycle = (recurrence: string | null): string => {
   }
 };
 
-// Helper function to calculate review date based on recurrence
-const calculateReviewDate = (recurrence: string): string => {
-  const today = new Date();
-  let reviewDate = new Date(today);
-
-  switch (recurrence) {
-    case "Monthly":
-      reviewDate.setMonth(reviewDate.getMonth() + 1);
-      break;
-    case "Quarterly":
-      reviewDate.setMonth(reviewDate.getMonth() + 3);
-      break;
-    case "Half-yearly":
-      reviewDate.setMonth(reviewDate.getMonth() + 6);
-      break;
-    case "Yearly":
-      reviewDate.setFullYear(reviewDate.getFullYear() + 1);
-      break;
-    default:
-      break;
-  }
-
-  return reviewDate.toISOString();
-};
-
 // Local storage key helpers for cycle status
-// Normalize dash characters (en-dash, em-dash, hyphen) to regular hyphen for consistent key matching
-const normalizeDashes = (str: string): string => {
-  return str.replace(/[\u2013\u2014]/g, "-"); // Replace en-dash (–) and em-dash (—) with hyphen (-)
-};
-
 const getCycleStatusKey = (evidenceId: string, period: string): string => {
-  return `evidence-${evidenceId}-cycle-${normalizeDashes(period)}-status`;
+  return `evidence-${evidenceId}-cycle-${period}-status`;
 };
 
 const getCycleStatusFromStorage = (evidenceId: string, period: string): CycleStatusData => {
   if (typeof window === "undefined") {
     return { status: "none", aiReviewStatus: "none" };
   }
-
-  // Try normalized key first (new format with regular hyphen)
-  const normalizedKey = getCycleStatusKey(evidenceId, period);
-  let stored = localStorage.getItem(normalizedKey);
-
-  // Backwards compatibility: also try original key format (with en-dash)
-  if (!stored) {
-    const originalKey = `evidence-${evidenceId}-cycle-${period}-status`;
-    stored = localStorage.getItem(originalKey);
-
-    // If found with old key, migrate to new key format
-    if (stored) {
-      localStorage.setItem(normalizedKey, stored);
-      localStorage.removeItem(originalKey);
-    }
-  }
-
+  const key = getCycleStatusKey(evidenceId, period);
+  const stored = localStorage.getItem(key);
   if (stored) {
     try {
       return JSON.parse(stored);
@@ -306,6 +252,7 @@ export default function EvidenceDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { data: session } = useSession();
+  const { t } = useLanguage();
   const id = params.id as string;
 
   const isGRCAdmin = session?.user?.roles?.includes("GRCAdministrator");
@@ -346,12 +293,9 @@ export default function EvidenceDetailPage() {
     kpiExpectedScore: "",
     kpiDescription: "",
     kpiCalculationFormula: "",
-    kpiActualScore: "",
   });
   const [kpiEditMode, setKpiEditMode] = useState(false);
   const [kpiSaving, setKpiSaving] = useState(false);
-  const [actualScoreEditMode, setActualScoreEditMode] = useState(false);
-  const [actualScoreSaving, setActualScoreSaving] = useState(false);
 
   // Comment state
   const [commentDialogOpen, setCommentDialogOpen] = useState(false);
@@ -361,13 +305,9 @@ export default function EvidenceDetailPage() {
   // Delete state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
-  // Clear AI Results state
-  const [clearAIDialogOpen, setClearAIDialogOpen] = useState(false);
-
   // Upload attachment state (Customer Admin)
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [attachmentDate, setAttachmentDate] = useState<string>("");
   const [uploading, setUploading] = useState(false);
 
   const fetchEvidence = useCallback(async () => {
@@ -386,7 +326,6 @@ export default function EvidenceDetailPage() {
             kpiExpectedScore: linkedKpi.expectedScore?.toString() || data.kpiExpectedScore?.toString() || "",
             kpiDescription: linkedKpi.description || data.kpiDescription || "",
             kpiCalculationFormula: linkedKpi.calculationFormula || data.kpiCalculationFormula || "",
-            kpiActualScore: linkedKpi.actualScore?.toString() || "",
           });
           // KPI exists, so show view mode (Edit button)
           setKpiEditMode(false);
@@ -397,7 +336,6 @@ export default function EvidenceDetailPage() {
             kpiExpectedScore: data.kpiExpectedScore?.toString() || "",
             kpiDescription: data.kpiDescription || "",
             kpiCalculationFormula: data.kpiCalculationFormula || "",
-            kpiActualScore: "",
           });
           // No KPI exists yet, so show edit mode (Save button)
           setKpiEditMode(true);
@@ -492,7 +430,7 @@ export default function EvidenceDetailPage() {
 
           if (response.ok) {
             fetchEvidence();
-            toast.info("Status reverted to Draft: Current cycle is not validated.");
+            toast.info(t("Status reverted to Draft: Current cycle is not validated."));
           }
         } catch (error) {
           console.error("Error reverting parent status:", error);
@@ -533,7 +471,7 @@ export default function EvidenceDetailPage() {
 
     // Validate: Must have attachment for this cycle
     if (!selectedCycleHasAttachments) {
-      toast.error("Please upload an attachment for this cycle first.");
+      toast.error(t("Please upload an attachment for this cycle first."));
       return;
     }
 
@@ -551,13 +489,13 @@ export default function EvidenceDetailPage() {
       // Update status to completed with result
       updateCycleStatus(selectedMonth, {
         aiReviewStatus: "completed",
-        aiReviewResult: "AI Review completed successfully. Document meets compliance requirements."
+        aiReviewResult: t("AI Review completed successfully. Document meets compliance requirements.")
       });
 
-      toast.success("AI Review completed successfully!");
+      toast.success(t("AI Review completed successfully!"));
     } catch (error) {
       console.error("AI Review error:", error);
-      toast.error("AI Review failed. Please try again.");
+      toast.error(t("AI Review failed. Please try again."));
     } finally {
       setAiReviewLoading(false);
     }
@@ -569,12 +507,12 @@ export default function EvidenceDetailPage() {
 
     // Validate: Must have attachment for this cycle
     if (!selectedCycleHasAttachments) {
-      toast.error("Please upload an attachment for this cycle first.");
+      toast.error(t("Please upload an attachment for this cycle first."));
       return;
     }
 
     updateCycleStatus(selectedMonth, { status: "submitted" });
-    toast.success("Submitted for approval successfully.");
+    toast.success(t("Submitted for approval successfully."));
   };
 
   // Handler: Validate (CustomerAdmin or Assignee)
@@ -584,31 +522,27 @@ export default function EvidenceDetailPage() {
     // Update cycle status to validated
     updateCycleStatus(selectedMonth, { status: "validated" });
 
-    // Normalize for comparison (handle en-dash vs hyphen differences)
-    const normalizedSelected = normalizeDashes(selectedMonth);
-    const normalizedCurrent = currentCycle ? normalizeDashes(currentCycle) : null;
-
-    // If validated cycle is the current cycle, update parent status to Published
-    if (normalizedSelected === normalizedCurrent) {
+    // If validated cycle is the current cycle, update parent status to Validated
+    if (selectedMonth === currentCycle) {
       try {
         const response = await fetch(`/api/evidences/${id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: "Published" }),
+          body: JSON.stringify({ status: "Validated" }),
         });
 
         if (response.ok) {
           fetchEvidence();
-          toast.success(`${selectedMonth} cycle validated. Evidence status updated to Published.`);
+          toast.success(`${selectedMonth} ${t("cycle validated. Evidence status updated to Validated.")}`);
         } else {
-          toast.success(`${selectedMonth} cycle validated successfully.`);
+          toast.success(`${selectedMonth} ${t("cycle validated successfully.")}`);
         }
       } catch (error) {
         console.error("Error updating parent status:", error);
-        toast.success(`${selectedMonth} cycle validated successfully.`);
+        toast.success(`${selectedMonth} ${t("cycle validated successfully.")}`);
       }
     } else {
-      toast.success(`${selectedMonth} cycle validated successfully.`);
+      toast.success(`${selectedMonth} ${t("cycle validated successfully.")}`);
     }
   };
 
@@ -616,30 +550,18 @@ export default function EvidenceDetailPage() {
   const handleReject = () => {
     if (!selectedMonth) return;
     updateCycleStatus(selectedMonth, { status: "rejected" });
-    toast.info(`${selectedMonth} cycle rejected.`);
+    toast.info(`${selectedMonth} ${t("cycle rejected.")}`);
   };
 
   // Handler: Publish with validation
   const handlePublishWithValidation = async () => {
     if (!currentCycle || !evidence) return;
 
-    // Check current cycle status from both currentCycle key and selectedMonth if they match
-    // This handles potential key mismatches between stored data and computed keys
     const currentCycleStatus = cycleStatuses[currentCycle];
-    const selectedCycleStatus = selectedMonth ? cycleStatuses[selectedMonth] : null;
-
-    // Normalize for comparison (handle en-dash vs hyphen differences)
-    const normalizedCurrentCycle = normalizeDashes(currentCycle);
-    const normalizedSelectedMonth = selectedMonth ? normalizeDashes(selectedMonth) : null;
-
-    // Consider validated if current cycle OR selected month (if it's the current cycle) is validated
-    const isCurrentCycleValidated =
-      (currentCycleStatus && currentCycleStatus.status === "validated") ||
-      (normalizedSelectedMonth === normalizedCurrentCycle && selectedCycleStatus && selectedCycleStatus.status === "validated");
 
     // Check if current cycle is validated
-    if (!isCurrentCycleValidated) {
-      setPublishBlockedMessage("Current cycle document is not validated.");
+    if (!currentCycleStatus || currentCycleStatus.status !== "validated") {
+      setPublishBlockedMessage(t("Current cycle document is not validated."));
       return;
     }
 
@@ -691,7 +613,7 @@ export default function EvidenceDetailPage() {
   const handleSaveKpi = async () => {
     // Validate required fields
     if (!kpiForm.kpiObjective?.trim()) {
-      toast.error("KPI Objective is required");
+      toast.error(t("KPI Objective is required"));
       return;
     }
 
@@ -711,7 +633,7 @@ export default function EvidenceDetailPage() {
       });
 
       if (!evidenceResponse.ok) {
-        toast.error("Failed to save KPI details to evidence");
+        toast.error(t("Failed to save KPI details to evidence"));
         return;
       }
 
@@ -725,7 +647,6 @@ export default function EvidenceDetailPage() {
         dataSource: kpiForm.kpiDataSource || null,
         calculationFormula: kpiForm.kpiCalculationFormula || null,
         expectedScore: kpiForm.kpiExpectedScore ? parseFloat(kpiForm.kpiExpectedScore) : null,
-        actualScore: kpiForm.kpiActualScore ? parseFloat(kpiForm.kpiActualScore) : null,
         departmentId: evidence?.departmentId || null,
         reviewDate: evidence?.reviewDate || null,
         evidenceId: id,
@@ -753,51 +674,18 @@ export default function EvidenceDetailPage() {
       }
 
       if (kpiResponse.ok) {
-        toast.success(existingKpi ? "KPI updated successfully!" : "KPI created successfully!");
+        toast.success(existingKpi ? t("KPI updated successfully!") : t("KPI created successfully!"));
         setKpiEditMode(false); // Switch to view mode (show Edit button)
         await fetchEvidence();
       } else {
         const errorData = await kpiResponse.json();
-        toast.error(errorData.error || "Failed to save KPI");
+        toast.error(errorData.error || t("Failed to save KPI"));
       }
     } catch (error) {
       console.error("Error saving KPI:", error);
-      toast.error("Failed to save KPI");
+      toast.error(t("Failed to save KPI"));
     } finally {
       setKpiSaving(false);
-    }
-  };
-
-  const handleSaveActualScore = async () => {
-    const existingKpi = evidence?.kpis?.[0];
-    if (!existingKpi) {
-      toast.error("Please save KPI details first");
-      return;
-    }
-
-    setActualScoreSaving(true);
-    try {
-      const response = await fetch(`/api/kpis/${existingKpi.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          actualScore: kpiForm.kpiActualScore ? parseFloat(kpiForm.kpiActualScore) : null,
-        }),
-      });
-
-      if (response.ok) {
-        toast.success("Actual score saved successfully!");
-        setActualScoreEditMode(false);
-        await fetchEvidence();
-      } else {
-        const errorData = await response.json();
-        toast.error(errorData.error || "Failed to save actual score");
-      }
-    } catch (error) {
-      console.error("Error saving actual score:", error);
-      toast.error("Failed to save actual score");
-    } finally {
-      setActualScoreSaving(false);
     }
   };
 
@@ -877,13 +765,12 @@ export default function EvidenceDetailPage() {
 
   // Upload attachment handler (Customer Admin)
   const handleUploadAttachment = async () => {
-    if (!selectedFile || !attachmentDate) return;
+    if (!selectedFile) return;
 
     setUploading(true);
     try {
       const formData = new FormData();
       formData.append("file", selectedFile);
-      formData.append("uploadedAt", new Date(attachmentDate).toISOString());
 
       const response = await fetch(`/api/evidences/${id}/attachments`, {
         method: "POST",
@@ -892,7 +779,6 @@ export default function EvidenceDetailPage() {
 
       if (response.ok) {
         setSelectedFile(null);
-        setAttachmentDate("");
         setUploadDialogOpen(false);
 
         // Update status to Draft if currently Not Uploaded
@@ -905,15 +791,15 @@ export default function EvidenceDetailPage() {
         }
 
         fetchEvidence();
-        toast.success("Attachment uploaded successfully!");
+        toast.success(t("Attachment uploaded successfully!"));
       } else {
         const error = await response.json();
         console.error("Upload failed:", error);
-        toast.error("Failed to upload attachment");
+        toast.error(t("Failed to upload attachment"));
       }
     } catch (error) {
       console.error("Error uploading attachment:", error);
-      toast.error("Failed to upload attachment");
+      toast.error(t("Failed to upload attachment"));
     } finally {
       setUploading(false);
     }
@@ -932,58 +818,6 @@ export default function EvidenceDetailPage() {
     } catch (error) {
       console.error("Error deleting attachment:", error);
     }
-  };
-
-  // Delete attachment with full reset (for Linked Artifacts tab)
-  const handleDeleteAttachmentWithReset = async (attachmentId: string) => {
-    try {
-      // First delete the attachment
-      const deleteResponse = await fetch(`/api/evidences/${id}/attachments?attachmentId=${attachmentId}`, {
-        method: "DELETE",
-      });
-
-      if (deleteResponse.ok) {
-        // Reset evidence status to "Not Uploaded" and clear AI review data
-        await fetch(`/api/evidences/${id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            status: "Not Uploaded",
-          }),
-        });
-
-        // Clear cycle statuses from localStorage
-        if (evidence?.recurrence) {
-          const periods = getPeriodsForRecurrence(evidence.recurrence);
-          periods.forEach((period) => {
-            const key = getCycleStatusKey(evidence.id, period);
-            localStorage.removeItem(key);
-          });
-          setCycleStatuses({});
-        }
-
-        toast.success("Attachment deleted and evidence reset successfully");
-        fetchEvidence();
-      }
-    } catch (error) {
-      console.error("Error deleting attachment:", error);
-      toast.error("Failed to delete attachment");
-    }
-  };
-
-  // Clear AI Results handler
-  const handleClearAIResults = () => {
-    if (!evidence?.id || !evidence?.recurrence) return;
-
-    // Clear all cycle statuses from localStorage
-    const periods = getPeriodsForRecurrence(evidence.recurrence);
-    periods.forEach((period) => {
-      const key = getCycleStatusKey(evidence.id, period);
-      localStorage.removeItem(key);
-    });
-    setCycleStatuses({});
-    setClearAIDialogOpen(false);
-    toast.success("AI results cleared successfully");
   };
 
   // Helper: Get month index from upload date
@@ -1049,17 +883,10 @@ export default function EvidenceDetailPage() {
     }
   };
 
-  // Filter users by selected department and roles (DepartmentReviewer, DepartmentContributor)
+  // Filter users by selected department
   const filteredUsers = evidence?.departmentId
-    ? users.filter((u) => {
-        // Must be in the same department
-        if (u.departmentId !== evidence.departmentId) return false;
-        // Must have DepartmentReviewer or DepartmentContributor role
-        return u.userRoles?.some((ur) =>
-          ["DepartmentReviewer", "DepartmentContributor"].includes(ur.role?.name)
-        );
-      })
-    : [];
+    ? users.filter((u) => u.departmentId === evidence.departmentId)
+    : users;
 
   // Get linked control IDs for filtering
   const linkedControlIds = evidence?.evidenceControls?.map((ec) => ec.control.id) || [];
@@ -1083,7 +910,7 @@ export default function EvidenceDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" aria-label={t("Loading...")}></div>
       </div>
     );
   }
@@ -1091,7 +918,7 @@ export default function EvidenceDetailPage() {
   if (!evidence) {
     return (
       <div className="p-6">
-        <div className="text-center text-gray-500">Evidence not found</div>
+        <div className="text-center text-gray-500">{t("Evidence not found")}</div>
       </div>
     );
   }
@@ -1114,7 +941,7 @@ export default function EvidenceDetailPage() {
           </Button>
           <span className="text-gray-300">|</span>
           <h1 className="text-xl font-semibold text-blue-700">
-            {evidence.domain || "Evidence Details"}
+            {evidence.domain || t("Evidence Details")}
           </h1>
         </div>
 
@@ -1136,7 +963,7 @@ export default function EvidenceDetailPage() {
         {/* Evidence Details Section */}
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-blue-700">Evidence Details</h2>
+            <h2 className="text-lg font-semibold text-blue-700">{t("Evidence Details")}</h2>
             <Button variant="ghost" size="icon" className="text-blue-700">
               <Eye className="h-5 w-5" />
             </Button>
@@ -1147,22 +974,22 @@ export default function EvidenceDetailPage() {
               {/* Left Column */}
               <div className="space-y-6">
                 <div>
-                  <Label className="text-blue-700 font-medium">Requirement</Label>
+                  <Label className="text-blue-700 font-medium">{t("Requirement")}</Label>
                   <p className="mt-1 text-gray-900">{evidence.name}</p>
                 </div>
                 <div>
-                  <Label className="text-blue-700 font-medium">Recurrence</Label>
+                  <Label className="text-blue-700 font-medium">{t("Recurrence")}</Label>
                   <Select
                     value={evidence.recurrence || ""}
                     onValueChange={(value) => handleInlineUpdate("recurrence", value || null)}
                   >
                     <SelectTrigger className="mt-1 w-48 bg-white">
-                      <SelectValue placeholder="Select" />
+                      <SelectValue placeholder={t("Select")} />
                     </SelectTrigger>
                     <SelectContent>
                       {recurrenceOptions.map((r) => (
                         <SelectItem key={r} value={r}>
-                          {r}
+                          {t(r)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1173,11 +1000,11 @@ export default function EvidenceDetailPage() {
               {/* Right Column */}
               <div className="space-y-6">
                 <div>
-                  <Label className="text-blue-700 font-medium">Artifact</Label>
+                  <Label className="text-blue-700 font-medium">{t("Artifact")}</Label>
                   <p className="mt-1 text-gray-900">{evidence.description || "-"}</p>
                 </div>
                 <div>
-                  <Label className="text-blue-700 font-medium">Review date</Label>
+                  <Label className="text-blue-700 font-medium">{t("Review date")}</Label>
                   <div className="mt-1 flex items-center gap-2">
                     <Input
                       type="date"
@@ -1204,7 +1031,7 @@ export default function EvidenceDetailPage() {
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
-              Linked Artifact
+              {t("Linked Artifact")}
             </button>
             <button
               onClick={() => setActiveTab("controls")}
@@ -1214,7 +1041,7 @@ export default function EvidenceDetailPage() {
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
-              Linked Controls
+              {t("Linked Controls")}
             </button>
           </div>
 
@@ -1222,7 +1049,7 @@ export default function EvidenceDetailPage() {
           <div className="bg-gray-50 rounded-b-lg rounded-tr-lg p-6">
             {activeTab === "controls" && (
               <div>
-                <h3 className="text-lg font-semibold text-blue-700 mb-4">Controls</h3>
+                <h3 className="text-lg font-semibold text-blue-700 mb-4">{t("Controls")}</h3>
                 <div className="space-y-3">
                   {evidence.evidenceControls?.map((ec) => (
                     <div
@@ -1239,7 +1066,7 @@ export default function EvidenceDetailPage() {
                           )}
                         </div>
                         <Badge className="bg-blue-700 text-white hover:bg-blue-600">
-                          {ec.control.entities || "Organization Wide"}
+                          {ec.control.entities || t("Organization Wide")}
                         </Badge>
                       </div>
                     </div>
@@ -1247,7 +1074,7 @@ export default function EvidenceDetailPage() {
                   {(!evidence.evidenceControls || evidence.evidenceControls.length === 0) && (
                     <div className="text-center py-8 text-gray-500">
                       <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                      <p>No controls linked to this evidence</p>
+                      <p>{t("No controls linked to this evidence")}</p>
                     </div>
                   )}
                 </div>
@@ -1256,7 +1083,7 @@ export default function EvidenceDetailPage() {
 
             {activeTab === "artifacts" && (
               <div>
-                <h3 className="text-lg font-semibold text-blue-700 mb-4">Artifacts</h3>
+                <h3 className="text-lg font-semibold text-blue-700 mb-4">{t("Artifacts")}</h3>
                 <div className="space-y-3">
                   {evidence.linkedArtifacts?.map((la) => (
                     <div
@@ -1287,7 +1114,7 @@ export default function EvidenceDetailPage() {
                   {(!evidence.linkedArtifacts || evidence.linkedArtifacts.length === 0) && (
                     <div className="text-center py-8 text-gray-500">
                       <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                      <p>No artifacts linked to this evidence</p>
+                      <p>{t("No artifacts linked to this evidence")}</p>
                     </div>
                   )}
                 </div>
@@ -1313,11 +1140,11 @@ export default function EvidenceDetailPage() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">Evidence Detail Page</h1>
+            <h1 className="text-2xl font-bold">{t("Evidence Detail Page")}</h1>
             <p className="text-gray-600">{evidence.evidenceCode} - {evidence.name}</p>
           </div>
           <Badge className={statusColors[evidence.status] || "bg-gray-500 text-white"}>
-            {evidence.status}
+            {t(evidence.status)}
           </Badge>
         </div>
         <div className="flex gap-2">
@@ -1326,14 +1153,14 @@ export default function EvidenceDetailPage() {
             onClick={() => setCommentDialogOpen(true)}
           >
             <MessageSquare className="h-4 w-4 mr-2" />
-            Comments ({evidence.comments?.length || 0})
+            {t("Comments")} ({evidence.comments?.length || 0})
           </Button>
           <Button
             variant="destructive"
             onClick={() => setDeleteDialogOpen(true)}
           >
             <Trash2 className="h-4 w-4 mr-2" />
-            Delete
+            {t("Delete")}
           </Button>
         </div>
       </div>
@@ -1349,7 +1176,7 @@ export default function EvidenceDetailPage() {
           >
             {currentStep > 0 ? <Check className="h-6 w-6" /> : <Upload className="h-5 w-5" />}
           </div>
-          <span className={`text-sm ${currentStep >= 0 ? "text-gray-900" : "text-gray-400"}`}>Upload</span>
+          <span className={`text-sm ${currentStep >= 0 ? "text-gray-900" : "text-gray-400"}`}>{t("Upload")}</span>
         </div>
         <div className={`w-24 h-0.5 ${currentStep >= 1 ? "bg-green-500" : "bg-gray-300"}`} />
 
@@ -1362,7 +1189,7 @@ export default function EvidenceDetailPage() {
           >
             {currentStep > 1 ? <Check className="h-6 w-6" /> : <FileText className="h-5 w-5" />}
           </div>
-          <span className={`text-sm ${currentStep >= 1 ? "text-gray-900" : "text-gray-400"}`}>Draft</span>
+          <span className={`text-sm ${currentStep >= 1 ? "text-gray-900" : "text-gray-400"}`}>{t("Draft")}</span>
         </div>
         <div className={`w-24 h-0.5 ${currentStep >= 2 ? "bg-green-500" : "bg-gray-300"}`} />
 
@@ -1375,7 +1202,7 @@ export default function EvidenceDetailPage() {
           >
             {currentStep >= 2 ? <Check className="h-6 w-6" /> : <span className="text-lg font-medium">3</span>}
           </div>
-          <span className={`text-sm ${currentStep >= 2 ? "text-gray-900" : "text-gray-400"}`}>Publish</span>
+          <span className={`text-sm ${currentStep >= 2 ? "text-gray-900" : "text-gray-400"}`}>{t("Publish")}</span>
         </div>
       </div>
 
@@ -1384,46 +1211,20 @@ export default function EvidenceDetailPage() {
         <div className="flex justify-end">
           <Button onClick={handlePublishWithValidation} className="bg-green-600 hover:bg-green-700">
             <Check className="h-4 w-4 mr-2" />
-            Publish
+            {t("Publish")}
           </Button>
         </div>
       )}
 
       {/* Linked Frameworks Indicator */}
       {(() => {
-        // Compute linked frameworks from:
-        // 1. evidence.frameworks array (if exists)
-        // 2. evidence.framework single field
-        // 3. evidenceControls -> control -> framework (derived)
+        // Compute linked frameworks from both evidence.frameworks array and single framework
         const linkedFrameworks: Array<{ id: string; name: string }> = [];
-        const seenIds = new Set<string>();
-
-        // First, check evidence.frameworks array
         if (evidence.frameworks && evidence.frameworks.length > 0) {
-          evidence.frameworks.forEach((fw) => {
-            if (!seenIds.has(fw.id)) {
-              linkedFrameworks.push(fw);
-              seenIds.add(fw.id);
-            }
-          });
-        }
-
-        // Check direct evidence.framework field
-        if (evidence.framework && !seenIds.has(evidence.framework.id)) {
+          linkedFrameworks.push(...evidence.frameworks);
+        } else if (evidence.framework) {
           linkedFrameworks.push(evidence.framework);
-          seenIds.add(evidence.framework.id);
         }
-
-        // Also derive from evidenceControls -> control -> framework
-        if (evidence.evidenceControls) {
-          evidence.evidenceControls.forEach((ec) => {
-            if (ec.control.framework && !seenIds.has(ec.control.framework.id)) {
-              linkedFrameworks.push(ec.control.framework);
-              seenIds.add(ec.control.framework.id);
-            }
-          });
-        }
-
         const frameworkCount = linkedFrameworks.length;
 
         return (
@@ -1433,14 +1234,14 @@ export default function EvidenceDetailPage() {
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors">
                   <Layers className="h-4 w-4 text-blue-600" />
                   <span className="text-sm font-medium text-blue-700">
-                    Linked Frameworks: {frameworkCount}
+                    {t("Linked Frameworks:")} {frameworkCount}
                   </span>
                 </div>
               </TooltipTrigger>
               {frameworkCount > 0 && (
                 <TooltipContent side="bottom" className="max-w-xs bg-slate-800 text-white p-2">
                   <div className="space-y-1">
-                    <p className="font-medium text-xs text-slate-300">Linked Frameworks:</p>
+                    <p className="font-medium text-xs text-slate-300">{t("Linked Frameworks:")}</p>
                     {linkedFrameworks.map((fw) => (
                       <p key={fw.id} className="text-sm">{fw.name}</p>
                     ))}
@@ -1457,7 +1258,7 @@ export default function EvidenceDetailPage() {
         {/* Evidence Details */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Evidence Details</CardTitle>
+              <CardTitle>{t("Evidence Details")}</CardTitle>
               <Button variant="ghost" size="icon">
                 <Eye className="h-4 w-4" />
               </Button>
@@ -1465,24 +1266,24 @@ export default function EvidenceDetailPage() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="font-medium">Requirement</Label>
+                  <Label className="font-medium">{t("Requirement")}</Label>
                   <p>{evidence.name}</p>
                 </div>
                 <div className="space-y-2">
-                  <Label className="font-medium">Description</Label>
+                  <Label className="font-medium">{t("Description")}</Label>
                   <p>{evidence.description || "-"}</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="font-medium">Department</Label>
+                  <Label className="font-medium">{t("Department")}</Label>
                   <Select
                     value={evidence.departmentId || ""}
                     onValueChange={(value) => handleInlineUpdate("departmentId", value || null)}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select department" />
+                      <SelectValue placeholder={t("Select department")} />
                     </SelectTrigger>
                     <SelectContent>
                       {departments.map((d) => (
@@ -1495,49 +1296,35 @@ export default function EvidenceDetailPage() {
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label className="font-medium">Assigned to</Label>
+                    <Label className="font-medium">{t("Assigned to")}</Label>
                     <Dialog open={editAssigneeOpen} onOpenChange={setEditAssigneeOpen}>
                       <DialogTrigger asChild>
                         <Button variant="link" size="sm">
-                          Edit Assignee
+                          {t("Edit Assignee")}
                         </Button>
                       </DialogTrigger>
                       <DialogContent>
                         <DialogHeader>
-                          <DialogTitle>Edit Assignee</DialogTitle>
+                          <DialogTitle>{t("Edit Assignee")}</DialogTitle>
                         </DialogHeader>
                         <div className="py-4">
-                          <Label>Select Assignee</Label>
-                          <p className="text-xs text-slate-500 mt-1 mb-2">
-                            Only Department Reviewers and Department Contributors from the assigned department are shown.
-                          </p>
+                          <Label>{t("Select Assignee")}</Label>
                           <Select
                             value={evidence.assigneeId || ""}
                             onValueChange={(value) => {
                               handleInlineUpdate("assigneeId", value || null);
                               setEditAssigneeOpen(false);
                             }}
-                            disabled={!evidence.departmentId}
                           >
                             <SelectTrigger>
-                              <SelectValue placeholder={
-                                !evidence.departmentId
-                                  ? "Select department first"
-                                  : "Select assignee"
-                              } />
+                              <SelectValue placeholder={t("Select assignee")} />
                             </SelectTrigger>
                             <SelectContent>
-                              {filteredUsers.length > 0 ? (
-                                filteredUsers.map((u) => (
-                                  <SelectItem key={u.id} value={u.id}>
-                                    {u.fullName}
-                                  </SelectItem>
-                                ))
-                              ) : (
-                                <div className="py-2 px-2 text-sm text-slate-500 text-center">
-                                  No eligible users found in this department
-                                </div>
-                              )}
+                              {filteredUsers.map((u) => (
+                                <SelectItem key={u.id} value={u.id}>
+                                  {u.fullName}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         </div>
@@ -1550,48 +1337,25 @@ export default function EvidenceDetailPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="font-medium">Recurrence</Label>
+                  <Label className="font-medium">{t("Recurrence")}</Label>
                   <Select
                     value={evidence.recurrence || ""}
-                    onValueChange={async (value) => {
-                      if (value) {
-                        // Calculate review date based on recurrence
-                        const reviewDate = calculateReviewDate(value);
-                        // Update both recurrence and review date
-                        try {
-                          const response = await fetch(`/api/evidences/${id}`, {
-                            method: "PUT",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                              recurrence: value,
-                              reviewDate: reviewDate,
-                            }),
-                          });
-                          if (response.ok) {
-                            fetchEvidence();
-                          }
-                        } catch (error) {
-                          console.error("Error updating recurrence:", error);
-                        }
-                      } else {
-                        handleInlineUpdate("recurrence", null);
-                      }
-                    }}
+                    onValueChange={(value) => handleInlineUpdate("recurrence", value || null)}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select recurrence" />
+                      <SelectValue placeholder={t("Select recurrence")} />
                     </SelectTrigger>
                     <SelectContent>
                       {recurrenceOptions.map((r) => (
                         <SelectItem key={r} value={r}>
-                          {r}
+                          {t(r)}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label className="font-medium">Review Date</Label>
+                  <Label className="font-medium">{t("Review Date")}</Label>
                   <Input
                     type="date"
                     value={evidence.reviewDate?.split("T")[0] || ""}
@@ -1601,7 +1365,7 @@ export default function EvidenceDetailPage() {
               </div>
 
               <div className="flex items-center gap-2">
-                <span className="text-sm">KPI Required</span>
+                <span className="text-sm">{t("KPI Required")}</span>
                 <Checkbox
                   checked={evidence.kpiRequired}
                   onCheckedChange={(checked) => handleInlineUpdate("kpiRequired", !!checked)}
@@ -1614,102 +1378,63 @@ export default function EvidenceDetailPage() {
           {evidence.kpiRequired && (
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>KPI Details</CardTitle>
+                <CardTitle>{t("KPI Details")}</CardTitle>
                 {!kpiEditMode && evidence.kpis && evidence.kpis.length > 0 && (
                   <Button variant="outline" size="sm" onClick={() => setKpiEditMode(true)}>
-                    Edit
+                    {t("Edit")}
                   </Button>
                 )}
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label className="font-medium">KPI Objective <span className="text-red-500">*</span></Label>
+                    <Label className="font-medium">{t("KPI Objective")} <span className="text-red-500">*</span></Label>
                     <Input
-                      placeholder="Enter Objective"
+                      placeholder={t("Enter Objective")}
                       value={kpiForm.kpiObjective}
                       onChange={(e) => setKpiForm({ ...kpiForm, kpiObjective: e.target.value })}
                       disabled={!kpiEditMode}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="font-medium">KPI Data Source</Label>
+                    <Label className="font-medium">{t("KPI Data Source")}</Label>
                     <Input
-                      placeholder="Enter Data Source"
+                      placeholder={t("Enter Data Source")}
                       value={kpiForm.kpiDataSource}
                       onChange={(e) => setKpiForm({ ...kpiForm, kpiDataSource: e.target.value })}
                       disabled={!kpiEditMode}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="font-medium">KPI Expected Score (%)</Label>
+                    <Label className="font-medium">{t("KPI Expected Score (%)")}</Label>
                     <Input
                       type="number"
-                      placeholder="Enter expected score"
+                      placeholder={t("Enter expected score")}
                       value={kpiForm.kpiExpectedScore}
                       onChange={(e) => setKpiForm({ ...kpiForm, kpiExpectedScore: e.target.value })}
                       disabled={!kpiEditMode}
                     />
                   </div>
                 </div>
-                <div className={`grid gap-4 ${kpiForm.kpiDescription && kpiForm.kpiExpectedScore ? "grid-cols-3" : "grid-cols-2"}`}>
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="font-medium">KPI Description</Label>
+                    <Label className="font-medium">{t("KPI Description")}</Label>
                     <Input
-                      placeholder="Enter KPI Description"
+                      placeholder={t("Enter Description")}
                       value={kpiForm.kpiDescription}
                       onChange={(e) => setKpiForm({ ...kpiForm, kpiDescription: e.target.value })}
                       disabled={!kpiEditMode}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="font-medium">KPI Calculation Formula</Label>
+                    <Label className="font-medium">{t("KPI Calculation Formula")}</Label>
                     <Input
-                      placeholder="Enter the KPI Calculation Formula"
+                      placeholder={t("Enter the KPI Calculation Formula")}
                       value={kpiForm.kpiCalculationFormula}
                       onChange={(e) => setKpiForm({ ...kpiForm, kpiCalculationFormula: e.target.value })}
                       disabled={!kpiEditMode}
                     />
                   </div>
-                  {kpiForm.kpiDescription && kpiForm.kpiExpectedScore && (
-                    <div className="space-y-2">
-                      <Label className="font-medium">KPI Actual Score (%)</Label>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          type="number"
-                          placeholder="Enter actual score"
-                          value={kpiForm.kpiActualScore}
-                          onChange={(e) => setKpiForm({ ...kpiForm, kpiActualScore: e.target.value })}
-                          disabled={!actualScoreEditMode}
-                          className="flex-1"
-                        />
-                        {actualScoreEditMode ? (
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={handleSaveActualScore}
-                            disabled={actualScoreSaving}
-                            className="bg-blue-600 hover:bg-blue-700 text-white border-blue-600"
-                          >
-                            {actualScoreSaving ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Save className="h-4 w-4" />
-                            )}
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setActualScoreEditMode(true)}
-                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  )}
                 </div>
                 {kpiEditMode && (
                   <div className="flex gap-2">
@@ -1717,15 +1442,15 @@ export default function EvidenceDetailPage() {
                       {kpiSaving ? (
                         <>
                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Saving...
+                          {t("Saving...")}
                         </>
                       ) : (
-                        "Save"
+                        t("Save")
                       )}
                     </Button>
                     {evidence.kpis && evidence.kpis.length > 0 && (
                       <Button variant="outline" onClick={() => setKpiEditMode(false)} disabled={kpiSaving}>
-                        Cancel
+                        {t("Cancel")}
                       </Button>
                     )}
                   </div>
@@ -1738,9 +1463,9 @@ export default function EvidenceDetailPage() {
           {evidence.status === "Published" && (
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Published</CardTitle>
+                <CardTitle>{t("Published")}</CardTitle>
                 <Button variant="outline" onClick={handleUnpublish}>
-                  Unpublish
+                  {t("Unpublish")}
                 </Button>
               </CardHeader>
               <CardContent>
@@ -1749,18 +1474,18 @@ export default function EvidenceDetailPage() {
                     <div key={att.id} className="flex items-center justify-between p-3 border rounded-lg">
                       <div>
                         <p className="text-sm text-gray-500">
-                          Published On: {new Date(att.uploadedAt).toLocaleString()}
+                          {t("Published On:")} {new Date(att.uploadedAt).toLocaleString()}
                         </p>
                         <p className="font-medium">{att.fileName}</p>
                       </div>
                       <Button variant="outline" size="sm">
                         <Download className="h-4 w-4 mr-1" />
-                        Download
+                        {t("Download")}
                       </Button>
                     </div>
                   ))}
                   {(!evidence.attachments || evidence.attachments.length === 0) && (
-                    <p className="text-gray-500 text-center py-4">No published files</p>
+                    <p className="text-gray-500 text-center py-4">{t("No published files")}</p>
                   )}
                 </div>
               </CardContent>
@@ -1770,22 +1495,22 @@ export default function EvidenceDetailPage() {
         {/* Attachments Card */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Attachments</CardTitle>
+            <CardTitle>{t("Attachments")}</CardTitle>
             <div className="flex gap-2">
               {isCustomerAdmin ? (
                 <Button size="sm" variant="outline" onClick={() => setUploadDialogOpen(true)}>
                   <Plus className="h-4 w-4 mr-1" />
-                  Add Attachment
+                  {t("Add Attachment")}
                 </Button>
               ) : (
                 <Button size="sm" variant="outline">
                   <Plus className="h-4 w-4 mr-1" />
-                  Add Attachment
+                  {t("Add Attachment")}
                 </Button>
               )}
               <Button size="sm" variant="outline">
                 <Link2 className="h-4 w-4 mr-1" />
-                Link Artifacts
+                {t("Link Artifacts")}
               </Button>
             </div>
           </CardHeader>
@@ -1811,33 +1536,24 @@ export default function EvidenceDetailPage() {
                     {cycleStatus?.status === "validated" && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium border-2 border-green-500 text-green-700 bg-green-50 rounded">
                         <CheckCircle className="h-3 w-3" />
-                        Validated
+                        {t("Validated")}
                       </span>
                     )}
                     {cycleStatus?.status === "rejected" && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium border-2 border-red-500 text-red-700 bg-red-50 rounded">
                         <XCircle className="h-3 w-3" />
-                        Rejected
+                        {t("Rejected")}
                       </span>
                     )}
                     {cycleStatus?.status === "submitted" && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium border-2 border-yellow-500 text-yellow-700 bg-yellow-50 rounded">
                         <Clock className="h-3 w-3" />
-                        Pending
+                        {t("Pending")}
                       </span>
                     )}
                   </div>
                 );
               })}
-              {/* Clear AI Results Button */}
-              <Button
-                size="sm"
-                onClick={() => setClearAIDialogOpen(true)}
-                className="bg-blue-700 hover:bg-blue-800 text-white"
-              >
-                <X className="h-4 w-4 mr-1" />
-                Clear AI Results
-              </Button>
             </div>
 
             {/* AI Review Section */}
@@ -1847,12 +1563,12 @@ export default function EvidenceDetailPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Brain className={`h-5 w-5 ${getSelectedCycleStatus().aiReviewStatus === "completed" ? "text-green-600" : "text-gray-400"}`} />
-                      <span className="font-medium">AI Review</span>
+                      <span className="font-medium">{t("AI Review")}</span>
                       {getSelectedCycleStatus().aiReviewStatus === "completed" && (
-                        <Badge className="bg-green-100 text-green-700 border-green-300">Completed</Badge>
+                        <Badge className="bg-green-100 text-green-700 border-green-300">{t("Completed")}</Badge>
                       )}
                       {getSelectedCycleStatus().aiReviewStatus === "pending" && (
-                        <Badge className="bg-yellow-100 text-yellow-700 border-yellow-300">In Progress</Badge>
+                        <Badge className="bg-yellow-100 text-yellow-700 border-yellow-300">{t("In Progress")}</Badge>
                       )}
                     </div>
                     <Button
@@ -1864,17 +1580,17 @@ export default function EvidenceDetailPage() {
                       {aiReviewLoading ? (
                         <>
                           <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                          Reviewing...
+                          {t("Reviewing...")}
                         </>
                       ) : getSelectedCycleStatus().aiReviewStatus === "completed" ? (
                         <>
                           <Check className="h-4 w-4 mr-1" />
-                          Review Complete
+                          {t("Review Complete")}
                         </>
                       ) : (
                         <>
                           <Brain className="h-4 w-4 mr-1" />
-                          Start AI Review
+                          {t("Start AI Review")}
                         </>
                       )}
                     </Button>
@@ -1902,7 +1618,7 @@ export default function EvidenceDetailPage() {
                     className="border-blue-500 text-blue-600 hover:bg-blue-50"
                   >
                     <Send className="h-4 w-4 mr-1" />
-                    Submit for Approval
+                    {t("Submit for Approval")}
                   </Button>
                 )}
 
@@ -1915,7 +1631,7 @@ export default function EvidenceDetailPage() {
                       className="bg-green-600 hover:bg-green-700 text-white"
                     >
                       <Check className="h-4 w-4 mr-1" />
-                      Validate
+                      {t("Validate")}
                     </Button>
                     <Button
                       size="sm"
@@ -1924,7 +1640,7 @@ export default function EvidenceDetailPage() {
                       className="border-red-500 text-red-600 hover:bg-red-50"
                     >
                       <X className="h-4 w-4 mr-1" />
-                      Reject
+                      {t("Reject")}
                     </Button>
                   </>
                 )}
@@ -1933,18 +1649,18 @@ export default function EvidenceDetailPage() {
                 {getSelectedCycleStatus().status === "validated" && (
                   <span className="text-sm text-green-600 font-medium flex items-center gap-1">
                     <CheckCircle className="h-4 w-4" />
-                    This cycle has been validated
+                    {t("This cycle has been validated")}
                   </span>
                 )}
                 {getSelectedCycleStatus().status === "rejected" && (
                   <span className="text-sm text-red-600 font-medium flex items-center gap-1">
                     <XCircle className="h-4 w-4" />
-                    This cycle has been rejected
+                    {t("This cycle has been rejected")}
                   </span>
                 )}
                 {getSelectedCycleStatus().status === "none" && !isDepartmentReviewer && (
                   <span className="text-sm text-gray-500">
-                    Awaiting submission from Department Reviewer
+                    {t("Awaiting submission from Department Reviewer")}
                   </span>
                 )}
               </div>
@@ -1979,7 +1695,7 @@ export default function EvidenceDetailPage() {
               ))}
               {filteredAttachments.length === 0 && (
                 <p className="text-center text-gray-500 text-sm py-4">
-                  {selectedMonth ? `No attachments for ${selectedMonth}` : "No attachments"}
+                  {selectedMonth ? `${t("No attachments for")} ${selectedMonth}` : t("No attachments")}
                 </p>
               )}
             </div>
@@ -1990,14 +1706,14 @@ export default function EvidenceDetailPage() {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>Recent Comments</CardTitle>
+              <CardTitle>{t("Recent Comments")}</CardTitle>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setCommentDialogOpen(true)}
               >
                 <MessageSquare className="h-4 w-4 mr-2" />
-                Add Comment
+                {t("Add Comment")}
               </Button>
             </div>
           </CardHeader>
@@ -2011,7 +1727,7 @@ export default function EvidenceDetailPage() {
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span className="font-medium text-sm">
-                        {comment.userName || "Unknown User"}
+                        {comment.userName || t("Unknown User")}
                       </span>
                       <span className="text-xs text-gray-500">
                         {new Date(comment.createdAt).toLocaleDateString(
@@ -2028,13 +1744,13 @@ export default function EvidenceDetailPage() {
                     className="w-full"
                     onClick={() => setCommentDialogOpen(true)}
                   >
-                    View all {evidence.comments.length} comments
+                    {t("View all")} {evidence.comments.length} {t("comments")}
                   </Button>
                 )}
               </div>
             ) : (
               <p className="text-gray-500 text-center py-4">
-                No comments yet
+                {t("No comments yet")}
               </p>
             )}
           </CardContent>
@@ -2051,7 +1767,7 @@ export default function EvidenceDetailPage() {
                   : "text-gray-500"
               }`}
             >
-              Linked Controls
+              {t("Linked Controls")}
             </button>
             <button
               onClick={() => setActiveTab("artifacts")}
@@ -2061,30 +1777,30 @@ export default function EvidenceDetailPage() {
                   : "text-gray-500"
               }`}
             >
-              Linked Artifacts
+              {t("Linked Artifacts")}
             </button>
           </div>
 
           {activeTab === "controls" && (
             <Card className="mt-4">
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Controls</CardTitle>
+                <CardTitle>{t("Controls")}</CardTitle>
                 <Dialog open={linkControlsOpen} onOpenChange={(open) => {
                       setLinkControlsOpen(open);
                       if (!open) setControlSearchQuery(""); // Clear search when dialog closes
                     }}>
                   <DialogTrigger asChild>
-                    <Button size="sm">Link Controls</Button>
+                    <Button size="sm">{t("Link Controls")}</Button>
                   </DialogTrigger>
                   <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
                     <DialogHeader>
-                      <DialogTitle>Link Controls</DialogTitle>
+                      <DialogTitle>{t("Link Controls")}</DialogTitle>
                     </DialogHeader>
                     <div className="py-4 space-y-4">
                       {/* Search input for filtering controls */}
                       <div className="relative">
                         <Input
-                          placeholder="Search by Control Code or Control Name..."
+                          placeholder={t("Search by Control Code or Control Name...")}
                           value={controlSearchQuery}
                           onChange={(e) => setControlSearchQuery(e.target.value)}
                           className="w-full"
@@ -2142,23 +1858,23 @@ export default function EvidenceDetailPage() {
                         {availableControls.length === 0 && (
                           <div className="p-4 text-center text-gray-500">
                             {controlSearchQuery.trim()
-                              ? "No controls found matching your search"
-                              : "No available controls to link"}
+                              ? t("No controls found matching your search")
+                              : t("No available controls to link")}
                           </div>
                         )}
                       </div>
                       <p className="text-sm text-gray-600">
-                        {selectedControlIds.length} control(s) selected
+                        {selectedControlIds.length} {t("control(s) selected")}
                       </p>
                       <div className="flex justify-end gap-2">
                         <Button variant="outline" onClick={() => {
                             setLinkControlsOpen(false);
                             setControlSearchQuery("");
                           }}>
-                          Cancel
+                          {t("Cancel")}
                         </Button>
                         <Button onClick={handleLinkControls} disabled={selectedControlIds.length === 0}>
-                          Link Controls
+                          {t("Link Controls")}
                         </Button>
                       </div>
                     </div>
@@ -2170,12 +1886,11 @@ export default function EvidenceDetailPage() {
                   {evidence.evidenceControls?.map((ec) => (
                     <div
                       key={ec.id}
-                      className="flex items-start justify-between p-3 border rounded-lg hover:bg-blue-50 cursor-pointer transition-colors"
-                      onClick={() => router.push(`/compliance/control/${ec.control.id}`)}
+                      className="flex items-start justify-between p-3 border rounded-lg hover:bg-gray-50"
                     >
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <span className="font-medium text-blue-700 hover:underline">{ec.control.controlCode}</span>
+                          <span className="font-medium">{ec.control.controlCode}</span>
                           <span>: {ec.control.name}</span>
                         </div>
                         {ec.control.description && (
@@ -2188,19 +1903,16 @@ export default function EvidenceDetailPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleUnlinkControl(ec.control.id);
-                        }}
+                        onClick={() => handleUnlinkControl(ec.control.id)}
                       >
-                        Unlink
+                        {t("Unlink")}
                       </Button>
                     </div>
                   ))}
                   {(!evidence.evidenceControls || evidence.evidenceControls.length === 0) && (
                     <div className="text-center py-8 text-gray-500">
                       <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                      <p>No controls linked to this evidence</p>
+                      <p>{t("No controls linked to this evidence")}</p>
                     </div>
                   )}
                 </div>
@@ -2210,39 +1922,46 @@ export default function EvidenceDetailPage() {
 
           {activeTab === "artifacts" && (
             <Card className="mt-4">
-              <CardHeader>
-                <CardTitle>Linked Artifacts</CardTitle>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>{t("Linked Artifacts")}</CardTitle>
+                <Button size="sm">
+                  <Link2 className="h-4 w-4 mr-1" />
+                  {t("Link Artifacts")}
+                </Button>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {evidence.attachments?.map((att) => (
+                  {evidence.linkedArtifacts?.map((la) => (
                     <div
-                      key={att.id}
+                      key={la.id}
                       className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
                     >
                       <div className="flex items-center gap-3">
                         <FileText className="h-8 w-8 text-blue-600" />
                         <div>
-                          <p className="font-medium">{att.fileName}</p>
-                          <p className="text-sm text-gray-500">
-                            Uploaded: {new Date(att.uploadedAt).toLocaleDateString("en-GB")}
+                          <p className="font-medium">
+                            {la.artifact.artifactCode} : {la.artifact.name}
                           </p>
+                          <p className="text-sm text-gray-500">{la.artifact.fileName}</p>
                         </div>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDeleteAttachmentWithReset(att.id)}
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="icon">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon">
+                          <Download className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon">
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      </div>
                     </div>
                   ))}
-                  {(!evidence.attachments || evidence.attachments.length === 0) && (
+                  {(!evidence.linkedArtifacts || evidence.linkedArtifacts.length === 0) && (
                     <div className="text-center py-8 text-gray-500">
                       <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                      <p>No documents uploaded for this evidence</p>
+                      <p>{t("No artifacts linked to this evidence")}</p>
                     </div>
                   )}
                 </div>
@@ -2256,7 +1975,7 @@ export default function EvidenceDetailPage() {
       <Dialog open={commentDialogOpen} onOpenChange={setCommentDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Comments</DialogTitle>
+            <DialogTitle>{t("Comments")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             {/* Comment List */}
@@ -2266,7 +1985,7 @@ export default function EvidenceDetailPage() {
                   <div key={comment.id} className="p-3 bg-gray-50 rounded-lg">
                     <div className="flex items-center justify-between mb-1">
                       <span className="font-medium text-sm">
-                        {comment.userName || "Unknown User"}
+                        {comment.userName || t("Unknown User")}
                       </span>
                       <span className="text-xs text-gray-500">
                         {new Date(comment.createdAt).toLocaleDateString("en-GB")}{" "}
@@ -2281,19 +2000,19 @@ export default function EvidenceDetailPage() {
                 ))
               ) : (
                 <p className="text-gray-500 text-center py-4">
-                  No comments yet
+                  {t("No comments yet")}
                 </p>
               )}
             </div>
 
             {/* Add Comment */}
             <div className="border-t pt-4">
-              <Label className="font-medium">Add a comment</Label>
+              <Label className="font-medium">{t("Add a comment")}</Label>
               <div className="flex gap-2 mt-2">
                 <Textarea
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
-                  placeholder="Type your comment..."
+                  placeholder={t("Type your comment...")}
                   rows={2}
                   className="flex-1"
                 />
@@ -2315,106 +2034,63 @@ export default function EvidenceDetailPage() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmation</AlertDialogTitle>
+            <AlertDialogTitle>{t("Confirmation")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this evidence? This action cannot
-              be undone.
+              {t("Are you sure you want to delete this evidence? This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+            <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>{t("Delete")}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
       {/* Upload Attachment Dialog (Customer Admin) */}
       {isCustomerAdmin && (
-        <Dialog open={uploadDialogOpen} onOpenChange={(open) => {
-          setUploadDialogOpen(open);
-          if (!open) {
-            setSelectedFile(null);
-            setAttachmentDate("");
-          }
-        }}>
+        <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Add Evidence Attachment</DialogTitle>
+              <DialogTitle>{t("Upload Attachment")}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
-              {/* Date Selection */}
-              <div>
+              <div className="space-y-2">
+                <Label>{t("Select File")}</Label>
                 <Input
-                  type="date"
-                  value={attachmentDate}
-                  onChange={(e) => setAttachmentDate(e.target.value)}
-                  placeholder="dd/mm/yyyy"
-                  className="w-full"
-                />
-              </div>
-
-              {/* Drag and Drop Area */}
-              <div
-                className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-gray-400 transition-colors"
-                onClick={() => document.getElementById("evidence-attachment-file")?.click()}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  e.currentTarget.classList.add("border-blue-500", "bg-blue-50");
-                }}
-                onDragLeave={(e) => {
-                  e.preventDefault();
-                  e.currentTarget.classList.remove("border-blue-500", "bg-blue-50");
-                }}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  e.currentTarget.classList.remove("border-blue-500", "bg-blue-50");
-                  const files = e.dataTransfer.files;
-                  if (files.length > 0) {
-                    setSelectedFile(files[0]);
-                  }
-                }}
-              >
-                {selectedFile ? (
-                  <div className="space-y-2">
-                    <FileText className="h-10 w-10 mx-auto text-blue-600" />
-                    <p className="font-medium text-gray-800">{selectedFile.name}</p>
-                    <p className="text-sm text-gray-500">({(selectedFile.size / 1024).toFixed(1)} KB)</p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedFile(null);
-                      }}
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                ) : (
-                  <p className="text-gray-500">Drag and drop or select file.</p>
-                )}
-                <input
-                  id="evidence-attachment-file"
                   type="file"
-                  className="hidden"
                   onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
                   accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.txt,.csv"
                 />
+                {selectedFile && (
+                  <p className="text-sm text-gray-500">
+                    {t("Selected:")} {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)
+                  </p>
+                )}
               </div>
-
-              <div className="flex justify-end">
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSelectedFile(null);
+                    setUploadDialogOpen(false);
+                  }}
+                >
+                  {t("Cancel")}
+                </Button>
                 <Button
                   onClick={handleUploadAttachment}
-                  disabled={!selectedFile || !attachmentDate || uploading}
-                  className="bg-blue-700 hover:bg-blue-800"
+                  disabled={!selectedFile || uploading}
                 >
                   {uploading ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                      Uploading...
+                      {t("Uploading...")}
                     </>
                   ) : (
-                    "Submit"
+                    <>
+                      <Upload className="h-4 w-4 mr-2" />
+                      {t("Upload")}
+                    </>
                   )}
                 </Button>
               </div>
@@ -2429,37 +2105,19 @@ export default function EvidenceDetailPage() {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-orange-600">
               <XCircle className="h-5 w-5" />
-              Cannot Publish
+              {t("Cannot Publish")}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {publishBlockedMessage}
               {currentCycle && (
                 <p className="mt-2 text-sm">
-                  Current cycle: <span className="font-medium">{currentCycle}</span>
+                  {t("Current cycle:")} <span className="font-medium">{currentCycle}</span>
                 </p>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Close</AlertDialogCancel>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Clear AI Results Confirmation Dialog */}
-      <AlertDialog open={clearAIDialogOpen} onOpenChange={setClearAIDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Clear AI Results</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to clear AI results? This will remove all AI review data and validation statuses for all cycles.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>No</AlertDialogCancel>
-            <AlertDialogAction onClick={handleClearAIResults} className="bg-blue-700 hover:bg-blue-800">
-              Yes
-            </AlertDialogAction>
+            <AlertDialogCancel>{t("Close")}</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

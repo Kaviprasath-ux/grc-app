@@ -32,6 +32,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { useToast } from "@/hooks/use-toast";
 import { useSession } from "next-auth/react";
 import { useUserRoles } from "@/hooks/usePermissions";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Department {
   id: string;
@@ -109,6 +110,7 @@ export default function ProcessPage() {
   const router = useRouter();
   const { data: session } = useSession();
   const userRoles = useUserRoles();
+  const { t } = useLanguage();
 
   // Check if user is DepartmentReviewer (needs to see assigned processes and approve)
   const isDepartmentReviewer = userRoles.some((role) => role === "DepartmentReviewer");
@@ -179,22 +181,22 @@ export default function ProcessPage() {
       if (response.ok) {
         setAiRisks(result.risks || []);
         toast({
-          title: "AI Risks Generated",
-          description: `Successfully ${result.source === "AI" ? "generated" : "retrieved"} ${result.risks.length} risks.`,
+          title: t("AI Risks Generated"),
+          description: `${t("Successfully")} ${result.source === "AI" ? t("generated") : t("retrieved")} ${result.risks.length} ${t("risks")}.`,
         });
         // Refresh process list to reflect new risks if needed
         fetchData();
       } else {
         toast({
-          title: "AI Generation Failed",
-          description: result.error || "Please try again later.",
+          title: t("AI Generation Failed"),
+          description: result.error || t("Please try again later."),
           variant: "destructive",
         });
       }
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Communication with AI service failed.",
+        title: t("Error"),
+        description: t("Communication with AI service failed."),
         variant: "destructive",
       });
     } finally {
@@ -396,8 +398,8 @@ export default function ProcessPage() {
   const handleAddProcess = async () => {
     if (!processForm.name || !processForm.processType) {
       toast({
-        title: "Error",
-        description: "Please fill in required fields (Name and Process Type)",
+        title: t("Error"),
+        description: t("Please fill in required fields (Name and Process Type)"),
         variant: "destructive",
       });
       return;
@@ -417,22 +419,22 @@ export default function ProcessPage() {
         resetProcessForm();
         setIsAddProcessOpen(false);
         toast({
-          title: "Success",
-          description: "Process created successfully",
+          title: t("Success"),
+          description: t("Process created successfully"),
         });
       } else {
         const error = await res.json();
         toast({
-          title: "Error",
-          description: error.error || "Failed to create process",
+          title: t("Error"),
+          description: error.error || t("Failed to create process"),
           variant: "destructive",
         });
       }
     } catch (error) {
       console.error("Error adding process:", error);
       toast({
-        title: "Error",
-        description: "Failed to create process",
+        title: t("Error"),
+        description: t("Failed to create process"),
         variant: "destructive",
       });
     }
@@ -457,22 +459,22 @@ export default function ProcessPage() {
         setIsEditProcessOpen(false);
         setEditingProcess(null);
         toast({
-          title: "Success",
-          description: "Process updated successfully",
+          title: t("Success"),
+          description: t("Process updated successfully"),
         });
       } else {
         const error = await res.json();
         toast({
-          title: "Error",
-          description: error.error || "Failed to update process",
+          title: t("Error"),
+          description: error.error || t("Failed to update process"),
           variant: "destructive",
         });
       }
     } catch (error) {
       console.error("Error updating process:", error);
       toast({
-        title: "Error",
-        description: "Failed to update process",
+        title: t("Error"),
+        description: t("Failed to update process"),
         variant: "destructive",
       });
     }
@@ -504,27 +506,27 @@ export default function ProcessPage() {
   const biaColumns: ColumnDef<Process>[] = [
     {
       accessorKey: "processCode",
-      header: "Reference ID",
+      header: t("Reference ID"),
       cell: ({ row }) => <span className="font-mono text-sm">{row.getValue("processCode")}</span>,
     },
     {
       accessorKey: "name",
-      header: "Name",
+      header: t("Name"),
       cell: ({ row }) => <span className="font-medium">{row.getValue("name")}</span>,
     },
     {
       accessorKey: "department.name",
-      header: "Department",
+      header: t("Department"),
       cell: ({ row }) => row.original.department?.name || "-",
     },
     {
       accessorKey: "owner.fullName",
-      header: "Process Owner",
+      header: t("Process Owner"),
       cell: ({ row }) => row.original.owner?.fullName || "-",
     },
     {
       accessorKey: "processCriticality",
-      header: "Process Criticality",
+      header: t("Process Criticality"),
       cell: ({ row }) => {
         const biaStatus = getBIAStatus(row.original.id);
         const criticality = biaStatus?.processCriticality || row.original.processCriticality;
@@ -538,7 +540,7 @@ export default function ProcessPage() {
     },
     {
       id: "actions",
-      header: "Action",
+      header: t("Action"),
       cell: ({ row }) => {
         const biaStatus = getBIAStatus(row.original.id);
         const status = biaStatus?.status || "Open";
@@ -557,7 +559,7 @@ export default function ProcessPage() {
               onClick={() => router.push(`/organization/process/bia/${row.original.id}`)}
             >
               <Eye className="h-4 w-4 mr-1" />
-              View
+              {t("View")}
             </Button>
           );
         }
@@ -572,7 +574,7 @@ export default function ProcessPage() {
               onClick={() => router.push(`/organization/process/bia/${row.original.id}`)}
             >
               <Eye className="h-4 w-4 mr-1" />
-              View
+              {t("View")}
             </Button>
           );
         }
@@ -585,7 +587,7 @@ export default function ProcessPage() {
               size="sm"
               onClick={() => router.push(`/organization/process/bia/${row.original.id}`)}
             >
-              Respond
+              {t("Respond")}
             </Button>
           );
         }
@@ -601,7 +603,7 @@ export default function ProcessPage() {
                 setIsBIAFormOpen(true);
               }}
             >
-              Perform BIA
+              {t("Perform BIA")}
             </Button>
           </div>
         );
@@ -613,17 +615,17 @@ export default function ProcessPage() {
   const processColumns: ColumnDef<Process>[] = [
     {
       accessorKey: "processCode",
-      header: "Reference ID",
+      header: t("Reference ID"),
       cell: ({ row }) => <span className="font-mono text-sm">{row.getValue("processCode")}</span>,
     },
     {
       accessorKey: "name",
-      header: "Name",
+      header: t("Name"),
       cell: ({ row }) => <span className="font-medium">{row.getValue("name")}</span>,
     },
     {
       accessorKey: "description",
-      header: "Description",
+      header: t("Description"),
       cell: ({ row }) => {
         const desc = row.getValue("description") as string;
         return <span className="text-sm text-slate-400 truncate max-w-[200px] block">{desc || "-"}</span>;
@@ -631,28 +633,28 @@ export default function ProcessPage() {
     },
     {
       accessorKey: "department.name",
-      header: "Department",
+      header: t("Department"),
       cell: ({ row }) => row.original.department?.name || "-",
     },
     {
       accessorKey: "owner.fullName",
-      header: "Process Owner",
+      header: t("Process Owner"),
       cell: ({ row }) => row.original.owner?.fullName || "-",
     },
     {
       accessorKey: "frequency",
-      header: "Process Frequency",
+      header: t("Process Frequency"),
       cell: ({ row }) => row.original.frequency || "-",
     },
     {
       accessorKey: "natureOfImplementation",
-      header: "Nature Of Implementation",
+      header: t("Nature Of Implementation"),
       cell: ({ row }) => row.original.natureOfImplementation || "-",
     },
     // Hide AI Risk column for Reviewer role
     ...(!isReviewer ? [{
       id: "aiRisk",
-      header: "AI Risk",
+      header: t("AI Risk"),
       cell: ({ row }: { row: { original: Process } }) => (
         <Button
           variant="outline"
@@ -666,14 +668,14 @@ export default function ProcessPage() {
           ) : (
             <Sparkles className="h-4 w-4 mr-1" />
           )}
-          AI Risk Evaluation
+          {t("AI Risk Evaluation")}
         </Button>
       ),
     }] : []),
     // Hide actions column for Reviewer and DepartmentContributor roles
     ...(!isDepartmentContributor && !isReviewer ? [{
       id: "actions",
-      header: "Actions",
+      header: t("Actions"),
       cell: ({ row }: { row: { original: Process } }) => (
         <div className="flex gap-1">
           <Button
@@ -704,23 +706,23 @@ export default function ProcessPage() {
   const performanceColumns: ColumnDef<Process>[] = [
     {
       accessorKey: "name",
-      header: "Process Name",
+      header: t("Process Name"),
       cell: ({ row }) => <span className="font-medium">{row.getValue("name")}</span>,
     },
     {
       accessorKey: "department.name",
-      header: "Department Name",
+      header: t("Department Name"),
       cell: ({ row }) => row.original.department?.name || "-",
     },
     {
       id: "actions",
-      header: "Action",
+      header: t("Action"),
       cell: ({ row }) => (
         <Button
           variant="ghost"
           size="icon"
           onClick={() => openKPIModal(row.original)}
-          title="View KPI Details"
+          title={t("View KPI Details")}
         >
           <BarChart3 className="h-4 w-4" />
         </Button>
@@ -731,7 +733,7 @@ export default function ProcessPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-slate-400">Loading...</p>
+        <p className="text-slate-400">{t("Loading...")}</p>
       </div>
     );
   }
@@ -750,14 +752,14 @@ export default function ProcessPage() {
 
       {/* Page Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">Process</h1>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Process")}</h1>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          <TabsTrigger value="repository">Repository</TabsTrigger>
-          <TabsTrigger value="bia">Business Impact Analysis</TabsTrigger>
-          <TabsTrigger value="performance">Performance Dashboard</TabsTrigger>
+          <TabsTrigger value="repository">{t("Repository")}</TabsTrigger>
+          <TabsTrigger value="bia">{t("Business Impact Analysis")}</TabsTrigger>
+          <TabsTrigger value="performance">{t("Performance Dashboard")}</TabsTrigger>
         </TabsList>
 
         {/* Repository Tab */}
@@ -767,7 +769,7 @@ export default function ProcessPage() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input
-                  placeholder="Search processes..."
+                  placeholder={t("Search processes...")}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 w-[250px] bg-white"
@@ -775,10 +777,10 @@ export default function ProcessPage() {
               </div>
               <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
                 <SelectTrigger className="w-[180px] bg-white">
-                  <SelectValue placeholder="Department" />
+                  <SelectValue placeholder={t("Department")} />
                 </SelectTrigger>
                 <SelectContent position="popper" sideOffset={4}>
-                  <SelectItem value="all">All Departments</SelectItem>
+                  <SelectItem value="all">{t("All Departments")}</SelectItem>
                   {departments.map((dept) => (
                     <SelectItem key={dept.id} value={dept.id}>
                       {dept.name}
@@ -788,10 +790,10 @@ export default function ProcessPage() {
               </Select>
               <Select value={ownerFilter} onValueChange={setOwnerFilter}>
                 <SelectTrigger className="w-[180px] bg-white">
-                  <SelectValue placeholder="Process Owner" />
+                  <SelectValue placeholder={t("Process Owner")} />
                 </SelectTrigger>
                 <SelectContent position="popper" sideOffset={4}>
-                  <SelectItem value="all">All Owners</SelectItem>
+                  <SelectItem value="all">{t("All Owners")}</SelectItem>
                   {users.map((user) => (
                     <SelectItem key={user.id} value={user.id}>
                       {user.fullName}
@@ -801,10 +803,10 @@ export default function ProcessPage() {
               </Select>
               <Select value={frequencyFilter} onValueChange={setFrequencyFilter}>
                 <SelectTrigger className="w-[150px] bg-white">
-                  <SelectValue placeholder="Frequency" />
+                  <SelectValue placeholder={t("Frequency")} />
                 </SelectTrigger>
                 <SelectContent position="popper" sideOffset={4}>
-                  <SelectItem value="all">All Frequencies</SelectItem>
+                  <SelectItem value="all">{t("All Frequencies")}</SelectItem>
                   {processFrequencies.map((freq) => (
                     <SelectItem key={freq} value={freq}>
                       {freq}
@@ -816,18 +818,18 @@ export default function ProcessPage() {
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm">
                 <Download className="h-4 w-4 mr-2" />
-                Export
+                {t("Export")}
               </Button>
               {!isDepartmentContributor && (
                 <Button variant="outline" size="sm">
                   <Upload className="h-4 w-4 mr-2" />
-                  Import
+                  {t("Import")}
                 </Button>
               )}
               {canAddProcess && (
                 <Button onClick={() => setIsAddProcessOpen(true)}>
                   <Plus className="h-4 w-4 mr-2" />
-                  Add New
+                  {t("Add New")}
                 </Button>
               )}
             </div>
@@ -847,7 +849,7 @@ export default function ProcessPage() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input
-                  placeholder="Search By Process ID, Name"
+                  placeholder={t("Search By Process ID, Name")}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 w-[250px] bg-white"
@@ -855,10 +857,10 @@ export default function ProcessPage() {
               </div>
               <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
                 <SelectTrigger className="w-[180px] bg-white">
-                  <SelectValue placeholder="Department" />
+                  <SelectValue placeholder={t("Department")} />
                 </SelectTrigger>
                 <SelectContent position="popper" sideOffset={4}>
-                  <SelectItem value="all">All Departments</SelectItem>
+                  <SelectItem value="all">{t("All Departments")}</SelectItem>
                   {departments.map((dept) => (
                     <SelectItem key={dept.id} value={dept.id}>
                       {dept.name}
@@ -868,10 +870,10 @@ export default function ProcessPage() {
               </Select>
               <Select value={ownerFilter} onValueChange={setOwnerFilter}>
                 <SelectTrigger className="w-[180px] bg-white">
-                  <SelectValue placeholder="Process Owner" />
+                  <SelectValue placeholder={t("Process Owner")} />
                 </SelectTrigger>
                 <SelectContent position="popper" sideOffset={4}>
-                  <SelectItem value="all">All Owners</SelectItem>
+                  <SelectItem value="all">{t("All Owners")}</SelectItem>
                   {users.map((user) => (
                     <SelectItem key={user.id} value={user.id}>
                       {user.fullName}
@@ -882,7 +884,7 @@ export default function ProcessPage() {
             </div>
             <Button variant="outline" size="sm">
               <Download className="h-4 w-4 mr-2" />
-              Export
+              {t("Export")}
             </Button>
           </div>
 
@@ -900,7 +902,7 @@ export default function ProcessPage() {
             {/* Status Chart */}
             <div className="bg-white rounded-xl border border-slate-200">
               <div className="px-6 py-4 border-b border-slate-100">
-                <h3 className="text-base font-semibold text-slate-800">Status</h3>
+                <h3 className="text-base font-semibold text-slate-800">{t("Status")}</h3>
               </div>
               <div className="p-6">
                 {(() => {
@@ -908,10 +910,10 @@ export default function ProcessPage() {
                   const total = kpiProcesses.length || 1;
                   // For now, show all as "Achieved" since we don't have KPI status tracking yet
                   const statusData = [
-                    { name: "Scheduled", value: 0, color: "#3b82f6" },
-                    { name: "Missed", value: 0, color: "#f59e0b" },
-                    { name: "Overdue", value: 0, color: "#22c55e" },
-                    { name: "Achieved", value: kpiProcesses.length, color: "#1e3a5f" },
+                    { name: t("Scheduled"), value: 0, color: "#3b82f6" },
+                    { name: t("Missed"), value: 0, color: "#f59e0b" },
+                    { name: t("Overdue"), value: 0, color: "#22c55e" },
+                    { name: t("Achieved"), value: kpiProcesses.length, color: "#1e3a5f" },
                   ];
                   const hasData = statusData.some(d => d.value > 0);
 
@@ -921,7 +923,7 @@ export default function ProcessPage() {
                         <ResponsiveContainer width="100%" height="100%">
                           <PieChart>
                             <Pie
-                              data={hasData ? statusData.filter(d => d.value > 0) : [{ name: "No Data", value: 1, color: "#e5e7eb" }]}
+                              data={hasData ? statusData.filter(d => d.value > 0) : [{ name: t("No Data"), value: 1, color: "#e5e7eb" }]}
                               cx="50%"
                               cy="50%"
                               innerRadius={50}
@@ -931,7 +933,7 @@ export default function ProcessPage() {
                               label={({ percent }) => hasData && percent ? `${(percent * 100).toFixed(0)}%` : ""}
                               labelLine={false}
                             >
-                              {(hasData ? statusData.filter(d => d.value > 0) : [{ name: "No Data", value: 1, color: "#e5e7eb" }]).map((entry, index) => (
+                              {(hasData ? statusData.filter(d => d.value > 0) : [{ name: t("No Data"), value: 1, color: "#e5e7eb" }]).map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={entry.color} />
                               ))}
                             </Pie>
@@ -956,7 +958,7 @@ export default function ProcessPage() {
             {/* Department Chart */}
             <div className="bg-white rounded-xl border border-slate-200">
               <div className="px-6 py-4 border-b border-slate-100">
-                <h3 className="text-base font-semibold text-slate-800">Department</h3>
+                <h3 className="text-base font-semibold text-slate-800">{t("Department")}</h3>
               </div>
               <div className="p-6">
                 {(() => {
@@ -964,7 +966,7 @@ export default function ProcessPage() {
                   // Group by department
                   const deptCounts: Record<string, number> = {};
                   kpiProcesses.forEach((p) => {
-                    const deptName = p.department?.name || "Unassigned";
+                    const deptName = p.department?.name || t("Unassigned");
                     deptCounts[deptName] = (deptCounts[deptName] || 0) + 1;
                   });
                   const colors = ["#3b82f6", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#ec4899", "#84cc16"];
@@ -982,7 +984,7 @@ export default function ProcessPage() {
                         <ResponsiveContainer width="100%" height="100%">
                           <PieChart>
                             <Pie
-                              data={hasData ? deptData : [{ name: "No Data", value: 1, color: "#e5e7eb" }]}
+                              data={hasData ? deptData : [{ name: t("No Data"), value: 1, color: "#e5e7eb" }]}
                               cx="50%"
                               cy="50%"
                               innerRadius={50}
@@ -992,7 +994,7 @@ export default function ProcessPage() {
                               label={({ percent }) => hasData && percent ? `${(percent * 100).toFixed(0)}%` : ""}
                               labelLine={false}
                             >
-                              {(hasData ? deptData : [{ name: "No Data", value: 1, color: "#e5e7eb" }]).map((entry, index) => (
+                              {(hasData ? deptData : [{ name: t("No Data"), value: 1, color: "#e5e7eb" }]).map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={entry.color} />
                               ))}
                             </Pie>
@@ -1020,7 +1022,7 @@ export default function ProcessPage() {
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
-                placeholder="Search processes..."
+                placeholder={t("Search processes...")}
                 value={kpiSearchTerm}
                 onChange={(e) => setKpiSearchTerm(e.target.value)}
                 className="pl-10 w-full bg-white"
@@ -1028,10 +1030,10 @@ export default function ProcessPage() {
             </div>
             <Select value={kpiDepartmentFilter} onValueChange={setKpiDepartmentFilter}>
               <SelectTrigger className="w-[200px] bg-white">
-                <SelectValue placeholder="Department" />
+                <SelectValue placeholder={t("Department")} />
               </SelectTrigger>
               <SelectContent position="popper" sideOffset={4}>
-                <SelectItem value="all">All Departments</SelectItem>
+                <SelectItem value="all">{t("All Departments")}</SelectItem>
                 {departments.map((dept) => (
                   <SelectItem key={dept.id} value={dept.id}>
                     {dept.name}
@@ -1060,9 +1062,9 @@ export default function ProcessPage() {
               <div className="bg-white rounded-xl border border-slate-200 p-12">
                 <div className="flex flex-col items-center justify-center text-center">
                   <FileText className="h-12 w-12 text-slate-400 mb-4" />
-                  <h3 className="text-base font-semibold text-slate-800 mb-1">No KPI Data</h3>
+                  <h3 className="text-base font-semibold text-slate-800 mb-1">{t("No KPI Data")}</h3>
                   <p className="text-sm text-slate-500">
-                    No processes have KPI measurement enabled. Enable KPI Measurement Required when adding a process to see it here.
+                    {t("No processes have KPI measurement enabled. Enable KPI Measurement Required when adding a process to see it here.")}
                   </p>
                 </div>
               </div>
@@ -1075,17 +1077,17 @@ export default function ProcessPage() {
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Confirm Delete</DialogTitle>
+            <DialogTitle>{t("Confirm Delete")}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this process? This action cannot be undone.
+              {t("Are you sure you want to delete this process? This action cannot be undone.")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button variant="destructive" onClick={handleDeleteProcess}>
-              Delete
+              {t("Delete")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1098,29 +1100,28 @@ export default function ProcessPage() {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-lg font-semibold text-slate-800">
                 <Sparkles className="h-5 w-5 text-primary-600" />
-                AI Risk Evaluation
+                {t("AI Risk Evaluation")}
               </DialogTitle>
             </DialogHeader>
           </div>
           <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
             <div className="space-y-1">
-              <p className="text-sm font-medium text-slate-700">Process: {evaluatingProcess?.name}</p>
+              <p className="text-sm font-medium text-slate-700">{t("Process")}: {evaluatingProcess?.name}</p>
               <p className="text-xs text-slate-500 line-clamp-2">{evaluatingProcess?.description}</p>
             </div>
 
             {isAiGenerating ? (
               <div className="flex flex-col items-center justify-center py-12 space-y-4">
                 <Loader2 className="h-12 w-12 text-primary-600 animate-spin" />
-                <p className="text-sm text-slate-600 font-medium">AI is identifying potential risks...</p>
-                <p className="text-xs text-slate-400">This may take up to 30 seconds</p>
+                <p className="text-sm text-slate-600 font-medium">{t("AI is identifying potential risks...")}</p>
+                <p className="text-xs text-slate-400">{t("This may take up to 30 seconds")}</p>
               </div>
             ) : aiRisks.length > 0 ? (
               <div className="space-y-6">
                 <div className="p-4 bg-primary-50 rounded-lg border border-primary-200">
-                  <h4 className="font-medium text-primary-900 mb-2">Detected Risks ({aiRisks.length})</h4>
+                  <h4 className="font-medium text-primary-900 mb-2">{t("Detected Risks")} ({aiRisks.length})</h4>
                   <p className="text-sm text-primary-700">
-                    The AI has identified the following risks, threats, and suggested controls.
-                    These are now persisted in your Risk Register.
+                    {t("The AI has identified the following risks, threats, and suggested controls. These are now persisted in your Risk Register.")}
                   </p>
                 </div>
                 <div className="space-y-4">
@@ -1140,7 +1141,7 @@ export default function ProcessPage() {
 
                       {risk.threats?.length > 0 && (
                         <div className="space-y-1">
-                          <p className="text-xs font-bold text-slate-400 uppercase">Threats</p>
+                          <p className="text-xs font-bold text-slate-400 uppercase">{t("Threats")}</p>
                           <div className="flex flex-wrap gap-2">
                             {risk.threats.map((tm: any, tIdx: number) => (
                               <Badge key={tIdx} variant="outline" className="text-[10px] py-0">
@@ -1153,7 +1154,7 @@ export default function ProcessPage() {
 
                       {risk.controlRisks?.length > 0 && (
                         <div className="space-y-1">
-                          <p className="text-xs font-bold text-slate-400 uppercase">Suggested Controls</p>
+                          <p className="text-xs font-bold text-slate-400 uppercase">{t("Suggested Controls")}</p>
                           <div className="space-y-1">
                             {risk.controlRisks.map((cr: any, cIdx: number) => (
                               <div key={cIdx} className="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 p-1.5 rounded">
@@ -1171,16 +1172,16 @@ export default function ProcessPage() {
             ) : (
               <div className="flex flex-col items-center justify-center py-12 text-slate-400">
                 <Sparkles className="h-12 w-12 mb-4 opacity-20" />
-                <p>No risks generated yet.</p>
+                <p>{t("No risks generated yet.")}</p>
               </div>
             )}
           </div>
           <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsAIEvaluationOpen(false)}>
-              Close
+              {t("Close")}
             </Button>
             <Button onClick={() => router.push("/risks/register")}>
-              Go to Risk Register
+              {t("Go to Risk Register")}
             </Button>
           </div>
         </DialogContent>
@@ -1192,7 +1193,7 @@ export default function ProcessPage() {
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Business Impact Analysis - {biaProcess?.name}</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Business Impact Analysis")} - {biaProcess?.name}</DialogTitle>
             </DialogHeader>
           </div>
           {/* Scrollable Content */}
@@ -1200,15 +1201,15 @@ export default function ProcessPage() {
             {/* Status and Controls Section */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">Status & Approval</h4>
-                <Badge variant="outline" className="bg-info-light text-info-dark border-info">Open</Badge>
+                <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Status & Approval")}</h4>
+                <Badge variant="outline" className="bg-info-light text-info-dark border-info">{t("Open")}</Badge>
               </div>
               <div className="flex items-center gap-4">
                 <div className="flex-1">
-                  <Label className="text-sm font-medium text-slate-700">Approver</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Approver")}</Label>
                   <Select value={biaApprover} onValueChange={setBiaApprover}>
                     <SelectTrigger className="w-full mt-1.5 bg-white">
-                      <SelectValue placeholder="Select Approver" />
+                      <SelectValue placeholder={t("Select Approver")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
                       {users.map((user) => (
@@ -1221,7 +1222,7 @@ export default function ProcessPage() {
                 </div>
                 <div className="pt-6">
                   <Button variant="outline" size="sm" disabled={!biaApprover}>
-                    Submit For Approval
+                    {t("Submit For Approval")}
                   </Button>
                 </div>
               </div>
@@ -1229,33 +1230,33 @@ export default function ProcessPage() {
 
             {/* Impact Assessment Section */}
             <div className="space-y-4">
-              <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">Impact Assessment</h4>
+              <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Impact Assessment")}</h4>
 
               {/* Category Table */}
               <div className="border border-slate-200 rounded-lg overflow-hidden">
                 {/* Table Header */}
                 <div className="grid grid-cols-3 bg-slate-800 text-white">
-                  <div className="px-4 py-3 text-sm font-medium">Category</div>
-                  <div className="px-4 py-3 text-sm font-medium text-center">BIA Rating</div>
-                  <div className="px-4 py-3 text-sm font-medium">Description</div>
+                  <div className="px-4 py-3 text-sm font-medium">{t("Category")}</div>
+                  <div className="px-4 py-3 text-sm font-medium text-center">{t("BIA Rating")}</div>
+                  <div className="px-4 py-3 text-sm font-medium">{t("Description")}</div>
                 </div>
 
                 {/* Table Rows */}
                 {biaRatings.map((item, index) => (
                   <div key={item.category} className="grid grid-cols-3 border-b border-slate-100 last:border-b-0">
-                    <div className="px-4 py-3 text-sm font-medium text-slate-700">{item.category}</div>
+                    <div className="px-4 py-3 text-sm font-medium text-slate-700">{t(item.category)}</div>
                     <div className="px-4 py-3 flex justify-center">
                       <Select
                         value={item.rating}
                         onValueChange={(value) => handleBiaRatingChange(index, value as "High" | "Medium" | "Low" | "")}
                       >
                         <SelectTrigger className="w-[120px] bg-white">
-                          <SelectValue placeholder="Select" />
+                          <SelectValue placeholder={t("Select")} />
                         </SelectTrigger>
                         <SelectContent position="popper" sideOffset={4}>
-                          <SelectItem value="High">High</SelectItem>
-                          <SelectItem value="Medium">Medium</SelectItem>
-                          <SelectItem value="Low">Low</SelectItem>
+                          <SelectItem value="High">{t("High")}</SelectItem>
+                          <SelectItem value="Medium">{t("Medium")}</SelectItem>
+                          <SelectItem value="Low">{t("Low")}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -1270,8 +1271,8 @@ export default function ProcessPage() {
               <div className="border border-slate-200 rounded-lg p-4 bg-slate-50">
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="font-medium text-slate-800">Impact Rating = {calculateImpactRating()}</span>
-                    <p className="text-xs text-slate-500 mt-1">Note: The highest rating will be taken</p>
+                    <span className="font-medium text-slate-800">{t("Impact Rating")} = {calculateImpactRating()}</span>
+                    <p className="text-xs text-slate-500 mt-1">{t("Note: The highest rating will be taken")}</p>
                   </div>
                   <Badge
                     className={
@@ -1282,7 +1283,7 @@ export default function ProcessPage() {
                           : "bg-success-light text-success-dark border-success"
                     }
                   >
-                    {getProcessCriticality() || "N/A"}
+                    {getProcessCriticality() || t("N/A")}
                   </Badge>
                 </div>
               </div>
@@ -1290,10 +1291,10 @@ export default function ProcessPage() {
 
             {/* Recovery Metrics Section */}
             <div className="space-y-4">
-              <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">Recovery Metrics</h4>
+              <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Recovery Metrics")}</h4>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">RTO (Recovery Time Objective) - Hours</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("RTO (Recovery Time Objective) - Hours")}</Label>
                   <Input
                     type="number"
                     value={rto}
@@ -1303,7 +1304,7 @@ export default function ProcessPage() {
                   />
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">RPO (Recovery Point Objective) - Hours</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("RPO (Recovery Point Objective) - Hours")}</Label>
                   <Input
                     type="number"
                     value={rpo}
@@ -1318,10 +1319,10 @@ export default function ProcessPage() {
           {/* Fixed Footer */}
           <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsBIAFormOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button onClick={handleSaveBIA}>
-              Save
+              {t("Save")}
             </Button>
           </div>
         </DialogContent>
@@ -1336,42 +1337,42 @@ export default function ProcessPage() {
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Add New Process</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add New Process")}</DialogTitle>
             </DialogHeader>
           </div>
           {/* Scrollable Content */}
           <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
             {/* Basic Information Section */}
             <div className="space-y-4">
-              <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">Basic Information</h4>
+              <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Basic Information")}</h4>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="name" className="text-sm font-medium text-slate-700">Process Name <span className="text-error">*</span></Label>
+                  <Label htmlFor="name" className="text-sm font-medium text-slate-700">{t("Process Name")} <span className="text-error">*</span></Label>
                   <Input
                     id="name"
                     value={processForm.name}
                     onChange={(e) => setProcessForm({ ...processForm, name: e.target.value })}
-                    placeholder="Enter process name"
+                    placeholder={t("Enter process name")}
                     className="mt-1.5 bg-white"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="description" className="text-sm font-medium text-slate-700">Description</Label>
+                  <Label htmlFor="description" className="text-sm font-medium text-slate-700">{t("Description")}</Label>
                   <Textarea
                     id="description"
                     value={processForm.description}
                     onChange={(e) => setProcessForm({ ...processForm, description: e.target.value })}
-                    placeholder="Enter process description"
+                    placeholder={t("Enter process description")}
                     className="mt-1.5 bg-white"
                     rows={3}
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Process Type <span className="text-error">*</span></Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Process Type")} <span className="text-error">*</span></Label>
                     <Select value={processForm.processType} onValueChange={(value) => setProcessForm({ ...processForm, processType: value })}>
                       <SelectTrigger className="w-full mt-1.5 bg-white">
-                        <SelectValue placeholder="Select type" />
+                        <SelectValue placeholder={t("Select type")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
                         {processTypes.map((type) => (
@@ -1381,10 +1382,10 @@ export default function ProcessPage() {
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Department</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Department")}</Label>
                     <Select value={processForm.departmentId} onValueChange={(value) => setProcessForm({ ...processForm, departmentId: value })}>
                       <SelectTrigger className="w-full mt-1.5 bg-white">
-                        <SelectValue placeholder="Select department" />
+                        <SelectValue placeholder={t("Select department")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
                         {departments.map((dept) => (
@@ -1399,13 +1400,13 @@ export default function ProcessPage() {
 
             {/* Process Details Section */}
             <div className="space-y-4">
-              <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">Process Details</h4>
+              <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Process Details")}</h4>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Process Owner</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Process Owner")}</Label>
                   <Select value={processForm.ownerId} onValueChange={(value) => setProcessForm({ ...processForm, ownerId: value })}>
                     <SelectTrigger className="w-full mt-1.5 bg-white">
-                      <SelectValue placeholder="Select owner" />
+                      <SelectValue placeholder={t("Select owner")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
                       {users.map((user) => (
@@ -1415,10 +1416,10 @@ export default function ProcessPage() {
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Frequency</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Frequency")}</Label>
                   <Select value={processForm.frequency} onValueChange={(value) => setProcessForm({ ...processForm, frequency: value })}>
                     <SelectTrigger className="w-full mt-1.5 bg-white">
-                      <SelectValue placeholder="Select frequency" />
+                      <SelectValue placeholder={t("Select frequency")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
                       {processFrequencies.map((freq) => (
@@ -1428,10 +1429,10 @@ export default function ProcessPage() {
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Nature of Implementation</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Nature of Implementation")}</Label>
                   <Select value={processForm.natureOfImplementation} onValueChange={(value) => setProcessForm({ ...processForm, natureOfImplementation: value })}>
                     <SelectTrigger className="w-full mt-1.5 bg-white">
-                      <SelectValue placeholder="Select implementation" />
+                      <SelectValue placeholder={t("Select implementation")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
                       {natureOfImplementations.map((nature) => (
@@ -1441,10 +1442,10 @@ export default function ProcessPage() {
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Location</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Location")}</Label>
                   <Select value={processForm.location} onValueChange={(value) => setProcessForm({ ...processForm, location: value })}>
                     <SelectTrigger className="w-full mt-1.5 bg-white">
-                      <SelectValue placeholder="Select location" />
+                      <SelectValue placeholder={t("Select location")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
                       {locations.map((loc) => (
@@ -1454,10 +1455,10 @@ export default function ProcessPage() {
                   </Select>
                 </div>
                 <div className="col-span-2">
-                  <Label className="text-sm font-medium text-slate-700">Operational Complexity</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Operational Complexity")}</Label>
                   <Select value={processForm.operationalComplexity} onValueChange={(value) => setProcessForm({ ...processForm, operationalComplexity: value })}>
                     <SelectTrigger className="w-full mt-1.5 bg-white">
-                      <SelectValue placeholder="Select complexity" />
+                      <SelectValue placeholder={t("Select complexity")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
                       {operationalComplexities.map((complexity) => (
@@ -1471,7 +1472,7 @@ export default function ProcessPage() {
 
             {/* Dependencies & Options Section */}
             <div className="space-y-4">
-              <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">Dependencies & Options</h4>
+              <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Dependencies & Options")}</h4>
               <div className="grid grid-cols-2 gap-y-3 gap-x-4">
                 <div className="flex items-center space-x-2">
                   <Checkbox
@@ -1479,7 +1480,7 @@ export default function ProcessPage() {
                     checked={processForm.assetDependency}
                     onCheckedChange={(checked) => setProcessForm({ ...processForm, assetDependency: checked as boolean })}
                   />
-                  <Label htmlFor="assetDependency" className="text-sm text-slate-700 font-normal">Asset Dependency</Label>
+                  <Label htmlFor="assetDependency" className="text-sm text-slate-700 font-normal">{t("Asset Dependency")}</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Checkbox
@@ -1487,7 +1488,7 @@ export default function ProcessPage() {
                     checked={processForm.externalDependency}
                     onCheckedChange={(checked) => setProcessForm({ ...processForm, externalDependency: checked as boolean })}
                   />
-                  <Label htmlFor="externalDependency" className="text-sm text-slate-700 font-normal">External Dependency</Label>
+                  <Label htmlFor="externalDependency" className="text-sm text-slate-700 font-normal">{t("External Dependency")}</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Checkbox
@@ -1495,7 +1496,7 @@ export default function ProcessPage() {
                     checked={processForm.kpiMeasurementRequired}
                     onCheckedChange={(checked) => setProcessForm({ ...processForm, kpiMeasurementRequired: checked as boolean })}
                   />
-                  <Label htmlFor="kpiMeasurementRequired" className="text-sm text-slate-700 font-normal">KPI Measurement Required</Label>
+                  <Label htmlFor="kpiMeasurementRequired" className="text-sm text-slate-700 font-normal">{t("KPI Measurement Required")}</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Checkbox
@@ -1503,52 +1504,52 @@ export default function ProcessPage() {
                     checked={processForm.piiCapture}
                     onCheckedChange={(checked) => setProcessForm({ ...processForm, piiCapture: checked as boolean })}
                   />
-                  <Label htmlFor="piiCapture" className="text-sm text-slate-700 font-normal">PII Capture</Label>
+                  <Label htmlFor="piiCapture" className="text-sm text-slate-700 font-normal">{t("PII Capture")}</Label>
                 </div>
               </div>
             </div>
 
             {/* RACI Section */}
             <div className="space-y-4">
-              <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">RACI Matrix</h4>
+              <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("RACI Matrix")}</h4>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="responsible" className="text-sm font-medium text-slate-700">Responsible</Label>
+                  <Label htmlFor="responsible" className="text-sm font-medium text-slate-700">{t("Responsible")}</Label>
                   <Input
                     id="responsible"
                     value={processForm.responsible}
                     onChange={(e) => setProcessForm({ ...processForm, responsible: e.target.value })}
-                    placeholder="Enter responsible party"
+                    placeholder={t("Enter responsible party")}
                     className="mt-1.5 bg-white"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="accountable" className="text-sm font-medium text-slate-700">Accountable</Label>
+                  <Label htmlFor="accountable" className="text-sm font-medium text-slate-700">{t("Accountable")}</Label>
                   <Input
                     id="accountable"
                     value={processForm.accountable}
                     onChange={(e) => setProcessForm({ ...processForm, accountable: e.target.value })}
-                    placeholder="Enter accountable party"
+                    placeholder={t("Enter accountable party")}
                     className="mt-1.5 bg-white"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="consulted" className="text-sm font-medium text-slate-700">Consulted</Label>
+                  <Label htmlFor="consulted" className="text-sm font-medium text-slate-700">{t("Consulted")}</Label>
                   <Input
                     id="consulted"
                     value={processForm.consulted}
                     onChange={(e) => setProcessForm({ ...processForm, consulted: e.target.value })}
-                    placeholder="Enter consulted parties"
+                    placeholder={t("Enter consulted parties")}
                     className="mt-1.5 bg-white"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="informed" className="text-sm font-medium text-slate-700">Informed</Label>
+                  <Label htmlFor="informed" className="text-sm font-medium text-slate-700">{t("Informed")}</Label>
                   <Input
                     id="informed"
                     value={processForm.informed}
                     onChange={(e) => setProcessForm({ ...processForm, informed: e.target.value })}
-                    placeholder="Enter informed parties"
+                    placeholder={t("Enter informed parties")}
                     className="mt-1.5 bg-white"
                   />
                 </div>
@@ -1558,10 +1559,10 @@ export default function ProcessPage() {
           {/* Fixed Footer */}
           <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsAddProcessOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button onClick={handleAddProcess} disabled={saving}>
-              {saving ? "Saving..." : "Add Process"}
+              {saving ? t("Saving...") : t("Add Process")}
             </Button>
           </div>
         </DialogContent>
@@ -1576,17 +1577,17 @@ export default function ProcessPage() {
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Edit Process</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Process")}</DialogTitle>
             </DialogHeader>
           </div>
           {editingProcess && (
             <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
               {/* Basic Information Section */}
               <div className="space-y-4">
-                <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">Basic Information</h4>
+                <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Basic Information")}</h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Process Code</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Process Code")}</Label>
                     <Input
                       value={editingProcess.processCode}
                       disabled
@@ -1594,7 +1595,7 @@ export default function ProcessPage() {
                     />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Status</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Status")}</Label>
                     <Input
                       value={editingProcess.status}
                       disabled
@@ -1603,32 +1604,32 @@ export default function ProcessPage() {
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="editName" className="text-sm font-medium text-slate-700">Process Name <span className="text-error">*</span></Label>
+                  <Label htmlFor="editName" className="text-sm font-medium text-slate-700">{t("Process Name")} <span className="text-error">*</span></Label>
                   <Input
                     id="editName"
                     value={editingProcess.name}
                     onChange={(e) => setEditingProcess({ ...editingProcess, name: e.target.value })}
-                    placeholder="Enter process name"
+                    placeholder={t("Enter process name")}
                     className="mt-1.5 bg-white"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="editDescription" className="text-sm font-medium text-slate-700">Description</Label>
+                  <Label htmlFor="editDescription" className="text-sm font-medium text-slate-700">{t("Description")}</Label>
                   <Textarea
                     id="editDescription"
                     value={editingProcess.description || ""}
                     onChange={(e) => setEditingProcess({ ...editingProcess, description: e.target.value })}
-                    placeholder="Enter process description"
+                    placeholder={t("Enter process description")}
                     className="mt-1.5 bg-white"
                     rows={3}
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Process Type <span className="text-error">*</span></Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Process Type")} <span className="text-error">*</span></Label>
                     <Select value={editingProcess.processType} onValueChange={(value) => setEditingProcess({ ...editingProcess, processType: value })}>
                       <SelectTrigger className="w-full mt-1.5 bg-white">
-                        <SelectValue placeholder="Select type" />
+                        <SelectValue placeholder={t("Select type")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
                         {processTypes.map((type) => (
@@ -1638,10 +1639,10 @@ export default function ProcessPage() {
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Department</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Department")}</Label>
                     <Select value={editingProcess.departmentId || ""} onValueChange={(value) => setEditingProcess({ ...editingProcess, departmentId: value })}>
                       <SelectTrigger className="w-full mt-1.5 bg-white">
-                        <SelectValue placeholder="Select department" />
+                        <SelectValue placeholder={t("Select department")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
                         {departments.map((dept) => (
@@ -1655,13 +1656,13 @@ export default function ProcessPage() {
 
               {/* Process Details Section */}
               <div className="space-y-4">
-                <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">Process Details</h4>
+                <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Process Details")}</h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Process Owner</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Process Owner")}</Label>
                     <Select value={editingProcess.ownerId || ""} onValueChange={(value) => setEditingProcess({ ...editingProcess, ownerId: value })}>
                       <SelectTrigger className="w-full mt-1.5 bg-white">
-                        <SelectValue placeholder="Select owner" />
+                        <SelectValue placeholder={t("Select owner")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
                         {users.map((user) => (
@@ -1671,10 +1672,10 @@ export default function ProcessPage() {
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Frequency</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Frequency")}</Label>
                     <Select value={editingProcess.frequency || ""} onValueChange={(value) => setEditingProcess({ ...editingProcess, frequency: value })}>
                       <SelectTrigger className="w-full mt-1.5 bg-white">
-                        <SelectValue placeholder="Select frequency" />
+                        <SelectValue placeholder={t("Select frequency")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
                         {processFrequencies.map((freq) => (
@@ -1684,10 +1685,10 @@ export default function ProcessPage() {
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Nature of Implementation</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Nature of Implementation")}</Label>
                     <Select value={editingProcess.natureOfImplementation || ""} onValueChange={(value) => setEditingProcess({ ...editingProcess, natureOfImplementation: value })}>
                       <SelectTrigger className="w-full mt-1.5 bg-white">
-                        <SelectValue placeholder="Select implementation" />
+                        <SelectValue placeholder={t("Select implementation")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
                         {natureOfImplementations.map((nature) => (
@@ -1697,10 +1698,10 @@ export default function ProcessPage() {
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Location</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Location")}</Label>
                     <Select value={editingProcess.location || ""} onValueChange={(value) => setEditingProcess({ ...editingProcess, location: value })}>
                       <SelectTrigger className="w-full mt-1.5 bg-white">
-                        <SelectValue placeholder="Select location" />
+                        <SelectValue placeholder={t("Select location")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
                         {locations.map((loc) => (
@@ -1710,10 +1711,10 @@ export default function ProcessPage() {
                     </Select>
                   </div>
                   <div className="col-span-2">
-                    <Label className="text-sm font-medium text-slate-700">Operational Complexity</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Operational Complexity")}</Label>
                     <Select value={editingProcess.operationalComplexity || ""} onValueChange={(value) => setEditingProcess({ ...editingProcess, operationalComplexity: value })}>
                       <SelectTrigger className="w-full mt-1.5 bg-white">
-                        <SelectValue placeholder="Select complexity" />
+                        <SelectValue placeholder={t("Select complexity")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
                         {operationalComplexities.map((complexity) => (
@@ -1727,7 +1728,7 @@ export default function ProcessPage() {
 
               {/* Dependencies & Options Section */}
               <div className="space-y-4">
-                <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">Dependencies & Options</h4>
+                <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Dependencies & Options")}</h4>
                 <div className="grid grid-cols-2 gap-y-3 gap-x-4">
                   <div className="flex items-center space-x-2">
                     <Checkbox
@@ -1735,7 +1736,7 @@ export default function ProcessPage() {
                       checked={editingProcess.assetDependency || false}
                       onCheckedChange={(checked) => setEditingProcess({ ...editingProcess, assetDependency: checked as boolean })}
                     />
-                    <Label htmlFor="editAssetDependency" className="text-sm text-slate-700 font-normal">Asset Dependency</Label>
+                    <Label htmlFor="editAssetDependency" className="text-sm text-slate-700 font-normal">{t("Asset Dependency")}</Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Checkbox
@@ -1743,7 +1744,7 @@ export default function ProcessPage() {
                       checked={editingProcess.externalDependency || false}
                       onCheckedChange={(checked) => setEditingProcess({ ...editingProcess, externalDependency: checked as boolean })}
                     />
-                    <Label htmlFor="editExternalDependency" className="text-sm text-slate-700 font-normal">External Dependency</Label>
+                    <Label htmlFor="editExternalDependency" className="text-sm text-slate-700 font-normal">{t("External Dependency")}</Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Checkbox
@@ -1751,7 +1752,7 @@ export default function ProcessPage() {
                       checked={editingProcess.kpiMeasurementRequired || false}
                       onCheckedChange={(checked) => setEditingProcess({ ...editingProcess, kpiMeasurementRequired: checked as boolean })}
                     />
-                    <Label htmlFor="editKpiMeasurementRequired" className="text-sm text-slate-700 font-normal">KPI Measurement Required</Label>
+                    <Label htmlFor="editKpiMeasurementRequired" className="text-sm text-slate-700 font-normal">{t("KPI Measurement Required")}</Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Checkbox
@@ -1759,52 +1760,52 @@ export default function ProcessPage() {
                       checked={editingProcess.piiCapture || false}
                       onCheckedChange={(checked) => setEditingProcess({ ...editingProcess, piiCapture: checked as boolean })}
                     />
-                    <Label htmlFor="editPiiCapture" className="text-sm text-slate-700 font-normal">PII Capture</Label>
+                    <Label htmlFor="editPiiCapture" className="text-sm text-slate-700 font-normal">{t("PII Capture")}</Label>
                   </div>
                 </div>
               </div>
 
               {/* RACI Section */}
               <div className="space-y-4">
-                <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">RACI Matrix</h4>
+                <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("RACI Matrix")}</h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="editResponsible" className="text-sm font-medium text-slate-700">Responsible</Label>
+                    <Label htmlFor="editResponsible" className="text-sm font-medium text-slate-700">{t("Responsible")}</Label>
                     <Input
                       id="editResponsible"
                       value={editingProcess.responsible || ""}
                       onChange={(e) => setEditingProcess({ ...editingProcess, responsible: e.target.value })}
-                      placeholder="Enter responsible party"
+                      placeholder={t("Enter responsible party")}
                       className="mt-1.5 bg-white"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="editAccountable" className="text-sm font-medium text-slate-700">Accountable</Label>
+                    <Label htmlFor="editAccountable" className="text-sm font-medium text-slate-700">{t("Accountable")}</Label>
                     <Input
                       id="editAccountable"
                       value={editingProcess.accountable || ""}
                       onChange={(e) => setEditingProcess({ ...editingProcess, accountable: e.target.value })}
-                      placeholder="Enter accountable party"
+                      placeholder={t("Enter accountable party")}
                       className="mt-1.5 bg-white"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="editConsulted" className="text-sm font-medium text-slate-700">Consulted</Label>
+                    <Label htmlFor="editConsulted" className="text-sm font-medium text-slate-700">{t("Consulted")}</Label>
                     <Input
                       id="editConsulted"
                       value={editingProcess.consulted || ""}
                       onChange={(e) => setEditingProcess({ ...editingProcess, consulted: e.target.value })}
-                      placeholder="Enter consulted parties"
+                      placeholder={t("Enter consulted parties")}
                       className="mt-1.5 bg-white"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="editInformed" className="text-sm font-medium text-slate-700">Informed</Label>
+                    <Label htmlFor="editInformed" className="text-sm font-medium text-slate-700">{t("Informed")}</Label>
                     <Input
                       id="editInformed"
                       value={editingProcess.informed || ""}
                       onChange={(e) => setEditingProcess({ ...editingProcess, informed: e.target.value })}
-                      placeholder="Enter informed parties"
+                      placeholder={t("Enter informed parties")}
                       className="mt-1.5 bg-white"
                     />
                   </div>
@@ -1815,10 +1816,10 @@ export default function ProcessPage() {
           {/* Fixed Footer */}
           <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsEditProcessOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button onClick={handleEditProcess} disabled={saving}>
-              {saving ? "Saving..." : "Save Changes"}
+              {saving ? t("Saving...") : t("Save Changes")}
             </Button>
           </div>
         </DialogContent>
@@ -1833,7 +1834,7 @@ export default function ProcessPage() {
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">KPI Details - {selectedKPIProcess?.name}</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("KPI Details")} - {selectedKPIProcess?.name}</DialogTitle>
             </DialogHeader>
           </div>
           {selectedKPIProcess && (
@@ -1841,9 +1842,9 @@ export default function ProcessPage() {
               {/* KPI Chart Section */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">Performance Chart</h4>
+                  <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Performance Chart")}</h4>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-slate-400">Year</span>
+                    <span className="text-sm text-slate-400">{t("Year")}</span>
                     <Select value={selectedKPIYear} onValueChange={setSelectedKPIYear}>
                       <SelectTrigger className="w-[100px] bg-white">
                         <SelectValue />
@@ -1882,7 +1883,7 @@ export default function ProcessPage() {
                             stroke="#3b82f6"
                             strokeWidth={2}
                             dot={{ fill: "#3b82f6", r: 4 }}
-                            name="Achieved Value"
+                            name={t("Achieved Value")}
                             connectNulls={false}
                           />
                           <Line
@@ -1890,7 +1891,7 @@ export default function ProcessPage() {
                             dataKey="expectedValue"
                             stroke="#f59e0b"
                             strokeWidth={2}
-                            name="Expected Value"
+                            name={t("Expected Value")}
                           />
                         </LineChart>
                       </ResponsiveContainer>
@@ -1900,11 +1901,11 @@ export default function ProcessPage() {
                     <div className="flex justify-end gap-6">
                       <div className="flex items-center gap-2">
                         <div className="w-4 h-1 bg-blue-500" />
-                        <span className="text-sm text-slate-600">Achieved Value</span>
+                        <span className="text-sm text-slate-600">{t("Achieved Value")}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="w-4 h-1 bg-amber-500" />
-                        <span className="text-sm text-slate-600">Expected Value</span>
+                        <span className="text-sm text-slate-600">{t("Expected Value")}</span>
                       </div>
                     </div>
                   </div>
@@ -1913,30 +1914,30 @@ export default function ProcessPage() {
 
               {/* KPI Configuration Section */}
               <div className="space-y-4">
-                <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">KPI Configuration</h4>
+                <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("KPI Configuration")}</h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">KPI Objective</Label>
-                    <Input placeholder="Enter Objective" className="mt-1.5 bg-white" />
+                    <Label className="text-sm font-medium text-slate-700">{t("KPI Objective")}</Label>
+                    <Input placeholder={t("Enter Objective")} className="mt-1.5 bg-white" />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">KPI Description</Label>
-                    <Input placeholder="Enter Description" className="mt-1.5 bg-white" />
+                    <Label className="text-sm font-medium text-slate-700">{t("KPI Description")}</Label>
+                    <Input placeholder={t("Enter Description")} className="mt-1.5 bg-white" />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">KPI Data Source</Label>
-                    <Input placeholder="Enter Data Source" className="mt-1.5 bg-white" />
+                    <Label className="text-sm font-medium text-slate-700">{t("KPI Data Source")}</Label>
+                    <Input placeholder={t("Enter Data Source")} className="mt-1.5 bg-white" />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">KPI Measurement Formula</Label>
-                    <Input placeholder="Enter the KPI Calculation Formula" className="mt-1.5 bg-white" />
+                    <Label className="text-sm font-medium text-slate-700">{t("KPI Measurement Formula")}</Label>
+                    <Input placeholder={t("Enter the KPI Calculation Formula")} className="mt-1.5 bg-white" />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Expected Value</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Expected Value")}</Label>
                     <Input type="number" defaultValue={80} className="mt-1.5 bg-white" />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Targeted Achieved Value</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Targeted Achieved Value")}</Label>
                     <Input type="number" defaultValue={100} className="mt-1.5 bg-white" />
                   </div>
                 </div>
@@ -1944,10 +1945,10 @@ export default function ProcessPage() {
 
               {/* KPI Records Section */}
               <div className="space-y-4">
-                <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">KPI Records</h4>
+                <h4 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("KPI Records")}</h4>
                 <div className="border border-slate-200 rounded-lg p-8 bg-slate-50">
                   <div className="flex flex-col items-center justify-center text-center">
-                    <p className="text-slate-400">No KPI records yet</p>
+                    <p className="text-slate-400">{t("No KPI records yet")}</p>
                   </div>
                 </div>
               </div>
@@ -1956,10 +1957,10 @@ export default function ProcessPage() {
           {/* Fixed Footer */}
           <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsKPIModalOpen(false)}>
-              Close
+              {t("Close")}
             </Button>
             <Button>
-              Save
+              {t("Save")}
             </Button>
           </div>
         </DialogContent>
