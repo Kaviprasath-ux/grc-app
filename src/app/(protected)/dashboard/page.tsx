@@ -186,7 +186,16 @@ export default function DashboardPage() {
         <ComplianceProgressBar
           title="Overall Compliance Status"
           data={complianceData}
-          onFrameworkClick={(frameworkId) => router.push(`/compliance/control?frameworkId=${frameworkId}&from=dashboard`)}
+          onFrameworkClick={(frameworkId) => {
+            // Role-aware navigation for framework clicks
+            const isGRCAdmin = session?.user?.roles?.includes("GRCAdministrator");
+            if (isGRCAdmin) {
+              router.push(`/compliance/control?frameworkId=${frameworkId}&from=dashboard`);
+            } else {
+              // Customer Admin and other roles use role-specific framework controls page
+              router.push(`/roles/customer-administrator/compliance/framework/${frameworkId}/controls?from=dashboard`);
+            }
+          }}
         />
         <HorizontalBarChart
           title="Risk Assessment Overview"

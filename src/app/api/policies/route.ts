@@ -17,9 +17,21 @@ export const GET = withAuth(
 
       const tenantFilter = getTenantFilter(session);
       const where: Record<string, unknown> = { ...tenantFilter };
+
+      // Department-based filtering for DepartmentContributor and DepartmentReviewer roles
+      // These roles should only see governance documents assigned to their department
+      const isDepartmentRole = session.roles.some(role =>
+        ['DepartmentContributor', 'DepartmentReviewer'].includes(role)
+      );
+      if (isDepartmentRole && session.departmentId) {
+        where.departmentId = session.departmentId;
+      } else if (departmentId) {
+        // For other roles, apply departmentId filter from query params if provided
+        where.departmentId = departmentId;
+      }
+
       if (status) where.status = status;
       if (documentType) where.documentType = documentType;
-      if (departmentId) where.departmentId = departmentId;
       // Filter by framework through PolicyControl -> Control -> Framework relationship
       if (frameworkId) {
         where.policyControls = {

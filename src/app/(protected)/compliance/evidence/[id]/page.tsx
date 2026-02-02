@@ -36,6 +36,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   ArrowLeft,
   FileText,
   Upload,
@@ -54,6 +59,9 @@ import {
   XCircle,
   Clock,
   Loader2,
+  Layers,
+  Pencil,
+  Save,
 } from "lucide-react";
 
 // Cycle status types
@@ -118,6 +126,7 @@ interface Evidence {
       description: string | null;
       entities: string;
       domain?: { name: string } | null;
+      framework?: { id: string; name: string } | null;
     };
   }>;
   attachments?: Array<{
@@ -145,10 +154,17 @@ interface Department {
   name: string;
 }
 
+interface UserRole {
+  role: {
+    name: string;
+  };
+}
+
 interface User {
   id: string;
   fullName: string;
   departmentId: string | null;
+  userRoles?: UserRole[];
 }
 
 interface Framework {
@@ -214,17 +230,62 @@ const getCurrentCycle = (recurrence: string | null): string => {
   }
 };
 
+// Helper function to calculate review date based on recurrence
+const calculateReviewDate = (recurrence: string): string => {
+  const today = new Date();
+  let reviewDate = new Date(today);
+
+  switch (recurrence) {
+    case "Monthly":
+      reviewDate.setMonth(reviewDate.getMonth() + 1);
+      break;
+    case "Quarterly":
+      reviewDate.setMonth(reviewDate.getMonth() + 3);
+      break;
+    case "Half-yearly":
+      reviewDate.setMonth(reviewDate.getMonth() + 6);
+      break;
+    case "Yearly":
+      reviewDate.setFullYear(reviewDate.getFullYear() + 1);
+      break;
+    default:
+      break;
+  }
+
+  return reviewDate.toISOString();
+};
+
 // Local storage key helpers for cycle status
+// Normalize dash characters (en-dash, em-dash, hyphen) to regular hyphen for consistent key matching
+const normalizeDashes = (str: string): string => {
+  return str.replace(/[\u2013\u2014]/g, "-"); // Replace en-dash (–) and em-dash (—) with hyphen (-)
+};
+
 const getCycleStatusKey = (evidenceId: string, period: string): string => {
-  return `evidence-${evidenceId}-cycle-${period}-status`;
+  return `evidence-${evidenceId}-cycle-${normalizeDashes(period)}-status`;
 };
 
 const getCycleStatusFromStorage = (evidenceId: string, period: string): CycleStatusData => {
   if (typeof window === "undefined") {
     return { status: "none", aiReviewStatus: "none" };
   }
-  const key = getCycleStatusKey(evidenceId, period);
-  const stored = localStorage.getItem(key);
+
+  // Try normalized key first (new format with regular hyphen)
+  const normalizedKey = getCycleStatusKey(evidenceId, period);
+  let stored = localStorage.getItem(normalizedKey);
+
+  // Backwards compatibility: also try original key format (with en-dash)
+  if (!stored) {
+    const originalKey = `evidence-${evidenceId}-cycle-${period}-status`;
+    stored = localStorage.getItem(originalKey);
+
+    // If found with old key, migrate to new key format
+    if (stored) {
+      localStorage.setItem(normalizedKey, stored);
+      localStorage.removeItem(originalKey);
+    }
+  }
+
   if (stored) {
     try {
       return JSON.parse(stored);
@@ -285,9 +346,12 @@ export default function EvidenceDetailPage() {
     kpiExpectedScore: "",
     kpiDescription: "",
     kpiCalculationFormula: "",
+    kpiActualScore: "",
   });
   const [kpiEditMode, setKpiEditMode] = useState(false);
   const [kpiSaving, setKpiSaving] = useState(false);
+  const [actualScoreEditMode, setActualScoreEditMode] = useState(false);
+  const [actualScoreSaving, setActualScoreSaving] = useState(false);
 
   // Comment state
   const [commentDialogOpen, setCommentDialogOpen] = useState(false);
@@ -297,9 +361,13 @@ export default function EvidenceDetailPage() {
   // Delete state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
+  // Clear AI Results state
+  const [clearAIDialogOpen, setClearAIDialogOpen] = useState(false);
+
   // Upload attachment state (Customer Admin)
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [attachmentDate, setAttachmentDate] = useState<string>("");
   const [uploading, setUploading] = useState(false);
 
   const fetchEvidence = useCallback(async () => {
@@ -318,6 +386,7 @@ export default function EvidenceDetailPage() {
             kpiExpectedScore: linkedKpi.expectedScore?.toString() || data.kpiExpectedScore?.toString() || "",
             kpiDescription: linkedKpi.description || data.kpiDescription || "",
             kpiCalculationFormula: linkedKpi.calculationFormula || data.kpiCalculationFormula || "",
+            kpiActualScore: linkedKpi.actualScore?.toString() || "",
           });
           // KPI exists, so show view mode (Edit button)
           setKpiEditMode(false);
@@ -328,6 +397,7 @@ export default function EvidenceDetailPage() {
             kpiExpectedScore: data.kpiExpectedScore?.toString() || "",
             kpiDescription: data.kpiDescription || "",
             kpiCalculationFormula: data.kpiCalculationFormula || "",
+            kpiActualScore: "",
           });
           // No KPI exists yet, so show edit mode (Save button)
           setKpiEditMode(true);
@@ -514,18 +584,22 @@ export default function EvidenceDetailPage() {
     // Update cycle status to validated
     updateCycleStatus(selectedMonth, { status: "validated" });
 
-    // If validated cycle is the current cycle, update parent status to Validated
-    if (selectedMonth === currentCycle) {
+    // Normalize for comparison (handle en-dash vs hyphen differences)
+    const normalizedSelected = normalizeDashes(selectedMonth);
+    const normalizedCurrent = currentCycle ? normalizeDashes(currentCycle) : null;
+
+    // If validated cycle is the current cycle, update parent status to Published
+    if (normalizedSelected === normalizedCurrent) {
       try {
         const response = await fetch(`/api/evidences/${id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: "Validated" }),
+          body: JSON.stringify({ status: "Published" }),
         });
 
         if (response.ok) {
           fetchEvidence();
-          toast.success(`${selectedMonth} cycle validated. Evidence status updated to Validated.`);
+          toast.success(`${selectedMonth} cycle validated. Evidence status updated to Published.`);
         } else {
           toast.success(`${selectedMonth} cycle validated successfully.`);
         }
@@ -549,10 +623,22 @@ export default function EvidenceDetailPage() {
   const handlePublishWithValidation = async () => {
     if (!currentCycle || !evidence) return;
 
+    // Check current cycle status from both currentCycle key and selectedMonth if they match
+    // This handles potential key mismatches between stored data and computed keys
     const currentCycleStatus = cycleStatuses[currentCycle];
+    const selectedCycleStatus = selectedMonth ? cycleStatuses[selectedMonth] : null;
+
+    // Normalize for comparison (handle en-dash vs hyphen differences)
+    const normalizedCurrentCycle = normalizeDashes(currentCycle);
+    const normalizedSelectedMonth = selectedMonth ? normalizeDashes(selectedMonth) : null;
+
+    // Consider validated if current cycle OR selected month (if it's the current cycle) is validated
+    const isCurrentCycleValidated =
+      (currentCycleStatus && currentCycleStatus.status === "validated") ||
+      (normalizedSelectedMonth === normalizedCurrentCycle && selectedCycleStatus && selectedCycleStatus.status === "validated");
 
     // Check if current cycle is validated
-    if (!currentCycleStatus || currentCycleStatus.status !== "validated") {
+    if (!isCurrentCycleValidated) {
       setPublishBlockedMessage("Current cycle document is not validated.");
       return;
     }
@@ -639,6 +725,7 @@ export default function EvidenceDetailPage() {
         dataSource: kpiForm.kpiDataSource || null,
         calculationFormula: kpiForm.kpiCalculationFormula || null,
         expectedScore: kpiForm.kpiExpectedScore ? parseFloat(kpiForm.kpiExpectedScore) : null,
+        actualScore: kpiForm.kpiActualScore ? parseFloat(kpiForm.kpiActualScore) : null,
         departmentId: evidence?.departmentId || null,
         reviewDate: evidence?.reviewDate || null,
         evidenceId: id,
@@ -678,6 +765,39 @@ export default function EvidenceDetailPage() {
       toast.error("Failed to save KPI");
     } finally {
       setKpiSaving(false);
+    }
+  };
+
+  const handleSaveActualScore = async () => {
+    const existingKpi = evidence?.kpis?.[0];
+    if (!existingKpi) {
+      toast.error("Please save KPI details first");
+      return;
+    }
+
+    setActualScoreSaving(true);
+    try {
+      const response = await fetch(`/api/kpis/${existingKpi.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          actualScore: kpiForm.kpiActualScore ? parseFloat(kpiForm.kpiActualScore) : null,
+        }),
+      });
+
+      if (response.ok) {
+        toast.success("Actual score saved successfully!");
+        setActualScoreEditMode(false);
+        await fetchEvidence();
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || "Failed to save actual score");
+      }
+    } catch (error) {
+      console.error("Error saving actual score:", error);
+      toast.error("Failed to save actual score");
+    } finally {
+      setActualScoreSaving(false);
     }
   };
 
@@ -757,12 +877,13 @@ export default function EvidenceDetailPage() {
 
   // Upload attachment handler (Customer Admin)
   const handleUploadAttachment = async () => {
-    if (!selectedFile) return;
+    if (!selectedFile || !attachmentDate) return;
 
     setUploading(true);
     try {
       const formData = new FormData();
       formData.append("file", selectedFile);
+      formData.append("uploadedAt", new Date(attachmentDate).toISOString());
 
       const response = await fetch(`/api/evidences/${id}/attachments`, {
         method: "POST",
@@ -771,6 +892,7 @@ export default function EvidenceDetailPage() {
 
       if (response.ok) {
         setSelectedFile(null);
+        setAttachmentDate("");
         setUploadDialogOpen(false);
 
         // Update status to Draft if currently Not Uploaded
@@ -810,6 +932,58 @@ export default function EvidenceDetailPage() {
     } catch (error) {
       console.error("Error deleting attachment:", error);
     }
+  };
+
+  // Delete attachment with full reset (for Linked Artifacts tab)
+  const handleDeleteAttachmentWithReset = async (attachmentId: string) => {
+    try {
+      // First delete the attachment
+      const deleteResponse = await fetch(`/api/evidences/${id}/attachments?attachmentId=${attachmentId}`, {
+        method: "DELETE",
+      });
+
+      if (deleteResponse.ok) {
+        // Reset evidence status to "Not Uploaded" and clear AI review data
+        await fetch(`/api/evidences/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            status: "Not Uploaded",
+          }),
+        });
+
+        // Clear cycle statuses from localStorage
+        if (evidence?.recurrence) {
+          const periods = getPeriodsForRecurrence(evidence.recurrence);
+          periods.forEach((period) => {
+            const key = getCycleStatusKey(evidence.id, period);
+            localStorage.removeItem(key);
+          });
+          setCycleStatuses({});
+        }
+
+        toast.success("Attachment deleted and evidence reset successfully");
+        fetchEvidence();
+      }
+    } catch (error) {
+      console.error("Error deleting attachment:", error);
+      toast.error("Failed to delete attachment");
+    }
+  };
+
+  // Clear AI Results handler
+  const handleClearAIResults = () => {
+    if (!evidence?.id || !evidence?.recurrence) return;
+
+    // Clear all cycle statuses from localStorage
+    const periods = getPeriodsForRecurrence(evidence.recurrence);
+    periods.forEach((period) => {
+      const key = getCycleStatusKey(evidence.id, period);
+      localStorage.removeItem(key);
+    });
+    setCycleStatuses({});
+    setClearAIDialogOpen(false);
+    toast.success("AI results cleared successfully");
   };
 
   // Helper: Get month index from upload date
@@ -875,10 +1049,17 @@ export default function EvidenceDetailPage() {
     }
   };
 
-  // Filter users by selected department
+  // Filter users by selected department and roles (DepartmentReviewer, DepartmentContributor)
   const filteredUsers = evidence?.departmentId
-    ? users.filter((u) => u.departmentId === evidence.departmentId)
-    : users;
+    ? users.filter((u) => {
+        // Must be in the same department
+        if (u.departmentId !== evidence.departmentId) return false;
+        // Must have DepartmentReviewer or DepartmentContributor role
+        return u.userRoles?.some((ur) =>
+          ["DepartmentReviewer", "DepartmentContributor"].includes(ur.role?.name)
+        );
+      })
+    : [];
 
   // Get linked control IDs for filtering
   const linkedControlIds = evidence?.evidenceControls?.map((ec) => ec.control.id) || [];
@@ -1208,6 +1389,69 @@ export default function EvidenceDetailPage() {
         </div>
       )}
 
+      {/* Linked Frameworks Indicator */}
+      {(() => {
+        // Compute linked frameworks from:
+        // 1. evidence.frameworks array (if exists)
+        // 2. evidence.framework single field
+        // 3. evidenceControls -> control -> framework (derived)
+        const linkedFrameworks: Array<{ id: string; name: string }> = [];
+        const seenIds = new Set<string>();
+
+        // First, check evidence.frameworks array
+        if (evidence.frameworks && evidence.frameworks.length > 0) {
+          evidence.frameworks.forEach((fw) => {
+            if (!seenIds.has(fw.id)) {
+              linkedFrameworks.push(fw);
+              seenIds.add(fw.id);
+            }
+          });
+        }
+
+        // Check direct evidence.framework field
+        if (evidence.framework && !seenIds.has(evidence.framework.id)) {
+          linkedFrameworks.push(evidence.framework);
+          seenIds.add(evidence.framework.id);
+        }
+
+        // Also derive from evidenceControls -> control -> framework
+        if (evidence.evidenceControls) {
+          evidence.evidenceControls.forEach((ec) => {
+            if (ec.control.framework && !seenIds.has(ec.control.framework.id)) {
+              linkedFrameworks.push(ec.control.framework);
+              seenIds.add(ec.control.framework.id);
+            }
+          });
+        }
+
+        const frameworkCount = linkedFrameworks.length;
+
+        return (
+          <div className="flex items-center gap-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors">
+                  <Layers className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm font-medium text-blue-700">
+                    Linked Frameworks: {frameworkCount}
+                  </span>
+                </div>
+              </TooltipTrigger>
+              {frameworkCount > 0 && (
+                <TooltipContent side="bottom" className="max-w-xs bg-slate-800 text-white p-2">
+                  <div className="space-y-1">
+                    <p className="font-medium text-xs text-slate-300">Linked Frameworks:</p>
+                    {linkedFrameworks.map((fw) => (
+                      <p key={fw.id} className="text-sm">{fw.name}</p>
+                    ))}
+                  </div>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </div>
+        );
+      })()}
+
       {/* Main Content - Single Column Layout */}
       <div className="space-y-6">
         {/* Evidence Details */}
@@ -1264,22 +1508,36 @@ export default function EvidenceDetailPage() {
                         </DialogHeader>
                         <div className="py-4">
                           <Label>Select Assignee</Label>
+                          <p className="text-xs text-slate-500 mt-1 mb-2">
+                            Only Department Reviewers and Department Contributors from the assigned department are shown.
+                          </p>
                           <Select
                             value={evidence.assigneeId || ""}
                             onValueChange={(value) => {
                               handleInlineUpdate("assigneeId", value || null);
                               setEditAssigneeOpen(false);
                             }}
+                            disabled={!evidence.departmentId}
                           >
                             <SelectTrigger>
-                              <SelectValue placeholder="Select assignee" />
+                              <SelectValue placeholder={
+                                !evidence.departmentId
+                                  ? "Select department first"
+                                  : "Select assignee"
+                              } />
                             </SelectTrigger>
                             <SelectContent>
-                              {filteredUsers.map((u) => (
-                                <SelectItem key={u.id} value={u.id}>
-                                  {u.fullName}
-                                </SelectItem>
-                              ))}
+                              {filteredUsers.length > 0 ? (
+                                filteredUsers.map((u) => (
+                                  <SelectItem key={u.id} value={u.id}>
+                                    {u.fullName}
+                                  </SelectItem>
+                                ))
+                              ) : (
+                                <div className="py-2 px-2 text-sm text-slate-500 text-center">
+                                  No eligible users found in this department
+                                </div>
+                              )}
                             </SelectContent>
                           </Select>
                         </div>
@@ -1295,7 +1553,30 @@ export default function EvidenceDetailPage() {
                   <Label className="font-medium">Recurrence</Label>
                   <Select
                     value={evidence.recurrence || ""}
-                    onValueChange={(value) => handleInlineUpdate("recurrence", value || null)}
+                    onValueChange={async (value) => {
+                      if (value) {
+                        // Calculate review date based on recurrence
+                        const reviewDate = calculateReviewDate(value);
+                        // Update both recurrence and review date
+                        try {
+                          const response = await fetch(`/api/evidences/${id}`, {
+                            method: "PUT",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              recurrence: value,
+                              reviewDate: reviewDate,
+                            }),
+                          });
+                          if (response.ok) {
+                            fetchEvidence();
+                          }
+                        } catch (error) {
+                          console.error("Error updating recurrence:", error);
+                        }
+                      } else {
+                        handleInlineUpdate("recurrence", null);
+                      }
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select recurrence" />
@@ -1371,7 +1652,7 @@ export default function EvidenceDetailPage() {
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className={`grid gap-4 ${kpiForm.kpiDescription && kpiForm.kpiExpectedScore ? "grid-cols-3" : "grid-cols-2"}`}>
                   <div className="space-y-2">
                     <Label className="font-medium">KPI Description</Label>
                     <Input
@@ -1390,6 +1671,45 @@ export default function EvidenceDetailPage() {
                       disabled={!kpiEditMode}
                     />
                   </div>
+                  {kpiForm.kpiDescription && kpiForm.kpiExpectedScore && (
+                    <div className="space-y-2">
+                      <Label className="font-medium">KPI Actual Score (%)</Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          placeholder="Enter actual score"
+                          value={kpiForm.kpiActualScore}
+                          onChange={(e) => setKpiForm({ ...kpiForm, kpiActualScore: e.target.value })}
+                          disabled={!actualScoreEditMode}
+                          className="flex-1"
+                        />
+                        {actualScoreEditMode ? (
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={handleSaveActualScore}
+                            disabled={actualScoreSaving}
+                            className="bg-blue-600 hover:bg-blue-700 text-white border-blue-600"
+                          >
+                            {actualScoreSaving ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Save className="h-4 w-4" />
+                            )}
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setActualScoreEditMode(true)}
+                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
                 {kpiEditMode && (
                   <div className="flex gap-2">
@@ -1509,6 +1829,15 @@ export default function EvidenceDetailPage() {
                   </div>
                 );
               })}
+              {/* Clear AI Results Button */}
+              <Button
+                size="sm"
+                onClick={() => setClearAIDialogOpen(true)}
+                className="bg-blue-700 hover:bg-blue-800 text-white"
+              >
+                <X className="h-4 w-4 mr-1" />
+                Clear AI Results
+              </Button>
             </div>
 
             {/* AI Review Section */}
@@ -1841,12 +2170,13 @@ export default function EvidenceDetailPage() {
                   {evidence.evidenceControls?.map((ec) => (
                     <div
                       key={ec.id}
-                      className="flex items-start justify-between p-3 border rounded-lg hover:bg-gray-50"
+                      className="flex items-start justify-between p-3 border rounded-lg hover:bg-blue-50 cursor-pointer transition-colors"
+                      onClick={() => router.push(`/compliance/control/${ec.control.id}`)}
                     >
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <span className="font-medium">"{ec.control.controlCode}</span>
-                          <span>: {ec.control.name}"</span>
+                          <span className="font-medium text-blue-700 hover:underline">{ec.control.controlCode}</span>
+                          <span>: {ec.control.name}</span>
                         </div>
                         {ec.control.description && (
                           <p className="text-sm text-gray-500 mt-1">{ec.control.description}</p>
@@ -1858,7 +2188,10 @@ export default function EvidenceDetailPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleUnlinkControl(ec.control.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleUnlinkControl(ec.control.id);
+                        }}
                       >
                         Unlink
                       </Button>
@@ -1877,46 +2210,39 @@ export default function EvidenceDetailPage() {
 
           {activeTab === "artifacts" && (
             <Card className="mt-4">
-              <CardHeader className="flex flex-row items-center justify-between">
+              <CardHeader>
                 <CardTitle>Linked Artifacts</CardTitle>
-                <Button size="sm">
-                  <Link2 className="h-4 w-4 mr-1" />
-                  Link Artifacts
-                </Button>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {evidence.linkedArtifacts?.map((la) => (
+                  {evidence.attachments?.map((att) => (
                     <div
-                      key={la.id}
+                      key={att.id}
                       className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
                     >
                       <div className="flex items-center gap-3">
                         <FileText className="h-8 w-8 text-blue-600" />
                         <div>
-                          <p className="font-medium">
-                            {la.artifact.artifactCode} : {la.artifact.name}
+                          <p className="font-medium">{att.fileName}</p>
+                          <p className="text-sm text-gray-500">
+                            Uploaded: {new Date(att.uploadedAt).toLocaleDateString("en-GB")}
                           </p>
-                          <p className="text-sm text-gray-500">{la.artifact.fileName}</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="icon">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon">
-                          <Download className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon">
-                          <Trash2 className="h-4 w-4 text-red-500" />
-                        </Button>
-                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteAttachmentWithReset(att.id)}
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   ))}
-                  {(!evidence.linkedArtifacts || evidence.linkedArtifacts.length === 0) && (
+                  {(!evidence.attachments || evidence.attachments.length === 0) && (
                     <div className="text-center py-8 text-gray-500">
                       <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                      <p>No artifacts linked to this evidence</p>
+                      <p>No documents uploaded for this evidence</p>
                     </div>
                   )}
                 </div>
@@ -2004,38 +2330,83 @@ export default function EvidenceDetailPage() {
 
       {/* Upload Attachment Dialog (Customer Admin) */}
       {isCustomerAdmin && (
-        <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
+        <Dialog open={uploadDialogOpen} onOpenChange={(open) => {
+          setUploadDialogOpen(open);
+          if (!open) {
+            setSelectedFile(null);
+            setAttachmentDate("");
+          }
+        }}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Upload Attachment</DialogTitle>
+              <DialogTitle>Add Evidence Attachment</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label>Select File</Label>
+              {/* Date Selection */}
+              <div>
                 <Input
+                  type="date"
+                  value={attachmentDate}
+                  onChange={(e) => setAttachmentDate(e.target.value)}
+                  placeholder="dd/mm/yyyy"
+                  className="w-full"
+                />
+              </div>
+
+              {/* Drag and Drop Area */}
+              <div
+                className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-gray-400 transition-colors"
+                onClick={() => document.getElementById("evidence-attachment-file")?.click()}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.currentTarget.classList.add("border-blue-500", "bg-blue-50");
+                }}
+                onDragLeave={(e) => {
+                  e.preventDefault();
+                  e.currentTarget.classList.remove("border-blue-500", "bg-blue-50");
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.currentTarget.classList.remove("border-blue-500", "bg-blue-50");
+                  const files = e.dataTransfer.files;
+                  if (files.length > 0) {
+                    setSelectedFile(files[0]);
+                  }
+                }}
+              >
+                {selectedFile ? (
+                  <div className="space-y-2">
+                    <FileText className="h-10 w-10 mx-auto text-blue-600" />
+                    <p className="font-medium text-gray-800">{selectedFile.name}</p>
+                    <p className="text-sm text-gray-500">({(selectedFile.size / 1024).toFixed(1)} KB)</p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedFile(null);
+                      }}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="text-gray-500">Drag and drop or select file.</p>
+                )}
+                <input
+                  id="evidence-attachment-file"
                   type="file"
+                  className="hidden"
                   onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
                   accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.txt,.csv"
                 />
-                {selectedFile && (
-                  <p className="text-sm text-gray-500">
-                    Selected: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)
-                  </p>
-                )}
               </div>
-              <div className="flex justify-end gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setSelectedFile(null);
-                    setUploadDialogOpen(false);
-                  }}
-                >
-                  Cancel
-                </Button>
+
+              <div className="flex justify-end">
                 <Button
                   onClick={handleUploadAttachment}
-                  disabled={!selectedFile || uploading}
+                  disabled={!selectedFile || !attachmentDate || uploading}
+                  className="bg-blue-700 hover:bg-blue-800"
                 >
                   {uploading ? (
                     <>
@@ -2043,10 +2414,7 @@ export default function EvidenceDetailPage() {
                       Uploading...
                     </>
                   ) : (
-                    <>
-                      <Upload className="h-4 w-4 mr-2" />
-                      Upload
-                    </>
+                    "Submit"
                   )}
                 </Button>
               </div>
@@ -2074,6 +2442,24 @@ export default function EvidenceDetailPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Close</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Clear AI Results Confirmation Dialog */}
+      <AlertDialog open={clearAIDialogOpen} onOpenChange={setClearAIDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear AI Results</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to clear AI results? This will remove all AI review data and validation statuses for all cycles.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>No</AlertDialogCancel>
+            <AlertDialogAction onClick={handleClearAIResults} className="bg-blue-700 hover:bg-blue-800">
+              Yes
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

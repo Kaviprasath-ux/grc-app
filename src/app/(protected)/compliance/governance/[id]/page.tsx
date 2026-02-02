@@ -44,6 +44,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   Edit,
   FileText,
   Shield,
@@ -57,6 +62,7 @@ import {
   Download,
   Calendar,
   ChevronLeft,
+  Layers,
 } from "lucide-react";
 
 interface Policy {
@@ -64,7 +70,7 @@ interface Policy {
   code: string;
   name: string;
   description: string | null;
-  type: string;
+  documentType: string;
   status: string;
   version: string | null;
   owner: string | null;
@@ -91,6 +97,7 @@ interface Policy {
       name: string;
       status: string;
       domain?: { name: string } | null;
+      framework?: { id: string; name: string } | null;
     };
   }>;
   attachments?: Array<{
@@ -116,13 +123,6 @@ interface Policy {
     type: string;
     code: string;
   }>;
-  policyFrameworks?: Array<{
-    framework: {
-      id: string;
-      name: string;
-      code: string;
-    };
-  }>;
 }
 
 interface Framework {
@@ -136,12 +136,19 @@ interface Department {
   name: string;
 }
 
+interface UserRole {
+  role: {
+    name: string;
+  };
+}
+
 interface User {
   id: string;
   fullName: string;
   departmentId?: string;
   designation?: string;
   department?: { id: string; name: string };
+  userRoles?: UserRole[];
 }
 
 interface Control {
@@ -234,7 +241,7 @@ export default function GovernanceDetailPage() {
   const [editForm, setEditForm] = useState({
     name: "",
     description: "",
-    type: "",
+    documentType: "",
     status: "",
     version: "",
     owner: "",
@@ -269,7 +276,7 @@ export default function GovernanceDetailPage() {
         setEditForm({
           name: data.name || "",
           description: data.description || "",
-          type: data.type || "",
+          documentType: data.documentType || "",
           status: data.status || "",
           version: data.version || "",
           owner: data.owner || "",
@@ -325,6 +332,25 @@ export default function GovernanceDetailPage() {
     fetchPolicy();
     fetchReferenceData();
   }, [fetchPolicy, fetchReferenceData]);
+
+  // Filtered user lists for role-based assignment restrictions
+  // Assignees: Only DepartmentContributor and DepartmentReviewer from the selected department
+  const filteredAssigneeUsers = users.filter((u) => {
+    // Must be in the same department as the governance document
+    if (selectedDepartmentId && u.departmentId !== selectedDepartmentId) return false;
+    // Must have DepartmentContributor or DepartmentReviewer role
+    return u.userRoles?.some((ur) =>
+      ["DepartmentContributor", "DepartmentReviewer"].includes(ur.role?.name)
+    );
+  });
+
+  // Approvers: Only DepartmentReviewer from the selected department
+  const filteredApproverUsers = users.filter((u) => {
+    // Must be in the same department as the governance document
+    if (selectedDepartmentId && u.departmentId !== selectedDepartmentId) return false;
+    // Must have DepartmentReviewer role only
+    return u.userRoles?.some((ur) => ur.role?.name === "DepartmentReviewer");
+  });
 
   // Load stored signature from localStorage when policy is loaded and Published
   useEffect(() => {
@@ -673,7 +699,14 @@ export default function GovernanceDetailPage() {
   const linkedExceptions = policy.policyExceptions || [];
   const attachments = policy.attachments || [];
   const linkedDocuments = policy.linkedDocuments || [];
-  const policyFrameworks = policy.policyFrameworks || [];
+
+  // Derive linked frameworks from policyControls -> control -> framework
+  const linkedFrameworksFromControls = linkedControls
+    .filter((pc) => pc.control.framework)
+    .map((pc) => pc.control.framework!)
+    .filter((fw, index, self) =>
+      self.findIndex((f) => f.id === fw.id) === index
+    ); // Remove duplicates
 
   // Get step states based on current status
   const stepStates = getStepStates(policy.status);
@@ -726,7 +759,7 @@ export default function GovernanceDetailPage() {
             className="flex items-center gap-1 text-primary hover:underline"
           >
             <ChevronLeft className="h-4 w-4" />
-            <span>{typeLabels[policy.type] || "Policy"}</span>
+            <span>{typeLabels[policy.documentType] || "Policy"}</span>
           </button>
         </div>
 
@@ -768,7 +801,7 @@ export default function GovernanceDetailPage() {
               </DialogTrigger>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Edit {typeLabels[policy.type]}</DialogTitle>
+                <DialogTitle>Edit {typeLabels[policy.documentType]}</DialogTitle>
               </DialogHeader>
               <div className="grid grid-cols-2 gap-4 py-4">
                 <div className="col-span-2">
@@ -793,9 +826,9 @@ export default function GovernanceDetailPage() {
                 <div>
                   <Label>Type</Label>
                   <Select
-                    value={editForm.type}
+                    value={editForm.documentType}
                     onValueChange={(value) =>
-                      setEditForm({ ...editForm, type: value })
+                      setEditForm({ ...editForm, documentType: value })
                     }
                   >
                     <SelectTrigger>
@@ -945,21 +978,6 @@ export default function GovernanceDetailPage() {
         <p className="text-slate-400">{policy.code}</p>
       </div>
 
-      {/* Framework Tags */}
-      {(policyFrameworks.length > 0 || policy.framework) && (
-        <div className="flex flex-wrap gap-2">
-          {policyFrameworks.map((pf) => (
-            <Badge key={pf.framework.id} variant="outline" className="bg-blue-50">
-              {pf.framework.name}
-            </Badge>
-          ))}
-          {policy.framework && policyFrameworks.length === 0 && (
-            <Badge variant="outline" className="bg-blue-50">
-              {policy.framework.name}
-            </Badge>
-          )}
-        </div>
-      )}
 
       {/* Status Workflow Steps - Visual display of current state */}
       <Card>
@@ -1002,6 +1020,43 @@ export default function GovernanceDetailPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Linked Frameworks Indicator */}
+      {(() => {
+        // Use frameworks derived from policyControls, fallback to direct framework field
+        const linkedFrameworks: Array<{ id: string; name: string }> =
+          linkedFrameworksFromControls.length > 0
+            ? linkedFrameworksFromControls
+            : policy.framework
+            ? [policy.framework]
+            : [];
+        const frameworkCount = linkedFrameworks.length;
+
+        return (
+          <div className="flex items-center gap-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors">
+                  <Layers className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm font-medium text-blue-700">
+                    Linked Frameworks: {frameworkCount}
+                  </span>
+                </div>
+              </TooltipTrigger>
+              {frameworkCount > 0 && (
+                <TooltipContent side="bottom" className="max-w-xs bg-slate-800 text-white p-2">
+                  <div className="space-y-1">
+                    <p className="font-medium text-xs text-slate-300">Linked Frameworks:</p>
+                    {linkedFrameworks.map((fw) => (
+                      <p key={fw.id} className="text-sm">{fw.name}</p>
+                    ))}
+                  </div>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </div>
+        );
+      })()}
 
       {/* Policy Details - Inline Editable (with permission check) */}
       <Card>
@@ -1053,14 +1108,23 @@ export default function GovernanceDetailPage() {
                       </DialogHeader>
                       <div className="py-4">
                         <Label>Select Assignee</Label>
+                        <p className="text-xs text-slate-500 mt-1 mb-2">
+                          Only Department Contributors and Department Reviewers from the assigned department are shown.
+                        </p>
                         <Select value={selectedAssigneeId} onValueChange={setSelectedAssigneeId}>
                           <SelectTrigger className="mt-2">
                             <SelectValue placeholder="Select assignee" />
                           </SelectTrigger>
                           <SelectContent>
-                            {users.map((u) => (
-                              <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
-                            ))}
+                            {filteredAssigneeUsers.length > 0 ? (
+                              filteredAssigneeUsers.map((u) => (
+                                <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
+                              ))
+                            ) : (
+                              <div className="py-2 px-2 text-sm text-slate-500 text-center">
+                                No eligible users found in this department
+                              </div>
+                            )}
                           </SelectContent>
                         </Select>
                       </div>
@@ -1068,7 +1132,7 @@ export default function GovernanceDetailPage() {
                         <Button variant="outline" onClick={() => setAssigneeDialogOpen(false)}>
                           Cancel
                         </Button>
-                        <Button onClick={handleSaveAssignee}>Save</Button>
+                        <Button onClick={handleSaveAssignee} disabled={!selectedAssigneeId}>Save</Button>
                       </div>
                     </DialogContent>
                   </Dialog>
@@ -1094,14 +1158,23 @@ export default function GovernanceDetailPage() {
                       </DialogHeader>
                       <div className="py-4">
                         <Label>Select Approver</Label>
+                        <p className="text-xs text-slate-500 mt-1 mb-2">
+                          Only Department Reviewers from the assigned department are shown.
+                        </p>
                         <Select value={selectedApproverId} onValueChange={setSelectedApproverId}>
                           <SelectTrigger className="mt-2">
                             <SelectValue placeholder="Select approver" />
                           </SelectTrigger>
                           <SelectContent>
-                            {users.map((u) => (
-                              <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
-                            ))}
+                            {filteredApproverUsers.length > 0 ? (
+                              filteredApproverUsers.map((u) => (
+                                <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
+                              ))
+                            ) : (
+                              <div className="py-2 px-2 text-sm text-slate-500 text-center">
+                                No Department Reviewers found in this department
+                              </div>
+                            )}
                           </SelectContent>
                         </Select>
                       </div>
@@ -1109,7 +1182,7 @@ export default function GovernanceDetailPage() {
                         <Button variant="outline" onClick={() => setApproverDialogOpen(false)}>
                           Cancel
                         </Button>
-                        <Button onClick={handleSaveApprover}>Save</Button>
+                        <Button onClick={handleSaveApprover} disabled={!selectedApproverId}>Save</Button>
                       </div>
                     </DialogContent>
                   </Dialog>
@@ -1359,7 +1432,7 @@ export default function GovernanceDetailPage() {
       <AlertDialog open={unpublishDialogOpen} onOpenChange={setUnpublishDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Unpublish {typeLabels[policy.type] || "Document"}?</AlertDialogTitle>
+            <AlertDialogTitle>Unpublish {typeLabels[policy.documentType] || "Document"}?</AlertDialogTitle>
             <AlertDialogDescription>
               This will revert the status from Published to Approved. The document will need to be published again after any changes.
             </AlertDialogDescription>
@@ -1523,11 +1596,11 @@ export default function GovernanceDetailPage() {
       }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{typeLabels[policy.type] || "Policy"} signature Publish</DialogTitle>
+            <DialogTitle>{typeLabels[policy.documentType] || "Policy"} signature Publish</DialogTitle>
           </DialogHeader>
           <div className="py-4 space-y-4">
             <p className="text-sm text-slate-400">
-              Please sign below to publish this {(policy.type || "document").toLowerCase()}.
+              Please sign below to publish this {(policy.documentType || "document").toLowerCase()}.
             </p>
             <div className="border rounded-lg p-2 bg-white">
               <canvas
@@ -1642,7 +1715,7 @@ export default function GovernanceDetailPage() {
             {linkedControls.length === 0 ? (
               <div className="text-center py-8 text-slate-400">
                 <Link2 className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p>No controls linked to this {(policy.type || "policy").toLowerCase()}</p>
+                <p>No controls linked to this {(policy.documentType || "policy").toLowerCase()}</p>
               </div>
             ) : (
               <Table>
@@ -1696,7 +1769,7 @@ export default function GovernanceDetailPage() {
             {linkedExceptions.length === 0 ? (
               <div className="text-center py-8 text-slate-400">
                 <AlertTriangle className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p>No exceptions linked to this {(policy.type || "policy").toLowerCase()}</p>
+                <p>No exceptions linked to this {(policy.documentType || "policy").toLowerCase()}</p>
               </div>
             ) : (
               <Table>
@@ -1743,7 +1816,7 @@ export default function GovernanceDetailPage() {
             {linkedDocuments.length === 0 ? (
               <div className="text-center py-8 text-slate-400">
                 <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p>No documents linked to this {(policy.type || "policy").toLowerCase()}</p>
+                <p>No documents linked to this {(policy.documentType || "policy").toLowerCase()}</p>
               </div>
             ) : (
               <Table>

@@ -1,0 +1,87 @@
+import { NextRequest, NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
+import { withAuth, validateTenantAccess, forbidden } from "@/lib/api-auth";
+
+interface RouteContext {
+  params: Promise<{ id: string }>;
+}
+
+// POST /api/artifacts/[id]/link-evidences - Link artifact to evidences
+export const POST = withAuth(
+  async (req: NextRequest, context: RouteContext, session) => {
+    try {
+      const { id } = await context.params;
+      const body = await req.json();
+      const { evidenceIds } = body;
+
+      if (!evidenceIds || !Array.isArray(evidenceIds)) {
+        return NextResponse.json(
+          { error: "Evidence IDs are required" },
+          { status: 400 }
+        );
+      }
+
+      // Verify artifact exists and user has access
+      const artifact = await prisma.artifact.findUnique({
+        where: { id },
+        select: { customerAccountId: true },
+      });
+
+      if (!artifact) {
+        return NextResponse.json(
+          { error: "Artifact not found" },
+          { status: 404 }
+        );
+      }
+
+      if (!validateTenantAccess(session, artifact.customerAccountId)) {
+        return forbidden("Access denied to this artifact");
+      }
+
+      // Delete existing links
+      await prisma.evidenceArtifact.deleteMany({
+        where: { artifactId: id },
+      });
+
+      // Create new links
+      if (evidenceIds.length > 0) {
+        await prisma.evidenceArtifact.createMany({
+          data: evidenceIds.map((evidenceId: string) => ({
+            evidenceId,
+            artifactId: id,
+          })),
+          skipDuplicates: true,
+        });
+      }
+
+      // Fetch updated artifact with linked evidences
+      const updatedArtifact = await prisma.artifact.findUnique({
+        where: { id },
+        include: {
+          linkedEvidences: {
+            include: {
+              evidence: {
+                select: { id: true, evidenceCode: true, name: true },
+              },
+            },
+          },
+        },
+      });
+
+      return NextResponse.json({
+        message: "Evidences linked successfully",
+        linkedEvidences: updatedArtifact?.linkedEvidences.map((le) => ({
+          evidenceId: le.evidenceId,
+          evidence: le.evidence,
+        })),
+      });
+    } catch (error) {
+      console.error("Error linking evidences:", error);
+      return NextResponse.json(
+        { error: "Failed to link evidences" },
+        { status: 500 }
+      );
+    }
+  },
+  { resource: "compliance.evidence", action: "edit" }
+);
