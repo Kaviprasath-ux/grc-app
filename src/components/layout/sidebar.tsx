@@ -63,7 +63,7 @@ function NavItemComponent({ item, depth = 0 }: NavItemProps) {
           "overflow-hidden transition-all duration-200",
           isOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
         )}>
-          <div className="mt-1 ml-[22px] pl-4 border-l-2 border-slate-200">
+          <div className="mt-1 ms-[22px] ps-4 border-s-2 border-slate-200">
             {item.children?.map((child) => (
               <NavItemComponent key={child.name} item={child} depth={depth + 1} />
             ))}
@@ -152,7 +152,7 @@ export function Sidebar() {
   }, [session?.user?.permissions, session?.user?.roles]);
 
   return (
-    <aside className="fixed left-0 top-0 z-40 h-screen w-[260px] bg-white border-r border-slate-200">
+    <aside className="fixed top-0 z-40 h-screen w-[260px] bg-white ltr:left-0 ltr:border-r rtl:right-0 rtl:border-l border-slate-200">
       {/* Logo area */}
       <div className="relative flex h-16 items-center gap-3 border-b border-slate-200 px-5">
         <Link
@@ -185,7 +185,7 @@ export function Sidebar() {
       </ScrollArea>
 
       {/* Footer */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-200 bg-white">
+      <div className="absolute bottom-0 inset-x-0 p-4 border-t border-slate-200 bg-white">
         <div className="flex items-center justify-between text-[10px] text-slate-400">
           <span>© 2025 GRC Platform</span>
           <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">v2.0</span>

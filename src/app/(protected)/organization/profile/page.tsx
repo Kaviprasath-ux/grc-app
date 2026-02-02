@@ -2,8 +2,8 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Plus, Pencil, Trash2, Upload, X, Building2, Users, MapPin, Globe, Calendar, Target, Eye, Briefcase, Scale, ArrowLeft, ChevronRight, Home } from "lucide-react";
-import Link from "next/link";
+import { useTranslations } from "next-intl";
+import { Plus, Pencil, Trash2, Upload, X, Building2, Users, MapPin, Globe, Calendar, Target, Eye, Briefcase, Scale, ArrowLeft } from "lucide-react";
 import { DataGrid } from "@/components/shared";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -116,6 +116,8 @@ interface Regulation {
 function ProfilePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const t = useTranslations("organization.profile");
+  const tCommon = useTranslations("common");
   const initialTab = searchParams.get("tab") || "overview";
   const fromDashboard = searchParams.get("from") === "dashboard";
   const [activeTab, setActiveTab] = useState(initialTab);
@@ -597,28 +599,32 @@ function ProfilePageContent() {
 
   return (
     <div className="space-y-6">
-      {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
-        <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
-          <Home className="h-4 w-4" />
-          <span>Organization</span>
-        </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-        <span className="text-primary-700 font-medium">Profile</span>
-      </nav>
+      {/* Back to Dashboard Button */}
+      {fromDashboard && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => router.push("/dashboard")}
+          className="flex items-center gap-2 text-slate-600 hover:text-slate-800 -ms-2"
+        >
+          <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
+          {tCommon("back")}
+        </Button>
+      )}
 
       {/* Page Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">Organization Profile</h1>
+        <h1 className="text-2xl font-bold text-slate-800">{t("title")}</h1>
+
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="services">Services</TabsTrigger>
-          <TabsTrigger value="regulations">Regulations</TabsTrigger>
-          <TabsTrigger value="departments">Departments</TabsTrigger>
-          <TabsTrigger value="orgchart">Org Chart</TabsTrigger>
+          <TabsTrigger value="overview">{t("companyInfo")}</TabsTrigger>
+          <TabsTrigger value="services">{t("services")}</TabsTrigger>
+          <TabsTrigger value="regulations">{t("regulations")}</TabsTrigger>
+          <TabsTrigger value="departments">{t("departments")}</TabsTrigger>
+          <TabsTrigger value="orgchart">{t("orgChart")}</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
@@ -699,13 +705,13 @@ function ProfilePageContent() {
               <div className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center mx-auto mb-4">
                 <Building2 className="h-6 w-6 text-slate-400" />
               </div>
-              <h3 className="text-base font-semibold text-slate-800 mb-1">No Profile Created</h3>
+              <h3 className="text-base font-semibold text-slate-800 mb-1">{t("noProfile")}</h3>
               <p className="text-sm text-slate-500 mb-6">
-                Create your organization profile to get started.
+                {t("noProfileDescription")}
               </p>
               <Button onClick={openEditOrganization}>
-                <Plus className="h-4 w-4 mr-2" />
-                Create Profile
+                <Plus className="h-4 w-4 me-2" />
+                {t("createProfile")}
               </Button>
             </div>
           )}
