@@ -22,9 +22,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { RiskRatingBadge } from "@/components/risks/risk-rating-badge";
-import { RiskAssessmentWizardDialog } from "@/components/risks/risk-assessment-wizard-dialog";
 import { cn } from "@/lib/utils";
-import { Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Eye, ArrowLeft } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowLeft } from "lucide-react";
 
 interface Risk {
   id: string;
@@ -87,9 +86,6 @@ export default function RiskAssessmentPage() {
   const [riskTypes, setRiskTypes] = useState<RiskType[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Assessment dialog state
-  const [assessmentDialogOpen, setAssessmentDialogOpen] = useState(false);
-  const [selectedRiskId, setSelectedRiskId] = useState<string | null>(null);
 
   // Dynamic settings from API
   const [ratingThresholds, setRatingThresholds] = useState<RiskRatingThreshold[]>(defaultRatingThresholds);
@@ -254,12 +250,7 @@ export default function RiskAssessmentPage() {
   };
 
   const openAssessment = (risk: Risk) => {
-    setSelectedRiskId(risk.id);
-    setAssessmentDialogOpen(true);
-  };
-
-  const handleAssessmentComplete = () => {
-    fetchData();
+    router.push(`/risks/assessment/${risk.id}`);
   };
 
   // Show loading state while permissions or data is being fetched
@@ -486,13 +477,6 @@ export default function RiskAssessmentPage() {
         )}
       </div>
 
-      {/* Risk Assessment Wizard Dialog */}
-      <RiskAssessmentWizardDialog
-        open={assessmentDialogOpen}
-        onOpenChange={setAssessmentDialogOpen}
-        riskId={selectedRiskId}
-        onAssessmentComplete={handleAssessmentComplete}
-      />
     </div>
   );
 }
