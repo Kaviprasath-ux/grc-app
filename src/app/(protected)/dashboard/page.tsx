@@ -12,6 +12,8 @@ import {
   AlertTriangle,
   ShieldAlert,
   FileWarning,
+  ChevronRight,
+  Home,
 } from "lucide-react";
 
 interface DashboardData {
@@ -124,10 +126,19 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <div className="flex items-center gap-1.5 text-slate-500">
+          <Home className="h-4 w-4" />
+          <span>Organization</span>
+        </div>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">Dashboard</span>
+      </nav>
+
       {/* Page Header */}
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-bold text-slate-800">Dashboard Overview</h1>
-      
       </div>
 
       {/* Key Metrics */}

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Plus, Pencil, Trash2, ArrowLeft, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Home, ChevronRight } from "lucide-react";
 import { DataGrid } from "@/components/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1330,12 +1330,22 @@ export default function RiskSettingsCategoryPage() {
   if (permissionsLoading || loading) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Link href="/risks/settings">
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-600 hover:text-slate-800">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
+        {/* Breadcrumb */}
+        <nav className="flex items-center gap-1.5 text-sm">
+          <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>Risk Management</span>
           </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <Link href="/risks/settings" className="text-slate-500 hover:text-primary-600 transition-colors">
+            Settings
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <span className="text-primary-700 font-medium">{title}</span>
+        </nav>
+
+        {/* Page Header */}
+        <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-bold text-slate-800">{title}</h1>
         </div>
         <div className="flex items-center justify-center h-64">
@@ -1352,12 +1362,22 @@ export default function RiskSettingsCategoryPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Link href="/risks/settings">
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-600 hover:text-slate-800">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>Risk Management</span>
         </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <Link href="/risks/settings" className="text-slate-500 hover:text-primary-600 transition-colors">
+          Settings
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">{title}</span>
+      </nav>
+
+      {/* Page Header */}
+      <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-bold text-slate-800">{title}</h1>
       </div>
 

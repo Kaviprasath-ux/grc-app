@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { Home, ChevronRight } from "lucide-react";
+import Link from "next/link";
 import { RiskRatingBadge } from "@/components/risks/risk-rating-badge";
 import {
   Select,
@@ -422,17 +423,17 @@ export default function RiskResponsePage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        {fromRiskDashboard && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.push("/risks/dashboard")}
-            className="flex items-center gap-2 text-slate-600 hover:text-slate-800 -ml-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Risk Dashboard
-          </Button>
-        )}
+        {/* Breadcrumb */}
+        <nav className="flex items-center gap-1.5 text-sm">
+          <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>Risk Management</span>
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <span className="text-primary-700 font-medium">Response</span>
+        </nav>
+
+        {/* Page Header */}
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-bold text-slate-800">Risk Response Strategy</h1>
         </div>
@@ -448,17 +449,17 @@ export default function RiskResponsePage() {
 
   return (
     <div className="space-y-6">
-      {fromRiskDashboard && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => router.push("/risks/dashboard")}
-          className="flex items-center gap-2 text-slate-600 hover:text-slate-800 -ml-2"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Risk Dashboard
-        </Button>
-      )}
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>Risk Management</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">Response</span>
+      </nav>
+
+      {/* Page Header */}
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-bold text-slate-800">Risk Response Strategy</h1>
       </div>

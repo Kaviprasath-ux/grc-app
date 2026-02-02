@@ -31,7 +31,6 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  ArrowLeft,
   Plus,
   Pencil,
   Trash2,
@@ -43,7 +42,9 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  Home,
 } from "lucide-react";
+import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 
 interface Evidence {
@@ -588,16 +589,22 @@ export default function EvidencesMasterDataPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => router.push("/compliance/master-data")}
-          className="h-8 w-8 text-slate-400 hover:text-slate-600"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>Compliance</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <Link href="/compliance/master-data" className="text-slate-500 hover:text-primary-600 transition-colors">
+          Master Data
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">Evidences</span>
+      </nav>
+
+      {/* Page Header */}
+      <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-bold text-slate-800">Evidences</h1>
       </div>
 

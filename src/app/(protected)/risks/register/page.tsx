@@ -27,13 +27,15 @@ import {
   Upload,
   Activity,
   Search,
-  ArrowLeft,
   Eye,
   Shield,
   AlertCircle,
   Clock,
   CheckCircle,
+  Home,
+  ChevronRight,
 } from "lucide-react";
+import Link from "next/link";
 import { RiskDetailDialog } from "@/components/risks/risk-detail-dialog";
 import { NewRiskWizard } from "@/components/risks/new-risk-wizard";
 import {
@@ -455,18 +457,15 @@ function RiskRegisterContent() {
 
   return (
     <div className="space-y-6">
-      {/* Back to Dashboard Button */}
-      {fromDashboard && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => router.push(fromParam === "risk-dashboard" ? "/risks/dashboard" : "/dashboard")}
-          className="flex items-center gap-2 text-slate-600 hover:text-slate-800 -ml-2"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          {fromParam === "risk-dashboard" ? "Back to Risk Dashboard" : "Back to Dashboard"}
-        </Button>
-      )}
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>Risk Management</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">Register</span>
+      </nav>
 
       {/* Page Header */}
       <div className="flex flex-col gap-1">

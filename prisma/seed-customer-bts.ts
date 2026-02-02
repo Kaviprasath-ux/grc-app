@@ -18,7 +18,6 @@ async function main() {
 
   // Hash passwords upfront
   const hashedPassword1 = await bcrypt.hash("1", 10);
-  const hashedPassword123 = await bcrypt.hash("password123", 10);
 
   // ==================== GET/CREATE CUSTOMER ACCOUNT ====================
   console.log("\n🏛️ Getting Customer Account...");
@@ -219,11 +218,9 @@ async function main() {
   const createdUsers: Record<string, string> = {};
   createdUsers["bts"] = btsUser.id;
 
-  // UAT test users have simple password "1"
-  const uatTestUsers = ["Khalid", "Tamil"];
-
+  // All users get simple password "1" for easy testing
   for (const user of users) {
-    const password = uatTestUsers.includes(user.userName) ? hashedPassword1 : hashedPassword123;
+    const password = hashedPassword1;
     const created = await prisma.user.upsert({
       where: { userName: user.userName },
       update: {
@@ -247,10 +244,50 @@ async function main() {
   }
   console.log("  ✓ Users created");
 
-  // ==================== ASSIGN RBAC ROLES TO UAT TEST USERS ====================
-  console.log("\n🔐 Assigning RBAC roles to UAT test users...");
+  // ==================== ASSIGN RBAC ROLES TO ALL USERS ====================
+  console.log("\n🔐 Assigning RBAC roles to all users...");
 
-  // Ensure DepartmentReviewer and DepartmentContributor roles exist
+  // Ensure all required roles exist
+  const reviewerRole = await prisma.role.upsert({
+    where: { name: "Reviewer" },
+    update: {},
+    create: {
+      name: "Reviewer",
+      description: "Reviews and approves compliance, risk, and asset content",
+      isSystem: true,
+    },
+  });
+
+  const contributorRole = await prisma.role.upsert({
+    where: { name: "Contributor" },
+    update: {},
+    create: {
+      name: "Contributor",
+      description: "Creates and edits content across modules",
+      isSystem: true,
+    },
+  });
+
+  const auditHeadRole = await prisma.role.upsert({
+    where: { name: "AuditHead" },
+    update: {},
+    create: {
+      name: "AuditHead",
+      description: "Full access to Internal Audit module",
+      isSystem: true,
+    },
+  });
+
+  const auditeeRole = await prisma.role.upsert({
+    where: { name: "Auditee" },
+    update: {},
+    create: {
+      name: "Auditee",
+      description: "Receives audit requests, responds to findings",
+      isSystem: true,
+    },
+  });
+
   const deptReviewerRole = await prisma.role.upsert({
     where: { name: "DepartmentReviewer" },
     update: {},
@@ -271,41 +308,36 @@ async function main() {
     },
   });
 
-  // Assign DepartmentReviewer role to Khalid
-  if (createdUsers["Khalid"]) {
-    await prisma.userRole.upsert({
-      where: {
-        userId_roleId: {
-          userId: createdUsers["Khalid"],
-          roleId: deptReviewerRole.id,
-        },
-      },
-      update: {},
-      create: {
-        userId: createdUsers["Khalid"],
-        roleId: deptReviewerRole.id,
-      },
-    });
-    console.log("  ✓ Assigned DepartmentReviewer role to Khalid");
-  }
+  // Role mapping for assignment
+  const roleMap: Record<string, string> = {
+    "Reviewer": reviewerRole.id,
+    "Contributor": contributorRole.id,
+    "AuditHead": auditHeadRole.id,
+    "Auditee": auditeeRole.id,
+    "DepartmentReviewer": deptReviewerRole.id,
+    "DepartmentContributor": deptContributorRole.id,
+  };
 
-  // Assign DepartmentContributor role to Tamil
-  if (createdUsers["Tamil"]) {
-    await prisma.userRole.upsert({
-      where: {
-        userId_roleId: {
-          userId: createdUsers["Tamil"],
-          roleId: deptContributorRole.id,
+  // Assign RBAC roles to all users based on their role field
+  for (const user of users) {
+    const roleId = roleMap[user.role];
+    if (roleId && createdUsers[user.userName]) {
+      await prisma.userRole.upsert({
+        where: {
+          userId_roleId: {
+            userId: createdUsers[user.userName],
+            roleId: roleId,
+          },
         },
-      },
-      update: {},
-      create: {
-        userId: createdUsers["Tamil"],
-        roleId: deptContributorRole.id,
-      },
-    });
-    console.log("  ✓ Assigned DepartmentContributor role to Tamil");
+        update: {},
+        create: {
+          userId: createdUsers[user.userName],
+          roleId: roleId,
+        },
+      });
+    }
   }
+  console.log("  ✓ RBAC roles assigned to all users");
 
   // ==================== CREATE STAKEHOLDERS ====================
   console.log("\n🤝 Creating Stakeholders...");

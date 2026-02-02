@@ -55,7 +55,9 @@ import {
   ChevronsRight,
   Upload,
   ArrowLeft,
+  Home,
 } from "lucide-react";
+import Link from "next/link";
 
 interface Policy {
   id: string;
@@ -486,21 +488,19 @@ export default function GovernancePage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          {fromDashboard && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => router.push("/dashboard")}
-              className="h-8 w-8"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-          )}
-          <h1 className="text-2xl font-bold text-slate-800">Governance</h1>
-        </div>
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>Compliance</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">Governance</span>
+      </nav>
+
+      {/* Page Header */}
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold text-slate-800">Governance</h1>
       </div>
 
       {/* Tabs */}

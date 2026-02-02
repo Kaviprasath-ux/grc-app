@@ -12,7 +12,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Check, Sparkles, Upload, X } from "lucide-react";
+import { Check, Sparkles, Upload, X, Home, ChevronRight } from "lucide-react";
+import Link from "next/link";
 import { toast } from "sonner";
 
 interface Department {
@@ -218,7 +219,20 @@ export default function RiskIdentificationPage() {
   if (pageLoading) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-slate-800">Risk Identification</h1>
+        {/* Breadcrumb */}
+        <nav className="flex items-center gap-1.5 text-sm">
+          <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>Internal Audit</span>
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <span className="text-primary-700 font-medium">Risk Identification</span>
+        </nav>
+
+        {/* Page Header */}
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-bold text-slate-800">Risk Identification</h1>
+        </div>
         <div className="flex items-center justify-center h-[60vh]">
           <div className="flex flex-col items-center gap-4">
             <div className="relative">
@@ -234,6 +248,16 @@ export default function RiskIdentificationPage() {
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>Internal Audit</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">Risk Identification</span>
+      </nav>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-800">Risk Identification</h1>

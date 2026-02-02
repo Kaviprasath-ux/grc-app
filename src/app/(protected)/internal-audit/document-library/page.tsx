@@ -20,7 +20,9 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  Home,
 } from "lucide-react";
+import Link from "next/link";
 
 interface RecentSearch {
   id: string;
@@ -389,6 +391,16 @@ export default function DocumentLibraryPage() {
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>Internal Audit</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">Document Library</span>
+      </nav>
+
       <h1 className="text-2xl font-bold text-slate-800">Document Library</h1>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">

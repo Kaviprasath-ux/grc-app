@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft } from "lucide-react";
+import { ChevronRight, Home } from "lucide-react";
+import Link from "next/link";
 
 // Unified colors matching org-chart component
 const THEME_COLOR = "#64748b"; // slate-500 - subtle and professional
@@ -73,17 +74,17 @@ export default function RiskUniversePage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.back()}
-            className="text-slate-600 hover:text-slate-800 hover:bg-slate-100 p-2 h-auto"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-2xl font-bold text-slate-800">Risk Universe</h1>
-        </div>
+        {/* Breadcrumb */}
+        <nav className="flex items-center gap-1.5 text-sm">
+          <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>Internal Audit</span>
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <span className="text-primary-700 font-medium">Risk Universe</span>
+        </nav>
+
+        <h1 className="text-2xl font-bold text-slate-800">Risk Universe</h1>
         <div className="flex items-center justify-center h-64">
           <p className="text-slate-500">Loading risk universe...</p>
         </div>
@@ -93,18 +94,18 @@ export default function RiskUniversePage() {
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>Internal Audit</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">Risk Universe</span>
+      </nav>
+
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => router.back()}
-          className="text-slate-600 hover:text-slate-800 hover:bg-slate-100 p-2 h-auto"
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </Button>
-        <h1 className="text-2xl font-bold text-slate-800">Risk Universe</h1>
-      </div>
+      <h1 className="text-2xl font-bold text-slate-800">Risk Universe</h1>
 
       {/* Tree Structure Container */}
       <div className="overflow-x-auto">

@@ -36,7 +36,9 @@ import {
   Shield,
   ClipboardList,
   Calendar,
+  Home,
 } from "lucide-react";
+import Link from "next/link";
 
 interface DashboardData {
   riskStats: {
@@ -626,6 +628,17 @@ export default function InternalAuditDashboard() {
   if (isAuditee) {
     return (
       <div className="space-y-6">
+        {/* Breadcrumb */}
+        <nav className="flex items-center gap-1.5 text-sm">
+          <div className="flex items-center gap-1.5 text-slate-500">
+            <Home className="h-4 w-4" />
+            <span>Internal Audit</span>
+          </div>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <span className="text-primary-700 font-medium">My Tasks</span>
+        </nav>
+
+        {/* Page Header */}
         <div>
           <h1 className="text-2xl font-bold text-slate-800">My Audit Tasks</h1>
           <p className="text-sm text-slate-500 mt-1">Track your evidence requests and corrective actions</p>
@@ -666,6 +679,21 @@ export default function InternalAuditDashboard() {
   // Main dashboard view for Audit Head / Auditor
   return (
     <div className="space-y-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <div className="flex items-center gap-1.5 text-slate-500">
+          <Home className="h-4 w-4" />
+          <span>Internal Audit</span>
+        </div>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">Dashboard</span>
+      </nav>
+
+      {/* Page Header */}
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold text-slate-800">Audit Dashboard</h1>
+      </div>
+
       {/* Drill-down Dialog */}
       <Dialog open={drillDown.open} onOpenChange={(open) => !open && closeDrillDown()}>
         <DialogContent className="max-w-4xl p-0 gap-0">

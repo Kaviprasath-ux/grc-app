@@ -37,7 +37,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft, Plus, Pencil, Trash2, Download, Upload, Check, Sparkles, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, Download, Upload, Check, Sparkles, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Home } from "lucide-react";
+import Link from "next/link";
 
 interface Framework {
   id: string;
@@ -290,19 +291,23 @@ export default function FrameworkMasterDataPage() {
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>Compliance</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <Link href="/compliance/master-data" className="text-slate-500 hover:text-primary-600 transition-colors">
+          Master Data
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">Framework</span>
+      </nav>
+
       {/* Page Header */}
       <div className="flex flex-col gap-1">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-slate-400 hover:text-slate-600"
-            onClick={() => router.push("/compliance/master-data")}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-2xl font-bold text-slate-800">Integrated Frameworks</h1>
-        </div>
+        <h1 className="text-2xl font-bold text-slate-800">Integrated Frameworks</h1>
       </div>
 
       {/* Toolbar */}

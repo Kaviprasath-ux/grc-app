@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Pencil, Trash2, Upload, Download, Search, Package, Server, Monitor, Database, Users, Building, Wrench, Calendar } from "lucide-react";
+import { Plus, Pencil, Trash2, Upload, Download, Search, Package, Server, Monitor, Database, Users, Building, Wrench, Calendar, Home, ChevronRight } from "lucide-react";
+import Link from "next/link";
 import { DataGrid } from "@/components/shared";
 import { DatePicker } from "@/components/ui/date-picker";
 import { format } from "date-fns";
@@ -724,6 +725,16 @@ export default function AssetInventoryPage() {
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>Asset Management</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">Inventory</span>
+      </nav>
+
       {/* Page Header */}
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-bold text-slate-800">Asset Inventory</h1>
