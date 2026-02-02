@@ -9,8 +9,6 @@
  * - AI data cleanup
  */
 
-import { createFormData } from '@/lib/ai-api-client';
-
 // ==================== TYPE DEFINITIONS ====================
 
 export interface PolicyIngestRequest {

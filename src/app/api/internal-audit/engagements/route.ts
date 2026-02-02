@@ -177,7 +177,7 @@ export const POST = withAuth(
           plannedHours: plannedHours || 0,
           actualHours: 0,
           status: 'Planned',
-          ...(customerAccountId ? { customerAccountId } : {}),
+          customerAccount: { connect: { id: customerAccountId } },
         },
         include: {
           department: {

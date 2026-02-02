@@ -62,13 +62,19 @@ export async function POST(request: NextRequest) {
       accountableId,
       consultedId,
       informedId,
-      controls, // Array of extracted controls { title, description }
     } = body;
 
     if (!name) {
       return NextResponse.json(
         { error: "Process name is required" },
         { status: 400 }
+      );
+    }
+
+    if (!customerAccountId) {
+      return NextResponse.json(
+        { error: "User must belong to a customer account" },
+        { status: 403 }
       );
     }
 
@@ -109,7 +115,7 @@ export async function POST(request: NextRequest) {
         departmentId: departmentId || null,
         ownerId: ownerId || null,
         status: status || "Active",
-        customerAccountId: customerAccountId || undefined,
+        customerAccount: { connect: { id: customerAccountId } },
         processFrequency,
         natureOfImplementation,
         riskRating,
@@ -124,27 +130,6 @@ export async function POST(request: NextRequest) {
         accountableId: accountableId || null,
         consultedId: consultedId || null,
         informedId: informedId || null,
-        processControls: controls && Array.isArray(controls) ? {
-          create: await Promise.all(controls.map(async (c: any, index: number) => {
-            // Generate a temporary/new control code for extracted controls
-            const lastControl = await prisma.control.findFirst({
-              orderBy: { controlCode: 'desc' },
-            });
-            const lastNum = lastControl ? parseInt(lastControl.controlCode.replace('CTRL', '')) || 0 : 0;
-            const newCode = `CTRL-EXT-${Date.now()}-${index}`; // Unique code for extracted
-
-            return {
-              control: {
-                create: {
-                  controlCode: newCode,
-                  name: c.title || c.name,
-                  description: c.description,
-                  status: 'Non Compliant',
-                }
-              }
-            };
-          }))
-        } : undefined,
       },
       include: {
         department: true,
