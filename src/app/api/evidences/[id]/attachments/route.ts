@@ -83,6 +83,7 @@ export const POST = withAuth(
       // Parse form data
       const formData = await req.formData();
       const file = formData.get("file") as File;
+      const uploadedAtStr = formData.get("uploadedAt") as string | null;
 
       if (!file) {
         return NextResponse.json(
@@ -90,6 +91,9 @@ export const POST = withAuth(
           { status: 400 }
         );
       }
+
+      // Parse custom upload date if provided, otherwise use current time
+      const uploadedAt = uploadedAtStr ? new Date(uploadedAtStr) : new Date();
 
       // Create upload directory
       const uploadDir = path.join(process.cwd(), "uploads", "evidence", id);
@@ -118,6 +122,7 @@ export const POST = withAuth(
           fileType,
           fileSize: file.size,
           filePath: `/uploads/evidence/${id}/${fileName}`,
+          uploadedAt,
         },
       });
 

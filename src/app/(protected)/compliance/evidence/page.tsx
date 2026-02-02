@@ -763,7 +763,7 @@ export default function EvidencePage() {
                     <TableBody>
                       {filteredControls.map((control) => (
                         <TableRow key={control.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 cursor-pointer" onClick={() => toggleControlSelection(control.id)}>
-                          <TableCell className="py-4 pl-4">
+                          <TableCell className="py-4 pl-4" onClick={(e) => e.stopPropagation()}>
                             <Checkbox
                               checked={selectedControlIds.includes(control.id)}
                               onCheckedChange={() => toggleControlSelection(control.id)}

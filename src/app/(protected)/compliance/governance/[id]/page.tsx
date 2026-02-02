@@ -97,6 +97,7 @@ interface Policy {
       name: string;
       status: string;
       domain?: { name: string } | null;
+      framework?: { id: string; name: string } | null;
     };
   }>;
   attachments?: Array<{
@@ -121,13 +122,6 @@ interface Policy {
     name: string;
     type: string;
     code: string;
-  }>;
-  policyFrameworks?: Array<{
-    framework: {
-      id: string;
-      name: string;
-      code: string;
-    };
   }>;
 }
 
@@ -705,7 +699,14 @@ export default function GovernanceDetailPage() {
   const linkedExceptions = policy.policyExceptions || [];
   const attachments = policy.attachments || [];
   const linkedDocuments = policy.linkedDocuments || [];
-  const policyFrameworks = policy.policyFrameworks || [];
+
+  // Derive linked frameworks from policyControls -> control -> framework
+  const linkedFrameworksFromControls = linkedControls
+    .filter((pc) => pc.control.framework)
+    .map((pc) => pc.control.framework!)
+    .filter((fw, index, self) =>
+      self.findIndex((f) => f.id === fw.id) === index
+    ); // Remove duplicates
 
   // Get step states based on current status
   const stepStates = getStepStates(policy.status);
@@ -977,21 +978,6 @@ export default function GovernanceDetailPage() {
         <p className="text-slate-400">{policy.code}</p>
       </div>
 
-      {/* Framework Tags */}
-      {(policyFrameworks.length > 0 || policy.framework) && (
-        <div className="flex flex-wrap gap-2">
-          {policyFrameworks.map((pf) => (
-            <Badge key={pf.framework.id} variant="outline" className="bg-blue-50">
-              {pf.framework.name}
-            </Badge>
-          ))}
-          {policy.framework && policyFrameworks.length === 0 && (
-            <Badge variant="outline" className="bg-blue-50">
-              {policy.framework.name}
-            </Badge>
-          )}
-        </div>
-      )}
 
       {/* Status Workflow Steps - Visual display of current state */}
       <Card>
@@ -1037,15 +1023,13 @@ export default function GovernanceDetailPage() {
 
       {/* Linked Frameworks Indicator */}
       {(() => {
-        // Compute linked frameworks from both policyFrameworks array and single framework
-        const linkedFrameworks: Array<{ id: string; name: string }> = [];
-        if (policyFrameworks && policyFrameworks.length > 0) {
-          policyFrameworks.forEach((pf) => {
-            linkedFrameworks.push({ id: pf.framework.id, name: pf.framework.name });
-          });
-        } else if (policy.framework) {
-          linkedFrameworks.push(policy.framework);
-        }
+        // Use frameworks derived from policyControls, fallback to direct framework field
+        const linkedFrameworks: Array<{ id: string; name: string }> =
+          linkedFrameworksFromControls.length > 0
+            ? linkedFrameworksFromControls
+            : policy.framework
+            ? [policy.framework]
+            : [];
         const frameworkCount = linkedFrameworks.length;
 
         return (

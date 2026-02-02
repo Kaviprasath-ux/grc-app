@@ -25,6 +25,7 @@ export const GET = withAuth(
               control: {
                 include: {
                   domain: true,
+                  framework: true,
                 },
               },
             },
