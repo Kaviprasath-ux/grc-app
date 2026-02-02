@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { withAuth } from '@/lib/api-auth';
+import { withAuth, getTenantFilter } from '@/lib/api-auth';
 
-// GET /api/internal-audit/capa - Get CAPA list
+// GET /api/internal-audit/capa - Get CAPA list with tenant filtering
 export const GET = withAuth(
   async (req: NextRequest, context, session) => {
     try {
@@ -10,11 +10,14 @@ export const GET = withAuth(
       const status = searchParams.get('status');
       const search = searchParams.get('search');
 
+      const tenantFilter = getTenantFilter(session);
       const isAuditee = session.roles.includes('Auditee') &&
                         !session.roles.includes('AuditHead') &&
                         !session.roles.includes('Auditor');
 
-      const whereClause: Record<string, unknown> = {};
+      const whereClause: Record<string, unknown> = {
+        ...tenantFilter, // Add tenant filtering
+      };
 
       // For Auditee, only show CAPAs where they are the responsible person
       if (isAuditee) {

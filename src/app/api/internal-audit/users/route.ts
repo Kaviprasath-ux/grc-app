@@ -9,7 +9,6 @@ const AUDIT_ROLES = ["AuditHead", "AuditManager", "Auditee"];
 // GET all audit users - filtered by tenant and audit head
 // AuditHead can only see their own managed users (AuditManager/Auditee)
 // CustomerAdmin/GRCAdmin can see all audit users
-// Requires 'edit' action so only AuditHead can access (CustomerAdmin has only 'view')
 export const GET = withAuth(
   async (req: NextRequest, context, session) => {
     try {
@@ -74,7 +73,7 @@ export const GET = withAuth(
       );
     }
   },
-  { resource: "audit.settings", action: "edit" }
+  { resource: "audit.settings", action: "view" }
 );
 
 // POST create new audit user

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { withAuth } from '@/lib/api-auth';
+import { withAuth, validateTenantAccess, forbidden } from '@/lib/api-auth';
 
 interface RouteContext {
   params: Promise<{ findingId: string }>;
@@ -8,13 +8,14 @@ interface RouteContext {
 
 // DELETE /api/internal-audit/capa-tracking/[findingId] - Delete a finding
 export const DELETE = withAuth(
-  async (req: NextRequest, context: RouteContext) => {
+  async (req: NextRequest, context: RouteContext, session) => {
     try {
       const { findingId } = await context.params;
 
-      // Find the finding
+      // Find the finding and verify tenant access
       const finding = await prisma.internalAuditFinding.findUnique({
         where: { id: findingId },
+        select: { id: true, customerAccountId: true },
       });
 
       if (!finding) {
@@ -22,6 +23,10 @@ export const DELETE = withAuth(
           { error: 'Finding not found' },
           { status: 404 }
         );
+      }
+
+      if (!validateTenantAccess(session, finding.customerAccountId)) {
+        return forbidden("Access denied to this finding");
       }
 
       // Delete the finding (cascades to CAPAs)
@@ -44,9 +49,8 @@ export const DELETE = withAuth(
 );
 
 // PATCH /api/internal-audit/capa-tracking/[findingId] - Update finding
-// NOTE: AI review fields (aiReviewStatus, aiReviewDescription, etc.) are not in the schema yet
 export const PATCH = withAuth(
-  async (req: NextRequest, context: RouteContext) => {
+  async (req: NextRequest, context: RouteContext, session) => {
     try {
       const { findingId } = await context.params;
       const body = await req.json();
@@ -63,9 +67,14 @@ export const PATCH = withAuth(
         targetDate,
         auditeeComment,
         isAuditeeSubmission, // Flag to indicate auditee submission
+        aiReviewStatus: newAiReviewStatus, // Allow Audit Head to modify AI review status
+        aiReviewDescription: newAiReviewDescription, // Allow Audit Head to modify AI review description
       } = body;
 
-      // Find the existing finding
+      // Check if user is Audit Head
+      const isAuditHead = session.roles.includes('AuditHead');
+
+      // Find the existing finding and verify tenant access
       const existingFinding = await prisma.internalAuditFinding.findUnique({
         where: { id: findingId },
       });
@@ -75,6 +84,10 @@ export const PATCH = withAuth(
           { error: 'Finding not found' },
           { status: 404 }
         );
+      }
+
+      if (!validateTenantAccess(session, existingFinding.customerAccountId)) {
+        return forbidden("Access denied to this finding");
       }
 
       // Build update data
@@ -97,6 +110,27 @@ export const PATCH = withAuth(
       } else if (status !== undefined) {
         updateData.status = status;
         updateData.closedDate = status === 'Closed' ? new Date() : null;
+      }
+
+      // Handle Audit Head approval of AI review
+      // When Audit Head saves a finding that has an AI review (status is "Under Review")
+      if (isAuditHead && existingFinding.aiReviewStatus && !existingFinding.aiReviewApproved) {
+        // Allow Audit Head to modify AI review status and description
+        if (newAiReviewStatus !== undefined) {
+          updateData.aiReviewStatus = newAiReviewStatus;
+        }
+        if (newAiReviewDescription !== undefined) {
+          updateData.aiReviewDescription = newAiReviewDescription;
+        }
+
+        // Auto-approve the AI review when Audit Head saves
+        updateData.aiReviewApproved = true;
+        updateData.aiApprovedAt = new Date();
+        updateData.aiApprovedBy = session.id;
+
+        // Set status to Closed when approving AI review
+        updateData.status = 'Closed';
+        updateData.closedDate = new Date();
       }
 
       // Update finding
