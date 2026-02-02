@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Upload, X, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { DatePicker } from "@/components/ui/date-picker";
 
 interface Department {
   id: string;
@@ -569,12 +570,11 @@ export default function AddRiskPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label className="text-sm font-medium text-slate-700">Creation Date</Label>
-                <Input
-                  id="creationDate"
-                  type="date"
+                <DatePicker
                   value={formData.creationDate}
-                  onChange={(e) => setFormData({ ...formData, creationDate: e.target.value })}
-                  className="mt-1.5 w-full bg-white"
+                  onChange={(date) => setFormData({ ...formData, creationDate: date ? date.toISOString().split('T')[0] : "" })}
+                  placeholder="Select date"
+                  className="mt-1.5 w-full"
                 />
               </div>
               <div>

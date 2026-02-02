@@ -4,8 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Table,
   TableBody,
@@ -40,7 +40,6 @@ import {
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import {
-  ArrowLeft,
   Download,
   FileText,
   Plus,
@@ -49,10 +48,26 @@ import {
   Search,
   Loader2,
 } from "lucide-react";
+import { DatePicker } from "@/components/ui/date-picker";
 
 interface Department {
   id: string;
   name: string;
+}
+
+interface Risk {
+  id: string;
+  riskId: string;
+  riskName: string;
+  riskLevel: string | null;
+}
+
+interface User {
+  id: string;
+  fullName: string;
+  firstName: string;
+  lastName: string;
+  email: string;
 }
 
 interface Engagement {
@@ -91,6 +106,27 @@ export default function AuditPlanningPage() {
   const [reportYear, setReportYear] = useState("");
   const [reportStartDate, setReportStartDate] = useState("");
   const [reportEndDate, setReportEndDate] = useState("");
+
+  // Add Engagement dialog
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [addDialogLoading, setAddDialogLoading] = useState(false);
+  const [risks, setRisks] = useState<Risk[]>([]);
+  const [auditors, setAuditors] = useState<User[]>([]);
+  const [auditees, setAuditees] = useState<User[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [engagementForm, setEngagementForm] = useState({
+    engagementTitle: "",
+    engagementObjective: "",
+    engagementScope: "",
+    departmentId: "",
+    linkedRiskIds: [] as string[],
+    auditRating: "",
+    auditType: "",
+    auditorId: "",
+    auditeeId: "",
+    startDate: "",
+    targetDate: "",
+  });
 
   const isAuditHead = session?.user?.roles?.includes("AuditHead");
 
@@ -145,6 +181,122 @@ export default function AuditPlanningPage() {
       console.error("Failed to fetch engagements:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchRisksForDepartment = async (departmentId: string) => {
+    try {
+      const response = await fetch(`/api/internal-audit/risks?departmentId=${departmentId}&status=Open`);
+      if (response.ok) {
+        const data = await response.json();
+        setRisks(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch risks:", error);
+    }
+  };
+
+  const fetchAuditorsAndAuditees = async () => {
+    try {
+      const [auditeesRes, auditorsRes] = await Promise.all([
+        fetch("/api/users?forAuditHead=auditees"),
+        fetch("/api/users?forAuditHead=auditors"),
+      ]);
+
+      if (auditeesRes.ok) {
+        const auditeesData = await auditeesRes.json();
+        setAuditees(auditeesData.users || auditeesData || []);
+      }
+      if (auditorsRes.ok) {
+        const auditorsData = await auditorsRes.json();
+        setAuditors(auditorsData.users || auditorsData || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch auditors/auditees:", error);
+    }
+  };
+
+  const openAddDialog = async () => {
+    setEngagementForm({
+      engagementTitle: "",
+      engagementObjective: "",
+      engagementScope: "",
+      departmentId: "",
+      linkedRiskIds: [],
+      auditRating: "",
+      auditType: "",
+      auditorId: "",
+      auditeeId: "",
+      startDate: "",
+      targetDate: "",
+    });
+    setRisks([]);
+    setAddDialogOpen(true);
+    setAddDialogLoading(true);
+    await fetchAuditorsAndAuditees();
+    setAddDialogLoading(false);
+  };
+
+  const handleEngagementDepartmentChange = async (departmentId: string) => {
+    setEngagementForm({ ...engagementForm, departmentId, linkedRiskIds: [] });
+    if (departmentId) {
+      await fetchRisksForDepartment(departmentId);
+    } else {
+      setRisks([]);
+    }
+  };
+
+  const handleSaveEngagement = async () => {
+    if (!engagementForm.engagementTitle.trim()) {
+      toast.error("Engagement Title is required");
+      return;
+    }
+    if (!engagementForm.engagementObjective.trim()) {
+      toast.error("Engagement Objective is required");
+      return;
+    }
+    if (!engagementForm.engagementScope.trim()) {
+      toast.error("Engagement Scope is required");
+      return;
+    }
+    if (!engagementForm.departmentId) {
+      toast.error("Department is required");
+      return;
+    }
+    if (!engagementForm.auditorId) {
+      toast.error("Auditor is required");
+      return;
+    }
+    if (!engagementForm.startDate) {
+      toast.error("Start Date is required");
+      return;
+    }
+    if (!engagementForm.targetDate) {
+      toast.error("Target Date is required");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const response = await fetch("/api/internal-audit/engagements", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(engagementForm),
+      });
+
+      if (response.ok) {
+        toast.success("Engagement created successfully");
+        setAddDialogOpen(false);
+        fetchEngagements();
+      } else {
+        const error = await response.json();
+        toast.error(error.error || "Failed to create engagement");
+      }
+    } catch (error) {
+      console.error("Failed to create engagement:", error);
+      toast.error("Failed to create engagement");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -254,57 +406,41 @@ export default function AuditPlanningPage() {
 
   if (loading) {
     return (
-      <div className="p-6">
-        <h1 className="text-2xl font-bold text-blue-900 mb-6">Annual Audit Plan</h1>
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold text-slate-800">Annual Audit Plan</h1>
+        <div className="flex items-center justify-center h-[60vh]">
+          <div className="flex flex-col items-center gap-4">
+            <div className="relative">
+              <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
+              <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+            </div>
+            <p className="text-sm text-slate-500 font-medium">Loading...</p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => router.back()}>
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back
-          </Button>
-          <h1 className="text-2xl font-bold text-blue-900">Annual Audit Plan</h1>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={handleExport}>
-            <Download className="h-4 w-4 mr-2" />
-            Export
-          </Button>
-          <Button variant="default" className="bg-blue-600 hover:bg-blue-700" onClick={openReportDialog}>
-            <FileText className="h-4 w-4 mr-2" />
-            Generate Annual Plan Report
-          </Button>
-          {isAuditHead && (
-            <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => router.push("/internal-audit/audit-planning/add")}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Engagement
-            </Button>
-          )}
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold text-slate-800">Annual Audit Plan</h1>
       </div>
 
-      {/* Filters */}
-      <div className="flex items-center gap-4">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      {/* Search, Filters, and Actions Row */}
+      <div className="flex items-center gap-3">
+        <div className="relative w-[280px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input
             placeholder="Search By Audit ID, Name"
             value={searchFilter}
             onChange={(e) => setSearchFilter(e.target.value)}
-            className="pl-10"
+            className="pl-10 h-9 bg-white border-slate-200"
           />
         </div>
         <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-[160px] h-9 bg-white">
             <SelectValue placeholder="Department" />
           </SelectTrigger>
           <SelectContent>
@@ -317,7 +453,7 @@ export default function AuditPlanningPage() {
           </SelectContent>
         </Select>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[150px]">
+          <SelectTrigger className="w-[140px] h-9 bg-white">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
@@ -328,7 +464,7 @@ export default function AuditPlanningPage() {
           </SelectContent>
         </Select>
         <Select value={yearFilter} onValueChange={setYearFilter}>
-          <SelectTrigger className="w-[120px]">
+          <SelectTrigger className="w-[110px] h-9 bg-white">
             <SelectValue placeholder="Year" />
           </SelectTrigger>
           <SelectContent>
@@ -340,41 +476,57 @@ export default function AuditPlanningPage() {
             ))}
           </SelectContent>
         </Select>
+        <div className="flex-1" />
+        <Button variant="outline" size="sm" onClick={handleExport}>
+          <Download className="h-4 w-4 mr-2" />
+          Export
+        </Button>
+        <Button variant="outline" size="sm" className="border-primary-600 text-primary-600 hover:bg-primary-50" onClick={openReportDialog}>
+          <FileText className="h-4 w-4 mr-2" />
+          Generate Annual Plan Report
+        </Button>
+        {isAuditHead && (
+          <Button size="sm" className="bg-primary-600 hover:bg-primary-700" onClick={openAddDialog}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Engagement
+          </Button>
+        )}
       </div>
 
       {/* Table */}
-      <Card>
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="bg-blue-900 hover:bg-blue-900">
-              <TableHead className="text-white">Audit ID</TableHead>
-              <TableHead className="text-white">Engagement Name</TableHead>
-              <TableHead className="text-white">Department</TableHead>
-              <TableHead className="text-white">Audit Type</TableHead>
-              <TableHead className="text-white">Assigned Auditors</TableHead>
-              <TableHead className="text-white">Status</TableHead>
-              <TableHead className="text-white">Action</TableHead>
+            <TableRow className="border-b border-slate-100 bg-slate-50/50">
+              <TableHead className="text-xs font-semibold text-slate-600 py-4 pl-4">Audit ID</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4">Engagement Name</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4">Department</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4">Audit Type</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4">Assigned Auditors</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4">Status</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4 pr-4">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {engagements.length > 0 ? (
               engagements.map((engagement) => (
-                <TableRow key={engagement.id}>
-                  <TableCell className="font-medium">{engagement.auditId}</TableCell>
-                  <TableCell>{engagement.engagementTitle}</TableCell>
-                  <TableCell>{engagement.department?.name || "-"}</TableCell>
-                  <TableCell>{engagement.auditType || "-"}</TableCell>
-                  <TableCell>
+                <TableRow key={engagement.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                  <TableCell className="py-3 pl-4 text-sm font-medium text-slate-800">{engagement.auditId}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700">{engagement.engagementTitle}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700">{engagement.department?.name || "-"}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700">{engagement.auditType || "-"}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700">
                     {engagement.assignedAuditors.length > 0
                       ? engagement.assignedAuditors.join(", ")
-                      : "No items found"}
+                      : "-"}
                   </TableCell>
-                  <TableCell>{engagement.status}</TableCell>
-                  <TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700">{engagement.status}</TableCell>
+                  <TableCell className="py-3 pr-4">
                     <div className="flex items-center gap-1">
                       <Button
                         variant="ghost"
                         size="icon"
+                        className="h-8 w-8 text-slate-400 hover:text-slate-600"
                         onClick={() => router.push(`/internal-audit/audit-planning/${engagement.id}/edit`)}
                         title="Edit"
                       >
@@ -383,9 +535,9 @@ export default function AuditPlanningPage() {
                       <Button
                         variant="ghost"
                         size="icon"
+                        className="h-8 w-8 text-slate-400 hover:text-semantic-error"
                         onClick={() => openDeleteDialog(engagement)}
                         title="Delete"
-                        className="text-red-500 hover:text-red-700"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -395,14 +547,14 @@ export default function AuditPlanningPage() {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                <TableCell colSpan={7} className="text-center py-8 text-slate-500">
                   No audit engagements found
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
-      </Card>
+      </div>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -422,29 +574,40 @@ export default function AuditPlanningPage() {
 
       {/* Report Selection Dialog */}
       <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Select Year</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
+        <DialogContent className="sm:max-w-[500px] p-0 gap-0">
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">
+                Generate Annual Plan Report
+              </DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Content */}
+          <div className="px-6 py-6 space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="filterType">Filter Type</Label>
+              <Label className="text-sm font-medium text-slate-700">
+                Filter Type <span className="text-red-500">*</span>
+              </Label>
               <Select value={reportFilterType} onValueChange={setReportFilterType}>
-                <SelectTrigger id="filterType">
+                <SelectTrigger className="w-full bg-white">
                   <SelectValue placeholder="Select filter type" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Year">Year</SelectItem>
-                  <SelectItem value="DateRange">DateRange</SelectItem>
+                  <SelectItem value="DateRange">Date Range</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             {reportFilterType === "Year" && (
               <div className="space-y-2">
-                <Label htmlFor="year">Year</Label>
+                <Label className="text-sm font-medium text-slate-700">
+                  Year <span className="text-red-500">*</span>
+                </Label>
                 <Select value={reportYear} onValueChange={setReportYear}>
-                  <SelectTrigger id="year">
+                  <SelectTrigger className="w-full bg-white">
                     <SelectValue placeholder="Select year" />
                   </SelectTrigger>
                   <SelectContent>
@@ -461,34 +624,287 @@ export default function AuditPlanningPage() {
             {reportFilterType === "DateRange" && (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="startDate">Start Date</Label>
-                  <Input
-                    id="startDate"
-                    type="date"
+                  <Label className="text-sm font-medium text-slate-700">
+                    Start Date <span className="text-red-500">*</span>
+                  </Label>
+                  <DatePicker
                     value={reportStartDate}
-                    onChange={(e) => setReportStartDate(e.target.value)}
-                    placeholder="dd/mm/yyyy"
+                    onChange={(date) => setReportStartDate(date ? date.toISOString().split('T')[0] : "")}
+                    placeholder="Select start date"
+                    className="w-full h-10 bg-white"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="endDate">End Date</Label>
-                  <Input
-                    id="endDate"
-                    type="date"
+                  <Label className="text-sm font-medium text-slate-700">
+                    End Date <span className="text-red-500">*</span>
+                  </Label>
+                  <DatePicker
                     value={reportEndDate}
-                    onChange={(e) => setReportEndDate(e.target.value)}
-                    placeholder="dd/mm/yyyy"
+                    onChange={(date) => setReportEndDate(date ? date.toISOString().split('T')[0] : "")}
+                    placeholder="Select end date"
+                    className="w-full h-10 bg-white"
                   />
                 </div>
               </>
             )}
           </div>
-          <div className="flex justify-end gap-2">
-            <Button onClick={handleShowReport} className="bg-blue-600 hover:bg-blue-700">
+
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <Button variant="outline" onClick={() => setReportDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleShowReport} className="bg-primary-600 hover:bg-primary-700">
               Show Report
             </Button>
-            <Button variant="outline" onClick={() => setReportDialogOpen(false)}>
-              Close
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Engagement Dialog */}
+      <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">
+                Add Engagement
+              </DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            {addDialogLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Engagement Title */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
+                    Engagement Title <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    value={engagementForm.engagementTitle}
+                    onChange={(e) => setEngagementForm({ ...engagementForm, engagementTitle: e.target.value })}
+                    placeholder="Enter engagement title"
+                    className="w-full bg-white"
+                  />
+                </div>
+
+                {/* Engagement Objective */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
+                    Engagement Objective <span className="text-red-500">*</span>
+                  </Label>
+                  <Textarea
+                    value={engagementForm.engagementObjective}
+                    onChange={(e) => setEngagementForm({ ...engagementForm, engagementObjective: e.target.value })}
+                    placeholder="Enter engagement objective"
+                    rows={3}
+                    className="w-full bg-white resize-none"
+                  />
+                </div>
+
+                {/* Engagement Scope */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
+                    Engagement Scope <span className="text-red-500">*</span>
+                  </Label>
+                  <Textarea
+                    value={engagementForm.engagementScope}
+                    onChange={(e) => setEngagementForm({ ...engagementForm, engagementScope: e.target.value })}
+                    placeholder="Enter engagement scope"
+                    rows={3}
+                    className="w-full bg-white resize-none"
+                  />
+                </div>
+
+                {/* Department */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
+                    Department <span className="text-red-500">*</span>
+                  </Label>
+                  <Select
+                    value={engagementForm.departmentId}
+                    onValueChange={handleEngagementDepartmentChange}
+                  >
+                    <SelectTrigger className="w-full bg-white">
+                      <SelectValue placeholder="Select department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {departments.map((dept) => (
+                        <SelectItem key={dept.id} value={dept.id}>
+                          {dept.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Link Open Risks */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
+                    Link Open Risks
+                  </Label>
+                  <Select
+                    value={engagementForm.linkedRiskIds[0] || ""}
+                    onValueChange={(value) => setEngagementForm({ ...engagementForm, linkedRiskIds: value ? [value] : [] })}
+                  >
+                    <SelectTrigger className="w-full bg-white">
+                      <SelectValue placeholder="Select risk" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {risks.length > 0 ? (
+                        risks.map((risk) => (
+                          <SelectItem key={risk.id} value={risk.id}>
+                            {risk.riskId} - {risk.riskName}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="none" disabled>
+                          {engagementForm.departmentId ? "No open risks found" : "Select a department first"}
+                        </SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Two columns for Audit Rating and Audit Type */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-slate-700">Audit Rating</Label>
+                    <Select
+                      value={engagementForm.auditRating}
+                      onValueChange={(value) => setEngagementForm({ ...engagementForm, auditRating: value })}
+                    >
+                      <SelectTrigger className="w-full bg-white">
+                        <SelectValue placeholder="Select rating" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Satisfactory">Satisfactory</SelectItem>
+                        <SelectItem value="Needs Improvement">Needs Improvement</SelectItem>
+                        <SelectItem value="Unsatisfactory">Unsatisfactory</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-slate-700">Audit Type</Label>
+                    <Select
+                      value={engagementForm.auditType}
+                      onValueChange={(value) => setEngagementForm({ ...engagementForm, auditType: value })}
+                    >
+                      <SelectTrigger className="w-full bg-white">
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Internal Audit">Internal Audit</SelectItem>
+                        <SelectItem value="Compliance Audit">Compliance Audit</SelectItem>
+                        <SelectItem value="Financial Audit">Financial Audit</SelectItem>
+                        <SelectItem value="Operational Audit">Operational Audit</SelectItem>
+                        <SelectItem value="IT Audit">IT Audit</SelectItem>
+                        <SelectItem value="Assurance">Assurance</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Two columns for Auditor and Auditee */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-slate-700">
+                      Auditor <span className="text-red-500">*</span>
+                    </Label>
+                    <Select
+                      value={engagementForm.auditorId}
+                      onValueChange={(value) => setEngagementForm({ ...engagementForm, auditorId: value })}
+                    >
+                      <SelectTrigger className="w-full bg-white">
+                        <SelectValue placeholder="Select auditor" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {auditors.length > 0 ? (
+                          auditors.map((user) => (
+                            <SelectItem key={user.id} value={user.id}>
+                              {user.fullName}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="none" disabled>
+                            No auditors available
+                          </SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-slate-700">Auditee</Label>
+                    <Select
+                      value={engagementForm.auditeeId}
+                      onValueChange={(value) => setEngagementForm({ ...engagementForm, auditeeId: value })}
+                    >
+                      <SelectTrigger className="w-full bg-white">
+                        <SelectValue placeholder="Select auditee" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {auditees.length > 0 ? (
+                          auditees.map((user) => (
+                            <SelectItem key={user.id} value={user.id}>
+                              {user.fullName}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="none" disabled>
+                            No auditees available
+                          </SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Two columns for Start Date and Target Date */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-slate-700">
+                      Start Date <span className="text-red-500">*</span>
+                    </Label>
+                    <DatePicker
+                      value={engagementForm.startDate}
+                      onChange={(date) => setEngagementForm({ ...engagementForm, startDate: date ? date.toISOString().split('T')[0] : "" })}
+                      placeholder="Select start date"
+                      className="w-full h-10 bg-white"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-slate-700">
+                      Target Date <span className="text-red-500">*</span>
+                    </Label>
+                    <DatePicker
+                      value={engagementForm.targetDate}
+                      onChange={(date) => setEngagementForm({ ...engagementForm, targetDate: date ? date.toISOString().split('T')[0] : "" })}
+                      placeholder="Select target date"
+                      className="w-full h-10 bg-white"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <Button variant="outline" onClick={() => setAddDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveEngagement}
+              disabled={saving || addDialogLoading}
+              className="bg-primary-600 hover:bg-primary-700"
+            >
+              {saving ? "Saving..." : "Save"}
             </Button>
           </div>
         </DialogContent>

@@ -41,6 +41,9 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  ClipboardList,
+  Layers,
+  Building2,
 } from "lucide-react";
 import { DatePicker } from "@/components/ui/date-picker";
 import {
@@ -756,7 +759,12 @@ export default function ExceptionsPage() {
       <div className="grid grid-cols-3 gap-6">
         {/* Status Chart Card */}
         <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <h3 className="text-base font-semibold text-slate-800 mb-4">Status</h3>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
+              <ClipboardList className="h-5 w-5" />
+            </div>
+            <h3 className="text-base font-semibold text-slate-800">Status</h3>
+          </div>
           <div className="flex items-center justify-between">
             <div className="space-y-2 flex-1">
               <div className="flex items-center gap-2">
@@ -790,14 +798,19 @@ export default function ExceptionsPage() {
             </div>
             <div className="text-center ml-8">
               <p className="text-sm text-slate-500">Total</p>
-              <p className="text-3xl font-bold text-slate-800">{statusCounts.total}</p>
+              <p className="text-3xl font-bold tracking-tight text-slate-800">{statusCounts.total}</p>
             </div>
           </div>
         </div>
 
         {/* Type/Category Chart Card */}
         <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <h3 className="text-base font-semibold text-slate-800 mb-4">Type</h3>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
+              <Layers className="h-5 w-5" />
+            </div>
+            <h3 className="text-base font-semibold text-slate-800">Type</h3>
+          </div>
           <div className="flex items-center justify-between">
             <div className="space-y-2 flex-1">
               {Object.entries(categoryCounts)
@@ -824,14 +837,19 @@ export default function ExceptionsPage() {
             </div>
             <div className="text-center ml-8">
               <p className="text-sm text-slate-500">Total</p>
-              <p className="text-3xl font-bold text-slate-800">{statusCounts.total}</p>
+              <p className="text-3xl font-bold tracking-tight text-slate-800">{statusCounts.total}</p>
             </div>
           </div>
         </div>
 
         {/* Department Chart Card */}
         <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <h3 className="text-base font-semibold text-slate-800 mb-4">Department</h3>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
+              <Building2 className="h-5 w-5" />
+            </div>
+            <h3 className="text-base font-semibold text-slate-800">Department</h3>
+          </div>
           <div className="flex items-center justify-between">
             <div className="space-y-2 flex-1">
               {Object.entries(departmentCounts)
@@ -860,7 +878,7 @@ export default function ExceptionsPage() {
             </div>
             <div className="text-center ml-8">
               <p className="text-sm text-slate-500">Total</p>
-              <p className="text-3xl font-bold text-slate-800">{statusCounts.total}</p>
+              <p className="text-3xl font-bold tracking-tight text-slate-800">{statusCounts.total}</p>
             </div>
           </div>
         </div>

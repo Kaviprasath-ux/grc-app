@@ -3,7 +3,11 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, Loader2 } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
+
+// Unified colors matching org-chart component
+const THEME_COLOR = "#64748b"; // slate-500 - subtle and professional
+const LINE_COLOR = "#cbd5e1"; // slate-300 - light for lines
 
 interface RiskItem {
   id: string;
@@ -47,110 +51,143 @@ export default function RiskUniversePage() {
     }
   };
 
-  const getRiskLevelStyles = (level: string) => {
+  const getRiskLevelColor = (level: string) => {
     switch (level) {
       case "Extreme":
-        return "bg-red-600 text-white";
+        return "#ef4444"; // red-500
       case "High":
-        return "bg-orange-500 text-white";
+        return "#f97316"; // orange-500
       case "Medium":
-        return "bg-yellow-400 text-gray-900";
+        return "#fbbf24"; // amber-400
       case "Low":
-        return "bg-green-500 text-white";
+        return "#22c55e"; // green-500
       default:
-        return "bg-gray-400 text-white";
+        return "#94a3b8"; // slate-400
     }
+  };
+
+  const getRiskLevelTextColor = (level: string) => {
+    return level === "Medium" ? "#1e293b" : "#ffffff"; // slate-900 for medium, white for others
   };
 
   if (loading) {
     return (
-      <div className="p-6">
-        <div className="flex items-center gap-2 mb-6">
+      <div className="space-y-6">
+        <div className="flex items-center gap-3">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => router.back()}
-            className="text-blue-600 hover:text-blue-700 p-0"
+            className="text-slate-600 hover:text-slate-800 hover:bg-slate-100 p-2 h-auto"
           >
             <ChevronLeft className="h-5 w-5" />
-            Back
           </Button>
-          <h1 className="text-xl font-semibold text-blue-800">Risk Universe</h1>
+          <h1 className="text-2xl font-bold text-slate-800">Risk Universe</h1>
         </div>
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+          <p className="text-slate-500">Loading risk universe...</p>
         </div>
       </div>
     );
   }
 
-  // Find the maximum number of risks in any department for grid alignment
-  const maxRisks = data?.departments.reduce(
-    (max, dept) => Math.max(max, dept.risks.length),
-    0
-  ) || 0;
-
   return (
-    <div className="p-6">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-2 mb-8">
+      <div className="flex items-center gap-3">
         <Button
           variant="ghost"
           size="sm"
           onClick={() => router.back()}
-          className="text-blue-600 hover:text-blue-700 p-0"
+          className="text-slate-600 hover:text-slate-800 hover:bg-slate-100 p-2 h-auto"
         >
           <ChevronLeft className="h-5 w-5" />
-          Back
         </Button>
-        <h1 className="text-xl font-semibold text-blue-800">Risk Universe</h1>
+        <h1 className="text-2xl font-bold text-slate-800">Risk Universe</h1>
       </div>
 
-      {/* Tree Structure */}
-      <div className="overflow-x-auto pb-8">
-        <div className="min-w-max">
-          {/* Root Node - Risk Universe */}
-          <div className="flex justify-center mb-4">
-            <div className="bg-blue-700 text-white px-6 py-3 rounded-lg font-medium shadow-md">
-              Risk Universe
+      {/* Tree Structure Container */}
+      <div className="overflow-x-auto">
+        <div className="min-w-max p-8">
+          {/* Root Node - Risk Universe (matching org-chart node style) */}
+          <div className="flex justify-center mb-6">
+            <div
+              className="rounded-lg shadow-sm overflow-hidden min-w-[200px]"
+              style={{ border: `1px solid ${LINE_COLOR}` }}
+            >
+              <div
+                className="px-4 py-2 text-white text-center"
+                style={{ backgroundColor: THEME_COLOR }}
+              >
+                <p className="text-xs font-medium">Risk Overview</p>
+              </div>
+              <div className="bg-white px-4 py-2 text-center">
+                <p className="text-sm font-semibold text-gray-700">Risk Universe</p>
+              </div>
             </div>
           </div>
 
           {/* Vertical line from root */}
           <div className="flex justify-center">
-            <div className="w-px h-6 bg-gray-400"></div>
+            <div
+              style={{
+                width: "2px",
+                height: "20px",
+                backgroundColor: LINE_COLOR,
+              }}
+            />
           </div>
 
           {/* Horizontal line connecting departments */}
           {data?.departments && data.departments.length > 0 && (
-            <div className="flex justify-center">
-              <div
-                className="h-px bg-gray-400"
-                style={{
-                  width: `${(data.departments.length - 1) * 140 + 100}px`,
-                }}
-              ></div>
-            </div>
+            <>
+              <div className="flex justify-center">
+                <div
+                  style={{
+                    height: "2px",
+                    backgroundColor: LINE_COLOR,
+                    width: `${(data.departments.length - 1) * 180 + 160}px`,
+                  }}
+                />
+              </div>
+            </>
           )}
 
           {/* Departments and Risks Grid */}
           {data?.departments && data.departments.length > 0 ? (
             <div className="flex justify-center">
-              <div className="flex gap-2">
-                {data.departments.map((dept, deptIndex) => (
+              <div className="flex" style={{ gap: "24px" }}>
+                {data.departments.map((dept) => (
                   <div
                     key={dept.id}
                     className="flex flex-col items-center"
-                    style={{ width: "130px" }}
+                    style={{ width: "160px" }}
                   >
                     {/* Vertical line to department */}
-                    <div className="w-px h-4 bg-gray-400"></div>
+                    <div
+                      style={{
+                        width: "2px",
+                        height: "30px",
+                        backgroundColor: LINE_COLOR,
+                      }}
+                    />
 
-                    {/* Department Box */}
-                    <div className="border border-gray-300 rounded px-3 py-2 bg-white mb-3 w-full text-center shadow-sm">
-                      <span className="text-sm font-medium text-gray-800 leading-tight block">
-                        {dept.name}
-                      </span>
+                    {/* Department Box (matching org-chart node style) */}
+                    <div
+                      className="rounded-lg shadow-sm overflow-hidden w-full mb-4"
+                      style={{ border: `1px solid ${LINE_COLOR}` }}
+                    >
+                      <div
+                        className="px-3 py-2 text-white text-center"
+                        style={{ backgroundColor: THEME_COLOR }}
+                      >
+                        <p className="text-xs font-medium">Department</p>
+                      </div>
+                      <div className="bg-white px-3 py-2 text-center">
+                        <p className="text-sm font-semibold text-gray-700 truncate">
+                          {dept.name}
+                        </p>
+                      </div>
                     </div>
 
                     {/* Risk Items Column */}
@@ -158,18 +195,27 @@ export default function RiskUniversePage() {
                       {dept.risks.map((risk) => (
                         <div
                           key={risk.id}
-                          className={`${getRiskLevelStyles(
-                            risk.riskLevel
-                          )} rounded px-3 py-2 text-center shadow-sm cursor-pointer hover:opacity-90 transition-opacity`}
+                          className="rounded-lg shadow-sm overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                          style={{ border: `1px solid ${LINE_COLOR}` }}
                           title={risk.riskName}
                           onClick={() =>
                             router.push(`/internal-audit/risk-register`)
                           }
                         >
-                          <div className="font-semibold text-sm">
-                            {risk.riskId}
+                          <div
+                            className="px-3 py-2 text-center"
+                            style={{
+                              backgroundColor: getRiskLevelColor(risk.riskLevel),
+                              color: getRiskLevelTextColor(risk.riskLevel),
+                            }}
+                          >
+                            <p className="text-xs font-medium">{risk.riskLevel}</p>
                           </div>
-                          <div className="text-xs mt-0.5">{risk.riskLevel}</div>
+                          <div className="bg-white px-3 py-2 text-center">
+                            <p className="text-sm font-semibold text-gray-700">
+                              {risk.riskId}
+                            </p>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -178,18 +224,20 @@ export default function RiskUniversePage() {
               </div>
             </div>
           ) : (
-            <div className="text-center py-12 text-gray-500">
-              <p>No risks in the risk register yet</p>
-              <p className="text-sm mt-2">
-                Add risks to the Risk Register to see them here
-              </p>
-              <Button
-                variant="outline"
-                className="mt-4"
-                onClick={() => router.push("/internal-audit/risk-register")}
-              >
-                Go to Risk Register
-              </Button>
+            <div className="flex items-center justify-center h-64 border border-dashed border-slate-200 rounded-lg mt-8">
+              <div className="text-center">
+                <p className="text-slate-500">No risks in the risk register yet</p>
+                <p className="text-sm text-slate-400 mt-2">
+                  Add risks to the Risk Register to see them here
+                </p>
+                <Button
+                  variant="outline"
+                  className="mt-4 border-slate-200 text-slate-700 hover:bg-slate-50"
+                  onClick={() => router.push("/internal-audit/risk-register")}
+                >
+                  Go to Risk Register
+                </Button>
+              </div>
             </div>
           )}
         </div>

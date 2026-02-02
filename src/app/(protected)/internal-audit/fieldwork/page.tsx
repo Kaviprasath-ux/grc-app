@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Unauthorized } from "@/components/ui/unauthorized";
 import {
@@ -229,12 +228,12 @@ export default function FieldworkPage() {
 
   const SortableHeader = ({ field, children }: { field: string; children: React.ReactNode }) => (
     <TableHead
-      className="text-white cursor-pointer hover:bg-[#1a365d] select-none"
+      className="text-xs font-semibold text-slate-600 py-4 cursor-pointer select-none hover:bg-slate-100"
       onClick={() => handleSort(field)}
     >
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-2">
         {children}
-        <ArrowUpDown className="h-4 w-4" />
+        <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
       </div>
     </TableHead>
   );
@@ -242,10 +241,16 @@ export default function FieldworkPage() {
   // Show loading state while permissions or data is being fetched
   if (permissionsLoading || loading) {
     return (
-      <div className="p-6">
-        <h1 className="text-2xl font-bold text-[#1e3a5f] mb-6">Fieldwork</h1>
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold text-slate-800">Fieldwork</h1>
+        <div className="flex items-center justify-center h-[60vh]">
+          <div className="flex flex-col items-center gap-4">
+            <div className="relative">
+              <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
+              <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+            </div>
+            <p className="text-sm text-slate-500 font-medium">Loading...</p>
+          </div>
         </div>
       </div>
     );
@@ -257,17 +262,17 @@ export default function FieldworkPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       {/* Header */}
-      <h1 className="text-2xl font-bold text-[#1e3a5f]">Fieldwork</h1>
+      <h1 className="text-2xl font-bold text-slate-800">Fieldwork</h1>
 
       {/* Filters */}
-      <div className="flex items-center justify-end gap-4">
+      <div className="flex items-center justify-end gap-3">
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[150px]">
+          <SelectTrigger className="w-[140px] bg-white">
             <SelectValue placeholder="All Status" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-white">
             <SelectItem value="all">All Status</SelectItem>
             <SelectItem value="Planned">Planned</SelectItem>
             <SelectItem value="In Progress">In Progress</SelectItem>
@@ -276,11 +281,11 @@ export default function FieldworkPage() {
         </Select>
 
         <Select value={auditorFilter} onValueChange={setAuditorFilter}>
-          <SelectTrigger className="w-[150px]">
-            <SelectValue placeholder="All Auditor" />
+          <SelectTrigger className="w-[160px] bg-white">
+            <SelectValue placeholder="All Auditors" />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Auditor</SelectItem>
+          <SelectContent className="bg-white">
+            <SelectItem value="all">All Auditors</SelectItem>
             {auditors.map((auditor) => (
               <SelectItem key={auditor.id} value={auditor.id}>
                 {auditor.firstName} {auditor.lastName}
@@ -290,11 +295,11 @@ export default function FieldworkPage() {
         </Select>
 
         <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Select Department" />
+          <SelectTrigger className="w-[180px] bg-white">
+            <SelectValue placeholder="All Departments" />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Select Department</SelectItem>
+          <SelectContent className="bg-white">
+            <SelectItem value="all">All Departments</SelectItem>
             {departments.map((dept) => (
               <SelectItem key={dept.id} value={dept.id}>
                 {dept.name}
@@ -305,36 +310,36 @@ export default function FieldworkPage() {
       </div>
 
       {/* Table */}
-      <Card>
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="bg-[#1e3a5f] hover:bg-[#1e3a5f]">
+            <TableRow className="border-b border-slate-100 bg-slate-50/50">
               <SortableHeader field="auditId">Audit ID</SortableHeader>
               <SortableHeader field="name">Name</SortableHeader>
               <SortableHeader field="auditor">Auditor</SortableHeader>
               <SortableHeader field="startDate">Start Date</SortableHeader>
               <SortableHeader field="targetDate">Target Date</SortableHeader>
               <SortableHeader field="status">Status</SortableHeader>
-              <TableHead className="text-white">Action</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {paginatedData.length > 0 ? (
               paginatedData.map((engagement) => (
-                <TableRow key={engagement.id} className="hover:bg-gray-50">
-                  <TableCell className="font-medium">{engagement.auditId}</TableCell>
-                  <TableCell className="max-w-[200px] truncate">
+                <TableRow key={engagement.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                  <TableCell className="py-4 pl-4 text-sm font-medium text-slate-900">{engagement.auditId}</TableCell>
+                  <TableCell className="py-4 text-sm text-slate-700 max-w-[200px] truncate">
                     {engagement.engagementTitle}
                   </TableCell>
-                  <TableCell>{getAuditorName(engagement)}</TableCell>
-                  <TableCell>{formatDate(engagement.startDate)}</TableCell>
-                  <TableCell>{formatDate(engagement.endDate)}</TableCell>
-                  <TableCell>{engagement.status}</TableCell>
-                  <TableCell>
+                  <TableCell className="py-4 text-sm text-slate-700">{getAuditorName(engagement)}</TableCell>
+                  <TableCell className="py-4 text-sm text-slate-700">{formatDate(engagement.startDate)}</TableCell>
+                  <TableCell className="py-4 text-sm text-slate-700">{formatDate(engagement.endDate)}</TableCell>
+                  <TableCell className="py-4 text-sm text-slate-700">{engagement.status}</TableCell>
+                  <TableCell className="py-4">
                     <Button
                       variant="default"
                       size="sm"
-                      className="bg-[#1e3a5f] hover:bg-[#2d4a6f] text-white"
+                      className="bg-primary-600 hover:bg-primary-700 text-white"
                       onClick={() => router.push(`/internal-audit/fieldwork/${engagement.id}`)}
                     >
                       Add/View Details
@@ -344,7 +349,7 @@ export default function FieldworkPage() {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                <TableCell colSpan={7} className="text-center py-8 text-slate-500">
                   No fieldwork items found
                 </TableCell>
               </TableRow>
@@ -354,45 +359,51 @@ export default function FieldworkPage() {
 
         {/* Pagination */}
         {sortedEngagements.length > 0 && (
-          <div className="flex items-center justify-end gap-2 p-4 border-t">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setCurrentPage(1)}
-              disabled={currentPage === 1}
-            >
-              <ChevronsLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setCurrentPage(currentPage - 1)}
-              disabled={currentPage === 1}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="text-sm text-gray-600">
+          <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
+            <span className="text-sm text-slate-500">
               {startIndex + 1} to {Math.min(endIndex, sortedEngagements.length)} of {sortedEngagements.length}
             </span>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setCurrentPage(currentPage + 1)}
-              disabled={currentPage === totalPages || totalPages === 0}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setCurrentPage(totalPages)}
-              disabled={currentPage === totalPages || totalPages === 0}
-            >
-              <ChevronsRight className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+                className="h-8 w-8"
+              >
+                <ChevronsLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setCurrentPage(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="h-8 w-8"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setCurrentPage(currentPage + 1)}
+                disabled={currentPage === totalPages || totalPages === 0}
+                className="h-8 w-8"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages || totalPages === 0}
+                className="h-8 w-8"
+              >
+                <ChevronsRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         )}
-      </Card>
+      </div>
     </div>
   );
 }

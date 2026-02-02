@@ -59,6 +59,7 @@ import {
 } from "lucide-react";
 import { useHasRole } from "@/hooks/usePermissions";
 import { useSession } from "next-auth/react";
+import { DatePicker } from "@/components/ui/date-picker";
 
 interface Department {
   id: string;
@@ -2704,10 +2705,10 @@ export default function FieldworkDetailsPage() {
             </div>
             <div className="space-y-2">
               <Label>Due Date</Label>
-              <Input
-                type="date"
+              <DatePicker
                 value={newEvidence.dueDate}
-                onChange={(e) => setNewEvidence({ ...newEvidence, dueDate: e.target.value })}
+                onChange={(date) => setNewEvidence({ ...newEvidence, dueDate: date ? date.toISOString().split('T')[0] : "" })}
+                placeholder="Select due date"
               />
             </div>
           </div>

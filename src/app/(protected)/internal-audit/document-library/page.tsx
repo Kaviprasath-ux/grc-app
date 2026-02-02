@@ -240,7 +240,7 @@ export default function DocumentLibraryPage() {
       <div
         className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
           isActive
-            ? "border-blue-500 bg-blue-50"
+            ? "border-primary-500 bg-primary-50"
             : "border-gray-300 hover:border-gray-400"
         }`}
         onDragEnter={(e) => handleDrag(e, category, true)}
@@ -261,7 +261,7 @@ export default function DocumentLibraryPage() {
         />
         {isUploading ? (
           <div className="flex items-center justify-center gap-2">
-            <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
+            <Loader2 className="h-5 w-5 animate-spin text-primary-500" />
             <span className="text-gray-500">Uploading...</span>
           </div>
         ) : (
@@ -286,46 +286,48 @@ export default function DocumentLibraryPage() {
     return {
       items: paginatedItems,
       pagination: items.length > 0 && (
-        <div className="flex items-center justify-end gap-2 mt-4 text-sm text-gray-600">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setPage(1)}
-            disabled={currentPage === 1}
-            className="h-8 w-8 p-0"
-          >
-            <ChevronsLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setPage(currentPage - 1)}
-            disabled={currentPage === 1}
-            className="h-8 w-8 p-0"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <span>
+        <div className="flex items-center justify-between mt-4">
+          <span className="text-sm text-slate-500">
             {startIndex + 1} to {endIndex} of {items.length}
           </span>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setPage(currentPage + 1)}
-            disabled={currentPage === totalPages}
-            className="h-8 w-8 p-0"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setPage(totalPages)}
-            disabled={currentPage === totalPages}
-            className="h-8 w-8 p-0"
-          >
-            <ChevronsRight className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setPage(1)}
+              disabled={currentPage === 1}
+              className="h-8 w-8"
+            >
+              <ChevronsLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setPage(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="h-8 w-8"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setPage(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="h-8 w-8"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setPage(totalPages)}
+              disabled={currentPage === totalPages}
+              className="h-8 w-8"
+            >
+              <ChevronsRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       ),
     };
@@ -386,72 +388,51 @@ export default function DocumentLibraryPage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold text-blue-900">Document Library</h1>
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold text-slate-800">Document Library</h1>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="w-full justify-start bg-transparent border-b rounded-none h-auto p-0 gap-0">
-          <TabsTrigger
-            value="smart-search"
-            className="data-[state=active]:bg-blue-600 data-[state=active]:text-white rounded-t-lg rounded-b-none px-6 py-2.5"
-          >
-            Smart Search
-          </TabsTrigger>
-          <TabsTrigger
-            value="policies"
-            className="data-[state=active]:bg-blue-600 data-[state=active]:text-white rounded-t-lg rounded-b-none px-6 py-2.5"
-          >
-            Company&apos;s Policies and Procedures
-          </TabsTrigger>
-          <TabsTrigger
-            value="regulations"
-            className="data-[state=active]:bg-blue-600 data-[state=active]:text-white rounded-t-lg rounded-b-none px-6 py-2.5"
-          >
-            Standard Regulations
-          </TabsTrigger>
-          <TabsTrigger
-            value="reports"
-            className="data-[state=active]:bg-blue-600 data-[state=active]:text-white rounded-t-lg rounded-b-none px-6 py-2.5"
-          >
-            Previous Audit Reports
-          </TabsTrigger>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="smart-search">Smart Search</TabsTrigger>
+          <TabsTrigger value="policies">Company&apos;s Policies and Procedures</TabsTrigger>
+          <TabsTrigger value="regulations">Standard Regulations</TabsTrigger>
+          <TabsTrigger value="reports">Previous Audit Reports</TabsTrigger>
         </TabsList>
 
         {/* Smart Search Tab */}
-        <TabsContent value="smart-search" className="space-y-6 mt-6">
-          <Card>
-            <CardContent className="pt-6">
-              <h3 className="text-lg font-semibold text-blue-800 mb-4">
-                Smart Document Query
-              </h3>
-              <div className="flex gap-4">
-                <Textarea
-                  placeholder="Enter your question here"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  className="flex-1 resize-none min-h-[80px]"
-                  rows={3}
-                />
-                <Button
-                  onClick={handleSmartSearch}
-                  disabled={searching || !query.trim()}
-                  className="bg-blue-600 hover:bg-blue-700 h-auto px-4"
-                >
-                  {searching ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    <Send className="h-5 w-5" />
-                  )}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+        <TabsContent value="smart-search" className="space-y-6">
+          {/* Smart Document Query */}
+          <div className="bg-white rounded-xl border border-slate-200 p-6">
+            <h3 className="text-lg font-semibold text-slate-800 mb-4">
+              Smart Document Query
+            </h3>
+            <div className="relative">
+              <Textarea
+                placeholder="Enter your question here"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="resize-none min-h-[120px] bg-white border-slate-200 pr-14 pb-12"
+                rows={4}
+              />
+              <Button
+                onClick={handleSmartSearch}
+                disabled={searching || !query.trim()}
+                className="absolute bottom-3 right-3 bg-primary-600 hover:bg-primary-700 h-9 w-9 p-0 rounded-lg"
+              >
+                {searching ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+          </div>
 
           {/* Recent Searches */}
           <Card>
             <CardContent className="pt-6">
-              <h3 className="text-lg font-semibold text-blue-800 mb-4">
+              <h3 className="text-lg font-semibold text-slate-800 mb-4">
                 Recent Searches
               </h3>
               {recentSearches.length === 0 ? (
@@ -475,7 +456,7 @@ export default function DocumentLibraryPage() {
                             <p className="font-medium text-gray-900 truncate">
                               {search.query}
                             </p>
-                            <span className="text-xs text-blue-600 whitespace-nowrap">
+                            <span className="text-xs text-primary-600 whitespace-nowrap">
                               {formatDate(search.createdAt)}
                             </span>
                           </div>
@@ -501,10 +482,10 @@ export default function DocumentLibraryPage() {
         </TabsContent>
 
         {/* Company Policies Tab */}
-        <TabsContent value="policies" className="mt-6">
+        <TabsContent value="policies">
           <Card>
             <CardContent className="pt-6">
-              <h3 className="text-lg font-semibold text-blue-800 mb-4">
+              <h3 className="text-lg font-semibold text-slate-800 mb-4">
                 Company&apos;s Policies and Procedures
               </h3>
               {renderUploadArea("Policy")}
@@ -514,10 +495,10 @@ export default function DocumentLibraryPage() {
         </TabsContent>
 
         {/* Standard Regulations Tab */}
-        <TabsContent value="regulations" className="mt-6">
+        <TabsContent value="regulations">
           <Card>
             <CardContent className="pt-6">
-              <h3 className="text-lg font-semibold text-blue-800 mb-4">
+              <h3 className="text-lg font-semibold text-slate-800 mb-4">
                 Standard Regulations
               </h3>
               {renderUploadArea("Regulation")}
@@ -531,10 +512,10 @@ export default function DocumentLibraryPage() {
         </TabsContent>
 
         {/* Previous Audit Reports Tab */}
-        <TabsContent value="reports" className="mt-6">
+        <TabsContent value="reports">
           <Card>
             <CardContent className="pt-6">
-              <h3 className="text-lg font-semibold text-blue-800 mb-4">
+              <h3 className="text-lg font-semibold text-slate-800 mb-4">
                 Previous Audit Reports
               </h3>
               {renderUploadArea("PreviousReport")}
