@@ -1225,8 +1225,6 @@ export default function EvidenceDetailPage() {
         }
         const frameworkCount = linkedFrameworks.length;
 
-        if (frameworkCount === 0) return null;
-
         return (
           <div className="flex items-center gap-2">
             <Tooltip>
@@ -1238,14 +1236,16 @@ export default function EvidenceDetailPage() {
                   </span>
                 </div>
               </TooltipTrigger>
-              <TooltipContent side="bottom" className="max-w-xs bg-slate-800 text-white p-2">
-                <div className="space-y-1">
-                  <p className="font-medium text-xs text-slate-300">Linked Frameworks:</p>
-                  {linkedFrameworks.map((fw) => (
-                    <p key={fw.id} className="text-sm">{fw.name}</p>
-                  ))}
-                </div>
-              </TooltipContent>
+              {frameworkCount > 0 && (
+                <TooltipContent side="bottom" className="max-w-xs bg-slate-800 text-white p-2">
+                  <div className="space-y-1">
+                    <p className="font-medium text-xs text-slate-300">Linked Frameworks:</p>
+                    {linkedFrameworks.map((fw) => (
+                      <p key={fw.id} className="text-sm">{fw.name}</p>
+                    ))}
+                  </div>
+                </TooltipContent>
+              )}
             </Tooltip>
           </div>
         );
