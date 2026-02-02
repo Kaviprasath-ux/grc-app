@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -25,29 +24,18 @@ import {
 } from "@/components/ui/table";
 import { toast } from "sonner";
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Cell,
-  LabelList,
-} from "recharts";
-import {
   AlertTriangle,
   CheckCircle,
   Clock,
   Activity,
   ChevronLeft,
   ChevronRight,
-  Loader2,
   ExternalLink,
   FileText,
   Shield,
   ClipboardList,
   Calendar,
+  ArrowUpRight,
 } from "lucide-react";
 
 interface DashboardData {
@@ -164,7 +152,7 @@ const SeverityBadge = ({ severity }: { severity: string }) => {
     moderate: "bg-blue-500 text-white",
     low: "bg-green-500 text-white",
   };
-  const color = colors[severity?.toLowerCase()] || "bg-gray-500 text-white";
+  const color = colors[severity?.toLowerCase()] || "bg-slate-500 text-white";
   return <Badge className={color}>{severity || 'N/A'}</Badge>;
 };
 
@@ -178,7 +166,7 @@ const StatusBadge = ({ status }: { status: string }) => {
     closed: "bg-green-500 text-white",
     planned: "bg-purple-500 text-white",
   };
-  const color = colors[status?.toLowerCase()] || "bg-gray-500 text-white";
+  const color = colors[status?.toLowerCase()] || "bg-slate-500 text-white";
   return <Badge className={color}>{status || 'N/A'}</Badge>;
 };
 
@@ -338,8 +326,14 @@ export default function InternalAuditDashboard() {
   // Show loading state while permissions or data is being fetched
   if (permissionsLoading || loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+      <div className="flex items-center justify-center h-[60vh]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative">
+            <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
+            <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+          </div>
+          <p className="text-sm text-slate-500 font-medium">Loading dashboard...</p>
+        </div>
       </div>
     );
   }
@@ -354,14 +348,17 @@ export default function InternalAuditDashboard() {
     if (drillDownLoading) {
       return (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+          <div className="relative h-8 w-8">
+            <div className="absolute inset-0 rounded-full border-2 border-slate-200"></div>
+            <div className="absolute inset-0 rounded-full border-2 border-primary-500 border-t-transparent animate-spin"></div>
+          </div>
         </div>
       );
     }
 
     if (!drillDownData || !drillDownData.data) {
       return (
-        <div className="text-center py-12 text-gray-500">
+        <div className="text-center py-12 text-slate-500">
           No data available
         </div>
       );
@@ -372,20 +369,20 @@ export default function InternalAuditDashboard() {
         return (
           <div className="max-h-[60vh] overflow-auto">
             <Table>
-              <TableHeader>
+              <TableHeader className="bg-slate-50/50">
                 <TableRow>
-                  <TableHead>Risk ID</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Department</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Severity</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Action</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600">Risk ID</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600">Description</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600">Department</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600">Category</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600">Severity</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600">Status</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {drillDownData.data.map((risk: Record<string, unknown>) => (
-                  <TableRow key={risk.id as string} className="hover:bg-gray-50">
+                  <TableRow key={risk.id as string} className="hover:bg-slate-50">
                     <TableCell className="font-medium">{risk.riskId as string}</TableCell>
                     <TableCell className="max-w-[200px] truncate" title={risk.riskDescription as string}>
                       {risk.riskDescription as string}
@@ -397,7 +394,8 @@ export default function InternalAuditDashboard() {
                     <TableCell>
                       <Button
                         variant="ghost"
-                        size="sm"
+                        size="icon"
+                        className="h-8 w-8 text-slate-400 hover:text-slate-600"
                         onClick={() => navigateToDetail('risk', risk.id as string)}
                       >
                         <ExternalLink className="h-4 w-4" />
@@ -407,7 +405,7 @@ export default function InternalAuditDashboard() {
                 ))}
               </TableBody>
             </Table>
-            <div className="mt-4 text-sm text-gray-500 text-center">
+            <div className="mt-4 text-sm text-slate-500 text-center">
               Showing {drillDownData.data.length} of {drillDownData.total} records
             </div>
           </div>
@@ -417,20 +415,20 @@ export default function InternalAuditDashboard() {
         return (
           <div className="max-h-[60vh] overflow-auto">
             <Table>
-              <TableHeader>
+              <TableHeader className="bg-slate-50/50">
                 <TableRow>
-                  <TableHead>Audit ID</TableHead>
-                  <TableHead>Title</TableHead>
-                  <TableHead>Department</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Auditor</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Action</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600">Audit ID</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600">Title</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600">Department</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600">Type</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600">Auditor</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600">Status</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {drillDownData.data.map((audit: Record<string, unknown>) => (
-                  <TableRow key={audit.id as string} className="hover:bg-gray-50">
+                  <TableRow key={audit.id as string} className="hover:bg-slate-50">
                     <TableCell className="font-medium">{audit.auditId as string}</TableCell>
                     <TableCell className="max-w-[200px] truncate" title={audit.engagementTitle as string}>
                       {audit.engagementTitle as string}
@@ -442,7 +440,8 @@ export default function InternalAuditDashboard() {
                     <TableCell>
                       <Button
                         variant="ghost"
-                        size="sm"
+                        size="icon"
+                        className="h-8 w-8 text-slate-400 hover:text-slate-600"
                         onClick={() => navigateToDetail('audit', audit.id as string)}
                       >
                         <ExternalLink className="h-4 w-4" />
@@ -452,7 +451,7 @@ export default function InternalAuditDashboard() {
                 ))}
               </TableBody>
             </Table>
-            <div className="mt-4 text-sm text-gray-500 text-center">
+            <div className="mt-4 text-sm text-slate-500 text-center">
               Showing {drillDownData.data.length} of {drillDownData.total} records
             </div>
           </div>
@@ -462,21 +461,21 @@ export default function InternalAuditDashboard() {
         return (
           <div className="max-h-[60vh] overflow-auto">
             <Table>
-              <TableHeader>
+              <TableHeader className="bg-slate-50/50">
                 <TableRow>
-                  <TableHead>CAPA ID</TableHead>
-                  <TableHead>Title</TableHead>
-                  <TableHead>Finding</TableHead>
-                  <TableHead>Severity</TableHead>
-                  <TableHead>Responsible</TableHead>
-                  <TableHead>Target Date</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Action</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600">CAPA ID</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600">Title</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600">Finding</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600">Severity</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600">Responsible</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600">Target Date</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600">Status</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {drillDownData.data.map((capa: Record<string, unknown>) => (
-                  <TableRow key={capa.id as string} className="hover:bg-gray-50">
+                  <TableRow key={capa.id as string} className="hover:bg-slate-50">
                     <TableCell className="font-medium">{capa.capaId as string}</TableCell>
                     <TableCell className="max-w-[150px] truncate" title={capa.title as string}>
                       {capa.title as string}
@@ -495,7 +494,8 @@ export default function InternalAuditDashboard() {
                     <TableCell>
                       <Button
                         variant="ghost"
-                        size="sm"
+                        size="icon"
+                        className="h-8 w-8 text-slate-400 hover:text-slate-600"
                         onClick={() => navigateToDetail('capa', capa.id as string)}
                       >
                         <ExternalLink className="h-4 w-4" />
@@ -505,7 +505,7 @@ export default function InternalAuditDashboard() {
                 ))}
               </TableBody>
             </Table>
-            <div className="mt-4 text-sm text-gray-500 text-center">
+            <div className="mt-4 text-sm text-slate-500 text-center">
               Showing {drillDownData.data.length} of {drillDownData.total} records
             </div>
           </div>
@@ -527,7 +527,7 @@ export default function InternalAuditDashboard() {
           findingsCount?: number;
           evidenceRequestsCount?: number;
         };
-        if (!auditDetail) return <div className="text-center py-12 text-gray-500">No data available</div>;
+        if (!auditDetail) return <div className="text-center py-12 text-slate-500">No data available</div>;
 
         return (
           <div className="max-h-[60vh] overflow-auto space-y-6">
@@ -535,30 +535,30 @@ export default function InternalAuditDashboard() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm text-gray-500">Audit ID:</span>
+                  <FileText className="h-4 w-4 text-slate-500" />
+                  <span className="text-sm text-slate-500">Audit ID:</span>
                   <span className="font-medium">{auditDetail.auditId || 'N/A'}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <ClipboardList className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm text-gray-500">Department:</span>
+                  <ClipboardList className="h-4 w-4 text-slate-500" />
+                  <span className="text-sm text-slate-500">Department:</span>
                   <span className="font-medium">{auditDetail.department || 'N/A'}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Shield className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm text-gray-500">Type:</span>
+                  <Shield className="h-4 w-4 text-slate-500" />
+                  <span className="text-sm text-slate-500">Type:</span>
                   <span className="font-medium">{auditDetail.auditType || 'N/A'}</span>
                 </div>
               </div>
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <Activity className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm text-gray-500">Status:</span>
+                  <Activity className="h-4 w-4 text-slate-500" />
+                  <span className="text-sm text-slate-500">Status:</span>
                   <StatusBadge status={auditDetail.status || ''} />
                 </div>
                 <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm text-gray-500">Duration:</span>
+                  <Calendar className="h-4 w-4 text-slate-500" />
+                  <span className="text-sm text-slate-500">Duration:</span>
                   <span className="font-medium">
                     {auditDetail.startDate
                       ? new Date(auditDetail.startDate).toLocaleDateString()
@@ -568,8 +568,8 @@ export default function InternalAuditDashboard() {
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm text-gray-500">Auditor:</span>
+                  <CheckCircle className="h-4 w-4 text-slate-500" />
+                  <span className="text-sm text-slate-500">Auditor:</span>
                   <span className="font-medium">
                     {auditDetail.auditor?.name || 'Unassigned'}
                   </span>
@@ -579,18 +579,14 @@ export default function InternalAuditDashboard() {
 
             {/* Summary Stats */}
             <div className="grid grid-cols-2 gap-4">
-              <Card>
-                <CardContent className="pt-4">
-                  <div className="text-2xl font-bold">{auditDetail.findingsCount || 0}</div>
-                  <div className="text-sm text-gray-500">Findings</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="pt-4">
-                  <div className="text-2xl font-bold">{auditDetail.evidenceRequestsCount || 0}</div>
-                  <div className="text-sm text-gray-500">Evidence Requests</div>
-                </CardContent>
-              </Card>
+              <div className="bg-white rounded-xl border border-slate-200 p-4">
+                <div className="text-2xl font-bold text-slate-800">{auditDetail.findingsCount || 0}</div>
+                <div className="text-sm text-slate-500">Findings</div>
+              </div>
+              <div className="bg-white rounded-xl border border-slate-200 p-4">
+                <div className="text-2xl font-bold text-slate-800">{auditDetail.evidenceRequestsCount || 0}</div>
+                <div className="text-sm text-slate-500">Evidence Requests</div>
+              </div>
             </div>
 
             {/* Objectives & Scope */}
@@ -598,14 +594,14 @@ export default function InternalAuditDashboard() {
               <div className="space-y-3">
                 {auditDetail.objectives && (
                   <div>
-                    <h4 className="text-sm font-medium text-gray-700 mb-1">Objectives</h4>
-                    <p className="text-sm text-gray-600">{auditDetail.objectives}</p>
+                    <h4 className="text-sm font-medium text-slate-700 mb-1">Objectives</h4>
+                    <p className="text-sm text-slate-600">{auditDetail.objectives}</p>
                   </div>
                 )}
                 {auditDetail.scope && (
                   <div>
-                    <h4 className="text-sm font-medium text-gray-700 mb-1">Scope</h4>
-                    <p className="text-sm text-gray-600">{auditDetail.scope}</p>
+                    <h4 className="text-sm font-medium text-slate-700 mb-1">Scope</h4>
+                    <p className="text-sm text-slate-600">{auditDetail.scope}</p>
                   </div>
                 )}
               </div>
@@ -629,64 +625,80 @@ export default function InternalAuditDashboard() {
   // Auditee view - simplified dashboard
   if (isAuditee) {
     return (
-      <div className="p-6 space-y-6">
+      <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold">My Audit Tasks</h1>
-          <p className="text-gray-500 mt-1">Track your evidence requests and corrective actions</p>
+          <h1 className="text-2xl font-bold text-slate-800">My Audit Tasks</h1>
+          <p className="text-sm text-slate-500 mt-1">Track your evidence requests and corrective actions</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push("/internal-audit/fieldwork")}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-500">Evidence Requests</CardTitle>
-              <Activity className="h-5 w-5 text-blue-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{data?.stats.evidenceRequests.total || 0}</div>
-              <div className="flex gap-2 mt-2">
-                <Badge variant="outline" className="text-xs">{data?.stats.evidenceRequests.pending || 0} Pending</Badge>
+          <div
+            className="relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white cursor-pointer hover:border-slate-300 transition-colors"
+            onClick={() => router.push("/internal-audit/fieldwork")}
+          >
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
+                <Activity className="h-5 w-5" />
               </div>
-            </CardContent>
-          </Card>
+              <ArrowUpRight className="h-4 w-4 text-slate-400" />
+            </div>
+            <div className="text-3xl font-bold tracking-tight text-slate-800">
+              {data?.stats.evidenceRequests.total || 0}
+            </div>
+            <div className="mt-1">
+              <span className="text-sm font-medium text-slate-500">Evidence Requests</span>
+              <p className="text-xs text-slate-400 mt-0.5">{data?.stats.evidenceRequests.pending || 0} Pending</p>
+            </div>
+          </div>
 
-          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push("/internal-audit/capa-tracking")}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-500">Corrective Actions</CardTitle>
-              <CheckCircle className="h-5 w-5 text-green-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{data?.stats.capa.total || 0}</div>
-              <div className="flex gap-2 mt-2">
-                <Badge variant="outline" className="text-xs">{data?.stats.capa.open || 0} Open</Badge>
+          <div
+            className="relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white cursor-pointer hover:border-slate-300 transition-colors"
+            onClick={() => router.push("/internal-audit/capa-tracking")}
+          >
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-green-50 text-green-600">
+                <CheckCircle className="h-5 w-5" />
               </div>
-            </CardContent>
-          </Card>
+              <ArrowUpRight className="h-4 w-4 text-slate-400" />
+            </div>
+            <div className="text-3xl font-bold tracking-tight text-slate-800">
+              {data?.stats.capa.total || 0}
+            </div>
+            <div className="mt-1">
+              <span className="text-sm font-medium text-slate-500">Corrective Actions</span>
+              <p className="text-xs text-slate-400 mt-0.5">{data?.stats.capa.open || 0} Open</p>
+            </div>
+          </div>
 
-          <Card className="cursor-pointer hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-500">Pending Actions</CardTitle>
-              <Clock className="h-5 w-5 text-yellow-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {(data?.stats.evidenceRequests.pending || 0) + (data?.stats.capa.open || 0)}
+          <div className="relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white">
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-amber-50 text-amber-600">
+                <Clock className="h-5 w-5" />
               </div>
-              <p className="text-xs text-gray-500 mt-2">Items requiring attention</p>
-            </CardContent>
-          </Card>
+            </div>
+            <div className="text-3xl font-bold tracking-tight text-slate-800">
+              {(data?.stats.evidenceRequests.pending || 0) + (data?.stats.capa.open || 0)}
+            </div>
+            <div className="mt-1">
+              <span className="text-sm font-medium text-slate-500">Pending Actions</span>
+              <p className="text-xs text-slate-400 mt-0.5">Items requiring attention</p>
+            </div>
+          </div>
 
-          <Card className="cursor-pointer hover:shadow-md transition-shadow border-red-200">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-500">Overdue Items</CardTitle>
-              <AlertTriangle className="h-5 w-5 text-red-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-600">
-                {(data?.stats.evidenceRequests.overdue || 0) + (data?.stats.capa.overdue || 0)}
+          <div className="relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white">
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-red-50 text-red-600">
+                <AlertTriangle className="h-5 w-5" />
               </div>
-              <p className="text-xs text-red-500 mt-2">Requires immediate attention</p>
-            </CardContent>
-          </Card>
+            </div>
+            <div className="text-3xl font-bold tracking-tight text-red-600">
+              {(data?.stats.evidenceRequests.overdue || 0) + (data?.stats.capa.overdue || 0)}
+            </div>
+            <div className="mt-1">
+              <span className="text-sm font-medium text-slate-500">Overdue Items</span>
+              <p className="text-xs text-red-400 mt-0.5">Requires immediate attention</p>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -694,159 +706,155 @@ export default function InternalAuditDashboard() {
 
   // Main dashboard view for Audit Head / Auditor
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       {/* Drill-down Dialog */}
       <Dialog open={drillDown.open} onOpenChange={(open) => !open && closeDrillDown()}>
-        <DialogContent className="max-w-4xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center justify-between">
+        <DialogContent className="max-w-4xl p-0 gap-0">
+          <DialogHeader className="px-6 py-5 border-b border-slate-100">
+            <DialogTitle className="text-lg font-semibold text-slate-800">
               {drillDown.title}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-sm text-slate-500">
               Click on any row to view more details
             </DialogDescription>
           </DialogHeader>
-          {renderDrillDownContent()}
+          <div className="px-6 py-5">
+            {renderDrillDownContent()}
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card
-          className="bg-white cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02] border-l-4 border-l-blue-500"
+        <div
+          className="relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white cursor-pointer hover:border-slate-300 transition-colors"
           onClick={() => handleRiskCardClick('all', 'All Risks')}
         >
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500 font-medium">Total Risks Identified</p>
-                <p className="text-3xl font-bold text-gray-900 mt-1">{data?.riskStats.total || 0}</p>
-              </div>
-              <Shield className="h-10 w-10 text-blue-500 opacity-20" />
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
+              <Shield className="h-5 w-5" />
             </div>
-            <p className="text-xs text-blue-600 mt-2 flex items-center gap-1">
-              Click to view details <ExternalLink className="h-3 w-3" />
-            </p>
-          </CardContent>
-        </Card>
+            <ArrowUpRight className="h-4 w-4 text-slate-400" />
+          </div>
+          <div className="text-3xl font-bold tracking-tight text-slate-800">
+            {data?.riskStats.total || 0}
+          </div>
+          <div className="mt-1">
+            <span className="text-sm font-medium text-slate-500">Total Risks</span>
+          </div>
+        </div>
 
-        <Card
-          className="bg-white cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02] border-l-4 border-l-red-500"
+        <div
+          className="relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white cursor-pointer hover:border-slate-300 transition-colors"
           onClick={() => handleRiskCardClick('extreme', 'Extreme Severity Risks')}
         >
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500 font-medium">Risks with Extreme Severity</p>
-                <p className="text-3xl font-bold text-gray-900 mt-1">{data?.riskStats.extreme || 0}</p>
-              </div>
-              <AlertTriangle className="h-10 w-10 text-red-500 opacity-20" />
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-red-50 text-red-600">
+              <AlertTriangle className="h-5 w-5" />
             </div>
-            <p className="text-xs text-red-600 mt-2 flex items-center gap-1">
-              Click to view details <ExternalLink className="h-3 w-3" />
-            </p>
-          </CardContent>
-        </Card>
+            <ArrowUpRight className="h-4 w-4 text-slate-400" />
+          </div>
+          <div className="text-3xl font-bold tracking-tight text-slate-800">
+            {data?.riskStats.extreme || 0}
+          </div>
+          <div className="mt-1">
+            <span className="text-sm font-medium text-slate-500">Extreme Severity</span>
+          </div>
+        </div>
 
-        <Card
-          className="bg-white cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02] border-l-4 border-l-yellow-500"
+        <div
+          className="relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white cursor-pointer hover:border-slate-300 transition-colors"
           onClick={() => handleAuditCardClick('ongoing', 'Ongoing Audits')}
         >
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500 font-medium">Ongoing Audits</p>
-                <p className="text-3xl font-bold text-gray-900 mt-1">{data?.auditStats.ongoing || 0}</p>
-              </div>
-              <Activity className="h-10 w-10 text-yellow-500 opacity-20" />
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-amber-50 text-amber-600">
+              <Activity className="h-5 w-5" />
             </div>
-            <p className="text-xs text-yellow-600 mt-2 flex items-center gap-1">
-              Click to view details <ExternalLink className="h-3 w-3" />
-            </p>
-          </CardContent>
-        </Card>
+            <ArrowUpRight className="h-4 w-4 text-slate-400" />
+          </div>
+          <div className="text-3xl font-bold tracking-tight text-slate-800">
+            {data?.auditStats.ongoing || 0}
+          </div>
+          <div className="mt-1">
+            <span className="text-sm font-medium text-slate-500">Ongoing Audits</span>
+          </div>
+        </div>
 
-        <Card
-          className="bg-white cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02] border-l-4 border-l-green-500"
+        <div
+          className="relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white cursor-pointer hover:border-slate-300 transition-colors"
           onClick={() => handleAuditCardClick('completed', 'Completed Audits')}
         >
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500 font-medium">Completed Audits</p>
-                <p className="text-3xl font-bold text-gray-900 mt-1">{data?.auditStats.completed || 0}</p>
-              </div>
-              <CheckCircle className="h-10 w-10 text-green-500 opacity-20" />
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-green-50 text-green-600">
+              <CheckCircle className="h-5 w-5" />
             </div>
-            <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
-              Click to view details <ExternalLink className="h-3 w-3" />
-            </p>
-          </CardContent>
-        </Card>
+            <ArrowUpRight className="h-4 w-4 text-slate-400" />
+          </div>
+          <div className="text-3xl font-bold tracking-tight text-slate-800">
+            {data?.auditStats.completed || 0}
+          </div>
+          <div className="mt-1">
+            <span className="text-sm font-medium text-slate-500">Completed Audits</span>
+          </div>
+        </div>
       </div>
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Risk by Rating Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold text-blue-900">Risk by Rating</CardTitle>
-            <p className="text-xs text-gray-500">Click on a bar to view risks of that severity</p>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[250px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  layout="vertical"
-                  data={riskChartData}
-                  margin={{ top: 5, right: 30, left: 60, bottom: 5 }}
+        <div className="bg-white rounded-xl border border-slate-200">
+          <div className="px-6 py-4 border-b border-slate-100">
+            <h3 className="text-base font-semibold text-slate-800">Risk by Rating</h3>
+            <p className="text-xs text-slate-400 mt-1">Click on a bar to view risks of that severity</p>
+          </div>
+          <div className="p-6 space-y-4">
+            {riskChartData.map((item) => {
+              const maxValue = Math.max(...riskChartData.map(d => d.value), 1);
+              const percentage = (item.value / maxValue) * 100;
+              return (
+                <div
+                  key={item.name}
+                  className="cursor-pointer group"
+                  onClick={() => handleRiskCardClick(item.name.toLowerCase(), `${item.name} Severity Risks`)}
                 >
-                  <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
-                  <XAxis type="number" domain={[0, 'auto']} />
-                  <YAxis type="category" dataKey="name" width={60} />
-                  <Tooltip
-                    content={({ active, payload }) => {
-                      if (active && payload && payload.length) {
-                        return (
-                          <div className="bg-white border rounded-lg p-2 shadow-lg">
-                            <p className="font-medium">{payload[0].payload.name}</p>
-                            <p className="text-sm text-gray-600">{payload[0].value} risks</p>
-                            <p className="text-xs text-blue-600 mt-1">Click to drill down</p>
-                          </div>
-                        );
-                      }
-                      return null;
-                    }}
-                  />
-                  <Bar
-                    dataKey="value"
-                    radius={[0, 4, 4, 0]}
-                    className="cursor-pointer"
-                    onClick={(data) => handleChartBarClick(data)}
-                  >
-                    {riskChartData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={entry.color}
-                        className="hover:opacity-80 transition-opacity"
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: item.color }}
                       />
-                    ))}
-                    <LabelList dataKey="value" position="right" />
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
+                      <span className="text-sm font-medium text-slate-700">{item.name}</span>
+                    </div>
+                    <span className="text-sm font-semibold text-slate-800">{item.value}</span>
+                  </div>
+                  <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-300 group-hover:opacity-80"
+                      style={{
+                        width: `${percentage}%`,
+                        backgroundColor: item.color,
+                      }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+            {data?.riskStats.total === 0 && (
+              <div className="text-center py-8 text-slate-400">
+                <p className="text-sm">No risk data available</p>
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* CAPA Status Overview */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
+        <div className="bg-white rounded-xl border border-slate-200">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
             <div>
-              <CardTitle className="text-lg font-semibold text-blue-900">CAPA Status Overview</CardTitle>
-              <p className="text-xs text-gray-500">Click on a status badge to view details</p>
+              <h3 className="text-base font-semibold text-slate-800">CAPA Status Overview</h3>
+              <p className="text-xs text-slate-400 mt-1">Click on a status badge to view details</p>
             </div>
-            <div className="flex items-center gap-2 text-sm text-gray-500">
+            <div className="flex items-center gap-2 text-sm text-slate-500">
               <Button
                 variant="ghost"
                 size="icon"
@@ -867,20 +875,20 @@ export default function InternalAuditDashboard() {
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
-          </CardHeader>
-          <CardContent>
+          </div>
+          <div className="p-6">
             {paginatedCapaData.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-slate-500">
                 <p>No CAPA data available</p>
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-4">
                 {paginatedCapaData.map((dept, index) => (
-                  <div key={index} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                    <h4 className="font-semibold text-center mb-3">{dept.name}</h4>
-                    <div className="space-y-2">
+                  <div key={index} className="bg-slate-50/50 border border-slate-200 rounded-lg p-4 hover:border-slate-300 transition-colors">
+                    <h4 className="text-sm font-semibold text-slate-700 text-center mb-3">{dept.name}</h4>
+                    <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600">Open</span>
+                        <span className="text-sm text-slate-600">Open</span>
                         <div className="flex gap-1">
                           {dept.open.high > 0 && (
                             <Badge
@@ -907,12 +915,12 @@ export default function InternalAuditDashboard() {
                             </Badge>
                           )}
                           {dept.open.high === 0 && dept.open.medium === 0 && dept.open.low === 0 && (
-                            <span className="text-sm text-gray-400">-</span>
+                            <span className="text-sm text-slate-400">-</span>
                           )}
                         </div>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600">Closed</span>
+                        <span className="text-sm text-slate-600">Closed</span>
                         <div className="flex gap-1">
                           {dept.closed.high > 0 && (
                             <Badge
@@ -939,7 +947,7 @@ export default function InternalAuditDashboard() {
                             </Badge>
                           )}
                           {dept.closed.high === 0 && dept.closed.medium === 0 && dept.closed.low === 0 && (
-                            <span className="text-sm text-gray-400">-</span>
+                            <span className="text-sm text-slate-400">-</span>
                           )}
                         </div>
                       </div>
@@ -948,27 +956,27 @@ export default function InternalAuditDashboard() {
                 ))}
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
       {/* Annual Audit Plan Gantt Chart */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold text-blue-900">
+      <div className="bg-white rounded-xl border border-slate-200">
+        <div className="px-6 py-4 border-b border-slate-100">
+          <h3 className="text-base font-semibold text-slate-800">
             Annual Audit Plan - {data?.currentYear || new Date().getFullYear()}
-          </CardTitle>
-          <p className="text-xs text-gray-500">Click on an audit row to view details</p>
-        </CardHeader>
-        <CardContent>
+          </h3>
+          <p className="text-xs text-slate-400 mt-1">Click on an audit row to view details</p>
+        </div>
+        <div className="p-6">
           <div className="overflow-x-auto">
             <Table>
-              <TableHeader>
+              <TableHeader className="bg-slate-50/50">
                 <TableRow>
-                  <TableHead className="min-w-[200px]">Audit Name</TableHead>
-                  <TableHead className="min-w-[150px]">Auditor</TableHead>
+                  <TableHead className="min-w-[200px] text-xs font-semibold text-slate-600">Audit Name</TableHead>
+                  <TableHead className="min-w-[150px] text-xs font-semibold text-slate-600">Auditor</TableHead>
                   {MONTHS.map((month) => (
-                    <TableHead key={month} className="text-center min-w-[60px]">{month}</TableHead>
+                    <TableHead key={month} className="text-center min-w-[60px] text-xs font-semibold text-slate-600">{month}</TableHead>
                   ))}
                 </TableRow>
               </TableHeader>
@@ -977,7 +985,7 @@ export default function InternalAuditDashboard() {
                   data.annualAuditPlan.map((audit) => (
                     <TableRow
                       key={audit.id}
-                      className="cursor-pointer hover:bg-gray-50"
+                      className="cursor-pointer hover:bg-slate-50"
                       onClick={() => handleAuditPlanClick(audit.id, audit.engagementTitle || audit.auditId)}
                     >
                       <TableCell className="font-medium">
@@ -985,7 +993,7 @@ export default function InternalAuditDashboard() {
                           {audit.engagementTitle || audit.auditId}
                         </span>
                       </TableCell>
-                      <TableCell className="text-gray-700">{audit.auditorName || '-'}</TableCell>
+                      <TableCell className="text-slate-700">{audit.auditorName || '-'}</TableCell>
                       {MONTHS.map((month, monthIndex) => {
                         const isInRange = monthIndex >= audit.startMonth && monthIndex <= audit.endMonth;
                         const isStart = monthIndex === audit.startMonth;
@@ -1005,7 +1013,7 @@ export default function InternalAuditDashboard() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={14} className="text-center py-8 text-gray-500">
+                    <TableCell colSpan={14} className="text-center py-8 text-slate-500">
                       No audit plans for this year
                     </TableCell>
                   </TableRow>
@@ -1013,24 +1021,25 @@ export default function InternalAuditDashboard() {
               </TableBody>
             </Table>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Auditor Schedule Chart */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold text-blue-900">
+      <div className="bg-white rounded-xl border border-slate-200">
+        <div className="px-6 py-4 border-b border-slate-100">
+          <h3 className="text-base font-semibold text-slate-800">
             Auditor Schedule - {data?.currentYear || new Date().getFullYear()}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+          </h3>
+          <p className="text-xs text-slate-400 mt-1">Monthly allocation by auditor</p>
+        </div>
+        <div className="p-6">
           <div className="overflow-x-auto">
             <Table>
-              <TableHeader>
+              <TableHeader className="bg-slate-50/50">
                 <TableRow>
-                  <TableHead className="min-w-[200px]">Auditor Name</TableHead>
+                  <TableHead className="min-w-[200px] text-xs font-semibold text-slate-600">Auditor Name</TableHead>
                   {MONTHS.map((month) => (
-                    <TableHead key={month} className="text-center min-w-[60px]">{month}</TableHead>
+                    <TableHead key={month} className="text-center min-w-[60px] text-xs font-semibold text-slate-600">{month}</TableHead>
                   ))}
                 </TableRow>
               </TableHeader>
@@ -1069,7 +1078,7 @@ export default function InternalAuditDashboard() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={13} className="text-center py-8 text-gray-500">
+                    <TableCell colSpan={13} className="text-center py-8 text-slate-500">
                       No auditor schedules for this year
                     </TableCell>
                   </TableRow>
@@ -1077,8 +1086,8 @@ export default function InternalAuditDashboard() {
               </TableBody>
             </Table>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
