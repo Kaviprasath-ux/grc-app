@@ -1531,18 +1531,10 @@ export default function EvidencePage() {
       {/* Link Evidence Dialog */}
       <Dialog open={linkEvidenceDialogOpen} onOpenChange={setLinkEvidenceDialogOpen}>
         <DialogContent className="sm:max-w-[600px] p-0 gap-0 max-h-[80vh] flex flex-col">
-          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+          <div className="px-6 py-4 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-primary-600">Select Evidence</DialogTitle>
             </DialogHeader>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setLinkEvidenceDialogOpen(false)}
-            >
-              <X className="h-4 w-4" />
-            </Button>
           </div>
 
           <div className="p-6 space-y-4 overflow-y-auto flex-1">
@@ -1575,16 +1567,18 @@ export default function EvidencePage() {
                         : "border-primary-200 hover:border-primary-400"
                     }`}
                   >
-                    <Checkbox
-                      checked={isSelected}
-                      onCheckedChange={() => toggleEvidenceSelection(evidence.id)}
-                      className="border-primary-400"
-                    />
-                    <span className="text-primary-600 font-medium">
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={isSelected}
+                        onCheckedChange={() => toggleEvidenceSelection(evidence.id)}
+                        className="border-primary-400"
+                      />
+                    </div>
+                    <span className="text-primary-600 font-medium flex-1">
                       {evidence.evidenceCode} : {evidence.name}
                     </span>
                     {isLinked && (
-                      <CheckCircle className="h-4 w-4 text-green-500 ml-auto" />
+                      <CheckCircle className="h-4 w-4 text-green-500" />
                     )}
                   </div>
                 );
