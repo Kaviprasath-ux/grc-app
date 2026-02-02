@@ -814,6 +814,10 @@ export default function CustomerAdminFrameworkPage() {
                   onClick={(e) => {
                     e.stopPropagation();
                     if (isLocked) return;
+                    if (!framework.id) {
+                      console.error("Framework ID is missing:", framework);
+                      return;
+                    }
                     router.push(`/roles/customer-administrator/compliance/framework/${framework.id}/controls`);
                   }}
                   title={isLocked ? "Framework not subscribed" : "Click to view controls"}
@@ -857,6 +861,10 @@ export default function CustomerAdminFrameworkPage() {
                   onClick={(e) => {
                     e.stopPropagation();
                     if (isLocked) return;
+                    if (!framework.id) {
+                      console.error("Framework ID is missing:", framework);
+                      return;
+                    }
                     router.push(`/roles/customer-administrator/compliance/framework/${framework.id}/policies`);
                   }}
                   title={isLocked ? "Framework not subscribed" : "Click to view policies"}
@@ -879,6 +887,10 @@ export default function CustomerAdminFrameworkPage() {
                   onClick={(e) => {
                     e.stopPropagation();
                     if (isLocked) return;
+                    if (!framework.id) {
+                      console.error("Framework ID is missing:", framework);
+                      return;
+                    }
                     router.push(`/roles/customer-administrator/compliance/framework/${framework.id}/evidence`);
                   }}
                   title={isLocked ? "Framework not subscribed" : "Click to view evidence"}

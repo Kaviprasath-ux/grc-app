@@ -64,7 +64,7 @@ interface Policy {
   code: string;
   name: string;
   description: string | null;
-  type: string;
+  documentType: string;
   status: string;
   version: string | null;
   owner: string | null;
@@ -234,7 +234,7 @@ export default function GovernanceDetailPage() {
   const [editForm, setEditForm] = useState({
     name: "",
     description: "",
-    type: "",
+    documentType: "",
     status: "",
     version: "",
     owner: "",
@@ -269,7 +269,7 @@ export default function GovernanceDetailPage() {
         setEditForm({
           name: data.name || "",
           description: data.description || "",
-          type: data.type || "",
+          documentType: data.documentType || "",
           status: data.status || "",
           version: data.version || "",
           owner: data.owner || "",
@@ -726,7 +726,7 @@ export default function GovernanceDetailPage() {
             className="flex items-center gap-1 text-primary hover:underline"
           >
             <ChevronLeft className="h-4 w-4" />
-            <span>{typeLabels[policy.type] || "Policy"}</span>
+            <span>{typeLabels[policy.documentType] || "Policy"}</span>
           </button>
         </div>
 
@@ -768,7 +768,7 @@ export default function GovernanceDetailPage() {
               </DialogTrigger>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Edit {typeLabels[policy.type]}</DialogTitle>
+                <DialogTitle>Edit {typeLabels[policy.documentType]}</DialogTitle>
               </DialogHeader>
               <div className="grid grid-cols-2 gap-4 py-4">
                 <div className="col-span-2">
@@ -793,9 +793,9 @@ export default function GovernanceDetailPage() {
                 <div>
                   <Label>Type</Label>
                   <Select
-                    value={editForm.type}
+                    value={editForm.documentType}
                     onValueChange={(value) =>
-                      setEditForm({ ...editForm, type: value })
+                      setEditForm({ ...editForm, documentType: value })
                     }
                   >
                     <SelectTrigger>
@@ -1359,7 +1359,7 @@ export default function GovernanceDetailPage() {
       <AlertDialog open={unpublishDialogOpen} onOpenChange={setUnpublishDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Unpublish {typeLabels[policy.type] || "Document"}?</AlertDialogTitle>
+            <AlertDialogTitle>Unpublish {typeLabels[policy.documentType] || "Document"}?</AlertDialogTitle>
             <AlertDialogDescription>
               This will revert the status from Published to Approved. The document will need to be published again after any changes.
             </AlertDialogDescription>
@@ -1523,11 +1523,11 @@ export default function GovernanceDetailPage() {
       }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{typeLabels[policy.type] || "Policy"} signature Publish</DialogTitle>
+            <DialogTitle>{typeLabels[policy.documentType] || "Policy"} signature Publish</DialogTitle>
           </DialogHeader>
           <div className="py-4 space-y-4">
             <p className="text-sm text-slate-400">
-              Please sign below to publish this {(policy.type || "document").toLowerCase()}.
+              Please sign below to publish this {(policy.documentType || "document").toLowerCase()}.
             </p>
             <div className="border rounded-lg p-2 bg-white">
               <canvas
@@ -1642,7 +1642,7 @@ export default function GovernanceDetailPage() {
             {linkedControls.length === 0 ? (
               <div className="text-center py-8 text-slate-400">
                 <Link2 className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p>No controls linked to this {(policy.type || "policy").toLowerCase()}</p>
+                <p>No controls linked to this {(policy.documentType || "policy").toLowerCase()}</p>
               </div>
             ) : (
               <Table>
@@ -1696,7 +1696,7 @@ export default function GovernanceDetailPage() {
             {linkedExceptions.length === 0 ? (
               <div className="text-center py-8 text-slate-400">
                 <AlertTriangle className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p>No exceptions linked to this {(policy.type || "policy").toLowerCase()}</p>
+                <p>No exceptions linked to this {(policy.documentType || "policy").toLowerCase()}</p>
               </div>
             ) : (
               <Table>
@@ -1743,7 +1743,7 @@ export default function GovernanceDetailPage() {
             {linkedDocuments.length === 0 ? (
               <div className="text-center py-8 text-slate-400">
                 <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p>No documents linked to this {(policy.type || "policy").toLowerCase()}</p>
+                <p>No documents linked to this {(policy.documentType || "policy").toLowerCase()}</p>
               </div>
             ) : (
               <Table>

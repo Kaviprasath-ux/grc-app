@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
 
-// GET all evidences with filters - filtered by customer account
+// GET all evidences with filters - filtered by customer account and department for department roles
 export const GET = withAuth(
   async (req, context, session) => {
     try {
@@ -19,10 +19,22 @@ export const GET = withAuth(
 
       const tenantFilter = getTenantFilter(session);
       const where: Record<string, unknown> = { ...tenantFilter };
+
+      // Department-based filtering for DepartmentContributor and DepartmentReviewer roles
+      // These roles should only see evidence assigned to their department
+      const isDepartmentRole = session.roles.some(role =>
+        ['DepartmentContributor', 'DepartmentReviewer'].includes(role)
+      );
+      if (isDepartmentRole && session.departmentId) {
+        where.departmentId = session.departmentId;
+      } else if (departmentId) {
+        // For other roles, apply departmentId filter from query params if provided
+        where.departmentId = departmentId;
+      }
+
       if (status) where.status = status;
       if (frameworkId) where.frameworkId = frameworkId;
       if (controlId) where.controlId = controlId;
-      if (departmentId) where.departmentId = departmentId;
       if (assigneeId) where.assigneeId = assigneeId;
       if (domain) where.domain = domain;
       if (search) {
