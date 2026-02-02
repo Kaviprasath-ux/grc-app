@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { ArrowLeft, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { DatePicker } from "@/components/ui/date-picker";
 
 interface Department {
   id: string;
@@ -729,11 +730,10 @@ export default function EditProcessPage() {
                   </div>
                   <div>
                     <Label htmlFor="reviewDate">Review Date</Label>
-                    <Input
-                      id="reviewDate"
-                      type="date"
+                    <DatePicker
                       value={formData.reviewDate}
-                      onChange={(e) => setFormData({ ...formData, reviewDate: e.target.value })}
+                      onChange={(date) => setFormData({ ...formData, reviewDate: date ? date.toISOString().split('T')[0] : "" })}
+                      placeholder="Select date"
                       className="mt-2"
                     />
                   </div>
@@ -761,11 +761,10 @@ export default function EditProcessPage() {
                 </div>
                 <div>
                   <Label htmlFor="lastAuditDate">Last Audit Date</Label>
-                  <Input
-                    id="lastAuditDate"
-                    type="date"
+                  <DatePicker
                     value={formData.lastAuditDate}
-                    onChange={(e) => setFormData({ ...formData, lastAuditDate: e.target.value })}
+                    onChange={(date) => setFormData({ ...formData, lastAuditDate: date ? date.toISOString().split('T')[0] : "" })}
+                    placeholder="Select date"
                     className="mt-2"
                   />
                 </div>

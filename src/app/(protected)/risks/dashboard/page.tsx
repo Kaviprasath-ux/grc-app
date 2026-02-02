@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { DonutChart, HorizontalBarChart } from "@/components/charts";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Unauthorized } from "@/components/ui/unauthorized";
@@ -18,6 +19,7 @@ interface RiskStats {
 }
 
 export default function RiskDashboardPage() {
+  const router = useRouter();
   const { canView, isLoading: permissionsLoading } = usePermissions('risk.register');
   const [stats, setStats] = useState<RiskStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -90,6 +92,7 @@ export default function RiskDashboardPage() {
           title="Risk by Status"
           data={riskByStatus}
           centerLabel={totalRisks}
+          onClick={() => router.push("/risks/register?from=risk-dashboard")}
         />
 
         {/* Risk by Strategy - Horizontal Bar Chart (Top Right) */}
@@ -98,6 +101,7 @@ export default function RiskDashboardPage() {
           data={riskByStrategyData}
           yAxisDataKey="category"
           bars={[{ dataKey: "value", fill: "#146FF4", name: "Risks" }]}
+          onClick={() => router.push("/risks/response?from=risk-dashboard")}
         />
 
         {/* Risk by Rating - Horizontal Bar Chart (Bottom Left) */}
@@ -106,6 +110,7 @@ export default function RiskDashboardPage() {
           data={riskByRatingData}
           yAxisDataKey="category"
           bars={[{ dataKey: "value", fill: "#146FF4", name: "Risks" }]}
+          onClick={() => router.push("/risks/response?from=risk-dashboard")}
         />
 
         {/* Risk by Category - Horizontal Bar Chart (Bottom Right) */}
@@ -114,6 +119,7 @@ export default function RiskDashboardPage() {
           data={riskByCategoryData}
           yAxisDataKey="category"
           bars={[{ dataKey: "value", fill: "#146FF4", name: "Risks" }]}
+          onClick={() => router.push("/risks/register?from=risk-dashboard")}
         />
       </div>
     </div>

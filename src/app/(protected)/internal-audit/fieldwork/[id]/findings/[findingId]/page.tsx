@@ -21,6 +21,7 @@ import {
   Save,
   Edit2,
 } from "lucide-react";
+import { DatePicker } from "@/components/ui/date-picker";
 
 interface User {
   id: string;
@@ -425,11 +426,10 @@ export default function ViewFindingPage() {
             <div className="space-y-2">
               <Label className="text-[#1e3a5f] font-medium">Target Closure Date</Label>
               {isEditing ? (
-                <Input
-                  type="date"
-                  value={formatDate(formData.targetDate)}
-                  onChange={(e) => handleInputChange("targetDate", e.target.value)}
-                  className="border-gray-300"
+                <DatePicker
+                  value={formData.targetDate}
+                  onChange={(date) => handleInputChange("targetDate", date ? date.toISOString().split('T')[0] : "")}
+                  placeholder="Select date"
                 />
               ) : (
                 <div className="p-3 bg-gray-50 rounded-md border">

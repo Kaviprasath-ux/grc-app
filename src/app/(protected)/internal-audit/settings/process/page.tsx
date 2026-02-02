@@ -32,7 +32,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, Plus, Pencil, Trash2, ArrowUpDown, Download, Upload, Search } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, ArrowUpDown, Download, Upload, Search, Activity, CheckCircle, AlertTriangle, XCircle } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -42,6 +42,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
+import { DatePicker } from "@/components/ui/date-picker";
 
 interface Process {
   id: string;
@@ -589,22 +590,61 @@ export default function ProcessPage() {
       <div className="space-y-6">
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-4 gap-4">
-          <div className="bg-white rounded-xl border border-slate-200 p-4 text-center">
-            <div className="text-2xl font-bold text-slate-800">{stats.notAssessed}</div>
-            <div className="text-sm text-slate-500">Not Assessed</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white">
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
+                <Activity className="h-5 w-5" />
+              </div>
+            </div>
+            <div className="text-3xl font-bold tracking-tight text-slate-800">
+              {stats.notAssessed}
+            </div>
+            <div className="mt-1">
+              <span className="text-sm font-medium text-slate-500">Not Assessed</span>
+            </div>
           </div>
-          <div className="bg-white rounded-xl border border-green-200 p-4 text-center">
-            <div className="text-2xl font-bold text-green-600">{stats.low}</div>
-            <div className="text-sm text-slate-500">Low</div>
+
+          <div className="relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white">
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
+                <CheckCircle className="h-5 w-5" />
+              </div>
+            </div>
+            <div className="text-3xl font-bold tracking-tight text-slate-800">
+              {stats.low}
+            </div>
+            <div className="mt-1">
+              <span className="text-sm font-medium text-slate-500">Low</span>
+            </div>
           </div>
-          <div className="bg-white rounded-xl border border-yellow-200 p-4 text-center">
-            <div className="text-2xl font-bold text-yellow-600">{stats.medium}</div>
-            <div className="text-sm text-slate-500">Medium</div>
+
+          <div className="relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white">
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
+                <AlertTriangle className="h-5 w-5" />
+              </div>
+            </div>
+            <div className="text-3xl font-bold tracking-tight text-slate-800">
+              {stats.medium}
+            </div>
+            <div className="mt-1">
+              <span className="text-sm font-medium text-slate-500">Medium</span>
+            </div>
           </div>
-          <div className="bg-white rounded-xl border border-red-200 p-4 text-center">
-            <div className="text-2xl font-bold text-red-600">{stats.high}</div>
-            <div className="text-sm text-slate-500">High</div>
+
+          <div className="relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white">
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
+                <XCircle className="h-5 w-5" />
+              </div>
+            </div>
+            <div className="text-3xl font-bold tracking-tight text-slate-800">
+              {stats.high}
+            </div>
+            <div className="mt-1">
+              <span className="text-sm font-medium text-slate-500">High</span>
+            </div>
           </div>
         </div>
 
@@ -1009,11 +1049,10 @@ export default function ProcessPage() {
               {/* Last Audit Date */}
               <div>
                 <Label htmlFor="lastAuditDate">Last Audit Date</Label>
-                <Input
-                  id="lastAuditDate"
-                  type="date"
+                <DatePicker
                   value={formData.lastAuditDate}
-                  onChange={(e) => setFormData({ ...formData, lastAuditDate: e.target.value })}
+                  onChange={(date) => setFormData({ ...formData, lastAuditDate: date ? date.toISOString().split('T')[0] : "" })}
+                  placeholder="Select date"
                   className="mt-2"
                 />
               </div>

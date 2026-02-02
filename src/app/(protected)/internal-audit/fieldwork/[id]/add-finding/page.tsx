@@ -22,6 +22,7 @@ import {
   X,
   FileText,
 } from "lucide-react";
+import { DatePicker } from "@/components/ui/date-picker";
 
 interface User {
   id: string;
@@ -454,12 +455,10 @@ export default function AddFindingPage() {
             {/* Target Closure Date */}
             <div className="space-y-2">
               <Label className="text-[#1e3a5f] font-medium">Target Closure Date</Label>
-              <Input
-                type="date"
+              <DatePicker
                 value={formData.targetClosureDate}
-                onChange={(e) => handleInputChange("targetClosureDate", e.target.value)}
-                placeholder="dd/mm/yyyy"
-                className="border-gray-300"
+                onChange={(date) => handleInputChange("targetClosureDate", date ? date.toISOString().split('T')[0] : "")}
+                placeholder="Select date"
               />
             </div>
           </div>

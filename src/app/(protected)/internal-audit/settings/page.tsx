@@ -91,8 +91,8 @@ export default function InternalAuditSettingsPage() {
               className="bg-white rounded-xl border border-slate-200 p-5 flex flex-col h-full min-h-[160px]"
             >
               <div className="flex items-start gap-4 flex-1">
-                <div className="p-3 bg-blue-50 rounded-lg flex-shrink-0">
-                  <Icon className="h-6 w-6 text-blue-600" />
+                <div className="p-3 bg-primary-50 rounded-lg flex-shrink-0">
+                  <Icon className="h-6 w-6 text-primary-600" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h4 className="text-base font-semibold text-slate-800">{category.name}</h4>

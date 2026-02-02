@@ -31,6 +31,7 @@ import {
   X,
   Loader2,
 } from "lucide-react";
+import { DatePicker } from "@/components/ui/date-picker";
 
 interface Department {
   id: string;
@@ -562,20 +563,20 @@ export default function AddEngagementPage() {
             <Label className="text-blue-800">
               Start Date <span className="text-red-500">*</span>
             </Label>
-            <Input
-              type="date"
+            <DatePicker
               value={formData.startDate}
-              onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+              onChange={(date) => setFormData({ ...formData, startDate: date ? date.toISOString().split('T')[0] : "" })}
+              placeholder="Select start date"
             />
           </div>
           <div className="space-y-2">
             <Label className="text-blue-800">
               Target Date <span className="text-red-500">*</span>
             </Label>
-            <Input
-              type="date"
+            <DatePicker
               value={formData.targetDate}
-              onChange={(e) => setFormData({ ...formData, targetDate: e.target.value })}
+              onChange={(date) => setFormData({ ...formData, targetDate: date ? date.toISOString().split('T')[0] : "" })}
+              placeholder="Select target date"
             />
           </div>
         </div>
