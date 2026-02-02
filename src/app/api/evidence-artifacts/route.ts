@@ -188,8 +188,8 @@ export const POST = withAuth(
           fileType,
           fileSize: file.size,
           filePath: `/uploads/artifacts/${customerAccountId}/${fileName}`,
-          uploadedById: session.user?.id || null,
-          uploadedBy: session.user?.name || null,
+          uploadedById: session.id || null,
+          uploadedBy: session.name || null,
         },
       });
 

@@ -72,53 +72,22 @@ const settingCategories = [
   },
 ];
 
-// Mock data for each setting type
-const mockSettingsData: Record<string, SettingItem[]> = {
-  bia: [
-    { id: "1", name: "Critical", description: "Business critical processes" },
-    { id: "2", name: "High", description: "High priority processes" },
-    { id: "3", name: "Medium", description: "Medium priority processes" },
-    { id: "4", name: "Low", description: "Low priority processes" },
-  ],
-  location: [
-    { id: "1", name: "Head Office", description: "Main headquarters" },
-    { id: "2", name: "Branch Office", description: "Regional branches" },
-    { id: "3", name: "Remote", description: "Remote locations" },
-  ],
-  implementation: [
-    { id: "1", name: "On-Premise", description: "Local deployment" },
-    { id: "2", name: "Cloud", description: "Cloud-based deployment" },
-    { id: "3", name: "Hybrid", description: "Mixed deployment" },
-  ],
-  "document-types": [
-    { id: "1", name: "Policy", description: "Policy documents" },
-    { id: "2", name: "Procedure", description: "Procedure documents" },
-    { id: "3", name: "Standard", description: "Standard documents" },
-    { id: "4", name: "Guideline", description: "Guideline documents" },
-  ],
-  frequency: [
-    { id: "1", name: "Daily", description: "Every day" },
-    { id: "2", name: "Weekly", description: "Every week" },
-    { id: "3", name: "Monthly", description: "Every month" },
-    { id: "4", name: "Quarterly", description: "Every quarter" },
-    { id: "5", name: "Annually", description: "Every year" },
-  ],
-  designation: [
-    { id: "1", name: "CEO", description: "Chief Executive Officer" },
-    { id: "2", name: "CTO", description: "Chief Technology Officer" },
-    { id: "3", name: "CFO", description: "Chief Financial Officer" },
-    { id: "4", name: "Manager", description: "Department Manager" },
-    { id: "5", name: "Executive", description: "Executive" },
-    { id: "6", name: "Analyst", description: "Analyst" },
-    { id: "7", name: "Specialist", description: "Specialist" },
-  ],
+// Empty initial data - each tenant starts with clean slate
+// TODO: Replace with actual API calls for persistent storage
+const initialSettingsData: Record<string, SettingItem[]> = {
+  bia: [],
+  location: [],
+  implementation: [],
+  "document-types": [],
+  frequency: [],
+  designation: [],
 };
 
 export default function OrganizationSettingsPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
-  const [settingsData, setSettingsData] = useState<Record<string, SettingItem[]>>(mockSettingsData);
+  const [settingsData, setSettingsData] = useState<Record<string, SettingItem[]>>(initialSettingsData);
   const [searchTerm, setSearchTerm] = useState("");
 
   // Dialog states

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { withAuth } from '@/lib/api-auth';
+import { withAuth, validateTenantAccess, forbidden } from '@/lib/api-auth';
 
 interface RouteContext {
   params: Promise<{ id: string; findingId: string }>;
@@ -8,11 +8,11 @@ interface RouteContext {
 
 // GET /api/internal-audit/fieldwork/[id]/findings/[findingId] - Get a specific finding
 export const GET = withAuth(
-  async (req: NextRequest, context: RouteContext) => {
+  async (req: NextRequest, context: RouteContext, session) => {
     try {
       const { id: engagementId, findingId } = await context.params;
 
-      // Get finding
+      // Get finding with tenant validation
       const finding = await prisma.internalAuditFinding.findUnique({
         where: { id: findingId },
         include: {
@@ -25,6 +25,10 @@ export const GET = withAuth(
           { error: 'Finding not found' },
           { status: 404 }
         );
+      }
+
+      if (!validateTenantAccess(session, finding.customerAccountId)) {
+        return forbidden("Access denied to this finding");
       }
 
       return NextResponse.json({
@@ -61,7 +65,7 @@ export const GET = withAuth(
 
 // PATCH /api/internal-audit/fieldwork/[id]/findings/[findingId] - Update a finding
 export const PATCH = withAuth(
-  async (req: NextRequest, context: RouteContext) => {
+  async (req: NextRequest, context: RouteContext, session) => {
     try {
       const { id: engagementId, findingId } = await context.params;
       const body = await req.json();
@@ -76,6 +80,10 @@ export const PATCH = withAuth(
           { error: 'Finding not found' },
           { status: 404 }
         );
+      }
+
+      if (!validateTenantAccess(session, existingFinding.customerAccountId)) {
+        return forbidden("Access denied to this finding");
       }
 
       // Get responsible person name if ID provided
@@ -158,7 +166,7 @@ export const PATCH = withAuth(
 
 // DELETE /api/internal-audit/fieldwork/[id]/findings/[findingId] - Delete a finding
 export const DELETE = withAuth(
-  async (req: NextRequest, context: RouteContext) => {
+  async (req: NextRequest, context: RouteContext, session) => {
     try {
       const { id: engagementId, findingId } = await context.params;
 
@@ -172,6 +180,10 @@ export const DELETE = withAuth(
           { error: 'Finding not found' },
           { status: 404 }
         );
+      }
+
+      if (!validateTenantAccess(session, existingFinding.customerAccountId)) {
+        return forbidden("Access denied to this finding");
       }
 
       // Delete finding
