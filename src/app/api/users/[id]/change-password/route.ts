@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
 import prisma from "@/lib/prisma";
 import { withAuth, validateTenantAccess, forbidden } from "@/lib/api-auth";
 
@@ -43,11 +44,12 @@ export const POST = withAuth(
         return forbidden("Access denied to this user");
       }
 
-      // Update password (in production, hash this password!)
+      // Hash and update password
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
       await prisma.user.update({
         where: { id },
         data: {
-          password: newPassword,
+          password: hashedPassword,
         },
       });
 

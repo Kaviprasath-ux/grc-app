@@ -5,23 +5,19 @@ import { parseExcelFile, ColumnDefinition, ValidationError } from "@/lib/excel-i
 
 // Column definitions for framework requirements import
 const REQUIREMENT_COLUMNS: ColumnDefinition[] = [
-  { name: "Requirement Category", required: true, type: "string" },
-  { name: "Requirement code", required: true, type: "string" },
-  { name: "Requirement", required: true, type: "string" },
+  { name: "Requirement Code", required: true, type: "string" },
+  { name: "Requirement Name", required: true, type: "string" },
   { name: "Description", required: false, type: "string" },
-  { name: "Control mapping", required: false, type: "string" },
-  { name: "Requirement type", required: false, type: "string" },
-  { name: "Chapter type", required: false, type: "string" },
+  { name: "Category", required: true, type: "string" },
+  { name: "Control Mapping", required: false, type: "string" },
 ];
 
 interface RequirementRow extends Record<string, unknown> {
-  "Requirement Category": string;
-  "Requirement code": string;
-  Requirement: string;
+  "Requirement Code": string;
+  "Requirement Name": string;
   Description: string;
-  "Control mapping": string;
-  "Requirement type": string;
-  "Chapter type": string;
+  Category: string;
+  "Control Mapping": string;
 }
 
 /**
@@ -97,6 +93,14 @@ export const POST = withAuth(
       );
     }
 
+    // Validate tenant access - users can only import into their own frameworks
+    if (framework.customerAccountId !== customerAccountId) {
+      return NextResponse.json(
+        { error: "Access denied. You can only import into frameworks in your own account." },
+        { status: 403 }
+      );
+    }
+
     // Get the uploaded file from form data
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
@@ -147,7 +151,7 @@ export const POST = withAuth(
     // Group requirements by category
     const categoryMap = new Map<string, RequirementRow[]>();
     for (const row of result.data) {
-      const category = row["Requirement Category"];
+      const category = row["Category"];
       if (!categoryMap.has(category)) {
         categoryMap.set(category, []);
       }
@@ -157,7 +161,7 @@ export const POST = withAuth(
     // Track row numbers for error reporting
     const rowNumberMap = new Map<string, number>();
     result.data.forEach((row, index) => {
-      rowNumberMap.set(row["Requirement code"], index + 2); // +2 for header row and 0-index
+      rowNumberMap.set(row["Requirement Code"], index + 2); // +2 for header row and 0-index
     });
 
     // Fetch all existing controls for efficient lookup
@@ -217,7 +221,7 @@ export const POST = withAuth(
           const existingReq = await tx.requirement.findFirst({
             where: {
               frameworkId,
-              code: req["Requirement code"],
+              code: req["Requirement Code"],
             },
           });
 
@@ -227,11 +231,11 @@ export const POST = withAuth(
             const newReq = await tx.requirement.create({
               data: {
                 customerAccountId,
-                code: req["Requirement code"],
-                name: req.Requirement,
+                code: req["Requirement Code"],
+                name: req["Requirement Name"],
                 description: req.Description || null,
-                requirementType: req["Requirement type"] || "Mandatory",
-                chapterType: req["Chapter type"] || "Domain",
+                requirementType: "Mandatory",
+                chapterType: "Domain",
                 frameworkId,
                 categoryId: category.id,
                 level: 2,
@@ -245,11 +249,11 @@ export const POST = withAuth(
           }
 
           // Parse and store control references for later processing
-          const controlRefs = parseControlMapping(req["Control mapping"]);
+          const controlRefs = parseControlMapping(req["Control Mapping"]);
           if (controlRefs.length > 0) {
             createdRequirements.push({
               id: requirementId,
-              code: req["Requirement code"],
+              code: req["Requirement Code"],
               controlRefs,
             });
           }

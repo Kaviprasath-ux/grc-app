@@ -500,10 +500,16 @@ model Framework {
   description           String?
   version               String?
   type                  String                @default("Framework") // Framework, Standard, Regulation
-  status                String                @default("Subscribed") // Subscribed, Not Subscribed
+  status                String                @default("Subscribed") // Subscribed, Not Subscribed, Suggested, Archived
   country               String?
   industry              String?
   isCustom              Boolean               @default(false)
+  // Master template flag: true = this is a master template that customers can subscribe to
+  isMasterTemplate      Boolean               @default(false)
+  // Source framework: links a customer's subscribed copy back to the original master
+  sourceFrameworkId     String?
+  sourceFramework       Framework?            @relation("FrameworkSubscriptions", fields: [sourceFrameworkId], references: [id], onDelete: SetNull)
+  subscribedCopies      Framework[]           @relation("FrameworkSubscriptions")
   logo                  String?
   supportDocumentUrl    String?
   compliancePercentage  Float                 @default(0)
@@ -518,6 +524,7 @@ model Framework {
 
   @@unique([customerAccountId, name])
   @@index([customerAccountId])
+  @@index([sourceFrameworkId])
 }
 
 // Requirement Categories (Domains/Chapters in a framework)

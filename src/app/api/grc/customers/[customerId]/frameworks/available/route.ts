@@ -43,19 +43,18 @@ export async function GET(req: NextRequest, context: RouteContext) {
       );
     }
 
-    // Build the same filter that the logged-in GRC Admin uses to see
-    // frameworks under Compliance > Frameworks (getTenantFilter logic).
-    const grcAdminAccountId = session.user.customerAccountId;
-    const masterWhere: Record<string, unknown> = {};
-    if (grcAdminAccountId) {
-      masterWhere.customerAccountId = grcAdminAccountId;
-    }
-    // If no customerAccountId on session, the empty filter returns all
-    // frameworks (legacy / fallback behaviour matching getTenantFilter).
-
-    // Get all master frameworks visible to the Super Admin
+    // GRC Administrator has global access - return master frameworks that can be assigned
+    // Exclude: customer's own frameworks, archived frameworks, and subscription copies
     const masterFrameworks = await prisma.framework.findMany({
-      where: masterWhere,
+      where: {
+        // Exclude the customer's own frameworks
+        customerAccountId: { not: customerUser.customerAccountId },
+        // Exclude archived frameworks
+        status: { not: "Archived" },
+        // Only include master templates or frameworks without a source (original frameworks)
+        // Exclude subscription copies (they have sourceFrameworkId set)
+        sourceFrameworkId: null,
+      },
       orderBy: { name: "asc" },
     });
 

@@ -138,9 +138,9 @@ export const GET = withAuth(
 
       const isGRCAdmin = session.roles.includes("GRCAdministrator");
 
-      // For GRC Administrator: return only their own frameworks
+      // For GRC Administrator: return ALL frameworks (global access for system admin)
       if (isGRCAdmin) {
-        const tenantFilter = getTenantFilter(session);
+        const tenantFilter = getTenantFilter(session, { globalAccess: true });
         const where: Record<string, unknown> = { ...tenantFilter };
         if (status) where.status = status;
         if (type) where.type = type;
@@ -387,6 +387,7 @@ export const POST = withAuth(
     try {
       const body = await req.json();
       const {
+        code,
         name,
         description,
         version,
@@ -406,10 +407,20 @@ export const POST = withAuth(
         );
       }
 
-      const customerAccountId = getCustomerAccountId(session);
+      // Check if user has a customer account assigned
+      if (!session.customerAccountId) {
+        console.error("User does not have a customer account assigned:", session.id, session.roles);
+        return NextResponse.json(
+          { error: "User does not have a customer account assigned. Please contact an administrator." },
+          { status: 400 }
+        );
+      }
+
+      const customerAccountId = session.customerAccountId;
 
       const framework = await prisma.framework.create({
         data: {
+          code: code || null,
           name,
           description,
           version,
@@ -436,8 +447,10 @@ export const POST = withAuth(
           { status: 409 }
         );
       }
+      // Return more detailed error for debugging
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
       return NextResponse.json(
-        { error: "Failed to create framework" },
+        { error: `Failed to create framework: ${errorMessage}` },
         { status: 500 }
       );
     }

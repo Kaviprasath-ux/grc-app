@@ -1,5 +1,6 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { expandRolePermissions } from "@/lib/permissions";
 
@@ -99,10 +100,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         console.log('[AUTH] User found:', user.userName, 'isActive:', user.isActive, 'isBlocked:', user.isBlocked);
 
-        // Simple password check (in production, use bcrypt)
+        // Compare password using bcrypt
         const inputPassword = String(credentials.password);
-        if (user.password !== inputPassword) {
-          console.log('[AUTH] Password mismatch. DB password length:', user.password.length, 'Input password length:', inputPassword.length);
+        const isValidPassword = await bcrypt.compare(inputPassword, user.password);
+        if (!isValidPassword) {
+          console.log('[AUTH] Password mismatch');
           return null;
         }
 

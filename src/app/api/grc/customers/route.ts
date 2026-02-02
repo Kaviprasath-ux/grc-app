@@ -39,6 +39,12 @@ export async function GET(req: NextRequest) {
         lastName: true,
         fullName: true,
         customerAccountId: true,
+        customerAccount: {
+          select: {
+            code: true,
+            name: true,
+          },
+        },
         department: {
           select: {
             name: true,
@@ -50,19 +56,19 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    // Calculate compliance percentage for each customer
-    // In a real implementation, this would be based on actual compliance data
+    // Calculate compliance percentage for each customer based on THEIR controls
     const formattedCustomers = await Promise.all(
-      customers.map(async (user, index) => {
-        // Get compliance data for this user's organization/department
-        // For now, using a placeholder calculation
+      customers.map(async (user) => {
         let compliancePercentage = 0;
 
         try {
-          // Count total controls and compliant controls
-          const totalControls = await prisma.control.count();
+          // Count controls for THIS customer only
+          const totalControls = await prisma.control.count({
+            where: { customerAccountId: user.customerAccountId },
+          });
           const compliantControls = await prisma.control.count({
             where: {
+              customerAccountId: user.customerAccountId,
               status: "Compliant",
             },
           });
@@ -77,8 +83,8 @@ export async function GET(req: NextRequest) {
 
         return {
           id: user.id,
-          customerCode: `GRC_${String(index + 1).padStart(3, "0")}`,
-          customerName: user.department?.name || user.fullName || `${user.firstName} ${user.lastName}`,
+          customerCode: user.customerAccount?.code || "N/A",
+          customerName: user.customerAccount?.name || user.department?.name || user.fullName || `${user.firstName} ${user.lastName}`,
           email: user.email,
           userName: user.userName,
           customerAccountId: user.customerAccountId,
