@@ -505,26 +505,31 @@ export default function ProcessPage() {
     {
       accessorKey: "processCode",
       header: "Reference ID",
+      size: 120,
       cell: ({ row }) => <span className="font-mono text-sm">{row.getValue("processCode")}</span>,
     },
     {
       accessorKey: "name",
       header: "Name",
+      size: 220,
       cell: ({ row }) => <span className="font-medium">{row.getValue("name")}</span>,
     },
     {
       accessorKey: "department.name",
       header: "Department",
+      size: 160,
       cell: ({ row }) => row.original.department?.name || "-",
     },
     {
       accessorKey: "owner.fullName",
       header: "Process Owner",
+      size: 160,
       cell: ({ row }) => row.original.owner?.fullName || "-",
     },
     {
       accessorKey: "processCriticality",
-      header: "Process Criticality",
+      header: "Criticality",
+      size: 110,
       cell: ({ row }) => {
         const biaStatus = getBIAStatus(row.original.id);
         const criticality = biaStatus?.processCriticality || row.original.processCriticality;
@@ -614,45 +619,53 @@ export default function ProcessPage() {
     {
       accessorKey: "processCode",
       header: "Reference ID",
+      size: 100,
       cell: ({ row }) => <span className="font-mono text-sm">{row.getValue("processCode")}</span>,
     },
     {
       accessorKey: "name",
       header: "Name",
+      size: 180,
       cell: ({ row }) => <span className="font-medium">{row.getValue("name")}</span>,
     },
     {
       accessorKey: "description",
       header: "Description",
+      size: 200,
       cell: ({ row }) => {
         const desc = row.getValue("description") as string;
-        return <span className="text-sm text-slate-400 truncate max-w-[200px] block">{desc || "-"}</span>;
+        return <span className="text-sm text-slate-400 truncate max-w-[180px] block">{desc || "-"}</span>;
       },
     },
     {
       accessorKey: "department.name",
       header: "Department",
+      size: 130,
       cell: ({ row }) => row.original.department?.name || "-",
     },
     {
       accessorKey: "owner.fullName",
       header: "Process Owner",
+      size: 140,
       cell: ({ row }) => row.original.owner?.fullName || "-",
     },
     {
       accessorKey: "frequency",
-      header: "Process Frequency",
+      header: "Frequency",
+      size: 100,
       cell: ({ row }) => row.original.frequency || "-",
     },
     {
       accessorKey: "natureOfImplementation",
-      header: "Nature Of Implementation",
+      header: "Implementation",
+      size: 120,
       cell: ({ row }) => row.original.natureOfImplementation || "-",
     },
     // Hide AI Risk column for Reviewer role
     ...(!isReviewer ? [{
       id: "aiRisk",
       header: "AI Risk",
+      size: 160,
       cell: ({ row }: { row: { original: Process } }) => (
         <Button
           variant="outline"
@@ -674,6 +687,7 @@ export default function ProcessPage() {
     ...(!isDepartmentContributor && !isReviewer ? [{
       id: "actions",
       header: "Actions",
+      size: 90,
       cell: ({ row }: { row: { original: Process } }) => (
         <div className="flex gap-1">
           <Button
@@ -705,16 +719,19 @@ export default function ProcessPage() {
     {
       accessorKey: "name",
       header: "Process Name",
+      size: 300,
       cell: ({ row }) => <span className="font-medium">{row.getValue("name")}</span>,
     },
     {
       accessorKey: "department.name",
       header: "Department Name",
+      size: 200,
       cell: ({ row }) => row.original.department?.name || "-",
     },
     {
       id: "actions",
       header: "Action",
+      size: 100,
       cell: ({ row }) => (
         <Button
           variant="ghost"

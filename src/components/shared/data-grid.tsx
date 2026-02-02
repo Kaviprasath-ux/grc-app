@@ -138,70 +138,77 @@ export function DataGrid<TData, TValue>({
       )}
 
       {/* Table */}
-      <Table>
-        <TableHeader>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id} className="h-12 border-b border-slate-100 bg-slate-50/50 hover:bg-slate-50/50">
-              {headerGroup.headers.map((header, index) => (
-                <TableHead
-                  key={header.id}
-                  className={cn(
-                    "text-xs font-semibold text-slate-600 py-3",
-                    index === 0 && "pl-4",
-                    header.column.getCanSort() && "cursor-pointer select-none"
-                  )}
-                  onClick={header.column.getToggleSortingHandler()}
-                >
-                  <div className="flex items-center gap-2">
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                    {header.column.getCanSort() && (
-                      <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id} className="h-12 border-b border-slate-100 bg-slate-50/50 hover:bg-slate-50/50">
+                {headerGroup.headers.map((header, index) => (
+                  <TableHead
+                    key={header.id}
+                    style={header.column.columnDef.size ? { minWidth: header.column.columnDef.size, width: header.column.columnDef.size } : undefined}
+                    className={cn(
+                      "text-xs font-semibold text-slate-600 py-3 whitespace-nowrap",
+                      index === 0 && "pl-4",
+                      header.column.getCanSort() && "cursor-pointer select-none"
                     )}
-                  </div>
-                </TableHead>
-              ))}
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody>
-          {table.getRowModel().rows?.length ? (
-            table.getRowModel().rows.map((row) => (
-              <TableRow
-                key={row.id}
-                data-state={row.getIsSelected() && "selected"}
-                className={cn(
-                  "border-b border-slate-100 last:border-0",
-                  onRowClick && "cursor-pointer hover:bg-slate-50"
-                )}
-                onClick={() => onRowClick?.(row.original)}
-              >
-                {row.getVisibleCells().map((cell, index) => (
-                  <TableCell key={cell.id} className={cn("py-3 text-sm text-slate-700", index === 0 && "pl-4")}>
-                    {flexRender(
-                      cell.column.columnDef.cell,
-                      cell.getContext()
-                    )}
-                  </TableCell>
+                    onClick={header.column.getToggleSortingHandler()}
+                  >
+                    <div className="flex items-center gap-2">
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                      {header.column.getCanSort() && (
+                        <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
+                      )}
+                    </div>
+                  </TableHead>
                 ))}
               </TableRow>
-            ))
-          ) : (
-            <TableRow>
-              <TableCell
-                colSpan={columns.length}
-                className="h-24 text-center text-slate-500"
-              >
-                No results.
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows?.length ? (
+              table.getRowModel().rows.map((row) => (
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() && "selected"}
+                  className={cn(
+                    "border-b border-slate-100 last:border-0",
+                    onRowClick && "cursor-pointer hover:bg-slate-50"
+                  )}
+                  onClick={() => onRowClick?.(row.original)}
+                >
+                  {row.getVisibleCells().map((cell, index) => (
+                    <TableCell
+                      key={cell.id}
+                      style={cell.column.columnDef.size ? { minWidth: cell.column.columnDef.size, width: cell.column.columnDef.size } : undefined}
+                      className={cn("py-3 text-sm text-slate-700", index === 0 && "pl-4")}
+                    >
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center text-slate-500"
+                >
+                  No results.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
 
       {/* Pagination */}
       <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">

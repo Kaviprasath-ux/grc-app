@@ -22,6 +22,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { RiskRatingBadge } from "@/components/risks/risk-rating-badge";
+import { RiskAssessmentWizardDialog } from "@/components/risks/risk-assessment-wizard-dialog";
 import { cn } from "@/lib/utils";
 import { Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Home } from "lucide-react";
 import Link from "next/link";
@@ -101,6 +102,10 @@ export default function RiskAssessmentPage() {
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 20;
+
+  // Assessment modal state
+  const [assessmentDialogOpen, setAssessmentDialogOpen] = useState(false);
+  const [selectedRiskId, setSelectedRiskId] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -251,7 +256,12 @@ export default function RiskAssessmentPage() {
   };
 
   const openAssessment = (risk: Risk) => {
-    router.push(`/risks/assessment/${risk.id}`);
+    setSelectedRiskId(risk.id);
+    setAssessmentDialogOpen(true);
+  };
+
+  const handleAssessmentComplete = () => {
+    fetchData(); // Refresh the list after assessment is saved
   };
 
   // Show loading state while permissions or data is being fetched
@@ -476,6 +486,13 @@ export default function RiskAssessmentPage() {
         )}
       </div>
 
+      {/* Assessment Wizard Modal */}
+      <RiskAssessmentWizardDialog
+        open={assessmentDialogOpen}
+        onOpenChange={setAssessmentDialogOpen}
+        riskId={selectedRiskId}
+        onAssessmentComplete={handleAssessmentComplete}
+      />
     </div>
   );
 }

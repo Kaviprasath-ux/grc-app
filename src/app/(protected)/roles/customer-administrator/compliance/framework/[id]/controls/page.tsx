@@ -25,8 +25,10 @@ import {
   ChevronsRight,
   ArrowUpDown,
   Settings2,
+  Home,
 } from "lucide-react";
 import { Unauthorized } from "@/components/ui/unauthorized";
+import Link from "next/link";
 
 interface Control {
   id: string;
@@ -244,18 +246,22 @@ export default function ControlsByFrameworkPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header Section */}
-      <div className="flex items-center gap-3">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => router.push("/roles/customer-administrator/compliance/framework")}
-          className="h-9 w-9 text-slate-600 hover:text-slate-800"
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </Button>
-        <h1 className="text-2xl font-bold text-slate-800">Controls</h1>
-      </div>
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/roles/customer-administrator/compliance" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>Compliance</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <Link href="/roles/customer-administrator/compliance/framework" className="text-slate-500 hover:text-primary-600 transition-colors">
+          Integrated Frameworks
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">Controls</span>
+      </nav>
+
+      {/* Page Header */}
+      <h1 className="text-2xl font-bold text-slate-800">Controls</h1>
 
       {/* Search Row */}
       <div className="flex items-center gap-4">
