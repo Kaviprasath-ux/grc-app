@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Download } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Risk {
   id: string;
@@ -33,6 +34,7 @@ interface Asset {
 function ManagementReportContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t } = useLanguage();
   const [risks, setRisks] = useState<Risk[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(true);
@@ -93,7 +95,7 @@ function ManagementReportContent() {
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Risk Management Report</title>
+          <title>${t("riskManagementReport")}</title>
           <style>
             ${styles}
             @media print {
@@ -176,7 +178,7 @@ function ManagementReportContent() {
   // Get top 5 departments
   const deptCounts: Record<string, { name: string; count: number }> = {};
   risks.forEach(risk => {
-    const name = risk.department?.name || "Unassigned";
+    const name = risk.department?.name || t("unassigned");
     if (!deptCounts[name]) {
       deptCounts[name] = { name, count: 0 };
     }
@@ -204,7 +206,7 @@ function ManagementReportContent() {
   // Get top 5 risk owners
   const ownerCounts: Record<string, { name: string; count: number }> = {};
   risks.forEach(risk => {
-    const name = risk.owner?.fullName || "Unassigned";
+    const name = risk.owner?.fullName || t("unassigned");
     if (!ownerCounts[name]) {
       ownerCounts[name] = { name, count: 0 };
     }
@@ -217,7 +219,7 @@ function ManagementReportContent() {
   // Active risks by rating
   const risksByRating: Record<string, number> = {};
   risks.forEach(risk => {
-    const rating = risk.riskRating || "Not Rated";
+    const rating = risk.riskRating || t("notRated");
     risksByRating[rating] = (risksByRating[rating] || 0) + 1;
   });
 
@@ -268,24 +270,24 @@ function ManagementReportContent() {
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <h1 className="text-2xl font-bold text-slate-800">Management Report</h1>
+          <h1 className="text-2xl font-bold text-slate-800">{t("managementReport")}</h1>
         </div>
         <Button onClick={handleDownloadReport}>
           <Download className="h-4 w-4 mr-2" />
-          Download Report
+          {t("downloadReport")}
         </Button>
       </div>
 
       {/* Report Content */}
       <div ref={reportRef} className="space-y-6">
-        <h2 className="text-lg font-semibold text-slate-800 border-b border-slate-200 pb-2">Risk Management Report</h2>
+        <h2 className="text-lg font-semibold text-slate-800 border-b border-slate-200 pb-2">{t("riskManagementReport")}</h2>
 
         {/* Average Risks Row */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {selectedOptions.includes("average-residual-risk") && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Average Residual Risk</CardTitle>
+                <CardTitle className="text-base">{t("averageResidualRisk")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-4xl font-bold text-center py-4">{avgResidualRisk}</div>
@@ -296,7 +298,7 @@ function ManagementReportContent() {
           {selectedOptions.includes("average-inherent-risk") && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Average Inherent Risk</CardTitle>
+                <CardTitle className="text-base">{t("averageInherentRisk")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-4xl font-bold text-center py-4">{avgInherentRisk}</div>
@@ -309,7 +311,7 @@ function ManagementReportContent() {
         {selectedOptions.includes("active-risks-by-rating") && (
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Active Risks by Rating</CardTitle>
+              <CardTitle className="text-base">{t("activeRisksByRating")}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
@@ -344,15 +346,15 @@ function ManagementReportContent() {
         {selectedOptions.includes("top-5-risk-severity") && (
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Top 5 Risks</CardTitle>
+              <CardTitle className="text-base">{t("top5Risks")}</CardTitle>
             </CardHeader>
             <CardContent>
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-slate-200">
                     <th className="text-left p-2 text-sm font-medium">#</th>
-                    <th className="text-left p-2 text-sm font-medium">Name</th>
-                    <th className="text-left p-2 text-sm font-medium">Rating</th>
+                    <th className="text-left p-2 text-sm font-medium">{t("name")}</th>
+                    <th className="text-left p-2 text-sm font-medium">{t("rating")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -366,7 +368,7 @@ function ManagementReportContent() {
                   {top5Risks.length === 0 && (
                     <tr>
                       <td colSpan={3} className="p-4 text-center text-slate-500">
-                        No risk data available
+                        {t("noRiskDataAvailable")}
                       </td>
                     </tr>
                   )}
@@ -382,14 +384,14 @@ function ManagementReportContent() {
           {selectedOptions.includes("top-5-assets") && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Top 5 Assets</CardTitle>
+                <CardTitle className="text-base">{t("top5Assets")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-slate-200">
                       <th className="text-left p-2 text-sm font-medium">#</th>
-                      <th className="text-left p-2 text-sm font-medium">Name</th>
+                      <th className="text-left p-2 text-sm font-medium">{t("name")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -402,7 +404,7 @@ function ManagementReportContent() {
                     {top5Assets.length === 0 && (
                       <tr>
                         <td colSpan={2} className="p-4 text-center text-slate-500">
-                          No asset data available
+                          {t("noAssetDataAvailable")}
                         </td>
                       </tr>
                     )}
@@ -416,14 +418,14 @@ function ManagementReportContent() {
           {selectedOptions.includes("top-5-departments") && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Top 5 Departments</CardTitle>
+                <CardTitle className="text-base">{t("top5Departments")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-slate-200">
                       <th className="text-left p-2 text-sm font-medium">#</th>
-                      <th className="text-left p-2 text-sm font-medium">Name</th>
+                      <th className="text-left p-2 text-sm font-medium">{t("name")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -443,14 +445,14 @@ function ManagementReportContent() {
           {selectedOptions.includes("top-5-threats") && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Top 5 Threats</CardTitle>
+                <CardTitle className="text-base">{t("top5Threats")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-slate-200">
                       <th className="text-left p-2 text-sm font-medium">#</th>
-                      <th className="text-left p-2 text-sm font-medium">Name</th>
+                      <th className="text-left p-2 text-sm font-medium">{t("name")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -463,7 +465,7 @@ function ManagementReportContent() {
                     {top5Threats.length === 0 && (
                       <tr>
                         <td colSpan={2} className="p-4 text-center text-slate-500">
-                          No threat data available
+                          {t("noThreatDataAvailable")}
                         </td>
                       </tr>
                     )}
@@ -477,14 +479,14 @@ function ManagementReportContent() {
           {selectedOptions.includes("top-5-risk-owners") && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Top 5 Risk Owners</CardTitle>
+                <CardTitle className="text-base">{t("top5RiskOwners")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-slate-200">
                       <th className="text-left p-2 text-sm font-medium">#</th>
-                      <th className="text-left p-2 text-sm font-medium">Name</th>
+                      <th className="text-left p-2 text-sm font-medium">{t("name")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -507,7 +509,7 @@ function ManagementReportContent() {
           {selectedOptions.includes("risk-activity-trend") && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Risk Activity Trend</CardTitle>
+                <CardTitle className="text-base">{t("riskActivityTrend")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
@@ -544,15 +546,15 @@ function ManagementReportContent() {
                 <div className="flex gap-4 mt-4 text-xs">
                   <div className="flex items-center gap-1">
                     <div className="w-3 h-3 bg-blue-500 rounded"></div>
-                    <span>Identified</span>
+                    <span>{t("identified")}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <div className="w-3 h-3 bg-green-500 rounded"></div>
-                    <span>Assessed</span>
+                    <span>{t("assessed")}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <div className="w-3 h-3 bg-purple-500 rounded"></div>
-                    <span>Mitigated</span>
+                    <span>{t("mitigated")}</span>
                   </div>
                 </div>
               </CardContent>
@@ -564,7 +566,7 @@ function ManagementReportContent() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center justify-between">
-                  <span>Risk Activity based on Timeline</span>
+                  <span>{t("riskActivityBasedOnTimeline")}</span>
                   <span className="text-sm font-normal text-slate-500">{filterYear}</span>
                 </CardTitle>
               </CardHeader>
@@ -603,15 +605,15 @@ function ManagementReportContent() {
                 <div className="flex gap-4 mt-4 text-xs">
                   <div className="flex items-center gap-1">
                     <div className="w-3 h-3 bg-blue-500 rounded"></div>
-                    <span>Identified</span>
+                    <span>{t("identified")}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <div className="w-3 h-3 bg-green-500 rounded"></div>
-                    <span>Assessed</span>
+                    <span>{t("assessed")}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <div className="w-3 h-3 bg-purple-500 rounded"></div>
-                    <span>Mitigated</span>
+                    <span>{t("mitigated")}</span>
                   </div>
                 </div>
               </CardContent>

@@ -14,7 +14,10 @@ import {
   ClipboardList,
   Scale,
   X,
+  ChevronRight,
+  Home,
 } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -32,6 +35,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Framework {
   id: string;
@@ -140,6 +144,7 @@ const categoryColors: Record<string, { bg: string; icon: string }> = {
 export default function ReportsPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [selectedReport, setSelectedReport] = useState<string | null>(null);
   const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false);
   const [isManagementReportOpen, setIsManagementReportOpen] = useState(false);
@@ -191,8 +196,8 @@ export default function ReportsPage() {
       setIsGenerating(false);
       setIsGenerateDialogOpen(false);
       toast({
-        title: "Success",
-        description: `Report "${reportTypes.find((r) => r.id === selectedReport)?.title}" generated successfully!`,
+        title: t("Success"),
+        description: t("Report generated successfully"),
       });
     }, 1500);
   };
@@ -249,9 +254,9 @@ export default function ReportsPage() {
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="text-base font-semibold text-slate-800">
-              {report.title}
+              {t(report.title)}
             </h3>
-            <p className="text-sm text-slate-500 mt-1">{report.description}</p>
+            <p className="text-sm text-slate-500 mt-1">{t(report.description)}</p>
           </div>
         </div>
         <div className="mt-4">
@@ -265,7 +270,7 @@ export default function ReportsPage() {
             }}
           >
             <BarChart3 className="h-4 w-4 mr-2" />
-            Generate Report
+            {t("Generate Report")}
           </Button>
         </div>
       </div>
@@ -274,19 +279,29 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>Compliance</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">Reports</span>
+      </nav>
+
       {/* Page Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">Reports</h1>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Reports")}</h1>
         <Button size="sm" onClick={() => setIsManagementReportOpen(true)}>
           <FileText className="h-4 w-4 mr-2" />
-          Get Management Report
+          {t("Get Management Report")}
         </Button>
       </div>
 
       {/* Compliance Reports */}
       <div className="space-y-4">
         <h2 className="text-lg font-semibold text-slate-800">
-          Compliance Reports
+          {t("Compliance Reports")}
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {complianceReports.map((report) =>
@@ -297,7 +312,7 @@ export default function ReportsPage() {
 
       {/* Risk Reports */}
       <div className="space-y-4">
-        <h2 className="text-lg font-semibold text-slate-800">Risk Reports</h2>
+        <h2 className="text-lg font-semibold text-slate-800">{t("Risk Reports")}</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {riskReports.map((report) => renderReportCard(report, "risk"))}
         </div>
@@ -306,7 +321,7 @@ export default function ReportsPage() {
       {/* Evidence Reports */}
       <div className="space-y-4">
         <h2 className="text-lg font-semibold text-slate-800">
-          Evidence Reports
+          {t("Evidence Reports")}
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {evidenceReports.map((report) =>
@@ -318,7 +333,7 @@ export default function ReportsPage() {
       {/* Governance Reports */}
       <div className="space-y-4">
         <h2 className="text-lg font-semibold text-slate-800">
-          Governance Reports
+          {t("Governance Reports")}
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {governanceReports.map((report) =>
@@ -329,7 +344,7 @@ export default function ReportsPage() {
 
       {/* KPI Reports */}
       <div className="space-y-4">
-        <h2 className="text-lg font-semibold text-slate-800">KPI Reports</h2>
+        <h2 className="text-lg font-semibold text-slate-800">{t("KPI Reports")}</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {kpiReports.map((report) => renderReportCard(report, "kpi"))}
         </div>
@@ -342,7 +357,7 @@ export default function ReportsPage() {
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">
-                Generate Report
+                {t("Generate Report")}
               </DialogTitle>
             </DialogHeader>
           </div>
@@ -351,35 +366,35 @@ export default function ReportsPage() {
           <div className="flex-1 overflow-y-auto px-6 py-6">
             <div className="space-y-4">
               <p className="text-sm text-slate-500">
-                Configure and generate the{" "}
-                {reportTypes.find((r) => r.id === selectedReport)?.title}
+                {t("Configure and generate the")}{" "}
+                {t(reportTypes.find((r) => r.id === selectedReport)?.title || "")}
               </p>
               <div className="space-y-1.5">
                 <Label className="text-sm font-medium text-slate-700">
-                  Report Format
+                  {t("Report Format")}
                 </Label>
                 <Select value={reportFormat} onValueChange={setReportFormat}>
                   <SelectTrigger className="w-full bg-white border-slate-200">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
-                    <SelectItem value="pdf">PDF Document</SelectItem>
-                    <SelectItem value="excel">Excel Spreadsheet</SelectItem>
-                    <SelectItem value="csv">CSV File</SelectItem>
+                    <SelectItem value="pdf">{t("PDF Document")}</SelectItem>
+                    <SelectItem value="excel">{t("Excel Spreadsheet")}</SelectItem>
+                    <SelectItem value="csv">{t("CSV File")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
                 <h4 className="font-medium text-slate-800 mb-2">
-                  Report Details
+                  {t("Report Details")}
                 </h4>
                 <ul className="text-sm text-slate-500 space-y-1">
                   <li>
-                    • Report Type:{" "}
-                    {reportTypes.find((r) => r.id === selectedReport)?.title}
+                    • {t("Report Type")}:{" "}
+                    {t(reportTypes.find((r) => r.id === selectedReport)?.title || "")}
                   </li>
-                  <li>• Format: {reportFormat.toUpperCase()}</li>
-                  <li>• Data Range: All available data</li>
+                  <li>• {t("Format")}: {reportFormat.toUpperCase()}</li>
+                  <li>• {t("Data Range")}: {t("All available data")}</li>
                 </ul>
               </div>
             </div>
@@ -391,15 +406,15 @@ export default function ReportsPage() {
               variant="outline"
               onClick={() => setIsGenerateDialogOpen(false)}
             >
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button onClick={handleGenerateReport} disabled={isGenerating}>
               {isGenerating ? (
-                <>Generating...</>
+                <>{t("Generating...")}</>
               ) : (
                 <>
                   <Download className="h-4 w-4 mr-2" />
-                  Generate & Download
+                  {t("Generate & Download")}
                 </>
               )}
             </Button>
@@ -417,7 +432,7 @@ export default function ReportsPage() {
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">
-                Compliance Report Parameters
+                {t("Compliance Report Parameters")}
               </DialogTitle>
             </DialogHeader>
           </div>
@@ -439,7 +454,7 @@ export default function ReportsPage() {
                   htmlFor="overallCompliance"
                   className="text-sm text-slate-700 cursor-pointer"
                 >
-                  Overall Compliance
+                  {t("Overall Compliance")}
                 </label>
               </div>
               <div className="flex items-center space-x-2">
@@ -454,7 +469,7 @@ export default function ReportsPage() {
                   htmlFor="frameworkCompliance"
                   className="text-sm text-slate-700 cursor-pointer"
                 >
-                  Framework Compliance
+                  {t("Framework Compliance")}
                 </label>
               </div>
 
@@ -471,7 +486,7 @@ export default function ReportsPage() {
                   htmlFor="controlRequirementsByFramework"
                   className="text-sm text-slate-700 cursor-pointer"
                 >
-                  Control Requirements by Framework
+                  {t("Control Requirements by Framework")}
                 </label>
               </div>
               <div className="flex items-center space-x-2">
@@ -486,7 +501,7 @@ export default function ReportsPage() {
                   htmlFor="controlImplementationsByFramework"
                   className="text-sm text-slate-700 cursor-pointer"
                 >
-                  Control Implementations by Framework
+                  {t("Control Implementations by Framework")}
                 </label>
               </div>
 
@@ -503,7 +518,7 @@ export default function ReportsPage() {
                   htmlFor="complianceRequirementsExceptions"
                   className="text-sm text-slate-700 cursor-pointer"
                 >
-                  Compliance Requirements Exceptions
+                  {t("Compliance Requirements Exceptions")}
                 </label>
               </div>
               <div className="flex items-center space-x-2">
@@ -518,7 +533,7 @@ export default function ReportsPage() {
                   htmlFor="controlExceptions"
                   className="text-sm text-slate-700 cursor-pointer"
                 >
-                  Control Exceptions
+                  {t("Control Exceptions")}
                 </label>
               </div>
 
@@ -535,7 +550,7 @@ export default function ReportsPage() {
                   htmlFor="frameworkWithGovernanceData"
                   className="text-sm text-slate-700 cursor-pointer"
                 >
-                  Framework along with Governance Data
+                  {t("Framework along with Governance Data")}
                 </label>
               </div>
               <div className="flex items-center space-x-2">
@@ -550,7 +565,7 @@ export default function ReportsPage() {
                   htmlFor="complianceIssues"
                   className="text-sm text-slate-700 cursor-pointer"
                 >
-                  Compliance Issues
+                  {t("Compliance Issues")}
                 </label>
               </div>
 
@@ -567,7 +582,7 @@ export default function ReportsPage() {
                   htmlFor="domainBasedProgressCompliance"
                   className="text-sm text-slate-700 cursor-pointer"
                 >
-                  Domain based Progress Compliance (Self-Assessment model)
+                  {t("Domain based Progress Compliance (Self-Assessment model)")}
                 </label>
               </div>
               <div className="flex items-center">
@@ -577,7 +592,7 @@ export default function ReportsPage() {
                     onValueChange={setSelectedFrameworkId}
                   >
                     <SelectTrigger className="w-full bg-white border-slate-200 pr-8">
-                      <SelectValue placeholder="Framework" />
+                      <SelectValue placeholder={t("Framework")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
                       {frameworks.map((framework) => (
@@ -607,9 +622,9 @@ export default function ReportsPage() {
               variant="outline"
               onClick={() => setIsManagementReportOpen(false)}
             >
-              Cancel
+              {t("Cancel")}
             </Button>
-            <Button onClick={handleShowManagementReport}>Show Report</Button>
+            <Button onClick={handleShowManagementReport}>{t("Show Report")}</Button>
           </div>
         </DialogContent>
       </Dialog>

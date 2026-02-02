@@ -29,6 +29,7 @@ import {
   ClipboardList,
   Building2,
 } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface KPI {
   id: string;
@@ -60,6 +61,7 @@ const statuses = ["Scheduled", "Missed", "Overdue", "Achieved"];
 
 export default function KPIsPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [kpis, setKpis] = useState<KPI[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -136,7 +138,7 @@ export default function KPIsPage() {
     <div className="space-y-6">
       {/* Page Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">KPI Dashboard</h1>
+        <h1 className="text-2xl font-bold text-slate-800">{t("KPI Dashboard")}</h1>
       </div>
 
       {/* Summary Charts Row */}
@@ -147,41 +149,41 @@ export default function KPIsPage() {
             <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
               <ClipboardList className="h-5 w-5" />
             </div>
-            <h3 className="text-base font-semibold text-slate-800">Status</h3>
+            <h3 className="text-base font-semibold text-slate-800">{t("Status")}</h3>
           </div>
           <div className="flex items-center justify-between">
             <div className="space-y-2 flex-1">
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 rounded-full bg-info" />
-                <span className="text-sm text-slate-600">Scheduled</span>
+                <span className="text-sm text-slate-600">{t("Scheduled")}</span>
                 <span className="text-sm font-medium text-slate-800 ml-auto">
                   {getStatusPercentage(statusCounts.scheduled)}%
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 rounded-full bg-error" />
-                <span className="text-sm text-slate-600">Missed</span>
+                <span className="text-sm text-slate-600">{t("Missed")}</span>
                 <span className="text-sm font-medium text-slate-800 ml-auto">
                   {getStatusPercentage(statusCounts.missed)}%
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 rounded-full bg-warning" />
-                <span className="text-sm text-slate-600">Overdue</span>
+                <span className="text-sm text-slate-600">{t("Overdue")}</span>
                 <span className="text-sm font-medium text-slate-800 ml-auto">
                   {getStatusPercentage(statusCounts.overdue)}%
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 rounded-full bg-success" />
-                <span className="text-sm text-slate-600">Achieved</span>
+                <span className="text-sm text-slate-600">{t("Achieved")}</span>
                 <span className="text-sm font-medium text-slate-800 ml-auto">
                   {getStatusPercentage(statusCounts.achieved)}%
                 </span>
               </div>
             </div>
             <div className="text-center ml-8">
-              <p className="text-sm text-slate-500">Total</p>
+              <p className="text-sm text-slate-500">{t("Total")}</p>
               <p className="text-3xl font-bold tracking-tight text-slate-800">{statusCounts.total}</p>
             </div>
           </div>
@@ -193,7 +195,7 @@ export default function KPIsPage() {
             <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
               <Building2 className="h-5 w-5" />
             </div>
-            <h3 className="text-base font-semibold text-slate-800">Department</h3>
+            <h3 className="text-base font-semibold text-slate-800">{t("Department")}</h3>
           </div>
           <div className="flex items-center justify-between">
             <div className="space-y-2 flex-1">
@@ -222,7 +224,7 @@ export default function KPIsPage() {
                 ))}
             </div>
             <div className="text-center ml-8">
-              <p className="text-sm text-slate-500">Total</p>
+              <p className="text-sm text-slate-500">{t("Total")}</p>
               <p className="text-3xl font-bold tracking-tight text-slate-800">{statusCounts.total}</p>
             </div>
           </div>
@@ -232,7 +234,7 @@ export default function KPIsPage() {
       {/* Search and Filter Row */}
       <div className="flex items-center gap-3">
         <Input
-          placeholder="Search by code, objective or description..."
+          placeholder={t("Search by code, objective or description...")}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="max-w-sm h-9 border-slate-200 bg-white"
@@ -242,13 +244,13 @@ export default function KPIsPage() {
           onValueChange={(value) => setStatusFilter(value === "all" ? "" : value)}
         >
           <SelectTrigger className="w-[180px] h-9 bg-white border-slate-200">
-            <SelectValue placeholder="All Statuses" />
+            <SelectValue placeholder={t("All Statuses")} />
           </SelectTrigger>
           <SelectContent position="popper" sideOffset={4}>
-            <SelectItem value="all">All Statuses</SelectItem>
+            <SelectItem value="all">{t("All Statuses")}</SelectItem>
             {statuses.map((s) => (
               <SelectItem key={s} value={s}>
-                {s}
+                {t(s)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -261,13 +263,13 @@ export default function KPIsPage() {
         <Table>
           <TableHeader>
             <TableRow className="border-b border-slate-100 bg-slate-50/50">
-              <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4 w-[120px]">Code</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">KPI Objective</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">KPI Description</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12 w-[100px]">Expected</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12 w-[110px]">Review Date</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12 w-[100px]">Status</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[140px]">Department</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4 w-[120px]">{t("Code")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("KPI Objective")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("KPI Description")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 w-[100px]">{t("Expected")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 w-[110px]">{t("Review Date")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 w-[100px]">{t("Status")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[140px]">{t("Department")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -275,8 +277,8 @@ export default function KPIsPage() {
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-12">
                   <BarChart3 className="h-10 w-10 mx-auto mb-2 text-slate-300" />
-                  <p className="text-sm text-slate-500">No KPIs found</p>
-                  <p className="text-xs text-slate-400 mt-1">Try adjusting your search or filter</p>
+                  <p className="text-sm text-slate-500">{t("No KPIs found")}</p>
+                  <p className="text-xs text-slate-400 mt-1">{t("Try adjusting your search or filter")}</p>
                 </TableCell>
               </TableRow>
             ) : (
@@ -315,7 +317,7 @@ export default function KPIsPage() {
                     </TableCell>
                     <TableCell className="py-5 text-sm">
                       <Badge className={statusColors[kpi.status] || "bg-slate-100 text-slate-600"}>
-                        {kpi.status}
+                        {t(kpi.status)}
                       </Badge>
                     </TableCell>
                     <TableCell className="py-5 text-sm text-slate-700 pr-4">
@@ -332,8 +334,8 @@ export default function KPIsPage() {
         <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
           <span className="text-sm text-slate-500">
             {filteredKpis.length > 0
-              ? `Showing 1 to ${filteredKpis.length} of ${filteredKpis.length}`
-              : "No KPIs"}
+              ? `${t("Showing")} 1 ${t("to")} ${filteredKpis.length} ${t("of")} ${filteredKpis.length}`
+              : t("No KPIs")}
           </span>
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="icon" disabled={true} className="h-8 w-8">

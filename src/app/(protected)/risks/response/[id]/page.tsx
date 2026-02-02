@@ -35,6 +35,7 @@ import {
 import { usePermissions } from "@/hooks/usePermissions";
 import { PermissionGate } from "@/components/ui/permission-gate";
 import { useSession } from "next-auth/react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface ActivityLog {
   id: string;
@@ -83,6 +84,7 @@ export default function RiskViewPage() {
   const params = useParams();
   const router = useRouter();
   const { data: session } = useSession();
+  const { t } = useLanguage();
   const { canEdit, canApprove } = usePermissions('risk.response');
   const [risk, setRisk] = useState<Risk | null>(null);
   const [loading, setLoading] = useState(true);
@@ -286,15 +288,15 @@ export default function RiskViewPage() {
 
   // Get likelihood/impact labels
   const getLikelihoodLabel = (value: number) => {
-    if (value >= 8) return "High";
-    if (value >= 5) return "Moderate";
-    return "Rare";
+    if (value >= 8) return t("High");
+    if (value >= 5) return t("Moderate");
+    return t("Rare");
   };
 
   const getImpactLabel = (value: number) => {
-    if (value >= 8) return "High impact";
-    if (value >= 5) return "Moderate";
-    return "Low";
+    if (value >= 8) return t("High impact");
+    if (value >= 5) return t("Moderate");
+    return t("Low");
   };
 
   // Get risk rating color
@@ -333,7 +335,7 @@ export default function RiskViewPage() {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="bg-white rounded-lg border border-slate-200 py-8 text-center text-slate-500">
-          Risk not found
+          {t("Risk not found")}
         </div>
       </div>
     );
@@ -357,7 +359,7 @@ export default function RiskViewPage() {
             onClick={handleSubmitForApproval}
             disabled={submitting}
           >
-            {submitting ? "Submitting..." : "Submit for Approval"}
+            {submitting ? t("Submitting...") : t("Submit for Approval")}
           </Button>
         ) : null;
       case "Awaiting Approval":
@@ -369,14 +371,14 @@ export default function RiskViewPage() {
               onClick={handleApprove}
               disabled={approving}
             >
-              {approving ? "Approving..." : "Approve"}
+              {approving ? t("Approving...") : t("Approve")}
             </Button>
             <Button
               variant="destructive"
               onClick={() => setShowSendBackDialog(true)}
               disabled={processingSendBack}
             >
-              Send Back
+              {t("Send Back")}
             </Button>
           </div>
         ) : null;
@@ -401,7 +403,7 @@ export default function RiskViewPage() {
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <h1 className="text-xl font-semibold text-slate-800">Risk View</h1>
+          <h1 className="text-xl font-semibold text-slate-800">{t("Risk View")}</h1>
           {/* Show current status badge */}
           <span className={cn(
             "px-2 py-1 rounded text-xs font-medium",
@@ -421,9 +423,9 @@ export default function RiskViewPage() {
       <div className="grid grid-cols-2 gap-6">
         {/* Risk Treatment - Donut Chart */}
         <div className="bg-white rounded-lg border border-slate-200 p-4">
-          <h3 className="text-base text-primary font-semibold mb-3">Risk Treatment</h3>
+          <h3 className="text-base text-primary font-semibold mb-3">{t("Risk Treatment")}</h3>
           <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
-            <p className="text-sm font-medium text-slate-700 mb-3">Task Progress</p>
+            <p className="text-sm font-medium text-slate-700 mb-3">{t("Task Progress")}</p>
             <div className="flex items-center gap-4">
               <div className="relative w-32 h-32">
                 <ResponsiveContainer width="100%" height="100%" minWidth={0}>
@@ -447,18 +449,18 @@ export default function RiskViewPage() {
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-xs text-slate-500">Total</span>
+                  <span className="text-xs text-slate-500">{t("Total")}</span>
                   <span className="text-lg font-bold text-slate-800">100%</span>
                 </div>
               </div>
               <div className="flex flex-col gap-2 text-xs">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 bg-blue-500 rounded-sm"></div>
-                  <span className="text-slate-600">Completed</span>
+                  <span className="text-slate-600">{t("Completed")}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 bg-slate-200 rounded-sm"></div>
-                  <span className="text-slate-600">Total</span>
+                  <span className="text-slate-600">{t("Total")}</span>
                 </div>
               </div>
             </div>
@@ -467,20 +469,20 @@ export default function RiskViewPage() {
 
         {/* Budget Allocation Vs Used */}
         <div className="bg-white rounded-lg border border-slate-200 p-4">
-          <h3 className="text-base text-primary font-semibold mb-3">Budget Allocation Vs Used</h3>
+          <h3 className="text-base text-primary font-semibold mb-3">{t("Budget Allocation Vs Used")}</h3>
           <div className="h-48 flex flex-col justify-between">
             <div>
-              <p className="text-sm text-slate-500">Allocated</p>
+              <p className="text-sm text-slate-500">{t("Allocated")}</p>
               <p className="text-3xl font-bold text-slate-800">0</p>
             </div>
             <div className="flex items-center gap-6 text-sm">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-yellow-500"></div>
-                <span className="text-slate-600">Used - 0</span>
+                <span className="text-slate-600">{t("Used")} - 0</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-slate-200"></div>
-                <span className="text-slate-600">Remaining - 0</span>
+                <span className="text-slate-600">{t("Remaining")} - 0</span>
               </div>
             </div>
           </div>
@@ -488,7 +490,7 @@ export default function RiskViewPage() {
 
         {/* Days Remaining - Bar Chart */}
         <div className="bg-white rounded-lg border border-slate-200 p-4">
-          <h3 className="text-base text-primary font-semibold mb-3">Days Remaining</h3>
+          <h3 className="text-base text-primary font-semibold mb-3">{t("Days Remaining")}</h3>
           <div className="h-48 flex items-center justify-center">
             <div className="w-full">
               {/* Simple bar representation */}
@@ -516,7 +518,7 @@ export default function RiskViewPage() {
 
         {/* Residual Risk Rating */}
         <div className="bg-white rounded-lg border border-slate-200 p-4">
-          <h3 className="text-base text-primary font-semibold mb-3">Residual Risk Rating</h3>
+          <h3 className="text-base text-primary font-semibold mb-3">{t("Residual Risk Rating")}</h3>
           <div className="h-48 flex flex-col justify-between">
             {/* Gauge-like display */}
             <div className="flex items-center gap-4">
@@ -530,7 +532,7 @@ export default function RiskViewPage() {
 
             {/* Planned Residual Risk Rating */}
             <div className="border-t border-slate-100 pt-4">
-              <p className="text-sm text-primary font-medium mb-2">Planned Residual Risk Rating</p>
+              <p className="text-sm text-primary font-medium mb-2">{t("Planned Residual Risk Rating")}</p>
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-full border-4 border-orange-500 flex items-center justify-center">
                   <div className="w-2 h-2 rounded-full bg-orange-500"></div>
@@ -555,47 +557,47 @@ export default function RiskViewPage() {
 
         <div className="grid grid-cols-3 gap-6 mb-6">
           <div>
-            <p className="text-sm text-slate-500">Risk Owner</p>
-            <p className="font-medium text-slate-800">{risk.owner?.fullName || "No items found"}</p>
+            <p className="text-sm text-slate-500">{t("Risk Owner")}</p>
+            <p className="font-medium text-slate-800">{risk.owner?.fullName || t("No items found")}</p>
           </div>
           <div>
-            <p className="text-sm text-slate-500">Likelihood</p>
+            <p className="text-sm text-slate-500">{t("Likelihood")}</p>
             <p className="font-medium text-slate-800">{getLikelihoodLabel(risk.likelihood)}</p>
           </div>
           <div>
-            <p className="text-sm text-slate-500">Impact</p>
+            <p className="text-sm text-slate-500">{t("Impact")}</p>
             <p className="font-medium text-slate-800">{getImpactLabel(risk.impact)}</p>
           </div>
         </div>
 
         <div className="grid grid-cols-3 gap-6 mb-6">
           <div>
-            <p className="text-sm text-slate-500">Inherent Risk Rating</p>
+            <p className="text-sm text-slate-500">{t("Inherent Risk Rating")}</p>
             <p className="font-medium text-slate-800">-</p>
           </div>
           <div>
-            <p className="text-sm text-slate-500">Residual Risk Rating</p>
+            <p className="text-sm text-slate-500">{t("Residual Risk Rating")}</p>
             <span className={cn("font-medium", getRiskRatingColor(risk.riskRating))}>
               {risk.riskRating}
             </span>
           </div>
           <div>
-            <p className="text-sm text-slate-500">Control Rating</p>
+            <p className="text-sm text-slate-500">{t("Control Rating")}</p>
             <p className="font-medium text-slate-800">-</p>
           </div>
         </div>
 
         <div className="grid grid-cols-3 gap-6">
           <div>
-            <p className="text-sm text-slate-500">Risk Response Strategy</p>
-            <p className="font-medium text-slate-800">{risk.responseStrategy || "Treat"}</p>
+            <p className="text-sm text-slate-500">{t("Risk Response Strategy")}</p>
+            <p className="font-medium text-slate-800">{risk.responseStrategy || t("Treat")}</p>
           </div>
           <div>
-            <p className="text-sm text-slate-500">Assessment Date</p>
+            <p className="text-sm text-slate-500">{t("Assessment Date")}</p>
             <p className="font-medium text-slate-800">{new Date().toLocaleDateString("en-GB")}</p>
           </div>
           <div>
-            <p className="text-sm text-slate-500">Next Review Date</p>
+            <p className="text-sm text-slate-500">{t("Next Review Date")}</p>
             <p className="font-medium text-slate-800">-</p>
           </div>
         </div>
@@ -603,7 +605,7 @@ export default function RiskViewPage() {
 
       {/* Existing Controls */}
       <div>
-        <p className="text-slate-500 mb-3">Existing Controls</p>
+        <p className="text-slate-500 mb-3">{t("Existing Controls")}</p>
         <div className="space-y-2">
           {controls.map((control) => (
             <div key={control.id} className="bg-white rounded-lg border border-slate-200">
@@ -628,12 +630,12 @@ export default function RiskViewPage() {
                       <p className="text-sm text-slate-500 mb-4">{control.description}</p>
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm font-medium text-slate-700">Department</p>
-                          <p className="text-sm font-medium text-slate-700">Assigned To:</p>
+                          <p className="text-sm font-medium text-slate-700">{t("Department")}</p>
+                          <p className="text-sm font-medium text-slate-700">{t("Assigned To")}:</p>
                         </div>
                         <div className="text-right">
                           <p className="text-2xl font-bold text-slate-800">{control.effectiveness}%</p>
-                          <p className="text-sm text-slate-500">partially effective</p>
+                          <p className="text-sm text-slate-500">{t("partially effective")}</p>
                         </div>
                       </div>
                     </div>
@@ -648,22 +650,22 @@ export default function RiskViewPage() {
       {/* Planned Controls */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <p className="text-primary font-medium">Planned Controls</p>
+          <p className="text-primary font-medium">{t("Planned Controls")}</p>
           {canEdit && (
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={() => setAddControlOpen(true)}>
                 <Plus className="h-4 w-4 mr-1" />
-                Add New Control
+                {t("Add New Control")}
               </Button>
               <Button variant="outline" size="sm" onClick={() => setChooseControlOpen(true)}>
-                Choose Control
+                {t("Choose Control")}
               </Button>
             </div>
           )}
         </div>
         {plannedControls.length === 0 ? (
           <div className="bg-white rounded-lg border border-slate-200 py-4 text-center text-slate-500">
-            No items found
+            {t("No items found")}
           </div>
         ) : (
           <div className="space-y-2">
@@ -728,17 +730,17 @@ export default function RiskViewPage() {
       <AlertDialog open={successDialogOpen} onOpenChange={setSuccessDialogOpen}>
         <AlertDialogContent className="p-0 gap-0">
           <AlertDialogHeader className="px-6 py-5 border-b border-slate-100">
-            <AlertDialogTitle className="text-lg font-semibold text-slate-800">Information</AlertDialogTitle>
+            <AlertDialogTitle className="text-lg font-semibold text-slate-800">{t("Information")}</AlertDialogTitle>
             <AlertDialogDescription className="text-slate-500">
-              {currentStatus === "Completed" && "Risk Approved Successfully!"}
-              {currentStatus === "Awaiting Approval" && "Risk Submitted for Approval Successfully!"}
-              {currentStatus === "Sent Back" && "Risk Sent Back Successfully!"}
-              {!["Completed", "Awaiting Approval", "Sent Back"].includes(currentStatus) && "Action completed successfully!"}
+              {currentStatus === "Completed" && t("Risk Approved Successfully!")}
+              {currentStatus === "Awaiting Approval" && t("Risk Submitted for Approval Successfully!")}
+              {currentStatus === "Sent Back" && t("Risk Sent Back Successfully!")}
+              {!["Completed", "Awaiting Approval", "Sent Back"].includes(currentStatus) && t("Action completed successfully!")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="px-6 py-4 border-t border-slate-100">
             <AlertDialogAction onClick={() => setSuccessDialogOpen(false)}>
-              OK
+              {t("OK")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -751,18 +753,18 @@ export default function RiskViewPage() {
       }}>
         <DialogContent className="sm:max-w-[500px] p-0 gap-0">
           <DialogHeader className="px-6 py-5 border-b border-slate-100">
-            <DialogTitle className="text-lg font-semibold text-slate-800">Send Back Risk Response</DialogTitle>
+            <DialogTitle className="text-lg font-semibold text-slate-800">{t("Send Back Risk Response")}</DialogTitle>
             <DialogDescription className="text-slate-500">
-              Add a comment explaining why this risk response is being sent back
+              {t("Add a comment explaining why this risk response is being sent back")}
             </DialogDescription>
           </DialogHeader>
           <div className="px-6 py-5">
             <div className="space-y-1.5">
-              <Label htmlFor="sendBackComment" className="text-sm font-medium text-slate-700">Comment *</Label>
+              <Label htmlFor="sendBackComment" className="text-sm font-medium text-slate-700">{t("Comment")} *</Label>
               <Textarea
                 id="sendBackComment"
                 className="min-h-[100px] w-full bg-white"
-                placeholder="Enter your feedback..."
+                placeholder={t("Enter your feedback...")}
                 value={sendBackComment}
                 onChange={(e) => setSendBackComment(e.target.value)}
               />
@@ -770,10 +772,10 @@ export default function RiskViewPage() {
           </div>
           <DialogFooter className="px-6 py-4 border-t border-slate-100">
             <Button variant="outline" onClick={() => setShowSendBackDialog(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button onClick={handleSendBack} disabled={processingSendBack || !sendBackComment.trim()}>
-              {processingSendBack ? "Sending..." : "Send Back"}
+              {processingSendBack ? t("Sending...") : t("Send Back")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -782,13 +784,13 @@ export default function RiskViewPage() {
       {/* Show Comments Section if Sent Back */}
       {currentStatus === "Sent Back" && risk.activityLogs && risk.activityLogs.length > 0 && (
         <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-          <h3 className="text-base font-semibold text-red-800 mb-3">Reviewer Comments</h3>
+          <h3 className="text-base font-semibold text-red-800 mb-3">{t("Reviewer Comments")}</h3>
           <div className="space-y-3">
             {risk.activityLogs.map((log) => (
               <div key={log.id} className="bg-white p-3 rounded-lg border border-slate-100">
                 <p className="text-sm text-slate-700 whitespace-pre-wrap">{log.description}</p>
                 <div className="flex justify-between text-xs text-slate-500 mt-2">
-                  <span>By: {log.actor}</span>
+                  <span>{t("By")}: {log.actor}</span>
                   <span>{new Date(log.createdAt).toLocaleDateString()}</span>
                 </div>
               </div>

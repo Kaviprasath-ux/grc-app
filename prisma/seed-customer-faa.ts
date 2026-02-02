@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
@@ -15,6 +16,10 @@ const prisma = new PrismaClient();
 
 async function main() {
   console.log("🛫 Seeding Customer Account 'faa'...");
+
+  // Hash passwords upfront
+  const hashedPassword1 = await bcrypt.hash("1", 10);
+  const hashedPassword123 = await bcrypt.hash("password123", 10);
 
   // ==================== CREATE CUSTOMER ACCOUNT ====================
   console.log("\n🏛️ Creating Customer Account...");
@@ -49,7 +54,7 @@ async function main() {
   const faaUser = await prisma.user.upsert({
     where: { userName: "faa" },
     update: {
-      password: "1",
+      password: hashedPassword1,
       email: "admin@faa.gov",
       firstName: "FAA",
       lastName: "Administrator",
@@ -61,7 +66,7 @@ async function main() {
       userId: "FAA-001",
       userName: "faa",
       email: "admin@faa.gov",
-      password: "1",
+      password: hashedPassword1,
       firstName: "FAA",
       lastName: "Administrator",
       fullName: "FAA Administrator",
@@ -225,7 +230,7 @@ async function main() {
   const testUsers = ["dr", "dc"];
 
   for (const user of users) {
-    const password = testUsers.includes(user.userName) ? "1" : "password123";
+    const password = testUsers.includes(user.userName) ? hashedPassword1 : hashedPassword123;
     const created = await prisma.user.upsert({
       where: { userName: user.userName },
       update: { password },

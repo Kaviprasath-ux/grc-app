@@ -24,6 +24,7 @@ import { Label } from "@/components/ui/label";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Unauthorized } from "@/components/ui/unauthorized";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Check, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -95,13 +96,14 @@ interface RiskRange {
   color: string;
 }
 
-const assessmentSteps = [
-  { id: 1, name: "Risk Context" },
-  { id: 2, name: "Likelihood" },
-  { id: 3, name: "Impact" },
-  { id: 4, name: "Vulnerability" },
-  { id: 5, name: "Risk Rating" },
-  { id: 6, name: "Risk Summary" },
+// Assessment steps - will be translated in component
+const getAssessmentSteps = (t: (key: string) => string) => [
+  { id: 1, name: t("Risk Context") },
+  { id: 2, name: t("Likelihood") },
+  { id: 3, name: t("Impact") },
+  { id: 4, name: t("Vulnerability") },
+  { id: 5, name: t("Risk Rating") },
+  { id: 6, name: t("Risk Summary") },
 ];
 
 export default function RiskAssessmentWizardPage() {
@@ -109,6 +111,10 @@ export default function RiskAssessmentWizardPage() {
   const router = useRouter();
   const riskId = params.id as string;
   const { canView, canCreate, canEdit, isLoading: permissionsLoading } = usePermissions('risk.assessment');
+  const { t } = useLanguage();
+
+  // Get translated assessment steps
+  const assessmentSteps = getAssessmentSteps(t);
 
   const [risk, setRisk] = useState<Risk | null>(null);
   const [threats, setThreats] = useState<Threat[]>([]);
@@ -606,12 +612,12 @@ export default function RiskAssessmentWizardPage() {
           <Link href="/risks/assessment">
             <Button variant="ghost" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
+              {t("Back")}
             </Button>
           </Link>
           <div>
-            <p className="text-sm text-muted-foreground">Risk Management</p>
-            <h1 className="text-2xl font-bold">Risk Assessment</h1>
+            <p className="text-sm text-muted-foreground">{t("Risk Management")}</p>
+            <h1 className="text-2xl font-bold">{t("Risk Assessment")}</h1>
           </div>
         </div>
         <div className="flex items-center justify-center h-64">
@@ -623,7 +629,7 @@ export default function RiskAssessmentWizardPage() {
 
   // Show unauthorized if user doesn't have view permission
   if (!canView) {
-    return <Unauthorized description="You don't have permission to access Risk Assessment." />;
+    return <Unauthorized description={t("You don't have permission to access Risk Assessment.")} />;
   }
 
   if (!risk) {
@@ -633,16 +639,16 @@ export default function RiskAssessmentWizardPage() {
           <Link href="/risks/assessment">
             <Button variant="ghost" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
+              {t("Back")}
             </Button>
           </Link>
           <div>
-            <p className="text-sm text-muted-foreground">Risk Management</p>
-            <h1 className="text-2xl font-bold">Risk Assessment</h1>
+            <p className="text-sm text-muted-foreground">{t("Risk Management")}</p>
+            <h1 className="text-2xl font-bold">{t("Risk Assessment")}</h1>
           </div>
         </div>
         <div className="flex items-center justify-center h-64">
-          <p className="text-muted-foreground">Risk not found</p>
+          <p className="text-muted-foreground">{t("Risk not found")}</p>
         </div>
       </div>
     );
@@ -654,12 +660,12 @@ export default function RiskAssessmentWizardPage() {
         <Link href="/risks/assessment">
           <Button variant="ghost" size="sm">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
+            {t("Back")}
           </Button>
         </Link>
         <div>
-          <p className="text-sm text-muted-foreground">Risk Management</p>
-          <h1 className="text-2xl font-bold">Risk Assessment</h1>
+          <p className="text-sm text-muted-foreground">{t("Risk Management")}</p>
+          <h1 className="text-2xl font-bold">{t("Risk Assessment")}</h1>
         </div>
       </div>
 
@@ -715,15 +721,15 @@ export default function RiskAssessmentWizardPage() {
           <div className="space-y-4">
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <p className="text-sm text-muted-foreground">Risk Category</p>
+                <p className="text-sm text-muted-foreground">{t("Risk Category")}</p>
                 <p className="font-medium">{risk.category?.name || "-"}</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Risk Owner</p>
+                <p className="text-sm text-muted-foreground">{t("Risk Owner")}</p>
                 <p className="font-medium">{risk.owner?.fullName || "-"}</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Risk Sources</p>
+                <p className="text-sm text-muted-foreground">{t("Risk Sources")}</p>
                 <p className="font-medium">{risk.riskSources || "-"}</p>
               </div>
             </div>
@@ -752,8 +758,8 @@ export default function RiskAssessmentWizardPage() {
               </div>
             ))}
             <div className="flex gap-4 text-sm text-muted-foreground">
-              <span>Timeframe</span>
-              <span>Probability</span>
+              <span>{t("Timeframe")}</span>
+              <span>{t("Probability")}</span>
             </div>
           </div>
         )}
@@ -765,8 +771,8 @@ export default function RiskAssessmentWizardPage() {
               <div key={threat.id} className="space-y-3">
                 <h4 className="font-semibold">{threat.name}</h4>
                 <div className="grid grid-cols-2 gap-2 text-sm font-medium">
-                  <span>Category</span>
-                  <span>Impact Rating</span>
+                  <span>{t("Category")}</span>
+                  <span>{t("Impact Rating")}</span>
                 </div>
                 {impactCategories.map((category) => (
                   <div key={category.id} className="grid grid-cols-2 gap-2 items-center">
@@ -779,7 +785,7 @@ export default function RiskAssessmentWizardPage() {
                       }))}
                     >
                       <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select" />
+                        <SelectValue placeholder={t("Select")} />
                       </SelectTrigger>
                       <SelectContent>
                         {impactRatings.map((rating) => (
@@ -792,8 +798,8 @@ export default function RiskAssessmentWizardPage() {
                   </div>
                 ))}
                 <div className="pt-2 border-t">
-                  <p className="text-sm">Impact Rating = {Math.max(...Object.values(threatImpacts[threat.id] || { default: 0 }), 0)}</p>
-                  <p className="text-xs text-muted-foreground">Note: The highest rating will be taken</p>
+                  <p className="text-sm">{t("Impact Rating")} = {Math.max(...Object.values(threatImpacts[threat.id] || { default: 0 }), 0)}</p>
+                  <p className="text-xs text-muted-foreground">{t("Note: The highest rating will be taken")}</p>
                 </div>
               </div>
             ))}
@@ -828,30 +834,30 @@ export default function RiskAssessmentWizardPage() {
         {currentStep === 5 && (
           <div className="space-y-6">
             <div className="space-y-4">
-              <h4 className="font-semibold">Inherent Risk</h4>
+              <h4 className="font-semibold">{t("Inherent Risk")}</h4>
               <div className="flex items-center gap-4 text-center">
                 <div className="p-3 bg-muted rounded">
-                  <p className="text-xs text-muted-foreground">Likelihood</p>
+                  <p className="text-xs text-muted-foreground">{t("Likelihood")}</p>
                   <p className="font-bold">{calcLikelihood}</p>
                 </div>
                 <p className="font-bold">*</p>
                 <div className="p-3 bg-muted rounded">
-                  <p className="text-xs text-muted-foreground">Impact</p>
+                  <p className="text-xs text-muted-foreground">{t("Impact")}</p>
                   <p className="font-bold">{calcImpact}</p>
                 </div>
                 <p className="font-bold">*</p>
                 <div className="p-3 bg-muted rounded">
-                  <p className="text-xs text-muted-foreground">Vulnerability</p>
+                  <p className="text-xs text-muted-foreground">{t("Vulnerability")}</p>
                   <p className="font-bold">{calcVulnerability}</p>
                 </div>
                 <p className="font-bold">=</p>
                 <div className="p-3 bg-muted rounded">
-                  <p className="text-xs text-muted-foreground">Score</p>
+                  <p className="text-xs text-muted-foreground">{t("Score")}</p>
                   <p className="font-bold">{riskScore.toFixed(2)}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <span>Inherent Risk Rating</span>
+                <span>{t("Inherent Risk Rating")}</span>
                 <span className={cn(
                   "px-3 py-1 rounded font-medium",
                   calculatedRating === "Critical" && "bg-red-100 text-red-800",
@@ -863,8 +869,8 @@ export default function RiskAssessmentWizardPage() {
                 </span>
                 <span className="text-muted-foreground">({riskScore.toFixed(2)})</span>
               </div>
-              <p className="text-sm text-muted-foreground">Risk Score = Likelihood * Impact * Vulnerability</p>
-              <p className="text-sm text-muted-foreground">Risk Tolerance = 10</p>
+              <p className="text-sm text-muted-foreground">{t("Risk Score = Likelihood * Impact * Vulnerability")}</p>
+              <p className="text-sm text-muted-foreground">{t("Risk Tolerance")} = 10</p>
             </div>
 
             <div className="grid grid-cols-4 gap-2">
@@ -887,7 +893,7 @@ export default function RiskAssessmentWizardPage() {
           <div className="space-y-6">
             <div className="grid grid-cols-3 gap-4">
               <div className="p-4 bg-muted rounded text-center">
-                <p className="text-sm text-muted-foreground">Inherent Risk Rating</p>
+                <p className="text-sm text-muted-foreground">{t("Inherent Risk Rating")}</p>
                 <span className={cn(
                   "inline-block mt-2 px-3 py-1 rounded font-medium",
                   calculatedRating === "Critical" && "bg-red-100 text-red-800",
@@ -900,11 +906,11 @@ export default function RiskAssessmentWizardPage() {
                 <p className="text-sm text-muted-foreground mt-1">({riskScore.toFixed(2)})</p>
               </div>
               <div className="p-4 bg-muted rounded text-center">
-                <p className="text-sm text-muted-foreground">Overall Control Rating</p>
+                <p className="text-sm text-muted-foreground">{t("Overall Control Rating")}</p>
                 <p className="font-medium mt-2">-</p>
               </div>
               <div className="p-4 bg-muted rounded text-center">
-                <p className="text-sm text-muted-foreground">Residual Risk Rating</p>
+                <p className="text-sm text-muted-foreground">{t("Residual Risk Rating")}</p>
                 <span className={cn(
                   "inline-block mt-2 px-3 py-1 rounded font-medium",
                   calculatedRating === "Critical" && "bg-red-100 text-red-800",
@@ -919,8 +925,8 @@ export default function RiskAssessmentWizardPage() {
             </div>
 
             <div>
-              <h4 className="font-semibold mb-2">Existing Controls</h4>
-              <p className="text-sm text-muted-foreground">No controls linked to this risk</p>
+              <h4 className="font-semibold mb-2">{t("Existing Controls")}</h4>
+              <p className="text-sm text-muted-foreground">{t("No controls linked to this risk")}</p>
             </div>
           </div>
         )}
@@ -929,20 +935,20 @@ export default function RiskAssessmentWizardPage() {
       {/* Navigation Buttons */}
       <div className="flex justify-between pt-4 border-t">
         <Button variant="outline" onClick={() => router.push("/risks/assessment")}>
-          Cancel
+          {t("Cancel")}
         </Button>
         <div className="flex gap-2">
           {currentStep > 1 && (
             <Button variant="outline" onClick={handlePrevious}>
-              Previous
+              {t("Previous")}
             </Button>
           )}
           {currentStep < assessmentSteps.length ? (
-            <Button onClick={handleNext}>Next</Button>
+            <Button onClick={handleNext}>{t("Next")}</Button>
           ) : (
             (canCreate || canEdit) && (
               <Button onClick={handleSave}>
-                Save
+                {t("Save")}
               </Button>
             )
           )}
@@ -953,14 +959,14 @@ export default function RiskAssessmentWizardPage() {
       <Dialog open={showResponseDialog} onOpenChange={setShowResponseDialog}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Risk Response Strategy</DialogTitle>
+            <DialogTitle>{t("Risk Response Strategy")}</DialogTitle>
             <DialogDescription>
-              The risk rating is not Low. Please select a response strategy and provide an explanation.
+              {t("The risk rating is not Low. Please select a response strategy and provide an explanation.")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-6 py-4">
             <div className="space-y-3">
-              <Label className="text-sm font-medium">Select Strategy</Label>
+              <Label className="text-sm font-medium">{t("Select Strategy")}</Label>
               <RadioGroup
                 value={selectedStrategy}
                 onValueChange={setSelectedStrategy}
@@ -969,29 +975,29 @@ export default function RiskAssessmentWizardPage() {
                 <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-muted/50 cursor-pointer">
                   <RadioGroupItem value="Transfer" id="transfer" />
                   <Label htmlFor="transfer" className="flex-1 cursor-pointer">
-                    <div className="font-medium">Transfer</div>
-                    <p className="text-sm text-muted-foreground">Transfer the risk to a third party (e.g., insurance, outsourcing)</p>
+                    <div className="font-medium">{t("Transfer")}</div>
+                    <p className="text-sm text-muted-foreground">{t("Transfer the risk to a third party (e.g., insurance, outsourcing)")}</p>
                   </Label>
                 </div>
                 <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-muted/50 cursor-pointer">
                   <RadioGroupItem value="Avoid" id="avoid" />
                   <Label htmlFor="avoid" className="flex-1 cursor-pointer">
-                    <div className="font-medium">Avoid</div>
-                    <p className="text-sm text-muted-foreground">Eliminate the risk by not engaging in the activity</p>
+                    <div className="font-medium">{t("Avoid")}</div>
+                    <p className="text-sm text-muted-foreground">{t("Eliminate the risk by not engaging in the activity")}</p>
                   </Label>
                 </div>
                 <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-muted/50 cursor-pointer">
                   <RadioGroupItem value="Accept" id="accept" />
                   <Label htmlFor="accept" className="flex-1 cursor-pointer">
-                    <div className="font-medium">Accept</div>
-                    <p className="text-sm text-muted-foreground">Accept the risk without taking any action</p>
+                    <div className="font-medium">{t("Accept")}</div>
+                    <p className="text-sm text-muted-foreground">{t("Accept the risk without taking any action")}</p>
                   </Label>
                 </div>
                 <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-muted/50 cursor-pointer">
                   <RadioGroupItem value="Treat" id="treat" />
                   <Label htmlFor="treat" className="flex-1 cursor-pointer">
-                    <div className="font-medium">Treat</div>
-                    <p className="text-sm text-muted-foreground">Implement controls to reduce the risk likelihood or impact</p>
+                    <div className="font-medium">{t("Treat")}</div>
+                    <p className="text-sm text-muted-foreground">{t("Implement controls to reduce the risk likelihood or impact")}</p>
                   </Label>
                 </div>
               </RadioGroup>
@@ -999,11 +1005,11 @@ export default function RiskAssessmentWizardPage() {
 
             <div className="space-y-2">
               <Label htmlFor="strategy-explanation" className="text-sm font-medium">
-                Risk Response Strategy Explanation
+                {t("Risk Response Strategy Explanation")}
               </Label>
               <Textarea
                 id="strategy-explanation"
-                placeholder="Explain how you plan to address this risk with the selected strategy..."
+                placeholder={t("Explain how you plan to address this risk with the selected strategy...")}
                 value={strategyExplanation}
                 onChange={(e) => setStrategyExplanation(e.target.value)}
                 className="min-h-[100px]"
@@ -1012,13 +1018,13 @@ export default function RiskAssessmentWizardPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={handleCancelResponse}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button
               onClick={handleSaveResponse}
               disabled={!selectedStrategy || savingResponse}
             >
-              {savingResponse ? "Saving..." : "Save"}
+              {savingResponse ? t("Saving...") : t("Save")}
             </Button>
           </DialogFooter>
         </DialogContent>

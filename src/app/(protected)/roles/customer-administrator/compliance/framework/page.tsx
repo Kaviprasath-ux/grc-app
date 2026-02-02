@@ -32,10 +32,12 @@ import {
   AlertCircle,
   CheckCircle2,
   X,
+  Home,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useHasRole } from "@/hooks/usePermissions";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 interface Framework {
   id: string;
@@ -691,13 +693,26 @@ export default function CustomerAdminFrameworkPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-[60vh]">
-        <div className="flex flex-col items-center gap-4">
-          <div className="relative">
-            <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
-            <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+      <div className="space-y-6">
+        {/* Breadcrumb */}
+        <nav className="flex items-center gap-1.5 text-sm">
+          <Link href="/roles/customer-administrator/compliance" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>Compliance</span>
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <span className="text-primary-700 font-medium">Integrated Frameworks</span>
+        </nav>
+
+        <h1 className="text-2xl font-bold text-slate-800">Integrated Frameworks</h1>
+        <div className="flex items-center justify-center h-[60vh]">
+          <div className="flex flex-col items-center gap-4">
+            <div className="relative">
+              <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
+              <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+            </div>
+            <p className="text-sm text-slate-500 font-medium">Loading frameworks...</p>
           </div>
-          <p className="text-sm text-slate-500 font-medium">Loading frameworks...</p>
         </div>
       </div>
     );
@@ -705,10 +720,18 @@ export default function CustomerAdminFrameworkPage() {
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/roles/customer-administrator/compliance" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>Compliance</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">Integrated Frameworks</span>
+      </nav>
+
       {/* Page Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-800">Integrated Frameworks</h1>
-      </div>
+      <h1 className="text-2xl font-bold text-slate-800">Integrated Frameworks</h1>
 
       {/* Toolbar */}
       <div className="flex items-center justify-between gap-4">
@@ -814,6 +837,10 @@ export default function CustomerAdminFrameworkPage() {
                   onClick={(e) => {
                     e.stopPropagation();
                     if (isLocked) return;
+                    if (!framework.id) {
+                      console.error("Framework ID is missing:", framework);
+                      return;
+                    }
                     router.push(`/roles/customer-administrator/compliance/framework/${framework.id}/controls`);
                   }}
                   title={isLocked ? "Framework not subscribed" : "Click to view controls"}
@@ -857,6 +884,10 @@ export default function CustomerAdminFrameworkPage() {
                   onClick={(e) => {
                     e.stopPropagation();
                     if (isLocked) return;
+                    if (!framework.id) {
+                      console.error("Framework ID is missing:", framework);
+                      return;
+                    }
                     router.push(`/roles/customer-administrator/compliance/framework/${framework.id}/policies`);
                   }}
                   title={isLocked ? "Framework not subscribed" : "Click to view policies"}
@@ -879,6 +910,10 @@ export default function CustomerAdminFrameworkPage() {
                   onClick={(e) => {
                     e.stopPropagation();
                     if (isLocked) return;
+                    if (!framework.id) {
+                      console.error("Framework ID is missing:", framework);
+                      return;
+                    }
                     router.push(`/roles/customer-administrator/compliance/framework/${framework.id}/evidence`);
                   }}
                   title={isLocked ? "Framework not subscribed" : "Click to view evidence"}

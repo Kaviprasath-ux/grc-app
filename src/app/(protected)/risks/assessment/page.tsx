@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { usePermissions, useUserRoles } from "@/hooks/usePermissions";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Unauthorized } from "@/components/ui/unauthorized";
 import {
   Select,
@@ -22,8 +23,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { RiskRatingBadge } from "@/components/risks/risk-rating-badge";
+import { RiskAssessmentWizardDialog } from "@/components/risks/risk-assessment-wizard-dialog";
 import { cn } from "@/lib/utils";
-import { Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowLeft } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Home } from "lucide-react";
+import Link from "next/link";
 
 interface Risk {
   id: string;
@@ -76,6 +79,7 @@ export default function RiskAssessmentPage() {
   const fromDashboard = searchParams.get("from") === "dashboard";
   const { canView, canCreate, canEdit, isLoading: permissionsLoading } = usePermissions('risk.assessment');
   const userRoles = useUserRoles();
+  const { t } = useLanguage();
 
   // Check if user can approve assessments (Reviewer, DepartmentReviewer, CustomerAdministrator, GRCAdministrator)
   const canApprove = userRoles.some(role =>
@@ -100,6 +104,10 @@ export default function RiskAssessmentPage() {
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 20;
+
+  // Assessment modal state
+  const [assessmentDialogOpen, setAssessmentDialogOpen] = useState(false);
+  const [selectedRiskId, setSelectedRiskId] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -185,7 +193,7 @@ export default function RiskAssessmentPage() {
         // Users with create permission can re-assess completed risks
         return canCreate ? (
           <Button size="sm" variant="outline" onClick={() => openAssessment(risk)}>
-            Re-assess
+            {t("Re-assess")}
           </Button>
         ) : null;
       case "Draft":
@@ -193,14 +201,14 @@ export default function RiskAssessmentPage() {
         // Users with edit permission can continue working
         return canEdit ? (
           <Button size="sm" variant="outline" onClick={() => openAssessment(risk)}>
-            Resume
+            {t("Resume")}
           </Button>
         ) : null;
       default:
         // Open status - users with create permission can initiate
         return canCreate ? (
           <Button size="sm" onClick={() => openAssessment(risk)}>
-            Initiate
+            {t("Initiate")}
           </Button>
         ) : null;
     }
@@ -250,27 +258,31 @@ export default function RiskAssessmentPage() {
   };
 
   const openAssessment = (risk: Risk) => {
-    router.push(`/risks/assessment/${risk.id}`);
+    setSelectedRiskId(risk.id);
+    setAssessmentDialogOpen(true);
+  };
+
+  const handleAssessmentComplete = () => {
+    fetchData(); // Refresh the list after assessment is saved
   };
 
   // Show loading state while permissions or data is being fetched
   if (permissionsLoading || loading) {
     return (
       <div className="space-y-6">
+        {/* Breadcrumb */}
+        <nav className="flex items-center gap-1.5 text-sm">
+          <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>{t("Risk Management")}</span>
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <span className="text-primary-700 font-medium">{t("Assessment")}</span>
+        </nav>
+
+        {/* Page Header */}
         <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-3">
-            {fromDashboard && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => router.push("/dashboard")}
-                className="h-8 w-8"
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-            )}
-            <h1 className="text-2xl font-bold text-slate-800">Risk Assessment</h1>
-          </div>
+          <h1 className="text-2xl font-bold text-slate-800">{t("Risk Assessment")}</h1>
         </div>
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="relative h-8 w-8">
@@ -284,25 +296,24 @@ export default function RiskAssessmentPage() {
 
   // Show unauthorized if user doesn't have view permission
   if (!canView) {
-    return <Unauthorized description="You don't have permission to access Risk Assessment." />;
+    return <Unauthorized description={t("You don't have permission to access Risk Assessment.")} />;
   }
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>{t("Risk Management")}</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">{t("Assessment")}</span>
+      </nav>
+
+      {/* Page Header */}
       <div className="flex flex-col gap-1">
-        <div className="flex items-center gap-3">
-          {fromDashboard && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => router.push("/dashboard")}
-              className="h-8 w-8"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-          )}
-          <h1 className="text-2xl font-bold text-slate-800">Risk Assessment</h1>
-        </div>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Risk Assessment")}</h1>
       </div>
 
       {/* Filters */}
@@ -310,7 +321,7 @@ export default function RiskAssessmentPage() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search risks..."
+            placeholder={t("Search risks...")}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10 w-[200px] bg-white"
@@ -318,23 +329,23 @@ export default function RiskAssessmentPage() {
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[150px] bg-white">
-            <SelectValue placeholder="All Status" />
+            <SelectValue placeholder={t("All Status")} />
           </SelectTrigger>
           <SelectContent position="popper" sideOffset={4}>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="Assessment Pending">Assessment Pending</SelectItem>
-            <SelectItem value="Open">Open</SelectItem>
-            <SelectItem value="In-Progress">In-Progress</SelectItem>
-            <SelectItem value="Completed">Completed</SelectItem>
-            <SelectItem value="Awaiting Approval">Awaiting Approval</SelectItem>
+            <SelectItem value="all">{t("All Status")}</SelectItem>
+            <SelectItem value="Assessment Pending">{t("Assessment Pending")}</SelectItem>
+            <SelectItem value="Open">{t("Open")}</SelectItem>
+            <SelectItem value="In-Progress">{t("In-Progress")}</SelectItem>
+            <SelectItem value="Completed">{t("Completed")}</SelectItem>
+            <SelectItem value="Awaiting Approval">{t("Awaiting Approval")}</SelectItem>
           </SelectContent>
         </Select>
         <Select value={ratingFilter} onValueChange={setRatingFilter}>
           <SelectTrigger className="w-[140px] bg-white">
-            <SelectValue placeholder="All Ratings" />
+            <SelectValue placeholder={t("All Ratings")} />
           </SelectTrigger>
           <SelectContent position="popper" sideOffset={4}>
-            <SelectItem value="all">All Ratings</SelectItem>
+            <SelectItem value="all">{t("All Ratings")}</SelectItem>
             {ratingThresholds.map((threshold) => (
               <SelectItem key={threshold.rating} value={threshold.rating}>
                 {threshold.rating}
@@ -344,10 +355,10 @@ export default function RiskAssessmentPage() {
         </Select>
         <Select value={categoryFilter} onValueChange={setCategoryFilter}>
           <SelectTrigger className="w-[150px] bg-white">
-            <SelectValue placeholder="All Categories" />
+            <SelectValue placeholder={t("All Categories")} />
           </SelectTrigger>
           <SelectContent position="popper" sideOffset={4}>
-            <SelectItem value="all">All Categories</SelectItem>
+            <SelectItem value="all">{t("All Categories")}</SelectItem>
             {categories.map((cat) => (
               <SelectItem key={cat.id} value={cat.id}>
                 {cat.name}
@@ -357,10 +368,10 @@ export default function RiskAssessmentPage() {
         </Select>
         <Select value={typeFilter} onValueChange={setTypeFilter}>
           <SelectTrigger className="w-[140px] bg-white">
-            <SelectValue placeholder="All Types" />
+            <SelectValue placeholder={t("All Types")} />
           </SelectTrigger>
           <SelectContent position="popper" sideOffset={4}>
-            <SelectItem value="all">All Types</SelectItem>
+            <SelectItem value="all">{t("All Types")}</SelectItem>
             {riskTypes.map((type) => (
               <SelectItem key={type.id} value={type.id}>
                 {type.name}
@@ -375,22 +386,22 @@ export default function RiskAssessmentPage() {
         <Table>
           <TableHeader>
             <TableRow className="h-12 bg-slate-50/50 hover:bg-slate-50/50">
-              <TableHead className="text-xs font-semibold text-slate-600 pl-4">Risk ID</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600">Risk Name</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600">Risk Description</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600">Risk Rating</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600">Risk Category</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600">Risk Owner</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600">Risk Type</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600">Status</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600">Action</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 pl-4">{t("Risk ID")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600">{t("Risk Name")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600">{t("Risk Description")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600">{t("Risk Rating")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600">{t("Risk Category")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600">{t("Risk Owner")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600">{t("Risk Type")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600">{t("Status")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600">{t("Action")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {paginatedRisks.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={9} className="text-center py-8 text-slate-500">
-                  No risks found
+                  {t("No risks found")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -433,7 +444,7 @@ export default function RiskAssessmentPage() {
         {filteredRisks.length > 0 && (
           <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
             <span className="text-sm text-slate-500">
-              {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, filteredRisks.length)} of {filteredRisks.length}
+              {((currentPage - 1) * pageSize) + 1} {t("to")} {Math.min(currentPage * pageSize, filteredRisks.length)} {t("of")} {filteredRisks.length}
             </span>
             <div className="flex items-center gap-1">
               <Button
@@ -477,6 +488,13 @@ export default function RiskAssessmentPage() {
         )}
       </div>
 
+      {/* Assessment Wizard Modal */}
+      <RiskAssessmentWizardDialog
+        open={assessmentDialogOpen}
+        onOpenChange={setAssessmentDialogOpen}
+        riskId={selectedRiskId}
+        onAssessmentComplete={handleAssessmentComplete}
+      />
     </div>
   );
 }

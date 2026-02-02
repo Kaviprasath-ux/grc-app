@@ -962,26 +962,24 @@ export function RiskAssessmentWizardDialog({
           {/* Fixed Footer */}
           {!loading && risk && (
             <DialogFooter className="flex-shrink-0 px-6 py-4 border-t border-slate-100">
-              <div className="flex justify-between w-full">
+              <div className="flex justify-end gap-2 w-full">
+                {currentStep > 1 && (
+                  <Button variant="outline" onClick={handlePrevious}>
+                    Previous
+                  </Button>
+                )}
                 <Button variant="outline" onClick={() => onOpenChange(false)}>
                   Cancel
                 </Button>
-                <div className="flex gap-2">
-                  {currentStep > 1 && (
-                    <Button variant="outline" onClick={handlePrevious}>
-                      Previous
+                {currentStep < assessmentSteps.length ? (
+                  <Button onClick={handleNext}>Next</Button>
+                ) : (
+                  (canCreate || canEdit) && (
+                    <Button onClick={handleSave}>
+                      Save
                     </Button>
-                  )}
-                  {currentStep < assessmentSteps.length ? (
-                    <Button onClick={handleNext}>Next</Button>
-                  ) : (
-                    (canCreate || canEdit) && (
-                      <Button onClick={handleSave}>
-                        Save
-                      </Button>
-                    )
-                  )}
-                </div>
+                  )
+                )}
               </div>
             </DialogFooter>
           )}

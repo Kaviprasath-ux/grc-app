@@ -57,6 +57,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { useHasRole } from "@/hooks/usePermissions";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Framework {
   id: string;
@@ -102,6 +103,7 @@ const TEMPLATE_COLUMNS = [
 export default function FrameworkOverviewPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const isGRCReviewer = useHasRole("GRCReviewer");
   const isDepartmentReviewer = useHasRole("DepartmentReviewer");
   const isReviewerRole = isGRCReviewer || isDepartmentReviewer;
@@ -253,8 +255,8 @@ export default function FrameworkOverviewPage() {
           resetForm();
           fetchFrameworks();
           toast({
-            title: "Success",
-            description: "Framework updated successfully",
+            title: t("Success"),
+            description: t("Framework updated successfully"),
           });
         }
       } else {
@@ -282,8 +284,8 @@ export default function FrameworkOverviewPage() {
         } else {
           const error = await response.json();
           toast({
-            title: "Error",
-            description: error.error || "Failed to create framework",
+            title: t("Error"),
+            description: error.error || t("Failed to create framework"),
             variant: "destructive",
           });
         }
@@ -291,8 +293,8 @@ export default function FrameworkOverviewPage() {
     } catch (error) {
       console.error("Error saving framework:", error);
       toast({
-        title: "Error",
-        description: "Failed to save framework",
+        title: t("Error"),
+        description: t("Failed to save framework"),
         variant: "destructive",
       });
     }
@@ -311,15 +313,15 @@ export default function FrameworkOverviewPage() {
         setFrameworkToDelete(null);
         fetchFrameworks();
         toast({
-          title: "Success",
-          description: "Framework deleted successfully",
+          title: t("Success"),
+          description: t("Framework deleted successfully"),
         });
       }
     } catch (error) {
       console.error("Error deleting framework:", error);
       toast({
-        title: "Error",
-        description: "Failed to delete framework",
+        title: t("Error"),
+        description: t("Failed to delete framework"),
         variant: "destructive",
       });
     }
@@ -380,13 +382,13 @@ export default function FrameworkOverviewPage() {
         setImportSuccess(null);
       } else {
         toast({
-          title: "Invalid File",
-          description: "Please upload an Excel file (.xlsx)",
+          title: t("Invalid File"),
+          description: t("Please upload an Excel file (.xlsx)"),
           variant: "destructive",
         });
       }
     }
-  }, [toast]);
+  }, [toast, t]);
 
   const handleImportFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -398,8 +400,8 @@ export default function FrameworkOverviewPage() {
         setImportSuccess(null);
       } else {
         toast({
-          title: "Invalid File",
-          description: "Please upload an Excel file (.xlsx)",
+          title: t("Invalid File"),
+          description: t("Please upload an Excel file (.xlsx)"),
           variant: "destructive",
         });
       }
@@ -427,14 +429,14 @@ export default function FrameworkOverviewPage() {
       XLSX.writeFile(workbook, "framework_requirements_template.xlsx");
 
       toast({
-        title: "Template Downloaded",
-        description: "Sample template has been downloaded successfully",
+        title: t("Template Downloaded"),
+        description: t("Sample template has been downloaded successfully"),
       });
     } catch (error) {
       console.error("Error generating template:", error);
       toast({
-        title: "Error",
-        description: "Failed to download template",
+        title: t("Error"),
+        description: t("Failed to download template"),
         variant: "destructive",
       });
     }
@@ -462,7 +464,7 @@ export default function FrameworkOverviewPage() {
       if (response.ok) {
         fetchFrameworks();
         toast({
-          title: "Import Successful",
+          title: t("Import Successful"),
           description: result.message,
         });
         // Auto-close the dialog after successful import
@@ -472,16 +474,16 @@ export default function FrameworkOverviewPage() {
           setImportErrors(result.details);
         }
         toast({
-          title: "Import Failed",
-          description: result.error || "Failed to import requirements",
+          title: t("Import Failed"),
+          description: result.error || t("Failed to import requirements"),
           variant: "destructive",
         });
       }
     } catch (error) {
       console.error("Error importing file:", error);
       toast({
-        title: "Error",
-        description: "Failed to import requirements",
+        title: t("Error"),
+        description: t("Failed to import requirements"),
         variant: "destructive",
       });
     } finally {
@@ -503,7 +505,7 @@ export default function FrameworkOverviewPage() {
             <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
             <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
           </div>
-          <p className="text-sm text-slate-500 font-medium">Loading frameworks...</p>
+          <p className="text-sm text-slate-500 font-medium">{t("Loading frameworks...")}</p>
         </div>
       </div>
     );
@@ -513,7 +515,7 @@ export default function FrameworkOverviewPage() {
     <div className="space-y-6">
       {/* Page Header */}
       <div>
-        <h1 className="text-2xl font-bold text-slate-800">Frameworks</h1>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Frameworks")}</h1>
       </div>
 
       {/* Toolbar */}
@@ -521,7 +523,7 @@ export default function FrameworkOverviewPage() {
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input
-            placeholder="Search frameworks..."
+            placeholder={t("Search frameworks...")}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10 bg-white border-slate-200"
@@ -536,14 +538,14 @@ export default function FrameworkOverviewPage() {
               className="bg-primary-50 hover:bg-primary-100 text-primary-700 border-primary-200"
             >
               <Sparkles className="h-4 w-4 mr-2" />
-              New Framework (AI)
+              {t("New Framework (AI)")}
             </Button>
             <Button
               onClick={() => openCreateDialog(false)}
               size="sm"
             >
               <Plus className="h-4 w-4 mr-2" />
-              New Framework
+              {t("New Framework")}
             </Button>
           </div>
         )}
@@ -559,7 +561,7 @@ export default function FrameworkOverviewPage() {
                   onClick={() => handleSort("code")}
                   className="flex items-center gap-2 text-xs font-semibold text-slate-600 hover:text-slate-800"
                 >
-                  Code
+                  {t("Code")}
                   <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
                 </button>
               </TableHead>
@@ -568,7 +570,7 @@ export default function FrameworkOverviewPage() {
                   onClick={() => handleSort("name")}
                   className="flex items-center gap-2 text-xs font-semibold text-slate-600 hover:text-slate-800"
                 >
-                  Framework Name
+                  {t("Framework Name")}
                   <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
                 </button>
               </TableHead>
@@ -577,12 +579,12 @@ export default function FrameworkOverviewPage() {
                   onClick={() => handleSort("description")}
                   className="flex items-center gap-2 text-xs font-semibold text-slate-600 hover:text-slate-800"
                 >
-                  Description
+                  {t("Description")}
                   <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
                 </button>
               </TableHead>
               {!isReviewerRole && (
-                <TableHead className="w-[100px] text-xs font-semibold text-slate-600 py-3">Actions</TableHead>
+                <TableHead className="w-[100px] text-xs font-semibold text-slate-600 py-3">{t("Actions")}</TableHead>
               )}
             </TableRow>
           </TableHeader>
@@ -590,7 +592,7 @@ export default function FrameworkOverviewPage() {
             {currentFrameworks.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={isReviewerRole ? 3 : 4} className="h-24 text-center text-slate-500">
-                  No frameworks found.
+                  {t("No frameworks found.")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -643,8 +645,8 @@ export default function FrameworkOverviewPage() {
         <div className="flex items-center justify-between p-4 border-t border-slate-100">
           <div className="text-xs text-slate-500">
             {sortedFrameworks.length > 0
-              ? `Showing ${startIndex + 1} to ${endIndex} of ${sortedFrameworks.length}`
-              : "No frameworks"}
+              ? t("Showing {start} to {end} of {total}").replace("{start}", String(startIndex + 1)).replace("{end}", String(endIndex)).replace("{total}", String(sortedFrameworks.length))
+              : t("No frameworks")}
           </div>
           <div className="flex items-center gap-1">
             <Button
@@ -694,7 +696,7 @@ export default function FrameworkOverviewPage() {
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">
-                {isEditMode ? "Edit Framework" : "Create Framework"}
+                {isEditMode ? t("Edit Framework") : t("Create Framework")}
               </DialogTitle>
             </DialogHeader>
           </div>
@@ -703,82 +705,81 @@ export default function FrameworkOverviewPage() {
           <div className="flex-1 overflow-y-auto px-6 py-6">
             <div className="space-y-5">
               <p className="text-sm text-slate-500">
-                Please provide the following details to create a new compliance framework.
+                {t("Please provide the following details to create a new compliance framework.")}
               </p>
 
               {isEditMode && (
                 <p className="text-sm text-primary-600 bg-primary-50 p-3 rounded-lg border border-primary-100">
-                  Note: Custom framework will be automatically added in grey color to
-                  differentiate between Subscribed Frameworks.
+                  {t("Note: Custom framework will be automatically added in grey color to differentiate between Subscribed Frameworks.")}
                 </p>
               )}
 
               <div>
-                <Label className="text-sm font-medium text-slate-700">Code</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Code")}</Label>
                 <Input
                   value={formData.code}
                   onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                  placeholder="Enter code"
+                  placeholder={t("Enter code")}
                   className="mt-1.5 bg-white"
                 />
               </div>
 
               <div>
                 <Label className="text-sm font-medium text-slate-700">
-                  Framework Name <span className="text-error">*</span>
+                  {t("Framework Name")} <span className="text-error">*</span>
                 </Label>
                 <Input
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Enter framework name"
+                  placeholder={t("Enter framework name")}
                   className="mt-1.5 bg-white"
                 />
               </div>
 
               <div>
-                <Label className="text-sm font-medium text-slate-700">Description</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
                 <Textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Enter description"
+                  placeholder={t("Enter description")}
                   rows={3}
                   className="mt-1.5 bg-white"
                 />
               </div>
 
               <div>
-                <Label className="text-sm font-medium text-slate-700">Framework Type</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Framework Type")}</Label>
                 <Select
                   value={formData.type}
                   onValueChange={(value) => setFormData({ ...formData, type: value })}
                 >
                   <SelectTrigger className="w-full mt-1.5 bg-white">
-                    <SelectValue placeholder="Select type" />
+                    <SelectValue placeholder={t("Select type")} />
                   </SelectTrigger>
                   <SelectContent className="bg-white" position="popper" sideOffset={4}>
-                    <SelectItem value="Framework">Framework</SelectItem>
-                    <SelectItem value="Standard">Standard</SelectItem>
-                    <SelectItem value="Regulation">Regulation</SelectItem>
+                    <SelectItem value="Framework">{t("Framework")}</SelectItem>
+                    <SelectItem value="Standard">{t("Standard")}</SelectItem>
+                    <SelectItem value="Regulation">{t("Regulation")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Country</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Country")}</Label>
                   <Input
                     value={formData.country}
                     onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                    placeholder="Enter country"
+                    placeholder={t("Enter country")}
                     className="mt-1.5 bg-white"
                   />
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Industry</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Industry")}</Label>
                   <Input
                     value={formData.industry}
                     onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
-                    placeholder="Enter industry"
+                    placeholder={t("Enter industry")}
                     className="mt-1.5 bg-white"
                   />
                 </div>
@@ -787,7 +788,7 @@ export default function FrameworkOverviewPage() {
               {/* File Upload - Only for AI version */}
               {isAICreate && (
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Upload Support Document</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Upload Support Document")}</Label>
                   <div
                     className={`mt-1.5 border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
                       isDragging
@@ -821,13 +822,13 @@ export default function FrameworkOverviewPage() {
                           }}
                           className="text-slate-400 hover:text-semantic-error"
                         >
-                          Remove
+                          {t("Remove")}
                         </Button>
                       </div>
                     ) : (
                       <div className="flex flex-col items-center gap-2 text-slate-400">
                         <Upload className="h-8 w-8" />
-                        <span className="text-sm">Click here, or drop files here to upload.</span>
+                        <span className="text-sm">{t("Click here, or drop files here to upload.")}</span>
                       </div>
                     )}
                   </div>
@@ -839,10 +840,10 @@ export default function FrameworkOverviewPage() {
           {/* Fixed Footer */}
           <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button onClick={handleCreateOrUpdate} disabled={!formData.name}>
-              {isEditMode ? "Save" : "Create"}
+              {isEditMode ? t("Save") : t("Create")}
             </Button>
           </div>
         </DialogContent>
@@ -856,7 +857,7 @@ export default function FrameworkOverviewPage() {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-lg font-semibold text-slate-800">
                 <FileSpreadsheet className="h-5 w-5 text-success-dark" />
-                Import Framework Requirements
+                {t("Import Framework Requirements")}
               </DialogTitle>
             </DialogHeader>
           </div>
@@ -865,8 +866,7 @@ export default function FrameworkOverviewPage() {
           <div className="flex-1 overflow-y-auto px-6 py-6">
             <div className="space-y-5">
               <p className="text-sm text-slate-500">
-                Upload an Excel file (.xlsx) containing your framework requirements.
-                You can download the sample template to see the required format.
+                {t("Upload an Excel file (.xlsx) containing your framework requirements. You can download the sample template to see the required format.")}
               </p>
 
               {/* Download Template Button */}
@@ -877,16 +877,16 @@ export default function FrameworkOverviewPage() {
                   onClick={handleDownloadTemplate}
                 >
                   <Download className="h-4 w-4 mr-2" />
-                  Download Sample Template
+                  {t("Download Sample Template")}
                 </Button>
                 <span className="text-sm text-slate-500">
-                  Use this template to ensure correct column headers
+                  {t("Use this template to ensure correct column headers")}
                 </span>
               </div>
 
               {/* File Upload Area */}
               <div>
-                <Label className="text-sm font-medium text-slate-700">Upload Document</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Upload Document")}</Label>
                 <div
                   className={`mt-1.5 border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
                     isDraggingImport
@@ -937,9 +937,9 @@ export default function FrameworkOverviewPage() {
                       <Upload className="h-12 w-12" />
                       <div>
                         <span className="text-sm font-medium">
-                          Click to upload or drag and drop
+                          {t("Click to upload or drag and drop")}
                         </span>
-                        <p className="text-xs mt-1">Excel files only (.xlsx)</p>
+                        <p className="text-xs mt-1">{t("Excel files only (.xlsx)")}</p>
                       </div>
                     </div>
                   )}
@@ -954,7 +954,7 @@ export default function FrameworkOverviewPage() {
                     <p className="text-sm font-medium text-success-dark">{importSuccess}</p>
                     {importErrors.length > 0 && (
                       <p className="text-xs text-success-dark/80 mt-1">
-                        Some warnings occurred during import. See details below.
+                        {t("Some warnings occurred during import. See details below.")}
                       </p>
                     )}
                   </div>
@@ -967,7 +967,7 @@ export default function FrameworkOverviewPage() {
                   <div className="flex items-center gap-2 text-error">
                     <AlertCircle className="h-4 w-4" />
                     <span className="text-sm font-medium">
-                      {importSuccess ? "Warnings" : "Validation Errors"}
+                      {importSuccess ? t("Warnings") : t("Validation Errors")}
                     </span>
                   </div>
                   <div className="max-h-40 overflow-y-auto border border-error/20 rounded-lg bg-error-light">
@@ -976,7 +976,7 @@ export default function FrameworkOverviewPage() {
                         key={index}
                         className="px-3 py-2 text-sm text-error border-b border-error/10 last:border-b-0"
                       >
-                        {error.row > 0 && <span className="font-medium">Row {error.row}: </span>}
+                        {error.row > 0 && <span className="font-medium">{t("Row")} {error.row}: </span>}
                         {error.column && <span className="font-medium">{error.column} - </span>}
                         {error.message}
                       </div>
@@ -987,7 +987,7 @@ export default function FrameworkOverviewPage() {
 
               {/* Required Columns Info */}
               <div className="bg-slate-50 rounded-lg p-4">
-                <p className="text-sm font-medium text-slate-700 mb-2">Required Column Headers:</p>
+                <p className="text-sm font-medium text-slate-700 mb-2">{t("Required Column Headers:")}</p>
                 <div className="flex flex-wrap gap-2">
                   {TEMPLATE_COLUMNS.map((col) => (
                     <span
@@ -1005,7 +1005,7 @@ export default function FrameworkOverviewPage() {
           {/* Fixed Footer */}
           <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={handleCloseImportDialog}>
-              {importSuccess ? "Close" : "Skip"}
+              {importSuccess ? t("Close") : t("Skip")}
             </Button>
             <Button
               onClick={handleImport}
@@ -1014,12 +1014,12 @@ export default function FrameworkOverviewPage() {
               {isImporting ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
-                  Importing...
+                  {t("Importing...")}
                 </>
               ) : (
                 <>
                   <Upload className="h-4 w-4 mr-2" />
-                  Import
+                  {t("Import")}
                 </>
               )}
             </Button>
@@ -1031,14 +1031,14 @@ export default function FrameworkOverviewPage() {
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Framework</AlertDialogTitle>
+            <AlertDialogTitle>{t("Delete Framework")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this framework? This action cannot be undone.
+              {t("Are you sure you want to delete this framework? This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+            <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>{t("Delete")}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

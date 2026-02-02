@@ -427,7 +427,7 @@ export default function ViewFindingPage() {
               <Label className="text-[#1e3a5f] font-medium">Target Closure Date</Label>
               {isEditing ? (
                 <DatePicker
-                  value={formData.targetDate}
+                  value={formData.targetDate || undefined}
                   onChange={(date) => handleInputChange("targetDate", date ? date.toISOString().split('T')[0] : "")}
                   placeholder="Select date"
                 />

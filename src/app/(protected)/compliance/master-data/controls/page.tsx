@@ -55,6 +55,7 @@ import {
   Check,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface ControlDomain {
   id: string;
@@ -114,6 +115,7 @@ const functionalGroupings = [
 export default function ControlsMasterDataPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [controls, setControls] = useState<Control[]>([]);
   const [domains, setDomains] = useState<ControlDomain[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -561,7 +563,7 @@ export default function ControlsMasterDataPage() {
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-2xl font-bold text-slate-800">Control</h1>
+          <h1 className="text-2xl font-bold text-slate-800">{t("Control")}</h1>
         </div>
       </div>
 
@@ -570,7 +572,7 @@ export default function ControlsMasterDataPage() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input
-            placeholder="Search controls..."
+            placeholder={t("Search controls...")}
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
@@ -582,11 +584,11 @@ export default function ControlsMasterDataPage() {
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
             <Upload className="h-4 w-4 mr-2" />
-            Import
+            {t("Import")}
           </Button>
           <Button variant="outline" size="sm" onClick={handleExport}>
             <Download className="h-4 w-4 mr-2" />
-            Export
+            {t("Export")}
           </Button>
           <Dialog
           open={createDialogOpen}
@@ -600,7 +602,7 @@ export default function ControlsMasterDataPage() {
           <DialogTrigger asChild>
             <Button size="sm">
               <Plus className="h-4 w-4 mr-2" />
-              New Control
+              {t("New Control")}
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
@@ -608,7 +610,7 @@ export default function ControlsMasterDataPage() {
             <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-lg font-semibold text-slate-800">
-                  Control Details - Step {wizardStep} of 3
+                  {t("Control Details")} - {t("Step")} {wizardStep} {t("of")} 3
                 </DialogTitle>
               </DialogHeader>
             </div>
@@ -636,10 +638,10 @@ export default function ControlsMasterDataPage() {
                     }`}
                   >
                     {step === 1
-                      ? "Control Info"
+                      ? t("Control Info")
                       : step === 2
-                        ? "Assignments"
-                        : "Review"}
+                        ? t("Assignments")
+                        : t("Review")}
                   </span>
                   {step < 3 && (
                     <div className="w-12 h-0.5 bg-slate-200 mx-3" />
@@ -655,7 +657,7 @@ export default function ControlsMasterDataPage() {
                 <div className="space-y-4">
                   <div>
                     <Label className="text-sm font-medium text-slate-700">
-                      Control Domain
+                      {t("Control Domain")}
                     </Label>
                     <Select
                       value={formData.domainId || "none"}
@@ -667,10 +669,10 @@ export default function ControlsMasterDataPage() {
                       }
                     >
                       <SelectTrigger className="mt-1.5 w-full bg-white">
-                        <SelectValue placeholder="Select domain" />
+                        <SelectValue placeholder={t("Select domain")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
-                        <SelectItem value="none">Select domain</SelectItem>
+                        <SelectItem value="none">{t("Select domain")}</SelectItem>
                         {domains.map((d) => (
                           <SelectItem key={d.id} value={d.id}>
                             {d.name}
@@ -681,34 +683,34 @@ export default function ControlsMasterDataPage() {
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-slate-700">
-                      Control Name *
+                      {t("Control Name")} *
                     </Label>
                     <Input
                       value={formData.name}
                       onChange={(e) =>
                         setFormData({ ...formData, name: e.target.value })
                       }
-                      placeholder="Enter control name"
+                      placeholder={t("Enter control name")}
                       className="mt-1.5 w-full bg-white"
                     />
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-slate-700">
-                      Description
+                      {t("Description")}
                     </Label>
                     <Textarea
                       value={formData.description}
                       onChange={(e) =>
                         setFormData({ ...formData, description: e.target.value })
                       }
-                      placeholder="Enter description"
+                      placeholder={t("Enter description")}
                       rows={3}
                       className="mt-1.5 w-full bg-white"
                     />
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-slate-700">
-                      Control Question *
+                      {t("Control Question")} *
                     </Label>
                     <Textarea
                       value={formData.controlQuestion}
@@ -718,14 +720,14 @@ export default function ControlsMasterDataPage() {
                           controlQuestion: e.target.value,
                         })
                       }
-                      placeholder="Enter control question"
+                      placeholder={t("Enter control question")}
                       rows={2}
                       className="mt-1.5 w-full bg-white"
                     />
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-slate-700">
-                      Function Grouping *
+                      {t("Function Grouping")} *
                     </Label>
                     <Select
                       value={formData.functionalGrouping || "none"}
@@ -737,10 +739,10 @@ export default function ControlsMasterDataPage() {
                       }
                     >
                       <SelectTrigger className="mt-1.5 w-full bg-white">
-                        <SelectValue placeholder="Select grouping" />
+                        <SelectValue placeholder={t("Select grouping")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
-                        <SelectItem value="none">Select grouping</SelectItem>
+                        <SelectItem value="none">{t("Select grouping")}</SelectItem>
                         {functionalGroupings.map((g) => (
                           <SelectItem key={g} value={g}>
                             {g}
@@ -757,7 +759,7 @@ export default function ControlsMasterDataPage() {
                 <div className="space-y-4">
                   <div>
                     <Label className="text-sm font-medium text-slate-700">
-                      Department *
+                      {t("Department")} *
                     </Label>
                     <Select
                       value={formData.departmentId || "none"}
@@ -770,10 +772,10 @@ export default function ControlsMasterDataPage() {
                       }
                     >
                       <SelectTrigger className="mt-1.5 w-full bg-white">
-                        <SelectValue placeholder="Select department" />
+                        <SelectValue placeholder={t("Select department")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
-                        <SelectItem value="none">Select department</SelectItem>
+                        <SelectItem value="none">{t("Select department")}</SelectItem>
                         {departments.map((d) => (
                           <SelectItem key={d.id} value={d.id}>
                             {d.name}
@@ -784,7 +786,7 @@ export default function ControlsMasterDataPage() {
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-slate-700">
-                      Assignee *
+                      {t("Assignee")} *
                     </Label>
                     <Select
                       value={formData.assigneeId || "none"}
@@ -796,10 +798,10 @@ export default function ControlsMasterDataPage() {
                       }
                     >
                       <SelectTrigger className="mt-1.5 w-full bg-white">
-                        <SelectValue placeholder="Select assignee" />
+                        <SelectValue placeholder={t("Select assignee")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
-                        <SelectItem value="none">Select assignee</SelectItem>
+                        <SelectItem value="none">{t("Select assignee")}</SelectItem>
                         {filteredUsers.map((u) => (
                           <SelectItem key={u.id} value={u.id}>
                             {u.fullName}
@@ -809,7 +811,7 @@ export default function ControlsMasterDataPage() {
                     </Select>
                     {!formData.assigneeId && formData.departmentId && (
                       <p className="text-error text-sm mt-1">
-                        Please select the assignee
+                        {t("Please select the assignee")}
                       </p>
                     )}
                   </div>
@@ -822,20 +824,20 @@ export default function ControlsMasterDataPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm font-medium text-slate-500">
-                        Control Name
+                        {t("Control Name")}
                       </p>
                       <p className="text-sm text-slate-800">{formData.name}</p>
                     </div>
                     <div>
                       <p className="text-sm font-medium text-slate-500">
-                        Control Code
+                        {t("Control Code")}
                       </p>
-                      <p className="text-sm text-slate-400">(Auto-generated)</p>
+                      <p className="text-sm text-slate-400">({t("Auto-generated")})</p>
                     </div>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-slate-500">
-                      Description
+                      {t("Description")}
                     </p>
                     <p className="text-sm text-slate-800">
                       {formData.description || "-"}
@@ -843,7 +845,7 @@ export default function ControlsMasterDataPage() {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-slate-500">
-                      Control Question
+                      {t("Control Question")}
                     </p>
                     <p className="text-sm text-slate-800">
                       {formData.controlQuestion}
@@ -852,7 +854,7 @@ export default function ControlsMasterDataPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm font-medium text-slate-500">
-                        Control Domain
+                        {t("Control Domain")}
                       </p>
                       <p className="text-sm text-slate-800">
                         {domains.find((d) => d.id === formData.domainId)?.name ||
@@ -861,7 +863,7 @@ export default function ControlsMasterDataPage() {
                     </div>
                     <div>
                       <p className="text-sm font-medium text-slate-500">
-                        Functional Grouping
+                        {t("Functional Grouping")}
                       </p>
                       <p className="text-sm text-slate-800">
                         {formData.functionalGrouping}
@@ -871,7 +873,7 @@ export default function ControlsMasterDataPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm font-medium text-slate-500">
-                        Department
+                        {t("Department")}
                       </p>
                       <p className="text-sm text-slate-800">
                         {departments.find((d) => d.id === formData.departmentId)
@@ -880,7 +882,7 @@ export default function ControlsMasterDataPage() {
                     </div>
                     <div>
                       <p className="text-sm font-medium text-slate-500">
-                        Assignee
+                        {t("Assignee")}
                       </p>
                       <p className="text-sm text-slate-800">
                         {users.find((u) => u.id === formData.assigneeId)
@@ -899,7 +901,7 @@ export default function ControlsMasterDataPage() {
                   variant="outline"
                   onClick={() => setWizardStep(wizardStep - 1)}
                 >
-                  Previous
+                  {t("Previous")}
                 </Button>
               )}
               <Button
@@ -909,7 +911,7 @@ export default function ControlsMasterDataPage() {
                   resetForm();
                 }}
               >
-                Cancel
+                {t("Cancel")}
               </Button>
               {wizardStep < 3 ? (
                 <Button
@@ -922,10 +924,10 @@ export default function ControlsMasterDataPage() {
                       : !formData.departmentId || !formData.assigneeId
                   }
                 >
-                  Next
+                  {t("Next")}
                 </Button>
               ) : (
-                <Button onClick={handleCreate}>Create Control</Button>
+                <Button onClick={handleCreate}>{t("Create Control")}</Button>
               )}
             </div>
           </DialogContent>
@@ -939,25 +941,25 @@ export default function ControlsMasterDataPage() {
           <TableHeader>
             <TableRow className="border-b border-slate-100 bg-slate-50/50">
               <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4">
-                Control Name
+                {t("Control Name")}
               </TableHead>
               <TableHead className="text-xs font-semibold text-slate-600 h-12">
-                Control Domain
+                {t("Control Domain")}
               </TableHead>
               <TableHead className="text-xs font-semibold text-slate-600 h-12">
-                Control Code
+                {t("Control Code")}
               </TableHead>
               <TableHead className="text-xs font-semibold text-slate-600 h-12 max-w-[200px]">
-                Description
+                {t("Description")}
               </TableHead>
               <TableHead className="text-xs font-semibold text-slate-600 h-12">
-                Function Grouping
+                {t("Function Grouping")}
               </TableHead>
               <TableHead className="text-xs font-semibold text-slate-600 h-12">
-                Status
+                {t("Status")}
               </TableHead>
               <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[100px]">
-                Action
+                {t("Action")}
               </TableHead>
             </TableRow>
           </TableHeader>
@@ -965,7 +967,7 @@ export default function ControlsMasterDataPage() {
             {controls.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-8">
-                  <p className="text-slate-500">No controls found</p>
+                  <p className="text-slate-500">{t("No controls found")}</p>
                 </TableCell>
               </TableRow>
             ) : (
@@ -1026,8 +1028,8 @@ export default function ControlsMasterDataPage() {
         <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
           <p className="text-sm text-slate-500">
             {total > 0
-              ? `Showing ${startItem} to ${endItem} of ${total}`
-              : "No controls"}
+              ? `${t("Showing")} ${startItem} ${t("to")} ${endItem} ${t("of")} ${total}`
+              : t("No controls")}
           </p>
           <div className="flex items-center gap-1">
             <Button
@@ -1049,7 +1051,7 @@ export default function ControlsMasterDataPage() {
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <span className="text-sm text-slate-600 px-2">
-              Page {page} of {totalPages || 1}
+              {t("Page")} {page} {t("of")} {totalPages || 1}
             </span>
             <Button
               variant="ghost"
@@ -1079,7 +1081,7 @@ export default function ControlsMasterDataPage() {
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">
-                Edit Control
+                {t("Edit Control")}
               </DialogTitle>
             </DialogHeader>
           </div>
@@ -1089,7 +1091,7 @@ export default function ControlsMasterDataPage() {
             <div className="grid grid-cols-2 gap-5">
               <div>
                 <Label className="text-sm font-medium text-slate-700">
-                  Control Code <span className="text-red-500">*</span>
+                  {t("Control Code")} <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   value={formData.controlCode}
@@ -1101,7 +1103,7 @@ export default function ControlsMasterDataPage() {
               </div>
               <div>
                 <Label className="text-sm font-medium text-slate-700">
-                  Control Domain
+                  {t("Control Domain")}
                 </Label>
                 <Select
                   value={formData.domainId || "none"}
@@ -1116,7 +1118,7 @@ export default function ControlsMasterDataPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
-                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="none">{t("None")}</SelectItem>
                     {domains.map((d) => (
                       <SelectItem key={d.id} value={d.id}>
                         {d.name}
@@ -1129,7 +1131,7 @@ export default function ControlsMasterDataPage() {
 
             <div>
               <Label className="text-sm font-medium text-slate-700">
-                Control Name <span className="text-red-500">*</span>
+                {t("Control Name")} <span className="text-red-500">*</span>
               </Label>
               <Input
                 value={formData.name}
@@ -1142,7 +1144,7 @@ export default function ControlsMasterDataPage() {
 
             <div>
               <Label className="text-sm font-medium text-slate-700">
-                Description
+                {t("Description")}
               </Label>
               <Textarea
                 value={formData.description}
@@ -1156,7 +1158,7 @@ export default function ControlsMasterDataPage() {
 
             <div>
               <Label className="text-sm font-medium text-slate-700">
-                Control Question
+                {t("Control Question")}
               </Label>
               <Textarea
                 value={formData.controlQuestion}
@@ -1171,7 +1173,7 @@ export default function ControlsMasterDataPage() {
             <div className="grid grid-cols-2 gap-5">
               <div>
                 <Label className="text-sm font-medium text-slate-700">
-                  Function Grouping
+                  {t("Function Grouping")}
                 </Label>
                 <Select
                   value={formData.functionalGrouping || "none"}
@@ -1186,7 +1188,7 @@ export default function ControlsMasterDataPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
-                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="none">{t("None")}</SelectItem>
                     {functionalGroupings.map((g) => (
                       <SelectItem key={g} value={g}>
                         {g}
@@ -1197,7 +1199,7 @@ export default function ControlsMasterDataPage() {
               </div>
               <div>
                 <Label className="text-sm font-medium text-slate-700">
-                  Status
+                  {t("Status")}
                 </Label>
                 <Select
                   value={formData.status}
@@ -1209,12 +1211,12 @@ export default function ControlsMasterDataPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
-                    <SelectItem value="Non Compliant">Non Compliant</SelectItem>
-                    <SelectItem value="Compliant">Compliant</SelectItem>
+                    <SelectItem value="Non Compliant">{t("Non Compliant")}</SelectItem>
+                    <SelectItem value="Compliant">{t("Compliant")}</SelectItem>
                     <SelectItem value="Partial Compliant">
-                      Partial Compliant
+                      {t("Partial Compliant")}
                     </SelectItem>
-                    <SelectItem value="Not Applicable">Not Applicable</SelectItem>
+                    <SelectItem value="Not Applicable">{t("Not Applicable")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1223,7 +1225,7 @@ export default function ControlsMasterDataPage() {
             <div className="grid grid-cols-2 gap-5">
               <div>
                 <Label className="text-sm font-medium text-slate-700">
-                  Department
+                  {t("Department")}
                 </Label>
                 <Select
                   value={formData.departmentId || "none"}
@@ -1236,10 +1238,10 @@ export default function ControlsMasterDataPage() {
                   }
                 >
                   <SelectTrigger className="mt-1.5 w-full bg-white">
-                    <SelectValue placeholder="Select department" />
+                    <SelectValue placeholder={t("Select department")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
-                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="none">{t("None")}</SelectItem>
                     {departments.map((d) => (
                       <SelectItem key={d.id} value={d.id}>
                         {d.name}
@@ -1250,7 +1252,7 @@ export default function ControlsMasterDataPage() {
               </div>
               <div>
                 <Label className="text-sm font-medium text-slate-700">
-                  Assignee
+                  {t("Assignee")}
                 </Label>
                 <Select
                   value={formData.assigneeId || "none"}
@@ -1262,10 +1264,10 @@ export default function ControlsMasterDataPage() {
                   }
                 >
                   <SelectTrigger className="mt-1.5 w-full bg-white">
-                    <SelectValue placeholder="Select assignee" />
+                    <SelectValue placeholder={t("Select assignee")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
-                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="none">{t("None")}</SelectItem>
                     {filteredUsers.map((u) => (
                       <SelectItem key={u.id} value={u.id}>
                         {u.fullName}
@@ -1280,7 +1282,7 @@ export default function ControlsMasterDataPage() {
             <div className="grid grid-cols-3 gap-5">
               <div>
                 <Label className="text-sm font-medium text-slate-700">
-                  Relative Control Weighting
+                  {t("Relative Control Weighting")}
                 </Label>
                 <Input
                   type="number"
@@ -1297,7 +1299,7 @@ export default function ControlsMasterDataPage() {
               </div>
               <div>
                 <Label className="text-sm font-medium text-slate-700">
-                  Scope
+                  {t("Scope")}
                 </Label>
                 <Select
                   value={formData.scope}
@@ -1309,8 +1311,8 @@ export default function ControlsMasterDataPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
-                    <SelectItem value="In-Scope">In-Scope</SelectItem>
-                    <SelectItem value="Not In-Scope">Not In-Scope</SelectItem>
+                    <SelectItem value="In-Scope">{t("In-Scope")}</SelectItem>
+                    <SelectItem value="Not In-Scope">{t("Not In-Scope")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1327,7 +1329,7 @@ export default function ControlsMasterDataPage() {
                     htmlFor="isControlList"
                     className="text-sm text-slate-600 cursor-pointer"
                   >
-                    Is Control List
+                    {t("Is Control List")}
                   </Label>
                 </div>
               </div>
@@ -1336,26 +1338,26 @@ export default function ControlsMasterDataPage() {
             {/* CMM Maturity Levels */}
             <div className="border-t border-slate-100 pt-6">
               <h4 className="font-semibold text-slate-800 mb-5">
-                CMM Maturity Levels
+                {t("CMM Maturity Levels")}
               </h4>
               <div className="space-y-4">
                 <div>
                   <Label className="text-sm font-medium text-slate-700">
-                    Not Performed (Level 0)
+                    {t("Not Performed (Level 0)")}
                   </Label>
                   <Textarea
                     value={formData.notPerformed}
                     onChange={(e) =>
                       setFormData({ ...formData, notPerformed: e.target.value })
                     }
-                    placeholder="Description for Level 0"
+                    placeholder={t("Description for Level 0")}
                     rows={2}
                     className="mt-1.5 w-full bg-white"
                   />
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-slate-700">
-                    Performed Informally (Level 1)
+                    {t("Performed Informally (Level 1)")}
                   </Label>
                   <Textarea
                     value={formData.performedInformally}
@@ -1365,14 +1367,14 @@ export default function ControlsMasterDataPage() {
                         performedInformally: e.target.value,
                       })
                     }
-                    placeholder="Description for Level 1"
+                    placeholder={t("Description for Level 1")}
                     rows={2}
                     className="mt-1.5 w-full bg-white"
                   />
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-slate-700">
-                    Planned and Tracked (Level 2)
+                    {t("Planned and Tracked (Level 2)")}
                   </Label>
                   <Textarea
                     value={formData.plannedAndTracked}
@@ -1382,28 +1384,28 @@ export default function ControlsMasterDataPage() {
                         plannedAndTracked: e.target.value,
                       })
                     }
-                    placeholder="Description for Level 2"
+                    placeholder={t("Description for Level 2")}
                     rows={2}
                     className="mt-1.5 w-full bg-white"
                   />
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-slate-700">
-                    Well Defined (Level 3)
+                    {t("Well Defined (Level 3)")}
                   </Label>
                   <Textarea
                     value={formData.wellDefined}
                     onChange={(e) =>
                       setFormData({ ...formData, wellDefined: e.target.value })
                     }
-                    placeholder="Description for Level 3"
+                    placeholder={t("Description for Level 3")}
                     rows={2}
                     className="mt-1.5 w-full bg-white"
                   />
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-slate-700">
-                    Quantitatively Controlled (Level 4)
+                    {t("Quantitatively Controlled (Level 4)")}
                   </Label>
                   <Textarea
                     value={formData.quantitativelyControlled}
@@ -1413,14 +1415,14 @@ export default function ControlsMasterDataPage() {
                         quantitativelyControlled: e.target.value,
                       })
                     }
-                    placeholder="Description for Level 4"
+                    placeholder={t("Description for Level 4")}
                     rows={2}
                     className="mt-1.5 w-full bg-white"
                   />
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-slate-700">
-                    Continuously Improving (Level 5)
+                    {t("Continuously Improving (Level 5)")}
                   </Label>
                   <Textarea
                     value={formData.continuouslyImproving}
@@ -1430,7 +1432,7 @@ export default function ControlsMasterDataPage() {
                         continuouslyImproving: e.target.value,
                       })
                     }
-                    placeholder="Description for Level 5"
+                    placeholder={t("Description for Level 5")}
                     rows={2}
                     className="mt-1.5 w-full bg-white"
                   />
@@ -1448,13 +1450,13 @@ export default function ControlsMasterDataPage() {
                 resetForm();
               }}
             >
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button
               onClick={handleEdit}
               disabled={!formData.controlCode || !formData.name}
             >
-              Save
+              {t("Save")}
             </Button>
           </div>
         </DialogContent>
@@ -1465,20 +1467,20 @@ export default function ControlsMasterDataPage() {
         <AlertDialogContent className="p-0 gap-0">
           <AlertDialogHeader className="px-6 py-5">
             <AlertDialogTitle className="text-lg font-semibold text-slate-800">
-              Delete Control
+              {t("Delete Control")}
             </AlertDialogTitle>
             <AlertDialogDescription className="text-sm text-slate-500 mt-1">
-              Are you sure you want to delete &quot;{selectedControl?.name}&quot;?
-              This action cannot be undone.
+              {t("Are you sure you want to delete")} &quot;{selectedControl?.name}&quot;?
+              {t("This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="px-6 py-4 bg-white rounded-b-lg">
-            <AlertDialogCancel className="h-9">Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="h-9">{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-semantic-error hover:bg-semantic-error/90 h-9"
             >
-              Delete
+              {t("Delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1501,24 +1503,23 @@ export default function ControlsMasterDataPage() {
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">
-                Import Controls
+                {t("Import Controls")}
               </DialogTitle>
             </DialogHeader>
           </div>
 
           <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
             <p className="text-sm text-slate-500">
-              Upload a CSV file to import controls. You can download a template
-              to see the required format.
+              {t("Upload a CSV file to import controls. You can download a template to see the required format.")}
             </p>
 
             <div>
-              <Label className="text-sm font-medium text-slate-700">File *</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("File")} *</Label>
               <div className="flex items-center gap-3 mt-1.5">
                 <Input
                   readOnly
                   value={importFile?.name || ""}
-                  placeholder="Choose a file..."
+                  placeholder={t("Choose a file...")}
                   className="flex-1 bg-white min-w-0"
                 />
                 <Button
@@ -1526,7 +1527,7 @@ export default function ControlsMasterDataPage() {
                   onClick={() => fileInputRef.current?.click()}
                   className="flex-shrink-0"
                 >
-                  Browse...
+                  {t("Browse...")}
                 </Button>
                 <input
                   ref={fileInputRef}
@@ -1537,7 +1538,7 @@ export default function ControlsMasterDataPage() {
                 />
               </div>
               <p className="text-xs text-slate-500 mt-1.5">
-                Supported formats: CSV
+                {t("Supported formats: CSV")}
               </p>
             </div>
           </div>
@@ -1545,7 +1546,7 @@ export default function ControlsMasterDataPage() {
           <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
               <Download className="h-4 w-4 mr-2" />
-              Download Template
+              {t("Download Template")}
             </Button>
             <div className="flex gap-2">
               <Button
@@ -1556,14 +1557,14 @@ export default function ControlsMasterDataPage() {
                   setImportFile(null);
                 }}
               >
-                Cancel
+                {t("Cancel")}
               </Button>
               <Button
                 size="sm"
                 onClick={handleImport}
                 disabled={!importFile || importing}
               >
-                {importing ? "Importing..." : "Import"}
+                {importing ? t("Importing...") : t("Import")}
               </Button>
             </div>
           </div>

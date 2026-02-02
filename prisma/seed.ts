@@ -214,6 +214,7 @@ async function main() {
       where: { userName: user.userName },
       update: {
         customerAccountId, // Update existing users with customer account
+        password: hashedPassword1, // Ensure password is updated for existing users
       },
       create: {
         customerAccountId,
@@ -298,6 +299,7 @@ async function main() {
     where: { userName: "superadmin" },
     update: {
       customerAccountId: grcAdminCustomerAccountId, // Ensure existing superadmin gets the account
+      password: hashedPasswordBaarez, // Ensure password is updated for existing users
     },
     create: {
       userId: "SUPERADMIN-001",
@@ -337,6 +339,7 @@ async function main() {
     where: { userName: "grcadmin2" },
     update: {
       customerAccountId: grcAdmin2CustomerAccountId,
+      password: hashedPasswordBaarez, // Ensure password is updated for existing users
     },
     create: {
       userId: "GRCADMIN2-001",

@@ -179,7 +179,7 @@ async function canAccessFramework(
 export const GET = withAuth(
   async (request, context, session) => {
     try {
-      const { id } = await context.params;
+      const { id } = await context.params as { id: string };
 
       // First fetch the framework to check tenant access
       const framework = await prisma.framework.findUnique({
@@ -270,7 +270,7 @@ export const GET = withAuth(
 export const PUT = withAuth(
   async (request, context, session) => {
     try {
-      const { id } = await context.params;
+      const { id } = await context.params as { id: string };
 
       // First fetch the framework to check tenant access
       const existingFramework = await prisma.framework.findUnique({
@@ -348,7 +348,7 @@ export const PUT = withAuth(
 export const DELETE = withAuth(
   async (request, context, session) => {
     try {
-      const { id } = await context.params;
+      const { id } = await context.params as { id: string };
       const { searchParams } = new URL(request.url);
       const forceDelete = searchParams.get("force") === "true";
 

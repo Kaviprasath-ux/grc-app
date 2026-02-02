@@ -30,7 +30,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Plus, Pencil, Trash2, ArrowUpDown, Eye, Search, Download, Upload, X, FileText, Sparkles, Loader2, Calendar, Target, AlertTriangle, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
+import { Plus, Pencil, Trash2, ArrowUpDown, Eye, Search, Download, Upload, X, FileText, Sparkles, Loader2, Calendar, Target, AlertTriangle, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Home } from "lucide-react";
+import Link from "next/link";
 import { DatePicker } from "@/components/ui/date-picker";
 import { format } from "date-fns";
 import {
@@ -122,6 +123,36 @@ interface InternalAuditRisk {
   status: string;
 }
 
+interface InternalAuditRiskDetail {
+  id: string;
+  riskId: string;
+  riskName: string;
+  riskDescription: string | null;
+  departmentId: string | null;
+  department: { id: string; name: string } | null;
+  sectionProcess: string | null;
+  subProcess: string | null;
+  activity: string | null;
+  categoryId: string | null;
+  category: { id: string; name: string } | null;
+  auditTypeId: string | null;
+  auditType: { id: string; name: string } | null;
+  inherentLikelihood: number | null;
+  inherentImpact: number | null;
+  inherentScore: number | null;
+  controlDescription: string | null;
+  controlEffectiveness: string | null;
+  residualLikelihood: number | null;
+  residualImpact: number | null;
+  residualScore: number | null;
+  riskLevel: string | null;
+  creationDate: string;
+  auditComment: string | null;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export default function RiskRegisterPage() {
   const router = useRouter();
   const { data: session } = useSession();
@@ -165,6 +196,11 @@ export default function RiskRegisterPage() {
   const [editingRisk, setEditingRisk] = useState<InternalAuditRisk | null>(null);
   const [saving, setSaving] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
+
+  // View Risk Modal states
+  const [isViewRiskOpen, setIsViewRiskOpen] = useState(false);
+  const [viewingRisk, setViewingRisk] = useState<InternalAuditRiskDetail | null>(null);
+  const [viewLoading, setViewLoading] = useState(false);
 
   // Reference data for form
   const [categories, setCategories] = useState<AuditCategory[]>([]);
@@ -445,6 +481,42 @@ export default function RiskRegisterPage() {
     setIsEditRiskOpen(false);
     setEditingRisk(null);
     setFormData(initialFormData);
+  };
+
+  // View Risk Modal handler
+  const openViewRiskModal = async (risk: InternalAuditRisk) => {
+    setViewLoading(true);
+    setIsViewRiskOpen(true);
+
+    try {
+      const response = await fetch(`/api/internal-audit/risks/${risk.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        setViewingRisk(data);
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to load risk details.",
+          variant: "destructive",
+        });
+        setIsViewRiskOpen(false);
+      }
+    } catch (error) {
+      console.error("Failed to fetch risk details:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load risk details.",
+        variant: "destructive",
+      });
+      setIsViewRiskOpen(false);
+    } finally {
+      setViewLoading(false);
+    }
+  };
+
+  const closeViewRiskModal = () => {
+    setIsViewRiskOpen(false);
+    setViewingRisk(null);
   };
 
   // Calculate scores
@@ -729,6 +801,16 @@ export default function RiskRegisterPage() {
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>Internal Audit</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">Risk Register</span>
+      </nav>
+
       {/* Header */}
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-bold text-slate-800">Risk Register</h1>
@@ -839,7 +921,7 @@ export default function RiskRegisterPage() {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 text-slate-400 hover:text-slate-600"
-                        onClick={() => router.push(`/internal-audit/risk-register/${risk.id}`)}
+                        onClick={() => openViewRiskModal(risk)}
                         title="View"
                       >
                         <Eye className="h-4 w-4" />
@@ -1832,6 +1914,201 @@ export default function RiskRegisterPage() {
             <Button onClick={handleEditRiskSubmit} disabled={saving || formLoading}>
               {saving ? "Saving..." : "Save"}
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Risk Modal */}
+      <Dialog open={isViewRiskOpen} onOpenChange={setIsViewRiskOpen}>
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">
+                Risk Details {viewingRisk?.riskId ? `- ${viewingRisk.riskId}` : ""}
+              </DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto">
+            {viewLoading ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="flex flex-col items-center gap-4">
+                  <div className="relative">
+                    <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
+                    <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+                  </div>
+                  <p className="text-sm text-slate-500 font-medium">Loading risk details...</p>
+                </div>
+              </div>
+            ) : viewingRisk ? (
+              <div className="px-6 py-6 space-y-6">
+                {/* Basic Information */}
+                <section>
+                  <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wider mb-4">Basic Information</h3>
+                  <div className="bg-slate-50 rounded-xl p-5 border border-slate-100">
+                    <div className="grid grid-cols-3 gap-x-8 gap-y-5">
+                      <div>
+                        <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5">Risk ID</label>
+                        <p className="text-sm font-semibold text-slate-900">{viewingRisk.riskId || "-"}</p>
+                      </div>
+                      <div className="col-span-2">
+                        <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5">Risk Name</label>
+                        <p className="text-sm font-semibold text-slate-900">{viewingRisk.riskName}</p>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5">Department</label>
+                        <p className="text-sm text-slate-700">{viewingRisk.department?.name || "-"}</p>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5">Category</label>
+                        <p className="text-sm text-slate-700">{viewingRisk.category?.name || "-"}</p>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5">Audit Type</label>
+                        <p className="text-sm text-slate-700">{viewingRisk.auditType?.name || "-"}</p>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5">Section/Process</label>
+                        <p className="text-sm text-slate-700">{viewingRisk.sectionProcess || "-"}</p>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5">Sub Process</label>
+                        <p className="text-sm text-slate-700">{viewingRisk.subProcess || "-"}</p>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5">Activity</label>
+                        <p className="text-sm text-slate-700">{viewingRisk.activity || "-"}</p>
+                      </div>
+                    </div>
+                    {viewingRisk.riskDescription && (
+                      <div className="mt-5 pt-5 border-t border-slate-200">
+                        <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5">Risk Description</label>
+                        <p className="text-sm text-slate-700 leading-relaxed">{viewingRisk.riskDescription}</p>
+                      </div>
+                    )}
+                  </div>
+                </section>
+
+                {/* Risk Assessment Grid */}
+                <section>
+                  <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wider mb-4">Risk Assessment</h3>
+                  <div className="grid grid-cols-2 gap-5">
+                    {/* Inherent Risk */}
+                    <div className="bg-amber-50 rounded-xl p-5 border border-amber-100">
+                      <h4 className="text-xs font-semibold text-amber-800 uppercase tracking-wide mb-4">Inherent Risk</h4>
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="text-center">
+                          <label className="block text-xs text-amber-600 mb-1">Likelihood</label>
+                          <p className="text-2xl font-bold text-amber-900">{viewingRisk.inherentLikelihood ?? "-"}</p>
+                        </div>
+                        <div className="text-center">
+                          <label className="block text-xs text-amber-600 mb-1">Impact</label>
+                          <p className="text-2xl font-bold text-amber-900">{viewingRisk.inherentImpact ?? "-"}</p>
+                        </div>
+                        <div className="text-center">
+                          <label className="block text-xs text-amber-600 mb-1">Score</label>
+                          <p className="text-2xl font-bold text-amber-900">{viewingRisk.inherentScore ?? "-"}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Residual Risk */}
+                    <div className="bg-emerald-50 rounded-xl p-5 border border-emerald-100">
+                      <h4 className="text-xs font-semibold text-emerald-800 uppercase tracking-wide mb-4">Residual Risk</h4>
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="text-center">
+                          <label className="block text-xs text-emerald-600 mb-1">Likelihood</label>
+                          <p className="text-2xl font-bold text-emerald-900">{viewingRisk.residualLikelihood ?? "-"}</p>
+                        </div>
+                        <div className="text-center">
+                          <label className="block text-xs text-emerald-600 mb-1">Impact</label>
+                          <p className="text-2xl font-bold text-emerald-900">{viewingRisk.residualImpact ?? "-"}</p>
+                        </div>
+                        <div className="text-center">
+                          <label className="block text-xs text-emerald-600 mb-1">Score</label>
+                          <p className="text-2xl font-bold text-emerald-900">{viewingRisk.residualScore ?? "-"}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Risk Level Badge */}
+                  <div className="mt-4 flex items-center justify-between bg-slate-50 rounded-lg px-5 py-3 border border-slate-100">
+                    <span className="text-sm font-medium text-slate-600">Current Risk Level</span>
+                    <div>{getRiskLevelBadge(viewingRisk.riskLevel)}</div>
+                  </div>
+                </section>
+
+                {/* Control Information */}
+                <section>
+                  <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wider mb-4">Control Information</h3>
+                  <div className="bg-slate-50 rounded-xl p-5 border border-slate-100">
+                    <div className="grid grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5">Control Description</label>
+                        <p className="text-sm text-slate-700 leading-relaxed">{viewingRisk.controlDescription || "-"}</p>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5">Control Effectiveness</label>
+                        <p className="text-sm text-slate-700">{viewingRisk.controlEffectiveness || "-"}</p>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Status & Comments */}
+                <section>
+                  <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wider mb-4">Status & Comments</h3>
+                  <div className="bg-slate-50 rounded-xl p-5 border border-slate-100">
+                    <div className="grid grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide mb-2">Status</label>
+                        {getStatusBadge(viewingRisk.status)}
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5">Creation Date</label>
+                        <p className="text-sm text-slate-700">{formatDate(viewingRisk.creationDate)}</p>
+                      </div>
+                    </div>
+                    {viewingRisk.auditComment && (
+                      <div className="mt-5 pt-5 border-t border-slate-200">
+                        <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5">Audit Comment</label>
+                        <p className="text-sm text-slate-700 leading-relaxed">{viewingRisk.auditComment}</p>
+                      </div>
+                    )}
+                  </div>
+                </section>
+
+                {/* Metadata Footer */}
+                <div className="flex items-center justify-between text-xs text-slate-400 pt-2">
+                  <span>Created: {formatDate(viewingRisk.createdAt)}</span>
+                  <span>Last Updated: {formatDate(viewingRisk.updatedAt)}</span>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-64 text-slate-500">
+                <p>Failed to load risk details.</p>
+              </div>
+            )}
+          </div>
+
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <Button variant="outline" onClick={closeViewRiskModal}>
+              Close
+            </Button>
+            {!isReadOnlyRole && viewingRisk && (
+              <Button onClick={() => {
+                closeViewRiskModal();
+                const risk = risks.find(r => r.id === viewingRisk.id);
+                if (risk) openEditRiskModal(risk);
+              }}>
+                <Pencil className="h-4 w-4 mr-2" />
+                Edit
+              </Button>
+            )}
           </div>
         </DialogContent>
       </Dialog>

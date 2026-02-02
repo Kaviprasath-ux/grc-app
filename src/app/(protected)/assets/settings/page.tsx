@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Pencil, Trash2, ArrowLeft, Search, Upload, Download, FolderTree, Clock, Settings2, Lock, CheckCircle, RefreshCw, Layers, FolderOpen, Group } from "lucide-react";
+import { Plus, Pencil, Trash2, ArrowLeft, Search, Upload, Download, FolderTree, Clock, Settings2, Lock, CheckCircle, RefreshCw, Layers, FolderOpen, Group, Home, ChevronRight } from "lucide-react";
+import Link from "next/link";
 import { DataGrid } from "@/components/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1255,11 +1256,22 @@ export default function AssetSettingsPage() {
 
     return (
       <div className="space-y-6">
-        {/* Page Header with Back Button */}
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => setEntitySubTab(null)}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
+        {/* Breadcrumb */}
+        <nav className="flex items-center gap-1.5 text-sm">
+          <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>Asset Management</span>
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <button onClick={() => setEntitySubTab(null)} className="text-slate-500 hover:text-primary-600 transition-colors">
+            Settings
+          </button>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <span className="text-primary-700 font-medium">{currentEntitySub?.title || "Settings"}</span>
+        </nav>
+
+        {/* Page Header */}
+        <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-bold text-slate-800">{currentEntitySub?.title || "Settings"}</h1>
         </div>
 
@@ -1838,11 +1850,22 @@ export default function AssetSettingsPage() {
   if (activeCategory === "asset") {
     return (
       <div className="space-y-6">
+        {/* Breadcrumb */}
+        <nav className="flex items-center gap-1.5 text-sm">
+          <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>Asset Management</span>
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <button onClick={() => setActiveCategory(null)} className="text-slate-500 hover:text-primary-600 transition-colors">
+            Settings
+          </button>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <span className="text-primary-700 font-medium">Asset Settings</span>
+        </nav>
+
         {/* Page Header */}
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => setActiveCategory(null)}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
+        <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-bold text-slate-800">Asset Settings</h1>
         </div>
 
@@ -1898,11 +1921,22 @@ export default function AssetSettingsPage() {
 
     return (
       <div className="space-y-6">
+        {/* Breadcrumb */}
+        <nav className="flex items-center gap-1.5 text-sm">
+          <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>Asset Management</span>
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <button onClick={() => setActiveCategory(null)} className="text-slate-500 hover:text-primary-600 transition-colors">
+            Settings
+          </button>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <span className="text-primary-700 font-medium">Lifecycle Status</span>
+        </nav>
+
         {/* Page Header */}
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => setActiveCategory(null)}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
+        <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-bold text-slate-800">Lifecycle Status</h1>
         </div>
 
@@ -2094,11 +2128,22 @@ export default function AssetSettingsPage() {
   if (activeCategory === "cia") {
     return (
       <div className="space-y-6">
+        {/* Breadcrumb */}
+        <nav className="flex items-center gap-1.5 text-sm">
+          <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>Asset Management</span>
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <button onClick={() => setActiveCategory(null)} className="text-slate-500 hover:text-primary-600 transition-colors">
+            Settings
+          </button>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <span className="text-primary-700 font-medium">CIA Configuration</span>
+        </nav>
+
         {/* Page Header */}
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => setActiveCategory(null)}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
+        <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-bold text-slate-800">CIA Configuration</h1>
         </div>
 
@@ -2734,6 +2779,16 @@ export default function AssetSettingsPage() {
   // Show main settings grid view (default)
   return (
     <div className="space-y-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>Asset Management</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">Settings</span>
+      </nav>
+
       {/* Page Header */}
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-bold text-slate-800">Asset Settings</h1>

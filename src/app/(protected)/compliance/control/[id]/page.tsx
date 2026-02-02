@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Edit, FileText, Shield, AlertTriangle, ClipboardCheck, Link2, Plus, X } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Control {
   id: string;
@@ -148,6 +149,7 @@ const ENTITIES_OPTIONS = ["Organization Wide"];
 export default function ControlDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
+  const { t } = useLanguage();
   const [control, setControl] = useState<Control | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("requirements");
@@ -339,11 +341,11 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
   };
 
   if (loading) {
-    return <div className="p-6">Loading...</div>;
+    return <div className="p-6">{t("Loading...")}</div>;
   }
 
   if (!control) {
-    return <div className="p-6">Control not found</div>;
+    return <div className="p-6">{t("Control not found")}</div>;
   }
 
   return (
@@ -355,12 +357,12 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
             onClick={() => router.push("/compliance/control")}
             className="text-primary hover:underline text-sm"
           >
-            &lt;&lt; Control
+            &lt;&lt; {t("Control")}
           </button>
         </div>
         <Button variant="outline" onClick={() => setIsEditDialogOpen(true)}>
           <Edit className="h-4 w-4 mr-2" />
-          Edit Control
+          {t("Edit Control")}
         </Button>
       </div>
 
@@ -374,24 +376,24 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
       {/* Control Details Card with Inline Editable Fields */}
       <Card className="shadow-none">
         <CardHeader>
-          <CardTitle>Control Details</CardTitle>
+          <CardTitle>{t("Control Details")}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
-              <Label className="text-slate-400">Domain</Label>
+              <Label className="text-slate-400">{t("Domain")}</Label>
               <p className="font-medium">{control.domain?.name || "-"}</p>
             </div>
             <div>
-              <Label className="text-slate-400">Framework</Label>
+              <Label className="text-slate-400">{t("Framework")}</Label>
               <p className="font-medium">{control.framework?.name || "-"}</p>
             </div>
             {/* Inline Editable Department */}
             <div>
-              <Label className="text-slate-400">Department</Label>
+              <Label className="text-slate-400">{t("Department")}</Label>
               <Select value={inlineDepartmentId} onValueChange={handleInlineDepartmentChange}>
                 <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Select department" />
+                  <SelectValue placeholder={t("Select department")} />
                 </SelectTrigger>
                 <SelectContent position="popper" sideOffset={4} className="max-h-[200px] overflow-y-auto">
                   {departments.map((d) => (
@@ -401,19 +403,19 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
               </Select>
             </div>
             <div>
-              <Label className="text-slate-400">Functional Grouping</Label>
+              <Label className="text-slate-400">{t("Functional Grouping")}</Label>
               <p className="font-medium">{control.functionalGrouping || "-"}</p>
             </div>
             <div>
-              <Label className="text-slate-400">Owner</Label>
+              <Label className="text-slate-400">{t("Owner")}</Label>
               <p className="font-medium">{control.owner?.fullName || "-"}</p>
             </div>
             {/* Inline Editable Assignee */}
             <div>
-              <Label className="text-slate-400">Assigned To</Label>
+              <Label className="text-slate-400">{t("Assigned To")}</Label>
               <Select value={inlineAssigneeId} onValueChange={handleInlineAssigneeChange}>
                 <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Select assignee" />
+                  <SelectValue placeholder={t("Select assignee")} />
                 </SelectTrigger>
                 <SelectContent position="popper" sideOffset={4} className="max-h-[200px] overflow-y-auto">
                   {users.map((u) => (
@@ -423,11 +425,11 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
               </Select>
             </div>
             <div>
-              <Label className="text-slate-400">Entities</Label>
-              <p className="font-medium">{control.entities || "Organization Wide"}</p>
+              <Label className="text-slate-400">{t("Entities")}</Label>
+              <p className="font-medium">{control.entities || t("Organization Wide")}</p>
             </div>
             <div>
-              <Label className="text-slate-400">Scope</Label>
+              <Label className="text-slate-400">{t("Scope")}</Label>
               <p className="font-medium">{control.scope || "-"}</p>
             </div>
           </div>
@@ -439,13 +441,13 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
               checked={inlineNotApplicable}
               onCheckedChange={(checked) => handleNotApplicableChange(checked as boolean)}
             />
-            <Label htmlFor="notApplicable" className="cursor-pointer">Not Applicable</Label>
+            <Label htmlFor="notApplicable" className="cursor-pointer">{t("Not Applicable")}</Label>
           </div>
 
           {/* Risk Multi-Select with + Button */}
           <div className="mt-4">
             <div className="flex items-center justify-between mb-2">
-              <Label className="text-slate-400">Risk</Label>
+              <Label className="text-slate-400">{t("Risk")}</Label>
               <Button variant="outline" size="sm" onClick={() => setIsRiskDialogOpen(true)}>
                 <Plus className="h-4 w-4" />
               </Button>
@@ -467,20 +469,20 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
                 </Badge>
               ))}
               {(!control.controlRisks || control.controlRisks.length === 0) && (
-                <span className="text-slate-400 text-sm">No risks linked</span>
+                <span className="text-slate-400 text-sm">{t("No risks linked")}</span>
               )}
             </div>
           </div>
 
           {control.description && (
             <div className="mt-4">
-              <Label className="text-slate-400">Description</Label>
+              <Label className="text-slate-400">{t("Description")}</Label>
               <p className="mt-1">{control.description}</p>
             </div>
           )}
           {control.controlQuestion && (
             <div className="mt-4">
-              <Label className="text-slate-400">Control Question</Label>
+              <Label className="text-slate-400">{t("Control Question")}</Label>
               <p className="mt-1">{control.controlQuestion}</p>
             </div>
           )}
@@ -493,23 +495,23 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
           <TabsList className="w-full justify-start border-b rounded-none h-auto p-0">
             <TabsTrigger value="requirements" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
               <Link2 className="h-4 w-4 mr-2" />
-              Linked Requirement ({control.requirements?.length || 0})
+              {t("Linked Requirement")} ({control.requirements?.length || 0})
             </TabsTrigger>
             <TabsTrigger value="governance" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
               <FileText className="h-4 w-4 mr-2" />
-              Governance ({control.policyControls?.length || 0})
+              {t("Governance")} ({control.policyControls?.length || 0})
             </TabsTrigger>
             <TabsTrigger value="evidence" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
               <ClipboardCheck className="h-4 w-4 mr-2" />
-              Evidence ({control.evidences?.length || 0})
+              {t("Evidence")} ({control.evidences?.length || 0})
             </TabsTrigger>
             <TabsTrigger value="exceptions" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
               <AlertTriangle className="h-4 w-4 mr-2" />
-              Exception ({control.exceptions?.length || 0})
+              {t("Exception")} ({control.exceptions?.length || 0})
             </TabsTrigger>
             <TabsTrigger value="risks" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
               <Shield className="h-4 w-4 mr-2" />
-              Risk ({control.controlRisks?.length || 0})
+              {t("Risk")} ({control.controlRisks?.length || 0})
             </TabsTrigger>
           </TabsList>
 
@@ -517,9 +519,9 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Code</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Framework</TableHead>
+                  <TableHead>{t("Code")}</TableHead>
+                  <TableHead>{t("Name")}</TableHead>
+                  <TableHead>{t("Framework")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -533,7 +535,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
                 {(!control.requirements || control.requirements.length === 0) && (
                   <TableRow>
                     <TableCell colSpan={3} className="text-center text-slate-400">
-                      No linked requirements
+                      {t("No linked requirements")}
                     </TableCell>
                   </TableRow>
                 )}
@@ -545,10 +547,10 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Code</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>{t("Code")}</TableHead>
+                  <TableHead>{t("Name")}</TableHead>
+                  <TableHead>{t("Type")}</TableHead>
+                  <TableHead>{t("Status")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -565,7 +567,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
                 {(!control.policyControls || control.policyControls.length === 0) && (
                   <TableRow>
                     <TableCell colSpan={4} className="text-center text-slate-400">
-                      No linked policies
+                      {t("No linked policies")}
                     </TableCell>
                   </TableRow>
                 )}
@@ -577,11 +579,11 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Evidence Code</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Assignee</TableHead>
-                  <TableHead>Due Date</TableHead>
+                  <TableHead>{t("Evidence Code")}</TableHead>
+                  <TableHead>{t("Name")}</TableHead>
+                  <TableHead>{t("Status")}</TableHead>
+                  <TableHead>{t("Assignee")}</TableHead>
+                  <TableHead>{t("Due Date")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -599,7 +601,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
                 {(!control.evidences || control.evidences.length === 0) && (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center text-slate-400">
-                      No linked evidences
+                      {t("No linked evidences")}
                     </TableCell>
                   </TableRow>
                 )}
@@ -611,11 +613,11 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Exception Code</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>End Date</TableHead>
+                  <TableHead>{t("Exception Code")}</TableHead>
+                  <TableHead>{t("Name")}</TableHead>
+                  <TableHead>{t("Category")}</TableHead>
+                  <TableHead>{t("Status")}</TableHead>
+                  <TableHead>{t("End Date")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -633,7 +635,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
                 {(!control.exceptions || control.exceptions.length === 0) && (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center text-slate-400">
-                      No linked exceptions
+                      {t("No linked exceptions")}
                     </TableCell>
                   </TableRow>
                 )}
@@ -645,11 +647,11 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Risk ID</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Risk Rating</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Owner</TableHead>
+                  <TableHead>{t("Risk ID")}</TableHead>
+                  <TableHead>{t("Name")}</TableHead>
+                  <TableHead>{t("Risk Rating")}</TableHead>
+                  <TableHead>{t("Status")}</TableHead>
+                  <TableHead>{t("Owner")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -671,7 +673,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
                 {(!control.controlRisks || control.controlRisks.length === 0) && (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center text-slate-400">
-                      No linked risks
+                      {t("No linked risks")}
                     </TableCell>
                   </TableRow>
                 )}
@@ -685,14 +687,14 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
-            <DialogTitle>Edit Control</DialogTitle>
+            <DialogTitle>{t("Edit Control")}</DialogTitle>
           </div>
 
           <div className="overflow-y-auto flex-1 px-6 py-5">
           <div className="grid grid-cols-2 gap-4">
             {/* Control Name */}
             <div>
-              <Label>Control Name *</Label>
+              <Label>{t("Control Name")} *</Label>
               <Input
                 value={editData.name || ""}
                 onChange={(e) => setEditData({ ...editData, name: e.target.value })}
@@ -701,7 +703,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
 
             {/* Control Code (Editable) */}
             <div>
-              <Label>Control Code</Label>
+              <Label>{t("Control Code")}</Label>
               <Input
                 value={editData.controlCode || ""}
                 onChange={(e) => setEditData({ ...editData, controlCode: e.target.value })}
@@ -710,7 +712,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
 
             {/* Description */}
             <div className="col-span-2">
-              <Label>Description</Label>
+              <Label>{t("Description")}</Label>
               <Textarea
                 value={editData.description || ""}
                 onChange={(e) => setEditData({ ...editData, description: e.target.value })}
@@ -720,7 +722,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
 
             {/* Control Question */}
             <div className="col-span-2">
-              <Label>Control Question</Label>
+              <Label>{t("Control Question")}</Label>
               <Textarea
                 value={editData.controlQuestion || ""}
                 onChange={(e) => setEditData({ ...editData, controlQuestion: e.target.value })}
@@ -730,7 +732,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
 
             {/* Functional Grouping (Radio Buttons) */}
             <div className="col-span-2">
-              <Label>Functional Grouping</Label>
+              <Label>{t("Functional Grouping")}</Label>
               <RadioGroup
                 value={editData.functionalGrouping || ""}
                 onValueChange={(v) => setEditData({ ...editData, functionalGrouping: v })}
@@ -739,7 +741,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
                 {FUNCTIONAL_GROUPINGS.map((g) => (
                   <div key={g} className="flex items-center space-x-2">
                     <RadioGroupItem value={g} id={`edit-fg-${g}`} />
-                    <Label htmlFor={`edit-fg-${g}`} className="cursor-pointer text-sm">{g}</Label>
+                    <Label htmlFor={`edit-fg-${g}`} className="cursor-pointer text-sm">{t(g)}</Label>
                   </div>
                 ))}
               </RadioGroup>
@@ -747,7 +749,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
 
             {/* Entities (Radio Buttons) */}
             <div>
-              <Label>Entities</Label>
+              <Label>{t("Entities")}</Label>
               <RadioGroup
                 value={editData.entities || "Organization Wide"}
                 onValueChange={(v) => setEditData({ ...editData, entities: v })}
@@ -756,7 +758,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
                 {ENTITIES_OPTIONS.map((e) => (
                   <div key={e} className="flex items-center space-x-2">
                     <RadioGroupItem value={e} id={`edit-entity-${e}`} />
-                    <Label htmlFor={`edit-entity-${e}`} className="cursor-pointer">{e}</Label>
+                    <Label htmlFor={`edit-entity-${e}`} className="cursor-pointer">{t(e)}</Label>
                   </div>
                 ))}
               </RadioGroup>
@@ -764,7 +766,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
 
             {/* Status (Radio Buttons) */}
             <div>
-              <Label>Status</Label>
+              <Label>{t("Status")}</Label>
               <RadioGroup
                 value={editData.status || ""}
                 onValueChange={(v) => setEditData({ ...editData, status: v })}
@@ -773,7 +775,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
                 {STATUS_OPTIONS.map((s) => (
                   <div key={s} className="flex items-center space-x-2">
                     <RadioGroupItem value={s} id={`edit-status-${s}`} />
-                    <Label htmlFor={`edit-status-${s}`} className="cursor-pointer text-sm">{s}</Label>
+                    <Label htmlFor={`edit-status-${s}`} className="cursor-pointer text-sm">{t(s)}</Label>
                   </div>
                 ))}
               </RadioGroup>
@@ -781,7 +783,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
 
             {/* Is Control List (Radio Buttons) */}
             <div>
-              <Label>Is Control List</Label>
+              <Label>{t("Is Control List")}</Label>
               <RadioGroup
                 value={editData.isControlList ? "yes" : "no"}
                 onValueChange={(v) => setEditData({ ...editData, isControlList: v === "yes" })}
@@ -789,18 +791,18 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
               >
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="yes" id="edit-isCL-yes" />
-                  <Label htmlFor="edit-isCL-yes" className="cursor-pointer">Yes</Label>
+                  <Label htmlFor="edit-isCL-yes" className="cursor-pointer">{t("Yes")}</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="no" id="edit-isCL-no" />
-                  <Label htmlFor="edit-isCL-no" className="cursor-pointer">No</Label>
+                  <Label htmlFor="edit-isCL-no" className="cursor-pointer">{t("No")}</Label>
                 </div>
               </RadioGroup>
             </div>
 
             {/* Relative Control Weighting */}
             <div>
-              <Label>Relative Control Weighting</Label>
+              <Label>{t("Relative Control Weighting")}</Label>
               <Input
                 type="number"
                 value={editData.relativeControlWeighting || ""}
@@ -810,10 +812,10 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
 
             {/* CMM Maturity Level Fields */}
             <div className="col-span-2">
-              <h3 className="font-semibold mb-2 mt-4">CMM Maturity Level Descriptions</h3>
+              <h3 className="font-semibold mb-2 mt-4">{t("CMM Maturity Level Descriptions")}</h3>
             </div>
             <div className="col-span-2">
-              <Label>Level 0 - Not Performed</Label>
+              <Label>{t("Level 0 - Not Performed")}</Label>
               <Textarea
                 value={editData.notPerformed || ""}
                 onChange={(e) => setEditData({ ...editData, notPerformed: e.target.value })}
@@ -821,7 +823,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
               />
             </div>
             <div className="col-span-2">
-              <Label>Level 1 - Performed Informally</Label>
+              <Label>{t("Level 1 - Performed Informally")}</Label>
               <Textarea
                 value={editData.performedInformally || ""}
                 onChange={(e) => setEditData({ ...editData, performedInformally: e.target.value })}
@@ -829,7 +831,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
               />
             </div>
             <div className="col-span-2">
-              <Label>Level 2 - Planned and Tracked</Label>
+              <Label>{t("Level 2 - Planned and Tracked")}</Label>
               <Textarea
                 value={editData.plannedAndTracked || ""}
                 onChange={(e) => setEditData({ ...editData, plannedAndTracked: e.target.value })}
@@ -837,7 +839,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
               />
             </div>
             <div className="col-span-2">
-              <Label>Level 3 - Well Defined</Label>
+              <Label>{t("Level 3 - Well Defined")}</Label>
               <Textarea
                 value={editData.wellDefined || ""}
                 onChange={(e) => setEditData({ ...editData, wellDefined: e.target.value })}
@@ -845,7 +847,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
               />
             </div>
             <div className="col-span-2">
-              <Label>Level 4 - Quantitatively Controlled</Label>
+              <Label>{t("Level 4 - Quantitatively Controlled")}</Label>
               <Textarea
                 value={editData.quantitativelyControlled || ""}
                 onChange={(e) => setEditData({ ...editData, quantitativelyControlled: e.target.value })}
@@ -853,7 +855,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
               />
             </div>
             <div className="col-span-2">
-              <Label>Level 5 - Continuously Improving</Label>
+              <Label>{t("Level 5 - Continuously Improving")}</Label>
               <Textarea
                 value={editData.continuouslyImproving || ""}
                 onChange={(e) => setEditData({ ...editData, continuouslyImproving: e.target.value })}
@@ -863,14 +865,14 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
 
             {/* Scope */}
             <div>
-              <Label>Scope</Label>
+              <Label>{t("Scope")}</Label>
               <Select value={editData.scope || ""} onValueChange={(v) => setEditData({ ...editData, scope: v })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select scope" />
+                  <SelectValue placeholder={t("Select scope")} />
                 </SelectTrigger>
                 <SelectContent position="popper" sideOffset={4} className="max-h-[200px] overflow-y-auto">
                   {SCOPE_OPTIONS.map((s) => (
-                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                    <SelectItem key={s} value={s}>{t(s)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -878,13 +880,13 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
 
             {/* Domain */}
             <div>
-              <Label>Domain</Label>
+              <Label>{t("Domain")}</Label>
               <Select
                 value={editData.domainId || control.domain?.id || ""}
                 onValueChange={(v) => setEditData({ ...editData, domainId: v })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select domain" />
+                  <SelectValue placeholder={t("Select domain")} />
                 </SelectTrigger>
                 <SelectContent position="popper" sideOffset={4} className="max-h-[200px] overflow-y-auto">
                   {domains.map((d) => (
@@ -896,7 +898,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
 
             {/* Requirement Multi-Select */}
             <div className="col-span-2">
-              <Label>Requirement</Label>
+              <Label>{t("Requirement")}</Label>
               <div className="border rounded-md p-2 mt-1 max-h-32 overflow-y-auto">
                 {allRequirements.map((req) => (
                   <div key={req.id} className="flex items-center space-x-2 py-1">
@@ -918,7 +920,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
                   </div>
                 ))}
                 {allRequirements.length === 0 && (
-                  <p className="text-slate-400 text-sm">No requirements available</p>
+                  <p className="text-slate-400 text-sm">{t("No requirements available")}</p>
                 )}
               </div>
             </div>
@@ -927,10 +929,10 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
 
           <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex-shrink-0">
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button onClick={handleUpdateControl}>
-              Save Changes
+              {t("Save Changes")}
             </Button>
           </div>
         </DialogContent>
@@ -940,7 +942,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
       <Dialog open={isRiskDialogOpen} onOpenChange={setIsRiskDialogOpen}>
         <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
-            <DialogTitle>Select Risks</DialogTitle>
+            <DialogTitle>{t("Select Risks")}</DialogTitle>
           </div>
           <div className="overflow-y-auto flex-1 px-6 py-5">
             {allRisks.map((risk) => (
@@ -962,15 +964,15 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
               </div>
             ))}
             {allRisks.length === 0 && (
-              <p className="text-slate-400">No risks available</p>
+              <p className="text-slate-400">{t("No risks available")}</p>
             )}
           </div>
           <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex-shrink-0">
             <Button variant="outline" onClick={() => setIsRiskDialogOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button onClick={handleAddRisks}>
-              Add Selected
+              {t("Add Selected")}
             </Button>
           </div>
         </DialogContent>

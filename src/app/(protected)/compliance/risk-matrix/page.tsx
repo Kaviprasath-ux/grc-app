@@ -18,6 +18,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { ChevronDown, ChevronRight, Link2, Unlink } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface LinkedControl {
   id: string;
@@ -72,6 +73,7 @@ const riskStatusColors: Record<string, string> = {
 };
 
 export default function RiskComplianceMatrixPage() {
+  const { t } = useLanguage();
   const [risks, setRisks] = useState<Risk[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedRisks, setExpandedRisks] = useState<Set<string>>(new Set());
@@ -169,9 +171,9 @@ export default function RiskComplianceMatrixPage() {
     <div className="space-y-4 p-6">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">Risk Compliance Matrix</h1>
+        <h1 className="text-2xl font-bold">{t("riskComplianceMatrix.title")}</h1>
         <p className="text-gray-600">
-          View and manage risks with their linked controls
+          {t("riskComplianceMatrix.subtitle")}
         </p>
       </div>
 
@@ -180,7 +182,7 @@ export default function RiskComplianceMatrixPage() {
         {risks.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
-              <p className="text-gray-500">No risks found</p>
+              <p className="text-gray-500">{t("riskComplianceMatrix.noRisksFound")}</p>
             </CardContent>
           </Card>
         ) : (
@@ -211,7 +213,7 @@ export default function RiskComplianceMatrixPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                       {/* Description */}
                       <div className="md:col-span-2">
-                        <p className="text-sm font-medium text-gray-500 mb-1">Description</p>
+                        <p className="text-sm font-medium text-gray-500 mb-1">{t("riskComplianceMatrix.description")}</p>
                         <p className="text-sm">{risk.description || "-"}</p>
                       </div>
 
@@ -219,7 +221,7 @@ export default function RiskComplianceMatrixPage() {
                       <div className="md:col-span-2 grid grid-cols-3 gap-4">
                         {/* Inherent Risk Rating */}
                         <div>
-                          <p className="text-sm font-medium text-gray-500 mb-1">Inherent Risk Rating</p>
+                          <p className="text-sm font-medium text-gray-500 mb-1">{t("riskComplianceMatrix.inherentRiskRating")}</p>
                           {risk.riskRating ? (
                             <Badge className={riskRatingColors[risk.riskRating] || "bg-gray-100"}>
                               {risk.riskRating}
@@ -231,7 +233,7 @@ export default function RiskComplianceMatrixPage() {
 
                         {/* Residual Risk Rating */}
                         <div>
-                          <p className="text-sm font-medium text-gray-500 mb-1">Residual Risk Rating</p>
+                          <p className="text-sm font-medium text-gray-500 mb-1">{t("riskComplianceMatrix.residualRiskRating")}</p>
                           {risk.residualRiskRating ? (
                             <Badge className={riskRatingColors[risk.residualRiskRating] || "bg-gray-100"}>
                               {risk.residualRiskRating}
@@ -243,7 +245,7 @@ export default function RiskComplianceMatrixPage() {
 
                         {/* Status */}
                         <div>
-                          <p className="text-sm font-medium text-gray-500 mb-1">Status</p>
+                          <p className="text-sm font-medium text-gray-500 mb-1">{t("riskComplianceMatrix.status")}</p>
                           <Badge className={riskStatusColors[risk.status] || "bg-gray-100"}>
                             {risk.status}
                           </Badge>
@@ -252,8 +254,8 @@ export default function RiskComplianceMatrixPage() {
 
                       {/* Risk Owner */}
                       <div className="md:col-span-2">
-                        <p className="text-sm font-medium text-gray-500 mb-1">Risk Owner</p>
-                        <p className="text-sm">{risk.owner?.fullName || "No items found"}</p>
+                        <p className="text-sm font-medium text-gray-500 mb-1">{t("riskComplianceMatrix.riskOwner")}</p>
+                        <p className="text-sm">{risk.owner?.fullName || t("common.noItemsFound")}</p>
                       </div>
                     </div>
 
@@ -269,7 +271,7 @@ export default function RiskComplianceMatrixPage() {
                             className="flex items-center gap-2 p-0 h-auto font-medium text-blue-600 hover:text-blue-800"
                           >
                             <Link2 className="h-4 w-4" />
-                            Linked Controls ({risk.controlRisks?.length || 0})
+                            {t("riskComplianceMatrix.linkedControls")} ({risk.controlRisks?.length || 0})
                             {expandedControls.has(risk.id) ? (
                               <ChevronDown className="h-4 w-4" />
                             ) : (
@@ -283,10 +285,10 @@ export default function RiskComplianceMatrixPage() {
                             <Table>
                               <TableHeader>
                                 <TableRow>
-                                  <TableHead>Control Code</TableHead>
-                                  <TableHead>Control Name</TableHead>
-                                  <TableHead>Status</TableHead>
-                                  <TableHead className="w-[100px]">Action</TableHead>
+                                  <TableHead>{t("riskComplianceMatrix.controlCode")}</TableHead>
+                                  <TableHead>{t("riskComplianceMatrix.controlName")}</TableHead>
+                                  <TableHead>{t("riskComplianceMatrix.status")}</TableHead>
+                                  <TableHead className="w-[100px]">{t("common.action")}</TableHead>
                                 </TableRow>
                               </TableHeader>
                               <TableBody>
@@ -316,7 +318,7 @@ export default function RiskComplianceMatrixPage() {
                               </TableBody>
                             </Table>
                           ) : (
-                            <p className="text-sm text-gray-500 py-2">No linked controls</p>
+                            <p className="text-sm text-gray-500 py-2">{t("riskComplianceMatrix.noLinkedControls")}</p>
                           )}
                         </CollapsibleContent>
                       </Collapsible>
@@ -337,7 +339,7 @@ export default function RiskComplianceMatrixPage() {
             onClick={handleLoadMore}
             className="text-blue-600 hover:text-blue-800"
           >
-            Load more...
+            {t("common.loadMore")}
           </Button>
         </div>
       )}

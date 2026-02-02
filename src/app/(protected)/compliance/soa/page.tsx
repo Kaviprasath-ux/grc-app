@@ -38,6 +38,7 @@ import {
   Edit,
   Shield,
 } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface SOAEntry {
   id: string;
@@ -86,6 +87,7 @@ const complianceColors: Record<string, string> = {
 };
 
 export default function SOAPage() {
+  const { t } = useLanguage();
   const [entries, setEntries] = useState<SOAEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -213,14 +215,14 @@ export default function SOAPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Statement of Applicability</h1>
+          <h1 className="text-2xl font-bold">{t("Statement of Applicability")}</h1>
           <p className="text-gray-600">
-            Manage requirement applicability and implementation status
+            {t("Manage requirement applicability and implementation status")}
           </p>
         </div>
         <Button variant="outline">
           <Download className="h-4 w-4 mr-2" />
-          Export SOA
+          {t("Export SOA")}
         </Button>
       </div>
 
@@ -230,7 +232,7 @@ export default function SOAPage() {
           <CardContent className="pt-6">
             <div className="text-center">
               <p className="text-3xl font-bold">{stats.total}</p>
-              <p className="text-sm text-gray-500">Total Requirements</p>
+              <p className="text-sm text-gray-500">{t("Total Requirements")}</p>
             </div>
           </CardContent>
         </Card>
@@ -240,7 +242,7 @@ export default function SOAPage() {
               <p className="text-3xl font-bold text-green-600">
                 {stats.applicable}
               </p>
-              <p className="text-sm text-gray-500">Applicable</p>
+              <p className="text-sm text-gray-500">{t("Applicable")}</p>
             </div>
           </CardContent>
         </Card>
@@ -250,7 +252,7 @@ export default function SOAPage() {
               <p className="text-3xl font-bold text-gray-600">
                 {stats.notApplicable}
               </p>
-              <p className="text-sm text-gray-500">Not Applicable</p>
+              <p className="text-sm text-gray-500">{t("Not Applicable")}</p>
             </div>
           </CardContent>
         </Card>
@@ -260,7 +262,7 @@ export default function SOAPage() {
               <p className="text-3xl font-bold text-blue-600">
                 {stats.implemented}
               </p>
-              <p className="text-sm text-gray-500">Implemented</p>
+              <p className="text-sm text-gray-500">{t("Implemented")}</p>
             </div>
           </CardContent>
         </Card>
@@ -270,7 +272,7 @@ export default function SOAPage() {
               <p className="text-3xl font-bold text-green-600">
                 {stats.compliant}
               </p>
-              <p className="text-sm text-gray-500">Compliant</p>
+              <p className="text-sm text-gray-500">{t("Compliant")}</p>
             </div>
           </CardContent>
         </Card>
@@ -283,7 +285,7 @@ export default function SOAPage() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
-                placeholder="Search requirements..."
+                placeholder={t("Search requirements...")}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -294,14 +296,14 @@ export default function SOAPage() {
               onClick={() => setShowFilters(!showFilters)}
             >
               <Filter className="h-4 w-4 mr-2" />
-              Filters
+              {t("Filters")}
             </Button>
           </div>
 
           {showFilters && (
             <div className="grid grid-cols-4 gap-4 pt-4 border-t">
               <div>
-                <Label>Framework</Label>
+                <Label>{t("Framework")}</Label>
                 <Select
                   value={filters.frameworkId || "all"}
                   onValueChange={(value) =>
@@ -309,10 +311,10 @@ export default function SOAPage() {
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="All frameworks" />
+                    <SelectValue placeholder={t("All frameworks")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All frameworks</SelectItem>
+                    <SelectItem value="all">{t("All frameworks")}</SelectItem>
                     {frameworks.map((f) => (
                       <SelectItem key={f.id} value={f.id}>
                         {f.name}
@@ -322,7 +324,7 @@ export default function SOAPage() {
                 </Select>
               </div>
               <div>
-                <Label>Applicability</Label>
+                <Label>{t("Applicability")}</Label>
                 <Select
                   value={filters.applicability || "all"}
                   onValueChange={(value) =>
@@ -330,20 +332,20 @@ export default function SOAPage() {
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="All" />
+                    <SelectValue placeholder={t("All")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="Applicable">Applicable</SelectItem>
-                    <SelectItem value="Not Applicable">Not Applicable</SelectItem>
+                    <SelectItem value="all">{t("All")}</SelectItem>
+                    <SelectItem value="Applicable">{t("Applicable")}</SelectItem>
+                    <SelectItem value="Not Applicable">{t("Not Applicable")}</SelectItem>
                     <SelectItem value="Partially Applicable">
-                      Partially Applicable
+                      {t("Partially Applicable")}
                     </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label>Implementation</Label>
+                <Label>{t("Implementation")}</Label>
                 <Select
                   value={filters.implementationStatus || "all"}
                   onValueChange={(value) =>
@@ -351,16 +353,16 @@ export default function SOAPage() {
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="All" />
+                    <SelectValue placeholder={t("All")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="Implemented">Implemented</SelectItem>
+                    <SelectItem value="all">{t("All")}</SelectItem>
+                    <SelectItem value="Implemented">{t("Implemented")}</SelectItem>
                     <SelectItem value="Partially Implemented">
-                      Partially Implemented
+                      {t("Partially Implemented")}
                     </SelectItem>
-                    <SelectItem value="Not Implemented">Not Implemented</SelectItem>
-                    <SelectItem value="Planned">Planned</SelectItem>
+                    <SelectItem value="Not Implemented">{t("Not Implemented")}</SelectItem>
+                    <SelectItem value="Planned">{t("Planned")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -375,7 +377,7 @@ export default function SOAPage() {
                     })
                   }
                 >
-                  Clear Filters
+                  {t("Clear Filters")}
                 </Button>
               </div>
             </div>
@@ -386,20 +388,20 @@ export default function SOAPage() {
       {/* SOA Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Requirements</CardTitle>
+          <CardTitle>{t("Requirements")}</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Code</TableHead>
-                <TableHead>Requirement</TableHead>
-                <TableHead>Framework</TableHead>
-                <TableHead>Applicability</TableHead>
-                <TableHead>Implementation</TableHead>
-                <TableHead>Compliance</TableHead>
-                <TableHead>Controls</TableHead>
-                <TableHead className="w-[80px]">Actions</TableHead>
+                <TableHead>{t("Code")}</TableHead>
+                <TableHead>{t("Requirement")}</TableHead>
+                <TableHead>{t("Framework")}</TableHead>
+                <TableHead>{t("Applicability")}</TableHead>
+                <TableHead>{t("Implementation")}</TableHead>
+                <TableHead>{t("Compliance")}</TableHead>
+                <TableHead>{t("Controls")}</TableHead>
+                <TableHead className="w-[80px]">{t("Actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -407,7 +409,7 @@ export default function SOAPage() {
                 <TableRow>
                   <TableCell colSpan={8} className="text-center py-8">
                     <Shield className="h-12 w-12 mx-auto mb-2 text-gray-300" />
-                    <p className="text-gray-500">No requirements found</p>
+                    <p className="text-gray-500">{t("No requirements found")}</p>
                   </TableCell>
                 </TableRow>
               ) : (
@@ -442,10 +444,10 @@ export default function SOAPage() {
                           ) : (
                             <Clock className="h-3 w-3 mr-1" />
                           )}
-                          {entry.applicability}
+                          {t(entry.applicability)}
                         </Badge>
                       ) : (
-                        <Badge variant="outline">Not Set</Badge>
+                        <Badge variant="outline">{t("Not Set")}</Badge>
                       )}
                     </TableCell>
                     <TableCell>
@@ -457,10 +459,10 @@ export default function SOAPage() {
                             ] || "bg-gray-100"
                           }
                         >
-                          {entry.implementationStatus}
+                          {t(entry.implementationStatus)}
                         </Badge>
                       ) : (
-                        <Badge variant="outline">Not Set</Badge>
+                        <Badge variant="outline">{t("Not Set")}</Badge>
                       )}
                     </TableCell>
                     <TableCell>
@@ -471,10 +473,10 @@ export default function SOAPage() {
                             "bg-gray-100"
                           }
                         >
-                          {entry.controlCompliance}
+                          {t(entry.controlCompliance)}
                         </Badge>
                       ) : (
-                        <Badge variant="outline">Not Assessed</Badge>
+                        <Badge variant="outline">{t("Not Assessed")}</Badge>
                       )}
                     </TableCell>
                     <TableCell>
@@ -504,16 +506,16 @@ export default function SOAPage() {
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              Edit SOA Entry - {selectedEntry?.code}
+              {t("Edit SOA Entry")} - {selectedEntry?.code}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
-              <Label className="text-gray-500">Requirement</Label>
+              <Label className="text-gray-500">{t("Requirement")}</Label>
               <p className="font-medium">{selectedEntry?.name}</p>
             </div>
             <div>
-              <Label>Applicability</Label>
+              <Label>{t("Applicability")}</Label>
               <Select
                 value={editForm.applicability}
                 onValueChange={(value) =>
@@ -521,30 +523,30 @@ export default function SOAPage() {
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select applicability" />
+                  <SelectValue placeholder={t("Select applicability")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Applicable">Applicable</SelectItem>
-                  <SelectItem value="Not Applicable">Not Applicable</SelectItem>
+                  <SelectItem value="Applicable">{t("Applicable")}</SelectItem>
+                  <SelectItem value="Not Applicable">{t("Not Applicable")}</SelectItem>
                   <SelectItem value="Partially Applicable">
-                    Partially Applicable
+                    {t("Partially Applicable")}
                   </SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label>Justification</Label>
+              <Label>{t("Justification")}</Label>
               <Textarea
                 value={editForm.justification}
                 onChange={(e) =>
                   setEditForm({ ...editForm, justification: e.target.value })
                 }
-                placeholder="Provide justification for applicability decision"
+                placeholder={t("Provide justification for applicability decision")}
                 rows={3}
               />
             </div>
             <div>
-              <Label>Implementation Status</Label>
+              <Label>{t("Implementation Status")}</Label>
               <Select
                 value={editForm.implementationStatus}
                 onValueChange={(value) =>
@@ -552,20 +554,20 @@ export default function SOAPage() {
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
+                  <SelectValue placeholder={t("Select status")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Implemented">Implemented</SelectItem>
+                  <SelectItem value="Implemented">{t("Implemented")}</SelectItem>
                   <SelectItem value="Partially Implemented">
-                    Partially Implemented
+                    {t("Partially Implemented")}
                   </SelectItem>
-                  <SelectItem value="Not Implemented">Not Implemented</SelectItem>
-                  <SelectItem value="Planned">Planned</SelectItem>
+                  <SelectItem value="Not Implemented">{t("Not Implemented")}</SelectItem>
+                  <SelectItem value="Planned">{t("Planned")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label>Control Compliance</Label>
+              <Label>{t("Control Compliance")}</Label>
               <Select
                 value={editForm.controlCompliance}
                 onValueChange={(value) =>
@@ -573,24 +575,24 @@ export default function SOAPage() {
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select compliance" />
+                  <SelectValue placeholder={t("Select compliance")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Compliant">Compliant</SelectItem>
+                  <SelectItem value="Compliant">{t("Compliant")}</SelectItem>
                   <SelectItem value="Partially Compliant">
-                    Partially Compliant
+                    {t("Partially Compliant")}
                   </SelectItem>
-                  <SelectItem value="Non-Compliant">Non-Compliant</SelectItem>
-                  <SelectItem value="Not Assessed">Not Assessed</SelectItem>
+                  <SelectItem value="Non-Compliant">{t("Non-Compliant")}</SelectItem>
+                  <SelectItem value="Not Assessed">{t("Not Assessed")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
-            <Button onClick={handleSave}>Save Changes</Button>
+            <Button onClick={handleSave}>{t("Save Changes")}</Button>
           </div>
         </DialogContent>
       </Dialog>

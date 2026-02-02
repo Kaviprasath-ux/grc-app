@@ -28,6 +28,7 @@ import { usePermissions, useUserRoles } from "@/hooks/usePermissions";
 import { Unauthorized } from "@/components/ui/unauthorized";
 import { Card, CardContent } from "@/components/ui/card";
 import { useSession } from "next-auth/react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Category {
   id: string;
@@ -102,9 +103,9 @@ interface Risk {
   controlRisks?: { control: { id: string } }[];
 }
 
-const steps = [
-  { id: 1, name: "Risk Details", description: "Basic risk information" },
-  { id: 2, name: "Risk Mapping", description: "Link controls to risk" },
+const getSteps = (t: (key: string) => string) => [
+  { id: 1, name: t("riskDetails"), description: t("basicRiskInformation") },
+  { id: 2, name: t("riskMapping"), description: t("linkControlsToRisk") },
 ];
 
 export default function EditRiskPage({ params }: { params: Promise<{ id: string }> }) {
@@ -113,6 +114,8 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
   const { data: session } = useSession();
   const userRoles = useUserRoles();
   const { canEdit, isLoading: permissionsLoading } = usePermissions('risk.register');
+  const { t } = useLanguage();
+  const steps = getSteps(t);
 
   // Check if user is DepartmentContributor or DepartmentReviewer
   const isDepartmentRole = userRoles.some(
@@ -192,12 +195,12 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
           fetchUsers(risk.department.id);
         }
       } else {
-        toast.error("Risk not found");
+        toast.error(t("riskNotFound"));
         router.push("/risks/register");
       }
     } catch (error) {
       console.error("Failed to fetch risk:", error);
-      toast.error("Failed to load risk");
+      toast.error(t("failedToLoadRisk"));
     } finally {
       setLoadingRisk(false);
     }
@@ -412,15 +415,15 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
       });
 
       if (response.ok) {
-        toast.success("Risk updated successfully");
+        toast.success(t("riskUpdatedSuccessfully"));
         router.push("/risks/register");
       } else {
         const errorData = await response.json();
-        toast.error(errorData.error || "Failed to update risk");
+        toast.error(errorData.error || t("failedToUpdateRisk"));
       }
     } catch (error) {
       console.error("Failed to update risk:", error);
-      toast.error("Failed to update risk");
+      toast.error(t("failedToUpdateRisk"));
     } finally {
       setLoading(false);
     }
@@ -456,14 +459,14 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
   }
 
   if (!canEdit) {
-    return <Unauthorized description="You don't have permission to edit risks." />;
+    return <Unauthorized description={t("noPermissionToEditRisks")} />;
   }
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">Edit Risk - {riskId}</h1>
+        <h1 className="text-2xl font-bold text-slate-800">{t("editRisk")} - {riskId}</h1>
       </div>
 
       <Card>
@@ -526,11 +529,11 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
             {/* Step 1: Risk Details */}
             {currentStep === 1 && (
               <div className="space-y-6">
-                <h3 className="text-lg font-semibold text-slate-800 border-b border-slate-200 pb-2">Risk Details</h3>
+                <h3 className="text-lg font-semibold text-slate-800 border-b border-slate-200 pb-2">{t("riskDetails")}</h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <Label htmlFor="riskId">Risk ID</Label>
+                    <Label htmlFor="riskId">{t("riskId")}</Label>
                     <Input
                       id="riskId"
                       value={riskId}
@@ -539,37 +542,37 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
                     />
                   </div>
                   <div>
-                    <Label htmlFor="name">Risk Name *</Label>
+                    <Label htmlFor="name">{t("riskName")} *</Label>
                     <Input
                       id="name"
                       value={formData.name}
                       onChange={(e) => handleInputChange("name", e.target.value)}
-                      placeholder="Enter Risk Name"
+                      placeholder={t("enterRiskName")}
                     />
                   </div>
                 </div>
 
                 <div>
-                  <Label htmlFor="description">Risk Description</Label>
+                  <Label htmlFor="description">{t("riskDescription")}</Label>
                   <Textarea
                     id="description"
                     value={formData.description}
                     onChange={(e) => handleInputChange("description", e.target.value)}
-                    placeholder="Enter Description"
+                    placeholder={t("enterDescription")}
                     rows={4}
                   />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <Label htmlFor="department">Department</Label>
+                    <Label htmlFor="department">{t("department")}</Label>
                     <Select
                       value={formData.departmentId}
                       onValueChange={(value) => handleInputChange("departmentId", value)}
                       disabled={isDepartmentRole}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select Department" />
+                        <SelectValue placeholder={t("selectDepartment")} />
                       </SelectTrigger>
                       <SelectContent className="z-[9999]">
                         {departments.map((dept) => (
@@ -581,19 +584,19 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
                     </Select>
                   </div>
                   <div>
-                    <Label htmlFor="owner">Risk Owner</Label>
+                    <Label htmlFor="owner">{t("riskOwner")}</Label>
                     <Select
                       value={formData.ownerId}
                       onValueChange={(value) => handleInputChange("ownerId", value)}
                       disabled={!formData.departmentId}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder={formData.departmentId ? "Select Owner" : "Select Department first"} />
+                        <SelectValue placeholder={formData.departmentId ? t("selectOwner") : t("selectDepartmentFirst")} />
                       </SelectTrigger>
                       <SelectContent className="z-[9999]">
                         {users.length === 0 ? (
                           <div className="py-2 px-3 text-sm text-muted-foreground">
-                            No Department Reviewers found
+                            {t("noDepartmentReviewersFound")}
                           </div>
                         ) : (
                           users.map((user) => (
@@ -609,23 +612,23 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <Label htmlFor="riskSources">Risk Sources</Label>
+                    <Label htmlFor="riskSources">{t("riskSources")}</Label>
                     <Input
                       id="riskSources"
                       value={formData.riskSources}
                       onChange={(e) => handleInputChange("riskSources", e.target.value)}
-                      placeholder="Enter risk sources"
+                      placeholder={t("enterRiskSources")}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="category">Risk Category</Label>
+                    <Label htmlFor="category">{t("riskCategory")}</Label>
                     <div className="flex gap-2">
                       <Select
                         value={formData.categoryId}
                         onValueChange={(value) => handleInputChange("categoryId", value)}
                       >
                         <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Select Category" />
+                          <SelectValue placeholder={t("selectCategory")} />
                         </SelectTrigger>
                         <SelectContent className="z-[9999]">
                           {categories.map((cat) => (
@@ -644,13 +647,13 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <Label htmlFor="riskType">Risk Type</Label>
+                    <Label htmlFor="riskType">{t("riskType")}</Label>
                     <Select
                       value={formData.typeId}
                       onValueChange={(value) => handleInputChange("typeId", value)}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Risk Type" />
+                        <SelectValue placeholder={t("riskType")} />
                       </SelectTrigger>
                       <SelectContent className="z-[9999]">
                         {riskTypes.map((type) => (
@@ -663,13 +666,13 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
                   </div>
                   {riskTypes.find(t => t.id === formData.typeId)?.name === "Asset Risk" && (
                     <div>
-                      <Label>Impacted Asset</Label>
+                      <Label>{t("impactedAsset")}</Label>
                       <Select
                         value={formData.impactedAssetId}
                         onValueChange={(value) => handleInputChange("impactedAssetId", value)}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Select impacted asset" />
+                          <SelectValue placeholder={t("selectImpactedAsset")} />
                         </SelectTrigger>
                         <SelectContent className="z-[9999]">
                           {assets.map((asset) => (
@@ -683,13 +686,13 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
                   )}
                   {riskTypes.find(t => t.id === formData.typeId)?.name === "Process Risk" && (
                     <div>
-                      <Label>Impacted Process</Label>
+                      <Label>{t("impactedProcess")}</Label>
                       <Select
                         value={formData.impactedProcessId}
                         onValueChange={(value) => handleInputChange("impactedProcessId", value)}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Select impacted process" />
+                          <SelectValue placeholder={t("selectImpactedProcess")} />
                         </SelectTrigger>
                         <SelectContent className="z-[9999]">
                           {processes.map((process) => (
@@ -703,13 +706,13 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
                   )}
                   {!formData.typeId && (
                     <div>
-                      <Label className="text-muted-foreground">Impacted Asset/Process</Label>
+                      <Label className="text-muted-foreground">{t("impactedAssetProcess")}</Label>
                       <Select disabled>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select Risk Type first" />
+                          <SelectValue placeholder={t("selectRiskTypeFirst")} />
                         </SelectTrigger>
                         <SelectContent className="z-[9999]">
-                          <SelectItem value="none">Select Risk Type first</SelectItem>
+                          <SelectItem value="none">{t("selectRiskTypeFirst")}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -718,13 +721,13 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <Label>Potential Threats</Label>
+                    <Label>{t("potentialThreats")}</Label>
                     <div className="flex gap-2">
                       <Select
                         onValueChange={(value) => addToSelection("selectedThreats", value)}
                       >
                         <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Select threats" />
+                          <SelectValue placeholder={t("selectThreats")} />
                         </SelectTrigger>
                         <SelectContent className="z-[9999]">
                           {threats.map((threat) => (
@@ -757,7 +760,7 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
                     </div>
                   </div>
                   <div>
-                    <Label>Associated Vulnerabilities</Label>
+                    <Label>{t("associatedVulnerabilities")}</Label>
                     <div className="flex gap-2">
                       <Select
                         onValueChange={(value) =>
@@ -765,7 +768,7 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
                         }
                       >
                         <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Select vulnerabilities" />
+                          <SelectValue placeholder={t("selectVulnerabilities")} />
                         </SelectTrigger>
                         <SelectContent className="z-[9999]">
                           {vulnerabilities.map((vuln) => (
@@ -800,13 +803,13 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
                 </div>
 
                 <div>
-                  <Label>Cause</Label>
+                  <Label>{t("cause")}</Label>
                   <div className="flex gap-2">
                     <Select
                       onValueChange={(value) => addToSelection("selectedCauses", value)}
                     >
                       <SelectTrigger className="flex-1 max-w-md">
-                        <SelectValue placeholder="Select cause" />
+                        <SelectValue placeholder={t("selectCause")} />
                       </SelectTrigger>
                       <SelectContent className="z-[9999]">
                         {causes.map((cause) => (
@@ -845,10 +848,10 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
             {currentStep === 2 && (
               <div className="space-y-6">
                 <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-                  <h3 className="text-lg font-semibold text-slate-800">Controls</h3>
+                  <h3 className="text-lg font-semibold text-slate-800">{t("controls")}</h3>
                   <Button variant="outline" onClick={() => setLinkControlDialogOpen(true)}>
                     <Plus className="h-4 w-4 mr-2" />
-                    Link Control
+                    {t("linkControl")}
                   </Button>
                 </div>
 
@@ -857,10 +860,10 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
                     <table className="w-full">
                       <thead className="bg-slate-50">
                         <tr className="h-12">
-                          <th className="text-left px-4 text-sm font-medium text-slate-700">Control Code</th>
-                          <th className="text-left px-4 text-sm font-medium text-slate-700">Name</th>
-                          <th className="text-left px-4 text-sm font-medium text-slate-700">Domain</th>
-                          <th className="text-right px-4 text-sm font-medium text-slate-700">Action</th>
+                          <th className="text-left px-4 text-sm font-medium text-slate-700">{t("controlCode")}</th>
+                          <th className="text-left px-4 text-sm font-medium text-slate-700">{t("name")}</th>
+                          <th className="text-left px-4 text-sm font-medium text-slate-700">{t("domain")}</th>
+                          <th className="text-right px-4 text-sm font-medium text-slate-700">{t("action")}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
@@ -890,9 +893,9 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
                   </div>
                 ) : (
                   <div className="border border-slate-200 rounded-lg p-12 text-center text-slate-500">
-                    <p>No controls linked yet.</p>
+                    <p>{t("noControlsLinkedYet")}</p>
                     <p className="text-sm mt-2">
-                      Click &quot;Link Control&quot; to associate controls with this risk.
+                      {t("clickLinkControlToAssociate")}
                     </p>
                   </div>
                 )}
@@ -901,13 +904,13 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
                 <Dialog open={linkControlDialogOpen} onOpenChange={setLinkControlDialogOpen}>
                   <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
                     <DialogHeader className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
-                      <DialogTitle className="text-lg font-semibold text-slate-800">Link Controls</DialogTitle>
+                      <DialogTitle className="text-lg font-semibold text-slate-800">{t("linkControls")}</DialogTitle>
                     </DialogHeader>
                     <div className="flex-1 overflow-hidden flex flex-col px-6 py-4">
                       <div className="relative mb-4">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                         <Input
-                          placeholder="Search controls..."
+                          placeholder={t("searchControls")}
                           value={controlSearch}
                           onChange={(e) => setControlSearch(e.target.value)}
                           className="pl-9"
@@ -918,9 +921,9 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
                           <thead className="bg-slate-50 sticky top-0">
                             <tr className="h-12">
                               <th className="w-10 px-3"></th>
-                              <th className="text-left px-3 text-sm font-medium text-slate-700">Control Code</th>
-                              <th className="text-left px-3 text-sm font-medium text-slate-700">Name</th>
-                              <th className="text-left px-3 text-sm font-medium text-slate-700">Domain</th>
+                              <th className="text-left px-3 text-sm font-medium text-slate-700">{t("controlCode")}</th>
+                              <th className="text-left px-3 text-sm font-medium text-slate-700">{t("name")}</th>
+                              <th className="text-left px-3 text-sm font-medium text-slate-700">{t("domain")}</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100">
@@ -955,10 +958,10 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
                     </div>
                     <div className="flex-shrink-0 flex justify-between items-center px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
                       <span className="text-sm text-slate-500">
-                        {formData.selectedControls.length} control(s) selected
+                        {formData.selectedControls.length} {t("controlsSelected")}
                       </span>
                       <Button onClick={() => setLinkControlDialogOpen(false)}>
-                        Done
+                        {t("done")}
                       </Button>
                     </div>
                   </DialogContent>
@@ -973,22 +976,22 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
               variant="outline"
               onClick={currentStep === 1 ? () => router.push("/risks/register") : handlePrevious}
             >
-              {currentStep === 1 ? "Cancel" : (
+              {currentStep === 1 ? t("cancel") : (
                 <>
                   <ChevronLeft className="h-4 w-4 mr-1" />
-                  Previous
+                  {t("previous")}
                 </>
               )}
             </Button>
             <div className="flex gap-2">
               {currentStep < steps.length ? (
                 <Button onClick={handleNext} disabled={!validateStep()}>
-                  Next
+                  {t("next")}
                   <ChevronRight className="h-4 w-4 ml-1" />
                 </Button>
               ) : (
                 <Button onClick={handleSubmit} disabled={loading}>
-                  {loading ? "Saving..." : "Update Risk"}
+                  {loading ? t("saving") : t("updateRisk")}
                 </Button>
               )}
             </div>

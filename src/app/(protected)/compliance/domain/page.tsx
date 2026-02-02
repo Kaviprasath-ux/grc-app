@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   Dialog,
   DialogContent,
@@ -56,6 +57,7 @@ interface Domain {
 
 export default function DomainPage() {
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [domains, setDomains] = useState<Domain[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -156,8 +158,8 @@ export default function DomainPage() {
     // Validate name is not empty
     if (!formData.name.trim()) {
       toast({
-        title: "Validation Error",
-        description: "Domain Name is required",
+        title: t("Validation Error"),
+        description: t("Domain Name is required"),
         variant: "destructive",
       });
       return;
@@ -173,16 +175,16 @@ export default function DomainPage() {
         });
         if (response.ok) {
           toast({
-            title: "Success",
-            description: "Domain updated successfully",
+            title: t("Success"),
+            description: t("Domain updated successfully"),
           });
           fetchDomains();
           setIsDialogOpen(false);
         } else {
           const errorData = await response.json();
           toast({
-            title: "Error",
-            description: errorData.error || "Failed to update domain",
+            title: t("Error"),
+            description: errorData.error || t("Failed to update domain"),
             variant: "destructive",
           });
         }
@@ -195,16 +197,16 @@ export default function DomainPage() {
         });
         if (response.ok) {
           toast({
-            title: "Success",
-            description: "Domain created successfully",
+            title: t("Success"),
+            description: t("Domain created successfully"),
           });
           fetchDomains();
           setIsDialogOpen(false);
         } else {
           const errorData = await response.json();
           toast({
-            title: "Error",
-            description: errorData.error || "Failed to create domain",
+            title: t("Error"),
+            description: errorData.error || t("Failed to create domain"),
             variant: "destructive",
           });
         }
@@ -212,8 +214,8 @@ export default function DomainPage() {
     } catch (error) {
       console.error("Error saving domain:", error);
       toast({
-        title: "Error",
-        description: "An unexpected error occurred",
+        title: t("Error"),
+        description: t("An unexpected error occurred"),
         variant: "destructive",
       });
     }
@@ -227,23 +229,23 @@ export default function DomainPage() {
       });
       if (response.ok) {
         toast({
-          title: "Success",
-          description: "Domain deleted successfully",
+          title: t("Success"),
+          description: t("Domain deleted successfully"),
         });
         fetchDomains();
       } else {
         const errorData = await response.json();
         toast({
-          title: "Error",
-          description: errorData.error || "Failed to delete domain",
+          title: t("Error"),
+          description: errorData.error || t("Failed to delete domain"),
           variant: "destructive",
         });
       }
     } catch (error) {
       console.error("Error deleting domain:", error);
       toast({
-        title: "Error",
-        description: "An unexpected error occurred",
+        title: t("Error"),
+        description: t("An unexpected error occurred"),
         variant: "destructive",
       });
     } finally {
@@ -260,10 +262,10 @@ export default function DomainPage() {
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Domain</h1>
+        <h1 className="text-2xl font-bold">{t("Domain")}</h1>
         <Button onClick={handleOpenCreate}>
           <Plus className="h-4 w-4 mr-2" />
-          New Domain
+          {t("New Domain")}
         </Button>
       </div>
 
@@ -278,9 +280,9 @@ export default function DomainPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  {visibleColumns.code && <TableHead>Domain Code</TableHead>}
-                  {visibleColumns.name && <TableHead>Domain Name</TableHead>}
-                  <TableHead>Action</TableHead>
+                  {visibleColumns.code && <TableHead>{t("Domain Code")}</TableHead>}
+                  {visibleColumns.name && <TableHead>{t("Domain Name")}</TableHead>}
+                  <TableHead>{t("Action")}</TableHead>
                   <TableHead className="w-[50px]">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -293,13 +295,13 @@ export default function DomainPage() {
                           checked={visibleColumns.code}
                           onCheckedChange={(checked) => setVisibleColumns({ ...visibleColumns, code: checked })}
                         >
-                          Domain Code
+                          {t("Domain Code")}
                         </DropdownMenuCheckboxItem>
                         <DropdownMenuCheckboxItem
                           checked={visibleColumns.name}
                           onCheckedChange={(checked) => setVisibleColumns({ ...visibleColumns, name: checked })}
                         >
-                          Domain Name
+                          {t("Domain Name")}
                         </DropdownMenuCheckboxItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -338,7 +340,7 @@ export default function DomainPage() {
                 {domains.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                      No domains found
+                      {t("No domains found")}
                     </TableCell>
                   </TableRow>
                 )}
@@ -365,7 +367,7 @@ export default function DomainPage() {
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <span className="text-sm text-muted-foreground px-4">
-              Currently showing {startItem} to {endItem} of {total}
+              {t("Currently showing")} {startItem} {t("to")} {endItem} {t("of")} {total}
             </span>
             <Button
               variant="outline"
@@ -391,11 +393,11 @@ export default function DomainPage() {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingDomain ? "Edit Domain" : "New Domain"}</DialogTitle>
+            <DialogTitle>{editingDomain ? t("Edit Domain") : t("New Domain")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
-              <Label htmlFor="code">Domain Code</Label>
+              <Label htmlFor="code">{t("Domain Code")}</Label>
               <Input
                 id="code"
                 value={editingDomain ? formData.code : nextCode}
@@ -403,34 +405,34 @@ export default function DomainPage() {
                 className="bg-gray-100 cursor-not-allowed"
               />
               <p className="text-xs text-muted-foreground mt-1">
-                {editingDomain ? "Auto-generated code cannot be changed" : "Will be auto-generated on save"}
+                {editingDomain ? t("Auto-generated code cannot be changed") : t("Will be auto-generated on save")}
               </p>
             </div>
             <div>
-              <Label htmlFor="name">Domain Name *</Label>
+              <Label htmlFor="name">{t("Domain Name")} *</Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Enter domain name"
+                placeholder={t("Enter domain name")}
               />
             </div>
             <div>
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">{t("Description")}</Label>
               <Input
                 id="description"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Enter description"
+                placeholder={t("Enter description")}
               />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button onClick={handleSave} disabled={!formData.name}>
-              {editingDomain ? "Update" : "Create"}
+              {editingDomain ? t("Update") : t("Create")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -440,15 +442,15 @@ export default function DomainPage() {
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Domain</AlertDialogTitle>
+            <AlertDialogTitle>{t("Delete Domain")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete &quot;{domainToDelete?.name}&quot;? This action cannot be undone.
+              {t("Are you sure you want to delete")} &quot;{domainToDelete?.name}&quot;? {t("This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setDomainToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setDomainToDelete(null)}>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
-              Delete
+              {t("Delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
