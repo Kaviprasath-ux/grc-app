@@ -31,7 +31,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Pencil, Image, Trash2, X } from "lucide-react";
+import { Plus, Pencil, Image, Trash2, X, Upload, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface CustomerAccount {
@@ -227,6 +227,9 @@ export default function CustomerAccountsPage() {
   });
 
   const [submitting, setSubmitting] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const [logoUploadStatus, setLogoUploadStatus] = useState<"idle" | "uploading" | "success" | "error">("idle");
+  const [logoUploadProgress, setLogoUploadProgress] = useState(0);
 
   useEffect(() => {
     fetchCustomers();
@@ -284,6 +287,67 @@ export default function CustomerAccountsPage() {
       maxAccounts: 0,
       status: "Active",
     });
+  };
+
+  const handleLogoDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(true);
+  };
+
+  const handleLogoDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(false);
+  };
+
+  const handleLogoDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(false);
+
+    const files = e.dataTransfer.files;
+    if (files && files[0]) {
+      const file = files[0];
+      if (file.type.startsWith("image/")) {
+        setFormData({ ...formData, logoFile: file });
+        setLogoUploadStatus("idle");
+      } else {
+        toast({
+          title: "Invalid file type",
+          description: "Please upload an image file (PNG, JPG, etc.)",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const handleLogoFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.type.startsWith("image/")) {
+        setFormData({ ...formData, logoFile: file });
+        setLogoUploadStatus("idle");
+      } else {
+        toast({
+          title: "Invalid file type",
+          description: "Please upload an image file (PNG, JPG, etc.)",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const handleRemoveLogo = () => {
+    setFormData({ ...formData, logoFile: null });
+    setLogoUploadStatus("idle");
+    setLogoUploadProgress(0);
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
   };
 
   const handleOnboardCustomer = async () => {
@@ -867,487 +931,633 @@ export default function CustomerAccountsPage() {
     setShowSubscriptionPlanDialog(true);
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-slate-400">Loading...</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
+      {/* Page Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-blue-700">GRC Customer Account</h1>
-        <Button onClick={() => setShowOnboardDialog(true)} className="bg-blue-600 hover:bg-blue-700">
+        <h1 className="text-2xl font-bold text-slate-800">GRC Customer Account</h1>
+        <Button onClick={() => setShowOnboardDialog(true)} size="sm">
           <Plus className="h-4 w-4 mr-2" />
           Onboard Customer
         </Button>
       </div>
 
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-blue-900 hover:bg-blue-900">
-                <TableHead className="text-white font-semibold">Customer Code</TableHead>
-                <TableHead className="text-white font-semibold">Customer Name</TableHead>
-                <TableHead className="text-white font-semibold">Email</TableHead>
-                <TableHead className="text-white font-semibold">Is Local User</TableHead>
-                <TableHead className="text-white font-semibold">Name</TableHead>
-                <TableHead className="text-white font-semibold">Last Login</TableHead>
-                <TableHead className="text-white font-semibold">Blocked</TableHead>
-                <TableHead className="text-white font-semibold">Active</TableHead>
-                <TableHead className="text-white font-semibold">Action</TableHead>
+      {/* Table */}
+      <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-slate-50 hover:bg-slate-50">
+              <TableHead className="font-semibold text-slate-700">Customer Code</TableHead>
+              <TableHead className="font-semibold text-slate-700">Customer Name</TableHead>
+              <TableHead className="font-semibold text-slate-700">Email</TableHead>
+              <TableHead className="font-semibold text-slate-700">Is Local User</TableHead>
+              <TableHead className="font-semibold text-slate-700">Name</TableHead>
+              <TableHead className="font-semibold text-slate-700">Last Login</TableHead>
+              <TableHead className="font-semibold text-slate-700">Blocked</TableHead>
+              <TableHead className="font-semibold text-slate-700">Active</TableHead>
+              <TableHead className="font-semibold text-slate-700">Action</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {customers.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={9} className="text-center py-8 text-slate-400">
+                  No customer accounts found
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8">
-                    Loading...
+            ) : (
+              customers.map((customer) => (
+                <TableRow key={customer.id} className="hover:bg-slate-50">
+                  <TableCell className="font-medium">{customer.customerCode}</TableCell>
+                  <TableCell>{customer.customerName}</TableCell>
+                  <TableCell>{customer.email}</TableCell>
+                  <TableCell>{customer.isLocalUser ? "Yes" : "No"}</TableCell>
+                  <TableCell>{customer.name}</TableCell>
+                  <TableCell>{customer.lastLogin || "-"}</TableCell>
+                  <TableCell>{customer.blocked ? "Yes" : "No"}</TableCell>
+                  <TableCell>
+                    <span className={customer.active
+                      ? "px-2 py-1 rounded text-xs font-medium bg-success-light text-success-dark"
+                      : "px-2 py-1 rounded text-xs font-medium bg-slate-100 text-slate-600"
+                    }>
+                      {customer.active ? "Yes" : "No"}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                        onClick={() => openEditDialog(customer)}
+                        title="Edit"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                        onClick={() => openLogoDialog(customer)}
+                        title="View Logo"
+                      >
+                        <Image className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+                        onClick={() => openDeleteDialog(customer)}
+                        title="Delete"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
-              ) : customers.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-gray-500">
-                    No customer accounts found
-                  </TableCell>
-                </TableRow>
-              ) : (
-                customers.map((customer) => (
-                  <TableRow key={customer.id} className="hover:bg-gray-50">
-                    <TableCell className="font-medium">{customer.customerCode}</TableCell>
-                    <TableCell>{customer.customerName}</TableCell>
-                    <TableCell>{customer.email}</TableCell>
-                    <TableCell>{customer.isLocalUser ? "Yes" : "No"}</TableCell>
-                    <TableCell>{customer.name}</TableCell>
-                    <TableCell>{customer.lastLogin || "-"}</TableCell>
-                    <TableCell>{customer.blocked ? "Yes" : "No"}</TableCell>
-                    <TableCell>{customer.active ? "Yes" : "No"}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openEditDialog(customer)}
-                          title="Edit"
-                        >
-                          <Pencil className="h-4 w-4 text-blue-600" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openLogoDialog(customer)}
-                          title="View Logo"
-                        >
-                          <Image className="h-4 w-4 text-green-600" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openDeleteDialog(customer)}
-                          title="Delete"
-                        >
-                          <Trash2 className="h-4 w-4 text-red-600" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
 
       {/* Onboard Customer Dialog */}
       <Dialog open={showOnboardDialog} onOpenChange={setShowOnboardDialog}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>New Account</DialogTitle>
-            <DialogDescription>
-              Create a new customer account. The user will be assigned the CustomerAdministrator role.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right text-blue-700">Customer Code</Label>
-              <div className="col-span-3">
-                <Input value={nextCustomerCode} disabled className="bg-gray-100" />
+        <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">New Account</DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto px-6 py-5">
+            <div className="space-y-5">
+              {/* Account Information Section */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">Account Information</h3>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium text-slate-700">Customer Code</Label>
+                    <Input value={nextCustomerCode} disabled className="bg-slate-50" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium text-slate-700">User Role</Label>
+                    <Input className="bg-slate-50" value="CustomerAdministrator" disabled />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="customerName" className="text-sm font-medium text-slate-700">Customer Name <span className="text-error">*</span></Label>
+                  <Input
+                    id="customerName"
+                    value={formData.customerName}
+                    onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
+                    placeholder="Enter customer name"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="userName" className="text-sm font-medium text-slate-700">Username <span className="text-error">*</span></Label>
+                  <Input
+                    id="userName"
+                    value={formData.userName}
+                    onChange={(e) => setFormData({ ...formData, userName: e.target.value })}
+                    placeholder="Enter username"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="email" className="text-sm font-medium text-slate-700">Email <span className="text-error">*</span></Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    placeholder="Enter email address"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Upload Logo</Label>
+
+                  {/* Drag and Drop Zone */}
+                  <div
+                    className={`relative border-2 border-dashed rounded-lg p-6 transition-colors ${
+                      dragOver
+                        ? "border-primary bg-primary/5"
+                        : "border-slate-300 hover:border-slate-400"
+                    }`}
+                    onDragOver={handleLogoDragOver}
+                    onDragLeave={handleLogoDragLeave}
+                    onDrop={handleLogoDrop}
+                  >
+                    {!formData.logoFile ? (
+                      <div className="flex flex-col items-center text-center">
+                        <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mb-3">
+                          <Upload className="h-5 w-5 text-slate-400" />
+                        </div>
+                        <p className="text-sm text-slate-600">
+                          Drag and Drop or{" "}
+                          <label className="text-primary cursor-pointer hover:underline">
+                            Click to upload
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={handleLogoFileSelect}
+                            />
+                          </label>
+                        </p>
+                        <p className="text-xs text-slate-400 mt-1">
+                          Supported formats: PNG, JPG. Max Size: 5MB
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {/* File Item */}
+                        <div className="flex items-center gap-3 p-2 bg-slate-50 rounded-lg">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-slate-700 truncate">
+                              {formData.logoFile.name}
+                            </p>
+                            <p className="text-xs text-slate-400">
+                              {formatFileSize(formData.logoFile.size)}
+                            </p>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                            onClick={handleRemoveLogo}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="customerName" className="text-right text-blue-700">Customer Name *</Label>
-              <Input
-                id="customerName"
-                className="col-span-3"
-                value={formData.customerName}
-                onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
-                placeholder="Enter customer name"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="userName" className="text-right text-blue-700">Username *</Label>
-              <Input
-                id="userName"
-                className="col-span-3"
-                value={formData.userName}
-                onChange={(e) => setFormData({ ...formData, userName: e.target.value })}
-                placeholder="Enter username"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="email" className="text-right text-blue-700">Email *</Label>
-              <Input
-                id="email"
-                type="email"
-                className="col-span-3"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="Enter email address"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right text-blue-700">User Role</Label>
-              <Input
-                className="col-span-3 bg-gray-100"
-                value="CustomerAdministrator"
-                disabled
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right text-blue-700">Upload Logo</Label>
-              <div className="col-span-3 flex gap-2">
-                <Input
-                  type="text"
-                  className="flex-1"
-                  value={formData.logoFile?.name || "..."}
-                  readOnly
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => document.getElementById("logoUpload")?.click()}
-                >
-                  Browse...
-                </Button>
-                <input
-                  id="logoUpload"
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) setFormData({ ...formData, logoFile: file });
-                  }}
-                />
+
+              {/* Settings Section */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">Settings</h3>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Language</Label>
+                    <Select value={formData.language || ""} onValueChange={(v) => setFormData({ ...formData, language: v })}>
+                      <SelectTrigger className="w-full mt-1.5 bg-white">
+                        <SelectValue placeholder="Select" />
+                      </SelectTrigger>
+                      <SelectContent position="popper" sideOffset={4}>
+                        {LANGUAGES.map((lang) => (
+                          <SelectItem key={lang.value} value={lang.value}>{lang.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Time Zone</Label>
+                    <Select value={formData.timeZone || ""} onValueChange={(v) => setFormData({ ...formData, timeZone: v })}>
+                      <SelectTrigger className="w-full mt-1.5 bg-white">
+                        <SelectValue placeholder="Select" />
+                      </SelectTrigger>
+                      <SelectContent position="popper" sideOffset={4}>
+                        {TIME_ZONES.map((tz) => (
+                          <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium text-slate-700">Is Local User</Label>
+                    <div className="flex gap-4 h-9 items-center">
+                      <label className="flex items-center gap-2 text-sm">
+                        <input type="radio" name="isLocalUserNew" value="yes" defaultChecked className="accent-primary" /> Yes
+                      </label>
+                      <label className="flex items-center gap-2 text-sm">
+                        <input type="radio" name="isLocalUserNew" value="no" className="accent-primary" /> No
+                      </label>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium text-slate-700">Blocked</Label>
+                    <div className="flex gap-4 h-9 items-center">
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="radio"
+                          name="blockedNew"
+                          checked={!formData.blocked}
+                          onChange={() => setFormData({ ...formData, blocked: false })}
+                          className="accent-primary"
+                        /> No
+                      </label>
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="radio"
+                          name="blockedNew"
+                          checked={formData.blocked}
+                          onChange={() => setFormData({ ...formData, blocked: true })}
+                          className="accent-primary"
+                        /> Yes
+                      </label>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium text-slate-700">Active</Label>
+                    <div className="flex gap-4 h-9 items-center">
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="radio"
+                          name="activeNew"
+                          checked={formData.active}
+                          onChange={() => setFormData({ ...formData, active: true })}
+                          className="accent-primary"
+                        /> Yes
+                      </label>
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="radio"
+                          name="activeNew"
+                          checked={!formData.active}
+                          onChange={() => setFormData({ ...formData, active: false })}
+                          className="accent-primary"
+                        /> No
+                      </label>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right text-blue-700">Is Local User</Label>
-              <div className="col-span-3 flex gap-4">
-                <label className="flex items-center gap-2">
-                  <input type="radio" name="isLocalUserNew" value="yes" defaultChecked /> Yes
-                </label>
-                <label className="flex items-center gap-2">
-                  <input type="radio" name="isLocalUserNew" value="no" /> No
-                </label>
+
+              {/* Password Section */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">Password</h3>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="newPassword" className="text-sm font-medium text-slate-700">New Password <span className="text-error">*</span></Label>
+                  <Input
+                    id="newPassword"
+                    type="password"
+                    value={formData.newPassword}
+                    onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
+                    placeholder="Enter password"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="confirmPassword" className="text-sm font-medium text-slate-700">Confirm Password <span className="text-error">*</span></Label>
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    value={formData.confirmPassword}
+                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                    placeholder="Confirm password"
+                  />
+                </div>
               </div>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right text-blue-700">Language</Label>
-              <div className="col-span-3">
-                <Select value={formData.language} onValueChange={(v) => setFormData({ ...formData, language: v })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select language" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {LANGUAGES.map((lang) => (
-                      <SelectItem key={lang.value} value={lang.value}>{lang.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right text-blue-700">Time Zone</Label>
-              <div className="col-span-3">
-                <Select value={formData.timeZone} onValueChange={(v) => setFormData({ ...formData, timeZone: v })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select time zone" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-[300px]">
-                    {TIME_ZONES.map((tz) => (
-                      <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right text-blue-700">Blocked</Label>
-              <div className="col-span-3 flex gap-4">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="blockedNew"
-                    checked={!formData.blocked}
-                    onChange={() => setFormData({ ...formData, blocked: false })}
-                  /> No
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="blockedNew"
-                    checked={formData.blocked}
-                    onChange={() => setFormData({ ...formData, blocked: true })}
-                  /> Yes
-                </label>
-              </div>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right text-blue-700">Active</Label>
-              <div className="col-span-3 flex gap-4">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="activeNew"
-                    checked={formData.active}
-                    onChange={() => setFormData({ ...formData, active: true })}
-                  /> Yes
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="activeNew"
-                    checked={!formData.active}
-                    onChange={() => setFormData({ ...formData, active: false })}
-                  /> No
-                </label>
-              </div>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="newPassword" className="text-right text-blue-700">New Password *</Label>
-              <Input
-                id="newPassword"
-                type="password"
-                className="col-span-3"
-                value={formData.newPassword}
-                onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
-                placeholder="Enter password"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="confirmPassword" className="text-right text-blue-700">Confirm Password *</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                className="col-span-3"
-                value={formData.confirmPassword}
-                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                placeholder="Confirm password"
-              />
             </div>
           </div>
-          <DialogFooter className="flex justify-between">
-            <div className="flex gap-2">
-              <Button onClick={handleOnboardCustomer} disabled={submitting} className="bg-blue-600 hover:bg-blue-700">
-                {submitting ? "Saving..." : "Save"}
-              </Button>
-              <Button variant="outline" onClick={() => { setShowOnboardDialog(false); resetForm(); }}>
-                Cancel
-              </Button>
-            </div>
+
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 px-6 py-4 border-t border-slate-100 flex justify-between">
             <Button
               variant="outline"
-              className="bg-blue-600 text-white hover:bg-blue-700"
+              size="sm"
               onClick={() => openSubscriptionPlanDialog(undefined, true)}
             >
               Subscription Plan {pendingSubscriptionPlans.length > 0 && `(${pendingSubscriptionPlans.length})`}
             </Button>
-          </DialogFooter>
+            <div className="flex gap-2">
+              <Button onClick={handleOnboardCustomer} disabled={submitting} size="sm">
+                {submitting ? "Saving..." : "Save"}
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => { setShowOnboardDialog(false); resetForm(); }}>
+                Cancel
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Edit Customer Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit Account</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right text-blue-700">Customer Code</Label>
-              <div className="col-span-3">
-                <Input value={selectedCustomer?.customerCode || ""} disabled className="bg-gray-100" />
+        <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Edit Account</DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto px-6 py-5">
+            <div className="space-y-5">
+              {/* Account Information Section */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">Account Information</h3>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium text-slate-700">Customer Code</Label>
+                    <Input value={selectedCustomer?.customerCode || ""} disabled className="bg-slate-50" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium text-slate-700">User Role</Label>
+                    <Input className="bg-slate-50" value="CustomerAdministrator" disabled />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="editCustomerName" className="text-sm font-medium text-slate-700">Customer Name <span className="text-error">*</span></Label>
+                  <Input
+                    id="editCustomerName"
+                    value={formData.customerName}
+                    onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
+                    placeholder="Enter customer name"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="editUserName" className="text-sm font-medium text-slate-700">Username <span className="text-error">*</span></Label>
+                  <Input
+                    id="editUserName"
+                    value={formData.userName}
+                    onChange={(e) => setFormData({ ...formData, userName: e.target.value })}
+                    placeholder="Enter username"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="editEmail" className="text-sm font-medium text-slate-700">Email <span className="text-error">*</span></Label>
+                  <Input
+                    id="editEmail"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    placeholder="Enter email address"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Upload Logo</Label>
+
+                  {/* Drag and Drop Zone */}
+                  <div
+                    className={`relative border-2 border-dashed rounded-lg p-6 transition-colors ${
+                      dragOver
+                        ? "border-primary bg-primary/5"
+                        : "border-slate-300 hover:border-slate-400"
+                    }`}
+                    onDragOver={handleLogoDragOver}
+                    onDragLeave={handleLogoDragLeave}
+                    onDrop={handleLogoDrop}
+                  >
+                    {!formData.logoFile ? (
+                      <div className="flex flex-col items-center text-center">
+                        <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mb-3">
+                          <Upload className="h-5 w-5 text-slate-400" />
+                        </div>
+                        <p className="text-sm text-slate-600">
+                          Drag and Drop or{" "}
+                          <label className="text-primary cursor-pointer hover:underline">
+                            Click to upload
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={handleLogoFileSelect}
+                            />
+                          </label>
+                        </p>
+                        <p className="text-xs text-slate-400 mt-1">
+                          Supported formats: PNG, JPG. Max Size: 5MB
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {/* File Item */}
+                        <div className="flex items-center gap-3 p-2 bg-slate-50 rounded-lg">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-slate-700 truncate">
+                              {formData.logoFile.name}
+                            </p>
+                            <p className="text-xs text-slate-400">
+                              {formatFileSize(formData.logoFile.size)}
+                            </p>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                            onClick={handleRemoveLogo}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="editCustomerName" className="text-right text-blue-700">Customer Name *</Label>
-              <Input
-                id="editCustomerName"
-                className="col-span-3"
-                value={formData.customerName}
-                onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="editUserName" className="text-right text-blue-700">Username *</Label>
-              <Input
-                id="editUserName"
-                className="col-span-3"
-                value={formData.userName}
-                onChange={(e) => setFormData({ ...formData, userName: e.target.value })}
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="editEmail" className="text-right text-blue-700">Email *</Label>
-              <Input
-                id="editEmail"
-                type="email"
-                className="col-span-3"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right text-blue-700">Upload Logo</Label>
-              <div className="col-span-3 flex gap-2">
-                <Input
-                  type="text"
-                  className="flex-1"
-                  value={formData.logoFile?.name || "..."}
-                  readOnly
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => document.getElementById("editLogoUpload")?.click()}
-                >
-                  Browse...
-                </Button>
-                <input
-                  id="editLogoUpload"
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) setFormData({ ...formData, logoFile: file });
-                  }}
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right text-blue-700">Is Local User</Label>
-              <div className="col-span-3 flex gap-4">
-                <label className="flex items-center gap-2">
-                  <input type="radio" name="isLocalUser" value="yes" defaultChecked /> Yes
-                </label>
-                <label className="flex items-center gap-2">
-                  <input type="radio" name="isLocalUser" value="no" /> No
-                </label>
-              </div>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right text-blue-700">User Role(s)</Label>
-              <Input
-                className="col-span-3 bg-gray-100"
-                value="CustomerAdministrator"
-                disabled
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right text-blue-700">Language</Label>
-              <div className="col-span-3">
-                <Select value={formData.language} onValueChange={(v) => setFormData({ ...formData, language: v })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select language" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {LANGUAGES.map((lang) => (
-                      <SelectItem key={lang.value} value={lang.value}>{lang.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right text-blue-700">Blocked</Label>
-              <div className="col-span-3 flex gap-4">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="blocked"
-                    checked={!formData.blocked}
-                    onChange={() => setFormData({ ...formData, blocked: false })}
-                  /> No
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="blocked"
-                    checked={formData.blocked}
-                    onChange={() => setFormData({ ...formData, blocked: true })}
-                  /> Yes
-                </label>
-              </div>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right text-blue-700">Active</Label>
-              <div className="col-span-3 flex gap-4">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="active"
-                    checked={formData.active}
-                    onChange={() => setFormData({ ...formData, active: true })}
-                  /> Yes
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="active"
-                    checked={!formData.active}
-                    onChange={() => setFormData({ ...formData, active: false })}
-                  /> No
-                </label>
-              </div>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <div className="col-span-4">
-                <Button
-                  variant="link"
-                  className="text-blue-600 p-0"
-                  onClick={openChangePasswordDialog}
-                >
-                  Change password
-                </Button>
+
+              {/* Settings Section */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">Settings</h3>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Language</Label>
+                    <Select value={formData.language || ""} onValueChange={(v) => setFormData({ ...formData, language: v })}>
+                      <SelectTrigger className="w-full mt-1.5 bg-white">
+                        <SelectValue placeholder="Select" />
+                      </SelectTrigger>
+                      <SelectContent position="popper" sideOffset={4}>
+                        {LANGUAGES.map((lang) => (
+                          <SelectItem key={lang.value} value={lang.value}>{lang.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Time Zone</Label>
+                    <Select value={formData.timeZone || ""} onValueChange={(v) => setFormData({ ...formData, timeZone: v })}>
+                      <SelectTrigger className="w-full mt-1.5 bg-white">
+                        <SelectValue placeholder="Select" />
+                      </SelectTrigger>
+                      <SelectContent position="popper" sideOffset={4}>
+                        {TIME_ZONES.map((tz) => (
+                          <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium text-slate-700">Is Local User</Label>
+                    <div className="flex gap-4 h-9 items-center">
+                      <label className="flex items-center gap-2 text-sm">
+                        <input type="radio" name="isLocalUserEdit" value="yes" defaultChecked className="accent-primary" /> Yes
+                      </label>
+                      <label className="flex items-center gap-2 text-sm">
+                        <input type="radio" name="isLocalUserEdit" value="no" className="accent-primary" /> No
+                      </label>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium text-slate-700">Blocked</Label>
+                    <div className="flex gap-4 h-9 items-center">
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="radio"
+                          name="blockedEdit"
+                          checked={!formData.blocked}
+                          onChange={() => setFormData({ ...formData, blocked: false })}
+                          className="accent-primary"
+                        /> No
+                      </label>
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="radio"
+                          name="blockedEdit"
+                          checked={formData.blocked}
+                          onChange={() => setFormData({ ...formData, blocked: true })}
+                          className="accent-primary"
+                        /> Yes
+                      </label>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium text-slate-700">Active</Label>
+                    <div className="flex gap-4 h-9 items-center">
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="radio"
+                          name="activeEdit"
+                          checked={formData.active}
+                          onChange={() => setFormData({ ...formData, active: true })}
+                          className="accent-primary"
+                        /> Yes
+                      </label>
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="radio"
+                          name="activeEdit"
+                          checked={!formData.active}
+                          onChange={() => setFormData({ ...formData, active: false })}
+                          className="accent-primary"
+                        /> No
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <Button
+                    variant="link"
+                    className="text-primary p-0 h-auto text-sm"
+                    onClick={openChangePasswordDialog}
+                  >
+                    Change password
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
-          <DialogFooter className="flex justify-between">
-            <div className="flex gap-2">
-              <Button onClick={handleEditCustomer} disabled={submitting} className="bg-blue-600 hover:bg-blue-700">
-                {submitting ? "Saving..." : "Save"}
-              </Button>
-              <Button variant="outline" onClick={() => { setShowEditDialog(false); resetForm(); setSelectedCustomer(null); }}>
-                Cancel
-              </Button>
-            </div>
+
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 px-6 py-4 border-t border-slate-100 flex justify-between">
             <Button
               variant="outline"
-              className="bg-blue-600 text-white hover:bg-blue-700"
+              size="sm"
               onClick={() => openSubscriptionPlanDialog(selectedCustomer || undefined)}
             >
               Subscription Plan
             </Button>
-          </DialogFooter>
+            <div className="flex gap-2">
+              <Button onClick={handleEditCustomer} disabled={submitting} size="sm">
+                {submitting ? "Saving..." : "Save"}
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => { setShowEditDialog(false); resetForm(); setSelectedCustomer(null); }}>
+                Cancel
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Change Password Dialog */}
       <Dialog open={showChangePasswordDialog} onOpenChange={setShowChangePasswordDialog}>
-        <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle>Change Password</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="newPasswordChange" className="text-blue-700">New password</Label>
+        <DialogContent className="sm:max-w-[400px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Change Password</DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Content */}
+          <div className="px-6 py-5 space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="newPasswordChange" className="text-sm font-medium text-slate-700">New password</Label>
               <Input
                 id="newPasswordChange"
                 type="password"
@@ -1356,8 +1566,8 @@ export default function CustomerAccountsPage() {
                 placeholder="Enter new password"
               />
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="confirmPasswordChange" className="text-blue-700">Confirm password</Label>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPasswordChange" className="text-sm font-medium text-slate-700">Confirm password</Label>
               <Input
                 id="confirmPasswordChange"
                 type="password"
@@ -1367,50 +1577,57 @@ export default function CustomerAccountsPage() {
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button onClick={handleChangePassword} disabled={submitting} className="bg-blue-600 hover:bg-blue-700">
+
+          {/* Fixed Footer */}
+          <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+            <Button onClick={handleChangePassword} disabled={submitting} size="sm">
               {submitting ? "Changing..." : "Change"}
             </Button>
-            <Button variant="outline" onClick={() => { setShowChangePasswordDialog(false); resetChangePasswordData(); }}>
+            <Button variant="outline" size="sm" onClick={() => { setShowChangePasswordDialog(false); resetChangePasswordData(); }}>
               Cancel
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Subscription Plans Dialog */}
       <Dialog open={showSubscriptionPlanDialog} onOpenChange={setShowSubscriptionPlanDialog}>
-        <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Subscription Plans</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
+        <DialogContent className="sm:max-w-[700px] max-h-[80vh] flex flex-col p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Subscription Plans</DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto px-6 py-5">
             <Table>
               <TableHeader>
-                <TableRow className="bg-blue-900 hover:bg-blue-900">
-                  <TableHead className="text-white font-semibold">Frameworks Available</TableHead>
-                  <TableHead className="text-white font-semibold">Accounts Available</TableHead>
-                  <TableHead className="text-white font-semibold">Expiry date</TableHead>
-                  <TableHead className="text-white font-semibold">Status</TableHead>
-                  <TableHead className="text-white font-semibold">Action</TableHead>
+                <TableRow className="bg-slate-50 hover:bg-slate-50">
+                  <TableHead className="font-semibold text-slate-700">Frameworks Available</TableHead>
+                  <TableHead className="font-semibold text-slate-700">Accounts Available</TableHead>
+                  <TableHead className="font-semibold text-slate-700">Expiry date</TableHead>
+                  <TableHead className="font-semibold text-slate-700">Status</TableHead>
+                  <TableHead className="font-semibold text-slate-700">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {subscriptionPlans.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                    <TableCell colSpan={5} className="text-center py-8 text-slate-400">
                       No subscription plans found
                     </TableCell>
                   </TableRow>
                 ) : (
                   subscriptionPlans.map((plan) => (
-                    <TableRow key={plan.id} className="hover:bg-gray-50">
+                    <TableRow key={plan.id} className="hover:bg-slate-50">
                       <TableCell>{plan.frameworksAvailable}</TableCell>
                       <TableCell>{plan.accountsAvailable}</TableCell>
                       <TableCell>{plan.expiryDate}</TableCell>
                       <TableCell>
                         <span className={`px-2 py-1 rounded text-xs font-medium ${
-                          plan.status === "Active" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"
+                          plan.status === "Active" ? "bg-success-light text-success-dark" : "bg-slate-100 text-slate-600"
                         }`}>
                           {plan.status}
                         </span>
@@ -1419,19 +1636,21 @@ export default function CustomerAccountsPage() {
                         <div className="flex items-center gap-1">
                           <Button
                             variant="ghost"
-                            size="sm"
+                            size="icon"
+                            className="h-8 w-8 text-slate-400 hover:text-slate-600"
                             onClick={() => openEditSubscriptionDialog(plan)}
                             title="Edit"
                           >
-                            <Pencil className="h-4 w-4 text-blue-600" />
+                            <Pencil className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
-                            size="sm"
+                            size="icon"
+                            className="h-8 w-8 text-slate-400 hover:text-semantic-error"
                             onClick={() => handleDeleteSubscription(plan.id)}
                             title="Delete"
                           >
-                            <Trash2 className="h-4 w-4 text-red-600" />
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       </TableCell>
@@ -1441,29 +1660,36 @@ export default function CustomerAccountsPage() {
               </TableBody>
             </Table>
           </div>
-          <DialogFooter>
+
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 px-6 py-4 border-t border-slate-100 flex gap-2">
             <Button
               onClick={() => setShowNewSubscriptionDialog(true)}
-              className="bg-blue-600 hover:bg-blue-700"
+              size="sm"
             >
               New Subscription Plan
             </Button>
-            <Button variant="outline" onClick={() => setShowSubscriptionPlanDialog(false)}>
+            <Button variant="outline" size="sm" onClick={() => setShowSubscriptionPlanDialog(false)}>
               Close
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* New Subscription Dialog */}
       <Dialog open={showNewSubscriptionDialog} onOpenChange={setShowNewSubscriptionDialog}>
-        <DialogContent className="sm:max-w-[450px]">
-          <DialogHeader>
-            <DialogTitle>New Subscription</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
+        <DialogContent className="sm:max-w-[450px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">New Subscription</DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Content */}
+          <div className="px-6 py-5 space-y-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="startDate" className="text-right text-blue-700">Start date</Label>
+              <Label htmlFor="startDate" className="text-right text-sm font-medium text-slate-700">Start date</Label>
               <Input
                 id="startDate"
                 type="date"
@@ -1473,7 +1699,7 @@ export default function CustomerAccountsPage() {
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="expiryDate" className="text-right text-blue-700">Expiry date</Label>
+              <Label htmlFor="expiryDate" className="text-right text-sm font-medium text-slate-700">Expiry date</Label>
               <Input
                 id="expiryDate"
                 type="date"
@@ -1483,7 +1709,7 @@ export default function CustomerAccountsPage() {
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="maxFrameworks" className="text-right text-blue-700">Max frameworks allowed</Label>
+              <Label htmlFor="maxFrameworks" className="text-right text-sm font-medium text-slate-700">Max frameworks</Label>
               <Input
                 id="maxFrameworks"
                 type="number"
@@ -1494,7 +1720,7 @@ export default function CustomerAccountsPage() {
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="maxAccounts" className="text-right text-blue-700">Max accounts allowed</Label>
+              <Label htmlFor="maxAccounts" className="text-right text-sm font-medium text-slate-700">Max accounts</Label>
               <Input
                 id="maxAccounts"
                 type="number"
@@ -1505,47 +1731,56 @@ export default function CustomerAccountsPage() {
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right text-blue-700">Status</Label>
+              <Label className="text-right text-sm font-medium text-slate-700">Status</Label>
               <div className="col-span-3 flex gap-4">
-                <label className="flex items-center gap-2">
+                <label className="flex items-center gap-2 text-sm">
                   <input
                     type="radio"
                     name="subscriptionStatus"
                     checked={newSubscriptionData.status === "Active"}
                     onChange={() => setNewSubscriptionData({ ...newSubscriptionData, status: "Active" })}
+                    className="accent-primary"
                   /> Active
                 </label>
-                <label className="flex items-center gap-2">
+                <label className="flex items-center gap-2 text-sm">
                   <input
                     type="radio"
                     name="subscriptionStatus"
                     checked={newSubscriptionData.status === "Inactive"}
                     onChange={() => setNewSubscriptionData({ ...newSubscriptionData, status: "Inactive" })}
+                    className="accent-primary"
                   /> Inactive
                 </label>
               </div>
             </div>
           </div>
-          <DialogFooter>
-            <Button onClick={handleAddSubscription} className="bg-blue-600 hover:bg-blue-700">
+
+          {/* Fixed Footer */}
+          <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+            <Button onClick={handleAddSubscription} size="sm">
               Save
             </Button>
-            <Button variant="outline" onClick={() => { setShowNewSubscriptionDialog(false); resetNewSubscriptionData(); }}>
+            <Button variant="outline" size="sm" onClick={() => { setShowNewSubscriptionDialog(false); resetNewSubscriptionData(); }}>
               Cancel
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Edit Subscription Dialog */}
       <Dialog open={showEditSubscriptionDialog} onOpenChange={setShowEditSubscriptionDialog}>
-        <DialogContent className="sm:max-w-[450px]">
-          <DialogHeader>
-            <DialogTitle>Edit Subscription</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
+        <DialogContent className="sm:max-w-[450px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Edit Subscription</DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Content */}
+          <div className="px-6 py-5 space-y-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="editStartDate" className="text-right text-blue-700">Start date</Label>
+              <Label htmlFor="editStartDate" className="text-right text-sm font-medium text-slate-700">Start date</Label>
               <Input
                 id="editStartDate"
                 type="date"
@@ -1555,7 +1790,7 @@ export default function CustomerAccountsPage() {
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="editExpiryDate" className="text-right text-blue-700">Expiry date</Label>
+              <Label htmlFor="editExpiryDate" className="text-right text-sm font-medium text-slate-700">Expiry date</Label>
               <Input
                 id="editExpiryDate"
                 type="date"
@@ -1565,7 +1800,7 @@ export default function CustomerAccountsPage() {
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="editMaxFrameworks" className="text-right text-blue-700">Max frameworks allowed</Label>
+              <Label htmlFor="editMaxFrameworks" className="text-right text-sm font-medium text-slate-700">Max frameworks</Label>
               <Input
                 id="editMaxFrameworks"
                 type="number"
@@ -1576,7 +1811,7 @@ export default function CustomerAccountsPage() {
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="editMaxAccounts" className="text-right text-blue-700">Max accounts allowed</Label>
+              <Label htmlFor="editMaxAccounts" className="text-right text-sm font-medium text-slate-700">Max accounts</Label>
               <Input
                 id="editMaxAccounts"
                 type="number"
@@ -1587,67 +1822,85 @@ export default function CustomerAccountsPage() {
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right text-blue-700">Status</Label>
+              <Label className="text-right text-sm font-medium text-slate-700">Status</Label>
               <div className="col-span-3 flex gap-4">
-                <label className="flex items-center gap-2">
+                <label className="flex items-center gap-2 text-sm">
                   <input
                     type="radio"
                     name="editSubscriptionStatus"
                     checked={editSubscriptionData.status === "Active"}
                     onChange={() => setEditSubscriptionData({ ...editSubscriptionData, status: "Active" })}
+                    className="accent-primary"
                   /> Active
                 </label>
-                <label className="flex items-center gap-2">
+                <label className="flex items-center gap-2 text-sm">
                   <input
                     type="radio"
                     name="editSubscriptionStatus"
                     checked={editSubscriptionData.status === "Inactive"}
                     onChange={() => setEditSubscriptionData({ ...editSubscriptionData, status: "Inactive" })}
+                    className="accent-primary"
                   /> Inactive
                 </label>
               </div>
             </div>
           </div>
-          <DialogFooter>
-            <Button onClick={handleEditSubscription} disabled={submitting} className="bg-blue-600 hover:bg-blue-700">
+
+          {/* Fixed Footer */}
+          <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+            <Button onClick={handleEditSubscription} disabled={submitting} size="sm">
               {submitting ? "Saving..." : "Save"}
             </Button>
-            <Button variant="outline" onClick={() => { setShowEditSubscriptionDialog(false); setSelectedPlan(null); }}>
+            <Button variant="outline" size="sm" onClick={() => { setShowEditSubscriptionDialog(false); setSelectedPlan(null); }}>
               Cancel
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle>Confirmation</DialogTitle>
-          </DialogHeader>
-          <p className="py-4">Are you sure you want to delete this?</p>
-          <DialogFooter>
+        <DialogContent className="sm:max-w-[400px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Confirmation</DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Content */}
+          <div className="px-6 py-5">
+            <p className="text-slate-600">Are you sure you want to delete this?</p>
+          </div>
+
+          {/* Fixed Footer */}
+          <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
             <Button
               onClick={handleDeleteCustomer}
               disabled={submitting}
-              className="bg-blue-600 hover:bg-blue-700"
+              size="sm"
             >
               {submitting ? "Deleting..." : "Yes"}
             </Button>
-            <Button variant="outline" onClick={() => { setShowDeleteDialog(false); setSelectedCustomer(null); }}>
+            <Button variant="outline" size="sm" onClick={() => { setShowDeleteDialog(false); setSelectedCustomer(null); }}>
               No
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* View Logo Dialog */}
       <Dialog open={showLogoDialog} onOpenChange={setShowLogoDialog}>
-        <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle>Customer Logo</DialogTitle>
-          </DialogHeader>
-          <div className="py-4 flex justify-center">
+        <DialogContent className="sm:max-w-[400px] p-0 gap-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Customer Logo</DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Content */}
+          <div className="px-6 py-5 flex justify-center">
             {selectedCustomer?.logoUrl ? (
               <img
                 src={selectedCustomer.logoUrl}
@@ -1655,17 +1908,19 @@ export default function CustomerAccountsPage() {
                 className="max-w-full max-h-64 object-contain"
               />
             ) : (
-              <div className="text-gray-500 text-center py-8">
-                <Image className="h-16 w-16 mx-auto text-gray-300 mb-2" />
+              <div className="text-slate-400 text-center py-8">
+                <Image className="h-16 w-16 mx-auto text-slate-300 mb-2" />
                 <p>No logo uploaded</p>
               </div>
             )}
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setShowLogoDialog(false); setSelectedCustomer(null); }}>
+
+          {/* Fixed Footer */}
+          <div className="px-6 py-4 border-t border-slate-100">
+            <Button variant="outline" size="sm" onClick={() => { setShowLogoDialog(false); setSelectedCustomer(null); }}>
               Close
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

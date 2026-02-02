@@ -464,138 +464,139 @@ export function NewRiskWizard({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{isEditMode ? `Edit Risk - ${editData?.riskId}` : "New Risk"}</DialogTitle>
+      <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+        <DialogHeader className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <DialogTitle className="text-lg font-semibold text-slate-800">{isEditMode ? `Edit Risk - ${editData?.riskId}` : "New Risk"}</DialogTitle>
         </DialogHeader>
 
-        {/* Stepper */}
-        <div className="mb-6">
-          <nav aria-label="Progress">
-            <ol className="flex items-center">
-              {steps.map((step, index) => (
-                <li
-                  key={step.id}
-                  className={cn(
-                    "relative flex-1",
-                    index !== steps.length - 1 && "pr-8"
-                  )}
-                >
-                  <div className="flex items-center">
-                    <button
-                      onClick={() => setCurrentStep(step.id)}
-                      className={cn(
-                        "flex h-8 w-8 items-center justify-center rounded-full border-2 transition-colors",
-                        currentStep >= step.id
-                          ? "border-grc-primary bg-grc-primary text-white"
-                          : "border-gray-300 bg-white text-gray-500"
-                      )}
-                    >
-                      <span className="text-sm">{step.id}</span>
-                    </button>
-                    <button
-                      onClick={() => setCurrentStep(step.id)}
-                      className={cn(
-                        "ml-2 text-sm font-medium",
-                        currentStep >= step.id
-                          ? "text-grc-primary"
-                          : "text-gray-500"
-                      )}
-                    >
-                      {step.name}
-                    </button>
-                    {index !== steps.length - 1 && (
-                      <div
-                        className={cn(
-                          "ml-4 h-0.5 flex-1",
-                          currentStep > step.id ? "bg-grc-primary" : "bg-gray-300"
-                        )}
-                      />
+        <div className="flex-1 overflow-y-auto px-6 py-6">
+          {/* Stepper */}
+          <div className="mb-6">
+            <nav aria-label="Progress">
+              <ol className="flex items-center">
+                {steps.map((step, index) => (
+                  <li
+                    key={step.id}
+                    className={cn(
+                      "relative flex-1",
+                      index !== steps.length - 1 && "pr-8"
                     )}
+                  >
+                    <div className="flex items-center">
+                      <button
+                        onClick={() => setCurrentStep(step.id)}
+                        className={cn(
+                          "flex h-8 w-8 items-center justify-center rounded-full border-2 transition-colors",
+                          currentStep >= step.id
+                            ? "border-primary-500 bg-primary-500 text-white"
+                            : "border-slate-300 bg-white text-slate-500"
+                        )}
+                      >
+                        <span className="text-sm">{step.id}</span>
+                      </button>
+                      <button
+                        onClick={() => setCurrentStep(step.id)}
+                        className={cn(
+                          "ml-2 text-sm font-medium",
+                          currentStep >= step.id
+                            ? "text-primary-600"
+                            : "text-slate-500"
+                        )}
+                      >
+                        {step.name}
+                      </button>
+                      {index !== steps.length - 1 && (
+                        <div
+                          className={cn(
+                            "ml-4 h-0.5 flex-1",
+                            currentStep > step.id ? "bg-primary-500" : "bg-slate-300"
+                          )}
+                        />
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </nav>
+          </div>
+
+          {/* Step Content */}
+          <div className="min-h-[400px]">
+            {/* Step 1: Risk Details */}
+            {currentStep === 1 && (
+              <div className="space-y-5">
+                <h3 className="text-lg font-semibold text-slate-800">{isEditMode ? "Edit Risk" : "Risk Details"}</h3>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="riskId">Risk ID</Label>
+                    <Input
+                      id="riskId"
+                      value={generatedRiskId}
+                      disabled
+                      className="bg-slate-100"
+                    />
                   </div>
-                </li>
-              ))}
-            </ol>
-          </nav>
-        </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="name">Risk Name *</Label>
+                    <Input
+                      id="name"
+                      value={formData.name}
+                      onChange={(e) => handleInputChange("name", e.target.value)}
+                      placeholder="Enter Risk Name"
+                    />
+                  </div>
+                </div>
 
-        {/* Step Content */}
-        <div className="min-h-[400px]">
-          {/* Step 1: Risk Details */}
-          {currentStep === 1 && (
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold mb-4">{isEditMode ? "Edit Risk" : "New Risk"}</h3>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="riskId">Risk ID</Label>
-                  <Input
-                    id="riskId"
-                    value={generatedRiskId}
-                    disabled
-                    className="bg-gray-100"
+                <div className="space-y-1.5">
+                  <Label htmlFor="description">Risk Description</Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => handleInputChange("description", e.target.value)}
+                    placeholder="Enter Description"
+                    rows={3}
                   />
                 </div>
-                <div>
-                  <Label htmlFor="name">Risk Name *</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => handleInputChange("name", e.target.value)}
-                    placeholder="Enter Risk Name"
-                  />
-                </div>
-              </div>
 
-              <div>
-                <Label htmlFor="description">Risk Description</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => handleInputChange("description", e.target.value)}
-                  placeholder="Enter Description"
-                  rows={3}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="department">Department</Label>
-                  <Select
-                    value={formData.departmentId}
-                    onValueChange={(value) => handleInputChange("departmentId", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Department" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {departments.map((dept) => (
-                        <SelectItem key={dept.id} value={dept.id}>
-                          {dept.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="owner">Risk Owner</Label>
-                  <Select
-                    value={formData.ownerId}
-                    onValueChange={(value) => handleInputChange("ownerId", value)}
-                    disabled={!formData.departmentId}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={formData.departmentId ? "Select Owner" : "Select Department first"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {users.length === 0 ? (
-                        <div className="py-2 px-3 text-sm text-muted-foreground">
-                          No Department Reviewers found
-                        </div>
-                      ) : (
-                        users.map((user) => (
-                          <SelectItem key={user.id} value={user.id}>
-                            {user.fullName}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="department">Department</Label>
+                    <Select
+                      value={formData.departmentId}
+                      onValueChange={(value) => handleInputChange("departmentId", value)}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select Department" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {departments.map((dept) => (
+                          <SelectItem key={dept.id} value={dept.id}>
+                            {dept.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="owner">Risk Owner</Label>
+                    <Select
+                      value={formData.ownerId}
+                      onValueChange={(value) => handleInputChange("ownerId", value)}
+                      disabled={!formData.departmentId}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder={formData.departmentId ? "Select Owner" : "Select Department first"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {users.length === 0 ? (
+                          <div className="py-2 px-3 text-sm text-muted-foreground">
+                            No Department Reviewers found
+                          </div>
+                        ) : (
+                          users.map((user) => (
+                            <SelectItem key={user.id} value={user.id}>
+                              {user.fullName}
                           </SelectItem>
                         ))
                       )}
@@ -604,366 +605,370 @@ export function NewRiskWizard({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="riskSources">Risk Sources</Label>
-                  <Input
-                    id="riskSources"
-                    value={formData.riskSources}
-                    onChange={(e) => handleInputChange("riskSources", e.target.value)}
-                    placeholder="Enter risk sources"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="category">Risk Category</Label>
-                  <div className="flex gap-2">
-                    <Select
-                      value={formData.categoryId}
-                      onValueChange={(value) => handleInputChange("categoryId", value)}
-                    >
-                      <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="Select Category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories.map((cat) => (
-                          <SelectItem key={cat.id} value={cat.id}>
-                            {cat.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button variant="outline" size="icon">
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="riskType">Risk Type</Label>
-                  <Select
-                    value={formData.typeId}
-                    onValueChange={(value) => handleInputChange("typeId", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Risk Type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {riskTypes.map((type) => (
-                        <SelectItem key={type.id} value={type.id}>
-                          {type.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                {/* Conditional dropdown based on Risk Type selection */}
-                {riskTypes.find(t => t.id === formData.typeId)?.name === "Asset Risk" && (
-                  <div>
-                    <Label>Impacted Asset</Label>
-                    <Select
-                      value={formData.impactedAssetId}
-                      onValueChange={(value) => handleInputChange("impactedAssetId", value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select impacted asset" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {assets.map((asset) => (
-                          <SelectItem key={asset.id} value={asset.id}>
-                            {asset.assetId} - {asset.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-                {riskTypes.find(t => t.id === formData.typeId)?.name === "Process Risk" && (
-                  <div>
-                    <Label>Impacted Process</Label>
-                    <Select
-                      value={formData.impactedProcessId}
-                      onValueChange={(value) => handleInputChange("impactedProcessId", value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select impacted process" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {processes.map((process) => (
-                          <SelectItem key={process.id} value={process.id}>
-                            {process.processCode} - {process.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-                {!formData.typeId && (
-                  <div>
-                    <Label className="text-muted-foreground">Impacted Asset/Process</Label>
-                    <Select disabled>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select Risk Type first" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">Select Risk Type first</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Potential Threats</Label>
-                  <div className="flex gap-2">
-                    <Select
-                      onValueChange={(value) => addToSelection("selectedThreats", value)}
-                    >
-                      <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="Select threats" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {threats.map((threat) => (
-                          <SelectItem key={threat.id} value={threat.id}>
-                            {threat.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button variant="outline" size="icon">
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {getSelectedThreatNames().map((name, index) => (
-                      <Badge key={index} variant="secondary" className="gap-1">
-                        {name}
-                        <button
-                          onClick={() =>
-                            removeFromSelection(
-                              "selectedThreats",
-                              formData.selectedThreats[index]
-                            )
-                          }
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <Label>Associated Vulnerabilities</Label>
-                  <div className="flex gap-2">
-                    <Select
-                      onValueChange={(value) =>
-                        addToSelection("selectedVulnerabilities", value)
-                      }
-                    >
-                      <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="Select vulnerabilities" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {vulnerabilities.map((vuln) => (
-                          <SelectItem key={vuln.id} value={vuln.id}>
-                            {vuln.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button variant="outline" size="icon">
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {getSelectedVulnerabilityNames().map((name, index) => (
-                      <Badge key={index} variant="secondary" className="gap-1">
-                        {name}
-                        <button
-                          onClick={() =>
-                            removeFromSelection(
-                              "selectedVulnerabilities",
-                              formData.selectedVulnerabilities[index]
-                            )
-                          }
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <Label>Cause</Label>
-                <div className="flex gap-2">
-                  <Select
-                    onValueChange={(value) => addToSelection("selectedCauses", value)}
-                  >
-                    <SelectTrigger className="flex-1">
-                      <SelectValue placeholder="Select cause" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {causes.map((cause) => (
-                        <SelectItem key={cause.id} value={cause.id}>
-                          {cause.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button variant="outline" size="icon">
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {getSelectedCauseNames().map((name, index) => (
-                    <Badge key={index} variant="secondary" className="gap-1">
-                      {name}
-                      <button
-                        onClick={() =>
-                          removeFromSelection(
-                            "selectedCauses",
-                            formData.selectedCauses[index]
-                          )
-                        }
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Step 2: Risk Mapping (Controls) */}
-          {currentStep === 2 && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">Controls</h3>
-                <Button variant="outline" onClick={() => setLinkControlDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Link Control
-                </Button>
-              </div>
-
-              {formData.selectedControls.length > 0 ? (
-                <div className="border rounded-lg overflow-hidden">
-                  <table className="w-full">
-                    <thead className="bg-muted">
-                      <tr>
-                        <th className="text-left p-3 text-sm font-medium">Control Code</th>
-                        <th className="text-left p-3 text-sm font-medium">Name</th>
-                        <th className="text-left p-3 text-sm font-medium">Domain</th>
-                        <th className="text-right p-3 text-sm font-medium">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {formData.selectedControls.map((controlId) => {
-                        const control = controls.find(c => c.id === controlId);
-                        if (!control) return null;
-                        return (
-                          <tr key={controlId} className="border-t">
-                            <td className="p-3 text-sm">{control.controlCode}</td>
-                            <td className="p-3 text-sm">{control.name}</td>
-                            <td className="p-3 text-sm">{control.domain?.name || "-"}</td>
-                            <td className="p-3 text-right">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => removeFromSelection("selectedControls", controlId)}
-                              >
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="border rounded-lg p-8 text-center text-muted-foreground">
-                  <p>No controls linked yet.</p>
-                  <p className="text-sm mt-2">
-                    Click &quot;Link Control&quot; to associate controls with this risk.
-                  </p>
-                </div>
-              )}
-
-              {/* Link Control Dialog */}
-              <Dialog open={linkControlDialogOpen} onOpenChange={setLinkControlDialogOpen}>
-                <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
-                  <DialogHeader>
-                    <DialogTitle>Link Controls</DialogTitle>
-                  </DialogHeader>
-                  <div className="relative mb-4">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="riskSources">Risk Sources</Label>
                     <Input
-                      placeholder="Search controls..."
-                      value={controlSearch}
-                      onChange={(e) => setControlSearch(e.target.value)}
-                      className="pl-9"
+                      id="riskSources"
+                      value={formData.riskSources}
+                      onChange={(e) => handleInputChange("riskSources", e.target.value)}
+                      placeholder="Enter risk sources"
                     />
                   </div>
-                  <div className="flex-1 overflow-auto border rounded-lg">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="category">Risk Category</Label>
+                    <div className="flex gap-2">
+                      <Select
+                        value={formData.categoryId}
+                        onValueChange={(value) => handleInputChange("categoryId", value)}
+                      >
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="Select Category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categories.map((cat) => (
+                            <SelectItem key={cat.id} value={cat.id}>
+                              {cat.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button variant="outline" size="icon">
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="riskType">Risk Type</Label>
+                    <Select
+                      value={formData.typeId}
+                      onValueChange={(value) => handleInputChange("typeId", value)}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Risk Type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {riskTypes.map((type) => (
+                          <SelectItem key={type.id} value={type.id}>
+                            {type.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {/* Conditional dropdown based on Risk Type selection */}
+                  {riskTypes.find(t => t.id === formData.typeId)?.name === "Asset Risk" && (
+                    <div className="space-y-1.5">
+                      <Label>Impacted Asset</Label>
+                      <Select
+                        value={formData.impactedAssetId}
+                        onValueChange={(value) => handleInputChange("impactedAssetId", value)}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select impacted asset" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {assets.map((asset) => (
+                            <SelectItem key={asset.id} value={asset.id}>
+                              {asset.assetId} - {asset.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  {riskTypes.find(t => t.id === formData.typeId)?.name === "Process Risk" && (
+                    <div className="space-y-1.5">
+                      <Label>Impacted Process</Label>
+                      <Select
+                        value={formData.impactedProcessId}
+                        onValueChange={(value) => handleInputChange("impactedProcessId", value)}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select impacted process" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {processes.map((process) => (
+                            <SelectItem key={process.id} value={process.id}>
+                              {process.processCode} - {process.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  {!formData.typeId && (
+                    <div className="space-y-1.5">
+                      <Label className="text-muted-foreground">Impacted Asset/Process</Label>
+                      <Select disabled>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select Risk Type first" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Select Risk Type first</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label>Potential Threats</Label>
+                    <div className="flex gap-2">
+                      <Select
+                        onValueChange={(value) => addToSelection("selectedThreats", value)}
+                      >
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="Select threats" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {threats.map((threat) => (
+                            <SelectItem key={threat.id} value={threat.id}>
+                              {threat.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button variant="outline" size="icon">
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {getSelectedThreatNames().map((name, index) => (
+                        <Badge key={index} variant="secondary" className="gap-1">
+                          {name}
+                          <button
+                            onClick={() =>
+                              removeFromSelection(
+                                "selectedThreats",
+                                formData.selectedThreats[index]
+                              )
+                            }
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Associated Vulnerabilities</Label>
+                    <div className="flex gap-2">
+                      <Select
+                        onValueChange={(value) =>
+                          addToSelection("selectedVulnerabilities", value)
+                        }
+                      >
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="Select vulnerabilities" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {vulnerabilities.map((vuln) => (
+                            <SelectItem key={vuln.id} value={vuln.id}>
+                              {vuln.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button variant="outline" size="icon">
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {getSelectedVulnerabilityNames().map((name, index) => (
+                        <Badge key={index} variant="secondary" className="gap-1">
+                          {name}
+                          <button
+                            onClick={() =>
+                              removeFromSelection(
+                                "selectedVulnerabilities",
+                                formData.selectedVulnerabilities[index]
+                              )
+                            }
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>Cause</Label>
+                  <div className="flex gap-2">
+                    <Select
+                      onValueChange={(value) => addToSelection("selectedCauses", value)}
+                    >
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Select cause" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {causes.map((cause) => (
+                          <SelectItem key={cause.id} value={cause.id}>
+                            {cause.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button variant="outline" size="icon">
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {getSelectedCauseNames().map((name, index) => (
+                      <Badge key={index} variant="secondary" className="gap-1">
+                        {name}
+                        <button
+                          onClick={() =>
+                            removeFromSelection(
+                              "selectedCauses",
+                              formData.selectedCauses[index]
+                            )
+                          }
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 2: Risk Mapping (Controls) */}
+            {currentStep === 2 && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                  <h3 className="text-lg font-semibold text-slate-800">Controls</h3>
+                  <Button variant="outline" onClick={() => setLinkControlDialogOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Link Control
+                  </Button>
+                </div>
+
+                {formData.selectedControls.length > 0 ? (
+                  <div className="border border-slate-200 rounded-lg overflow-hidden">
                     <table className="w-full">
-                      <thead className="bg-muted sticky top-0">
-                        <tr>
-                          <th className="w-10 p-3"></th>
-                          <th className="text-left p-3 text-sm font-medium">Control Code</th>
-                          <th className="text-left p-3 text-sm font-medium">Name</th>
-                          <th className="text-left p-3 text-sm font-medium">Domain</th>
+                      <thead className="bg-slate-50">
+                        <tr className="h-12">
+                          <th className="text-left px-4 text-sm font-medium text-slate-700">Control Code</th>
+                          <th className="text-left px-4 text-sm font-medium text-slate-700">Name</th>
+                          <th className="text-left px-4 text-sm font-medium text-slate-700">Domain</th>
+                          <th className="text-right px-4 text-sm font-medium text-slate-700">Action</th>
                         </tr>
                       </thead>
-                      <tbody>
-                        {controls
-                          .filter(control =>
-                            control.name.toLowerCase().includes(controlSearch.toLowerCase()) ||
-                            control.controlCode.toLowerCase().includes(controlSearch.toLowerCase()) ||
-                            (control.domain?.name || "").toLowerCase().includes(controlSearch.toLowerCase())
-                          )
-                          .map((control) => (
-                            <tr key={control.id} className="border-t hover:bg-muted/50">
-                              <td className="p-3">
-                                <Checkbox
-                                  checked={formData.selectedControls.includes(control.id)}
-                                  onCheckedChange={(checked) => {
-                                    if (checked) {
-                                      addToSelection("selectedControls", control.id);
-                                    } else {
-                                      removeFromSelection("selectedControls", control.id);
-                                    }
-                                  }}
-                                />
+                      <tbody className="divide-y divide-slate-100">
+                        {formData.selectedControls.map((controlId) => {
+                          const control = controls.find(c => c.id === controlId);
+                          if (!control) return null;
+                          return (
+                            <tr key={controlId} className="hover:bg-slate-50 transition-colors">
+                              <td className="px-4 py-3 text-sm font-medium text-primary-600">{control.controlCode}</td>
+                              <td className="px-4 py-3 text-sm text-slate-600">{control.name}</td>
+                              <td className="px-4 py-3 text-sm text-slate-600">{control.domain?.name || "-"}</td>
+                              <td className="px-4 py-3 text-right">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removeFromSelection("selectedControls", controlId)}
+                                  className="text-red-600 hover:text-red-700"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
                               </td>
-                              <td className="p-3 text-sm">{control.controlCode}</td>
-                              <td className="p-3 text-sm">{control.name}</td>
-                              <td className="p-3 text-sm">{control.domain?.name || "-"}</td>
                             </tr>
-                          ))}
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
-                  <div className="flex justify-between items-center mt-4 pt-4 border-t">
-                    <span className="text-sm text-muted-foreground">
-                      {formData.selectedControls.length} control(s) selected
-                    </span>
-                    <Button onClick={() => setLinkControlDialogOpen(false)}>
-                      Done
-                    </Button>
+                ) : (
+                  <div className="border border-slate-200 rounded-lg p-12 text-center text-slate-500">
+                    <p>No controls linked yet.</p>
+                    <p className="text-sm mt-2">
+                      Click &quot;Link Control&quot; to associate controls with this risk.
+                    </p>
                   </div>
-                </DialogContent>
-              </Dialog>
-            </div>
-          )}
+                )}
+
+                {/* Link Control Dialog */}
+                <Dialog open={linkControlDialogOpen} onOpenChange={setLinkControlDialogOpen}>
+                  <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+                    <DialogHeader className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+                      <DialogTitle className="text-lg font-semibold text-slate-800">Link Controls</DialogTitle>
+                    </DialogHeader>
+                    <div className="flex-1 overflow-hidden flex flex-col px-6 py-4">
+                      <div className="relative mb-4">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                        <Input
+                          placeholder="Search controls..."
+                          value={controlSearch}
+                          onChange={(e) => setControlSearch(e.target.value)}
+                          className="pl-9"
+                        />
+                      </div>
+                      <div className="flex-1 overflow-auto border border-slate-200 rounded-lg">
+                        <table className="w-full">
+                          <thead className="bg-slate-50 sticky top-0">
+                            <tr className="h-12">
+                              <th className="w-10 px-3"></th>
+                              <th className="text-left px-3 text-sm font-medium text-slate-700">Control Code</th>
+                              <th className="text-left px-3 text-sm font-medium text-slate-700">Name</th>
+                              <th className="text-left px-3 text-sm font-medium text-slate-700">Domain</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {controls
+                              .filter(control =>
+                                control.name.toLowerCase().includes(controlSearch.toLowerCase()) ||
+                                control.controlCode.toLowerCase().includes(controlSearch.toLowerCase()) ||
+                                (control.domain?.name || "").toLowerCase().includes(controlSearch.toLowerCase())
+                              )
+                              .map((control) => (
+                                <tr key={control.id} className="hover:bg-slate-50 transition-colors">
+                                  <td className="px-3 py-3">
+                                    <Checkbox
+                                      checked={formData.selectedControls.includes(control.id)}
+                                      onCheckedChange={(checked) => {
+                                        if (checked) {
+                                          addToSelection("selectedControls", control.id);
+                                        } else {
+                                          removeFromSelection("selectedControls", control.id);
+                                        }
+                                      }}
+                                    />
+                                  </td>
+                                  <td className="px-3 py-3 text-sm font-medium text-primary-600">{control.controlCode}</td>
+                                  <td className="px-3 py-3 text-sm text-slate-600">{control.name}</td>
+                                  <td className="px-3 py-3 text-sm text-slate-600">{control.domain?.name || "-"}</td>
+                                </tr>
+                              ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                    <div className="flex-shrink-0 flex justify-between items-center px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+                      <span className="text-sm text-slate-500">
+                        {formData.selectedControls.length} control(s) selected
+                      </span>
+                      <Button onClick={() => setLinkControlDialogOpen(false)}>
+                        Done
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Navigation Buttons */}
-        <div className="flex justify-between mt-6 pt-4 border-t">
+        <div className="flex-shrink-0 flex justify-between px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
           <Button
             variant="outline"
             onClick={currentStep === 1 ? handleClose : handlePrevious}
@@ -983,7 +988,7 @@ export function NewRiskWizard({
               </Button>
             ) : (
               <Button onClick={handleSubmit} disabled={loading}>
-                {loading ? "Saving..." : (isEditMode ? "Update" : "Save")}
+                {loading ? "Saving..." : (isEditMode ? "Update Risk" : "Save Risk")}
               </Button>
             )}
           </div>

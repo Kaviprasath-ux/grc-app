@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { withAuth } from "@/lib/api-auth";
+import { withAuth, getTenantFilter } from "@/lib/api-auth";
 
 // GET all asset lifecycle statuses
-// NOTE: AssetLifecycleStatus model doesn't have customerAccountId yet - tenant filtering disabled
+// Note: Uses asset.inventory:view permission to allow inventory users to see statuses in dropdowns
 export const GET = withAuth(
-  async () => {
+  async (_req, _context, session) => {
     try {
+      const tenantFilter = getTenantFilter(session);
+
       const statuses = await prisma.assetLifecycleStatus.findMany({
+        where: tenantFilter,
         include: {
           _count: {
             select: { assets: true },
@@ -24,13 +27,12 @@ export const GET = withAuth(
       );
     }
   },
-  { resource: "asset.settings", action: "view" }
+  { resource: "asset.inventory", action: "view" }
 );
 
 // POST create new asset lifecycle status
-// NOTE: AssetLifecycleStatus model doesn't have customerAccountId yet - tenant filtering disabled
 export const POST = withAuth(
-  async (req) => {
+  async (req, _context, session) => {
     try {
       const body = await req.json();
       const { name, description, order } = body;
@@ -42,9 +44,28 @@ export const POST = withAuth(
         );
       }
 
-      // Check for duplicate
+      // Get customer account ID for the new record
+      // GRCAdministrators can create shared/master data without customerAccountId
+      // Regular users must have a customerAccountId assigned
+      let customerAccountId: string | null;
+      if (session.roles.includes('GRCAdministrator')) {
+        customerAccountId = session.customerAccountId || null;
+      } else {
+        if (!session.customerAccountId) {
+          return NextResponse.json(
+            { error: "User does not have a customer account assigned" },
+            { status: 400 }
+          );
+        }
+        customerAccountId = session.customerAccountId;
+      }
+
+      // Check for duplicate within the same tenant
       const existing = await prisma.assetLifecycleStatus.findFirst({
-        where: { name: name.trim() },
+        where: {
+          name: name.trim(),
+          customerAccountId,
+        },
       });
 
       if (existing) {
@@ -56,6 +77,7 @@ export const POST = withAuth(
 
       const status = await prisma.assetLifecycleStatus.create({
         data: {
+          ...(customerAccountId ? { customerAccount: { connect: { id: customerAccountId } } } : {}),
           name: name.trim(),
           description: description?.trim() || null,
           order: order || 0,

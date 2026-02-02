@@ -5,6 +5,7 @@ import { withAuth, getTenantFilter } from "@/lib/api-auth";
 // Note: If TypeScript errors occur for customerAccountId, run: npx prisma generate
 
 // GET all asset categories
+// Note: Uses asset.inventory:view permission to allow inventory users to see categories in dropdowns
 export const GET = withAuth(
   async (_req, _context, session) => {
     try {
@@ -29,7 +30,7 @@ export const GET = withAuth(
       );
     }
   },
-  { resource: "asset.settings", action: "view" }
+  { resource: "asset.inventory", action: "view" }
 );
 
 // POST create new asset category

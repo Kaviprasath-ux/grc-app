@@ -25,8 +25,8 @@ export function DonutChart({ title, data, centerLabel, centerSubLabel, className
   return (
     <div
       className={cn(
-        "bg-white rounded-xl border border-slate-200 p-5",
-        onClick && "cursor-pointer hover:shadow-md transition-shadow",
+        "bg-white rounded-xl border border-slate-200 p-5 overflow-visible",
+        onClick && "cursor-pointer hover:bg-slate-50 transition-colors",
         className
       )}
       onClick={onClick}
@@ -41,17 +41,17 @@ export function DonutChart({ title, data, centerLabel, centerSubLabel, className
         </div>
       )}
 
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-6 overflow-visible">
         {/* Chart container - left side */}
-        <div className="relative w-[140px] h-[140px] flex-shrink-0">
+        <div className="relative w-[180px] h-[180px] flex-shrink-0 overflow-visible">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
                 data={data}
                 cx="50%"
                 cy="50%"
-                innerRadius={42}
-                outerRadius={65}
+                innerRadius={54}
+                outerRadius={84}
                 paddingAngle={2}
                 dataKey="value"
                 strokeWidth={0}
@@ -65,6 +65,7 @@ export function DonutChart({ title, data, centerLabel, centerSubLabel, className
                 ))}
               </Pie>
               <Tooltip
+                wrapperStyle={{ zIndex: 50 }}
                 contentStyle={{
                   backgroundColor: "white",
                   border: "1px solid #e2e8f0",
@@ -82,10 +83,10 @@ export function DonutChart({ title, data, centerLabel, centerSubLabel, className
           {(centerLabel !== undefined || centerSubLabel) && (
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
               {centerLabel !== undefined && (
-                <span className="text-2xl font-bold text-slate-800">{centerLabel}</span>
+                <span className="text-3xl font-bold text-slate-800">{centerLabel}</span>
               )}
               {centerSubLabel && (
-                <span className="text-[10px] text-slate-500 font-medium">{centerSubLabel}</span>
+                <span className="text-xs text-slate-500 font-medium">{centerSubLabel}</span>
               )}
             </div>
           )}

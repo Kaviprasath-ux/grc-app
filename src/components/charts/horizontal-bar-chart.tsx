@@ -46,7 +46,7 @@ export function HorizontalBarChart({
     <div
       className={cn(
         "bg-white rounded-xl border border-slate-200 p-4",
-        onClick && "cursor-pointer hover:shadow-md transition-shadow",
+        onClick && "cursor-pointer hover:bg-slate-50 transition-colors",
         className
       )}
       onClick={onClick}

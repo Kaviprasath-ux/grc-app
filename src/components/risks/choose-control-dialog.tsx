@@ -198,15 +198,15 @@ export function ChooseControlDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[80vh]">
-        <DialogHeader>
-          <DialogTitle>Select Governance</DialogTitle>
+      <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+        <DialogHeader className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+          <DialogTitle className="text-lg font-semibold text-slate-800">Select Governance</DialogTitle>
         </DialogHeader>
 
         {/* Filters */}
-        <div className="flex gap-4 py-4">
+        <div className="flex-shrink-0 grid grid-cols-2 gap-4 px-6 py-4 border-b border-slate-100">
           <Select value={domain} onValueChange={setDomain}>
-            <SelectTrigger className="w-48">
+            <SelectTrigger className="w-full bg-white">
               <SelectValue placeholder="Domain" />
             </SelectTrigger>
             <SelectContent>
@@ -220,7 +220,7 @@ export function ChooseControlDialog({
           </Select>
 
           <Select value={functionalGrouping} onValueChange={setFunctionalGrouping}>
-            <SelectTrigger className="w-48">
+            <SelectTrigger className="w-full bg-white">
               <SelectValue placeholder="Functional Grouping" />
             </SelectTrigger>
             <SelectContent>
@@ -234,71 +234,74 @@ export function ChooseControlDialog({
           </Select>
         </div>
 
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            className="pl-10"
-            placeholder="Search By Control Code, Name"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
+        {/* Search and List */}
+        <div className="flex-1 overflow-hidden flex flex-col px-6 py-4">
+          {/* Search */}
+          <div className="relative mb-4">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Input
+              className="pl-10 bg-white"
+              placeholder="Search By Control Code, Name"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
 
-        {/* Control List */}
-        <div className="border rounded-lg overflow-hidden mt-4">
-          <div className="max-h-64 overflow-y-auto">
-            {filteredControls.length === 0 ? (
-              <div className="p-8 text-center text-muted-foreground">
-                No controls found matching your criteria
-              </div>
-            ) : (
-              <div className="divide-y">
-                {filteredControls.map((control) => (
-                  <div
-                    key={control.id}
-                    className={cn(
-                      "p-3 cursor-pointer hover:bg-gray-50 transition-colors",
-                      selectedControl?.id === control.id && "bg-primary/5 border-l-2 border-l-primary"
-                    )}
-                    onClick={() => setSelectedControl(control)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-primary">{control.controlId}</span>
-                          <span className="text-muted-foreground">-</span>
-                          <span className="font-medium">{control.name}</span>
-                        </div>
-                        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                          {control.description}
-                        </p>
-                        <div className="flex gap-2 mt-2">
-                          {control.domain && (
-                            <span className="text-xs bg-gray-100 px-2 py-1 rounded">
-                              {control.domain}
-                            </span>
-                          )}
-                          {control.functionalGrouping && (
-                            <span className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">
-                              {control.functionalGrouping}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      {selectedControl?.id === control.id && (
-                        <Check className="h-5 w-5 text-primary ml-4" />
+          {/* Control List */}
+          <div className="flex-1 border border-slate-200 rounded-lg overflow-hidden">
+            <div className="h-full overflow-y-auto">
+              {filteredControls.length === 0 ? (
+                <div className="p-8 text-center text-slate-500">
+                  No controls found matching your criteria
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-100">
+                  {filteredControls.map((control) => (
+                    <div
+                      key={control.id}
+                      className={cn(
+                        "p-3 cursor-pointer hover:bg-slate-50 transition-colors",
+                        selectedControl?.id === control.id && "bg-primary/5 border-l-2 border-l-primary"
                       )}
+                      onClick={() => setSelectedControl(control)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-primary">{control.controlId}</span>
+                            <span className="text-slate-400">-</span>
+                            <span className="font-medium text-slate-800">{control.name}</span>
+                          </div>
+                          <p className="text-sm text-slate-500 mt-1 line-clamp-2">
+                            {control.description}
+                          </p>
+                          <div className="flex gap-2 mt-2">
+                            {control.domain && (
+                              <span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded">
+                                {control.domain}
+                              </span>
+                            )}
+                            {control.functionalGrouping && (
+                              <span className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">
+                                {control.functionalGrouping}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        {selectedControl?.id === control.id && (
+                          <Check className="h-5 w-5 text-primary ml-4" />
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Actions */}
-        <div className="flex justify-end gap-2 pt-4 border-t">
+        <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100">
           <Button variant="outline" onClick={handleClose}>
             Cancel
           </Button>

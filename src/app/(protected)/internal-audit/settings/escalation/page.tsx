@@ -88,106 +88,123 @@ export default function EscalationConfigPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="space-y-6">
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.push("/internal-audit/settings")}
+            className="h-8 w-8"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <h1 className="text-2xl font-bold text-slate-800">Escalation Configuration</h1>
+        </div>
+        <div className="flex items-center justify-center h-[60vh]">
+          <div className="flex flex-col items-center gap-4">
+            <div className="relative">
+              <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
+              <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+            </div>
+            <p className="text-sm text-slate-500 font-medium">Loading configuration...</p>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.push("/internal-audit/settings")}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold">Escalation</h1>
-            <p className="text-gray-600">Set up escalation rules and thresholds</p>
-          </div>
-        </div>
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex items-center gap-3">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => router.push("/internal-audit/settings")}
+          className="h-8 w-8"
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <h1 className="text-2xl font-bold text-slate-800">Escalation Configuration</h1>
       </div>
 
       {/* Content Card */}
-      <div className="bg-card rounded-lg border">
+      <div className="bg-white rounded-xl border border-slate-200">
+        {/* Card Header */}
+        <div className="px-6 py-4 border-b border-slate-100">
+          <h2 className="text-base font-semibold text-slate-800">Escalation Timeline Settings</h2>
+          <p className="text-sm text-slate-500 mt-1">Configure the number of days before escalation for each activity type</p>
+        </div>
+
+        {/* Card Content */}
         <div className="p-6">
-          <h2 className="text-xl font-semibold mb-6">Escalation Configuration</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl">
+            <div>
+              <Label className="text-sm font-medium text-slate-700">Response Submission</Label>
+              <div className="flex items-center gap-2 mt-1.5">
+                <Input
+                  type="number"
+                  min={1}
+                  value={formData.responseSubmission}
+                  onChange={(e) => setFormData({ ...formData, responseSubmission: parseInt(e.target.value) || 5 })}
+                  className="bg-white w-24"
+                />
+                <span className="text-sm text-slate-500">days</span>
+              </div>
+            </div>
 
-        <div className="space-y-6 max-w-md">
-          <div>
-            <Label htmlFor="responseSubmission">Response Submission (days)</Label>
-            <Input
-              id="responseSubmission"
-              type="number"
-              min={1}
-              value={formData.responseSubmission}
-              onChange={(e) => setFormData({ ...formData, responseSubmission: parseInt(e.target.value) || 5 })}
-              className="mt-2"
-            />
-            <p className="text-sm text-muted-foreground mt-1">
-              Number of days before escalation for response submission
-            </p>
-          </div>
+            <div>
+              <Label className="text-sm font-medium text-slate-700">Acknowledgement</Label>
+              <div className="flex items-center gap-2 mt-1.5">
+                <Input
+                  type="number"
+                  min={1}
+                  value={formData.acknowledgement}
+                  onChange={(e) => setFormData({ ...formData, acknowledgement: parseInt(e.target.value) || 1 })}
+                  className="bg-white w-24"
+                />
+                <span className="text-sm text-slate-500">days</span>
+              </div>
+            </div>
 
-          <div>
-            <Label htmlFor="acknowledgement">Acknowledgement (days)</Label>
-            <Input
-              id="acknowledgement"
-              type="number"
-              min={1}
-              value={formData.acknowledgement}
-              onChange={(e) => setFormData({ ...formData, acknowledgement: parseInt(e.target.value) || 1 })}
-              className="mt-2"
-            />
-            <p className="text-sm text-muted-foreground mt-1">
-              Number of days before escalation for acknowledgement
-            </p>
-          </div>
+            <div>
+              <Label className="text-sm font-medium text-slate-700">Clarification</Label>
+              <div className="flex items-center gap-2 mt-1.5">
+                <Input
+                  type="number"
+                  min={1}
+                  value={formData.clarification}
+                  onChange={(e) => setFormData({ ...formData, clarification: parseInt(e.target.value) || 2 })}
+                  className="bg-white w-24"
+                />
+                <span className="text-sm text-slate-500">days</span>
+              </div>
+            </div>
 
-          <div>
-            <Label htmlFor="clarification">Clarification (days)</Label>
-            <Input
-              id="clarification"
-              type="number"
-              min={1}
-              value={formData.clarification}
-              onChange={(e) => setFormData({ ...formData, clarification: parseInt(e.target.value) || 2 })}
-              className="mt-2"
-            />
-            <p className="text-sm text-muted-foreground mt-1">
-              Number of days before escalation for clarification
-            </p>
-          </div>
-
-          <div>
-            <Label htmlFor="issueResolution">Issue Resolution (days)</Label>
-            <Input
-              id="issueResolution"
-              type="number"
-              min={1}
-              value={formData.issueResolution}
-              onChange={(e) => setFormData({ ...formData, issueResolution: parseInt(e.target.value) || 3 })}
-              className="mt-2"
-            />
-            <p className="text-sm text-muted-foreground mt-1">
-              Number of days before escalation for issue resolution
-            </p>
-          </div>
-
-          <div className="flex gap-4 pt-4">
-            <Button onClick={handleSave} disabled={saving}>
-              {saving ? "Saving..." : "Save"}
-            </Button>
-            <Button variant="outline" onClick={() => router.push("/internal-audit/settings")}>
-              Cancel
-            </Button>
+            <div>
+              <Label className="text-sm font-medium text-slate-700">Issue Resolution</Label>
+              <div className="flex items-center gap-2 mt-1.5">
+                <Input
+                  type="number"
+                  min={1}
+                  value={formData.issueResolution}
+                  onChange={(e) => setFormData({ ...formData, issueResolution: parseInt(e.target.value) || 3 })}
+                  className="bg-white w-24"
+                />
+                <span className="text-sm text-slate-500">days</span>
+              </div>
+            </div>
           </div>
         </div>
+
+        {/* Card Footer */}
+        <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-3">
+          <Button variant="outline" onClick={() => router.push("/internal-audit/settings")}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave} disabled={saving}>
+            {saving ? "Saving..." : "Save Changes"}
+          </Button>
         </div>
       </div>
     </div>

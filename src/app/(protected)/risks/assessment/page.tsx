@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import { PageHeader } from "@/components/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { usePermissions, useUserRoles } from "@/hooks/usePermissions";
@@ -23,8 +21,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { RiskRatingBadge } from "@/components/risks/risk-rating-badge";
+import { RiskAssessmentWizardDialog } from "@/components/risks/risk-assessment-wizard-dialog";
 import { cn } from "@/lib/utils";
-import { Search, ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Eye } from "lucide-react";
 
 interface Risk {
   id: string;
@@ -72,7 +71,6 @@ const defaultRatingThresholds: RiskRatingThreshold[] = [
 ];
 
 export default function RiskAssessmentPage() {
-  const router = useRouter();
   const { canView, canCreate, canEdit, isLoading: permissionsLoading } = usePermissions('risk.assessment');
   const userRoles = useUserRoles();
 
@@ -84,6 +82,10 @@ export default function RiskAssessmentPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [riskTypes, setRiskTypes] = useState<RiskType[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Assessment dialog state
+  const [assessmentDialogOpen, setAssessmentDialogOpen] = useState(false);
+  const [selectedRiskId, setSelectedRiskId] = useState<string | null>(null);
 
   // Dynamic settings from API
   const [ratingThresholds, setRatingThresholds] = useState<RiskRatingThreshold[]>(defaultRatingThresholds);
@@ -248,16 +250,26 @@ export default function RiskAssessmentPage() {
   };
 
   const openAssessment = (risk: Risk) => {
-    router.push(`/risks/assessment/${risk.id}`);
+    setSelectedRiskId(risk.id);
+    setAssessmentDialogOpen(true);
+  };
+
+  const handleAssessmentComplete = () => {
+    fetchData();
   };
 
   // Show loading state while permissions or data is being fetched
   if (permissionsLoading || loading) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Risk Assessment" description="Assess and evaluate risks" />
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-bold text-slate-800">Risk Assessment</h1>
+        </div>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="relative h-8 w-8">
+            <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+          </div>
         </div>
       </div>
     );
@@ -270,27 +282,27 @@ export default function RiskAssessmentPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Risk Assessment"
-      />
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold text-slate-800">Risk Assessment</h1>
+      </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search By Risk ID, Name"
+            placeholder="Search risks..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9 w-64"
+            className="pl-10 w-[200px] bg-white"
           />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Status" />
+          <SelectTrigger className="w-[150px] bg-white">
+            <SelectValue placeholder="All Status" />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Status</SelectItem>
+          <SelectContent position="popper" sideOffset={4}>
+            <SelectItem value="all">All Status</SelectItem>
             <SelectItem value="Assessment Pending">Assessment Pending</SelectItem>
             <SelectItem value="Open">Open</SelectItem>
             <SelectItem value="In-Progress">In-Progress</SelectItem>
@@ -299,11 +311,11 @@ export default function RiskAssessmentPage() {
           </SelectContent>
         </Select>
         <Select value={ratingFilter} onValueChange={setRatingFilter}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Risk Rating" />
+          <SelectTrigger className="w-[140px] bg-white">
+            <SelectValue placeholder="All Ratings" />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Risk Rating</SelectItem>
+          <SelectContent position="popper" sideOffset={4}>
+            <SelectItem value="all">All Ratings</SelectItem>
             {ratingThresholds.map((threshold) => (
               <SelectItem key={threshold.rating} value={threshold.rating}>
                 {threshold.rating}
@@ -312,11 +324,11 @@ export default function RiskAssessmentPage() {
           </SelectContent>
         </Select>
         <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Category" />
+          <SelectTrigger className="w-[150px] bg-white">
+            <SelectValue placeholder="All Categories" />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Category</SelectItem>
+          <SelectContent position="popper" sideOffset={4}>
+            <SelectItem value="all">All Categories</SelectItem>
             {categories.map((cat) => (
               <SelectItem key={cat.id} value={cat.id}>
                 {cat.name}
@@ -325,11 +337,11 @@ export default function RiskAssessmentPage() {
           </SelectContent>
         </Select>
         <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Risk type" />
+          <SelectTrigger className="w-[140px] bg-white">
+            <SelectValue placeholder="All Types" />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Risk type</SelectItem>
+          <SelectContent position="popper" sideOffset={4}>
+            <SelectItem value="all">All Types</SelectItem>
             {riskTypes.map((type) => (
               <SelectItem key={type.id} value={type.id}>
                 {type.name}
@@ -340,78 +352,46 @@ export default function RiskAssessmentPage() {
       </div>
 
       {/* Data Grid */}
-      <div className="rounded-md border">
+      <div className="bg-white rounded-xl border border-slate-200">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead className="cursor-pointer">
-                <div className="flex items-center gap-1">
-                  Risk ID <ArrowUpDown className="h-4 w-4" />
-                </div>
-              </TableHead>
-              <TableHead className="cursor-pointer">
-                <div className="flex items-center gap-1">
-                  Risk Name <ArrowUpDown className="h-4 w-4" />
-                </div>
-              </TableHead>
-              <TableHead className="cursor-pointer">
-                <div className="flex items-center gap-1">
-                  Risk Description <ArrowUpDown className="h-4 w-4" />
-                </div>
-              </TableHead>
-              <TableHead className="cursor-pointer">
-                <div className="flex items-center gap-1">
-                  Risk Rating <ArrowUpDown className="h-4 w-4" />
-                </div>
-              </TableHead>
-              <TableHead className="cursor-pointer">
-                <div className="flex items-center gap-1">
-                  Risk Category <ArrowUpDown className="h-4 w-4" />
-                </div>
-              </TableHead>
-              <TableHead className="cursor-pointer">
-                <div className="flex items-center gap-1">
-                  Risk Owner <ArrowUpDown className="h-4 w-4" />
-                </div>
-              </TableHead>
-              <TableHead className="cursor-pointer">
-                <div className="flex items-center gap-1">
-                  RiskType <ArrowUpDown className="h-4 w-4" />
-                </div>
-              </TableHead>
-              <TableHead className="cursor-pointer">
-                <div className="flex items-center gap-1">
-                  Status <ArrowUpDown className="h-4 w-4" />
-                </div>
-              </TableHead>
-              <TableHead></TableHead>
+            <TableRow className="h-12 bg-slate-50/50 hover:bg-slate-50/50">
+              <TableHead className="text-xs font-semibold text-slate-600 pl-4">Risk ID</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600">Risk Name</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600">Risk Description</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600">Risk Rating</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600">Risk Category</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600">Risk Owner</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600">Risk Type</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600">Status</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {paginatedRisks.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={9} className="text-center py-8 text-slate-500">
                   No risks found
                 </TableCell>
               </TableRow>
             ) : (
               paginatedRisks.map((risk) => (
-                <TableRow key={risk.id}>
-                  <TableCell className="font-medium">{risk.riskId}</TableCell>
-                  <TableCell>{risk.name}</TableCell>
-                  <TableCell className="max-w-xs truncate">{risk.description}</TableCell>
-                  <TableCell>
+                <TableRow key={risk.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                  <TableCell className="py-3 pl-4 font-medium text-slate-800">{risk.riskId}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700">{risk.name}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700 max-w-[200px] truncate">{risk.description || "-"}</TableCell>
+                  <TableCell className="py-3">
                     {risk.riskRating ? <RiskRatingBadge rating={risk.riskRating} /> : "-"}
                   </TableCell>
-                  <TableCell>{risk.category?.name || "-"}</TableCell>
-                  <TableCell>{risk.owner?.fullName || "No items found"}</TableCell>
-                  <TableCell>{risk.type?.name || "-"}</TableCell>
-                  <TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700">{risk.category?.name || "-"}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700">{risk.owner?.fullName || "-"}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700">{risk.type?.name || "-"}</TableCell>
+                  <TableCell className="py-3">
                     <span className={cn(
                       "px-2 py-1 rounded text-xs font-medium",
                       (risk.assessmentStatus || "Open") === "Approved" && "bg-green-100 text-green-800",
                       (risk.assessmentStatus || "Open") === "Submitted" && "bg-purple-100 text-purple-800",
-                      (risk.assessmentStatus || "Open") === "Draft" && "bg-gray-100 text-gray-800",
+                      (risk.assessmentStatus || "Open") === "Draft" && "bg-slate-100 text-slate-800",
                       (risk.assessmentStatus || "Open") === "Rejected" && "bg-red-100 text-red-800",
                       (risk.assessmentStatus || "Open") === "In-Progress" && "bg-yellow-100 text-yellow-800",
                       (risk.assessmentStatus || "Open") === "Open" && "bg-blue-100 text-blue-800"
@@ -419,57 +399,80 @@ export default function RiskAssessmentPage() {
                       {risk.assessmentStatus || "Open"}
                     </span>
                   </TableCell>
-                  <TableCell>{getActionButton(risk)}</TableCell>
+                  <TableCell className="py-3">
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => openAssessment(risk)}
+                        className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      {getActionButton(risk)}
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))
             )}
           </TableBody>
         </Table>
+
+        {/* Pagination */}
+        {filteredRisks.length > 0 && (
+          <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
+            <span className="text-sm text-slate-500">
+              {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, filteredRisks.length)} of {filteredRisks.length}
+            </span>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+              >
+                <ChevronsLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setCurrentPage(currentPage - 1)}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setCurrentPage(currentPage + 1)}
+                disabled={currentPage === totalPages || totalPages === 0}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages || totalPages === 0}
+              >
+                <ChevronsRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Pagination */}
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-muted-foreground">
-          Currently showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, filteredRisks.length)} of {filteredRisks.length}
-        </div>
-        <div className="flex gap-1">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage(1)}
-            disabled={currentPage === 1}
-          >
-            <ChevronLeft className="h-4 w-4" />
-            <ChevronLeft className="h-4 w-4 -ml-2" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage(currentPage - 1)}
-            disabled={currentPage === 1}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage(currentPage + 1)}
-            disabled={currentPage === totalPages || totalPages === 0}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage(totalPages)}
-            disabled={currentPage === totalPages || totalPages === 0}
-          >
-            <ChevronRight className="h-4 w-4" />
-            <ChevronRight className="h-4 w-4 -ml-2" />
-          </Button>
-        </div>
-      </div>
-
+      {/* Risk Assessment Wizard Dialog */}
+      <RiskAssessmentWizardDialog
+        open={assessmentDialogOpen}
+        onOpenChange={setAssessmentDialogOpen}
+        riskId={selectedRiskId}
+        onAssessmentComplete={handleAssessmentComplete}
+      />
     </div>
   );
 }

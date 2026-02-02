@@ -24,7 +24,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -45,16 +44,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  Search,
   Plus,
-  Upload,
+  FileSpreadsheet,
   Trash2,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
   Check,
-  Download,
 } from "lucide-react";
 
 interface Evidence {
@@ -69,6 +66,7 @@ interface Evidence {
   assigneeId: string | null;
   department?: { id: string; name: string } | null;
   assignee?: { id: string; fullName: string } | null;
+  customerAccount?: { id: string; code: string; name: string } | null;
 }
 
 interface Control {
@@ -87,11 +85,24 @@ interface Department {
   name: string;
 }
 
+interface UserRole {
+  role: {
+    name: string;
+  };
+}
+
 interface User {
   id: string;
   fullName: string;
   departmentId: string | null;
   customerCode?: string;
+  userRoles?: UserRole[];
+}
+
+interface CustomerAccount {
+  id: string;
+  code: string;
+  name: string;
 }
 
 interface Framework {
@@ -105,11 +116,11 @@ interface ControlDomain {
 }
 
 const statusColors: Record<string, string> = {
-  "Not Uploaded": "bg-gray-100 text-gray-800",
-  Draft: "bg-yellow-100 text-yellow-800",
-  Validated: "bg-blue-100 text-blue-800",
-  Published: "bg-green-100 text-green-800",
-  "Need Attention": "bg-red-100 text-red-800",
+  "Not Uploaded": "bg-slate-100 text-slate-600",
+  Draft: "bg-warning-light text-warning-dark",
+  Validated: "bg-info-light text-info-dark",
+  Published: "bg-success-light text-success-dark",
+  "Need Attention": "bg-error-light text-error-dark",
 };
 
 const recurrenceOptions = ["Yearly", "Half-yearly", "Quarterly", "Monthly"];
@@ -137,6 +148,7 @@ export default function GRCAdminEvidencePage() {
 
   // Filters
   const [frameworkFilter, setFrameworkFilter] = useState<string>("all");
+  const [customerFilter, setCustomerFilter] = useState<string>("all");
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -150,6 +162,7 @@ export default function GRCAdminEvidencePage() {
   const [frameworks, setFrameworks] = useState<Framework[]>([]);
   const [controls, setControls] = useState<Control[]>([]);
   const [controlDomains, setControlDomains] = useState<ControlDomain[]>([]);
+  const [customerAccounts, setCustomerAccounts] = useState<CustomerAccount[]>([]);
 
   // Create form
   const [createForm, setCreateForm] = useState({
@@ -158,6 +171,7 @@ export default function GRCAdminEvidencePage() {
     recurrence: "",
     departmentId: "",
     assigneeId: "",
+    customerAccountId: "",
   });
 
   // Step 2 - Control selection
@@ -174,6 +188,7 @@ export default function GRCAdminEvidencePage() {
       setLoading(true);
       const params = new URLSearchParams();
       if (frameworkFilter && frameworkFilter !== "all") params.append("frameworkId", frameworkFilter);
+      if (customerFilter && customerFilter !== "all") params.append("customerAccountId", customerFilter);
       if (searchTerm) params.append("search", searchTerm);
       params.append("page", currentPage.toString());
       params.append("limit", itemsPerPage.toString());
@@ -190,16 +205,17 @@ export default function GRCAdminEvidencePage() {
     } finally {
       setLoading(false);
     }
-  }, [frameworkFilter, searchTerm, currentPage]);
+  }, [frameworkFilter, customerFilter, searchTerm, currentPage]);
 
   const fetchReferenceData = useCallback(async () => {
     try {
-      const [deptRes, usersRes, fwRes, controlsRes, domainsRes] = await Promise.all([
+      const [deptRes, usersRes, fwRes, controlsRes, domainsRes, customerRes] = await Promise.all([
         fetch("/api/departments"),
         fetch("/api/users"),
         fetch("/api/frameworks"),
         fetch("/api/controls?limit=500"),
         fetch("/api/control-domains"),
+        fetch("/api/customer-accounts"),
       ]);
 
       if (deptRes.ok) {
@@ -223,6 +239,10 @@ export default function GRCAdminEvidencePage() {
         const data = await domainsRes.json();
         setControlDomains(data.data || data || []);
       }
+      if (customerRes.ok) {
+        const data = await customerRes.json();
+        setCustomerAccounts(data.data || data || []);
+      }
     } catch (error) {
       console.error("Error fetching reference data:", error);
     }
@@ -236,10 +256,34 @@ export default function GRCAdminEvidencePage() {
     fetchEvidences();
   }, [fetchEvidences]);
 
-  // GRC Admin sees all users and departments (no customer scoping)
+  // Filter users by selected customer account (for GRC Admin)
   const filteredUsers = (() => {
-    if (!createForm.departmentId) return users;
-    return users.filter((u) => u.departmentId === createForm.departmentId);
+    if (!createForm.customerAccountId) return users;
+    const customerCode = customerAccounts.find(c => c.id === createForm.customerAccountId)?.code;
+    return users.filter((u) => u.customerCode === customerCode);
+  })();
+
+  // Filter departments by selected customer account (for GRC Admin)
+  const filteredDepartments = (() => {
+    if (!createForm.customerAccountId) return departments;
+    const customerCode = customerAccounts.find(c => c.id === createForm.customerAccountId)?.code;
+    const customerUserDeptIds = new Set(
+      users
+        .filter((u) => u.customerCode === customerCode && u.departmentId)
+        .map((u) => u.departmentId)
+    );
+    return departments.filter((d) => customerUserDeptIds.has(d.id));
+  })();
+
+  // Filter users by department and role
+  const departmentFilteredUsers = (() => {
+    if (!createForm.departmentId) return [];
+    return filteredUsers.filter((u) => {
+      if (u.departmentId !== createForm.departmentId) return false;
+      return u.userRoles?.some((ur) =>
+        ["DepartmentReviewer", "DepartmentContributor"].includes(ur.role?.name)
+      );
+    });
   })();
 
   // Filtered controls for step 2
@@ -272,6 +316,7 @@ export default function GRCAdminEvidencePage() {
           recurrence: createForm.recurrence,
           departmentId: createForm.departmentId || null,
           assigneeId: createForm.assigneeId || null,
+          customerAccountId: createForm.customerAccountId || null,
           controlIds: selectedControlIds,
           status: "Not Uploaded",
         }),
@@ -295,6 +340,7 @@ export default function GRCAdminEvidencePage() {
       recurrence: "",
       departmentId: "",
       assigneeId: "",
+      customerAccountId: "",
     });
     setSelectedControlIds([]);
     setControlFilters({
@@ -307,7 +353,11 @@ export default function GRCAdminEvidencePage() {
 
   const handleDeleteAll = async () => {
     try {
-      const response = await fetch("/api/evidences/delete-all", {
+      const params = new URLSearchParams();
+      if (customerFilter && customerFilter !== "all") {
+        params.set("customerAccountId", customerFilter);
+      }
+      const response = await fetch(`/api/evidences/delete-all?${params.toString()}`, {
         method: "DELETE",
       });
       if (response.ok) {
@@ -353,6 +403,9 @@ export default function GRCAdminEvidencePage() {
     try {
       const formData = new FormData();
       formData.append("file", importFile);
+      if (createForm.customerAccountId) {
+        formData.append("customerAccountId", createForm.customerAccountId);
+      }
 
       const response = await fetch("/api/evidences/import", {
         method: "POST",
@@ -382,7 +435,7 @@ export default function GRCAdminEvidencePage() {
     );
   };
 
-  const canProceedStep1 = createForm.name && createForm.recurrence && createForm.departmentId && createForm.assigneeId;
+  const canProceedStep1 = createForm.name && createForm.recurrence && createForm.departmentId && createForm.assigneeId && createForm.customerAccountId;
 
   // Pagination helpers
   const startItem = total > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0;
@@ -392,164 +445,179 @@ export default function GRCAdminEvidencePage() {
   if (permissionsLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="relative h-8 w-8">
+          <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
+          <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+        </div>
       </div>
     );
   }
 
-  // Show unauthorized if user doesn't have view permission or is not GRC Admin
-  if (!canView || !isGRCAdmin) {
-    return <Unauthorized description="You don't have permission to access Evidence." />;
+  // Show unauthorized if user is not GRC Admin or doesn't have view permission
+  if (!isGRCAdmin || !canView) {
+    return <Unauthorized description="You don't have permission to access GRC Admin Evidence." />;
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Evidence</h1>
-        <div className="flex gap-2">
-          {/* GRC Admin can create evidence */}
-          <PermissionGate resource="compliance.evidence" action="create">
-            <Button onClick={() => setCreateDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              New Evidence
-            </Button>
-          </PermissionGate>
-          <PermissionGate resource="compliance.evidence" action="create">
-            <Button variant="outline" onClick={() => setIsImportDialogOpen(true)}>
-              <Upload className="h-4 w-4 mr-2" />
-              Import
-            </Button>
-          </PermissionGate>
-          <PermissionGate resource="compliance.evidence" action="delete">
-            <Button variant="outline" onClick={() => setIsDeleteAllDialogOpen(true)}>
-              <Trash2 className="h-4 w-4 mr-2" />
-              Delete All
-            </Button>
-          </PermissionGate>
-        </div>
+        <h1 className="text-2xl font-bold text-slate-800">Evidence</h1>
       </div>
 
-      {/* Search and Filter Row */}
-      <div className="flex items-center gap-4">
-        <div className="flex-1 relative">
-          <Input
-            placeholder="Search by Name, Domain and Assignee"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-            className="pr-10"
-          />
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute right-0 top-0 h-full"
-            onClick={handleSearch}
-          >
-            <Search className="h-4 w-4" />
-          </Button>
-        </div>
+      {/* Search, Filter, and Action Buttons Row */}
+      <div className="flex items-center gap-3">
+        <Input
+          placeholder="Search by name, domain or assignee..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+          className="max-w-md bg-white"
+        />
+        <Select value={customerFilter} onValueChange={setCustomerFilter}>
+          <SelectTrigger className="w-[180px] bg-white">
+            <SelectValue placeholder="All Customers" />
+          </SelectTrigger>
+          <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+            <SelectItem value="all">All Customers</SelectItem>
+            {customerAccounts.map((c) => (
+              <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
-          <SelectTrigger className="w-[250px]">
+          <SelectTrigger className="w-[200px] bg-white">
             <SelectValue placeholder="Integrated Framework" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
             <SelectItem value="all">Integrated Framework</SelectItem>
             {frameworks.map((f) => (
               <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
             ))}
           </SelectContent>
         </Select>
+        <div className="flex-1" />
+        <PermissionGate resource="compliance.evidence" action="create">
+          <Button variant="outline" size="sm" onClick={() => setIsImportDialogOpen(true)}>
+            <FileSpreadsheet className="h-4 w-4 mr-2" />
+            Import
+          </Button>
+        </PermissionGate>
+        <PermissionGate resource="compliance.evidence" action="delete">
+          <Button variant="outline" size="sm" className="text-semantic-error hover:text-semantic-error hover:bg-red-50" onClick={() => setIsDeleteAllDialogOpen(true)}>
+            <Trash2 className="h-4 w-4 mr-2" />
+            Delete All
+          </Button>
+        </PermissionGate>
+        <PermissionGate resource="compliance.evidence" action="create">
+          <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            New Evidence
+          </Button>
+        </PermissionGate>
       </div>
 
       {/* Table */}
       {loading ? (
-        <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+        <div className="flex items-center justify-center py-8">
+          <div className="relative h-8 w-8">
+            <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+          </div>
         </div>
       ) : (
-        <>
-          <div className="border rounded-lg">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Evidence Code</TableHead>
-                  <TableHead>Evidence Name</TableHead>
-                  <TableHead>Domain</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Assignee</TableHead>
-                  <TableHead>Department Name</TableHead>
+        <div className="bg-white rounded-xl border border-slate-200">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-b border-slate-100 bg-slate-50/50">
+                <TableHead className="text-xs font-semibold text-slate-600 py-4 pl-4">Evidence Code</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 py-4">Evidence Name</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 py-4">Customer</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 py-4">Domain</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 py-4">Status</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 py-4">Assignee</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 py-4">Department Name</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {evidences.map((evidence) => (
+                <TableRow
+                  key={evidence.id}
+                  className="border-b border-slate-100 last:border-0 cursor-pointer hover:bg-slate-50"
+                  onDoubleClick={() => router.push(`/compliance/evidence/${evidence.id}`)}
+                >
+                  <TableCell className="py-4 pl-4 text-sm font-medium text-slate-900">{evidence.evidenceCode}</TableCell>
+                  <TableCell className="py-4 text-sm text-slate-700">{evidence.name}</TableCell>
+                  <TableCell className="py-4">
+                    <Badge variant="outline" className="text-xs">
+                      {evidence.customerAccount?.name || "-"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="py-4 text-sm text-slate-700">{evidence.domain || "-"}</TableCell>
+                  <TableCell className="py-4">
+                    <Badge className={statusColors[evidence.status] || "bg-gray-100 text-gray-800"}>
+                      {evidence.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="py-4 text-sm text-slate-700">{evidence.assignee?.fullName || "-"}</TableCell>
+                  <TableCell className="py-4 text-sm text-slate-700">{evidence.department?.name || "-"}</TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {evidences.map((evidence) => (
-                  <TableRow
-                    key={evidence.id}
-                    className="cursor-pointer hover:bg-muted/50"
-                    onDoubleClick={() => router.push(`/compliance/evidence/${evidence.id}`)}
-                  >
-                    <TableCell className="font-medium">{evidence.evidenceCode}</TableCell>
-                    <TableCell>{evidence.name}</TableCell>
-                    <TableCell>{evidence.domain || ""}</TableCell>
-                    <TableCell>
-                      <Badge className={statusColors[evidence.status] || "bg-gray-100 text-gray-800"}>
-                        {evidence.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{evidence.assignee?.fullName || ""}</TableCell>
-                    <TableCell>{evidence.department?.name || ""}</TableCell>
-                  </TableRow>
-                ))}
-                {evidences.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                      No evidence records found
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
+              ))}
+              {evidences.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-8 text-slate-500">
+                    No evidence records found
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
 
           {/* Pagination */}
-          <div className="flex items-center justify-center gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage(1)}
-            >
-              <ChevronsLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage((p) => p - 1)}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="text-sm text-muted-foreground px-4">
-              Currently showing {startItem} to {endItem} of {total}
+          <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
+            <span className="text-sm text-slate-500">
+              {total > 0 ? `${startItem} to ${endItem} of ${total}` : "No evidence"}
             </span>
-            <Button
-              variant="outline"
-              size="icon"
-              disabled={currentPage >= totalPages}
-              onClick={() => setCurrentPage((p) => p + 1)}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              disabled={currentPage >= totalPages}
-              onClick={() => setCurrentPage(totalPages)}
-            >
-              <ChevronsRight className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(1)}
+                className="h-8 w-8"
+              >
+                <ChevronsLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((p) => p - 1)}
+                className="h-8 w-8"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                disabled={currentPage >= totalPages}
+                onClick={() => setCurrentPage((p) => p + 1)}
+                className="h-8 w-8"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                disabled={currentPage >= totalPages}
+                onClick={() => setCurrentPage(totalPages)}
+                className="h-8 w-8"
+              >
+                <ChevronsRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
-        </>
+        </div>
       )}
 
       {/* Create Evidence Dialog - 3 Step Wizard */}
@@ -557,95 +625,130 @@ export default function GRCAdminEvidencePage() {
         if (!open) resetCreateForm();
         setCreateDialogOpen(open);
       }}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              New Evidence - Step {createStep} of 3
-            </DialogTitle>
-          </DialogHeader>
-
-          {/* Step Indicator */}
-          <div className="flex items-center justify-center gap-2 py-4">
-            {[1, 2, 3].map((step) => (
-              <div key={step} className="flex items-center">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                  step === createStep
-                    ? "bg-primary text-primary-foreground"
-                    : step < createStep
-                    ? "bg-green-500 text-white"
-                    : "bg-muted text-muted-foreground"
-                }`}>
-                  {step < createStep ? <Check className="h-4 w-4" /> : step}
-                </div>
-                {step < 3 && (
-                  <div className={`w-16 h-1 mx-2 ${step < createStep ? "bg-green-500" : "bg-muted"}`} />
-                )}
-              </div>
-            ))}
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Sticky Header */}
+          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">New Evidence - Step {createStep} of 3</DialogTitle>
+            </DialogHeader>
           </div>
 
-          <div className="py-4">
+          {/* Scrollable Content */}
+          <div className="overflow-y-auto flex-1 px-6 py-5">
+            {/* Step Indicator */}
+            <div className="flex items-center justify-center gap-2 pb-5">
+              {[1, 2, 3].map((step) => (
+                <div key={step} className="flex items-center">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                    step === createStep
+                      ? "bg-primary text-primary-foreground"
+                      : step < createStep
+                      ? "bg-green-500 text-white"
+                      : "bg-muted text-slate-400"
+                  }`}>
+                    {step < createStep ? <Check className="h-4 w-4" /> : step}
+                  </div>
+                  {step < 3 && (
+                    <div className={`w-16 h-1 mx-2 ${step < createStep ? "bg-green-500" : "bg-muted"}`} />
+                  )}
+                </div>
+              ))}
+            </div>
+
             {/* Step 1: Basic Information */}
             {createStep === 1 && (
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="name">Evidence Requirement *</Label>
-                  <Input
-                    id="name"
-                    value={createForm.name}
-                    onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
-                    placeholder="Enter evidence requirement"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="recurrence">Recurrence *</Label>
-                    <Select value={createForm.recurrence} onValueChange={(v) => setCreateForm({ ...createForm, recurrence: v })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select recurrence" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {recurrenceOptions.map((r) => (
-                          <SelectItem key={r} value={r}>{r}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="departmentId">Department *</Label>
-                    <Select value={createForm.departmentId} onValueChange={(v) => setCreateForm({ ...createForm, departmentId: v, assigneeId: "" })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select department" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {departments.map((d) => (
-                          <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="assigneeId">Assignee *</Label>
-                  <Select value={createForm.assigneeId} onValueChange={(v) => setCreateForm({ ...createForm, assigneeId: v })} disabled={!createForm.departmentId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={createForm.departmentId ? "Select assignee" : "Select department first"} />
+                  <Label className="text-sm font-medium text-slate-700">Customer Account *</Label>
+                  <Select value={createForm.customerAccountId} onValueChange={(v) => setCreateForm({ ...createForm, customerAccountId: v, departmentId: "", assigneeId: "" })}>
+                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                      <SelectValue placeholder="Select customer account" />
                     </SelectTrigger>
-                    <SelectContent>
-                      {filteredUsers.map((u) => (
-                        <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
+                    <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                      {customerAccounts.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="description">Description</Label>
+                  <Label className="text-sm font-medium text-slate-700">Evidence Requirement *</Label>
+                  <Input
+                    value={createForm.name}
+                    onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
+                    placeholder="Enter evidence requirement"
+                    className="mt-1.5 w-full"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Recurrence *</Label>
+                  <Select value={createForm.recurrence} onValueChange={(v) => setCreateForm({ ...createForm, recurrence: v })}>
+                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                      <SelectValue placeholder="Select recurrence" />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                      {recurrenceOptions.map((r) => (
+                        <SelectItem key={r} value={r}>{r}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Department *</Label>
+                  <Select
+                    value={createForm.departmentId}
+                    onValueChange={(v) => setCreateForm({ ...createForm, departmentId: v, assigneeId: "" })}
+                    disabled={!createForm.customerAccountId}
+                  >
+                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                      <SelectValue placeholder={
+                        !createForm.customerAccountId
+                          ? "Select customer account first"
+                          : "Select department"
+                      } />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                      {filteredDepartments.map((d) => (
+                        <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Assignee *</Label>
+                  <Select
+                    value={createForm.assigneeId}
+                    onValueChange={(v) => setCreateForm({ ...createForm, assigneeId: v })}
+                    disabled={!createForm.departmentId}
+                  >
+                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                      <SelectValue placeholder={
+                        !createForm.departmentId
+                          ? "Select department first"
+                          : "Select assignee"
+                      } />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                      {departmentFilteredUsers.length > 0 ? (
+                        departmentFilteredUsers.map((u) => (
+                          <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
+                        ))
+                      ) : (
+                        <div className="py-2 px-2 text-sm text-slate-500 text-center">
+                          No department reviewers found
+                        </div>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Description</Label>
                   <Textarea
-                    id="description"
                     value={createForm.description}
                     onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
                     placeholder="Enter description"
                     rows={3}
+                    className="mt-1.5"
                   />
                 </div>
               </div>
@@ -655,39 +758,36 @@ export default function GRCAdminEvidencePage() {
             {createStep === 2 && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <Label className="text-lg font-medium">Select Controls to Link</Label>
+                  <Label className="text-base font-semibold text-slate-800">Select Controls to Link</Label>
                   <Badge variant="secondary">{selectedControlIds.length} selected</Badge>
                 </div>
 
                 {/* Control Filters */}
-                <div className="grid grid-cols-3 gap-4">
+                <div className="flex gap-4">
+                  <div className="flex-1">
+                    <Input
+                      placeholder="Search controls..."
+                      value={controlFilters.search}
+                      onChange={(e) => setControlFilters({ ...controlFilters, search: e.target.value })}
+                      className="bg-white"
+                    />
+                  </div>
                   <Select value={controlFilters.domainId || "all"} onValueChange={(v) => setControlFilters({ ...controlFilters, domainId: v === "all" ? "" : v })}>
-                    <SelectTrigger>
+                    <SelectTrigger className="w-[180px] bg-white">
                       <SelectValue placeholder="Domain" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
                       <SelectItem value="all">All Domains</SelectItem>
                       {controlDomains.map((d) => (
                         <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  <Select value={controlFilters.frameworkId || "all"} onValueChange={(v) => setControlFilters({ ...controlFilters, frameworkId: v === "all" ? "" : v })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Framework" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Frameworks</SelectItem>
-                      {frameworks.map((f) => (
-                        <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                   <Select value={controlFilters.functionalGrouping || "all"} onValueChange={(v) => setControlFilters({ ...controlFilters, functionalGrouping: v === "all" ? "" : v })}>
-                    <SelectTrigger>
+                    <SelectTrigger className="w-[180px] bg-white">
                       <SelectValue placeholder="Functional Grouping" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
                       <SelectItem value="all">All Groupings</SelectItem>
                       <SelectItem value="Govern">Govern</SelectItem>
                       <SelectItem value="Identify">Identify</SelectItem>
@@ -699,44 +799,34 @@ export default function GRCAdminEvidencePage() {
                   </Select>
                 </div>
 
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input
-                    placeholder="Search controls..."
-                    value={controlFilters.search}
-                    onChange={(e) => setControlFilters({ ...controlFilters, search: e.target.value })}
-                    className="pl-10"
-                  />
-                </div>
-
                 {/* Controls Table */}
-                <div className="border rounded-lg max-h-[300px] overflow-y-auto">
+                <div className="bg-white rounded-xl border border-slate-200 max-h-[300px] overflow-y-auto">
                   <Table>
                     <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[50px]"></TableHead>
-                        <TableHead>Control Code</TableHead>
-                        <TableHead>Control Name</TableHead>
-                        <TableHead>Domain</TableHead>
+                      <TableRow className="border-b border-slate-100 bg-slate-50/50">
+                        <TableHead className="w-[50px] py-4 pl-4"></TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 py-4">Control Code</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 py-4">Control Name</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 py-4">Domain</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredControls.map((control) => (
-                        <TableRow key={control.id} className="cursor-pointer" onClick={() => toggleControlSelection(control.id)}>
-                          <TableCell>
+                        <TableRow key={control.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 cursor-pointer" onClick={() => toggleControlSelection(control.id)}>
+                          <TableCell className="py-4 pl-4">
                             <Checkbox
                               checked={selectedControlIds.includes(control.id)}
                               onCheckedChange={() => toggleControlSelection(control.id)}
                             />
                           </TableCell>
-                          <TableCell className="font-medium">{control.controlCode}</TableCell>
-                          <TableCell>{control.name}</TableCell>
-                          <TableCell>{control.domain?.name || "-"}</TableCell>
+                          <TableCell className="py-4 text-sm font-medium text-slate-900">{control.controlCode}</TableCell>
+                          <TableCell className="py-4 text-sm text-slate-700">{control.name}</TableCell>
+                          <TableCell className="py-4 text-sm text-slate-700">{control.domain?.name || "-"}</TableCell>
                         </TableRow>
                       ))}
                       {filteredControls.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                          <TableCell colSpan={4} className="text-center py-8 text-slate-500">
                             No controls found
                           </TableCell>
                         </TableRow>
@@ -750,42 +840,48 @@ export default function GRCAdminEvidencePage() {
             {/* Step 3: Review */}
             {createStep === 3 && (
               <div className="space-y-6">
-                <div className="text-lg font-medium">Review Information</div>
+                <div className="text-lg font-medium text-slate-800">Review Information</div>
 
-                <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
+                <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
                   <div>
-                    <Label className="text-muted-foreground text-sm">Evidence Name</Label>
-                    <p className="font-medium">{createForm.name}</p>
-                  </div>
-                  <div>
-                    <Label className="text-muted-foreground text-sm">Recurrence</Label>
-                    <p className="font-medium">{createForm.recurrence}</p>
-                  </div>
-                  <div>
-                    <Label className="text-muted-foreground text-sm">Department</Label>
-                    <p className="font-medium">
-                      {departments.find((d) => d.id === createForm.departmentId)?.name || "-"}
+                    <Label className="text-slate-500 text-sm">Customer Account</Label>
+                    <p className="font-medium text-slate-900">
+                      {customerAccounts.find((c) => c.id === createForm.customerAccountId)?.name || "-"}
                     </p>
                   </div>
                   <div>
-                    <Label className="text-muted-foreground text-sm">Assignee</Label>
-                    <p className="font-medium">
-                      {users.find((u) => u.id === createForm.assigneeId)?.fullName || "-"}
+                    <Label className="text-slate-500 text-sm">Evidence Name</Label>
+                    <p className="font-medium text-slate-900">{createForm.name}</p>
+                  </div>
+                  <div>
+                    <Label className="text-slate-500 text-sm">Recurrence</Label>
+                    <p className="font-medium text-slate-900">{createForm.recurrence}</p>
+                  </div>
+                  <div>
+                    <Label className="text-slate-500 text-sm">Department</Label>
+                    <p className="font-medium text-slate-900">
+                      {filteredDepartments.find((d) => d.id === createForm.departmentId)?.name || "-"}
                     </p>
                   </div>
                   <div>
-                    <Label className="text-muted-foreground text-sm">Linked Controls</Label>
-                    <p className="font-medium">{selectedControlIds.length} controls</p>
+                    <Label className="text-slate-500 text-sm">Assignee</Label>
+                    <p className="font-medium text-slate-900">
+                      {filteredUsers.find((u) => u.id === createForm.assigneeId)?.fullName || "-"}
+                    </p>
                   </div>
                   <div>
-                    <Label className="text-muted-foreground text-sm">Description</Label>
-                    <p className="font-medium">{createForm.description || "-"}</p>
+                    <Label className="text-slate-500 text-sm">Linked Controls</Label>
+                    <p className="font-medium text-slate-900">{selectedControlIds.length} controls</p>
+                  </div>
+                  <div className="col-span-2">
+                    <Label className="text-slate-500 text-sm">Description</Label>
+                    <p className="font-medium text-slate-900">{createForm.description || "-"}</p>
                   </div>
                 </div>
 
                 {selectedControlIds.length > 0 && (
                   <div>
-                    <Label className="text-muted-foreground text-sm mb-2 block">Selected Controls:</Label>
+                    <Label className="text-slate-500 text-sm mb-2 block">Selected Controls:</Label>
                     <div className="flex flex-wrap gap-2">
                       {selectedControlIds.map((id) => {
                         const control = controls.find((c) => c.id === id);
@@ -802,7 +898,8 @@ export default function GRCAdminEvidencePage() {
             )}
           </div>
 
-          <DialogFooter>
+          {/* Sticky Footer */}
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex-shrink-0">
             <Button variant="outline" onClick={() => {
               if (createStep > 1) setCreateStep(createStep - 1);
               else {
@@ -821,7 +918,7 @@ export default function GRCAdminEvidencePage() {
             >
               {createStep === 3 ? "Create Evidence" : "Next"}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -831,7 +928,7 @@ export default function GRCAdminEvidencePage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete All Evidence</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete all evidence records? This action cannot be undone.
+              Are you sure you want to delete all evidence records{customerFilter !== "all" ? ` for the selected customer` : ""}? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -845,32 +942,66 @@ export default function GRCAdminEvidencePage() {
 
       {/* Import Dialog */}
       <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Import Evidence</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Sticky Header */}
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-lg font-semibold text-slate-800">
+                <FileSpreadsheet className="h-5 w-5 text-green-600" />
+                Import Evidence
+              </DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Content */}
+          <div className="px-6 py-6 space-y-4">
+            <div>
+              <Label className="text-sm font-medium text-slate-700">Customer Account *</Label>
+              <Select value={createForm.customerAccountId} onValueChange={(v) => setCreateForm({ ...createForm, customerAccountId: v })}>
+                <SelectTrigger className="mt-1.5 w-full bg-white">
+                  <SelectValue placeholder="Select customer account" />
+                </SelectTrigger>
+                <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                  {customerAccounts.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <p className="text-sm text-slate-500">
+              Upload a CSV or Excel file to import evidence records.
+            </p>
             <div
-              className={`border-2 border-dashed rounded-lg p-8 text-center ${
-                isDragging ? "border-primary bg-primary/5" : "border-muted-foreground/25"
+              className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+                isDragging ? "border-primary bg-primary-50" : "border-slate-200 hover:border-slate-300"
               }`}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
+              onClick={() => document.getElementById("import-file")?.click()}
             >
               {importFile ? (
-                <div className="space-y-2">
-                  <p className="font-medium">{importFile.name}</p>
-                  <Button variant="outline" size="sm" onClick={() => setImportFile(null)}>
+                <div className="space-y-3">
+                  <FileSpreadsheet className="h-10 w-10 mx-auto text-green-600" />
+                  <p className="font-medium text-slate-800">{importFile.name}</p>
+                  <Button variant="outline" size="sm" onClick={(e) => {
+                    e.stopPropagation();
+                    setImportFile(null);
+                  }}>
                     Remove
                   </Button>
                 </div>
               ) : (
-                <div className="space-y-2">
-                  <Upload className="h-10 w-10 mx-auto text-muted-foreground" />
-                  <p className="text-muted-foreground">
-                    Drag and drop a file here, or click to browse
-                  </p>
+                <div className="space-y-3">
+                  <FileSpreadsheet className="h-10 w-10 mx-auto text-slate-300" />
+                  <div>
+                    <p className="text-sm text-slate-600">
+                      Drag and drop a file here, or click to browse
+                    </p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Supported formats: CSV, XLSX, XLS
+                    </p>
+                  </div>
                   <input
                     ref={importFileInputRef}
                     type="file"
@@ -879,24 +1010,23 @@ export default function GRCAdminEvidencePage() {
                     id="import-file"
                     onChange={handleImportFileChange}
                   />
-                  <Button variant="outline" onClick={() => document.getElementById("import-file")?.click()}>
-                    Browse Files
-                  </Button>
                 </div>
               )}
             </div>
           </div>
-          <DialogFooter>
+
+          {/* Sticky Footer */}
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => {
               setIsImportDialogOpen(false);
               setImportFile(null);
             }}>
               Cancel
             </Button>
-            <Button onClick={handleImportSubmit} disabled={!importFile || importing}>
+            <Button onClick={handleImportSubmit} disabled={!importFile || !createForm.customerAccountId || importing}>
               {importing ? "Importing..." : "Import"}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

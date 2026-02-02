@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { PageHeader } from "@/components/shared";
+import { Button } from "@/components/ui/button";
 import {
   ClipboardList,
   Network,
@@ -16,66 +16,57 @@ import {
 
 const settingsCategories = [
   {
-    id: "categories",
-    title: "Audit Category",
+    name: "Audit Category",
+    description: "Manage audit categories and classifications",
     icon: ClipboardList,
-    iconElement: <ClipboardList className="h-12 w-12" />,
     href: "/internal-audit/settings/categories",
   },
   {
-    id: "nature-of-controls",
-    title: "Nature of Controls",
+    name: "Nature of Controls",
+    description: "Define control types and characteristics",
     icon: Network,
-    iconElement: <Network className="h-12 w-12" />,
     href: "/internal-audit/settings/nature-of-controls",
   },
   {
-    id: "risk-assessment",
-    title: "Risk Assessment Configuration",
+    name: "Risk Assessment Configuration",
+    description: "Configure risk assessment parameters",
     icon: Activity,
-    iconElement: <Activity className="h-12 w-12" />,
     href: "/internal-audit/settings/risk-assessment",
   },
   {
-    id: "periodicity",
-    title: "Periodicity",
+    name: "Periodicity",
+    description: "Set audit frequency and intervals",
     icon: Clock,
-    iconElement: <Clock className="h-12 w-12" />,
     href: "/internal-audit/settings/periodicity",
   },
   {
-    id: "escalation",
-    title: "Escalation Configuration",
+    name: "Escalation Configuration",
+    description: "Configure escalation timelines",
     icon: AlertTriangle,
-    iconElement: <AlertTriangle className="h-12 w-12" />,
     href: "/internal-audit/settings/escalation",
   },
   {
-    id: "audit-types",
-    title: "Audit Type",
+    name: "Audit Type",
+    description: "Define types of audits",
     icon: FileType,
-    iconElement: <FileType className="h-12 w-12" />,
     href: "/internal-audit/settings/audit-types",
   },
   {
-    id: "user-management",
-    title: "User Management",
+    name: "User Management",
+    description: "Manage audit team members and roles",
     icon: Users,
-    iconElement: <Users className="h-12 w-12" />,
     href: "/internal-audit/settings/user-management",
   },
   {
-    id: "departments",
-    title: "Department",
+    name: "Department",
+    description: "Configure departments for audits",
     icon: Building2,
-    iconElement: <Building2 className="h-12 w-12" />,
     href: "/internal-audit/settings/departments",
   },
   {
-    id: "process",
-    title: "Process",
+    name: "Process",
+    description: "Manage business processes",
     icon: GitBranch,
-    iconElement: <GitBranch className="h-12 w-12" />,
     href: "/internal-audit/settings/process",
   },
 ];
@@ -84,32 +75,44 @@ export default function InternalAuditSettingsPage() {
   const router = useRouter();
 
   return (
-    <div className="space-y-6 p-6">
-      <PageHeader title="Internal Audit Settings" />
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold text-slate-800">Settings</h1>
+      </div>
 
-      {/* Settings Card Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {settingsCategories.map((category) => (
-          <button
-            key={category.id}
-            onClick={() => router.push(category.href)}
-            className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 p-8 text-white shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          >
-            {/* Background pattern */}
-            <div className="absolute inset-0 opacity-10">
-              <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/20" />
-              <div className="absolute -left-10 -bottom-10 h-32 w-32 rounded-full bg-white/10" />
-            </div>
-
-            {/* Content */}
-            <div className="relative flex flex-col items-center justify-center space-y-4">
-              <div className="rounded-full bg-white/10 p-4 group-hover:bg-white/20 transition-colors">
-                {category.iconElement}
+      {/* Settings Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {settingsCategories.map((category) => {
+          const Icon = category.icon;
+          return (
+            <div
+              key={category.name}
+              className="bg-white rounded-xl border border-slate-200 p-5 flex flex-col h-full min-h-[160px]"
+            >
+              <div className="flex items-start gap-4 flex-1">
+                <div className="p-3 bg-blue-50 rounded-lg flex-shrink-0">
+                  <Icon className="h-6 w-6 text-blue-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-base font-semibold text-slate-800">{category.name}</h4>
+                  <p className="text-sm text-slate-500 line-clamp-2">
+                    {category.description}
+                  </p>
+                </div>
               </div>
-              <h4 className="text-lg font-semibold text-center">{category.title}</h4>
+              <div className="flex items-center justify-end pt-3 mt-4 border-t border-slate-100">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push(category.href)}
+                >
+                  Manage
+                </Button>
+              </div>
             </div>
-          </button>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

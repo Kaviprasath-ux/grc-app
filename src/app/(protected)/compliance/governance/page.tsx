@@ -46,22 +46,14 @@ import {
 import { Badge } from "@/components/ui/badge";
 import {
   Plus,
-  Search,
-  Upload,
+  FileSpreadsheet,
   Trash2,
   Pencil,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  UserPlus,
-  ListChecks,
-  CheckSquare,
-  ArrowUpFromLine,
-  UserCheck,
-  Download,
-  Link2,
-  FileText,
+  Upload,
 } from "lucide-react";
 
 interface Policy {
@@ -128,33 +120,6 @@ interface Domain {
 const DOCUMENT_TYPES = ["Policy", "Standard", "Procedure"];
 const RECURRENCE_OPTIONS = ["Weekly", "Monthly", "Quarterly", "Yearly"];
 
-interface DashboardStats {
-  notUploaded: number;
-  draft: number;
-  approved: number;
-  published: number;
-  needsReview: number;
-}
-
-interface VaultDocument {
-  id: string;
-  documentCode: string;
-  fileName: string;
-  fileType: string | null;
-  fileSize: number | null;
-  filePath: string;
-  status: string;
-  uploadedAt: string;
-  source: "vault" | "policy";
-  linkedPolicies: Array<{
-    id: string;
-    code: string;
-    name: string;
-    documentType: string;
-    linkedAt: string;
-  }>;
-}
-
 export default function GovernancePage() {
   const router = useRouter();
   const { data: session } = useSession();
@@ -163,23 +128,7 @@ export default function GovernancePage() {
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<string>("Dashboard");
   const [activeDocType, setActiveDocType] = useState<string>("Policy");
-  const [dashboardStats, setDashboardStats] = useState<DashboardStats>({
-    notUploaded: 0,
-    draft: 0,
-    approved: 0,
-    published: 0,
-    needsReview: 0,
-  });
-  const [tabStats, setTabStats] = useState<DashboardStats>({
-    notUploaded: 0,
-    draft: 0,
-    approved: 0,
-    published: 0,
-    needsReview: 0,
-  });
-  const [statsLoading, setStatsLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -188,7 +137,6 @@ export default function GovernancePage() {
 
   // Filters
   const [frameworkFilter, setFrameworkFilter] = useState<string>("all");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   // Filter options
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -224,95 +172,24 @@ export default function GovernancePage() {
   const [importFile, setImportFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
-  // Vault states (Customer Admin only)
-  const [vaultDocuments, setVaultDocuments] = useState<VaultDocument[]>([]);
-  const [vaultLoading, setVaultLoading] = useState(false);
-  const [vaultFile, setVaultFile] = useState<File | null>(null);
-  const [vaultUploading, setVaultUploading] = useState(false);
-  const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
-  const [documentToLink, setDocumentToLink] = useState<VaultDocument | null>(null);
-  const [selectedPolicyIds, setSelectedPolicyIds] = useState<string[]>([]);
-  const [isDeleteVaultDocDialogOpen, setIsDeleteVaultDocDialogOpen] = useState(false);
-  const [vaultDocToDelete, setVaultDocToDelete] = useState<VaultDocument | null>(null);
-  const [allGovernanceRecords, setAllGovernanceRecords] = useState<Policy[]>([]);
-  const [linkDialogLoading, setLinkDialogLoading] = useState(false);
+  // Edit dialog
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingPolicy, setEditingPolicy] = useState<Policy | null>(null);
+  const [editData, setEditData] = useState({
+    name: "",
+    documentType: "",
+    recurrence: "",
+    departmentId: "",
+    assigneeId: "",
+  });
 
   useEffect(() => {
     fetchFilterOptions();
   }, [session?.user?.id]);
 
   useEffect(() => {
-    if (activeTab === "Dashboard") {
-      fetchDashboardStats();
-    }
-  }, [activeTab]);
-
-  useEffect(() => {
-    if (activeTab !== "Dashboard" && activeTab !== "Information Security Vault") {
-      fetchTabStats(activeDocType);
-      fetchPolicies();
-    }
-  }, [activeTab, activeDocType, currentPage, frameworkFilter, statusFilter]);
-
-  // Fetch vault documents when Customer Admin views the vault tab
-  useEffect(() => {
-    if (activeTab === "Information Security Vault" && isCustomerAdmin) {
-      fetchVaultDocuments();
-    }
-  }, [activeTab, isCustomerAdmin]);
-
-  const fetchDashboardStats = async () => {
-    try {
-      setStatsLoading(true);
-      const statuses = ["Not Uploaded", "Draft", "Approved", "Published", "Needs Review"];
-      const counts = await Promise.all(
-        statuses.map(async (status) => {
-          const response = await fetch(`/api/policies?status=${encodeURIComponent(status)}&limit=1`);
-          if (response.ok) {
-            const data = await response.json();
-            return data.pagination?.total || 0;
-          }
-          return 0;
-        })
-      );
-      setDashboardStats({
-        notUploaded: counts[0],
-        draft: counts[1],
-        approved: counts[2],
-        published: counts[3],
-        needsReview: counts[4],
-      });
-    } catch (error) {
-      console.error("Error fetching dashboard stats:", error);
-    } finally {
-      setStatsLoading(false);
-    }
-  };
-
-  const fetchTabStats = async (documentType: string) => {
-    try {
-      const statuses = ["Not Uploaded", "Draft", "Approved", "Published", "Needs Review"];
-      const counts = await Promise.all(
-        statuses.map(async (status) => {
-          const response = await fetch(`/api/policies?status=${encodeURIComponent(status)}&documentType=${encodeURIComponent(documentType)}&limit=1`);
-          if (response.ok) {
-            const data = await response.json();
-            return data.pagination?.total || 0;
-          }
-          return 0;
-        })
-      );
-      setTabStats({
-        notUploaded: counts[0],
-        draft: counts[1],
-        approved: counts[2],
-        published: counts[3],
-        needsReview: counts[4],
-      });
-    } catch (error) {
-      console.error("Error fetching tab stats:", error);
-    }
-  };
+    fetchPolicies();
+  }, [activeDocType, currentPage, frameworkFilter]);
 
   const fetchFilterOptions = async () => {
     try {
@@ -364,7 +241,6 @@ export default function GovernancePage() {
       params.set("limit", itemsPerPage.toString());
       params.set("documentType", activeDocType);
       if (frameworkFilter && frameworkFilter !== "all") params.set("frameworkId", frameworkFilter);
-      if (statusFilter && statusFilter !== "all") params.set("status", statusFilter);
       if (search) params.set("search", search);
 
       const response = await fetch(`/api/policies?${params.toString()}`);
@@ -379,7 +255,7 @@ export default function GovernancePage() {
     } finally {
       setLoading(false);
     }
-  }, [activeDocType, currentPage, frameworkFilter, statusFilter, search]);
+  }, [activeDocType, currentPage, frameworkFilter, search]);
 
   const handleSearch = () => {
     setCurrentPage(1);
@@ -493,131 +369,6 @@ export default function GovernancePage() {
     }
   };
 
-  // Vault functions (Customer Admin only)
-  const fetchVaultDocuments = async () => {
-    try {
-      setVaultLoading(true);
-      const response = await fetch("/api/governance-vault");
-      if (response.ok) {
-        const data = await response.json();
-        setVaultDocuments(data.data || []);
-      }
-    } catch (error) {
-      console.error("Error fetching vault documents:", error);
-    } finally {
-      setVaultLoading(false);
-    }
-  };
-
-  const handleVaultUpload = async () => {
-    if (!vaultFile) return;
-    try {
-      setVaultUploading(true);
-      const formData = new FormData();
-      formData.append("file", vaultFile);
-
-      const response = await fetch("/api/governance-vault", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (response.ok) {
-        setVaultFile(null);
-        fetchVaultDocuments();
-      }
-    } catch (error) {
-      console.error("Error uploading vault document:", error);
-    } finally {
-      setVaultUploading(false);
-    }
-  };
-
-  const handleOpenLinkDialog = async (doc: VaultDocument) => {
-    setDocumentToLink(doc);
-    setSelectedPolicyIds(doc.linkedPolicies.map((p) => p.id));
-    setIsLinkDialogOpen(true);
-    setLinkDialogLoading(true);
-
-    try {
-      // Fetch all governance records (policies, standards, procedures)
-      const response = await fetch("/api/policies?limit=500");
-      if (response.ok) {
-        const data = await response.json();
-        setAllGovernanceRecords(data.data || []);
-      }
-    } catch (error) {
-      console.error("Error fetching governance records:", error);
-    } finally {
-      setLinkDialogLoading(false);
-    }
-  };
-
-  const handleSaveLinks = async () => {
-    if (!documentToLink) return;
-    try {
-      const response = await fetch(`/api/governance-vault/${documentToLink.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ policyIds: selectedPolicyIds }),
-      });
-
-      if (response.ok) {
-        setIsLinkDialogOpen(false);
-        setDocumentToLink(null);
-        setSelectedPolicyIds([]);
-        fetchVaultDocuments();
-      }
-    } catch (error) {
-      console.error("Error updating links:", error);
-    }
-  };
-
-  const handleDeleteVaultDoc = async () => {
-    if (!vaultDocToDelete) return;
-    try {
-      let response;
-      if (vaultDocToDelete.source === "vault") {
-        // Delete vault document
-        response = await fetch(`/api/governance-vault/${vaultDocToDelete.id}`, {
-          method: "DELETE",
-        });
-      } else {
-        // Delete policy attachment - need to call the policy attachment API
-        const policyId = vaultDocToDelete.linkedPolicies[0]?.id;
-        if (policyId) {
-          response = await fetch(`/api/policies/${policyId}/attachments?attachmentId=${vaultDocToDelete.id}`, {
-            method: "DELETE",
-          });
-        }
-      }
-
-      if (response?.ok) {
-        setIsDeleteVaultDocDialogOpen(false);
-        setVaultDocToDelete(null);
-        fetchVaultDocuments();
-      }
-    } catch (error) {
-      console.error("Error deleting vault document:", error);
-    }
-  };
-
-  const handleDownloadVaultDoc = (doc: VaultDocument) => {
-    // Create a temporary link to trigger download
-    const link = document.createElement("a");
-    link.href = doc.filePath;
-    link.download = doc.fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const formatFileSize = (bytes: number | null) => {
-    if (!bytes) return "-";
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  };
-
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
       case "Published": return "bg-green-100 text-green-800";
@@ -658,15 +409,53 @@ export default function GovernancePage() {
     });
   })();
 
-  const handleTabChange = (tab: string) => {
-    setActiveTab(tab);
-    if (tab !== "Dashboard" && tab !== "Information Security Vault") {
-      setActiveDocType(tab);
-      setCurrentPage(1);
-      setSearch("");
-      setFrameworkFilter("all");
-      setStatusFilter("all");
+  // Filter users for Edit Assignee dropdown
+  const filteredEditUsers = (() => {
+    if (!editData.departmentId) return [];
+
+    return users.filter((u) => {
+      if (u.departmentId !== editData.departmentId) return false;
+      return u.userRoles?.some((ur) =>
+        ["DepartmentReviewer", "DepartmentContributor"].includes(ur.role?.name)
+      );
+    });
+  })();
+
+  const openEditDialog = (policy: Policy) => {
+    setEditingPolicy(policy);
+    setEditData({
+      name: policy.name,
+      documentType: policy.documentType,
+      recurrence: policy.recurrence || "",
+      departmentId: policy.department?.id || "",
+      assigneeId: policy.assignee?.id || "",
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdatePolicy = async () => {
+    if (!editingPolicy) return;
+    try {
+      const response = await fetch(`/api/policies/${editingPolicy.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editData),
+      });
+      if (response.ok) {
+        setIsEditDialogOpen(false);
+        setEditingPolicy(null);
+        fetchPolicies();
+      }
+    } catch (error) {
+      console.error("Error updating policy:", error);
     }
+  };
+
+  const handleTabChange = (tab: string) => {
+    setActiveDocType(tab);
+    setCurrentPage(1);
+    setSearch("");
+    setFrameworkFilter("all");
   };
 
   const canProceedStep1 = newPolicy.name && newPolicy.departmentId && newPolicy.documentType && newPolicy.recurrence && newPolicy.assigneeId;
@@ -679,7 +468,10 @@ export default function GovernancePage() {
   if (permissionsLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="relative h-8 w-8">
+          <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
+          <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+        </div>
       </div>
     );
   }
@@ -690,718 +482,127 @@ export default function GovernancePage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Governance</h1>
-        <div className="flex gap-2">
-          {/* Show New Governance button for Customer Admin or users with create permission */}
-          {isCustomerAdmin ? (
-            <Button onClick={() => {
-              setNewPolicy({ ...newPolicy, documentType: activeDocType });
-              setIsCreateDialogOpen(true);
-            }}>
-              <Plus className="h-4 w-4 mr-2" />
-              New Governance
-            </Button>
-          ) : (
-            <PermissionGate resource="compliance.governance" action="create">
-              <Button onClick={() => {
-                setNewPolicy({ ...newPolicy, documentType: activeDocType });
-                setIsCreateDialogOpen(true);
-              }}>
-                <Plus className="h-4 w-4 mr-2" />
-                New Governance
-              </Button>
-            </PermissionGate>
-          )}
-          <PermissionGate resource="compliance.governance" action="create">
-            <Button variant="outline" onClick={() => setIsImportDialogOpen(true)}>
-              <Upload className="h-4 w-4 mr-2" />
-              Import
-            </Button>
-          </PermissionGate>
-          <PermissionGate resource="compliance.governance" action="delete">
-            <Button variant="outline" onClick={() => setIsDeleteAllDialogOpen(true)}>
-              <Trash2 className="h-4 w-4 mr-2" />
-              Delete All
-            </Button>
-          </PermissionGate>
-        </div>
+        <h1 className="text-2xl font-bold text-slate-800">Governance</h1>
       </div>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={handleTabChange}>
+      <Tabs value={activeDocType} onValueChange={handleTabChange}>
         <TabsList>
-          <TabsTrigger value="Dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="Policy">Policy</TabsTrigger>
           <TabsTrigger value="Standard">Standards</TabsTrigger>
           <TabsTrigger value="Procedure">Procedures</TabsTrigger>
-          <TabsTrigger value="Information Security Vault">Information Security Vault</TabsTrigger>
         </TabsList>
 
-        {/* Dashboard Tab Content */}
-        <TabsContent value="Dashboard" className="mt-4">
-          {statsLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-              {/* Not Uploaded Card */}
-              <div className="relative overflow-hidden rounded-xl p-6 h-48 flex flex-col items-center justify-center text-center"
-                style={{
-                  background: "linear-gradient(135deg, #0a0a5c 0%, #1a1a8c 50%, #0d0d6b 100%)",
-                }}>
-                <div className="absolute inset-0 opacity-20">
-                  <svg className="w-full h-full" viewBox="0 0 200 200" preserveAspectRatio="none">
-                    <defs>
-                      <linearGradient id="wave1" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#4f46e5" stopOpacity="0.3"/>
-                        <stop offset="100%" stopColor="#7c3aed" stopOpacity="0.1"/>
-                      </linearGradient>
-                    </defs>
-                    <path d="M0,100 Q50,50 100,100 T200,100 L200,200 L0,200 Z" fill="url(#wave1)"/>
-                    <path d="M0,120 Q50,80 100,120 T200,120 L200,200 L0,200 Z" fill="url(#wave1)" opacity="0.5"/>
-                  </svg>
-                </div>
-                <div className="absolute inset-0 opacity-30">
-                  <svg className="w-full h-full" viewBox="0 0 100 100">
-                    <circle cx="20" cy="30" r="1" fill="white"/>
-                    <circle cx="80" cy="20" r="0.5" fill="white"/>
-                    <circle cx="60" cy="70" r="0.8" fill="white"/>
-                    <circle cx="30" cy="80" r="0.6" fill="white"/>
-                    <circle cx="90" cy="60" r="0.7" fill="white"/>
-                  </svg>
-                </div>
-                <div className="relative z-10 mb-3">
-                  <div className="w-16 h-16 rounded-full border-2 border-dashed border-white/40 flex items-center justify-center">
-                    <UserPlus className="h-7 w-7 text-white" />
-                  </div>
-                </div>
-                <div className="relative z-10 text-4xl font-bold text-white mb-1">
-                  {dashboardStats.notUploaded}
-                </div>
-                <div className="relative z-10 text-white text-sm font-medium">
-                  Not Uploaded
-                </div>
-              </div>
-
-              {/* Draft Card */}
-              <div className="relative overflow-hidden rounded-xl p-6 h-48 flex flex-col items-center justify-center text-center"
-                style={{
-                  background: "linear-gradient(135deg, #0a0a5c 0%, #1a1a8c 50%, #0d0d6b 100%)",
-                }}>
-                <div className="absolute inset-0 opacity-20">
-                  <svg className="w-full h-full" viewBox="0 0 200 200" preserveAspectRatio="none">
-                    <defs>
-                      <linearGradient id="wave2" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#4f46e5" stopOpacity="0.3"/>
-                        <stop offset="100%" stopColor="#7c3aed" stopOpacity="0.1"/>
-                      </linearGradient>
-                    </defs>
-                    <path d="M0,100 Q50,50 100,100 T200,100 L200,200 L0,200 Z" fill="url(#wave2)"/>
-                    <path d="M0,120 Q50,80 100,120 T200,120 L200,200 L0,200 Z" fill="url(#wave2)" opacity="0.5"/>
-                  </svg>
-                </div>
-                <div className="absolute inset-0 opacity-30">
-                  <svg className="w-full h-full" viewBox="0 0 100 100">
-                    <circle cx="15" cy="25" r="0.8" fill="white"/>
-                    <circle cx="75" cy="35" r="0.6" fill="white"/>
-                    <circle cx="55" cy="75" r="1" fill="white"/>
-                    <circle cx="25" cy="85" r="0.5" fill="white"/>
-                    <circle cx="85" cy="55" r="0.7" fill="white"/>
-                  </svg>
-                </div>
-                <div className="relative z-10 mb-3">
-                  <div className="w-16 h-16 rounded-full border-2 border-dashed border-white/40 flex items-center justify-center">
-                    <ListChecks className="h-7 w-7 text-white" />
-                  </div>
-                </div>
-                <div className="relative z-10 text-4xl font-bold text-white mb-1">
-                  {dashboardStats.draft}
-                </div>
-                <div className="relative z-10 text-white text-sm font-medium">
-                  Draft
-                </div>
-              </div>
-
-              {/* Approved Card */}
-              <div className="relative overflow-hidden rounded-xl p-6 h-48 flex flex-col items-center justify-center text-center"
-                style={{
-                  background: "linear-gradient(135deg, #0a0a5c 0%, #1a1a8c 50%, #0d0d6b 100%)",
-                }}>
-                <div className="absolute inset-0 opacity-20">
-                  <svg className="w-full h-full" viewBox="0 0 200 200" preserveAspectRatio="none">
-                    <defs>
-                      <linearGradient id="wave3" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#4f46e5" stopOpacity="0.3"/>
-                        <stop offset="100%" stopColor="#7c3aed" stopOpacity="0.1"/>
-                      </linearGradient>
-                    </defs>
-                    <path d="M0,100 Q50,50 100,100 T200,100 L200,200 L0,200 Z" fill="url(#wave3)"/>
-                    <path d="M0,120 Q50,80 100,120 T200,120 L200,200 L0,200 Z" fill="url(#wave3)" opacity="0.5"/>
-                  </svg>
-                </div>
-                <div className="absolute inset-0 opacity-30">
-                  <svg className="w-full h-full" viewBox="0 0 100 100">
-                    <circle cx="10" cy="40" r="0.7" fill="white"/>
-                    <circle cx="70" cy="25" r="0.9" fill="white"/>
-                    <circle cx="50" cy="80" r="0.6" fill="white"/>
-                    <circle cx="35" cy="70" r="0.8" fill="white"/>
-                    <circle cx="90" cy="50" r="0.5" fill="white"/>
-                  </svg>
-                </div>
-                <div className="relative z-10 mb-3">
-                  <div className="w-16 h-16 rounded-full border-2 border-dashed border-white/40 flex items-center justify-center">
-                    <CheckSquare className="h-7 w-7 text-white" />
-                  </div>
-                </div>
-                <div className="relative z-10 text-4xl font-bold text-white mb-1">
-                  {dashboardStats.approved}
-                </div>
-                <div className="relative z-10 text-white text-sm font-medium">
-                  Approved
-                </div>
-              </div>
-
-              {/* Published Card */}
-              <div className="relative overflow-hidden rounded-xl p-6 h-48 flex flex-col items-center justify-center text-center"
-                style={{
-                  background: "linear-gradient(135deg, #0a0a5c 0%, #1a1a8c 50%, #0d0d6b 100%)",
-                }}>
-                <div className="absolute inset-0 opacity-20">
-                  <svg className="w-full h-full" viewBox="0 0 200 200" preserveAspectRatio="none">
-                    <defs>
-                      <linearGradient id="wave4" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#4f46e5" stopOpacity="0.3"/>
-                        <stop offset="100%" stopColor="#7c3aed" stopOpacity="0.1"/>
-                      </linearGradient>
-                    </defs>
-                    <path d="M0,100 Q50,50 100,100 T200,100 L200,200 L0,200 Z" fill="url(#wave4)"/>
-                    <path d="M0,120 Q50,80 100,120 T200,120 L200,200 L0,200 Z" fill="url(#wave4)" opacity="0.5"/>
-                  </svg>
-                </div>
-                <div className="absolute inset-0 opacity-30">
-                  <svg className="w-full h-full" viewBox="0 0 100 100">
-                    <circle cx="25" cy="35" r="0.6" fill="white"/>
-                    <circle cx="85" cy="30" r="0.8" fill="white"/>
-                    <circle cx="45" cy="85" r="0.7" fill="white"/>
-                    <circle cx="20" cy="75" r="0.9" fill="white"/>
-                    <circle cx="80" cy="65" r="0.5" fill="white"/>
-                  </svg>
-                </div>
-                <div className="relative z-10 mb-3">
-                  <div className="w-16 h-16 rounded-full border-2 border-dashed border-white/40 flex items-center justify-center">
-                    <ArrowUpFromLine className="h-7 w-7 text-white" />
-                  </div>
-                </div>
-                <div className="relative z-10 text-4xl font-bold text-white mb-1">
-                  {dashboardStats.published}
-                </div>
-                <div className="relative z-10 text-white text-sm font-medium">
-                  Published
-                </div>
-              </div>
-
-              {/* Needs Review Card */}
-              <div className="relative overflow-hidden rounded-xl p-6 h-48 flex flex-col items-center justify-center text-center"
-                style={{
-                  background: "linear-gradient(135deg, #0a0a5c 0%, #1a1a8c 50%, #0d0d6b 100%)",
-                }}>
-                <div className="absolute inset-0 opacity-20">
-                  <svg className="w-full h-full" viewBox="0 0 200 200" preserveAspectRatio="none">
-                    <defs>
-                      <linearGradient id="wave5" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#4f46e5" stopOpacity="0.3"/>
-                        <stop offset="100%" stopColor="#7c3aed" stopOpacity="0.1"/>
-                      </linearGradient>
-                    </defs>
-                    <path d="M0,100 Q50,50 100,100 T200,100 L200,200 L0,200 Z" fill="url(#wave5)"/>
-                    <path d="M0,120 Q50,80 100,120 T200,120 L200,200 L0,200 Z" fill="url(#wave5)" opacity="0.5"/>
-                  </svg>
-                </div>
-                <div className="absolute inset-0 opacity-30">
-                  <svg className="w-full h-full" viewBox="0 0 100 100">
-                    <circle cx="30" cy="20" r="0.8" fill="white"/>
-                    <circle cx="70" cy="40" r="0.6" fill="white"/>
-                    <circle cx="60" cy="65" r="0.9" fill="white"/>
-                    <circle cx="15" cy="80" r="0.5" fill="white"/>
-                    <circle cx="95" cy="45" r="0.7" fill="white"/>
-                  </svg>
-                </div>
-                <div className="relative z-10 mb-3">
-                  <div className="w-16 h-16 rounded-full border-2 border-dashed border-white/40 flex items-center justify-center">
-                    <UserCheck className="h-7 w-7 text-white" />
-                  </div>
-                </div>
-                <div className="relative z-10 text-4xl font-bold text-white mb-1">
-                  {dashboardStats.needsReview}
-                </div>
-                <div className="relative z-10 text-white text-sm font-medium">
-                  Needs Review
-                </div>
-              </div>
-            </div>
-          )}
-        </TabsContent>
-
-        {/* Information Security Vault Tab Content */}
-        <TabsContent value="Information Security Vault" className="mt-4">
-          {isCustomerAdmin ? (
-            <div className="space-y-6">
-              {/* File Upload Section */}
-              <div className="border rounded-lg p-6">
-                <h3 className="text-lg font-medium mb-4">Upload Document to Vault</h3>
-                <div className="flex items-center gap-4">
-                  <div className="flex-1">
-                    <Input
-                      type="file"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) setVaultFile(file);
-                      }}
-                      accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
-                    />
-                  </div>
-                  <Button
-                    onClick={handleVaultUpload}
-                    disabled={!vaultFile || vaultUploading}
-                  >
-                    {vaultUploading ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        Uploading...
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="h-4 w-4 mr-2" />
-                        Upload
-                      </>
-                    )}
-                  </Button>
-                </div>
-                {vaultFile && (
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Selected: {vaultFile.name}
-                  </p>
-                )}
-              </div>
-
-              {/* Document Listing */}
-              {vaultLoading ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-                </div>
-              ) : (
-                <div className="border rounded-lg">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Document ID</TableHead>
-                        <TableHead>Document Name</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Linked To</TableHead>
-                        <TableHead>Date Uploaded</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {vaultDocuments.map((doc) => (
-                        <TableRow key={`${doc.source}-${doc.id}`}>
-                          <TableCell className="font-medium">{doc.documentCode}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <FileText className="h-4 w-4 text-muted-foreground" />
-                              {doc.fileName}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">
-                              {doc.fileType?.toUpperCase() || "FILE"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Badge className={doc.status === "Active" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}>
-                              {doc.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {doc.linkedPolicies.length > 0 ? (
-                              <div className="flex flex-wrap gap-1">
-                                {doc.linkedPolicies.slice(0, 2).map((p) => (
-                                  <Badge key={p.id} variant="secondary" className="text-xs">
-                                    {p.code}
-                                  </Badge>
-                                ))}
-                                {doc.linkedPolicies.length > 2 && (
-                                  <Badge variant="secondary" className="text-xs">
-                                    +{doc.linkedPolicies.length - 2}
-                                  </Badge>
-                                )}
-                              </div>
-                            ) : (
-                              <span className="text-muted-foreground text-sm">Not linked</span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {new Date(doc.uploadedAt).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex gap-1">
-                              {doc.source === "vault" ? (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  title="Link / Delink Governance"
-                                  onClick={() => handleOpenLinkDialog(doc)}
-                                >
-                                  <Link2 className="h-4 w-4" />
-                                </Button>
-                              ) : (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  disabled
-                                  title={`Already linked to ${doc.linkedPolicies[0]?.code || 'governance'}`}
-                                >
-                                  <Link2 className="h-4 w-4 text-muted-foreground" />
-                                </Button>
-                              )}
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                title="Download"
-                                onClick={() => handleDownloadVaultDoc(doc)}
-                              >
-                                <Download className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                title="Delete"
-                                onClick={() => {
-                                  setVaultDocToDelete(doc);
-                                  setIsDeleteVaultDocDialogOpen(true);
-                                }}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                      {vaultDocuments.length === 0 && (
-                        <TableRow>
-                          <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                            No documents in the vault. Upload your first document above.
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="flex items-center justify-center py-12 text-muted-foreground">
-              Information Security Vault is available for Customer Administrators only.
-            </div>
-          )}
-        </TabsContent>
-
-        {/* Tab Content - Same structure for Policy, Standard, Procedure tabs */}
+        {/* Tab Content - Same structure for all tabs */}
         {["Policy", "Standard", "Procedure"].map((docType) => (
-          <TabsContent key={docType} value={docType} className="mt-4 space-y-4">
-            {/* Dashboard Cards - Same style as Dashboard tab */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-              {/* Not Uploaded Card */}
-              <div
-                className={`relative overflow-hidden rounded-xl p-6 h-48 flex flex-col items-center justify-center text-center cursor-pointer transition-all hover:scale-[1.02] ${statusFilter === "Not Uploaded" ? "ring-2 ring-white ring-offset-2" : ""}`}
-                style={{
-                  background: "linear-gradient(135deg, #0a0a5c 0%, #1a1a8c 50%, #0d0d6b 100%)",
-                }}
-                onClick={() => setStatusFilter(statusFilter === "Not Uploaded" ? "all" : "Not Uploaded")}
-              >
-                <div className="absolute inset-0 opacity-20">
-                  <svg className="w-full h-full" viewBox="0 0 200 200" preserveAspectRatio="none">
-                    <defs>
-                      <linearGradient id={`wave1-${docType}`} x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#4f46e5" stopOpacity="0.3"/>
-                        <stop offset="100%" stopColor="#7c3aed" stopOpacity="0.1"/>
-                      </linearGradient>
-                    </defs>
-                    <path d="M0,100 Q50,50 100,100 T200,100 L200,200 L0,200 Z" fill={`url(#wave1-${docType})`}/>
-                    <path d="M0,120 Q50,80 100,120 T200,120 L200,200 L0,200 Z" fill={`url(#wave1-${docType})`} opacity="0.5"/>
-                  </svg>
-                </div>
-                <div className="absolute inset-0 opacity-30">
-                  <svg className="w-full h-full" viewBox="0 0 100 100">
-                    <circle cx="20" cy="30" r="1" fill="white"/>
-                    <circle cx="80" cy="20" r="0.5" fill="white"/>
-                    <circle cx="60" cy="70" r="0.8" fill="white"/>
-                    <circle cx="30" cy="80" r="0.6" fill="white"/>
-                    <circle cx="90" cy="60" r="0.7" fill="white"/>
-                  </svg>
-                </div>
-                <div className="relative z-10 mb-3">
-                  <div className="w-16 h-16 rounded-full border-2 border-dashed border-white/40 flex items-center justify-center">
-                    <UserPlus className="h-7 w-7 text-white" />
-                  </div>
-                </div>
-                <div className="relative z-10 text-4xl font-bold text-white mb-1">
-                  {tabStats.notUploaded}
-                </div>
-                <div className="relative z-10 text-white text-sm font-medium">
-                  Not Uploaded
-                </div>
-              </div>
-
-              {/* Draft Card */}
-              <div
-                className={`relative overflow-hidden rounded-xl p-6 h-48 flex flex-col items-center justify-center text-center cursor-pointer transition-all hover:scale-[1.02] ${statusFilter === "Draft" ? "ring-2 ring-white ring-offset-2" : ""}`}
-                style={{
-                  background: "linear-gradient(135deg, #0a0a5c 0%, #1a1a8c 50%, #0d0d6b 100%)",
-                }}
-                onClick={() => setStatusFilter(statusFilter === "Draft" ? "all" : "Draft")}
-              >
-                <div className="absolute inset-0 opacity-20">
-                  <svg className="w-full h-full" viewBox="0 0 200 200" preserveAspectRatio="none">
-                    <defs>
-                      <linearGradient id={`wave2-${docType}`} x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#4f46e5" stopOpacity="0.3"/>
-                        <stop offset="100%" stopColor="#7c3aed" stopOpacity="0.1"/>
-                      </linearGradient>
-                    </defs>
-                    <path d="M0,100 Q50,50 100,100 T200,100 L200,200 L0,200 Z" fill={`url(#wave2-${docType})`}/>
-                    <path d="M0,120 Q50,80 100,120 T200,120 L200,200 L0,200 Z" fill={`url(#wave2-${docType})`} opacity="0.5"/>
-                  </svg>
-                </div>
-                <div className="absolute inset-0 opacity-30">
-                  <svg className="w-full h-full" viewBox="0 0 100 100">
-                    <circle cx="15" cy="25" r="0.8" fill="white"/>
-                    <circle cx="75" cy="35" r="0.6" fill="white"/>
-                    <circle cx="55" cy="75" r="1" fill="white"/>
-                    <circle cx="25" cy="85" r="0.5" fill="white"/>
-                    <circle cx="85" cy="55" r="0.7" fill="white"/>
-                  </svg>
-                </div>
-                <div className="relative z-10 mb-3">
-                  <div className="w-16 h-16 rounded-full border-2 border-dashed border-white/40 flex items-center justify-center">
-                    <ListChecks className="h-7 w-7 text-white" />
-                  </div>
-                </div>
-                <div className="relative z-10 text-4xl font-bold text-white mb-1">
-                  {tabStats.draft}
-                </div>
-                <div className="relative z-10 text-white text-sm font-medium">
-                  Draft
-                </div>
-              </div>
-
-              {/* Approved Card */}
-              <div
-                className={`relative overflow-hidden rounded-xl p-6 h-48 flex flex-col items-center justify-center text-center cursor-pointer transition-all hover:scale-[1.02] ${statusFilter === "Approved" ? "ring-2 ring-white ring-offset-2" : ""}`}
-                style={{
-                  background: "linear-gradient(135deg, #0a0a5c 0%, #1a1a8c 50%, #0d0d6b 100%)",
-                }}
-                onClick={() => setStatusFilter(statusFilter === "Approved" ? "all" : "Approved")}
-              >
-                <div className="absolute inset-0 opacity-20">
-                  <svg className="w-full h-full" viewBox="0 0 200 200" preserveAspectRatio="none">
-                    <defs>
-                      <linearGradient id={`wave3-${docType}`} x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#4f46e5" stopOpacity="0.3"/>
-                        <stop offset="100%" stopColor="#7c3aed" stopOpacity="0.1"/>
-                      </linearGradient>
-                    </defs>
-                    <path d="M0,100 Q50,50 100,100 T200,100 L200,200 L0,200 Z" fill={`url(#wave3-${docType})`}/>
-                    <path d="M0,120 Q50,80 100,120 T200,120 L200,200 L0,200 Z" fill={`url(#wave3-${docType})`} opacity="0.5"/>
-                  </svg>
-                </div>
-                <div className="absolute inset-0 opacity-30">
-                  <svg className="w-full h-full" viewBox="0 0 100 100">
-                    <circle cx="10" cy="40" r="0.7" fill="white"/>
-                    <circle cx="70" cy="25" r="0.9" fill="white"/>
-                    <circle cx="50" cy="80" r="0.6" fill="white"/>
-                    <circle cx="35" cy="70" r="0.8" fill="white"/>
-                    <circle cx="90" cy="50" r="0.5" fill="white"/>
-                  </svg>
-                </div>
-                <div className="relative z-10 mb-3">
-                  <div className="w-16 h-16 rounded-full border-2 border-dashed border-white/40 flex items-center justify-center">
-                    <CheckSquare className="h-7 w-7 text-white" />
-                  </div>
-                </div>
-                <div className="relative z-10 text-4xl font-bold text-white mb-1">
-                  {tabStats.approved}
-                </div>
-                <div className="relative z-10 text-white text-sm font-medium">
-                  Approved
-                </div>
-              </div>
-
-              {/* Published Card */}
-              <div
-                className={`relative overflow-hidden rounded-xl p-6 h-48 flex flex-col items-center justify-center text-center cursor-pointer transition-all hover:scale-[1.02] ${statusFilter === "Published" ? "ring-2 ring-white ring-offset-2" : ""}`}
-                style={{
-                  background: "linear-gradient(135deg, #0a0a5c 0%, #1a1a8c 50%, #0d0d6b 100%)",
-                }}
-                onClick={() => setStatusFilter(statusFilter === "Published" ? "all" : "Published")}
-              >
-                <div className="absolute inset-0 opacity-20">
-                  <svg className="w-full h-full" viewBox="0 0 200 200" preserveAspectRatio="none">
-                    <defs>
-                      <linearGradient id={`wave4-${docType}`} x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#4f46e5" stopOpacity="0.3"/>
-                        <stop offset="100%" stopColor="#7c3aed" stopOpacity="0.1"/>
-                      </linearGradient>
-                    </defs>
-                    <path d="M0,100 Q50,50 100,100 T200,100 L200,200 L0,200 Z" fill={`url(#wave4-${docType})`}/>
-                    <path d="M0,120 Q50,80 100,120 T200,120 L200,200 L0,200 Z" fill={`url(#wave4-${docType})`} opacity="0.5"/>
-                  </svg>
-                </div>
-                <div className="absolute inset-0 opacity-30">
-                  <svg className="w-full h-full" viewBox="0 0 100 100">
-                    <circle cx="25" cy="35" r="0.6" fill="white"/>
-                    <circle cx="85" cy="30" r="0.8" fill="white"/>
-                    <circle cx="45" cy="85" r="0.7" fill="white"/>
-                    <circle cx="20" cy="75" r="0.9" fill="white"/>
-                    <circle cx="80" cy="65" r="0.5" fill="white"/>
-                  </svg>
-                </div>
-                <div className="relative z-10 mb-3">
-                  <div className="w-16 h-16 rounded-full border-2 border-dashed border-white/40 flex items-center justify-center">
-                    <ArrowUpFromLine className="h-7 w-7 text-white" />
-                  </div>
-                </div>
-                <div className="relative z-10 text-4xl font-bold text-white mb-1">
-                  {tabStats.published}
-                </div>
-                <div className="relative z-10 text-white text-sm font-medium">
-                  Published
-                </div>
-              </div>
-
-              {/* Needs Review Card */}
-              <div
-                className={`relative overflow-hidden rounded-xl p-6 h-48 flex flex-col items-center justify-center text-center cursor-pointer transition-all hover:scale-[1.02] ${statusFilter === "Needs Review" ? "ring-2 ring-white ring-offset-2" : ""}`}
-                style={{
-                  background: "linear-gradient(135deg, #0a0a5c 0%, #1a1a8c 50%, #0d0d6b 100%)",
-                }}
-                onClick={() => setStatusFilter(statusFilter === "Needs Review" ? "all" : "Needs Review")}
-              >
-                <div className="absolute inset-0 opacity-20">
-                  <svg className="w-full h-full" viewBox="0 0 200 200" preserveAspectRatio="none">
-                    <defs>
-                      <linearGradient id={`wave5-${docType}`} x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#4f46e5" stopOpacity="0.3"/>
-                        <stop offset="100%" stopColor="#7c3aed" stopOpacity="0.1"/>
-                      </linearGradient>
-                    </defs>
-                    <path d="M0,100 Q50,50 100,100 T200,100 L200,200 L0,200 Z" fill={`url(#wave5-${docType})`}/>
-                    <path d="M0,120 Q50,80 100,120 T200,120 L200,200 L0,200 Z" fill={`url(#wave5-${docType})`} opacity="0.5"/>
-                  </svg>
-                </div>
-                <div className="absolute inset-0 opacity-30">
-                  <svg className="w-full h-full" viewBox="0 0 100 100">
-                    <circle cx="30" cy="20" r="0.8" fill="white"/>
-                    <circle cx="70" cy="40" r="0.6" fill="white"/>
-                    <circle cx="60" cy="65" r="0.9" fill="white"/>
-                    <circle cx="15" cy="80" r="0.5" fill="white"/>
-                    <circle cx="95" cy="45" r="0.7" fill="white"/>
-                  </svg>
-                </div>
-                <div className="relative z-10 mb-3">
-                  <div className="w-16 h-16 rounded-full border-2 border-dashed border-white/40 flex items-center justify-center">
-                    <UserCheck className="h-7 w-7 text-white" />
-                  </div>
-                </div>
-                <div className="relative z-10 text-4xl font-bold text-white mb-1">
-                  {tabStats.needsReview}
-                </div>
-                <div className="relative z-10 text-white text-sm font-medium">
-                  Needs Review
-                </div>
-              </div>
-            </div>
-
-            {/* Search and Filter Row */}
-            <div className="flex items-center gap-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder={`Search By ${docType} Name, ${docType} Code`}
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                  className="pl-10"
-                />
-              </div>
+          <TabsContent key={docType} value={docType} className="mt-6 space-y-4">
+            {/* Search, Filter, and Action Buttons Row */}
+            <div className="flex items-center gap-3">
+              <Input
+                placeholder={`Search by ${docType.toLowerCase()} name or code...`}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                className="max-w-md bg-white"
+              />
               <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
-                <SelectTrigger className="w-[250px]">
+                <SelectTrigger className="w-[200px] bg-white">
                   <SelectValue placeholder="Integrated Framework" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
                   <SelectItem value="all">Integrated Framework</SelectItem>
                   {frameworks.map((f) => (
                     <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <Button variant="outline">
-                <Upload className="h-4 w-4 mr-2" />
-                Export
-              </Button>
+              <div className="flex-1" />
+              <PermissionGate resource="compliance.governance" action="delete">
+                <Button variant="outline" size="sm" className="text-semantic-error hover:text-semantic-error hover:bg-red-50" onClick={() => setIsDeleteAllDialogOpen(true)}>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete All
+                </Button>
+              </PermissionGate>
+              <PermissionGate resource="compliance.governance" action="create">
+                <Button variant="outline" size="sm" onClick={() => setIsImportDialogOpen(true)}>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Import
+                </Button>
+              </PermissionGate>
+              {isCustomerAdmin ? (
+                <Button size="sm" onClick={() => {
+                  setNewPolicy({ ...newPolicy, documentType: activeDocType });
+                  setIsCreateDialogOpen(true);
+                }}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  New Governance
+                </Button>
+              ) : (
+                <PermissionGate resource="compliance.governance" action="create">
+                  <Button size="sm" onClick={() => {
+                    setNewPolicy({ ...newPolicy, documentType: activeDocType });
+                    setIsCreateDialogOpen(true);
+                  }}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    New Governance
+                  </Button>
+                </PermissionGate>
+              )}
             </div>
 
             {/* Table */}
             {loading ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+              <div className="flex items-center justify-center py-8">
+                <div className="relative h-8 w-8">
+                  <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
+                  <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+                </div>
               </div>
             ) : (
               <>
-                <div className="border rounded-lg">
+                <div className="bg-white rounded-xl border border-slate-200">
                   <Table>
                     <TableHeader>
-                      <TableRow>
-                        <TableHead>Code</TableHead>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Assignee</TableHead>
-                        <TableHead>Approver</TableHead>
-                        <TableHead>Department Name</TableHead>
-                        <TableHead>Action</TableHead>
+                      <TableRow className="border-b border-slate-100 bg-slate-50/50">
+                        <TableHead className="text-xs font-semibold text-slate-600 py-4 pl-4">Code</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 py-4">Name</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 py-4">Status</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 py-4">Assignee</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 py-4">Approver</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 py-4">Department Name</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 py-4">Action</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {policies.map((policy) => (
                         <TableRow
                           key={policy.id}
-                          className="cursor-pointer hover:bg-muted/50"
+                          className="border-b border-slate-100 last:border-0 cursor-pointer hover:bg-slate-50"
                           onDoubleClick={() => router.push(`/compliance/governance/${policy.id}`)}
                         >
-                          <TableCell className="font-medium">{policy.code}</TableCell>
-                          <TableCell>{policy.name}</TableCell>
-                          <TableCell>
+                          <TableCell className="py-3 pl-4 text-sm font-medium text-slate-900">{policy.code}</TableCell>
+                          <TableCell className="py-3 text-sm text-slate-700">{policy.name}</TableCell>
+                          <TableCell className="py-3">
                             <Badge className={getStatusBadgeColor(policy.status)}>
                               {policy.status}
                             </Badge>
                           </TableCell>
-                          <TableCell>{policy.assignee?.fullName || ""}</TableCell>
-                          <TableCell>{policy.approver?.fullName || ""}</TableCell>
-                          <TableCell>{policy.department?.name || ""}</TableCell>
-                          <TableCell>
+                          <TableCell className="py-3 text-sm text-slate-700">{policy.assignee?.fullName || "-"}</TableCell>
+                          <TableCell className="py-3 text-sm text-slate-700">{policy.approver?.fullName || "-"}</TableCell>
+                          <TableCell className="py-3 text-sm text-slate-700">{policy.department?.name || "-"}</TableCell>
+                          <TableCell className="py-3">
                             <div className="flex gap-1">
                               <PermissionGate resource="compliance.governance" action="edit">
                                 <Button
                                   variant="ghost"
                                   size="icon"
+                                  className="h-8 w-8 text-slate-400 hover:text-slate-600"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    router.push(`/compliance/governance/${policy.id}`);
+                                    openEditDialog(policy);
                                   }}
                                 >
                                   <Pencil className="h-4 w-4" />
@@ -1411,6 +612,7 @@ export default function GovernancePage() {
                                 <Button
                                   variant="ghost"
                                   size="icon"
+                                  className="h-8 w-8 text-slate-400 hover:text-semantic-error"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     setPolicyToDelete(policy);
@@ -1426,52 +628,58 @@ export default function GovernancePage() {
                       ))}
                       {policies.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                          <TableCell colSpan={7} className="h-24 text-center text-slate-500">
                             No {docType.toLowerCase()}s found
                           </TableCell>
                         </TableRow>
                       )}
                     </TableBody>
                   </Table>
-                </div>
 
-                {/* Pagination */}
-                <div className="flex items-center justify-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    disabled={currentPage === 1}
-                    onClick={() => setCurrentPage(1)}
-                  >
-                    <ChevronsLeft className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    disabled={currentPage === 1}
-                    onClick={() => setCurrentPage((p) => p - 1)}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <span className="text-sm text-muted-foreground px-4">
-                    Currently showing {startItem} to {endItem} of {total}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    disabled={currentPage >= totalPages}
-                    onClick={() => setCurrentPage((p) => p + 1)}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    disabled={currentPage >= totalPages}
-                    onClick={() => setCurrentPage(totalPages)}
-                  >
-                    <ChevronsRight className="h-4 w-4" />
-                  </Button>
+                  {/* Pagination */}
+                  <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
+                    <span className="text-sm text-slate-500">
+                      {total > 0 ? `${startItem} to ${endItem} of ${total}` : `No ${docType.toLowerCase()}s`}
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        disabled={currentPage === 1}
+                        onClick={() => setCurrentPage(1)}
+                        className="h-8 w-8"
+                      >
+                        <ChevronsLeft className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        disabled={currentPage === 1}
+                        onClick={() => setCurrentPage((p) => p - 1)}
+                        className="h-8 w-8"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        disabled={currentPage >= totalPages}
+                        onClick={() => setCurrentPage((p) => p + 1)}
+                        className="h-8 w-8"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        disabled={currentPage >= totalPages}
+                        onClick={() => setCurrentPage(totalPages)}
+                        className="h-8 w-8"
+                      >
+                        <ChevronsRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </>
             )}
@@ -1484,53 +692,55 @@ export default function GovernancePage() {
         if (!open) resetCreateDialog();
         setIsCreateDialogOpen(open);
       }}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              New Governance - Step {createStep} of 3
-            </DialogTitle>
-          </DialogHeader>
-
-          {/* Step Indicator */}
-          <div className="flex items-center justify-center gap-2 py-4">
-            {[1, 2, 3].map((step) => (
-              <div key={step} className="flex items-center">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                  step === createStep
-                    ? "bg-primary text-primary-foreground"
-                    : step < createStep
-                    ? "bg-green-500 text-white"
-                    : "bg-muted text-muted-foreground"
-                }`}>
-                  {step}
-                </div>
-                {step < 3 && (
-                  <div className={`w-16 h-1 mx-2 ${step < createStep ? "bg-green-500" : "bg-muted"}`} />
-                )}
-              </div>
-            ))}
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Sticky Header */}
+          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">New Governance - Step {createStep} of 3</DialogTitle>
+            </DialogHeader>
           </div>
 
-          <div className="py-4">
+          {/* Scrollable Content */}
+          <div className="overflow-y-auto flex-1 px-6 py-5">
+            {/* Step Indicator */}
+            <div className="flex items-center justify-center gap-2 pb-5">
+              {[1, 2, 3].map((step) => (
+                <div key={step} className="flex items-center">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                    step === createStep
+                      ? "bg-primary text-primary-foreground"
+                      : step < createStep
+                      ? "bg-green-500 text-white"
+                      : "bg-slate-100 text-slate-400"
+                  }`}>
+                    {step}
+                  </div>
+                  {step < 3 && (
+                    <div className={`w-16 h-1 mx-2 ${step < createStep ? "bg-green-500" : "bg-slate-100"}`} />
+                  )}
+                </div>
+              ))}
+            </div>
+
             {/* Step 1: Basic Information */}
             {createStep === 1 && (
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="name">Governance Name *</Label>
+                  <Label className="text-sm font-medium text-slate-700">Governance Name *</Label>
                   <Input
-                    id="name"
                     value={newPolicy.name}
                     onChange={(e) => setNewPolicy({ ...newPolicy, name: e.target.value })}
                     placeholder="Enter governance name"
+                    className="mt-1.5 w-full"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="departmentId">Department *</Label>
+                  <Label className="text-sm font-medium text-slate-700">Department *</Label>
                   <Select value={newPolicy.departmentId} onValueChange={(v) => setNewPolicy({ ...newPolicy, departmentId: v, assigneeId: "" })}>
-                    <SelectTrigger>
+                    <SelectTrigger className="mt-1.5 w-full bg-white">
                       <SelectValue placeholder="Select department" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
                       {getCustomerScopedDepartments().map((d) => (
                         <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                       ))}
@@ -1538,12 +748,12 @@ export default function GovernancePage() {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="documentType">Document Type *</Label>
+                  <Label className="text-sm font-medium text-slate-700">Document Type *</Label>
                   <Select value={newPolicy.documentType} onValueChange={(v) => setNewPolicy({ ...newPolicy, documentType: v })}>
-                    <SelectTrigger>
+                    <SelectTrigger className="mt-1.5 w-full bg-white">
                       <SelectValue placeholder="Select document type" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
                       {DOCUMENT_TYPES.map((t) => (
                         <SelectItem key={t} value={t}>{t}</SelectItem>
                       ))}
@@ -1551,12 +761,12 @@ export default function GovernancePage() {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="recurrence">Recurrence *</Label>
+                  <Label className="text-sm font-medium text-slate-700">Recurrence *</Label>
                   <Select value={newPolicy.recurrence} onValueChange={(v) => setNewPolicy({ ...newPolicy, recurrence: v })}>
-                    <SelectTrigger>
+                    <SelectTrigger className="mt-1.5 w-full bg-white">
                       <SelectValue placeholder="Select recurrence" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
                       {RECURRENCE_OPTIONS.map((r) => (
                         <SelectItem key={r} value={r}>{r}</SelectItem>
                       ))}
@@ -1564,26 +774,26 @@ export default function GovernancePage() {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="assigneeId">Assignee *</Label>
+                  <Label className="text-sm font-medium text-slate-700">Assignee *</Label>
                   <Select
                     value={newPolicy.assigneeId}
                     onValueChange={(v) => setNewPolicy({ ...newPolicy, assigneeId: v })}
                     disabled={!newPolicy.departmentId}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="mt-1.5 w-full bg-white">
                       <SelectValue placeholder={
                         !newPolicy.departmentId
                           ? "Select department first"
                           : "Select assignee"
                       } />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
                       {filteredUsers.length > 0 ? (
                         filteredUsers.map((u) => (
                           <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
                         ))
                       ) : (
-                        <div className="py-2 px-2 text-sm text-muted-foreground text-center">
+                        <div className="py-2 px-2 text-sm text-slate-500 text-center">
                           No department reviewers found
                         </div>
                       )}
@@ -1597,7 +807,7 @@ export default function GovernancePage() {
             {createStep === 2 && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <Label className="text-lg font-medium">Select Controls to Link</Label>
+                  <Label className="text-base font-semibold text-slate-800">Select Controls to Link</Label>
                   <Badge variant="secondary">{selectedControlIds.length} selected</Badge>
                 </div>
 
@@ -1608,13 +818,14 @@ export default function GovernancePage() {
                       placeholder="Search controls..."
                       value={controlSearch}
                       onChange={(e) => setControlSearch(e.target.value)}
+                      className="bg-white"
                     />
                   </div>
                   <Select value={controlDomainFilter} onValueChange={setControlDomainFilter}>
-                    <SelectTrigger className="w-[180px]">
+                    <SelectTrigger className="w-[180px] bg-white">
                       <SelectValue placeholder="Domain" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
                       <SelectItem value="all">All Domains</SelectItem>
                       {domains.map((d) => (
                         <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
@@ -1622,10 +833,10 @@ export default function GovernancePage() {
                     </SelectContent>
                   </Select>
                   <Select value={controlStatusFilter} onValueChange={setControlStatusFilter}>
-                    <SelectTrigger className="w-[180px]">
+                    <SelectTrigger className="w-[180px] bg-white">
                       <SelectValue placeholder="Status" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
                       <SelectItem value="all">All Statuses</SelectItem>
                       <SelectItem value="Compliant">Compliant</SelectItem>
                       <SelectItem value="Non Compliant">Non Compliant</SelectItem>
@@ -1635,21 +846,21 @@ export default function GovernancePage() {
                 </div>
 
                 {/* Controls Table */}
-                <div className="border rounded-lg max-h-[300px] overflow-y-auto">
+                <div className="bg-white rounded-xl border border-slate-200 max-h-[300px] overflow-y-auto">
                   <Table>
                     <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[50px]"></TableHead>
-                        <TableHead>Control Code</TableHead>
-                        <TableHead>Control Name</TableHead>
-                        <TableHead>Domain</TableHead>
-                        <TableHead>Status</TableHead>
+                      <TableRow className="border-b border-slate-100 bg-slate-50/50">
+                        <TableHead className="w-[50px] py-4 pl-4"></TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 py-4">Control Code</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 py-4">Control Name</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 py-4">Domain</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 py-4">Status</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredControls.map((control) => (
-                        <TableRow key={control.id}>
-                          <TableCell>
+                        <TableRow key={control.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                          <TableCell className="py-3 pl-4">
                             <Checkbox
                               checked={selectedControlIds.includes(control.id)}
                               onCheckedChange={(checked) => {
@@ -1661,10 +872,10 @@ export default function GovernancePage() {
                               }}
                             />
                           </TableCell>
-                          <TableCell className="font-medium">{control.controlCode}</TableCell>
-                          <TableCell>{control.name}</TableCell>
-                          <TableCell>{control.domain?.name || "-"}</TableCell>
-                          <TableCell>
+                          <TableCell className="py-3 text-sm font-medium text-slate-900">{control.controlCode}</TableCell>
+                          <TableCell className="py-3 text-sm text-slate-700">{control.name}</TableCell>
+                          <TableCell className="py-3 text-sm text-slate-700">{control.domain?.name || "-"}</TableCell>
+                          <TableCell className="py-3">
                             <Badge className={getStatusBadgeColor(control.status)}>
                               {control.status}
                             </Badge>
@@ -1673,7 +884,7 @@ export default function GovernancePage() {
                       ))}
                       {filteredControls.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                          <TableCell colSpan={5} className="h-24 text-center text-slate-500">
                             No controls found
                           </TableCell>
                         </TableRow>
@@ -1687,42 +898,42 @@ export default function GovernancePage() {
             {/* Step 3: Review */}
             {createStep === 3 && (
               <div className="space-y-6">
-                <div className="text-lg font-medium">Review Information</div>
+                <div className="text-lg font-medium text-slate-800">Review Information</div>
 
-                <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
+                <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
                   <div>
-                    <Label className="text-muted-foreground text-sm">Governance Name</Label>
-                    <p className="font-medium">{newPolicy.name}</p>
+                    <Label className="text-slate-500 text-sm">Governance Name</Label>
+                    <p className="font-medium text-slate-900">{newPolicy.name}</p>
                   </div>
                   <div>
-                    <Label className="text-muted-foreground text-sm">Document Type</Label>
-                    <p className="font-medium">{newPolicy.documentType}</p>
+                    <Label className="text-slate-500 text-sm">Document Type</Label>
+                    <p className="font-medium text-slate-900">{newPolicy.documentType}</p>
                   </div>
                   <div>
-                    <Label className="text-muted-foreground text-sm">Recurrence</Label>
-                    <p className="font-medium">{newPolicy.recurrence}</p>
+                    <Label className="text-slate-500 text-sm">Recurrence</Label>
+                    <p className="font-medium text-slate-900">{newPolicy.recurrence}</p>
                   </div>
                   <div>
-                    <Label className="text-muted-foreground text-sm">Department</Label>
-                    <p className="font-medium">
+                    <Label className="text-slate-500 text-sm">Department</Label>
+                    <p className="font-medium text-slate-900">
                       {getCustomerScopedDepartments().find((d) => d.id === newPolicy.departmentId)?.name || "-"}
                     </p>
                   </div>
                   <div>
-                    <Label className="text-muted-foreground text-sm">Assignee</Label>
-                    <p className="font-medium">
+                    <Label className="text-slate-500 text-sm">Assignee</Label>
+                    <p className="font-medium text-slate-900">
                       {getCustomerScopedUsers().find((u) => u.id === newPolicy.assigneeId)?.fullName || "-"}
                     </p>
                   </div>
                   <div>
-                    <Label className="text-muted-foreground text-sm">Linked Controls</Label>
-                    <p className="font-medium">{selectedControlIds.length} controls</p>
+                    <Label className="text-slate-500 text-sm">Linked Controls</Label>
+                    <p className="font-medium text-slate-900">{selectedControlIds.length} controls</p>
                   </div>
                 </div>
 
                 {selectedControlIds.length > 0 && (
                   <div>
-                    <Label className="text-muted-foreground text-sm mb-2 block">Selected Controls:</Label>
+                    <Label className="text-slate-500 text-sm mb-2 block">Selected Controls:</Label>
                     <div className="flex flex-wrap gap-2">
                       {selectedControlIds.map((id) => {
                         const control = controls.find((c) => c.id === id);
@@ -1739,7 +950,8 @@ export default function GovernancePage() {
             )}
           </div>
 
-          <DialogFooter>
+          {/* Sticky Footer */}
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex-shrink-0">
             <Button variant="outline" onClick={() => {
               if (createStep > 1) setCreateStep(createStep - 1);
               else {
@@ -1758,7 +970,7 @@ export default function GovernancePage() {
             >
               {createStep === 3 ? `Create ${newPolicy.documentType}` : "Next"}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -1800,32 +1012,53 @@ export default function GovernancePage() {
 
       {/* Import Dialog */}
       <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Import {activeDocType}s</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Sticky Header */}
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-lg font-semibold text-slate-800">
+                <FileSpreadsheet className="h-5 w-5 text-green-600" />
+                Import {activeDocType}s
+              </DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Content */}
+          <div className="px-6 py-6">
+            <p className="text-sm text-slate-500 mb-4">
+              Upload a CSV or Excel file to import {activeDocType.toLowerCase()}s.
+            </p>
             <div
-              className={`border-2 border-dashed rounded-lg p-8 text-center ${
-                isDragging ? "border-primary bg-primary/5" : "border-muted-foreground/25"
+              className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+                isDragging ? "border-primary bg-primary-50" : "border-slate-200 hover:border-slate-300"
               }`}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
+              onClick={() => document.getElementById("import-file")?.click()}
             >
               {importFile ? (
-                <div className="space-y-2">
-                  <p className="font-medium">{importFile.name}</p>
-                  <Button variant="outline" size="sm" onClick={() => setImportFile(null)}>
+                <div className="space-y-3">
+                  <FileSpreadsheet className="h-10 w-10 mx-auto text-green-600" />
+                  <p className="font-medium text-slate-800">{importFile.name}</p>
+                  <Button variant="outline" size="sm" onClick={(e) => {
+                    e.stopPropagation();
+                    setImportFile(null);
+                  }}>
                     Remove
                   </Button>
                 </div>
               ) : (
-                <div className="space-y-2">
-                  <Upload className="h-10 w-10 mx-auto text-muted-foreground" />
-                  <p className="text-muted-foreground">
-                    Drag and drop a file here, or click to browse
-                  </p>
+                <div className="space-y-3">
+                  <FileSpreadsheet className="h-10 w-10 mx-auto text-slate-300" />
+                  <div>
+                    <p className="text-sm text-slate-600">
+                      Drag and drop a file here, or click to browse
+                    </p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Supported formats: CSV, XLSX, XLS
+                    </p>
+                  </div>
                   <input
                     type="file"
                     accept=".csv,.xlsx,.xls"
@@ -1838,14 +1071,13 @@ export default function GovernancePage() {
                       }
                     }}
                   />
-                  <Button variant="outline" onClick={() => document.getElementById("import-file")?.click()}>
-                    Browse Files
-                  </Button>
                 </div>
               )}
             </div>
           </div>
-          <DialogFooter>
+
+          {/* Sticky Footer */}
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => {
               setIsImportDialogOpen(false);
               setImportFile(null);
@@ -1855,133 +1087,123 @@ export default function GovernancePage() {
             <Button onClick={handleImport} disabled={!importFile}>
               Import
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
-      {/* Link / Delink Vault Document to Governance Dialog */}
-      <Dialog open={isLinkDialogOpen} onOpenChange={(open) => {
+      {/* Edit Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
         if (!open) {
-          setIsLinkDialogOpen(false);
-          setDocumentToLink(null);
-          setSelectedPolicyIds([]);
+          setEditingPolicy(null);
         }
+        setIsEditDialogOpen(open);
       }}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Link / Delink Governance</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            {documentToLink && (
-              <div className="mb-4 p-3 bg-muted rounded-lg">
-                <p className="text-sm text-muted-foreground">Document:</p>
-                <p className="font-medium">{documentToLink.fileName}</p>
-              </div>
-            )}
-            <p className="text-sm text-muted-foreground mb-4">
-              Check to link, uncheck to delink. Changes are applied on save.
-            </p>
-            <div className="border rounded-lg max-h-[300px] overflow-y-auto">
-              {linkDialogLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[50px]"></TableHead>
-                      <TableHead>Code</TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Type</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {allGovernanceRecords.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                          No governance records found. Please create governance first.
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      allGovernanceRecords.map((policy) => (
-                        <TableRow
-                          key={policy.id}
-                          className="cursor-pointer"
-                          onClick={() => {
-                            setSelectedPolicyIds((prev) =>
-                              prev.includes(policy.id)
-                                ? prev.filter((id) => id !== policy.id)
-                                : [...prev, policy.id]
-                            );
-                          }}
-                        >
-                          <TableCell>
-                            <Checkbox
-                              checked={selectedPolicyIds.includes(policy.id)}
-                              onCheckedChange={(checked) => {
-                                setSelectedPolicyIds((prev) =>
-                                  checked
-                                    ? [...prev, policy.id]
-                                    : prev.filter((id) => id !== policy.id)
-                                );
-                              }}
-                            />
-                          </TableCell>
-                          <TableCell className="font-medium">{policy.code}</TableCell>
-                          <TableCell>{policy.name}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{policy.documentType}</Badge>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              )}
-            </div>
-            {selectedPolicyIds.length > 0 && (
-              <p className="text-sm text-muted-foreground mt-2">
-                {selectedPolicyIds.length} governance record(s) selected
-              </p>
-            )}
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Sticky Header */}
+          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Edit {editingPolicy?.documentType || "Governance"}</DialogTitle>
+            </DialogHeader>
           </div>
-          <DialogFooter>
+
+          {/* Scrollable Content */}
+          <div className="overflow-y-auto flex-1 px-6 py-5">
+            <div className="space-y-4">
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Governance Name *</Label>
+                <Input
+                  value={editData.name}
+                  onChange={(e) => setEditData({ ...editData, name: e.target.value })}
+                  placeholder="Enter governance name"
+                  className="mt-1.5 w-full"
+                />
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Department *</Label>
+                <Select value={editData.departmentId} onValueChange={(v) => setEditData({ ...editData, departmentId: v, assigneeId: "" })}>
+                  <SelectTrigger className="mt-1.5 w-full bg-white">
+                    <SelectValue placeholder="Select department" />
+                  </SelectTrigger>
+                  <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                    {getCustomerScopedDepartments().map((d) => (
+                      <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Document Type *</Label>
+                <Select value={editData.documentType} onValueChange={(v) => setEditData({ ...editData, documentType: v })}>
+                  <SelectTrigger className="mt-1.5 w-full bg-white">
+                    <SelectValue placeholder="Select document type" />
+                  </SelectTrigger>
+                  <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                    {DOCUMENT_TYPES.map((t) => (
+                      <SelectItem key={t} value={t}>{t}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Recurrence *</Label>
+                <Select value={editData.recurrence} onValueChange={(v) => setEditData({ ...editData, recurrence: v })}>
+                  <SelectTrigger className="mt-1.5 w-full bg-white">
+                    <SelectValue placeholder="Select recurrence" />
+                  </SelectTrigger>
+                  <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                    {RECURRENCE_OPTIONS.map((r) => (
+                      <SelectItem key={r} value={r}>{r}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-slate-700">Assignee *</Label>
+                <Select
+                  value={editData.assigneeId}
+                  onValueChange={(v) => setEditData({ ...editData, assigneeId: v })}
+                  disabled={!editData.departmentId}
+                >
+                  <SelectTrigger className="mt-1.5 w-full bg-white">
+                    <SelectValue placeholder={
+                      !editData.departmentId
+                        ? "Select department first"
+                        : "Select assignee"
+                    } />
+                  </SelectTrigger>
+                  <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                    {filteredEditUsers.length > 0 ? (
+                      filteredEditUsers.map((u) => (
+                        <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
+                      ))
+                    ) : (
+                      <div className="py-2 px-2 text-sm text-slate-500 text-center">
+                        No department reviewers found
+                      </div>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          {/* Sticky Footer */}
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex-shrink-0">
             <Button variant="outline" onClick={() => {
-              setIsLinkDialogOpen(false);
-              setDocumentToLink(null);
-              setSelectedPolicyIds([]);
+              setIsEditDialogOpen(false);
+              setEditingPolicy(null);
             }}>
               Cancel
             </Button>
-            <Button onClick={handleSaveLinks}>
+            <Button
+              onClick={handleUpdatePolicy}
+              disabled={!editData.name || !editData.departmentId || !editData.documentType || !editData.recurrence}
+            >
               Save Changes
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
-
-      {/* Delete Vault Document Dialog */}
-      <AlertDialog open={isDeleteVaultDocDialogOpen} onOpenChange={setIsDeleteVaultDocDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Document</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this document?
-              <br /><br />
-              <strong>&quot;{vaultDocToDelete?.fileName}&quot;</strong>
-              <br /><br />
-              This will permanently remove the document from the vault and all linked governance records. This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setVaultDocToDelete(null)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteVaultDoc} className="bg-red-600 hover:bg-red-700">
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import { ChevronLeft, ChevronRight, X, Plus, Search, Trash2, ArrowLeft } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, Plus, Search, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
@@ -447,7 +447,10 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
   if (permissionsLoading || loadingRisk) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="relative h-8 w-8">
+          <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
+          <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+        </div>
       </div>
     );
   }
@@ -459,19 +462,8 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => router.push("/risks/register")}
-          className="h-9 w-9"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div>
-          <div className="text-sm text-muted-foreground mb-1">Risk Management</div>
-          <h1 className="text-2xl font-semibold text-grc-text">Edit Risk - {riskId}</h1>
-        </div>
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold text-slate-800">Edit Risk - {riskId}</h1>
       </div>
 
       <Card>
@@ -494,8 +486,8 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
                         className={cn(
                           "flex h-10 w-10 items-center justify-center rounded-full border-2 transition-colors",
                           currentStep >= step.id
-                            ? "border-grc-primary bg-grc-primary text-white"
-                            : "border-gray-300 bg-white text-gray-500"
+                            ? "border-primary-500 bg-primary-500 text-white"
+                            : "border-slate-300 bg-white text-slate-500"
                         )}
                       >
                         <span className="text-sm font-medium">{step.id}</span>
@@ -506,19 +498,19 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
                           className={cn(
                             "text-sm font-medium",
                             currentStep >= step.id
-                              ? "text-grc-primary"
-                              : "text-gray-500"
+                              ? "text-primary-600"
+                              : "text-slate-500"
                           )}
                         >
                           {step.name}
                         </button>
-                        <p className="text-xs text-muted-foreground">{step.description}</p>
+                        <p className="text-xs text-slate-500">{step.description}</p>
                       </div>
                       {index !== steps.length - 1 && (
                         <div
                           className={cn(
                             "ml-6 h-0.5 flex-1",
-                            currentStep > step.id ? "bg-grc-primary" : "bg-gray-300"
+                            currentStep > step.id ? "bg-primary-500" : "bg-slate-300"
                           )}
                         />
                       )}
@@ -534,7 +526,7 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
             {/* Step 1: Risk Details */}
             {currentStep === 1 && (
               <div className="space-y-6">
-                <h3 className="text-lg font-semibold border-b pb-2">Risk Details</h3>
+                <h3 className="text-lg font-semibold text-slate-800 border-b border-slate-200 pb-2">Risk Details</h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
@@ -543,7 +535,7 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
                       id="riskId"
                       value={riskId}
                       disabled
-                      className="bg-gray-100"
+                      className="bg-slate-100"
                     />
                   </div>
                   <div>
@@ -852,8 +844,8 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
             {/* Step 2: Risk Mapping (Controls) */}
             {currentStep === 2 && (
               <div className="space-y-6">
-                <div className="flex items-center justify-between border-b pb-2">
-                  <h3 className="text-lg font-semibold">Controls</h3>
+                <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                  <h3 className="text-lg font-semibold text-slate-800">Controls</h3>
                   <Button variant="outline" onClick={() => setLinkControlDialogOpen(true)}>
                     <Plus className="h-4 w-4 mr-2" />
                     Link Control
@@ -861,32 +853,33 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
                 </div>
 
                 {formData.selectedControls.length > 0 ? (
-                  <div className="border rounded-lg overflow-hidden">
+                  <div className="border border-slate-200 rounded-lg overflow-hidden">
                     <table className="w-full">
-                      <thead className="bg-muted">
-                        <tr>
-                          <th className="text-left p-3 text-sm font-medium">Control Code</th>
-                          <th className="text-left p-3 text-sm font-medium">Name</th>
-                          <th className="text-left p-3 text-sm font-medium">Domain</th>
-                          <th className="text-right p-3 text-sm font-medium">Action</th>
+                      <thead className="bg-slate-50">
+                        <tr className="h-12">
+                          <th className="text-left px-4 text-sm font-medium text-slate-700">Control Code</th>
+                          <th className="text-left px-4 text-sm font-medium text-slate-700">Name</th>
+                          <th className="text-left px-4 text-sm font-medium text-slate-700">Domain</th>
+                          <th className="text-right px-4 text-sm font-medium text-slate-700">Action</th>
                         </tr>
                       </thead>
-                      <tbody>
+                      <tbody className="divide-y divide-slate-100">
                         {formData.selectedControls.map((controlId) => {
                           const control = controls.find(c => c.id === controlId);
                           if (!control) return null;
                           return (
-                            <tr key={controlId} className="border-t">
-                              <td className="p-3 text-sm">{control.controlCode}</td>
-                              <td className="p-3 text-sm">{control.name}</td>
-                              <td className="p-3 text-sm">{control.domain?.name || "-"}</td>
-                              <td className="p-3 text-right">
+                            <tr key={controlId} className="hover:bg-slate-50 transition-colors">
+                              <td className="px-4 py-3 text-sm font-medium text-primary-600">{control.controlCode}</td>
+                              <td className="px-4 py-3 text-sm text-slate-600">{control.name}</td>
+                              <td className="px-4 py-3 text-sm text-slate-600">{control.domain?.name || "-"}</td>
+                              <td className="px-4 py-3 text-right">
                                 <Button
                                   variant="ghost"
-                                  size="sm"
+                                  size="icon"
                                   onClick={() => removeFromSelection("selectedControls", controlId)}
+                                  className="h-8 w-8 text-slate-400 hover:text-semantic-error"
                                 >
-                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                  <Trash2 className="h-4 w-4" />
                                 </Button>
                               </td>
                             </tr>
@@ -896,7 +889,7 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
                     </table>
                   </div>
                 ) : (
-                  <div className="border rounded-lg p-12 text-center text-muted-foreground">
+                  <div className="border border-slate-200 rounded-lg p-12 text-center text-slate-500">
                     <p>No controls linked yet.</p>
                     <p className="text-sm mt-2">
                       Click &quot;Link Control&quot; to associate controls with this risk.
@@ -906,60 +899,62 @@ export default function EditRiskPage({ params }: { params: Promise<{ id: string 
 
                 {/* Link Control Dialog */}
                 <Dialog open={linkControlDialogOpen} onOpenChange={setLinkControlDialogOpen}>
-                  <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
-                    <DialogHeader>
-                      <DialogTitle>Link Controls</DialogTitle>
+                  <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+                    <DialogHeader className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+                      <DialogTitle className="text-lg font-semibold text-slate-800">Link Controls</DialogTitle>
                     </DialogHeader>
-                    <div className="relative mb-4">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Search controls..."
-                        value={controlSearch}
-                        onChange={(e) => setControlSearch(e.target.value)}
-                        className="pl-9"
-                      />
+                    <div className="flex-1 overflow-hidden flex flex-col px-6 py-4">
+                      <div className="relative mb-4">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                        <Input
+                          placeholder="Search controls..."
+                          value={controlSearch}
+                          onChange={(e) => setControlSearch(e.target.value)}
+                          className="pl-9"
+                        />
+                      </div>
+                      <div className="flex-1 overflow-auto border border-slate-200 rounded-lg">
+                        <table className="w-full">
+                          <thead className="bg-slate-50 sticky top-0">
+                            <tr className="h-12">
+                              <th className="w-10 px-3"></th>
+                              <th className="text-left px-3 text-sm font-medium text-slate-700">Control Code</th>
+                              <th className="text-left px-3 text-sm font-medium text-slate-700">Name</th>
+                              <th className="text-left px-3 text-sm font-medium text-slate-700">Domain</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {controls
+                              .filter(control =>
+                                control.name.toLowerCase().includes(controlSearch.toLowerCase()) ||
+                                control.controlCode.toLowerCase().includes(controlSearch.toLowerCase()) ||
+                                (control.domain?.name || "").toLowerCase().includes(controlSearch.toLowerCase())
+                              )
+                              .map((control) => (
+                                <tr key={control.id} className="hover:bg-slate-50 transition-colors">
+                                  <td className="px-3 py-3">
+                                    <Checkbox
+                                      checked={formData.selectedControls.includes(control.id)}
+                                      onCheckedChange={(checked) => {
+                                        if (checked) {
+                                          addToSelection("selectedControls", control.id);
+                                        } else {
+                                          removeFromSelection("selectedControls", control.id);
+                                        }
+                                      }}
+                                    />
+                                  </td>
+                                  <td className="px-3 py-3 text-sm font-medium text-primary-600">{control.controlCode}</td>
+                                  <td className="px-3 py-3 text-sm text-slate-600">{control.name}</td>
+                                  <td className="px-3 py-3 text-sm text-slate-600">{control.domain?.name || "-"}</td>
+                                </tr>
+                              ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
-                    <div className="flex-1 overflow-auto border rounded-lg">
-                      <table className="w-full">
-                        <thead className="bg-muted sticky top-0">
-                          <tr>
-                            <th className="w-10 p-3"></th>
-                            <th className="text-left p-3 text-sm font-medium">Control Code</th>
-                            <th className="text-left p-3 text-sm font-medium">Name</th>
-                            <th className="text-left p-3 text-sm font-medium">Domain</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {controls
-                            .filter(control =>
-                              control.name.toLowerCase().includes(controlSearch.toLowerCase()) ||
-                              control.controlCode.toLowerCase().includes(controlSearch.toLowerCase()) ||
-                              (control.domain?.name || "").toLowerCase().includes(controlSearch.toLowerCase())
-                            )
-                            .map((control) => (
-                              <tr key={control.id} className="border-t hover:bg-muted/50">
-                                <td className="p-3">
-                                  <Checkbox
-                                    checked={formData.selectedControls.includes(control.id)}
-                                    onCheckedChange={(checked) => {
-                                      if (checked) {
-                                        addToSelection("selectedControls", control.id);
-                                      } else {
-                                        removeFromSelection("selectedControls", control.id);
-                                      }
-                                    }}
-                                  />
-                                </td>
-                                <td className="p-3 text-sm">{control.controlCode}</td>
-                                <td className="p-3 text-sm">{control.name}</td>
-                                <td className="p-3 text-sm">{control.domain?.name || "-"}</td>
-                              </tr>
-                            ))}
-                        </tbody>
-                      </table>
-                    </div>
-                    <div className="flex justify-between items-center mt-4 pt-4 border-t">
-                      <span className="text-sm text-muted-foreground">
+                    <div className="flex-shrink-0 flex justify-between items-center px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+                      <span className="text-sm text-slate-500">
                         {formData.selectedControls.length} control(s) selected
                       </span>
                       <Button onClick={() => setLinkControlDialogOpen(false)}>

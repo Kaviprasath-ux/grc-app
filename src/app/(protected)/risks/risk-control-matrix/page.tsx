@@ -2,8 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -77,7 +75,7 @@ const controlStatusColors: Record<string, string> = {
   Compliant: "bg-green-100 text-green-800",
   "Non Compliant": "bg-red-100 text-red-800",
   "Partial Compliant": "bg-yellow-100 text-yellow-800",
-  "Not Applicable": "bg-gray-100 text-gray-800",
+  "Not Applicable": "bg-slate-100 text-slate-800",
 };
 
 const riskStatusColors: Record<string, string> = {
@@ -299,8 +297,11 @@ export default function RiskControlMatrixPage() {
   // Show loading state while permissions or data is being fetched
   if (permissionsLoading || loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="relative h-8 w-8">
+          <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
+          <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+        </div>
       </div>
     );
   }
@@ -311,15 +312,10 @@ export default function RiskControlMatrixPage() {
   }
 
   return (
-    <div className="space-y-4 p-6">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Risk Control Matrix</h1>
-          <p className="text-gray-600">
-            View and manage risks with their linked controls
-          </p>
-        </div>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-slate-800">Risk Control Matrix</h1>
         <div className="flex gap-2">
           {/* Import from Risks button */}
           {canCreate && (
@@ -347,18 +343,18 @@ export default function RiskControlMatrixPage() {
                   {deleting === "all-entries" ? "Deleting..." : "Delete All"}
                 </Button>
               </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
+              <AlertDialogContent className="p-0 gap-0">
+                <AlertDialogHeader className="px-6 py-5 border-b border-slate-100">
                   <AlertDialogTitle>Delete All Matrix Entries?</AlertDialogTitle>
                   <AlertDialogDescription>
                     This will remove all {entries.length} entry(ies) from the Risk Control Matrix.
                     <strong className="block mt-2 text-green-600">The underlying Risk records will NOT be deleted.</strong>
                   </AlertDialogDescription>
                 </AlertDialogHeader>
-                <AlertDialogFooter>
+                <AlertDialogFooter className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <AlertDialogAction
-                    className="bg-red-500 hover:bg-red-600"
+                    className="bg-red-600 hover:bg-red-700"
                     onClick={handleDeleteAllEntries}
                   >
                     Delete All
@@ -373,42 +369,40 @@ export default function RiskControlMatrixPage() {
       {/* Matrix Entry Accordion List */}
       <div className="space-y-3">
         {entries.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <p className="text-gray-500 mb-4">No entries in the Risk Control Matrix</p>
-              {canCreate && (
-                <Button
-                  variant="outline"
-                  onClick={handleImportRisks}
-                  disabled={importing}
-                >
-                  <RefreshCw className={`h-4 w-4 mr-2 ${importing ? 'animate-spin' : ''}`} />
-                  {importing ? "Importing..." : "Import Risks"}
-                </Button>
-              )}
-            </CardContent>
-          </Card>
+          <div className="bg-white rounded-lg border border-slate-200 py-12 text-center">
+            <p className="text-slate-500 mb-4">No entries in the Risk Control Matrix</p>
+            {canCreate && (
+              <Button
+                variant="outline"
+                onClick={handleImportRisks}
+                disabled={importing}
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${importing ? 'animate-spin' : ''}`} />
+                {importing ? "Importing..." : "Import Risks"}
+              </Button>
+            )}
+          </div>
         ) : (
           entries.map((entry) => (
-            <Card key={entry.id} className="overflow-hidden">
+            <div key={entry.id} className="bg-white rounded-lg border border-slate-200 overflow-hidden">
               {/* Entry Header - Collapsible Trigger */}
               <Collapsible
                 open={expandedEntries.has(entry.id)}
                 onOpenChange={() => toggleEntry(entry.id)}
               >
-                <div className="flex items-center justify-between p-4 border-b">
+                <div className="flex items-center justify-between p-4 border-b border-slate-100">
                   <CollapsibleTrigger asChild>
-                    <div className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 flex-1">
+                    <div className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 flex-1">
                       {expandedEntries.has(entry.id) ? (
-                        <ChevronDown className="h-5 w-5 text-gray-500" />
+                        <ChevronDown className="h-5 w-5 text-slate-500" />
                       ) : (
-                        <ChevronRight className="h-5 w-5 text-gray-500" />
+                        <ChevronRight className="h-5 w-5 text-slate-500" />
                       )}
-                      <span className="font-medium text-blue-600">{entry.riskCode}</span>
+                      <span className="font-medium text-primary-600">{entry.riskCode}</span>
                       <span className="font-medium">{entry.name}</span>
                       {/* Show if original risk still exists */}
                       {!entry.riskId && (
-                        <Badge variant="outline" className="text-gray-500 text-xs">
+                        <Badge variant="outline" className="text-slate-500 text-xs">
                           Original risk deleted
                         </Badge>
                       )}
@@ -427,18 +421,18 @@ export default function RiskControlMatrixPage() {
                           {deleting === `entry-${entry.id}` ? "Deleting..." : "Delete"}
                         </Button>
                       </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
+                      <AlertDialogContent className="p-0 gap-0">
+                        <AlertDialogHeader className="px-6 py-5 border-b border-slate-100">
                           <AlertDialogTitle>Delete Matrix Entry?</AlertDialogTitle>
                           <AlertDialogDescription>
                             This will remove entry {entry.riskCode} ({entry.name}) from the Risk Control Matrix.
                             <strong className="block mt-2 text-green-600">The underlying Risk record will NOT be deleted.</strong>
                           </AlertDialogDescription>
                         </AlertDialogHeader>
-                        <AlertDialogFooter>
+                        <AlertDialogFooter className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
                           <AlertDialogAction
-                            className="bg-red-500 hover:bg-red-600"
+                            className="bg-red-600 hover:bg-red-700"
                             onClick={() => handleDeleteEntry(entry.id)}
                           >
                             Delete
@@ -450,12 +444,12 @@ export default function RiskControlMatrixPage() {
                 </div>
 
                 <CollapsibleContent>
-                  <CardContent className="pt-4">
+                  <div className="p-4">
                     {/* Entry Details Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                       {/* Description */}
                       <div className="md:col-span-2">
-                        <p className="text-sm font-medium text-gray-500 mb-1">Description</p>
+                        <p className="text-sm font-medium text-slate-500 mb-1">Description</p>
                         <p className="text-sm">{entry.description || "-"}</p>
                       </div>
 
@@ -463,46 +457,46 @@ export default function RiskControlMatrixPage() {
                       <div className="md:col-span-2 grid grid-cols-3 gap-4">
                         {/* Inherent Risk Rating */}
                         <div>
-                          <p className="text-sm font-medium text-gray-500 mb-1">Inherent Risk Rating</p>
+                          <p className="text-sm font-medium text-slate-500 mb-1">Inherent Risk Rating</p>
                           {entry.riskRating ? (
-                            <Badge className={riskRatingColors[entry.riskRating] || "bg-gray-100"}>
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${riskRatingColors[entry.riskRating] || "bg-slate-100 text-slate-800"}`}>
                               {entry.riskRating}
-                            </Badge>
+                            </span>
                           ) : (
-                            <span className="text-sm text-gray-400">-</span>
+                            <span className="text-sm text-slate-400">-</span>
                           )}
                         </div>
 
                         {/* Residual Risk Rating */}
                         <div>
-                          <p className="text-sm font-medium text-gray-500 mb-1">Residual Risk Rating</p>
+                          <p className="text-sm font-medium text-slate-500 mb-1">Residual Risk Rating</p>
                           {entry.residualRiskRating ? (
-                            <Badge className={riskRatingColors[entry.residualRiskRating] || "bg-gray-100"}>
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${riskRatingColors[entry.residualRiskRating] || "bg-slate-100 text-slate-800"}`}>
                               {entry.residualRiskRating}
-                            </Badge>
+                            </span>
                           ) : (
-                            <span className="text-sm text-gray-400">-</span>
+                            <span className="text-sm text-slate-400">-</span>
                           )}
                         </div>
 
                         {/* Status */}
                         <div>
-                          <p className="text-sm font-medium text-gray-500 mb-1">Status</p>
-                          <Badge className={riskStatusColors[entry.status] || "bg-gray-100"}>
+                          <p className="text-sm font-medium text-slate-500 mb-1">Status</p>
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${riskStatusColors[entry.status] || "bg-slate-100 text-slate-800"}`}>
                             {entry.status}
-                          </Badge>
+                          </span>
                         </div>
                       </div>
 
                       {/* Risk Owner */}
                       <div className="md:col-span-2">
-                        <p className="text-sm font-medium text-gray-500 mb-1">Risk Owner</p>
+                        <p className="text-sm font-medium text-slate-500 mb-1">Risk Owner</p>
                         <p className="text-sm">{entry.ownerName || "No items found"}</p>
                       </div>
                     </div>
 
                     {/* Linked Controls Section */}
-                    <div className="border-t pt-4">
+                    <div className="border-t border-slate-100 pt-4">
                       <Collapsible
                         open={expandedControls.has(entry.id)}
                         onOpenChange={() => toggleControls(entry.id)}
@@ -511,7 +505,7 @@ export default function RiskControlMatrixPage() {
                           <CollapsibleTrigger asChild>
                             <Button
                               variant="ghost"
-                              className="flex items-center gap-2 p-0 h-auto font-medium text-blue-600 hover:text-blue-800"
+                              className="flex items-center gap-2 p-0 h-auto font-medium text-primary-600 hover:text-primary-700"
                             >
                               <Link2 className="h-4 w-4" />
                               Linked Controls ({entry.linkedControls?.length || 0})
@@ -527,28 +521,29 @@ export default function RiskControlMatrixPage() {
 
                         <CollapsibleContent className="mt-3">
                           {entry.linkedControls && entry.linkedControls.length > 0 ? (
-                            <Table>
-                              <TableHeader>
-                                <TableRow>
-                                  <TableHead>Control Code</TableHead>
-                                  <TableHead>Control Name</TableHead>
-                                  <TableHead>Status</TableHead>
-                                  <TableHead className="w-[100px]">Action</TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {entry.linkedControls.map((lc) => (
-                                  <TableRow key={lc.id}>
-                                    <TableCell className="font-medium text-blue-600">
-                                      {lc.control.controlCode}
-                                    </TableCell>
-                                    <TableCell>{lc.control.name}</TableCell>
-                                    <TableCell>
-                                      <Badge className={controlStatusColors[lc.control.status] || "bg-gray-100"}>
-                                        {lc.control.status}
-                                      </Badge>
-                                    </TableCell>
-                                    <TableCell>
+                            <div className="border border-slate-200 rounded-lg overflow-hidden">
+                              <Table>
+                                <TableHeader>
+                                  <TableRow className="h-12 bg-slate-50 hover:bg-slate-50">
+                                    <TableHead className="text-slate-700 font-medium">Control Code</TableHead>
+                                    <TableHead className="text-slate-700 font-medium">Control Name</TableHead>
+                                    <TableHead className="text-slate-700 font-medium">Status</TableHead>
+                                    <TableHead className="text-slate-700 font-medium w-[100px]">Action</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {entry.linkedControls.map((lc) => (
+                                    <TableRow key={lc.id} className="hover:bg-slate-50">
+                                      <TableCell className="py-3 font-medium text-primary-600">
+                                        {lc.control.controlCode}
+                                      </TableCell>
+                                      <TableCell className="py-3 text-slate-800">{lc.control.name}</TableCell>
+                                      <TableCell className="py-3">
+                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${controlStatusColors[lc.control.status] || "bg-slate-100 text-slate-800"}`}>
+                                          {lc.control.status}
+                                        </span>
+                                      </TableCell>
+                                      <TableCell className="py-3">
                                       {isCustomerAdmin && (
                                         <AlertDialog>
                                           <AlertDialogTrigger asChild>
@@ -561,18 +556,18 @@ export default function RiskControlMatrixPage() {
                                               {deleting === `${entry.id}-${lc.control.id}` ? "Unlinking..." : "Unlink"}
                                             </Button>
                                           </AlertDialogTrigger>
-                                          <AlertDialogContent>
-                                            <AlertDialogHeader>
+                                          <AlertDialogContent className="p-0 gap-0">
+                                            <AlertDialogHeader className="px-6 py-5 border-b border-slate-100">
                                               <AlertDialogTitle>Unlink Control?</AlertDialogTitle>
                                               <AlertDialogDescription>
                                                 This will remove the link between control {lc.control.controlCode} and this matrix entry.
                                                 <strong className="block mt-2 text-green-600">The control itself will NOT be deleted.</strong>
                                               </AlertDialogDescription>
                                             </AlertDialogHeader>
-                                            <AlertDialogFooter>
+                                            <AlertDialogFooter className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
                                               <AlertDialogCancel>Cancel</AlertDialogCancel>
                                               <AlertDialogAction
-                                                className="bg-red-500 hover:bg-red-600"
+                                                className="bg-red-600 hover:bg-red-700"
                                                 onClick={() => handleUnlinkControl(entry.id, lc.control.id)}
                                               >
                                                 Unlink
@@ -582,20 +577,21 @@ export default function RiskControlMatrixPage() {
                                         </AlertDialog>
                                       )}
                                     </TableCell>
-                                  </TableRow>
-                                ))}
-                              </TableBody>
-                            </Table>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </div>
                           ) : (
-                            <p className="text-sm text-gray-500 py-2">No linked controls</p>
+                            <p className="text-sm text-slate-500 py-2">No linked controls</p>
                           )}
                         </CollapsibleContent>
                       </Collapsible>
                     </div>
-                  </CardContent>
+                  </div>
                 </CollapsibleContent>
               </Collapsible>
-            </Card>
+            </div>
           ))
         )}
       </div>
@@ -604,11 +600,11 @@ export default function RiskControlMatrixPage() {
       {hasMore && entries.length > 0 && (
         <div className="flex justify-center pt-4">
           <Button
-            variant="link"
+            variant="outline"
             onClick={handleLoadMore}
-            className="text-blue-600 hover:text-blue-800"
+            className="text-primary-600 hover:text-primary-700 hover:bg-primary-50"
           >
-            Load more...
+            Load More
           </Button>
         </div>
       )}

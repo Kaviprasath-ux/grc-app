@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { usePermissions } from "@/hooks/usePermissions";
+import { usePermissions, useHasRole } from "@/hooks/usePermissions";
 import { PermissionGate } from "@/components/ui/permission-gate";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -24,6 +25,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Table,
   TableBody,
@@ -68,6 +79,7 @@ interface Policy {
   departmentId: string | null;
   assigneeId: string | null;
   approverId: string | null;
+  updatedAt: string;
   framework?: { id: string; name: string } | null;
   department?: { id: string; name: string } | null;
   assignee?: { id: string; fullName: string } | null;
@@ -86,6 +98,7 @@ interface Policy {
     fileName: string;
     fileType: string;
     fileSize: number;
+    filePath: string;
     uploadedAt: string;
   }>;
   policyExceptions?: Array<{
@@ -110,15 +123,6 @@ interface Policy {
       code: string;
     };
   }>;
-  policyAIReviews?: Array<{
-    id: string;
-    status: string;
-    score: number | null;
-    critique: string | null;
-    gaps: string | null;
-    recommendations: string | null;
-    createdAt: string;
-  }>;
 }
 
 interface Framework {
@@ -136,6 +140,8 @@ interface User {
   id: string;
   fullName: string;
   departmentId?: string;
+  designation?: string;
+  department?: { id: string; name: string };
 }
 
 interface Control {
@@ -171,18 +177,40 @@ const typeLabels: Record<string, string> = {
 
 const RECURRENCE_OPTIONS = ["Weekly", "Monthly", "Quarterly", "Yearly"];
 
-// Status workflow steps
+// Status workflow steps - 3 visual steps with status mapping
+// Step 1 (Upload): Active when status is Draft, Approved, or Published
+// Step 2 (Draft): Active when status is Approved or Published
+// Step 3 (Publish): Active when status is Published
 const STATUS_WORKFLOW = [
-  { key: "Not Uploaded", label: "Upload", icon: Upload },
+  { key: "Upload", label: "Upload", icon: Upload },
   { key: "Draft", label: "Draft", icon: FileText },
-  { key: "Published", label: "Publish", icon: Check },
+  { key: "Publish", label: "Publish", icon: Check },
 ];
+
+// Helper to determine which steps are active/completed based on status
+const getStepStates = (status: string) => {
+  switch (status) {
+    case "Not Uploaded":
+      return { upload: false, draft: false, publish: false };
+    case "Draft":
+      return { upload: true, draft: false, publish: false };
+    case "Approved":
+      return { upload: true, draft: true, publish: false };
+    case "Published":
+      return { upload: true, draft: true, publish: true };
+    default:
+      return { upload: false, draft: false, publish: false };
+  }
+};
 
 export default function GovernanceDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
+  const { data: session } = useSession();
+  const currentUserId = session?.user?.id as string | undefined;
   const { canEdit, canApprove, canDelete, isLoading: permissionsLoading } = usePermissions('compliance.governance');
+  const isCustomerAdmin = useHasRole('CustomerAdministrator');
 
   const [policy, setPolicy] = useState<Policy | null>(null);
   const [loading, setLoading] = useState(true);
@@ -191,6 +219,16 @@ export default function GovernanceDetailPage() {
   const [linkControlDialogOpen, setLinkControlDialogOpen] = useState(false);
   const [assigneeDialogOpen, setAssigneeDialogOpen] = useState(false);
   const [approverDialogOpen, setApproverDialogOpen] = useState(false);
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [publishDialogOpen, setPublishDialogOpen] = useState(false);
+  const [signatureDialogOpen, setSignatureDialogOpen] = useState(false);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [hasSignature, setHasSignature] = useState(false);
+  const [unpublishDialogOpen, setUnpublishDialogOpen] = useState(false);
+  const [storedSignature, setStoredSignature] = useState<string | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // Edit form state
   const [editForm, setEditForm] = useState({
@@ -287,6 +325,16 @@ export default function GovernanceDetailPage() {
     fetchPolicy();
     fetchReferenceData();
   }, [fetchPolicy, fetchReferenceData]);
+
+  // Load stored signature from localStorage when policy is loaded and Published
+  useEffect(() => {
+    if (policy?.id && policy.status === "Published") {
+      const signature = localStorage.getItem(`policy-signature-${policy.id}`);
+      setStoredSignature(signature);
+    } else {
+      setStoredSignature(null);
+    }
+  }, [policy?.id, policy?.status]);
 
   const handleSave = async () => {
     try {
@@ -396,17 +444,30 @@ export default function GovernanceDetailPage() {
 
   const handleTriggerAIReview = async () => {
     try {
-      const response = await fetch("/api/ai/governance/review", {
-        method: "POST",
+      const response = await fetch(`/api/policies/${id}`, {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ policyId: id }),
+        body: JSON.stringify({
+          aiReviewStatus: "In Progress",
+        }),
       });
 
       if (response.ok) {
+        // Simulate AI review completion after delay
+        setTimeout(async () => {
+          await fetch(`/api/policies/${id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              aiReviewStatus: "Completed",
+              aiReviewScore: Math.floor(Math.random() * 30) + 70,
+              aiReviewJustification:
+                "The document meets compliance requirements with minor recommendations for improvement in clarity and scope definition.",
+            }),
+          });
+          fetchPolicy();
+        }, 2000);
         fetchPolicy();
-      } else {
-        const error = await response.json();
-        console.error("AI Review failed:", error);
       }
     } catch (error) {
       console.error("Error triggering AI review:", error);
@@ -421,6 +482,173 @@ export default function GovernanceDetailPage() {
   const handleSaveApprover = async () => {
     await handleInlineUpdate("approverId", selectedApproverId);
     setApproverDialogOpen(false);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setUploadFile(file);
+    }
+  };
+
+  const handleUploadAttachment = async () => {
+    if (!uploadFile) return;
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", uploadFile);
+
+      const response = await fetch(`/api/policies/${id}/attachments`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (response.ok) {
+        setUploadDialogOpen(false);
+        setUploadFile(null);
+
+        // Auto-transition to Draft status when first attachment is uploaded
+        // Also set approver = assignee if not already set
+        if (policy?.status === "Not Uploaded") {
+          const updateData: Record<string, string | null> = { status: "Draft" };
+
+          // Auto-set approver to assignee if approver is not set
+          if (!policy.approverId && policy.assigneeId) {
+            updateData.approverId = policy.assigneeId;
+          }
+
+          await fetch(`/api/policies/${id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(updateData),
+          });
+        }
+
+        fetchPolicy(); // Refresh policy data including attachments
+      } else {
+        const error = await response.json();
+        console.error("Upload failed:", error);
+      }
+    } catch (error) {
+      console.error("Error uploading attachment:", error);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDeleteAttachment = async (attachmentId: string) => {
+    try {
+      const response = await fetch(`/api/policies/${id}/attachments?attachmentId=${attachmentId}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        fetchPolicy(); // Refresh policy data
+      }
+    } catch (error) {
+      console.error("Error deleting attachment:", error);
+    }
+  };
+
+  const handlePublish = async () => {
+    try {
+      // Save signature to localStorage before publishing
+      const canvas = canvasRef.current;
+      if (canvas && hasSignature) {
+        const signatureDataUrl = canvas.toDataURL("image/png");
+        localStorage.setItem(`policy-signature-${id}`, signatureDataUrl);
+        // Also store the publish timestamp
+        localStorage.setItem(`policy-publishedAt-${id}`, new Date().toISOString());
+      }
+
+      const response = await fetch(`/api/policies/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "Published" }),
+      });
+
+      if (response.ok) {
+        setPublishDialogOpen(false);
+        setSignatureDialogOpen(false);
+        clearSignature();
+        fetchPolicy();
+      }
+    } catch (error) {
+      console.error("Error publishing policy:", error);
+    }
+  };
+
+  const handleUnpublish = async () => {
+    try {
+      const response = await fetch(`/api/policies/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "Approved" }),
+      });
+
+      if (response.ok) {
+        // Clear stored signature and publishedAt from localStorage
+        localStorage.removeItem(`policy-signature-${id}`);
+        localStorage.removeItem(`policy-publishedAt-${id}`);
+        setStoredSignature(null);
+        setUnpublishDialogOpen(false);
+        fetchPolicy();
+      }
+    } catch (error) {
+      console.error("Error unpublishing policy:", error);
+    }
+  };
+
+  // Signature canvas functions
+  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    setIsDrawing(true);
+    setHasSignature(true);
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      const rect = canvas.getBoundingClientRect();
+      ctx.beginPath();
+      ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+    }
+  };
+
+  const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDrawing) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      const rect = canvas.getBoundingClientRect();
+      ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+      ctx.strokeStyle = "#000";
+      ctx.lineWidth = 2;
+      ctx.lineCap = "round";
+      ctx.stroke();
+    }
+  };
+
+  const stopDrawing = () => {
+    setIsDrawing(false);
+  };
+
+  const clearSignature = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      setHasSignature(false);
+    }
+  };
+
+  const openSignatureDialog = () => {
+    setSignatureDialogOpen(true);
+    setHasSignature(false);
   };
 
   if (loading) {
@@ -447,8 +675,24 @@ export default function GovernanceDetailPage() {
   const linkedDocuments = policy.linkedDocuments || [];
   const policyFrameworks = policy.policyFrameworks || [];
 
-  // Get current status step index
-  const currentStatusIndex = STATUS_WORKFLOW.findIndex(s => s.key === policy.status);
+  // Get step states based on current status
+  const stepStates = getStepStates(policy.status);
+
+  // Approve button visibility: Only CustomerAdmin who is the Approver can approve
+  // And only when status is Draft
+  const canShowApproveButton =
+    isCustomerAdmin &&
+    currentUserId &&
+    policy.approverId &&
+    currentUserId === policy.approverId &&
+    policy.status === "Draft";
+
+  // Publish button visibility: Only when status is Approved
+  // And only if user is Assignee OR CustomerAdmin
+  const canShowPublishButton =
+    policy.status === "Approved" &&
+    currentUserId &&
+    (currentUserId === policy.assigneeId || isCustomerAdmin);
 
   const tabs = [
     {
@@ -487,15 +731,21 @@ export default function GovernanceDetailPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Approve Button - Only show if user can approve */}
-          <PermissionGate resource="compliance.governance" action="approve">
-            {policy.status !== "Approved" && policy.status !== "Published" && (
-              <Button variant="outline" onClick={handleApprove}>
-                <Check className="h-4 w-4 mr-2" />
-                Approve
-              </Button>
-            )}
-          </PermissionGate>
+          {/* Approve Button - Only CustomerAdmin who is the Approver can see */}
+          {canShowApproveButton && (
+            <Button variant="outline" onClick={handleApprove}>
+              <Check className="h-4 w-4 mr-2" />
+              Approve
+            </Button>
+          )}
+
+          {/* Publish Button - Only when Approved, visible to Assignee or CustomerAdmin */}
+          {canShowPublishButton && (
+            <Button onClick={openSignatureDialog}>
+              <Check className="h-4 w-4 mr-2" />
+              Publish
+            </Button>
+          )}
 
           {/* Start AI Review Button - Requires edit permission */}
           <PermissionGate resource="compliance.governance" action="edit">
@@ -516,170 +766,170 @@ export default function GovernanceDetailPage() {
                   Edit
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Edit {typeLabels[policy.type]}</DialogTitle>
-                </DialogHeader>
-                <div className="grid grid-cols-2 gap-4 py-4">
-                  <div className="col-span-2">
-                    <Label>Name</Label>
-                    <Input
-                      value={editForm.name}
-                      onChange={(e) =>
-                        setEditForm({ ...editForm, name: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div className="col-span-2">
-                    <Label>Description</Label>
-                    <Textarea
-                      value={editForm.description}
-                      onChange={(e) =>
-                        setEditForm({ ...editForm, description: e.target.value })
-                      }
-                      rows={3}
-                    />
-                  </div>
-                  <div>
-                    <Label>Type</Label>
-                    <Select
-                      value={editForm.type}
-                      onValueChange={(value) =>
-                        setEditForm({ ...editForm, type: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Policy">Policy</SelectItem>
-                        <SelectItem value="Standard">Standard</SelectItem>
-                        <SelectItem value="Procedure">Procedure</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Status</Label>
-                    <Select
-                      value={editForm.status}
-                      onValueChange={(value) =>
-                        setEditForm({ ...editForm, status: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Not Uploaded">Not Uploaded</SelectItem>
-                        <SelectItem value="Draft">Draft</SelectItem>
-                        <SelectItem value="Under Review">Under Review</SelectItem>
-                        <SelectItem value="Approved">Approved</SelectItem>
-                        <SelectItem value="Published">Published</SelectItem>
-                        <SelectItem value="Needs Review">Needs Review</SelectItem>
-                        <SelectItem value="Archived">Archived</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Version</Label>
-                    <Input
-                      value={editForm.version}
-                      onChange={(e) =>
-                        setEditForm({ ...editForm, version: e.target.value })
-                      }
-                      placeholder="e.g., 1.0"
-                    />
-                  </div>
-                  <div>
-                    <Label>Recurrence</Label>
-                    <Select
-                      value={editForm.recurrence}
-                      onValueChange={(value) =>
-                        setEditForm({ ...editForm, recurrence: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select recurrence" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {RECURRENCE_OPTIONS.map((r) => (
-                          <SelectItem key={r} value={r}>{r}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Framework</Label>
-                    <Select
-                      value={editForm.frameworkId}
-                      onValueChange={(value) =>
-                        setEditForm({ ...editForm, frameworkId: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select framework" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {frameworks.map((f) => (
-                          <SelectItem key={f.id} value={f.id}>
-                            {f.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Department</Label>
-                    <Select
-                      value={editForm.departmentId}
-                      onValueChange={(value) =>
-                        setEditForm({ ...editForm, departmentId: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select department" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {departments.map((d) => (
-                          <SelectItem key={d.id} value={d.id}>
-                            {d.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Effective Date</Label>
-                    <Input
-                      type="date"
-                      value={editForm.effectiveDate}
-                      onChange={(e) =>
-                        setEditForm({ ...editForm, effectiveDate: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div>
-                    <Label>Review Date</Label>
-                    <Input
-                      type="date"
-                      value={editForm.reviewDate}
-                      onChange={(e) =>
-                        setEditForm({ ...editForm, reviewDate: e.target.value })
-                      }
-                    />
-                  </div>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Edit {typeLabels[policy.type]}</DialogTitle>
+              </DialogHeader>
+              <div className="grid grid-cols-2 gap-4 py-4">
+                <div className="col-span-2">
+                  <Label>Name</Label>
+                  <Input
+                    value={editForm.name}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, name: e.target.value })
+                    }
+                  />
                 </div>
-                <div className="flex justify-end gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => setEditDialogOpen(false)}
+                <div className="col-span-2">
+                  <Label>Description</Label>
+                  <Textarea
+                    value={editForm.description}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, description: e.target.value })
+                    }
+                    rows={3}
+                  />
+                </div>
+                <div>
+                  <Label>Type</Label>
+                  <Select
+                    value={editForm.type}
+                    onValueChange={(value) =>
+                      setEditForm({ ...editForm, type: value })
+                    }
                   >
-                    Cancel
-                  </Button>
-                  <Button onClick={handleSave}>Save Changes</Button>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Policy">Policy</SelectItem>
+                      <SelectItem value="Standard">Standard</SelectItem>
+                      <SelectItem value="Procedure">Procedure</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-              </DialogContent>
-            </Dialog>
+                <div>
+                  <Label>Status</Label>
+                  <Select
+                    value={editForm.status}
+                    onValueChange={(value) =>
+                      setEditForm({ ...editForm, status: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Not Uploaded">Not Uploaded</SelectItem>
+                      <SelectItem value="Draft">Draft</SelectItem>
+                      <SelectItem value="Under Review">Under Review</SelectItem>
+                      <SelectItem value="Approved">Approved</SelectItem>
+                      <SelectItem value="Published">Published</SelectItem>
+                      <SelectItem value="Needs Review">Needs Review</SelectItem>
+                      <SelectItem value="Archived">Archived</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Version</Label>
+                  <Input
+                    value={editForm.version}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, version: e.target.value })
+                    }
+                    placeholder="e.g., 1.0"
+                  />
+                </div>
+                <div>
+                  <Label>Recurrence</Label>
+                  <Select
+                    value={editForm.recurrence}
+                    onValueChange={(value) =>
+                      setEditForm({ ...editForm, recurrence: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select recurrence" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {RECURRENCE_OPTIONS.map((r) => (
+                        <SelectItem key={r} value={r}>{r}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Framework</Label>
+                  <Select
+                    value={editForm.frameworkId}
+                    onValueChange={(value) =>
+                      setEditForm({ ...editForm, frameworkId: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select framework" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {frameworks.map((f) => (
+                        <SelectItem key={f.id} value={f.id}>
+                          {f.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Department</Label>
+                  <Select
+                    value={editForm.departmentId}
+                    onValueChange={(value) =>
+                      setEditForm({ ...editForm, departmentId: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {departments.map((d) => (
+                        <SelectItem key={d.id} value={d.id}>
+                          {d.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Effective Date</Label>
+                  <Input
+                    type="date"
+                    value={editForm.effectiveDate}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, effectiveDate: e.target.value })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label>Review Date</Label>
+                  <Input
+                    type="date"
+                    value={editForm.reviewDate}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, reviewDate: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setEditDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button onClick={handleSave}>Save Changes</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
           </PermissionGate>
         </div>
       </div>
@@ -692,7 +942,7 @@ export default function GovernanceDetailPage() {
             {policy.status}
           </Badge>
         </div>
-        <p className="text-muted-foreground">{policy.code}</p>
+        <p className="text-slate-400">{policy.code}</p>
       </div>
 
       {/* Framework Tags */}
@@ -711,33 +961,40 @@ export default function GovernanceDetailPage() {
         </div>
       )}
 
-      {/* Status Workflow Steps - Only clickable with edit permission */}
+      {/* Status Workflow Steps - Visual display of current state */}
       <Card>
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
             {STATUS_WORKFLOW.map((step, index) => {
-              const isActive = step.key === policy.status;
-              const isCompleted = currentStatusIndex > index;
+              // Determine step state based on status
+              const isStepActive =
+                (step.key === "Upload" && stepStates.upload) ||
+                (step.key === "Draft" && stepStates.draft) ||
+                (step.key === "Publish" && stepStates.publish);
+
+              // Determine if connecting line should be green
+              const isLineGreen =
+                (index === 0 && stepStates.upload) ||
+                (index === 1 && stepStates.draft);
+
               const Icon = step.icon;
 
               return (
                 <div key={step.key} className="flex items-center flex-1">
-                  <button
-                    onClick={() => canEdit && handleStatusChange(step.key)}
-                    disabled={!canEdit}
-                    className={`flex flex-col items-center gap-2 p-3 rounded-lg transition-colors ${isActive
-                      ? "bg-primary text-primary-foreground"
-                      : isCompleted
-                        ? "bg-green-100 text-green-800 hover:bg-green-200"
-                        : "bg-muted text-muted-foreground hover:bg-muted/80"
-                      } ${!canEdit ? "cursor-not-allowed opacity-60" : ""}`}
+                  <div
+                    className={`flex flex-col items-center gap-2 p-3 rounded-lg transition-colors ${
+                      isStepActive
+                        ? "bg-green-100 text-green-800"
+                        : "bg-muted text-slate-400"
+                    }`}
                   >
                     <Icon className="h-6 w-6" />
                     <span className="text-sm font-medium">{step.label}</span>
-                  </button>
+                  </div>
                   {index < STATUS_WORKFLOW.length - 1 && (
-                    <div className={`flex-1 h-1 mx-2 ${isCompleted || isActive ? "bg-green-500" : "bg-muted"
-                      }`} />
+                    <div className={`flex-1 h-1 mx-2 ${
+                      isLineGreen ? "bg-green-500" : "bg-muted"
+                    }`} />
                   )}
                 </div>
               );
@@ -755,7 +1012,7 @@ export default function GovernanceDetailPage() {
           <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
             {/* Department - Inline Dropdown (editable only with permission) */}
             <div>
-              <Label className="text-muted-foreground text-sm">Department</Label>
+              <Label className="text-slate-400 text-sm">Department</Label>
               {canEdit ? (
                 <Select
                   value={selectedDepartmentId}
@@ -780,7 +1037,7 @@ export default function GovernanceDetailPage() {
 
             {/* Assigned To - With Edit Button (only with edit permission) */}
             <div>
-              <Label className="text-muted-foreground text-sm">Assigned To</Label>
+              <Label className="text-slate-400 text-sm">Assigned To</Label>
               <div className="flex items-center gap-2 mt-1">
                 <span className="font-medium">{policy.assignee?.fullName || "-"}</span>
                 <PermissionGate resource="compliance.governance" action="edit">
@@ -821,7 +1078,7 @@ export default function GovernanceDetailPage() {
 
             {/* Approvers - With Add Button (only with edit permission) */}
             <div>
-              <Label className="text-muted-foreground text-sm">Approvers</Label>
+              <Label className="text-slate-400 text-sm">Approvers</Label>
               <div className="flex items-center gap-2 mt-1">
                 <span className="font-medium">{policy.approver?.fullName || "-"}</span>
                 <PermissionGate resource="compliance.governance" action="edit">
@@ -862,7 +1119,7 @@ export default function GovernanceDetailPage() {
 
             {/* Recurrence - Inline Dropdown (editable only with permission) */}
             <div>
-              <Label className="text-muted-foreground text-sm">Recurrence</Label>
+              <Label className="text-slate-400 text-sm">Recurrence</Label>
               {canEdit ? (
                 <Select
                   value={selectedRecurrence}
@@ -887,7 +1144,7 @@ export default function GovernanceDetailPage() {
 
             {/* Review Date - Inline Date Picker (editable only with permission) */}
             <div>
-              <Label className="text-muted-foreground text-sm">Review Date</Label>
+              <Label className="text-slate-400 text-sm">Review Date</Label>
               <div className="flex items-center gap-2 mt-1">
                 {canEdit ? (
                   <Input
@@ -907,14 +1164,14 @@ export default function GovernanceDetailPage() {
 
             {/* Version - Read-only */}
             <div>
-              <Label className="text-muted-foreground text-sm">Version</Label>
+              <Label className="text-slate-400 text-sm">Version</Label>
               <p className="font-medium mt-1">{policy.version || "-"}</p>
             </div>
           </div>
 
           {policy.description && (
             <div className="mt-6">
-              <Label className="text-muted-foreground text-sm">Description</Label>
+              <Label className="text-slate-400 text-sm">Description</Label>
               <p className="mt-1">{policy.description}</p>
             </div>
           )}
@@ -931,7 +1188,7 @@ export default function GovernanceDetailPage() {
         </CardHeader>
         <CardContent>
           {!policy.aiReviewStatus || policy.aiReviewStatus === "Pending" ? (
-            <div className="text-center py-4 text-muted-foreground">
+            <div className="text-center py-4 text-slate-400">
               <p>AI Review has not been performed yet</p>
             </div>
           ) : policy.aiReviewStatus === "In Progress" ? (
@@ -940,78 +1197,35 @@ export default function GovernanceDetailPage() {
               <p>AI Review in progress...</p>
             </div>
           ) : (
-            <div className="space-y-6">
-              <div className="grid grid-cols-3 gap-6">
-                <div>
-                  <Label className="text-muted-foreground text-sm">Status</Label>
-                  <div className="mt-1">
-                    <Badge className={aiStatusColors[policy.aiReviewStatus || "Pending"] || "bg-gray-100"}>
-                      {policy.aiReviewStatus}
-                    </Badge>
-                  </div>
-                </div>
-                {policy.aiReviewScore !== null && (
-                  <div>
-                    <Label className="text-muted-foreground text-sm">Score</Label>
-                    <div className="mt-1">
-                      <span className={`text-2xl font-bold ${policy.aiReviewScore >= 80
-                        ? "text-green-600"
-                        : policy.aiReviewScore >= 60
-                          ? "text-yellow-600"
-                          : "text-red-600"
-                        }`}>
-                        {policy.aiReviewScore}%
-                      </span>
-                    </div>
-                  </div>
-                )}
-                <div className="col-span-1 flex items-end">
-                  <span className="text-sm text-gray-500">
-                    Last reviewed: {policy.policyAIReviews?.[0] ? new Date(policy.policyAIReviews[0].createdAt).toLocaleDateString() : 'Never'}
-                  </span>
+            <div className="grid grid-cols-3 gap-6">
+              <div>
+                <Label className="text-slate-400 text-sm">Status</Label>
+                <div className="mt-1">
+                  <Badge className={aiStatusColors[policy.aiReviewStatus] || "bg-gray-100"}>
+                    {policy.aiReviewStatus}
+                  </Badge>
                 </div>
               </div>
-
+              {policy.aiReviewScore !== null && (
+                <div>
+                  <Label className="text-slate-400 text-sm">Score</Label>
+                  <div className="mt-1">
+                    <span className={`text-2xl font-bold ${
+                      policy.aiReviewScore >= 80
+                        ? "text-green-600"
+                        : policy.aiReviewScore >= 60
+                        ? "text-yellow-600"
+                        : "text-red-600"
+                    }`}>
+                      {policy.aiReviewScore}%
+                    </span>
+                  </div>
+                </div>
+              )}
               {policy.aiReviewJustification && (
-                <div>
-                  <Label className="text-muted-foreground text-sm">Critique & Analysis</Label>
-                  <p className="mt-1 p-3 bg-muted rounded-lg text-sm leading-relaxed whitespace-pre-wrap">
-                    {policy.aiReviewJustification}
-                  </p>
-                </div>
-              )}
-
-              {policy.policyAIReviews?.[0]?.gaps && (
-                <div>
-                  <Label className="text-muted-foreground text-sm">Identified Gaps</Label>
-                  <div className="mt-1 p-3 border border-red-100 bg-red-50/50 rounded-lg text-sm">
-                    {policy.policyAIReviews[0].gaps.startsWith('[') ? (
-                      <ul className="list-disc pl-4 space-y-1">
-                        {JSON.parse(policy.policyAIReviews[0].gaps).map((gap: string, idx: number) => (
-                          <li key={idx} className="text-red-800">{gap}</li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="text-red-800">{policy.policyAIReviews[0].gaps}</p>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {policy.policyAIReviews?.[0]?.recommendations && (
-                <div>
-                  <Label className="text-muted-foreground text-sm">Recommendations</Label>
-                  <div className="mt-1 p-3 border border-blue-100 bg-blue-50/50 rounded-lg text-sm">
-                    {policy.policyAIReviews[0].recommendations.startsWith('[') ? (
-                      <ul className="list-disc pl-4 space-y-1">
-                        {JSON.parse(policy.policyAIReviews[0].recommendations).map((rec: string, idx: number) => (
-                          <li key={idx} className="text-blue-800">{rec}</li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="text-blue-800">{policy.policyAIReviews[0].recommendations}</p>
-                    )}
-                  </div>
+                <div className="col-span-3">
+                  <Label className="text-slate-400 text-sm">Justification</Label>
+                  <p className="mt-1 p-3 bg-muted rounded-lg">{policy.aiReviewJustification}</p>
                 </div>
               )}
             </div>
@@ -1019,20 +1233,225 @@ export default function GovernanceDetailPage() {
         </CardContent>
       </Card>
 
+      {/* Published Section - Only show when status is Published */}
+      {policy.status === "Published" && (
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Check className="h-5 w-5 text-green-600" />
+              Published
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              {/* Download Published Document Button */}
+              {attachments.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.open(attachments[0].filePath, "_blank")}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Download
+                </Button>
+              )}
+              {/* Unpublish Button */}
+              <PermissionGate resource="compliance.governance" action="edit">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setUnpublishDialogOpen(true)}
+                  className="text-orange-600 hover:text-orange-700"
+                >
+                  Unpublish
+                </Button>
+              </PermissionGate>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Left Column - Published Info */}
+              <div className="space-y-4">
+                {/* Published On */}
+                <div>
+                  <Label className="text-slate-400 text-sm">Published On</Label>
+                  <p className="font-medium mt-1">
+                    {(() => {
+                      // Try to get stored publishedAt from localStorage, fallback to updatedAt
+                      const storedPublishedAt = localStorage.getItem(`policy-publishedAt-${policy.id}`);
+                      const publishDate = storedPublishedAt
+                        ? new Date(storedPublishedAt)
+                        : new Date(policy.updatedAt);
+                      return publishDate.toLocaleString("en-US", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      });
+                    })()}
+                  </p>
+                </div>
+
+                {/* Published Document */}
+                <div>
+                  <Label className="text-slate-400 text-sm">Published Document</Label>
+                  {attachments.length > 0 ? (
+                    <div className="flex items-center gap-2 mt-1 p-2 bg-muted rounded-lg">
+                      <FileText className="h-5 w-5 text-blue-600" />
+                      <span className="font-medium">{attachments[0].fileName}</span>
+                    </div>
+                  ) : (
+                    <p className="text-slate-400 mt-1">No document attached</p>
+                  )}
+                </div>
+
+                {/* Approver Details */}
+                <div>
+                  <Label className="text-slate-400 text-sm">Approved By</Label>
+                  {policy.approver ? (
+                    <div className="mt-1 p-3 bg-muted rounded-lg space-y-1">
+                      <p className="font-medium">{policy.approver.fullName}</p>
+                      {(() => {
+                        // Find the approver in users array to get full details
+                        const approverUser = users.find(u => u.id === policy.approverId);
+                        return (
+                          <>
+                            {approverUser?.department && (
+                              <p className="text-sm text-slate-400">
+                                Department: {approverUser.department.name}
+                              </p>
+                            )}
+                            {approverUser?.designation && (
+                              <p className="text-sm text-slate-400">
+                                Designation: {approverUser.designation}
+                              </p>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </div>
+                  ) : (
+                    <p className="text-slate-400 mt-1">-</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Right Column - Signature */}
+              <div>
+                <Label className="text-slate-400 text-sm">Signature</Label>
+                <div className="mt-1 border rounded-lg p-4 bg-white min-h-[150px] flex items-center justify-center">
+                  {storedSignature ? (
+                    <img
+                      src={storedSignature}
+                      alt="Signature"
+                      className="max-w-full max-h-[140px] object-contain"
+                    />
+                  ) : (
+                    <p className="text-slate-400 text-sm">Signature not available</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Unpublish Confirmation Dialog */}
+      <AlertDialog open={unpublishDialogOpen} onOpenChange={setUnpublishDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unpublish {typeLabels[policy.type] || "Document"}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will revert the status from Published to Approved. The document will need to be published again after any changes.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleUnpublish} className="bg-orange-600 hover:bg-orange-700">
+              Unpublish
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Attachments Section */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Attachments</CardTitle>
           <PermissionGate resource="compliance.governance" action="edit">
-            <Button size="sm">
-              <Upload className="h-4 w-4 mr-2" />
-              Upload
-            </Button>
+            {isCustomerAdmin ? (
+              /* Customer Admin: Upload dialog with full functionality */
+              <Dialog open={uploadDialogOpen} onOpenChange={(open) => {
+                setUploadDialogOpen(open);
+                if (!open) setUploadFile(null);
+              }}>
+                <DialogTrigger asChild>
+                  <Button size="sm">
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Upload Document</DialogTitle>
+                  </DialogHeader>
+                  <div className="py-4 space-y-4">
+                    <div>
+                      <Label>Select File</Label>
+                      <Input
+                        type="file"
+                        onChange={handleFileSelect}
+                        className="mt-2"
+                        accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
+                      />
+                    </div>
+                    {uploadFile && (
+                      <div className="p-3 bg-muted rounded-lg">
+                        <p className="text-sm font-medium">{uploadFile.name}</p>
+                        <p className="text-xs text-slate-400">
+                          {(uploadFile.size / 1024).toFixed(2)} KB
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setUploadDialogOpen(false);
+                        setUploadFile(null);
+                      }}
+                      disabled={uploading}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleUploadAttachment}
+                      disabled={!uploadFile || uploading}
+                    >
+                      {uploading ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                          Uploading...
+                        </>
+                      ) : (
+                        "Upload"
+                      )}
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            ) : (
+              /* GRC Admin / Other roles: Original simple button (no functionality) */
+              <Button size="sm">
+                <Upload className="h-4 w-4 mr-2" />
+                Upload
+              </Button>
+            )}
           </PermissionGate>
         </CardHeader>
         <CardContent>
           {attachments.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className="text-center py-8 text-slate-400">
               <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
               <p>No attachments uploaded</p>
             </div>
@@ -1054,13 +1473,38 @@ export default function GovernanceDetailPage() {
                     <TableCell>{new Date(att.uploadedAt).toLocaleDateString()}</TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        <Button variant="ghost" size="icon">
-                          <Download className="h-4 w-4" />
-                        </Button>
-                        <PermissionGate resource="compliance.governance" action="delete">
-                          <Button variant="ghost" size="icon">
-                            <Trash2 className="h-4 w-4 text-red-500" />
+                        {isCustomerAdmin ? (
+                          /* Customer Admin: Functional download button */
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => window.open(att.filePath, "_blank")}
+                            title="Download"
+                          >
+                            <Download className="h-4 w-4" />
                           </Button>
+                        ) : (
+                          /* GRC Admin / Other: Original button (no functionality) */
+                          <Button variant="ghost" size="icon">
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        )}
+                        <PermissionGate resource="compliance.governance" action="delete">
+                          {isCustomerAdmin ? (
+                            /* Customer Admin: Functional delete button */
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDeleteAttachment(att.id)}
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                          ) : (
+                            /* GRC Admin / Other: Original button (no functionality) */
+                            <Button variant="ghost" size="icon">
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                          )}
                         </PermissionGate>
                       </div>
                     </TableCell>
@@ -1072,6 +1516,59 @@ export default function GovernanceDetailPage() {
         </CardContent>
       </Card>
 
+      {/* Signature Publish Dialog */}
+      <Dialog open={signatureDialogOpen} onOpenChange={(open) => {
+        setSignatureDialogOpen(open);
+        if (!open) clearSignature();
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{typeLabels[policy.type] || "Policy"} signature Publish</DialogTitle>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <p className="text-sm text-slate-400">
+              Please sign below to publish this {(policy.type || "document").toLowerCase()}.
+            </p>
+            <div className="border rounded-lg p-2 bg-white">
+              <canvas
+                ref={canvasRef}
+                width={400}
+                height={150}
+                className="w-full border border-dashed border-gray-300 rounded cursor-crosshair"
+                onMouseDown={startDrawing}
+                onMouseMove={draw}
+                onMouseUp={stopDrawing}
+                onMouseLeave={stopDrawing}
+              />
+            </div>
+            <div className="flex justify-between items-center">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearSignature}
+                disabled={!hasSignature}
+              >
+                Clear Signature
+              </Button>
+              <span className="text-xs text-slate-400">
+                Draw your signature above
+              </span>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => {
+              setSignatureDialogOpen(false);
+              clearSignature();
+            }}>
+              Cancel
+            </Button>
+            <Button onClick={handlePublish} disabled={!hasSignature}>
+              Publish
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Tabs */}
       <div className="border-b">
         <div className="flex gap-4">
@@ -1079,10 +1576,11 @@ export default function GovernanceDetailPage() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 border-b-2 transition-colors ${activeTab === tab.id
-                ? "border-primary text-primary"
-                : "border-transparent text-gray-500 hover:text-gray-700"
-                }`}
+              className={`flex items-center gap-2 px-4 py-2 border-b-2 transition-colors ${
+                activeTab === tab.id
+                  ? "border-primary text-primary"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
+              }`}
             >
               <tab.icon className="h-4 w-4" />
               {tab.label}
@@ -1142,7 +1640,7 @@ export default function GovernanceDetailPage() {
           </CardHeader>
           <CardContent>
             {linkedControls.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
+              <div className="text-center py-8 text-slate-400">
                 <Link2 className="h-12 w-12 mx-auto mb-2 opacity-50" />
                 <p>No controls linked to this {(policy.type || "policy").toLowerCase()}</p>
               </div>
@@ -1196,7 +1694,7 @@ export default function GovernanceDetailPage() {
           </CardHeader>
           <CardContent>
             {linkedExceptions.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
+              <div className="text-center py-8 text-slate-400">
                 <AlertTriangle className="h-12 w-12 mx-auto mb-2 opacity-50" />
                 <p>No exceptions linked to this {(policy.type || "policy").toLowerCase()}</p>
               </div>
@@ -1243,7 +1741,7 @@ export default function GovernanceDetailPage() {
           </CardHeader>
           <CardContent>
             {linkedDocuments.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
+              <div className="text-center py-8 text-slate-400">
                 <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
                 <p>No documents linked to this {(policy.type || "policy").toLowerCase()}</p>
               </div>

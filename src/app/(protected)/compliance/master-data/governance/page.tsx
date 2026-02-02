@@ -3,8 +3,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -39,7 +37,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft, Plus, Pencil, Trash2, Download, Upload, Search } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, Download, Upload, Search, Check, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Department {
@@ -96,12 +94,12 @@ interface Policy {
 }
 
 const statusColors: Record<string, string> = {
-  "Published": "bg-green-100 text-green-800",
-  "Draft": "bg-yellow-100 text-yellow-800",
-  "Approved": "bg-blue-100 text-blue-800",
-  "Needs Review": "bg-orange-100 text-orange-800",
-  "Not Uploaded": "bg-gray-100 text-gray-800",
-  "Pending Approval": "bg-purple-100 text-purple-800",
+  "Published": "bg-success-light text-success-dark",
+  "Draft": "bg-warning-light text-warning-dark",
+  "Approved": "bg-info-light text-info-dark",
+  "Needs Review": "bg-warning-light text-warning-dark",
+  "Not Uploaded": "bg-slate-100 text-slate-600",
+  "Pending Approval": "bg-primary-100 text-primary-700",
 };
 
 const documentTypes = ["Policy", "Standard", "Procedure"];
@@ -510,168 +508,172 @@ export default function GovernanceMasterDataPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="relative h-10 w-10">
+          <div className="absolute inset-0 rounded-full border-4 border-primary/30"></div>
+          <div className="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.push("/compliance/master-data")}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold">Governance</h1>
-            <p className="text-gray-600">Manage policies, standards, and procedures</p>
-          </div>
+      <div className="flex items-center gap-3">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => router.push("/compliance/master-data")}
+          className="h-8 w-8 text-slate-400 hover:text-slate-600"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <h1 className="text-2xl font-bold text-slate-800">Governance</h1>
+      </div>
+
+      {/* Search and Actions - same row */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input
+            placeholder="Search governance documents..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 w-[300px] bg-white border-slate-200"
+          />
         </div>
-        <div className="flex gap-2">
-          <Button onClick={() => setCreateDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Policies
-          </Button>
-          <Button variant="outline" onClick={() => setImportDialogOpen(true)}>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
             <Upload className="h-4 w-4 mr-2" />
             Import
           </Button>
-          <Button variant="outline" onClick={handleExport}>
+          <Button variant="outline" size="sm" onClick={handleExport}>
             <Download className="h-4 w-4 mr-2" />
             Export
+          </Button>
+          <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            New Policies
           </Button>
         </div>
       </div>
 
-      {/* Search and Table */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search governance documents..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
+      {/* Table */}
+      <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow className="border-b border-slate-100 bg-slate-50/50">
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4">Policy Name</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">Status</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">Assignee</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">Approver</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">Department</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">Requirement</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">Recurrence</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">Code</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">Type</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[100px]">Action</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredPolicies.length === 0 ? (
               <TableRow>
-                <TableHead>Policy Name</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Assignee</TableHead>
-                <TableHead>Approver</TableHead>
-                <TableHead>Department Name</TableHead>
-                <TableHead>Policy Requirement</TableHead>
-                <TableHead>Recurrence</TableHead>
-                <TableHead>Entities</TableHead>
-                <TableHead>Policy Code</TableHead>
-                <TableHead>Document Type</TableHead>
-                <TableHead className="w-[100px]">Action</TableHead>
+                <TableCell colSpan={10} className="text-center py-12">
+                  <p className="text-slate-500">No governance documents found</p>
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredPolicies.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={11} className="text-center py-8">
-                    <p className="text-gray-500">No governance documents found</p>
+            ) : (
+              filteredPolicies.map((policy) => (
+                <TableRow key={policy.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                  <TableCell className="py-3 text-sm font-medium text-slate-800 pl-4">{policy.name}</TableCell>
+                  <TableCell className="py-3 text-sm">
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[policy.status] || "bg-slate-100 text-slate-600"}`}>
+                      {policy.status}
+                    </span>
+                  </TableCell>
+                  <TableCell className="py-3 text-sm text-slate-600">{policy.assignee?.fullName || "-"}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-600">{policy.approver?.fullName || "-"}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-600">{policy.department?.name || "-"}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-600 max-w-[150px] truncate">
+                    {policy.content || "-"}
+                  </TableCell>
+                  <TableCell className="py-3 text-sm text-slate-600">{policy.recurrence || "-"}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-600">{policy.code}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-600">{policy.documentType}</TableCell>
+                  <TableCell className="py-3 text-sm pr-4">
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                        onClick={() => openEditDialog(policy)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+                        onClick={() => openDeleteDialog(policy)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
-              ) : (
-                filteredPolicies.map((policy) => (
-                  <TableRow key={policy.id}>
-                    <TableCell className="font-medium">{policy.name}</TableCell>
-                    <TableCell>
-                      <Badge className={statusColors[policy.status] || "bg-gray-100"}>
-                        {policy.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{policy.assignee?.fullName || "-"}</TableCell>
-                    <TableCell>{policy.approver?.fullName || "-"}</TableCell>
-                    <TableCell>{policy.department?.name || "-"}</TableCell>
-                    <TableCell className="max-w-[150px] truncate">
-                      {policy.content || "-"}
-                    </TableCell>
-                    <TableCell>{policy.recurrence || "-"}</TableCell>
-                    <TableCell>-</TableCell>
-                    <TableCell>{policy.code}</TableCell>
-                    <TableCell>{policy.documentType}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => openEditDialog(policy)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => openDeleteDialog(policy)}
-                        >
-                          <Trash2 className="h-4 w-4 text-red-500" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-          <div className="mt-4 flex items-center justify-between">
-            <div className="text-sm text-gray-500">
-              Showing {filteredPolicies.length} of {total} documents
-            </div>
-            {totalPages > 1 && (
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(1)}
-                  disabled={page === 1}
-                >
-                  First
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(page - 1)}
-                  disabled={page === 1}
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(page + 1)}
-                  disabled={page >= totalPages}
-                >
-                  Next
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(totalPages)}
-                  disabled={page >= totalPages}
-                >
-                  Last
-                </Button>
-              </div>
+              ))
             )}
+          </TableBody>
+        </Table>
+
+        {/* Pagination */}
+        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
+          <p className="text-sm text-slate-500">
+            Showing {filteredPolicies.length} of {total}
+          </p>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setPage(1)}
+              disabled={page === 1}
+            >
+              <ChevronsLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-sm text-slate-600 px-2">
+              Page {page} of {totalPages || 1}
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setPage(totalPages)}
+              disabled={page >= totalPages}
+            >
+              <ChevronsRight className="h-4 w-4" />
+            </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Create Dialog - 3-Step Wizard */}
       <Dialog open={createDialogOpen} onOpenChange={(open) => {
@@ -680,393 +682,388 @@ export default function GovernanceMasterDataPage() {
           resetForm();
         }
       }}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>New Policies</DialogTitle>
-          </DialogHeader>
-
-          {/* Step Indicators */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-2">
-              <Button
-                variant={wizardStep >= 1 ? "default" : "outline"}
-                size="sm"
-                className={`rounded-full w-8 h-8 p-0 ${wizardStep >= 1 ? "bg-blue-600" : ""}`}
-                onClick={() => setWizardStep(1)}
-              >
-                {wizardStep > 1 ? "✓" : "1"}
-              </Button>
-              <span className={`text-sm ${wizardStep === 1 ? "font-medium" : "text-gray-500"}`}>
-                Policy Information
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant={wizardStep >= 2 ? "default" : "outline"}
-                size="sm"
-                className={`rounded-full w-8 h-8 p-0 ${wizardStep >= 2 ? "bg-blue-600" : ""}`}
-                onClick={() => wizardStep > 1 && setWizardStep(2)}
-              >
-                {wizardStep > 2 ? "✓" : "2"}
-              </Button>
-              <span className={`text-sm ${wizardStep === 2 ? "font-medium" : "text-gray-500"}`}>
-                Assignments & Details
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant={wizardStep >= 3 ? "default" : "outline"}
-                size="sm"
-                className={`rounded-full w-8 h-8 p-0 ${wizardStep >= 3 ? "bg-blue-600" : ""}`}
-                onClick={() => wizardStep > 2 && setWizardStep(3)}
-              >
-                3
-              </Button>
-              <span className={`text-sm ${wizardStep === 3 ? "font-medium" : "text-gray-500"}`}>
-                Review informations
-              </span>
-            </div>
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogTitle className="text-lg font-semibold text-slate-800">New Policies</DialogTitle>
           </div>
 
-          {/* Step 1: Policy Information */}
-          {wizardStep === 1 && (
-            <div className="space-y-4">
-              <div>
-                <Label>Policy Name *</Label>
-                <Input
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  placeholder="Enter policy name"
-                />
+          {/* Step Indicators */}
+          <div className="flex-shrink-0 flex items-center justify-center px-6 py-4 bg-slate-50/50 border-b border-slate-100">
+            {[1, 2, 3].map((step) => (
+              <div key={step} className="flex items-center">
+                <div className={`flex items-center justify-center w-8 h-8 rounded-full border-2 text-sm font-medium ${
+                  step === wizardStep
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : step < wizardStep
+                      ? "bg-success text-white border-success"
+                      : "bg-white border-slate-300 text-slate-500"
+                }`}>
+                  {step < wizardStep ? <Check className="h-4 w-4" /> : step}
+                </div>
+                <span className={`ml-2 text-sm ${
+                  step === wizardStep ? "text-slate-800 font-medium" : "text-slate-500"
+                }`}>
+                  {step === 1 ? "Policy Information" : step === 2 ? "Link Controls" : "Review"}
+                </span>
+                {step < 3 && <div className="w-12 h-0.5 bg-slate-200 mx-3" />}
               </div>
-              <div>
-                <Label>Department *</Label>
-                <Select
-                  value={formData.departmentId || "none"}
-                  onValueChange={(value) =>
-                    setFormData({
-                      ...formData,
-                      departmentId: value === "none" ? "" : value,
-                      assigneeId: "", // Reset assignee when department changes
-                    })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select department" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Select department</SelectItem>
-                    {departments.map((d) => (
-                      <SelectItem key={d.id} value={d.id}>
-                        {d.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Document type *</Label>
-                <Select
-                  value={formData.documentType || "none"}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, documentType: value === "none" ? "" : value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select document type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Select document type</SelectItem>
-                    {documentTypes.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {type}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Recurrence *</Label>
-                <Select
-                  value={formData.recurrence || "none"}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, recurrence: value === "none" ? "" : value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select recurrence" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Select recurrence</SelectItem>
-                    {recurrenceOptions.map((option) => (
-                      <SelectItem key={option} value={option}>
-                        {option}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {!formData.recurrence && formData.name && (
-                  <p className="text-red-500 text-sm mt-1">Please select the recurrence</p>
-                )}
-              </div>
-              <div>
-                <Label>Assignee *</Label>
-                <Select
-                  value={formData.assigneeId || "none"}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, assigneeId: value === "none" ? "" : value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select assignee" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Select assignee</SelectItem>
-                    {filteredUsers.map((u) => (
-                      <SelectItem key={u.id} value={u.id}>
-                        {u.fullName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {!formData.assigneeId && formData.departmentId && (
-                  <p className="text-red-500 text-sm mt-1">Please select the assignee</p>
-                )}
-              </div>
-              <div className="flex justify-end gap-2 pt-4">
-                <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button
-                  onClick={() => setWizardStep(2)}
-                  disabled={!formData.name || !formData.departmentId || !formData.documentType || !formData.recurrence || !formData.assigneeId}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
-          )}
+            ))}
+          </div>
 
-          {/* Step 2: Assignments & Details - Link Controls */}
-          {wizardStep === 2 && (
-            <div className="space-y-4">
-              {/* Filters Row */}
-              <div className="flex gap-4">
-                <Select
-                  value={controlCategoryFilter || "all"}
-                  onValueChange={(value) => setControlCategoryFilter(value === "all" ? "" : value)}
-                >
-                  <SelectTrigger className="w-[200px]">
-                    <SelectValue placeholder="Clear Filter" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Clear Filter</SelectItem>
-                    {policyCategories.map((cat) => (
-                      <SelectItem key={cat} value={cat}>
-                        {cat}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <Select
-                  value={frameworkFilter || "all"}
-                  onValueChange={(value) => setFrameworkFilter(value === "all" ? "" : value)}
-                >
-                  <SelectTrigger className="w-[200px]">
-                    <SelectValue placeholder="Clear Filter" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Clear Filter</SelectItem>
-                    {frameworks.map((f) => (
-                      <SelectItem key={f.id} value={f.id}>
-                        {f.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <Select
-                  value={functionalGroupingFilter || "all"}
-                  onValueChange={(value) => setFunctionalGroupingFilter(value === "all" ? "" : value)}
-                >
-                  <SelectTrigger className="w-[200px]">
-                    <SelectValue placeholder="Clear Filter" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Clear Filter</SelectItem>
-                    {functionalGroupings.map((fg) => (
-                      <SelectItem key={fg} value={fg}>
-                        {fg}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            {/* Step 1: Policy Information */}
+            {wizardStep === 1 && (
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">
+                    Policy Name <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    value={formData.name}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
+                    placeholder="Enter policy name"
+                    className="mt-1.5 w-full bg-white"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">
+                    Department <span className="text-red-500">*</span>
+                  </Label>
+                  <Select
+                    value={formData.departmentId || "none"}
+                    onValueChange={(value) =>
+                      setFormData({
+                        ...formData,
+                        departmentId: value === "none" ? "" : value,
+                        assigneeId: "",
+                      })
+                    }
+                  >
+                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                      <SelectValue placeholder="Select department" />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4}>
+                      <SelectItem value="none">Select department</SelectItem>
+                      {departments.map((d) => (
+                        <SelectItem key={d.id} value={d.id}>
+                          {d.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">
+                    Document type <span className="text-red-500">*</span>
+                  </Label>
+                  <Select
+                    value={formData.documentType || "none"}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, documentType: value === "none" ? "" : value })
+                    }
+                  >
+                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                      <SelectValue placeholder="Select document type" />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4}>
+                      <SelectItem value="none">Select document type</SelectItem>
+                      {documentTypes.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {type}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">
+                    Recurrence <span className="text-red-500">*</span>
+                  </Label>
+                  <Select
+                    value={formData.recurrence || "none"}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, recurrence: value === "none" ? "" : value })
+                    }
+                  >
+                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                      <SelectValue placeholder="Select recurrence" />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4}>
+                      <SelectItem value="none">Select recurrence</SelectItem>
+                      {recurrenceOptions.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {option}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {!formData.recurrence && formData.name && (
+                    <p className="text-red-500 text-sm mt-1">Please select the recurrence</p>
+                  )}
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">
+                    Assignee <span className="text-red-500">*</span>
+                  </Label>
+                  <Select
+                    value={formData.assigneeId || "none"}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, assigneeId: value === "none" ? "" : value })
+                    }
+                  >
+                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                      <SelectValue placeholder="Select assignee" />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4}>
+                      <SelectItem value="none">Select assignee</SelectItem>
+                      {filteredUsers.map((u) => (
+                        <SelectItem key={u.id} value={u.id}>
+                          {u.fullName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {!formData.assigneeId && formData.departmentId && (
+                    <p className="text-red-500 text-sm mt-1">Please select the assignee</p>
+                  )}
+                </div>
               </div>
+            )}
 
-              {/* Search */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Search By Control Code , Name"
-                  value={controlSearchTerm}
-                  onChange={(e) => setControlSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+            {/* Step 2: Assignments & Details - Link Controls */}
+            {wizardStep === 2 && (
+              <div className="space-y-4">
+                {/* Filters Row */}
+                <div className="grid grid-cols-3 gap-4">
+                  <Select
+                    value={controlCategoryFilter || "all"}
+                    onValueChange={(value) => setControlCategoryFilter(value === "all" ? "" : value)}
+                  >
+                    <SelectTrigger className="w-full bg-white">
+                      <SelectValue placeholder="All Categories" />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4}>
+                      <SelectItem value="all">All Categories</SelectItem>
+                      {policyCategories.map((cat) => (
+                        <SelectItem key={cat} value={cat}>
+                          {cat}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
 
-              {/* Controls List */}
-              <div className="border rounded-lg max-h-[350px] overflow-y-auto">
-                {filteredControls.length === 0 ? (
-                  <div className="p-4 text-center text-gray-500">No controls found</div>
-                ) : (
-                  filteredControls.map((control) => (
-                    <div
-                      key={control.id}
-                      className="p-3 border-b last:border-b-0 hover:bg-gray-50 cursor-pointer"
-                      onClick={() => toggleControlSelection(control.id)}
-                    >
-                      <div className="flex items-start gap-3">
-                        <Checkbox
-                          checked={selectedControlIds.has(control.id)}
-                          onCheckedChange={() => toggleControlSelection(control.id)}
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between">
-                            <span className="font-medium">
-                              {control.controlCode} : {control.name}
-                            </span>
-                            <span className="text-sm text-gray-500">
-                              {control.entities || "Organization Wide"}
-                            </span>
+                  <Select
+                    value={frameworkFilter || "all"}
+                    onValueChange={(value) => setFrameworkFilter(value === "all" ? "" : value)}
+                  >
+                    <SelectTrigger className="w-full bg-white">
+                      <SelectValue placeholder="All Frameworks" />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4}>
+                      <SelectItem value="all">All Frameworks</SelectItem>
+                      {frameworks.map((f) => (
+                        <SelectItem key={f.id} value={f.id}>
+                          {f.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Select
+                    value={functionalGroupingFilter || "all"}
+                    onValueChange={(value) => setFunctionalGroupingFilter(value === "all" ? "" : value)}
+                  >
+                    <SelectTrigger className="w-full bg-white">
+                      <SelectValue placeholder="All Groupings" />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4}>
+                      <SelectItem value="all">All Groupings</SelectItem>
+                      {functionalGroupings.map((fg) => (
+                        <SelectItem key={fg} value={fg}>
+                          {fg}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Search */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Input
+                    placeholder="Search By Control Code, Name"
+                    value={controlSearchTerm}
+                    onChange={(e) => setControlSearchTerm(e.target.value)}
+                    className="pl-10 bg-white"
+                  />
+                </div>
+
+                {/* Controls List */}
+                <div className="border border-slate-200 rounded-lg max-h-[350px] overflow-y-auto">
+                  {filteredControls.length === 0 ? (
+                    <div className="p-4 text-center text-slate-500">No controls found</div>
+                  ) : (
+                    filteredControls.map((control) => (
+                      <div
+                        key={control.id}
+                        className={`p-3 border-b border-slate-200 last:border-b-0 hover:bg-slate-50 cursor-pointer ${
+                          selectedControlIds.has(control.id) ? "bg-primary/5" : ""
+                        }`}
+                        onClick={() => toggleControlSelection(control.id)}
+                      >
+                        <div className="flex items-start gap-3">
+                          <Checkbox
+                            checked={selectedControlIds.has(control.id)}
+                            onCheckedChange={() => toggleControlSelection(control.id)}
+                            onClick={(e) => e.stopPropagation()}
+                            className="mt-1"
+                          />
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium text-slate-800">
+                                {control.controlCode} : {control.name}
+                              </span>
+                              <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
+                                {control.entities || "Organization Wide"}
+                              </span>
+                            </div>
+                            <p className="text-sm text-slate-600 mt-1 line-clamp-2">
+                              {control.description || "-"}
+                            </p>
                           </div>
-                          <p className="text-sm text-gray-600 mt-1 line-clamp-2">
-                            {control.description || "-"}
-                          </p>
                         </div>
                       </div>
-                    </div>
-                  ))
-                )}
-              </div>
+                    ))
+                  )}
+                </div>
 
-              <div className="text-sm text-gray-500">
-                Selected: {selectedControlIds.size} controls
+                <p className="text-sm text-slate-500">
+                  {selectedControlIds.size} control(s) selected
+                </p>
               </div>
+            )}
 
-              <div className="flex justify-between gap-2 pt-4">
-                <Button variant="outline" onClick={() => setWizardStep(1)}>
-                  Previous
-                </Button>
-                <Button onClick={() => setWizardStep(3)}>
-                  Next
-                </Button>
-              </div>
-            </div>
-          )}
+            {/* Step 3: Review Information */}
+            {wizardStep === 3 && (
+              <div className="space-y-4">
+                <h4 className="font-medium text-slate-800">Policy Information</h4>
+                <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-lg">
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Policy Name</Label>
+                    <p className="text-sm text-slate-800 mt-1">{formData.name}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Policy Code</Label>
+                    <p className="text-sm text-slate-500 mt-1">(Auto-generated)</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Document Type</Label>
+                    <p className="text-sm text-slate-800 mt-1">{formData.documentType}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Recurrence</Label>
+                    <p className="text-sm text-slate-800 mt-1">{formData.recurrence}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Department</Label>
+                    <p className="text-sm text-slate-800 mt-1">
+                      {departments.find((d) => d.id === formData.departmentId)?.name || "-"}
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Assignee</Label>
+                    <p className="text-sm text-slate-800 mt-1">
+                      {users.find((u) => u.id === formData.assigneeId)?.fullName || "-"}
+                    </p>
+                  </div>
+                </div>
 
-          {/* Step 3: Review Information */}
-          {wizardStep === 3 && (
-            <div className="space-y-4">
-              <h4 className="font-medium text-lg">Policy Information</h4>
-              <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg">
-                <div>
-                  <h5 className="font-medium text-sm text-gray-500">Policy Name</h5>
-                  <p className="text-sm">{formData.name}</p>
-                </div>
-                <div>
-                  <h5 className="font-medium text-sm text-gray-500">Policy Code</h5>
-                  <p className="text-sm text-gray-400">(Auto-generated)</p>
-                </div>
-                <div>
-                  <h5 className="font-medium text-sm text-gray-500">Document Type</h5>
-                  <p className="text-sm">{formData.documentType}</p>
-                </div>
-                <div>
-                  <h5 className="font-medium text-sm text-gray-500">Recurrence</h5>
-                  <p className="text-sm">{formData.recurrence}</p>
-                </div>
-                <div>
-                  <h5 className="font-medium text-sm text-gray-500">Department</h5>
-                  <p className="text-sm">
-                    {departments.find((d) => d.id === formData.departmentId)?.name || "-"}
-                  </p>
-                </div>
-                <div>
-                  <h5 className="font-medium text-sm text-gray-500">Assignee</h5>
-                  <p className="text-sm">
-                    {users.find((u) => u.id === formData.assigneeId)?.fullName || "-"}
-                  </p>
-                </div>
-              </div>
-
-              <h4 className="font-medium text-lg mt-6">Linked Controls ({selectedControlIds.size})</h4>
-              <div className="border rounded-lg max-h-[200px] overflow-y-auto">
-                {selectedControlIds.size === 0 ? (
-                  <div className="p-4 text-center text-gray-500">No controls selected</div>
-                ) : (
-                  Array.from(selectedControlIds).map((controlId) => {
-                    const control = controls.find((c) => c.id === controlId);
-                    if (!control) return null;
-                    return (
-                      <div key={control.id} className="p-3 border-b last:border-b-0">
-                        <div className="font-medium text-sm">
-                          {control.controlCode} : {control.name}
+                <h4 className="font-medium text-slate-800 mt-6">Linked Controls ({selectedControlIds.size})</h4>
+                <div className="border border-slate-200 rounded-lg max-h-[200px] overflow-y-auto">
+                  {selectedControlIds.size === 0 ? (
+                    <div className="p-4 text-center text-slate-500">No controls selected</div>
+                  ) : (
+                    Array.from(selectedControlIds).map((controlId) => {
+                      const control = controls.find((c) => c.id === controlId);
+                      if (!control) return null;
+                      return (
+                        <div key={control.id} className="p-3 border-b border-slate-200 last:border-b-0">
+                          <div className="font-medium text-sm text-slate-800">
+                            {control.controlCode} : {control.name}
+                          </div>
+                          <div className="text-xs text-slate-500">
+                            {control.entities || "Organization Wide"}
+                          </div>
                         </div>
-                        <div className="text-xs text-gray-500">
-                          {control.entities || "Organization Wide"}
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
+                      );
+                    })
+                  )}
+                </div>
               </div>
+            )}
+          </div>
 
-              <div className="flex justify-between gap-2 pt-4">
-                <Button variant="outline" onClick={() => setWizardStep(2)}>
-                  Previous
-                </Button>
-                <Button onClick={handleCreate}>
-                  Save
-                </Button>
-              </div>
-            </div>
-          )}
+          {/* Footer */}
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            {wizardStep > 1 && (
+              <Button variant="outline" size="sm" onClick={() => setWizardStep(wizardStep - 1)}>
+                Previous
+              </Button>
+            )}
+            <Button variant="outline" size="sm" onClick={() => setCreateDialogOpen(false)}>
+              Cancel
+            </Button>
+            {wizardStep < 3 ? (
+              <Button
+                size="sm"
+                onClick={() => setWizardStep(wizardStep + 1)}
+                disabled={wizardStep === 1 && (!formData.name || !formData.departmentId || !formData.documentType || !formData.recurrence || !formData.assigneeId)}
+              >
+                Next
+              </Button>
+            ) : (
+              <Button size="sm" onClick={handleCreate}>
+                Save
+              </Button>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit Policy</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogTitle className="text-lg font-semibold text-slate-800">Edit Policy</DialogTitle>
+          </div>
+          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-5">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Policy Code *</Label>
+                <Label className="text-sm font-medium text-slate-700">
+                  Policy Code <span className="text-red-500">*</span>
+                </Label>
                 <Input
                   value={formData.code}
                   onChange={(e) =>
                     setFormData({ ...formData, code: e.target.value })
                   }
+                  className="mt-1.5 w-full bg-white"
                 />
               </div>
               <div>
-                <Label>Document Type</Label>
+                <Label className="text-sm font-medium text-slate-700">Document Type</Label>
                 <Select
                   value={formData.documentType || "none"}
                   onValueChange={(value) =>
                     setFormData({ ...formData, documentType: value === "none" ? "" : value })
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="mt-1.5 w-full bg-white">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper" sideOffset={4}>
                     <SelectItem value="none">None</SelectItem>
                     {documentTypes.map((type) => (
                       <SelectItem key={type} value={type}>
@@ -1078,17 +1075,20 @@ export default function GovernanceMasterDataPage() {
               </div>
             </div>
             <div>
-              <Label>Policy Name *</Label>
+              <Label className="text-sm font-medium text-slate-700">
+                Policy Name <span className="text-red-500">*</span>
+              </Label>
               <Input
                 value={formData.name}
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
                 }
+                className="mt-1.5 w-full bg-white"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Department</Label>
+                <Label className="text-sm font-medium text-slate-700">Department</Label>
                 <Select
                   value={formData.departmentId || "none"}
                   onValueChange={(value) =>
@@ -1099,10 +1099,10 @@ export default function GovernanceMasterDataPage() {
                     })
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="mt-1.5 w-full bg-white">
                     <SelectValue placeholder="Select department" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper" sideOffset={4}>
                     <SelectItem value="none">None</SelectItem>
                     {departments.map((d) => (
                       <SelectItem key={d.id} value={d.id}>
@@ -1113,17 +1113,17 @@ export default function GovernanceMasterDataPage() {
                 </Select>
               </div>
               <div>
-                <Label>Recurrence</Label>
+                <Label className="text-sm font-medium text-slate-700">Recurrence</Label>
                 <Select
                   value={formData.recurrence || "none"}
                   onValueChange={(value) =>
                     setFormData({ ...formData, recurrence: value === "none" ? "" : value })
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="mt-1.5 w-full bg-white">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper" sideOffset={4}>
                     <SelectItem value="none">None</SelectItem>
                     {recurrenceOptions.map((option) => (
                       <SelectItem key={option} value={option}>
@@ -1136,17 +1136,17 @@ export default function GovernanceMasterDataPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Assignee</Label>
+                <Label className="text-sm font-medium text-slate-700">Assignee</Label>
                 <Select
                   value={formData.assigneeId || "none"}
                   onValueChange={(value) =>
                     setFormData({ ...formData, assigneeId: value === "none" ? "" : value })
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="mt-1.5 w-full bg-white">
                     <SelectValue placeholder="Select assignee" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper" sideOffset={4}>
                     <SelectItem value="none">None</SelectItem>
                     {filteredUsers.map((u) => (
                       <SelectItem key={u.id} value={u.id}>
@@ -1157,17 +1157,17 @@ export default function GovernanceMasterDataPage() {
                 </Select>
               </div>
               <div>
-                <Label>Approver</Label>
+                <Label className="text-sm font-medium text-slate-700">Approver</Label>
                 <Select
                   value={formData.approverId || "none"}
                   onValueChange={(value) =>
                     setFormData({ ...formData, approverId: value === "none" ? "" : value })
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="mt-1.5 w-full bg-white">
                     <SelectValue placeholder="Select approver" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper" sideOffset={4}>
                     <SelectItem value="none">None</SelectItem>
                     {users.map((u) => (
                       <SelectItem key={u.id} value={u.id}>
@@ -1179,17 +1179,17 @@ export default function GovernanceMasterDataPage() {
               </div>
             </div>
             <div>
-              <Label>Status</Label>
+              <Label className="text-sm font-medium text-slate-700">Status</Label>
               <Select
                 value={formData.status}
                 onValueChange={(value) =>
                   setFormData({ ...formData, status: value })
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger className="mt-1.5 w-full bg-white">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent position="popper" sideOffset={4}>
                   <SelectItem value="Not Uploaded">Not Uploaded</SelectItem>
                   <SelectItem value="Draft">Draft</SelectItem>
                   <SelectItem value="Approved">Approved</SelectItem>
@@ -1199,43 +1199,45 @@ export default function GovernanceMasterDataPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setEditDialogOpen(false);
-                  setSelectedPolicy(null);
-                  resetForm();
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleEdit}
-                disabled={!formData.code || !formData.name}
-              >
-                Save
-              </Button>
-            </div>
+          </div>
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setEditDialogOpen(false);
+                setSelectedPolicy(null);
+                resetForm();
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleEdit}
+              disabled={!formData.code || !formData.name}
+            >
+              Save
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
 
       {/* Delete Confirmation */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Policy</AlertDialogTitle>
-            <AlertDialogDescription>
+        <AlertDialogContent className="p-0 gap-0">
+          <AlertDialogHeader className="px-6 py-5">
+            <AlertDialogTitle className="text-lg font-semibold text-slate-800">Delete Policy</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm text-slate-500 mt-1">
               Are you sure you want to delete &quot;{selectedPolicy?.name}&quot;? This
               action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogFooter className="px-6 py-4 bg-white rounded-b-lg">
+            <AlertDialogCancel className="h-9">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-red-600 hover:bg-red-700 h-9"
             >
               Delete
             </AlertDialogAction>
@@ -1253,53 +1255,66 @@ export default function GovernanceMasterDataPage() {
           }
         }
       }}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Import Policies</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogTitle className="text-lg font-semibold text-slate-800">Import Policies</DialogTitle>
+          </div>
+          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
             <div>
-              <Label>File</Label>
-              <div className="flex gap-2 mt-1">
-                <Input
-                  type="file"
-                  accept=".csv"
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
-                  className="flex-1"
-                />
-              </div>
+              <Label className="text-sm font-medium text-slate-700">File</Label>
+              <Input
+                type="file"
+                accept=".csv"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                className="mt-1.5 w-full bg-white"
+              />
               {importFile && (
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-slate-500 mt-1">
                   Selected: {importFile.name}
                 </p>
               )}
             </div>
-            <div className="flex justify-between gap-2 pt-4">
-              <Button variant="outline" onClick={handleDownloadTemplate}>
-                <Download className="h-4 w-4 mr-2" />
-                Download Template
+          </div>
+          <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
+              <Download className="h-4 w-4 mr-2" />
+              Download Template
+            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setImportDialogOpen(false);
+                  setImportFile(null);
+                  if (fileInputRef.current) {
+                    fileInputRef.current.value = "";
+                  }
+                }}
+              >
+                Cancel
               </Button>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setImportDialogOpen(false);
-                    setImportFile(null);
-                    if (fileInputRef.current) {
-                      fileInputRef.current.value = "";
-                    }
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleImport}
-                  disabled={!importFile || importing}
-                >
-                  {importing ? "Importing..." : "Import"}
-                </Button>
-              </div>
+              <Button
+                size="sm"
+                onClick={handleImport}
+                disabled={!importFile || importing}
+              >
+                {importing ? (
+                  <>
+                    <div className="relative h-4 w-4 mr-2">
+                      <div className="absolute inset-0 rounded-full border-2 border-white/30"></div>
+                      <div className="absolute inset-0 rounded-full border-2 border-white border-t-transparent animate-spin"></div>
+                    </div>
+                    Importing...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Import
+                  </>
+                )}
+              </Button>
             </div>
           </div>
         </DialogContent>

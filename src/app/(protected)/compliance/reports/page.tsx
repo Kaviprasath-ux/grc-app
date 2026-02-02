@@ -2,17 +2,25 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { FileText, Download, Shield, AlertTriangle, CheckCircle, TrendingUp, FileWarning, BarChart3, ClipboardList, Scale, X } from "lucide-react";
-import { PageHeader } from "@/components/shared";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  FileText,
+  Download,
+  Shield,
+  AlertTriangle,
+  CheckCircle,
+  TrendingUp,
+  FileWarning,
+  BarChart3,
+  ClipboardList,
+  Scale,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
-  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -120,6 +128,15 @@ const reportTypes = [
   },
 ];
 
+// Category colors using design system
+const categoryColors: Record<string, { bg: string; icon: string }> = {
+  compliance: { bg: "bg-info-light", icon: "text-info-dark" },
+  risk: { bg: "bg-warning-light", icon: "text-warning-dark" },
+  evidence: { bg: "bg-success-light", icon: "text-success-dark" },
+  governance: { bg: "bg-primary-100", icon: "text-primary-700" },
+  kpi: { bg: "bg-info-light", icon: "text-info-dark" },
+};
+
 export default function ReportsPage() {
   const router = useRouter();
   const { toast } = useToast();
@@ -132,13 +149,20 @@ export default function ReportsPage() {
   // Management Report Parameters - matching UAT checkboxes
   const [overallCompliance, setOverallCompliance] = useState(true);
   const [frameworkCompliance, setFrameworkCompliance] = useState(true);
-  const [controlRequirementsByFramework, setControlRequirementsByFramework] = useState(true);
-  const [controlImplementationsByFramework, setControlImplementationsByFramework] = useState(true);
-  const [complianceRequirementsExceptions, setComplianceRequirementsExceptions] = useState(true);
+  const [controlRequirementsByFramework, setControlRequirementsByFramework] =
+    useState(true);
+  const [
+    controlImplementationsByFramework,
+    setControlImplementationsByFramework,
+  ] = useState(true);
+  const [complianceRequirementsExceptions, setComplianceRequirementsExceptions] =
+    useState(true);
   const [controlExceptions, setControlExceptions] = useState(true);
-  const [frameworkWithGovernanceData, setFrameworkWithGovernanceData] = useState(true);
+  const [frameworkWithGovernanceData, setFrameworkWithGovernanceData] =
+    useState(true);
   const [complianceIssues, setComplianceIssues] = useState(true);
-  const [domainBasedProgressCompliance, setDomainBasedProgressCompliance] = useState(true);
+  const [domainBasedProgressCompliance, setDomainBasedProgressCompliance] =
+    useState(true);
 
   // Framework selection
   const [frameworks, setFrameworks] = useState<Framework[]>([]);
@@ -166,7 +190,10 @@ export default function ReportsPage() {
     setTimeout(() => {
       setIsGenerating(false);
       setIsGenerateDialogOpen(false);
-      toast({ title: "Success", description: `Report "${reportTypes.find(r => r.id === selectedReport)?.title}" generated successfully!` });
+      toast({
+        title: "Success",
+        description: `Report "${reportTypes.find((r) => r.id === selectedReport)?.title}" generated successfully!`,
+      });
     }, 1500);
   };
 
@@ -175,13 +202,18 @@ export default function ReportsPage() {
     const params = new URLSearchParams();
     if (overallCompliance) params.append("overallCompliance", "true");
     if (frameworkCompliance) params.append("frameworkCompliance", "true");
-    if (controlRequirementsByFramework) params.append("controlRequirementsByFramework", "true");
-    if (controlImplementationsByFramework) params.append("controlImplementationsByFramework", "true");
-    if (complianceRequirementsExceptions) params.append("complianceRequirementsExceptions", "true");
+    if (controlRequirementsByFramework)
+      params.append("controlRequirementsByFramework", "true");
+    if (controlImplementationsByFramework)
+      params.append("controlImplementationsByFramework", "true");
+    if (complianceRequirementsExceptions)
+      params.append("complianceRequirementsExceptions", "true");
     if (controlExceptions) params.append("controlExceptions", "true");
-    if (frameworkWithGovernanceData) params.append("frameworkWithGovernanceData", "true");
+    if (frameworkWithGovernanceData)
+      params.append("frameworkWithGovernanceData", "true");
     if (complianceIssues) params.append("complianceIssues", "true");
-    if (domainBasedProgressCompliance) params.append("domainBasedProgressCompliance", "true");
+    if (domainBasedProgressCompliance)
+      params.append("domainBasedProgressCompliance", "true");
     if (selectedFrameworkId) params.append("frameworkId", selectedFrameworkId);
 
     setIsManagementReportOpen(false);
@@ -189,249 +221,176 @@ export default function ReportsPage() {
   };
 
   // Group reports by category
-  const complianceReports = reportTypes.filter(r => r.category === "compliance");
-  const riskReports = reportTypes.filter(r => r.category === "risk");
-  const evidenceReports = reportTypes.filter(r => r.category === "evidence");
-  const governanceReports = reportTypes.filter(r => r.category === "governance");
-  const kpiReports = reportTypes.filter(r => r.category === "kpi");
+  const complianceReports = reportTypes.filter(
+    (r) => r.category === "compliance"
+  );
+  const riskReports = reportTypes.filter((r) => r.category === "risk");
+  const evidenceReports = reportTypes.filter((r) => r.category === "evidence");
+  const governanceReports = reportTypes.filter(
+    (r) => r.category === "governance"
+  );
+  const kpiReports = reportTypes.filter((r) => r.category === "kpi");
+
+  // Render report card
+  const renderReportCard = (
+    report: (typeof reportTypes)[0],
+    category: string
+  ) => {
+    const Icon = report.icon;
+    const colors = categoryColors[category];
+    return (
+      <div
+        key={report.id}
+        className="bg-white rounded-xl border border-slate-200 p-5"
+      >
+        <div className="flex items-start gap-4">
+          <div className={`p-3 rounded-lg ${colors.bg}`}>
+            <Icon className={`h-6 w-6 ${colors.icon}`} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-base font-semibold text-slate-800">
+              {report.title}
+            </h3>
+            <p className="text-sm text-slate-500 mt-1">{report.description}</p>
+          </div>
+        </div>
+        <div className="mt-4">
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full"
+            onClick={() => {
+              setSelectedReport(report.id);
+              setIsGenerateDialogOpen(true);
+            }}
+          >
+            <BarChart3 className="h-4 w-4 mr-2" />
+            Generate Report
+          </Button>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Reports"
-        actions={[
-          {
-            label: "Get Management Report",
-            icon: FileText,
-            onClick: () => setIsManagementReportOpen(true),
-          },
-        ]}
-      />
+      {/* Page Header */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-slate-800">Reports</h1>
+        <Button size="sm" onClick={() => setIsManagementReportOpen(true)}>
+          <FileText className="h-4 w-4 mr-2" />
+          Get Management Report
+        </Button>
+      </div>
 
       {/* Compliance Reports */}
       <div className="space-y-4">
-        <h2 className="text-lg font-medium text-gray-900">Compliance Reports</h2>
+        <h2 className="text-lg font-semibold text-slate-800">
+          Compliance Reports
+        </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {complianceReports.map((report) => {
-            const Icon = report.icon;
-            return (
-              <Card
-                key={report.id}
-                className="cursor-pointer hover:border-blue-300 hover:shadow-md transition-all"
-                onClick={() => {
-                  setSelectedReport(report.id);
-                  setIsGenerateDialogOpen(true);
-                }}
-              >
-                <CardHeader className="flex flex-row items-start gap-4">
-                  <div className="p-3 bg-blue-50 rounded-lg">
-                    <Icon className="h-6 w-6 text-blue-600" />
-                  </div>
-                  <div className="flex-1">
-                    <CardTitle className="text-base">{report.title}</CardTitle>
-                    <CardDescription className="text-sm mt-1">
-                      {report.description}
-                    </CardDescription>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <Button variant="outline" size="sm" className="w-full">
-                    <BarChart3 className="h-4 w-4 mr-2" />
-                    Generate Report
-                  </Button>
-                </CardContent>
-              </Card>
-            );
-          })}
+          {complianceReports.map((report) =>
+            renderReportCard(report, "compliance")
+          )}
         </div>
       </div>
 
       {/* Risk Reports */}
       <div className="space-y-4">
-        <h2 className="text-lg font-medium text-gray-900">Risk Reports</h2>
+        <h2 className="text-lg font-semibold text-slate-800">Risk Reports</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {riskReports.map((report) => {
-            const Icon = report.icon;
-            return (
-              <Card
-                key={report.id}
-                className="cursor-pointer hover:border-blue-300 hover:shadow-md transition-all"
-                onClick={() => {
-                  setSelectedReport(report.id);
-                  setIsGenerateDialogOpen(true);
-                }}
-              >
-                <CardHeader className="flex flex-row items-start gap-4">
-                  <div className="p-3 bg-orange-50 rounded-lg">
-                    <Icon className="h-6 w-6 text-orange-600" />
-                  </div>
-                  <div className="flex-1">
-                    <CardTitle className="text-base">{report.title}</CardTitle>
-                    <CardDescription className="text-sm mt-1">
-                      {report.description}
-                    </CardDescription>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <Button variant="outline" size="sm" className="w-full">
-                    <BarChart3 className="h-4 w-4 mr-2" />
-                    Generate Report
-                  </Button>
-                </CardContent>
-              </Card>
-            );
-          })}
+          {riskReports.map((report) => renderReportCard(report, "risk"))}
         </div>
       </div>
 
       {/* Evidence Reports */}
       <div className="space-y-4">
-        <h2 className="text-lg font-medium text-gray-900">Evidence Reports</h2>
+        <h2 className="text-lg font-semibold text-slate-800">
+          Evidence Reports
+        </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {evidenceReports.map((report) => {
-            const Icon = report.icon;
-            return (
-              <Card
-                key={report.id}
-                className="cursor-pointer hover:border-blue-300 hover:shadow-md transition-all"
-                onClick={() => {
-                  setSelectedReport(report.id);
-                  setIsGenerateDialogOpen(true);
-                }}
-              >
-                <CardHeader className="flex flex-row items-start gap-4">
-                  <div className="p-3 bg-green-50 rounded-lg">
-                    <Icon className="h-6 w-6 text-green-600" />
-                  </div>
-                  <div className="flex-1">
-                    <CardTitle className="text-base">{report.title}</CardTitle>
-                    <CardDescription className="text-sm mt-1">
-                      {report.description}
-                    </CardDescription>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <Button variant="outline" size="sm" className="w-full">
-                    <BarChart3 className="h-4 w-4 mr-2" />
-                    Generate Report
-                  </Button>
-                </CardContent>
-              </Card>
-            );
-          })}
+          {evidenceReports.map((report) =>
+            renderReportCard(report, "evidence")
+          )}
         </div>
       </div>
 
       {/* Governance Reports */}
       <div className="space-y-4">
-        <h2 className="text-lg font-medium text-gray-900">Governance Reports</h2>
+        <h2 className="text-lg font-semibold text-slate-800">
+          Governance Reports
+        </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {governanceReports.map((report) => {
-            const Icon = report.icon;
-            return (
-              <Card
-                key={report.id}
-                className="cursor-pointer hover:border-blue-300 hover:shadow-md transition-all"
-                onClick={() => {
-                  setSelectedReport(report.id);
-                  setIsGenerateDialogOpen(true);
-                }}
-              >
-                <CardHeader className="flex flex-row items-start gap-4">
-                  <div className="p-3 bg-purple-50 rounded-lg">
-                    <Icon className="h-6 w-6 text-purple-600" />
-                  </div>
-                  <div className="flex-1">
-                    <CardTitle className="text-base">{report.title}</CardTitle>
-                    <CardDescription className="text-sm mt-1">
-                      {report.description}
-                    </CardDescription>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <Button variant="outline" size="sm" className="w-full">
-                    <BarChart3 className="h-4 w-4 mr-2" />
-                    Generate Report
-                  </Button>
-                </CardContent>
-              </Card>
-            );
-          })}
+          {governanceReports.map((report) =>
+            renderReportCard(report, "governance")
+          )}
         </div>
       </div>
 
       {/* KPI Reports */}
       <div className="space-y-4">
-        <h2 className="text-lg font-medium text-gray-900">KPI Reports</h2>
+        <h2 className="text-lg font-semibold text-slate-800">KPI Reports</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {kpiReports.map((report) => {
-            const Icon = report.icon;
-            return (
-              <Card
-                key={report.id}
-                className="cursor-pointer hover:border-blue-300 hover:shadow-md transition-all"
-                onClick={() => {
-                  setSelectedReport(report.id);
-                  setIsGenerateDialogOpen(true);
-                }}
-              >
-                <CardHeader className="flex flex-row items-start gap-4">
-                  <div className="p-3 bg-teal-50 rounded-lg">
-                    <Icon className="h-6 w-6 text-teal-600" />
-                  </div>
-                  <div className="flex-1">
-                    <CardTitle className="text-base">{report.title}</CardTitle>
-                    <CardDescription className="text-sm mt-1">
-                      {report.description}
-                    </CardDescription>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <Button variant="outline" size="sm" className="w-full">
-                    <BarChart3 className="h-4 w-4 mr-2" />
-                    Generate Report
-                  </Button>
-                </CardContent>
-              </Card>
-            );
-          })}
+          {kpiReports.map((report) => renderReportCard(report, "kpi"))}
         </div>
       </div>
 
       {/* Generate Report Dialog */}
       <Dialog open={isGenerateDialogOpen} onOpenChange={setIsGenerateDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Generate Report</DialogTitle>
-            <DialogDescription>
-              Configure and generate the {reportTypes.find(r => r.id === selectedReport)?.title}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>Report Format</Label>
-              <Select value={reportFormat} onValueChange={setReportFormat}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pdf">PDF Document</SelectItem>
-                  <SelectItem value="excel">Excel Spreadsheet</SelectItem>
-                  <SelectItem value="csv">CSV File</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="p-4 bg-gray-50 rounded-lg">
-              <h4 className="font-medium mb-2">Report Details</h4>
-              <ul className="text-sm text-muted-foreground space-y-1">
-                <li>• Report Type: {reportTypes.find(r => r.id === selectedReport)?.title}</li>
-                <li>• Format: {reportFormat.toUpperCase()}</li>
-                <li>• Data Range: All available data</li>
-              </ul>
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">
+                Generate Report
+              </DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            <div className="space-y-4">
+              <p className="text-sm text-slate-500">
+                Configure and generate the{" "}
+                {reportTypes.find((r) => r.id === selectedReport)?.title}
+              </p>
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium text-slate-700">
+                  Report Format
+                </Label>
+                <Select value={reportFormat} onValueChange={setReportFormat}>
+                  <SelectTrigger className="w-full bg-white border-slate-200">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent position="popper" sideOffset={4}>
+                    <SelectItem value="pdf">PDF Document</SelectItem>
+                    <SelectItem value="excel">Excel Spreadsheet</SelectItem>
+                    <SelectItem value="csv">CSV File</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                <h4 className="font-medium text-slate-800 mb-2">
+                  Report Details
+                </h4>
+                <ul className="text-sm text-slate-500 space-y-1">
+                  <li>
+                    • Report Type:{" "}
+                    {reportTypes.find((r) => r.id === selectedReport)?.title}
+                  </li>
+                  <li>• Format: {reportFormat.toUpperCase()}</li>
+                  <li>• Data Range: All available data</li>
+                </ul>
+              </div>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsGenerateDialogOpen(false)}>
+
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <Button
+              variant="outline"
+              onClick={() => setIsGenerateDialogOpen(false)}
+            >
               Cancel
             </Button>
             <Button onClick={handleGenerateReport} disabled={isGenerating}>
@@ -444,17 +403,27 @@ export default function ReportsPage() {
                 </>
               )}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Management Report Dialog - Matching UAT "Compliance Report Parameters" */}
-      <Dialog open={isManagementReportOpen} onOpenChange={setIsManagementReportOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Compliance Report Parameters</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
+      <Dialog
+        open={isManagementReportOpen}
+        onOpenChange={setIsManagementReportOpen}
+      >
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">
+                Compliance Report Parameters
+              </DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto px-6 py-6">
             {/* Checkbox grid - 2 columns, 5 rows matching UAT layout */}
             <div className="grid grid-cols-2 gap-x-8 gap-y-4">
               {/* Row 1 */}
@@ -462,9 +431,14 @@ export default function ReportsPage() {
                 <Checkbox
                   id="overallCompliance"
                   checked={overallCompliance}
-                  onCheckedChange={(checked) => setOverallCompliance(checked === true)}
+                  onCheckedChange={(checked) =>
+                    setOverallCompliance(checked === true)
+                  }
                 />
-                <label htmlFor="overallCompliance" className="text-sm cursor-pointer">
+                <label
+                  htmlFor="overallCompliance"
+                  className="text-sm text-slate-700 cursor-pointer"
+                >
                   Overall Compliance
                 </label>
               </div>
@@ -472,9 +446,14 @@ export default function ReportsPage() {
                 <Checkbox
                   id="frameworkCompliance"
                   checked={frameworkCompliance}
-                  onCheckedChange={(checked) => setFrameworkCompliance(checked === true)}
+                  onCheckedChange={(checked) =>
+                    setFrameworkCompliance(checked === true)
+                  }
                 />
-                <label htmlFor="frameworkCompliance" className="text-sm cursor-pointer">
+                <label
+                  htmlFor="frameworkCompliance"
+                  className="text-sm text-slate-700 cursor-pointer"
+                >
                   Framework Compliance
                 </label>
               </div>
@@ -484,9 +463,14 @@ export default function ReportsPage() {
                 <Checkbox
                   id="controlRequirementsByFramework"
                   checked={controlRequirementsByFramework}
-                  onCheckedChange={(checked) => setControlRequirementsByFramework(checked === true)}
+                  onCheckedChange={(checked) =>
+                    setControlRequirementsByFramework(checked === true)
+                  }
                 />
-                <label htmlFor="controlRequirementsByFramework" className="text-sm cursor-pointer">
+                <label
+                  htmlFor="controlRequirementsByFramework"
+                  className="text-sm text-slate-700 cursor-pointer"
+                >
                   Control Requirements by Framework
                 </label>
               </div>
@@ -494,9 +478,14 @@ export default function ReportsPage() {
                 <Checkbox
                   id="controlImplementationsByFramework"
                   checked={controlImplementationsByFramework}
-                  onCheckedChange={(checked) => setControlImplementationsByFramework(checked === true)}
+                  onCheckedChange={(checked) =>
+                    setControlImplementationsByFramework(checked === true)
+                  }
                 />
-                <label htmlFor="controlImplementationsByFramework" className="text-sm cursor-pointer">
+                <label
+                  htmlFor="controlImplementationsByFramework"
+                  className="text-sm text-slate-700 cursor-pointer"
+                >
                   Control Implementations by Framework
                 </label>
               </div>
@@ -506,9 +495,14 @@ export default function ReportsPage() {
                 <Checkbox
                   id="complianceRequirementsExceptions"
                   checked={complianceRequirementsExceptions}
-                  onCheckedChange={(checked) => setComplianceRequirementsExceptions(checked === true)}
+                  onCheckedChange={(checked) =>
+                    setComplianceRequirementsExceptions(checked === true)
+                  }
                 />
-                <label htmlFor="complianceRequirementsExceptions" className="text-sm cursor-pointer">
+                <label
+                  htmlFor="complianceRequirementsExceptions"
+                  className="text-sm text-slate-700 cursor-pointer"
+                >
                   Compliance Requirements Exceptions
                 </label>
               </div>
@@ -516,9 +510,14 @@ export default function ReportsPage() {
                 <Checkbox
                   id="controlExceptions"
                   checked={controlExceptions}
-                  onCheckedChange={(checked) => setControlExceptions(checked === true)}
+                  onCheckedChange={(checked) =>
+                    setControlExceptions(checked === true)
+                  }
                 />
-                <label htmlFor="controlExceptions" className="text-sm cursor-pointer">
+                <label
+                  htmlFor="controlExceptions"
+                  className="text-sm text-slate-700 cursor-pointer"
+                >
                   Control Exceptions
                 </label>
               </div>
@@ -528,9 +527,14 @@ export default function ReportsPage() {
                 <Checkbox
                   id="frameworkWithGovernanceData"
                   checked={frameworkWithGovernanceData}
-                  onCheckedChange={(checked) => setFrameworkWithGovernanceData(checked === true)}
+                  onCheckedChange={(checked) =>
+                    setFrameworkWithGovernanceData(checked === true)
+                  }
                 />
-                <label htmlFor="frameworkWithGovernanceData" className="text-sm cursor-pointer">
+                <label
+                  htmlFor="frameworkWithGovernanceData"
+                  className="text-sm text-slate-700 cursor-pointer"
+                >
                   Framework along with Governance Data
                 </label>
               </div>
@@ -538,9 +542,14 @@ export default function ReportsPage() {
                 <Checkbox
                   id="complianceIssues"
                   checked={complianceIssues}
-                  onCheckedChange={(checked) => setComplianceIssues(checked === true)}
+                  onCheckedChange={(checked) =>
+                    setComplianceIssues(checked === true)
+                  }
                 />
-                <label htmlFor="complianceIssues" className="text-sm cursor-pointer">
+                <label
+                  htmlFor="complianceIssues"
+                  className="text-sm text-slate-700 cursor-pointer"
+                >
                   Compliance Issues
                 </label>
               </div>
@@ -550,19 +559,27 @@ export default function ReportsPage() {
                 <Checkbox
                   id="domainBasedProgressCompliance"
                   checked={domainBasedProgressCompliance}
-                  onCheckedChange={(checked) => setDomainBasedProgressCompliance(checked === true)}
+                  onCheckedChange={(checked) =>
+                    setDomainBasedProgressCompliance(checked === true)
+                  }
                 />
-                <label htmlFor="domainBasedProgressCompliance" className="text-sm cursor-pointer">
+                <label
+                  htmlFor="domainBasedProgressCompliance"
+                  className="text-sm text-slate-700 cursor-pointer"
+                >
                   Domain based Progress Compliance (Self-Assessment model)
                 </label>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center">
                 <div className="relative flex-1">
-                  <Select value={selectedFrameworkId} onValueChange={setSelectedFrameworkId}>
-                    <SelectTrigger className="pr-8">
+                  <Select
+                    value={selectedFrameworkId}
+                    onValueChange={setSelectedFrameworkId}
+                  >
+                    <SelectTrigger className="w-full bg-white border-slate-200 pr-8">
                       <SelectValue placeholder="Framework" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" sideOffset={4}>
                       {frameworks.map((framework) => (
                         <SelectItem key={framework.id} value={framework.id}>
                           {framework.name}
@@ -574,7 +591,7 @@ export default function ReportsPage() {
                     <button
                       type="button"
                       onClick={() => setSelectedFrameworkId("")}
-                      className="absolute right-8 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      className="absolute right-8 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                     >
                       <X className="h-4 w-4" />
                     </button>
@@ -583,11 +600,17 @@ export default function ReportsPage() {
               </div>
             </div>
           </div>
-          <DialogFooter>
-            <Button onClick={handleShowManagementReport}>
-              Show Report
+
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <Button
+              variant="outline"
+              onClick={() => setIsManagementReportOpen(false)}
+            >
+              Cancel
             </Button>
-          </DialogFooter>
+            <Button onClick={handleShowManagementReport}>Show Report</Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
