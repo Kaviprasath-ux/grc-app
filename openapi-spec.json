@@ -1,0 +1,4772 @@
+{
+    "openapi": "3.0.2",
+    "info": {
+        "title": "FastAPI",
+        "version": "0.1.0"
+    },
+    "paths": {
+        "/api/auth/register": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Create User",
+                "operationId": "create_user_api_auth_register_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateUserSchema"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/login": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Login",
+                "operationId": "login_api_auth_login_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/LoginUserSchema"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/forgot-password": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Forgot Password",
+                "operationId": "forgot_password_api_auth_forgot_password_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/LoginUserSchema"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/refresh": {
+            "get": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Refresh Token",
+                "operationId": "refresh_token_api_auth_refresh_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/logout": {
+            "get": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Logout",
+                "operationId": "logout_api_auth_logout_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/users/user": {
+            "get": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Get Me",
+                "operationId": "get_me_api_users_user_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/uploadfile/": {
+            "post": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Upload File",
+                "operationId": "upload_file_api_uploadfile__post",
+                "parameters": [
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Body_upload_file_api_uploadfile__post"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/control_map_ingest": {
+            "post": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Control Map Ingest Files",
+                "operationId": "control_map_ingest_files_api_control_map_ingest_post",
+                "parameters": [
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Body_control_map_ingest_files_api_control_map_ingest_post"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/control_map_ingest_status/{job_id}": {
+            "get": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Control Map Ingest Status",
+                "operationId": "control_map_ingest_status_api_control_map_ingest_status__job_id__get",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Job Id",
+                            "type": "string"
+                        },
+                        "name": "job_id",
+                        "in": "path"
+                    },
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/control_map_ingest_result/{job_id}": {
+            "get": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Control Map Ingest Result",
+                "operationId": "control_map_ingest_result_api_control_map_ingest_result__job_id__get",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Job Id",
+                            "type": "string"
+                        },
+                        "name": "job_id",
+                        "in": "path"
+                    },
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/grc_ingest": {
+            "post": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Grc Ingest Files",
+                "operationId": "grc_ingest_files_api_grc_ingest_post",
+                "parameters": [
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Body_grc_ingest_files_api_grc_ingest_post"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/grc_ingest_status/{job_id}": {
+            "get": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Grc Ingest Status",
+                "operationId": "grc_ingest_status_api_grc_ingest_status__job_id__get",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Job Id",
+                            "type": "string"
+                        },
+                        "name": "job_id",
+                        "in": "path"
+                    },
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/grc_ingest_result/{job_id}": {
+            "get": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Grc Ingest Result",
+                "operationId": "grc_ingest_result_api_grc_ingest_result__job_id__get",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Job Id",
+                            "type": "string"
+                        },
+                        "name": "job_id",
+                        "in": "path"
+                    },
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/audit_ingest": {
+            "post": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Audit Ingest Files",
+                "operationId": "audit_ingest_files_api_audit_ingest_post",
+                "parameters": [
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Body_audit_ingest_files_api_audit_ingest_post"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/audit_ingest_status/{job_id}": {
+            "get": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Audit Ingest Status",
+                "operationId": "audit_ingest_status_api_audit_ingest_status__job_id__get",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Job Id",
+                            "type": "string"
+                        },
+                        "name": "job_id",
+                        "in": "path"
+                    },
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/audit_ingest_result/{job_id}": {
+            "get": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Audit Ingest Result",
+                "operationId": "audit_ingest_result_api_audit_ingest_result__job_id__get",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Job Id",
+                            "type": "string"
+                        },
+                        "name": "job_id",
+                        "in": "path"
+                    },
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/grc_delete": {
+            "post": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Delete Grc Embeddings",
+                "operationId": "delete_grc_embeddings_api_grc_delete_post",
+                "parameters": [
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Body_delete_grc_embeddings_api_grc_delete_post"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/mendix_db_ingest": {
+            "post": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Mendix Db Ingest",
+                "operationId": "mendix_db_ingest_api_mendix_db_ingest_post",
+                "parameters": [
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "title": "Mendix Api Lst",
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/ingest": {
+            "post": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Ingest Files",
+                "operationId": "ingest_files_api_ingest_post",
+                "parameters": [
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Body_ingest_files_api_ingest_post"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/ingest_status/{job_id}": {
+            "get": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Ingest Status",
+                "operationId": "ingest_status_api_ingest_status__job_id__get",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Job Id",
+                            "type": "string"
+                        },
+                        "name": "job_id",
+                        "in": "path"
+                    },
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/ingest_result/{job_id}": {
+            "get": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Ingest Result",
+                "operationId": "ingest_result_api_ingest_result__job_id__get",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Job Id",
+                            "type": "string"
+                        },
+                        "name": "job_id",
+                        "in": "path"
+                    },
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/factory_ingest": {
+            "post": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Factory Ingest",
+                "operationId": "factory_ingest_api_factory_ingest_post",
+                "parameters": [
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Body_factory_ingest_api_factory_ingest_post"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/factory_ingest_status/{job_id}": {
+            "get": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Factory Ingest Status",
+                "operationId": "factory_ingest_status_api_factory_ingest_status__job_id__get",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Job Id",
+                            "type": "string"
+                        },
+                        "name": "job_id",
+                        "in": "path"
+                    },
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/factory_ingest_result/{job_id}": {
+            "get": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Factory Ingest Result",
+                "operationId": "factory_ingest_result_api_factory_ingest_result__job_id__get",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Job Id",
+                            "type": "string"
+                        },
+                        "name": "job_id",
+                        "in": "path"
+                    },
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/contract": {
+            "post": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Contract Files",
+                "operationId": "contract_files_api_contract_post",
+                "parameters": [
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Body_contract_files_api_contract_post"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/contract_status/{job_id}": {
+            "get": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Contract Status",
+                "operationId": "contract_status_api_contract_status__job_id__get",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Job Id",
+                            "type": "string"
+                        },
+                        "name": "job_id",
+                        "in": "path"
+                    },
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/contract_result/{job_id}": {
+            "get": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Contract Result",
+                "operationId": "contract_result_api_contract_result__job_id__get",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Job Id",
+                            "type": "string"
+                        },
+                        "name": "job_id",
+                        "in": "path"
+                    },
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/url": {
+            "post": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Scrapeurl",
+                "operationId": "scrapeURL_api_url_post",
+                "parameters": [
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/url"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/text": {
+            "post": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Text",
+                "operationId": "text_api_text_post",
+                "parameters": [
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/text"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/grc_policy_query": {
+            "post": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Retrieval Generate",
+                "operationId": "retrieval_generate_api_grc_policy_query_post",
+                "parameters": [
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/grc_queryPayLoad"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/grc_evidence_query": {
+            "post": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Retrieval Generate",
+                "operationId": "retrieval_generate_api_grc_evidence_query_post",
+                "parameters": [
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/grc_evidencePayLoad"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/grc_selfassesment_query": {
+            "post": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Retrieval Generate",
+                "operationId": "retrieval_generate_api_grc_selfassesment_query_post",
+                "parameters": [
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/queryPayLoad"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/control_code_query": {
+            "post": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Control Code Query",
+                "operationId": "control_code_query_api_control_code_query_post",
+                "parameters": [
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/controlDescriptionPayLoad"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/query": {
+            "post": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Retrieval Generate",
+                "operationId": "retrieval_generate_api_query_post",
+                "parameters": [
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/tprmQueryPayLoad"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/audit_query": {
+            "post": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Audit Retrieval Generate",
+                "operationId": "audit_retrieval_generate_api_audit_query_post",
+                "parameters": [
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/auditQueryPayLoad"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/audit_search_query": {
+            "post": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Audit Search Retrieval Generate",
+                "operationId": "audit_search_retrieval_generate_api_audit_search_query_post",
+                "parameters": [
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/auditSearchQueryPayLoad"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/chatbot": {
+            "post": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Chatbot",
+                "operationId": "chatbot_api_chatbot_post",
+                "parameters": [
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/searchPayLoad"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/contractQuery": {
+            "post": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Retrieval Generate",
+                "operationId": "retrieval_generate_api_contractQuery_post",
+                "parameters": [
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/contractPayLoad"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/multiQuery": {
+            "post": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Retrieval Generate",
+                "operationId": "retrieval_generate_api_multiQuery_post",
+                "parameters": [
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PayLoad"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/imageQuery": {
+            "post": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Retrieval Generate",
+                "operationId": "retrieval_generate_api_imageQuery_post",
+                "parameters": [
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PayLoad"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/globalSearchQuery": {
+            "post": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Retrieval Generate",
+                "operationId": "retrieval_generate_api_globalSearchQuery_post",
+                "parameters": [
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/tprmGlobalSearchQueryPayLoad"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/image": {
+            "post": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Analyze Image",
+                "operationId": "analyze_image_api_image_post",
+                "parameters": [
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Prompt",
+                            "type": "string",
+                            "default": "Enter your prompt"
+                        },
+                        "name": "prompt",
+                        "in": "query"
+                    },
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Body_analyze_image_api_image_post"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/health_check": {
+            "get": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Health Check",
+                "description": "_summary_\n\nReturns:\n    _type_: _description_",
+                "operationId": "health_check_api_health_check_get",
+                "parameters": [
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/workpaper_generation": {
+            "post": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Generate Audit Procedures",
+                "description": "Generate audit workpapers for the provided controls.\n\nArgs:\n    controls: List of control inputs with department, process, and process_control\n    \nReturns:\n    JSON response with generated audit procedures, Excel file, and Word document",
+                "operationId": "generate_audit_procedures_api_workpaper_generation_post",
+                "parameters": [
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "title": "Controls",
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/ControlInput"
+                                }
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/generate_process_controls": {
+            "post": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Generate Process Controls Auto",
+                "description": "Generate process controls for a given business process.\n\nArgs:\n    input_data: ProcessInput containing process name and nature controls list\n    \nReturns:\n    ProcessControlResponse with generated process controls",
+                "operationId": "generate_process_controls_auto_api_generate_process_controls_post",
+                "parameters": [
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ProcessInput"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProcessControlResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/audit_workpaper_v2": {
+            "post": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Audit Workpaper V2",
+                "description": "Upload document -> Extract department, process, process_controls -> \nGenerate audit workpapers (randomized audit procedures, evidences, and checklist questions).",
+                "operationId": "audit_workpaper_v2_api_audit_workpaper_v2_post",
+                "parameters": [
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Body_audit_workpaper_v2_api_audit_workpaper_v2_post"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/extract_process_controls": {
+            "post": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Extract Process Controls",
+                "operationId": "extract_process_controls_api_extract_process_controls_post",
+                "parameters": [
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Body_extract_process_controls_api_extract_process_controls_post"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProcessControlResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/generate_policy/": {
+            "post": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Generate Policy",
+                "operationId": "generate_policy_api_generate_policy__post",
+                "parameters": [
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Body_generate_policy_api_generate_policy__post"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/download/{filename}": {
+            "get": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Download File",
+                "operationId": "download_file_api_download__filename__get",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Filename",
+                            "type": "string"
+                        },
+                        "name": "filename",
+                        "in": "path"
+                    },
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/regenerate_policy/": {
+            "post": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Regenerate Policy",
+                "description": "Regenerate a policy document by adding content for missing controls\nwhile preserving the original document structure and format.\n\nReturns:\n- Previous policy content (for comparison)\n- New content generated for missing controls\n- Complete regenerated policy document in base64",
+                "operationId": "regenerate_policy_api_regenerate_policy__post",
+                "parameters": [
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Body_regenerate_policy_api_regenerate_policy__post"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/assess-risks": {
+            "post": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Assess Risks",
+                "description": "Generate a risk assessment based on department, optional specific audit focus and uploaded documents.\n\nFile upload is optional \u2014 user may upload 0, 1 or many files.",
+                "operationId": "assess_risks_api_assess_risks_post",
+                "parameters": [
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Body_assess_risks_api_assess_risks_post"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RiskAssessmentResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/generate-audit-plan": {
+            "post": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Generate Audit Plan",
+                "description": "Generate only:\n- List of audit tasks\n- For each task: methodology steps and list of evidences required\n\nInput:\n- engagement_title (string)\n- engagement_objective (string)\n- engagement_scope (string)\n- Optional: one or more uploaded documents (pdf, docx, xlsx, csv, etc.)\n\nOutput JSON structure is EXACTLY the same as before:\n{\n  \"status_code\": int,\n  \"generated_at\": datetime,\n  \"audit_tasks\": [...]\n}",
+                "operationId": "generate_audit_plan_api_generate_audit_plan_post",
+                "parameters": [
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Body_generate_audit_plan_api_generate_audit_plan_post"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AuditPlanResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/simple_ingest": {
+            "post": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Simple Ingest Files",
+                "operationId": "simple_ingest_files_api_simple_ingest_post",
+                "parameters": [
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Body_simple_ingest_files_api_simple_ingest_post"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/simple_ingest_status/{job_id}": {
+            "get": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Simple Ingest Status",
+                "operationId": "simple_ingest_status_api_simple_ingest_status__job_id__get",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Job Id",
+                            "type": "string"
+                        },
+                        "name": "job_id",
+                        "in": "path"
+                    },
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/simple_ingest_result/{job_id}": {
+            "get": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Simple Ingest Result",
+                "operationId": "simple_ingest_result_api_simple_ingest_result__job_id__get",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Job Id",
+                            "type": "string"
+                        },
+                        "name": "job_id",
+                        "in": "path"
+                    },
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/simple_query": {
+            "post": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Retrieval Generate",
+                "operationId": "retrieval_generate_api_simple_query_post",
+                "parameters": [
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/simpleTprmQueryPayLoad"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/fieldwork-audit-plan": {
+            "post": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Generate Audit Plan Endpoint",
+                "description": "Generate one or more audit plans based on the supplied department, risks, and (optionally) CAPA findings.\n\nRequest body should include:\n- department_name: Name of the department.\n- risks: List of risk objects, each with:\n  - associated_risk: Description of the risk.\n  - risks_level: Risk level (critical, high, medium, low).\n- CAPA (optional): List of CAPA findings, where each item includes:\n  - finding_name: Name/description of the finding.\n  - audit_title: Related audit title or reference.\n  - severity: Severity of the finding.\n\nReturns:\n- department_name: Name of the department.\n- audit_plan: A list of generated audit plans. Each audit plan contains:\n  - audit_code: Unique identifier for the audit plan (e.g., AP-001).\n  - audit_title: Title of the audit (single string).\n  - audit_objective: Objective of the audit (single string).\n  - audit_scope: Scope of the audit (single string).\n  - associated_risks: List of risk statements from the input that this plan addresses.\n  - audit_tasks: List of audit task objects (see `AuditTask` model).",
+                "operationId": "generate_audit_plan_endpoint_api_fieldwork_audit_plan_post",
+                "parameters": [
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Audit_PlanRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Audit_PlanResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/generate_process_asset_risk_v2": {
+            "post": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Generate Risks V2",
+                "description": "Generate risks synchronously and return results immediately.\nAll processing happens in this single endpoint.",
+                "operationId": "generate_risks_v2_api_generate_process_asset_risk_v2_post",
+                "parameters": [
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RiskInput"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/generate_framework_job": {
+            "post": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Create Job",
+                "operationId": "create_job_api_generate_framework_job_post",
+                "parameters": [
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Body_create_job_api_generate_framework_job_post"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/framework_job_status/{job_id}": {
+            "get": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Job Status",
+                "operationId": "job_status_api_framework_job_status__job_id__get",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Job Id",
+                            "type": "string"
+                        },
+                        "name": "job_id",
+                        "in": "path"
+                    },
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/framework_job_result/{job_id}": {
+            "get": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Job Result",
+                "operationId": "job_result_api_framework_job_result__job_id__get",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Job Id",
+                            "type": "string"
+                        },
+                        "name": "job_id",
+                        "in": "path"
+                    },
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/translate": {
+            "post": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Translate Text",
+                "description": "Translate text to target language using GPT LLM model.\n\n- **Original_Text**: The text to be translated (can be in any language - source language is auto-detected)\n- **target_language_code**: ISO 639-1 language code (e.g., 'es', 'fr', 'de', 'ja', 'zh', 'hi', 'ar', 'ru')\n\nReturns the translated text. The API automatically detects the source language.",
+                "operationId": "translate_text_api_translate_post",
+                "parameters": [
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TranslationRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TranslationResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/semanticMatch_process_asset_riskV2": {
+            "post": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Perform Semantic Matching",
+                "description": "Submit a semantic matching job and return immediately with job_id.\nThe actual processing happens in background to prevent timeout.\n\nStep 1: Submit job and get job_id\nStep 2: Check status using /semanticMatch_process_asset_riskV2_status/{job_id}\nStep 3: Get result using /semanticMatch_process_asset_riskV2_result/{job_id}",
+                "operationId": "perform_semantic_matching_api_semanticMatch_process_asset_riskV2_post",
+                "parameters": [
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Body_perform_semantic_matching_api_semanticMatch_process_asset_riskV2_post"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/semanticMatch_process_asset_riskV2_status/{job_id}": {
+            "get": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Semantic Matching Status",
+                "description": "Step 2: Check the status of a semantic matching job.\nReturns status: queued, processing, completed, or error",
+                "operationId": "semantic_matching_status_api_semanticMatch_process_asset_riskV2_status__job_id__get",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Job Id",
+                            "type": "string"
+                        },
+                        "name": "job_id",
+                        "in": "path"
+                    },
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/semanticMatch_process_asset_riskV2_result/{job_id}": {
+            "get": {
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Semantic Matching Result",
+                "description": "Step 3: Get the result of a completed semantic matching job.\nOnly returns result when status is \"completed\".",
+                "operationId": "semantic_matching_result_api_semanticMatch_process_asset_riskV2_result__job_id__get",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Job Id",
+                            "type": "string"
+                        },
+                        "name": "job_id",
+                        "in": "path"
+                    },
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Auth",
+                            "type": "string"
+                        },
+                        "name": "auth",
+                        "in": "header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/healthchecker": {
+            "get": {
+                "summary": "Root",
+                "operationId": "root_api_healthchecker_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "AssetsDetails": {
+                "title": "AssetsDetails",
+                "required": [
+                    "Asset_group_name"
+                ],
+                "type": "object",
+                "properties": {
+                    "Asset_group_name": {
+                        "title": "Asset Group Name",
+                        "type": "string"
+                    }
+                }
+            },
+            "AuditEvidenceItem": {
+                "title": "AuditEvidenceItem",
+                "required": [
+                    "code",
+                    "item"
+                ],
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "title": "Code",
+                        "type": "string"
+                    },
+                    "item": {
+                        "title": "Item",
+                        "type": "string"
+                    }
+                }
+            },
+            "AuditMethodologyItem": {
+                "title": "AuditMethodologyItem",
+                "required": [
+                    "code",
+                    "step"
+                ],
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "title": "Code",
+                        "type": "string"
+                    },
+                    "step": {
+                        "title": "Step",
+                        "type": "string"
+                    }
+                }
+            },
+            "AuditPlan": {
+                "title": "AuditPlan",
+                "required": [
+                    "audit_code",
+                    "audit_title",
+                    "audit_objective",
+                    "audit_scope",
+                    "associated_risks",
+                    "audit_tasks"
+                ],
+                "type": "object",
+                "properties": {
+                    "audit_code": {
+                        "title": "Audit Code",
+                        "type": "string"
+                    },
+                    "audit_title": {
+                        "title": "Audit Title",
+                        "type": "string"
+                    },
+                    "audit_objective": {
+                        "title": "Audit Objective",
+                        "type": "string"
+                    },
+                    "audit_scope": {
+                        "title": "Audit Scope",
+                        "type": "string"
+                    },
+                    "associated_risks": {
+                        "title": "Associated Risks",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "audit_tasks": {
+                        "title": "Audit Tasks",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/AuditTask"
+                        }
+                    }
+                }
+            },
+            "AuditPlanResponse": {
+                "title": "AuditPlanResponse",
+                "required": [
+                    "status_code",
+                    "generated_at",
+                    "audit_tasks"
+                ],
+                "type": "object",
+                "properties": {
+                    "status_code": {
+                        "title": "Status Code",
+                        "type": "integer"
+                    },
+                    "generated_at": {
+                        "title": "Generated At",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "audit_tasks": {
+                        "title": "Audit Tasks",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/AuditPlanTask"
+                        }
+                    }
+                }
+            },
+            "AuditPlanTask": {
+                "title": "AuditPlanTask",
+                "required": [
+                    "code",
+                    "task",
+                    "methodology",
+                    "evidences"
+                ],
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "title": "Code",
+                        "type": "string"
+                    },
+                    "task": {
+                        "title": "Task",
+                        "type": "string"
+                    },
+                    "methodology": {
+                        "title": "Methodology",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/AuditMethodologyItem"
+                        }
+                    },
+                    "evidences": {
+                        "title": "Evidences",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/AuditEvidenceItem"
+                        }
+                    }
+                }
+            },
+            "AuditTask": {
+                "title": "AuditTask",
+                "required": [
+                    "task_name",
+                    "audit_steps",
+                    "audit_checklist_questions",
+                    "evidence_to_collect"
+                ],
+                "type": "object",
+                "properties": {
+                    "task_name": {
+                        "title": "Task Name",
+                        "type": "string"
+                    },
+                    "audit_steps": {
+                        "title": "Audit Steps",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "audit_checklist_questions": {
+                        "title": "Audit Checklist Questions",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "evidence_to_collect": {
+                        "title": "Evidence To Collect",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "Audit_PlanRequest": {
+                "title": "Audit_PlanRequest",
+                "required": [
+                    "department_name",
+                    "risks"
+                ],
+                "type": "object",
+                "properties": {
+                    "department_name": {
+                        "title": "Department Name",
+                        "type": "string"
+                    },
+                    "risks": {
+                        "title": "Risks",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Risks_Item"
+                        }
+                    },
+                    "CAPA": {
+                        "title": "Capa",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CAPAItem"
+                        }
+                    }
+                }
+            },
+            "Audit_PlanResponse": {
+                "title": "Audit_PlanResponse",
+                "required": [
+                    "department_name",
+                    "audit_plan"
+                ],
+                "type": "object",
+                "properties": {
+                    "department_name": {
+                        "title": "Department Name",
+                        "type": "string"
+                    },
+                    "audit_plan": {
+                        "title": "Audit Plan",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/AuditPlan"
+                        }
+                    }
+                }
+            },
+            "Body_analyze_image_api_image_post": {
+                "title": "Body_analyze_image_api_image_post",
+                "required": [
+                    "image"
+                ],
+                "type": "object",
+                "properties": {
+                    "image": {
+                        "title": "Image",
+                        "type": "string",
+                        "format": "binary"
+                    }
+                }
+            },
+            "Body_assess_risks_api_assess_risks_post": {
+                "title": "Body_assess_risks_api_assess_risks_post",
+                "required": [
+                    "department"
+                ],
+                "type": "object",
+                "properties": {
+                    "department": {
+                        "title": "Department",
+                        "type": "string",
+                        "description": "Department being audited (e.g. Finance, HR)"
+                    },
+                    "specific_audit_focus": {
+                        "title": "Specific Audit Focus",
+                        "type": "string",
+                        "description": "Optional specific audit focus, e.g. 'Payroll processing' or 'Third-party management'."
+                    },
+                    "files": {
+                        "title": "Files",
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "binary"
+                        },
+                        "description": "Optional file upload (PDF, DOCX, XLSX, CSV, TXT, etc.)"
+                    }
+                }
+            },
+            "Body_audit_ingest_files_api_audit_ingest_post": {
+                "title": "Body_audit_ingest_files_api_audit_ingest_post",
+                "required": [
+                    "customer_id",
+                    "audit_id",
+                    "doc_type",
+                    "artifact_id",
+                    "document_id",
+                    "files"
+                ],
+                "type": "object",
+                "properties": {
+                    "customer_id": {
+                        "title": "Customer Id",
+                        "type": "string"
+                    },
+                    "audit_id": {
+                        "title": "Audit Id",
+                        "type": "string"
+                    },
+                    "doc_type": {
+                        "title": "Doc Type",
+                        "type": "string"
+                    },
+                    "procedure_id": {
+                        "title": "Procedure Id",
+                        "type": "string"
+                    },
+                    "artifact_id": {
+                        "title": "Artifact Id",
+                        "type": "string"
+                    },
+                    "document_id": {
+                        "title": "Document Id",
+                        "type": "string"
+                    },
+                    "files": {
+                        "title": "Files",
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "binary"
+                        }
+                    }
+                }
+            },
+            "Body_audit_workpaper_v2_api_audit_workpaper_v2_post": {
+                "title": "Body_audit_workpaper_v2_api_audit_workpaper_v2_post",
+                "required": [
+                    "file"
+                ],
+                "type": "object",
+                "properties": {
+                    "file": {
+                        "title": "File",
+                        "type": "string",
+                        "format": "binary"
+                    }
+                }
+            },
+            "Body_contract_files_api_contract_post": {
+                "title": "Body_contract_files_api_contract_post",
+                "required": [
+                    "customer_id",
+                    "engagement_id",
+                    "files"
+                ],
+                "type": "object",
+                "properties": {
+                    "customer_id": {
+                        "title": "Customer Id",
+                        "type": "string"
+                    },
+                    "engagement_id": {
+                        "title": "Engagement Id",
+                        "type": "string"
+                    },
+                    "files": {
+                        "title": "Files",
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "binary"
+                        }
+                    }
+                }
+            },
+            "Body_control_map_ingest_files_api_control_map_ingest_post": {
+                "title": "Body_control_map_ingest_files_api_control_map_ingest_post",
+                "required": [
+                    "files"
+                ],
+                "type": "object",
+                "properties": {
+                    "files": {
+                        "title": "Files",
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "binary"
+                        }
+                    }
+                }
+            },
+            "Body_create_job_api_generate_framework_job_post": {
+                "title": "Body_create_job_api_generate_framework_job_post",
+                "required": [
+                    "framework_name"
+                ],
+                "type": "object",
+                "properties": {
+                    "framework_name": {
+                        "title": "Framework Name",
+                        "type": "string"
+                    },
+                    "attachment": {
+                        "title": "Attachment",
+                        "type": "string",
+                        "format": "binary"
+                    },
+                    "library": {
+                        "title": "Library",
+                        "type": "string"
+                    }
+                }
+            },
+            "Body_delete_grc_embeddings_api_grc_delete_post": {
+                "title": "Body_delete_grc_embeddings_api_grc_delete_post",
+                "required": [
+                    "base_id",
+                    "doc_type",
+                    "document_id",
+                    "file_name"
+                ],
+                "type": "object",
+                "properties": {
+                    "base_id": {
+                        "title": "Base Id",
+                        "type": "string"
+                    },
+                    "doc_type": {
+                        "title": "Doc Type",
+                        "type": "string"
+                    },
+                    "document_id": {
+                        "title": "Document Id",
+                        "type": "string"
+                    },
+                    "file_name": {
+                        "title": "File Name",
+                        "type": "string"
+                    }
+                }
+            },
+            "Body_extract_process_controls_api_extract_process_controls_post": {
+                "title": "Body_extract_process_controls_api_extract_process_controls_post",
+                "required": [
+                    "file"
+                ],
+                "type": "object",
+                "properties": {
+                    "file": {
+                        "title": "File",
+                        "type": "string",
+                        "format": "binary"
+                    }
+                }
+            },
+            "Body_factory_ingest_api_factory_ingest_post": {
+                "title": "Body_factory_ingest_api_factory_ingest_post",
+                "required": [
+                    "customer_id",
+                    "assessment_id",
+                    "files"
+                ],
+                "type": "object",
+                "properties": {
+                    "customer_id": {
+                        "title": "Customer Id",
+                        "type": "string"
+                    },
+                    "assessment_id": {
+                        "title": "Assessment Id",
+                        "type": "string"
+                    },
+                    "files": {
+                        "title": "Files",
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "binary"
+                        }
+                    }
+                }
+            },
+            "Body_generate_audit_plan_api_generate_audit_plan_post": {
+                "title": "Body_generate_audit_plan_api_generate_audit_plan_post",
+                "required": [
+                    "engagement_title",
+                    "engagement_objective",
+                    "engagement_scope"
+                ],
+                "type": "object",
+                "properties": {
+                    "engagement_title": {
+                        "title": "Engagement Title",
+                        "type": "string",
+                        "description": "Engagement title"
+                    },
+                    "engagement_objective": {
+                        "title": "Engagement Objective",
+                        "type": "string",
+                        "description": "Engagement objective"
+                    },
+                    "engagement_scope": {
+                        "title": "Engagement Scope",
+                        "type": "string",
+                        "description": "Engagement scope"
+                    },
+                    "files": {
+                        "title": "Files",
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "binary"
+                        },
+                        "description": "Optional supporting documents (PDF, DOCX, XLSX, CSV, etc.)"
+                    }
+                }
+            },
+            "Body_generate_policy_api_generate_policy__post": {
+                "title": "Body_generate_policy_api_generate_policy__post",
+                "required": [
+                    "document_type",
+                    "document_name",
+                    "framework_names",
+                    "mapped_controls",
+                    "template"
+                ],
+                "type": "object",
+                "properties": {
+                    "document_type": {
+                        "title": "Document Type",
+                        "type": "string"
+                    },
+                    "document_name": {
+                        "title": "Document Name",
+                        "type": "string"
+                    },
+                    "framework_names": {
+                        "title": "Framework Names",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "mapped_controls": {
+                        "title": "Mapped Controls",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "template": {
+                        "title": "Template",
+                        "type": "string",
+                        "format": "binary"
+                    }
+                }
+            },
+            "Body_grc_ingest_files_api_grc_ingest_post": {
+                "title": "Body_grc_ingest_files_api_grc_ingest_post",
+                "required": [
+                    "base_id",
+                    "doc_type",
+                    "file_code",
+                    "document_id",
+                    "files"
+                ],
+                "type": "object",
+                "properties": {
+                    "base_id": {
+                        "title": "Base Id",
+                        "type": "string"
+                    },
+                    "doc_type": {
+                        "title": "Doc Type",
+                        "type": "string"
+                    },
+                    "file_code": {
+                        "title": "File Code",
+                        "type": "string"
+                    },
+                    "document_id": {
+                        "title": "Document Id",
+                        "type": "string"
+                    },
+                    "files": {
+                        "title": "Files",
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "binary"
+                        }
+                    }
+                }
+            },
+            "Body_ingest_files_api_ingest_post": {
+                "title": "Body_ingest_files_api_ingest_post",
+                "required": [
+                    "customer_id",
+                    "vendor_id",
+                    "engagement_id",
+                    "assessment_id",
+                    "files"
+                ],
+                "type": "object",
+                "properties": {
+                    "customer_id": {
+                        "title": "Customer Id",
+                        "type": "string"
+                    },
+                    "vendor_id": {
+                        "title": "Vendor Id",
+                        "type": "string"
+                    },
+                    "engagement_id": {
+                        "title": "Engagement Id",
+                        "type": "string"
+                    },
+                    "assessment_id": {
+                        "title": "Assessment Id",
+                        "type": "string"
+                    },
+                    "files": {
+                        "title": "Files",
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "binary"
+                        }
+                    }
+                }
+            },
+            "Body_perform_semantic_matching_api_semanticMatch_process_asset_riskV2_post": {
+                "title": "Body_perform_semantic_matching_api_semanticMatch_process_asset_riskV2_post",
+                "required": [
+                    "existing_library",
+                    "generated_risk"
+                ],
+                "type": "object",
+                "properties": {
+                    "existing_library": {
+                        "title": "Existing Library",
+                        "type": "string",
+                        "description": "JSON string of Existing_Library"
+                    },
+                    "generated_risk": {
+                        "title": "Generated Risk",
+                        "type": "string",
+                        "description": "JSON string of Generated_Risk"
+                    }
+                }
+            },
+            "Body_regenerate_policy_api_regenerate_policy__post": {
+                "title": "Body_regenerate_policy_api_regenerate_policy__post",
+                "required": [
+                    "document_type",
+                    "document_name",
+                    "framework_names",
+                    "missing_controls",
+                    "policy_document"
+                ],
+                "type": "object",
+                "properties": {
+                    "document_type": {
+                        "title": "Document Type",
+                        "type": "string"
+                    },
+                    "document_name": {
+                        "title": "Document Name",
+                        "type": "string"
+                    },
+                    "framework_names": {
+                        "title": "Framework Names",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "missing_controls": {
+                        "title": "Missing Controls",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "policy_document": {
+                        "title": "Policy Document",
+                        "type": "string",
+                        "format": "binary"
+                    }
+                }
+            },
+            "Body_simple_ingest_files_api_simple_ingest_post": {
+                "title": "Body_simple_ingest_files_api_simple_ingest_post",
+                "required": [
+                    "customer_id",
+                    "files"
+                ],
+                "type": "object",
+                "properties": {
+                    "customer_id": {
+                        "title": "Customer Id",
+                        "type": "string"
+                    },
+                    "files": {
+                        "title": "Files",
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "binary"
+                        }
+                    }
+                }
+            },
+            "Body_upload_file_api_uploadfile__post": {
+                "title": "Body_upload_file_api_uploadfile__post",
+                "required": [
+                    "file"
+                ],
+                "type": "object",
+                "properties": {
+                    "file": {
+                        "title": "File",
+                        "type": "string",
+                        "format": "binary"
+                    }
+                }
+            },
+            "CAPAItem": {
+                "title": "CAPAItem",
+                "required": [
+                    "finding_name",
+                    "audit_title",
+                    "severity"
+                ],
+                "type": "object",
+                "properties": {
+                    "finding_name": {
+                        "title": "Finding Name",
+                        "type": "string"
+                    },
+                    "audit_title": {
+                        "title": "Audit Title",
+                        "type": "string"
+                    },
+                    "severity": {
+                        "title": "Severity",
+                        "type": "string"
+                    }
+                }
+            },
+            "ControlInput": {
+                "title": "ControlInput",
+                "required": [
+                    "department",
+                    "process",
+                    "process_controls"
+                ],
+                "type": "object",
+                "properties": {
+                    "department": {
+                        "title": "Department",
+                        "type": "string"
+                    },
+                    "process": {
+                        "title": "Process",
+                        "type": "string"
+                    },
+                    "process_controls": {
+                        "title": "Process Controls",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "CreateUserSchema": {
+                "title": "CreateUserSchema",
+                "required": [
+                    "name",
+                    "email",
+                    "password",
+                    "passwordConfirm"
+                ],
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "title": "Name",
+                        "type": "string"
+                    },
+                    "email": {
+                        "title": "Email",
+                        "type": "string"
+                    },
+                    "role": {
+                        "title": "Role",
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "title": "Created At",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "title": "Updated At",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "password": {
+                        "title": "Password",
+                        "minLength": 8,
+                        "type": "string"
+                    },
+                    "passwordConfirm": {
+                        "title": "Passwordconfirm",
+                        "type": "string"
+                    },
+                    "verified": {
+                        "title": "Verified",
+                        "type": "boolean",
+                        "default": false
+                    }
+                }
+            },
+            "HTTPValidationError": {
+                "title": "HTTPValidationError",
+                "type": "object",
+                "properties": {
+                    "detail": {
+                        "title": "Detail",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ValidationError"
+                        }
+                    }
+                }
+            },
+            "LoginUserSchema": {
+                "title": "LoginUserSchema",
+                "required": [
+                    "email",
+                    "password"
+                ],
+                "type": "object",
+                "properties": {
+                    "email": {
+                        "title": "Email",
+                        "type": "string",
+                        "format": "email"
+                    },
+                    "password": {
+                        "title": "Password",
+                        "minLength": 8,
+                        "type": "string"
+                    }
+                }
+            },
+            "PayLoad": {
+                "title": "PayLoad",
+                "required": [
+                    "questions"
+                ],
+                "type": "object",
+                "properties": {
+                    "questions": {
+                        "title": "Questions",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "ProcessControl": {
+                "title": "ProcessControl",
+                "required": [
+                    "code",
+                    "text",
+                    "nature"
+                ],
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "title": "Code",
+                        "type": "string"
+                    },
+                    "text": {
+                        "title": "Text",
+                        "type": "string"
+                    },
+                    "nature": {
+                        "title": "Nature",
+                        "type": "string"
+                    }
+                }
+            },
+            "ProcessControlResponse": {
+                "title": "ProcessControlResponse",
+                "required": [
+                    "process",
+                    "count",
+                    "process_controls",
+                    "status"
+                ],
+                "type": "object",
+                "properties": {
+                    "process": {
+                        "title": "Process",
+                        "type": "string"
+                    },
+                    "count": {
+                        "title": "Count",
+                        "type": "integer"
+                    },
+                    "process_controls": {
+                        "title": "Process Controls",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ProcessControl"
+                        }
+                    },
+                    "status": {
+                        "title": "Status",
+                        "type": "string"
+                    }
+                }
+            },
+            "ProcessControl": {
+                "title": "ProcessControl",
+                "required": [
+                    "code",
+                    "text",
+                    "nature"
+                ],
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "title": "Code",
+                        "type": "string"
+                    },
+                    "text": {
+                        "title": "Text",
+                        "type": "string"
+                    },
+                    "nature": {
+                        "title": "Nature",
+                        "type": "string"
+                    }
+                }
+            },
+            "ProcessControlResponse": {
+                "title": "ProcessControlResponse",
+                "required": [
+                    "process",
+                    "count",
+                    "process_controls",
+                    "status"
+                ],
+                "type": "object",
+                "properties": {
+                    "process": {
+                        "title": "Process",
+                        "type": "string"
+                    },
+                    "count": {
+                        "title": "Count",
+                        "type": "integer"
+                    },
+                    "process_controls": {
+                        "title": "Process Controls",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ProcessControl"
+                        }
+                    },
+                    "status": {
+                        "title": "Status",
+                        "type": "string"
+                    }
+                }
+            },
+            "ProcessDetails": {
+                "title": "ProcessDetails",
+                "required": [
+                    "Process_name",
+                    "Process_description"
+                ],
+                "type": "object",
+                "properties": {
+                    "Process_name": {
+                        "title": "Process Name",
+                        "type": "string"
+                    },
+                    "Process_description": {
+                        "title": "Process Description",
+                        "type": "string"
+                    },
+                    "Department": {
+                        "title": "Department",
+                        "type": "string"
+                    }
+                }
+            },
+            "ProcessInput": {
+                "title": "ProcessInput",
+                "required": [
+                    "process",
+                    "nature_controls_list"
+                ],
+                "type": "object",
+                "properties": {
+                    "process": {
+                        "title": "Process",
+                        "type": "string"
+                    },
+                    "nature_controls_list": {
+                        "title": "Nature Controls List",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "RiskAssessmentResponse": {
+                "title": "RiskAssessmentResponse",
+                "required": [
+                    "status_code",
+                    "timestamp",
+                    "department",
+                    "generated_risks",
+                    "total_risks"
+                ],
+                "type": "object",
+                "properties": {
+                    "status_code": {
+                        "title": "Status Code",
+                        "type": "string"
+                    },
+                    "timestamp": {
+                        "title": "Timestamp",
+                        "type": "string"
+                    },
+                    "department": {
+                        "title": "Department",
+                        "type": "string"
+                    },
+                    "specific_audit_focus": {
+                        "title": "Specific Audit Focus",
+                        "type": "string"
+                    },
+                    "generated_risks": {
+                        "title": "Generated Risks",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RiskItem"
+                        }
+                    },
+                    "total_risks": {
+                        "title": "Total Risks",
+                        "type": "integer"
+                    }
+                }
+            },
+            "RiskInput": {
+                "title": "RiskInput",
+                "type": "object",
+                "properties": {
+                    "Process_Details": {
+                        "$ref": "#/components/schemas/ProcessDetails"
+                    },
+                    "Assets_Details": {
+                        "$ref": "#/components/schemas/AssetsDetails"
+                    }
+                }
+            },
+            "RiskItem": {
+                "title": "RiskItem",
+                "required": [
+                    "title",
+                    "description",
+                    "level",
+                    "inherent_likelihood",
+                    "inherent_impact"
+                ],
+                "type": "object",
+                "properties": {
+                    "title": {
+                        "title": "Title",
+                        "type": "string"
+                    },
+                    "description": {
+                        "title": "Description",
+                        "type": "string"
+                    },
+                    "level": {
+                        "title": "Level",
+                        "type": "string"
+                    },
+                    "inherent_likelihood": {
+                        "title": "Inherent Likelihood",
+                        "type": "string"
+                    },
+                    "inherent_impact": {
+                        "title": "Inherent Impact",
+                        "type": "string"
+                    }
+                }
+            },
+            "Risks_Item": {
+                "title": "Risks_Item",
+                "required": [
+                    "associated_risk",
+                    "risks_level"
+                ],
+                "type": "object",
+                "properties": {
+                    "associated_risk": {
+                        "title": "Associated Risk",
+                        "type": "string"
+                    },
+                    "risks_level": {
+                        "title": "Risks Level",
+                        "type": "string"
+                    }
+                }
+            },
+            "TranslationRequest": {
+                "title": "TranslationRequest",
+                "required": [
+                    "Original_Text",
+                    "target_language_code"
+                ],
+                "type": "object",
+                "properties": {
+                    "Original_Text": {
+                        "title": "Original Text",
+                        "type": "string",
+                        "description": "The text to be translated (can be in any language)"
+                    },
+                    "target_language_code": {
+                        "title": "Target Language Code",
+                        "type": "string"
+                    },
+                    "model_config": {
+                        "title": "Model Config",
+                        "type": "object",
+                        "default": {
+                            "populate_by_name": true
+                        }
+                    }
+                }
+            },
+            "TranslationResponse": {
+                "title": "TranslationResponse",
+                "required": [
+                    "original_text",
+                    "target_language_code",
+                    "translated_text"
+                ],
+                "type": "object",
+                "properties": {
+                    "original_text": {
+                        "title": "Original Text",
+                        "type": "string"
+                    },
+                    "target_language_code": {
+                        "title": "Target Language Code",
+                        "type": "string"
+                    },
+                    "translated_text": {
+                        "title": "Translated Text",
+                        "type": "string"
+                    }
+                }
+            },
+            "UserResponse": {
+                "title": "UserResponse",
+                "required": [
+                    "status",
+                    "user"
+                ],
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "title": "Status",
+                        "type": "string"
+                    },
+                    "user": {
+                        "$ref": "#/components/schemas/UserResponseSchema"
+                    }
+                }
+            },
+            "UserResponseSchema": {
+                "title": "UserResponseSchema",
+                "required": [
+                    "name",
+                    "email",
+                    "id"
+                ],
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "title": "Name",
+                        "type": "string"
+                    },
+                    "email": {
+                        "title": "Email",
+                        "type": "string"
+                    },
+                    "role": {
+                        "title": "Role",
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "title": "Created At",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "title": "Updated At",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "id": {
+                        "title": "Id",
+                        "type": "string"
+                    }
+                }
+            },
+            "ValidationError": {
+                "title": "ValidationError",
+                "required": [
+                    "loc",
+                    "msg",
+                    "type"
+                ],
+                "type": "object",
+                "properties": {
+                    "loc": {
+                        "title": "Location",
+                        "type": "array",
+                        "items": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "integer"
+                                }
+                            ]
+                        }
+                    },
+                    "msg": {
+                        "title": "Message",
+                        "type": "string"
+                    },
+                    "type": {
+                        "title": "Error Type",
+                        "type": "string"
+                    }
+                }
+            },
+            "auditQueryPayLoad": {
+                "title": "auditQueryPayLoad",
+                "required": [
+                    "question",
+                    "customer_id",
+                    "audit_id",
+                    "artifact_id"
+                ],
+                "type": "object",
+                "properties": {
+                    "question": {
+                        "title": "Question",
+                        "type": "string"
+                    },
+                    "customer_id": {
+                        "title": "Customer Id",
+                        "type": "string"
+                    },
+                    "audit_id": {
+                        "title": "Audit Id",
+                        "type": "string"
+                    },
+                    "artifact_id": {
+                        "title": "Artifact Id",
+                        "type": "string"
+                    }
+                }
+            },
+            "auditSearchQueryPayLoad": {
+                "title": "auditSearchQueryPayLoad",
+                "required": [
+                    "question",
+                    "customer_id",
+                    "audit_id"
+                ],
+                "type": "object",
+                "properties": {
+                    "question": {
+                        "title": "Question",
+                        "type": "string"
+                    },
+                    "customer_id": {
+                        "title": "Customer Id",
+                        "type": "string"
+                    },
+                    "audit_id": {
+                        "title": "Audit Id",
+                        "type": "string"
+                    }
+                }
+            },
+            "contractPayLoad": {
+                "title": "contractPayLoad",
+                "required": [
+                    "question",
+                    "file_name",
+                    "customer_id",
+                    "engagement_id"
+                ],
+                "type": "object",
+                "properties": {
+                    "question": {
+                        "title": "Question",
+                        "type": "string"
+                    },
+                    "file_name": {
+                        "title": "File Name",
+                        "type": "string"
+                    },
+                    "customer_id": {
+                        "title": "Customer Id",
+                        "type": "string"
+                    },
+                    "engagement_id": {
+                        "title": "Engagement Id",
+                        "type": "string"
+                    }
+                }
+            },
+            "controlDescriptionPayLoad": {
+                "title": "controlDescriptionPayLoad",
+                "required": [
+                    "description"
+                ],
+                "type": "object",
+                "properties": {
+                    "description": {
+                        "title": "Description",
+                        "type": "string"
+                    }
+                }
+            },
+            "grcPolicy": {
+                "title": "grcPolicy",
+                "required": [
+                    "policy_name",
+                    "policy_code",
+                    "controls",
+                    "evidences"
+                ],
+                "type": "object",
+                "properties": {
+                    "policy_name": {
+                        "title": "Policy Name",
+                        "type": "string"
+                    },
+                    "policy_code": {
+                        "title": "Policy Code",
+                        "type": "string"
+                    },
+                    "controls": {
+                        "title": "Controls",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/grcPolicyControl"
+                        }
+                    },
+                    "evidences": {
+                        "title": "Evidences",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/grcPolicyEvidence"
+                        }
+                    }
+                }
+            },
+            "grcPolicyControl": {
+                "title": "grcPolicyControl",
+                "required": [
+                    "control_code",
+                    "control_quetion"
+                ],
+                "type": "object",
+                "properties": {
+                    "control_code": {
+                        "title": "Control Code",
+                        "type": "string"
+                    },
+                    "control_quetion": {
+                        "title": "Control Quetion",
+                        "type": "string"
+                    }
+                }
+            },
+            "grcPolicyEvidence": {
+                "title": "grcPolicyEvidence",
+                "required": [
+                    "evidence_code",
+                    "evidence_artifact"
+                ],
+                "type": "object",
+                "properties": {
+                    "evidence_code": {
+                        "title": "Evidence Code",
+                        "type": "string"
+                    },
+                    "evidence_artifact": {
+                        "title": "Evidence Artifact",
+                        "type": "string"
+                    }
+                }
+            },
+            "grc_evidencePayLoad": {
+                "title": "grc_evidencePayLoad",
+                "required": [
+                    "user_id",
+                    "evidence_id",
+                    "doc_type",
+                    "evidences"
+                ],
+                "type": "object",
+                "properties": {
+                    "user_id": {
+                        "title": "User Id",
+                        "type": "string"
+                    },
+                    "evidence_id": {
+                        "title": "Evidence Id",
+                        "type": "string"
+                    },
+                    "doc_type": {
+                        "title": "Doc Type",
+                        "type": "string"
+                    },
+                    "evidences": {
+                        "title": "Evidences",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/grcPolicyEvidence"
+                        }
+                    }
+                }
+            },
+            "grc_queryPayLoad": {
+                "title": "grc_queryPayLoad",
+                "required": [
+                    "user_id",
+                    "doc_type",
+                    "policies"
+                ],
+                "type": "object",
+                "properties": {
+                    "user_id": {
+                        "title": "User Id",
+                        "type": "string"
+                    },
+                    "doc_type": {
+                        "title": "Doc Type",
+                        "type": "string"
+                    },
+                    "policies": {
+                        "title": "Policies",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/grcPolicy"
+                        }
+                    }
+                }
+            },
+            "queryPayLoad": {
+                "title": "queryPayLoad",
+                "required": [
+                    "question",
+                    "user_id"
+                ],
+                "type": "object",
+                "properties": {
+                    "question": {
+                        "title": "Question",
+                        "type": "string"
+                    },
+                    "user_id": {
+                        "title": "User Id",
+                        "type": "string"
+                    }
+                }
+            },
+            "searchPayLoad": {
+                "title": "searchPayLoad",
+                "required": [
+                    "question"
+                ],
+                "type": "object",
+                "properties": {
+                    "question": {
+                        "title": "Question",
+                        "type": "string"
+                    }
+                }
+            },
+            "simpleTprmQueryPayLoad": {
+                "title": "simpleTprmQueryPayLoad",
+                "required": [
+                    "question"
+                ],
+                "type": "object",
+                "properties": {
+                    "question": {
+                        "title": "Question",
+                        "type": "string"
+                    },
+                    "customer_id": {
+                        "title": "Customer Id",
+                        "type": "string"
+                    },
+                    "context_status": {
+                        "title": "Context Status",
+                        "type": "boolean",
+                        "default": true
+                    }
+                }
+            },
+            "text": {
+                "title": "text",
+                "required": [
+                    "txt"
+                ],
+                "type": "object",
+                "properties": {
+                    "txt": {
+                        "title": "Txt",
+                        "type": "string"
+                    }
+                }
+            },
+            "tprmGlobalSearchQueryPayLoad": {
+                "title": "tprmGlobalSearchQueryPayLoad",
+                "required": [
+                    "question",
+                    "customer_id",
+                    "vendor_id"
+                ],
+                "type": "object",
+                "properties": {
+                    "question": {
+                        "title": "Question",
+                        "type": "string"
+                    },
+                    "customer_id": {
+                        "title": "Customer Id",
+                        "type": "string"
+                    },
+                    "vendor_id": {
+                        "title": "Vendor Id",
+                        "type": "string"
+                    }
+                }
+            },
+            "tprmQueryPayLoad": {
+                "title": "tprmQueryPayLoad",
+                "required": [
+                    "question",
+                    "assessment_id"
+                ],
+                "type": "object",
+                "properties": {
+                    "question": {
+                        "title": "Question",
+                        "type": "string"
+                    },
+                    "assessment_id": {
+                        "title": "Assessment Id",
+                        "type": "string"
+                    },
+                    "customer_id": {
+                        "title": "Customer Id",
+                        "type": "string"
+                    }
+                }
+            },
+            "url": {
+                "title": "url",
+                "required": [
+                    "url"
+                ],
+                "type": "object",
+                "properties": {
+                    "url": {
+                        "title": "Url",
+                        "type": "string"
+                    }
+                }
+            }
+        }
+    }
+}

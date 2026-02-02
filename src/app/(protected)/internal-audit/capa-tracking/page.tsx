@@ -30,8 +30,36 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
-import { Loader2, Trash2, Eye, Pencil } from "lucide-react";
+import {
+  Loader2,
+  Trash2,
+  Eye,
+  Pencil,
+  Download,
+  FileText,
+  CheckCircle2,
+  XCircle,
+  Bot,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Home,
+} from "lucide-react";
+import Link from "next/link";
 import { useHasRole } from "@/hooks/usePermissions";
+import { DatePicker } from "@/components/ui/date-picker";
+import { useRef } from "react";
+
+interface FindingAttachment {
+  id: string;
+  fileName: string;
+  fileType: string | null;
+  fileSize: number | null;
+  filePath: string;
+  uploadedBy: string | null;
+  uploadedAt: string;
+}
 
 interface Finding {
   id: string;
@@ -56,6 +84,14 @@ interface Finding {
   effect: string | null;
   recommendation: string | null;
   auditeeComment: string | null;
+  attachments?: FindingAttachment[];
+  // AI Review fields
+  aiReviewStatus: string | null;
+  aiReviewDescription: string | null;
+  aiReviewedAt: string | null;
+  aiReviewApproved: boolean;
+  aiApprovedAt: string | null;
+  aiApprovedBy: string | null;
 }
 
 interface Department {
@@ -77,6 +113,14 @@ interface Pagination {
 
 export default function CAPATrackingPage() {
   const isAuditHead = useHasRole("AuditHead");
+  const isAuditManager = useHasRole("AuditManager");
+  const isAuditor = useHasRole("Auditor");
+  const isAuditee = useHasRole("Auditee");
+  const isAuditTeam = isAuditHead || isAuditManager || isAuditor;
+  const isAuditeeOnly = isAuditee && !isAuditTeam;
+
+  // Show actions column for audit team (full actions) or auditee (edit only)
+  const showActions = isAuditHead || isAuditeeOnly;
 
   const [loading, setLoading] = useState(true);
   const [findings, setFindings] = useState<Finding[]>([]);
@@ -118,6 +162,15 @@ export default function CAPATrackingPage() {
   });
   const [saving, setSaving] = useState(false);
   const [auditEngagements, setAuditEngagements] = useState<AuditEngagement[]>([]);
+
+  // File upload for Edit CAPA
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [existingAttachments, setExistingAttachments] = useState<FindingAttachment[]>([]);
+  const [uploading, setUploading] = useState(false);
+
+  // AI Review state
+  const [aiReviewing, setAiReviewing] = useState(false);
 
   useEffect(() => {
     fetchDepartments();
@@ -203,6 +256,13 @@ export default function CAPATrackingPage() {
   };
 
   const handleOpenEdit = (finding: Finding) => {
+    // Debug logging for AI review
+    console.log('[CAPA-Edit] Opening finding:', finding.findingId);
+    console.log('[CAPA-Edit] isAuditHead:', isAuditHead);
+    console.log('[CAPA-Edit] AI Review Status:', finding.aiReviewStatus);
+    console.log('[CAPA-Edit] AI Review Description:', finding.aiReviewDescription);
+    console.log('[CAPA-Edit] AI Review Approved:', finding.aiReviewApproved);
+
     setFindingToEdit(finding);
     setEditForm({
       engagementId: finding.engagementId,
@@ -217,7 +277,81 @@ export default function CAPATrackingPage() {
       targetDate: finding.targetDate ? finding.targetDate.split("T")[0] : "",
       auditeeComment: finding.auditeeComment || "",
     });
+    setUploadedFiles([]);
+    setExistingAttachments(finding.attachments || []);
     setEditDialogOpen(true);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setUploadedFiles(Array.from(e.target.files));
+    }
+  };
+
+  const handleFileDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    if (e.dataTransfer.files) {
+      setUploadedFiles(Array.from(e.dataTransfer.files));
+    }
+  };
+
+  const handleUploadFiles = async (findingId: string): Promise<boolean> => {
+    if (uploadedFiles.length === 0) return true;
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      uploadedFiles.forEach((file) => {
+        formData.append('files', file);
+      });
+
+      const response = await fetch(
+        `/api/internal-audit/capa-tracking/${findingId}/attachments`,
+        {
+          method: 'POST',
+          body: formData,
+        }
+      );
+
+      if (response.ok) {
+        const newAttachments = await response.json();
+        setExistingAttachments((prev) => [...newAttachments, ...prev]);
+        setUploadedFiles([]);
+        return true;
+      } else {
+        toast.error('Failed to upload files');
+        return false;
+      }
+    } catch (error) {
+      console.error('Error uploading files:', error);
+      toast.error('Failed to upload files');
+      return false;
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDeleteAttachment = async (attachmentId: string) => {
+    if (!findingToEdit) return;
+
+    try {
+      const response = await fetch(
+        `/api/internal-audit/capa-tracking/${findingToEdit.id}/attachments/${attachmentId}`,
+        { method: 'DELETE' }
+      );
+
+      if (response.ok) {
+        setExistingAttachments((prev) =>
+          prev.filter((att) => att.id !== attachmentId)
+        );
+        toast.success('Attachment deleted');
+      } else {
+        toast.error('Failed to delete attachment');
+      }
+    } catch (error) {
+      console.error('Error deleting attachment:', error);
+      toast.error('Failed to delete attachment');
+    }
   };
 
   const handleSaveEdit = async () => {
@@ -225,17 +359,58 @@ export default function CAPATrackingPage() {
 
     setSaving(true);
     try {
+      // First, upload any new files
+      if (uploadedFiles.length > 0) {
+        const uploadSuccess = await handleUploadFiles(findingToEdit.id);
+        if (!uploadSuccess) {
+          setSaving(false);
+          return;
+        }
+      }
+
+      // For auditee, only send auditeeComment and isAuditeeSubmission flag
+      const payload = isAuditeeOnly
+        ? {
+            auditeeComment: editForm.auditeeComment,
+            isAuditeeSubmission: true, // This will set status to "Under Review"
+          }
+        : editForm;
+
       const response = await fetch(
         `/api/internal-audit/capa-tracking/${findingToEdit.id}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(editForm),
+          body: JSON.stringify(payload),
         }
       );
 
       if (response.ok) {
-        toast.success("Finding updated successfully");
+        // For auditee submission, trigger AI review
+        if (isAuditeeOnly) {
+          setAiReviewing(true);
+          try {
+            const aiReviewResponse = await fetch(
+              `/api/internal-audit/capa-tracking/${findingToEdit.id}/ai-review`,
+              { method: "POST" }
+            );
+
+            if (aiReviewResponse.ok) {
+              toast.success("Documents submitted for Audit Head review");
+            } else {
+              // AI review failed, but save was successful
+              toast.success("CAPA submitted (AI review pending)");
+            }
+          } catch (aiError) {
+            console.error("AI review error:", aiError);
+            toast.success("CAPA submitted (AI review pending)");
+          } finally {
+            setAiReviewing(false);
+          }
+        } else {
+          toast.success("Finding updated successfully");
+        }
+
         setEditDialogOpen(false);
         setFindingToEdit(null);
         fetchFindings();
@@ -281,6 +456,8 @@ export default function CAPATrackingPage() {
         return "text-green-600";
       case "in progress":
         return "text-orange-600";
+      case "under review":
+        return "text-purple-600";
       case "overdue":
         return "text-red-600";
       default:
@@ -292,89 +469,102 @@ export default function CAPATrackingPage() {
   const endIndex = Math.min(pagination.page * pagination.limit, pagination.total);
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>Internal Audit</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">CAPA Tracking</span>
+      </nav>
+
       {/* Header */}
-      <div className="border-b pb-4">
-        <h1 className="text-xl font-bold text-[#1e3a5f]">
+      <div>
+        <h1 className="text-2xl font-bold text-slate-800">
           Corrective & Preventive Actions (CAPA)
         </h1>
       </div>
 
       {/* Filters */}
       <div className="flex justify-end">
-        <div className="w-[200px]">
-          <Select
-            value={selectedDepartment}
-            onValueChange={(value) => {
-              setSelectedDepartment(value === "all" ? "" : value);
-              setPagination((prev) => ({ ...prev, page: 1 }));
-            }}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Department" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Department</SelectItem>
-              {departments.map((dept) => (
-                <SelectItem key={dept.id} value={dept.id}>
-                  {dept.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <Select
+          value={selectedDepartment}
+          onValueChange={(value) => {
+            setSelectedDepartment(value === "all" ? "" : value);
+            setPagination((prev) => ({ ...prev, page: 1 }));
+          }}
+        >
+          <SelectTrigger className="w-[200px] bg-white">
+            <SelectValue placeholder="All Departments" />
+          </SelectTrigger>
+          <SelectContent className="bg-white">
+            <SelectItem value="all">All Departments</SelectItem>
+            {departments.map((dept) => (
+              <SelectItem key={dept.id} value={dept.id}>
+                {dept.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Table */}
-      <div className="border rounded-lg overflow-hidden">
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="bg-gray-50">
-              <TableHead className="text-[#1e3a5f] font-semibold">FindingsId</TableHead>
-              <TableHead className="text-[#1e3a5f] font-semibold">Finding</TableHead>
-              <TableHead className="text-[#1e3a5f] font-semibold">Severity</TableHead>
-              <TableHead className="text-[#1e3a5f] font-semibold">Audit Plan</TableHead>
-              <TableHead className="text-[#1e3a5f] font-semibold">Department</TableHead>
-              <TableHead className="text-[#1e3a5f] font-semibold">Responsible Person</TableHead>
-              <TableHead className="text-[#1e3a5f] font-semibold">Target date</TableHead>
-              <TableHead className="text-[#1e3a5f] font-semibold">Status</TableHead>
-              {isAuditHead && (
-                <TableHead className="text-[#1e3a5f] font-semibold">Actions</TableHead>
+            <TableRow className="border-b border-slate-100 bg-slate-50/50">
+              <TableHead className="text-xs font-semibold text-slate-600 py-4 pl-4">Findings ID</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4">Finding</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4">Severity</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4">Audit Plan</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4">Department</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4">Responsible Person</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4">Target Date</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4">Status</TableHead>
+              {showActions && (
+                <TableHead className="text-xs font-semibold text-slate-600 py-4">Actions</TableHead>
               )}
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={isAuditHead ? 9 : 8} className="text-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin mx-auto text-[#1e3a5f]" />
+                <TableCell colSpan={showActions ? 9 : 8} className="text-center py-8">
+                  <div className="flex items-center justify-center">
+                    <div className="relative h-6 w-6">
+                      <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
+                      <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+                    </div>
+                  </div>
                 </TableCell>
               </TableRow>
             ) : findings.length > 0 ? (
               findings.map((finding) => (
-                <TableRow key={finding.id} className="hover:bg-gray-50">
-                  <TableCell className="font-medium">{finding.findingId}</TableCell>
-                  <TableCell className="max-w-[250px]">
+                <TableRow key={finding.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                  <TableCell className="py-4 pl-4 text-sm font-medium text-slate-900">{finding.findingId}</TableCell>
+                  <TableCell className="py-4 text-sm text-slate-700 max-w-[250px]">
                     <span className="line-clamp-2">{finding.finding}</span>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="py-4 text-sm">
                     <span className={getSeverityColor(finding.severity)}>
                       {finding.severity}
                     </span>
                   </TableCell>
-                  <TableCell className="max-w-[200px]">
+                  <TableCell className="py-4 text-sm text-slate-700 max-w-[200px]">
                     <span className="line-clamp-2">{finding.auditPlan}</span>
                   </TableCell>
-                  <TableCell>{finding.departmentName}</TableCell>
-                  <TableCell>{finding.responsiblePerson}</TableCell>
-                  <TableCell>{formatDate(finding.targetDate)}</TableCell>
-                  <TableCell>
+                  <TableCell className="py-4 text-sm text-slate-700">{finding.departmentName}</TableCell>
+                  <TableCell className="py-4 text-sm text-slate-700">{finding.responsiblePerson}</TableCell>
+                  <TableCell className="py-4 text-sm text-slate-700">{formatDate(finding.targetDate)}</TableCell>
+                  <TableCell className="py-4 text-sm">
                     <span className={getStatusColor(finding.status)}>
                       {finding.status}
                     </span>
                   </TableCell>
-                  {isAuditHead && (
-                    <TableCell>
+                  {showActions && (
+                    <TableCell className="py-4">
                       <div className="flex items-center gap-1">
                         {finding.status.toLowerCase() === "closed" ? (
                           <Button
@@ -398,17 +588,20 @@ export default function CAPATrackingPage() {
                             >
                               <Pencil className="h-4 w-4 text-blue-500" />
                             </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              title="Delete"
-                              onClick={() => {
-                                setFindingToDelete(finding);
-                                setDeleteDialogOpen(true);
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4 text-red-500" />
-                            </Button>
+                            {/* Delete only for Audit Head, not Auditee */}
+                            {isAuditHead && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title="Delete"
+                                onClick={() => {
+                                  setFindingToDelete(finding);
+                                  setDeleteDialogOpen(true);
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4 text-red-500" />
+                              </Button>
+                            )}
                           </>
                         )}
                       </div>
@@ -418,55 +611,77 @@ export default function CAPATrackingPage() {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={isAuditHead ? 9 : 8} className="text-center py-8 text-gray-500">
+                <TableCell colSpan={showActions ? 9 : 8} className="text-center py-8 text-slate-500">
                   No findings found
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
-      </div>
 
-      {/* Pagination */}
-      {pagination.total > 0 && (
-        <div className="flex items-center justify-between text-sm text-gray-600">
-          <span>
-            Currently showing {startIndex} to {endIndex} of {pagination.total}
-          </span>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={pagination.page === 1}
-              onClick={() => setPagination((prev) => ({ ...prev, page: prev.page - 1 }))}
-            >
-              Previous
-            </Button>
-            <span>
+        {/* Pagination */}
+        {pagination.total > 0 && (
+          <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
+            <span className="text-sm text-slate-500">
               {startIndex} to {endIndex} of {pagination.total}
             </span>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={pagination.page >= pagination.totalPages}
-              onClick={() => setPagination((prev) => ({ ...prev, page: prev.page + 1 }))}
-            >
-              Next
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                disabled={pagination.page === 1}
+                onClick={() => setPagination((prev) => ({ ...prev, page: 1 }))}
+                className="h-8 w-8"
+              >
+                <ChevronsLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                disabled={pagination.page === 1}
+                onClick={() => setPagination((prev) => ({ ...prev, page: prev.page - 1 }))}
+                className="h-8 w-8"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                disabled={pagination.page >= pagination.totalPages}
+                onClick={() => setPagination((prev) => ({ ...prev, page: prev.page + 1 }))}
+                className="h-8 w-8"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                disabled={pagination.page >= pagination.totalPages}
+                onClick={() => setPagination((prev) => ({ ...prev, page: pagination.totalPages }))}
+                className="h-8 w-8"
+              >
+                <ChevronsRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Delete Finding</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete finding "{findingToDelete?.findingId}"? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
+        <DialogContent className="sm:max-w-[450px] p-0 gap-0">
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Delete Finding</DialogTitle>
+              <DialogDescription className="text-sm text-slate-500 mt-1">
+                Are you sure you want to delete finding &quot;{findingToDelete?.findingId}&quot;? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => {
@@ -490,32 +705,37 @@ export default function CAPATrackingPage() {
                 "Delete"
               )}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* View Dialog (for Closed findings) */}
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-        <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader className="border-b pb-4">
-            <DialogTitle className="text-[#1e3a5f]">View CAPA</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
+        <DialogContent className="sm:max-w-[600px] p-0 gap-0 max-h-[90vh] flex flex-col">
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">View CAPA</DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
             {/* Audit Plan */}
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-              <Label className="text-[#1e3a5f] font-medium">Audit plan</Label>
+              <Label className="text-slate-800 font-medium">Audit plan</Label>
               <Input value={findingToView?.auditPlan || ""} readOnly className="bg-gray-50" />
             </div>
 
             {/* Finding Title */}
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-              <Label className="text-[#1e3a5f] font-medium">Finding title</Label>
+              <Label className="text-slate-800 font-medium">Finding title</Label>
               <Input value={findingToView?.finding || ""} readOnly className="bg-gray-50" />
             </div>
 
             {/* Severity */}
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-              <Label className="text-[#1e3a5f] font-medium">Severity</Label>
+              <Label className="text-slate-800 font-medium">Severity</Label>
               <RadioGroup value={findingToView?.severity || ""} className="flex gap-6" disabled>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="Low" id="view-severity-low" disabled />
@@ -534,37 +754,37 @@ export default function CAPATrackingPage() {
 
             {/* Criteria */}
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-              <Label className="text-[#1e3a5f] font-medium">Criteria</Label>
+              <Label className="text-slate-800 font-medium">Criteria</Label>
               <Input value={findingToView?.criteria || ""} readOnly className="bg-gray-50" />
             </div>
 
             {/* Condition */}
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-              <Label className="text-[#1e3a5f] font-medium">Condition</Label>
+              <Label className="text-slate-800 font-medium">Condition</Label>
               <Input value={findingToView?.condition || ""} readOnly className="bg-gray-50" />
             </div>
 
             {/* Cause */}
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-              <Label className="text-[#1e3a5f] font-medium">Cause</Label>
+              <Label className="text-slate-800 font-medium">Cause</Label>
               <Input value={findingToView?.cause || ""} readOnly className="bg-gray-50" />
             </div>
 
             {/* Effect */}
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-              <Label className="text-[#1e3a5f] font-medium">Effect</Label>
+              <Label className="text-slate-800 font-medium">Effect</Label>
               <Input value={findingToView?.effect || ""} readOnly className="bg-gray-50" />
             </div>
 
             {/* Recommendation */}
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-              <Label className="text-[#1e3a5f] font-medium">Recommendation</Label>
+              <Label className="text-slate-800 font-medium">Recommendation</Label>
               <Input value={findingToView?.recommendation || ""} readOnly className="bg-gray-50" />
             </div>
 
             {/* Status */}
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-              <Label className="text-[#1e3a5f] font-medium">Status</Label>
+              <Label className="text-slate-800 font-medium">Status</Label>
               <RadioGroup value={findingToView?.status || ""} className="flex gap-6" disabled>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="Open" id="view-status-open" disabled />
@@ -583,7 +803,7 @@ export default function CAPATrackingPage() {
 
             {/* Target Date */}
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-              <Label className="text-[#1e3a5f] font-medium">Target date</Label>
+              <Label className="text-slate-800 font-medium">Target date</Label>
               <Input
                 value={findingToView?.targetDate ? formatDate(findingToView.targetDate) : ""}
                 readOnly
@@ -593,7 +813,7 @@ export default function CAPATrackingPage() {
 
             {/* Auditee Comment */}
             <div className="grid grid-cols-[140px_1fr] items-start gap-4">
-              <Label className="text-[#1e3a5f] font-medium pt-2">Auditee Comment</Label>
+              <Label className="text-slate-800 font-medium pt-2">Auditee Comment</Label>
               <Textarea
                 value={findingToView?.auditeeComment || ""}
                 readOnly
@@ -601,11 +821,47 @@ export default function CAPATrackingPage() {
                 rows={3}
               />
             </div>
+
+            {/* AI Review Section (visible when approved for Auditee, always for Audit Team) */}
+            {findingToView?.aiReviewStatus && (
+              <div className="border-t pt-4 mt-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Bot className="h-5 w-5 text-purple-600" />
+                  <h3 className="font-semibold text-slate-800">AI Review Result</h3>
+                </div>
+                <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                  <Label className="text-slate-800 font-medium">Status</Label>
+                  <div className="flex items-center gap-2">
+                    {findingToView.aiReviewStatus === "Satisfactory" ? (
+                      <>
+                        <CheckCircle2 className="h-5 w-5 text-green-600" />
+                        <span className="text-green-600 font-medium">Satisfactory</span>
+                      </>
+                    ) : (
+                      <>
+                        <XCircle className="h-5 w-5 text-red-600" />
+                        <span className="text-red-600 font-medium">Unsatisfactory</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <div className="grid grid-cols-[140px_1fr] items-start gap-4 mt-3">
+                  <Label className="text-slate-800 font-medium pt-2">Description</Label>
+                  <Textarea
+                    value={findingToView.aiReviewDescription || ""}
+                    readOnly
+                    className="bg-gray-50"
+                    rows={3}
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
-          <div className="flex gap-2 pt-4 border-t">
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button
-              className="bg-[#1e3a5f] hover:bg-[#2e4a6f]"
+              className="bg-primary-600 hover:bg-primary-700"
               onClick={() => {
                 setViewDialogOpen(false);
                 setFindingToView(null);
@@ -619,21 +875,27 @@ export default function CAPATrackingPage() {
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader className="border-b pb-4">
-            <DialogTitle className="text-[#1e3a5f]">Edit CAPA</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
+        <DialogContent className="sm:max-w-[600px] p-0 gap-0 max-h-[90vh] flex flex-col">
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">Edit CAPA</DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
             {/* Audit Plan */}
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-              <Label className="text-[#1e3a5f] font-medium">Audit plan</Label>
+              <Label className="text-slate-800 font-medium">Audit plan</Label>
               <Select
                 value={editForm.engagementId}
                 onValueChange={(value) =>
                   setEditForm((prev) => ({ ...prev, engagementId: value }))
                 }
+                disabled={isAuditeeOnly}
               >
-                <SelectTrigger>
+                <SelectTrigger className={isAuditeeOnly ? "bg-gray-50" : ""}>
                   <SelectValue placeholder="Select audit plan" />
                 </SelectTrigger>
                 <SelectContent>
@@ -648,35 +910,38 @@ export default function CAPATrackingPage() {
 
             {/* Finding Title */}
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-              <Label className="text-[#1e3a5f] font-medium">Finding title</Label>
+              <Label className="text-slate-800 font-medium">Finding title</Label>
               <Input
                 value={editForm.finding}
                 onChange={(e) =>
                   setEditForm((prev) => ({ ...prev, finding: e.target.value }))
                 }
+                disabled={isAuditeeOnly}
+                className={isAuditeeOnly ? "bg-gray-50" : ""}
               />
             </div>
 
             {/* Severity */}
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-              <Label className="text-[#1e3a5f] font-medium">Severity</Label>
+              <Label className="text-slate-800 font-medium">Severity</Label>
               <RadioGroup
                 value={editForm.severity}
                 onValueChange={(value) =>
                   setEditForm((prev) => ({ ...prev, severity: value }))
                 }
                 className="flex gap-6"
+                disabled={isAuditeeOnly}
               >
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="Low" id="severity-low" />
+                  <RadioGroupItem value="Low" id="severity-low" disabled={isAuditeeOnly} />
                   <Label htmlFor="severity-low" className="font-normal cursor-pointer">Low</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="Medium" id="severity-medium" />
+                  <RadioGroupItem value="Medium" id="severity-medium" disabled={isAuditeeOnly} />
                   <Label htmlFor="severity-medium" className="font-normal cursor-pointer">Medium</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="High" id="severity-high" />
+                  <RadioGroupItem value="High" id="severity-high" disabled={isAuditeeOnly} />
                   <Label htmlFor="severity-high" className="font-normal cursor-pointer">High</Label>
                 </div>
               </RadioGroup>
@@ -684,79 +949,90 @@ export default function CAPATrackingPage() {
 
             {/* Criteria */}
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-              <Label className="text-[#1e3a5f] font-medium">Criteria</Label>
+              <Label className="text-slate-800 font-medium">Criteria</Label>
               <Input
                 value={editForm.criteria}
                 onChange={(e) =>
                   setEditForm((prev) => ({ ...prev, criteria: e.target.value }))
                 }
+                disabled={isAuditeeOnly}
+                className={isAuditeeOnly ? "bg-gray-50" : ""}
               />
             </div>
 
             {/* Condition */}
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-              <Label className="text-[#1e3a5f] font-medium">Condition</Label>
+              <Label className="text-slate-800 font-medium">Condition</Label>
               <Input
                 value={editForm.condition}
                 onChange={(e) =>
                   setEditForm((prev) => ({ ...prev, condition: e.target.value }))
                 }
+                disabled={isAuditeeOnly}
+                className={isAuditeeOnly ? "bg-gray-50" : ""}
               />
             </div>
 
             {/* Cause */}
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-              <Label className="text-[#1e3a5f] font-medium">Cause</Label>
+              <Label className="text-slate-800 font-medium">Cause</Label>
               <Input
                 value={editForm.cause}
                 onChange={(e) =>
                   setEditForm((prev) => ({ ...prev, cause: e.target.value }))
                 }
+                disabled={isAuditeeOnly}
+                className={isAuditeeOnly ? "bg-gray-50" : ""}
               />
             </div>
 
             {/* Effect */}
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-              <Label className="text-[#1e3a5f] font-medium">Effect</Label>
+              <Label className="text-slate-800 font-medium">Effect</Label>
               <Input
                 value={editForm.effect}
                 onChange={(e) =>
                   setEditForm((prev) => ({ ...prev, effect: e.target.value }))
                 }
+                disabled={isAuditeeOnly}
+                className={isAuditeeOnly ? "bg-gray-50" : ""}
               />
             </div>
 
             {/* Recommendation */}
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-              <Label className="text-[#1e3a5f] font-medium">Recommendation</Label>
+              <Label className="text-slate-800 font-medium">Recommendation</Label>
               <Input
                 value={editForm.recommendation}
                 onChange={(e) =>
                   setEditForm((prev) => ({ ...prev, recommendation: e.target.value }))
                 }
+                disabled={isAuditeeOnly}
+                className={isAuditeeOnly ? "bg-gray-50" : ""}
               />
             </div>
 
             {/* Status */}
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-              <Label className="text-[#1e3a5f] font-medium">Status</Label>
+              <Label className="text-slate-800 font-medium">Status</Label>
               <RadioGroup
                 value={editForm.status}
                 onValueChange={(value) =>
                   setEditForm((prev) => ({ ...prev, status: value }))
                 }
                 className="flex gap-6"
+                disabled={isAuditeeOnly}
               >
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="Open" id="status-open" />
+                  <RadioGroupItem value="Open" id="status-open" disabled={isAuditeeOnly} />
                   <Label htmlFor="status-open" className="font-normal cursor-pointer">Open</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="Closed" id="status-closed" />
+                  <RadioGroupItem value="Closed" id="status-closed" disabled={isAuditeeOnly} />
                   <Label htmlFor="status-closed" className="font-normal cursor-pointer">Closed</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="Under Review" id="status-review" />
+                  <RadioGroupItem value="Under Review" id="status-review" disabled={isAuditeeOnly} />
                   <Label htmlFor="status-review" className="font-normal cursor-pointer">Under Review</Label>
                 </div>
               </RadioGroup>
@@ -764,19 +1040,20 @@ export default function CAPATrackingPage() {
 
             {/* Target Date */}
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-              <Label className="text-[#1e3a5f] font-medium">Target date</Label>
-              <Input
-                type="date"
+              <Label className="text-slate-800 font-medium">Target date</Label>
+              <DatePicker
                 value={editForm.targetDate}
-                onChange={(e) =>
-                  setEditForm((prev) => ({ ...prev, targetDate: e.target.value }))
+                onChange={(date) =>
+                  setEditForm((prev) => ({ ...prev, targetDate: date ? date.toISOString().split('T')[0] : "" }))
                 }
+                disabled={isAuditeeOnly}
+                placeholder="Select date"
               />
             </div>
 
-            {/* Auditee Comment */}
+            {/* Auditee's comments - EDITABLE for auditee */}
             <div className="grid grid-cols-[140px_1fr] items-start gap-4">
-              <Label className="text-[#1e3a5f] font-medium pt-2">Auditee Comment</Label>
+              <Label className="text-slate-800 font-medium pt-2">Auditee<br/>Comment</Label>
               <Textarea
                 value={editForm.auditeeComment}
                 onChange={(e) =>
@@ -785,31 +1062,182 @@ export default function CAPATrackingPage() {
                 rows={3}
               />
             </div>
+
+            {/* Existing Attachments */}
+            {existingAttachments.length > 0 && (
+              <div className="grid grid-cols-[140px_1fr] items-start gap-4">
+                <Label className="text-slate-800 font-medium pt-2">Attachments</Label>
+                <div className="space-y-2">
+                  {existingAttachments.map((att) => (
+                    <div key={att.id} className="flex items-center gap-2">
+                      <FileText className="h-5 w-5 text-blue-600" />
+                      <span className="text-blue-600 text-sm flex-1">{att.fileName}</span>
+                      <div className="flex items-center gap-1">
+                        <a
+                          href={att.filePath}
+                          download={att.fileName}
+                          className="text-gray-500 hover:text-blue-600 p-1"
+                          title="Download"
+                        >
+                          <Download className="h-4 w-4" />
+                        </a>
+                        <a
+                          href={att.filePath}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-gray-500 hover:text-blue-600 p-1"
+                          title="View"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </a>
+                        {/* Delete only for Audit Head, not Auditee */}
+                        {!isAuditeeOnly && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 text-red-500 hover:text-red-700"
+                            onClick={() => handleDeleteAttachment(att.id)}
+                            title="Delete"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* File Upload - EDITABLE for auditee */}
+            <div className="grid grid-cols-[140px_1fr] items-start gap-4">
+              <Label className="text-slate-800 font-medium pt-2"></Label>
+              <div
+                className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-gray-400 transition-colors"
+                onClick={() => fileInputRef.current?.click()}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={handleFileDrop}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  className="hidden"
+                  onChange={handleFileSelect}
+                />
+                <p className="text-gray-500">
+                  Click here, or drop files here to upload.
+                </p>
+                {uploadedFiles.length > 0 && (
+                  <div className="mt-2 space-y-1">
+                    {uploadedFiles.map((file, index) => (
+                      <div key={index} className="flex items-center justify-center gap-2 text-sm text-green-600">
+                        <FileText className="h-4 w-4" />
+                        <span>{file.name}</span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setUploadedFiles((prev) => prev.filter((_, i) => i !== index));
+                          }}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* AI Review Section for Audit Head (visible when AI review exists) */}
+            {isAuditHead && findingToEdit?.aiReviewStatus && (
+              <div className="border-t pt-4 mt-4 bg-purple-50 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Bot className="h-5 w-5 text-purple-600" />
+                  <h3 className="font-semibold text-slate-800">
+                    {!findingToEdit.aiReviewApproved
+                      ? "AI Review Result (Pending Approval)"
+                      : "AI Review Result"}
+                  </h3>
+                </div>
+                <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                  <Label className="text-slate-800 font-medium">Status</Label>
+                  <div className="flex items-center gap-2">
+                    {findingToEdit.aiReviewStatus === "Satisfactory" ? (
+                      <>
+                        <CheckCircle2 className="h-5 w-5 text-green-600" />
+                        <span className="text-green-600 font-medium">Satisfactory</span>
+                      </>
+                    ) : (
+                      <>
+                        <XCircle className="h-5 w-5 text-red-600" />
+                        <span className="text-red-600 font-medium">Unsatisfactory</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <div className="grid grid-cols-[140px_1fr] items-start gap-4 mt-3">
+                  <Label className="text-slate-800 font-medium pt-2">Description</Label>
+                  <Textarea
+                    value={findingToEdit.aiReviewDescription || ""}
+                    readOnly
+                    className="bg-white"
+                    rows={3}
+                  />
+                </div>
+                {!findingToEdit.aiReviewApproved && (
+                  <p className="text-sm text-purple-700 mt-3">
+                    Click &quot;Save&quot; to approve this AI review and close the finding.
+                  </p>
+                )}
+                {findingToEdit.aiReviewApproved && (
+                  <p className="text-sm text-green-600 mt-3">
+                    AI review has been approved.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Pending Audit Head Review message for Auditee (when AI review exists but not approved) */}
+            {isAuditeeOnly && findingToEdit?.status === "Under Review" && !findingToEdit?.aiReviewApproved && (
+              <div className="border-t pt-4 mt-4 bg-yellow-50 rounded-lg p-4">
+                <div className="flex items-center gap-2">
+                  <Bot className="h-5 w-5 text-yellow-600" />
+                  <span className="text-yellow-700 font-medium">Pending Audit Head Review</span>
+                </div>
+                <p className="text-sm text-yellow-600 mt-2">
+                  Your documents have been submitted and are awaiting review by the Audit Head.
+                </p>
+              </div>
+            )}
           </div>
 
-          <div className="flex gap-2 pt-4 border-t">
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button
-              className="bg-[#1e3a5f] hover:bg-[#2e4a6f]"
-              onClick={handleSaveEdit}
-              disabled={saving}
-            >
-              {saving ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                "Save"
-              )}
-            </Button>
-            <Button
-              className="bg-[#1e3a5f] hover:bg-[#2e4a6f]"
+              variant="outline"
               onClick={() => {
                 setEditDialogOpen(false);
                 setFindingToEdit(null);
               }}
             >
               Cancel
+            </Button>
+            <Button
+              className="bg-primary-600 hover:bg-primary-700"
+              onClick={handleSaveEdit}
+              disabled={saving || uploading || aiReviewing}
+            >
+              {saving || uploading || aiReviewing ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  {uploading ? "Uploading..." : aiReviewing ? "Analyzing..." : "Saving..."}
+                </>
+              ) : (
+                "Save"
+              )}
             </Button>
           </div>
         </DialogContent>

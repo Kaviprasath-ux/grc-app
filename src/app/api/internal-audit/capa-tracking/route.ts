@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { withAuth } from '@/lib/api-auth';
+import { withAuth, getTenantFilter, getAuditHeadFilter } from '@/lib/api-auth';
 
 // GET /api/internal-audit/capa-tracking - Get all findings for CAPA tracking
 export const GET = withAuth(
-  async (req: NextRequest) => {
+  async (req: NextRequest, context: unknown, session) => {
     try {
       const { searchParams } = new URL(req.url);
       const departmentId = searchParams.get('departmentId');
@@ -13,8 +13,33 @@ export const GET = withAuth(
       const limit = parseInt(searchParams.get('limit') || '20');
       const skip = (page - 1) * limit;
 
-      // Build where clause
-      const where: Record<string, unknown> = {};
+      // Get tenant filter
+      const tenantFilter = getTenantFilter(session);
+      const auditHeadFilter = getAuditHeadFilter(session);
+
+      // Check if user is auditee only (has Auditee role but not AuditHead/AuditManager/Auditor)
+      const userRoles = session.roles || [];
+      const auditTeamRoles = ['AuditHead', 'AuditManager', 'Auditor'];
+      const isAuditTeam = userRoles.some((role: string) =>
+        auditTeamRoles.some(r => r.toLowerCase() === role.toLowerCase())
+      );
+      const isAuditee = userRoles.some((role: string) => role.toLowerCase() === 'auditee');
+      const isAuditeeOnly = isAuditee && !isAuditTeam;
+
+      // Debug logging
+      console.log('[CAPA-GET] User roles:', userRoles, 'isAuditTeam:', isAuditTeam, 'isAuditee:', isAuditee);
+
+      // Build where clause with tenant filter
+      const where: Record<string, unknown> = { ...tenantFilter };
+
+      // For auditee-only users, filter to show only their assigned findings
+      if (isAuditeeOnly && session.id) {
+        where.responsiblePersonId = session.id;
+      } else if (isAuditTeam) {
+        // For AuditHead/AuditManager/Auditor, filter through engagement
+        where.engagement = auditHeadFilter;
+      }
+
       if (departmentId) {
         where.departmentId = departmentId;
       }
@@ -26,6 +51,7 @@ export const GET = withAuth(
       const total = await prisma.internalAuditFinding.count({ where });
 
       // Get findings with relations
+      // NOTE: attachments and AI review fields are not in the schema yet
       const findings = await prisma.internalAuditFinding.findMany({
         where,
         include: {
@@ -48,30 +74,41 @@ export const GET = withAuth(
       });
 
       // Transform findings for the response
-      const transformedFindings = findings.map((finding) => ({
-        id: finding.id,
-        findingId: finding.findingId,
-        finding: finding.finding,
-        description: finding.description,
-        severity: finding.severity,
-        auditPlan: finding.engagement?.engagementTitle || '-',
-        engagementId: finding.engagementId,
-        departmentId: finding.departmentId,
-        departmentName: finding.department?.name || '-',
-        responsiblePerson: finding.responsiblePerson || '-',
-        targetDate: finding.targetDate,
-        status: finding.status,
-        identifiedDate: finding.identifiedDate,
-        closedDate: finding.closedDate,
-        createdAt: finding.createdAt,
-        // Additional fields for Edit CAPA
-        criteria: finding.criteria,
-        condition: finding.condition,
-        cause: finding.cause,
-        effect: finding.effect,
-        recommendation: finding.recommendation,
-        auditeeComment: finding.description, // Map description to auditeeComment for now
-      }));
+      const transformedFindings = findings.map((finding) => {
+        return {
+          id: finding.id,
+          findingId: finding.findingId,
+          finding: finding.finding,
+          description: finding.description,
+          severity: finding.severity,
+          auditPlan: finding.engagement?.engagementTitle || '-',
+          engagementId: finding.engagementId,
+          departmentId: finding.departmentId,
+          departmentName: finding.department?.name || '-',
+          responsiblePerson: finding.responsiblePerson || '-',
+          targetDate: finding.targetDate,
+          status: finding.status,
+          identifiedDate: finding.identifiedDate,
+          closedDate: finding.closedDate,
+          createdAt: finding.createdAt,
+          // Additional fields for Edit CAPA
+          criteria: finding.criteria,
+          condition: finding.condition,
+          cause: finding.cause,
+          effect: finding.effect,
+          recommendation: finding.recommendation,
+          auditeeComment: finding.description, // Map description to auditeeComment for now
+          // Attachments - not in schema yet
+          attachments: [],
+          // AI Review fields - not in schema yet
+          aiReviewStatus: null,
+          aiReviewDescription: null,
+          aiReviewedAt: null,
+          aiReviewApproved: false,
+          aiApprovedAt: null,
+          aiApprovedBy: null,
+        };
+      });
 
       return NextResponse.json({
         findings: transformedFindings,

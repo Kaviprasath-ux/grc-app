@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 
 // GET all asset CIA classifications
+// Note: AssetCIAClassification model doesn't have customerAccountId field yet
 export async function GET() {
   try {
     const classifications = await prisma.assetCIAClassification.findMany({
@@ -28,6 +30,9 @@ export async function GET() {
 // POST create new asset CIA classification
 export async function POST(request: NextRequest) {
   try {
+    const session = await auth();
+    const customerAccountId = session?.user?.customerAccountId;
+
     const body = await request.json();
     const {
       subCategoryId,
@@ -61,6 +66,7 @@ export async function POST(request: NextRequest) {
 
     const classification = await prisma.assetCIAClassification.create({
       data: {
+        ...(customerAccountId ? { customerAccountId } : {}),
         subCategoryId,
         groupId,
         confidentiality: confidentiality || "low",

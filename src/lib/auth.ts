@@ -1,9 +1,45 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { expandRolePermissions } from "@/lib/permissions";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  trustHost: true,
+  cookies: {
+    sessionToken: {
+      name: process.env.NODE_ENV === "production"
+        ? "__Secure-authjs.session-token"
+        : "authjs.session-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+      },
+    },
+    callbackUrl: {
+      name: process.env.NODE_ENV === "production"
+        ? "__Secure-authjs.callback-url"
+        : "authjs.callback-url",
+      options: {
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+      },
+    },
+    csrfToken: {
+      name: process.env.NODE_ENV === "production"
+        ? "__Host-authjs.csrf-token"
+        : "authjs.csrf-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+      },
+    },
+  },
   providers: [
     Credentials({
       name: "credentials",
@@ -12,10 +48,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
+        console.log('[AUTH] Login attempt:', credentials?.username);
+
         if (!credentials?.username || !credentials?.password) {
+          console.log('[AUTH] Missing credentials');
           return null;
         }
 
+        try {
         // Find user in database
         const user = await prisma.user.findFirst({
           where: {
@@ -33,6 +73,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 name: true,
               },
             },
+            customerAccount: {
+              select: {
+                id: true,
+                code: true,
+                name: true,
+              },
+            },
             userRoles: {
               include: {
                 role: {
@@ -47,13 +94,21 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         });
 
         if (!user) {
+          console.log('[AUTH] User not found');
           return null;
         }
 
-        // Simple password check (in production, use bcrypt)
-        if (user.password !== credentials.password) {
+        console.log('[AUTH] User found:', user.userName, 'isActive:', user.isActive, 'isBlocked:', user.isBlocked);
+
+        // Compare password using bcrypt
+        const inputPassword = String(credentials.password);
+        const isValidPassword = await bcrypt.compare(inputPassword, user.password);
+        if (!isValidPassword) {
+          console.log('[AUTH] Password mismatch');
           return null;
         }
+
+        console.log('[AUTH] Login successful for:', user.userName);
 
         // Extract role names from userRoles
         const roleNames = user.userRoles.map(ur => ur.role.name);
@@ -74,9 +129,18 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           department: user.department?.name || '', // Legacy field
           departmentId: user.departmentId,
           departmentName: user.department?.name || null,
+          // Multi-tenant: Include customer account information
+          customerAccountId: user.customerAccountId,
+          customerAccountCode: user.customerAccount?.code || null,
+          customerAccountName: user.customerAccount?.name || null,
+          // Note: User model doesn't have auditHeadId field yet
           roles: effectiveRoles,
           permissions: [], // Placeholder - expanded in session callback
         };
+        } catch (error) {
+          console.error('[AUTH] Error during authentication:', error);
+          return null;
+        }
       },
     }),
   ],
@@ -91,6 +155,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.department = user.department;
         token.departmentId = user.departmentId;
         token.departmentName = user.departmentName;
+        // Multi-tenant: Store customer account info in JWT
+        token.customerAccountId = user.customerAccountId;
+        token.customerAccountCode = user.customerAccountCode;
+        token.customerAccountName = user.customerAccountName;
+        // Note: User model doesn't have auditHeadId field yet
         token.roles = user.roles;
         // Don't store permissions in JWT - they'll be expanded in session callback
       }
@@ -103,6 +172,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.department = token.department as string;
         session.user.departmentId = token.departmentId as string | null;
         session.user.departmentName = token.departmentName as string | null;
+        // Multi-tenant: Include customer account in session
+        session.user.customerAccountId = token.customerAccountId as string | null;
+        session.user.customerAccountCode = token.customerAccountCode as string | null;
+        session.user.customerAccountName = token.customerAccountName as string | null;
+        // Note: User model doesn't have auditHeadId field yet
         session.user.roles = (token.roles as string[]) || [];
 
         // Expand permissions from roles here (session callback runs server-side)

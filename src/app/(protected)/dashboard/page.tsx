@@ -4,154 +4,254 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { StatsCard } from "@/components/shared";
-import { DonutChart, HorizontalBarChart, StackedBarChart } from "@/components/charts";
+import { DonutChart, HorizontalBarChart, StackedBarChart, ComplianceProgressBar, DocumentStatusCard } from "@/components/charts";
 import {
-  dashboardStats,
-  complianceData,
-  riskAssessmentData,
-  issueByCategoryData,
-  issueByDepartmentData,
-  issueByDomainData,
-  exceptionByTypeData,
-  evidenceKPIData,
-  processKPIData,
-  governanceStatusData,
-  exceptionStatusData,
-} from "@/data/dashboard";
-import { getDashboardStats } from "@/actions/dashboard";
+  Building2,
+  Users,
+  Scale,
+  AlertTriangle,
+  ShieldAlert,
+  FileWarning,
+  ChevronRight,
+  Home,
+} from "lucide-react";
+
+interface DashboardData {
+  dashboardStats: {
+    departments: number;
+    stakeholders: number;
+    regulations: number;
+    issues: number;
+    risks: number;
+    exceptions: number;
+  };
+  complianceData: { frameworkId: string; framework: string; compliant: number; nonCompliant: number }[];
+  riskAssessmentData: { category: string; total: number; closed: number }[];
+  issueByCategoryData: { name: string; value: number; color: string }[];
+  issueByDepartmentData: { name: string; value: number; color: string }[];
+  issueByDomainData: { name: string; value: number; color: string }[];
+  exceptionByTypeData: { name: string; value: number; color: string }[];
+  evidenceKPIData: { department: string; overdue: number; achieved: number; missed: number; scheduled: number }[];
+  processKPIData: { department: string; overdue: number; achieved: number; missed: number; scheduled: number }[];
+  governanceStatusData: { type: string; notUploaded: number; draft: number; approved: number; needsReview: number; published: number }[];
+  exceptionStatusData: { type: string; pending: number; approved: number; authorized: number; closed: number; overdue: number }[];
+}
+
+const defaultDashboardData: DashboardData = {
+  dashboardStats: { departments: 0, stakeholders: 0, regulations: 0, issues: 0, risks: 0, exceptions: 0 },
+  complianceData: [],
+  riskAssessmentData: [],
+  issueByCategoryData: [],
+  issueByDepartmentData: [],
+  issueByDomainData: [],
+  exceptionByTypeData: [],
+  evidenceKPIData: [],
+  processKPIData: [],
+  governanceStatusData: [],
+  exceptionStatusData: [],
+};
 
 export default function DashboardPage() {
   const { data: session } = useSession();
   const router = useRouter();
-  const [stats, setStats] = useState(dashboardStats);
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const data = await getDashboardStats();
-        setStats(data);
-      } catch (error) {
-        console.error("Failed to load dashboard stats", error);
-      }
-    };
-    fetchStats();
-  }, []);
+  const [data, setData] = useState<DashboardData>(defaultDashboardData);
+  const [loading, setLoading] = useState(true);
 
   // Redirect users based on their role to appropriate landing pages
   useEffect(() => {
     if (session?.user?.roles?.includes("GRCAdministrator")) {
       router.replace("/grc");
-    } else if (session?.user?.roles?.includes("AuditHead")) {
+    } else if (session?.user?.roles?.includes("AuditHead") || session?.user?.roles?.includes("AuditManager")) {
       router.replace("/internal-audit/dashboard");
     } else if (session?.user?.roles?.includes("Auditee") &&
-      !session?.user?.roles?.includes("AuditHead") &&
-      !session?.user?.roles?.includes("Auditor")) {
-      // Auditee can only access Fieldwork, CAPA Tracking, and Reports (NO Dashboard)
+               !session?.user?.roles?.includes("AuditHead") &&
+               !session?.user?.roles?.includes("AuditManager") &&
+               !session?.user?.roles?.includes("Auditor")) {
       router.replace("/internal-audit/fieldwork");
     }
   }, [session, router]);
 
-  // Calculate issue totals
+  // Fetch dashboard data
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch("/api/dashboard/stats");
+        if (response.ok) {
+          const result = await response.json();
+          setData(result);
+        }
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const {
+    dashboardStats,
+    complianceData,
+    riskAssessmentData,
+    issueByCategoryData,
+    issueByDepartmentData,
+    issueByDomainData,
+    exceptionByTypeData,
+    evidenceKPIData,
+    processKPIData,
+    governanceStatusData,
+    exceptionStatusData,
+  } = data;
+
+  // Calculate totals
   const issueCategoryTotal = issueByCategoryData.reduce((sum, item) => sum + item.value, 0);
   const issueDepartmentTotal = issueByDepartmentData.reduce((sum, item) => sum + item.value, 0);
   const issueDomainTotal = issueByDomainData.reduce((sum, item) => sum + item.value, 0);
   const exceptionTotal = exceptionByTypeData.reduce((sum, item) => sum + item.value, 0);
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-[60vh]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative">
+            <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
+            <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+          </div>
+          <p className="text-sm text-slate-500 font-medium">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold text-grc-text">Dashboard</h1>
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <div className="flex items-center gap-1.5 text-slate-500">
+          <Home className="h-4 w-4" />
+          <span>Organization</span>
+        </div>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">Dashboard</span>
+      </nav>
 
-      {/* Stats Cards */}
+      {/* Page Header */}
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold text-slate-800">Dashboard Overview</h1>
+      </div>
+
+      {/* Key Metrics */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <StatsCard
           label="Departments"
-          value={stats.departments}
-          href="/organization/profile?tab=departments"
+          value={dashboardStats.departments}
+          href="/organization/profile?tab=departments&from=dashboard"
+          icon={Building2}
         />
         <StatsCard
           label="Stakeholders"
-          value={stats.stakeholders}
-          href="/organization/context"
+          value={dashboardStats.stakeholders}
+          href="/organization/context?from=dashboard"
+          icon={Users}
         />
         <StatsCard
           label="Regulations"
-          value={stats.regulations}
-          href="/organization/profile?tab=regulations"
+          value={dashboardStats.regulations}
+          href="/organization/profile?tab=regulations&from=dashboard"
+          icon={Scale}
         />
         <StatsCard
           label="Issues"
-          value={stats.issues}
-          href="/organization/context"
+          value={dashboardStats.issues}
+          href="/organization/context?tab=issuelist&from=dashboard"
+          icon={AlertTriangle}
         />
         <StatsCard
           label="Risks"
-          value={stats.risks}
-          href="/risks/register"
+          value={dashboardStats.risks}
+          href="/risks/register?from=dashboard"
+          icon={ShieldAlert}
         />
         <StatsCard
           label="Exceptions"
-          value={stats.exceptions}
-          href="/compliance/exception"
+          value={dashboardStats.exceptions}
+          href="/compliance/exceptions?from=dashboard"
+          icon={FileWarning}
         />
       </div>
 
-      {/* Charts Row 1: Compliance & Risk */}
+      {/* Compliance & Risk Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <StackedBarChart
+        <ComplianceProgressBar
           title="Overall Compliance Status"
           data={complianceData}
-          yAxisDataKey="framework"
-          bars={[
-            { dataKey: "compliant", fill: "#22C55E", name: "Compliant" },
-            { dataKey: "nonCompliant", fill: "#EF4444", name: "Non Compliant" },
-          ]}
+          onFrameworkClick={(frameworkId) => {
+            // Role-aware navigation for framework clicks
+            const isGRCAdmin = session?.user?.roles?.includes("GRCAdministrator");
+            if (isGRCAdmin) {
+              router.push(`/compliance/control?frameworkId=${frameworkId}&from=dashboard`);
+            } else {
+              // Customer Admin and other roles use role-specific framework controls page
+              router.push(`/roles/customer-administrator/compliance/framework/${frameworkId}/controls?from=dashboard`);
+            }
+          }}
         />
         <HorizontalBarChart
           title="Risk Assessment Overview"
           data={riskAssessmentData}
           yAxisDataKey="category"
           bars={[
-            { dataKey: "total", fill: "#146FF4", name: "Total" },
-            { dataKey: "closed", fill: "#22C55E", name: "Closed" },
+            { dataKey: "closed", fill: "#10B981", name: "Closed" },
+            { dataKey: "total", fill: "#6366F1", name: "Total" },
           ]}
+          onClick={() => router.push("/risks/assessment?from=dashboard")}
         />
       </div>
 
-      {/* Charts Row 2: Issues */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Issues & Exceptions Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <DonutChart
           title="Issue By Category"
           data={issueByCategoryData}
           centerLabel={issueCategoryTotal}
+          centerSubLabel="Total"
+          onClick={() => router.push("/organization/context?tab=issuelist&from=dashboard")}
         />
         <DonutChart
           title="Issue By Department"
           data={issueByDepartmentData}
           centerLabel={issueDepartmentTotal}
+          centerSubLabel="Total"
+          onClick={() => router.push("/organization/context?tab=issuelist&from=dashboard")}
         />
         <DonutChart
           title="Issue By Domain"
           data={issueByDomainData}
           centerLabel={issueDomainTotal}
+          centerSubLabel="Total"
+          onClick={() => router.push("/organization/context?tab=issuelist&from=dashboard")}
         />
         <DonutChart
-          title="Exception"
+          title="Exceptions"
           data={exceptionByTypeData}
           centerLabel={exceptionTotal}
+          centerSubLabel="Total"
+          onClick={() => router.push("/compliance/exceptions?from=dashboard")}
         />
       </div>
 
-      {/* Charts Row 3: KPIs */}
+      {/* KPI Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <StackedBarChart
           title="Evidence KPI"
           data={evidenceKPIData}
           yAxisDataKey="department"
           bars={[
-            { dataKey: "overdue", fill: "#EF4444", name: "Overdue" },
-            { dataKey: "achieved", fill: "#22C55E", name: "Achieved" },
+            { dataKey: "achieved", fill: "#10B981", name: "Achieved" },
+            { dataKey: "scheduled", fill: "#6366F1", name: "Scheduled" },
             { dataKey: "missed", fill: "#F59E0B", name: "Missed" },
-            { dataKey: "scheduled", fill: "#146FF4", name: "Scheduled" },
+            { dataKey: "overdue", fill: "#EF4444", name: "Overdue" },
           ]}
         />
         <StackedBarChart
@@ -159,40 +259,42 @@ export default function DashboardPage() {
           data={processKPIData}
           yAxisDataKey="department"
           bars={[
-            { dataKey: "overdue", fill: "#EF4444", name: "Overdue" },
-            { dataKey: "achieved", fill: "#22C55E", name: "Achieved" },
+            { dataKey: "achieved", fill: "#10B981", name: "Achieved" },
+            { dataKey: "scheduled", fill: "#6366F1", name: "Scheduled" },
             { dataKey: "missed", fill: "#F59E0B", name: "Missed" },
-            { dataKey: "scheduled", fill: "#146FF4", name: "Scheduled" },
+            { dataKey: "overdue", fill: "#EF4444", name: "Overdue" },
           ]}
         />
       </div>
 
-      {/* Charts Row 4: Governance & Exceptions Status */}
+      {/* Governance & Status Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <StackedBarChart
           title="Governance Status"
           data={governanceStatusData}
           yAxisDataKey="type"
           bars={[
-            { dataKey: "notUploaded", fill: "#6C717E", name: "Not Uploaded" },
+            { dataKey: "notUploaded", fill: "#EF4444", name: "Not Uploaded" },
             { dataKey: "draft", fill: "#F59E0B", name: "Draft" },
-            { dataKey: "approved", fill: "#22C55E", name: "Approved" },
-            { dataKey: "needsReview", fill: "#EF4444", name: "Needs Review" },
-            { dataKey: "published", fill: "#146FF4", name: "Published" },
+            { dataKey: "approved", fill: "#3B82F6", name: "Approved" },
+            { dataKey: "needsReview", fill: "#1E3A5F", name: "Needs Review" },
+            { dataKey: "published", fill: "#22C55E", name: "Published" },
           ]}
           layout="horizontal"
+          onClick={() => router.push("/compliance/governance?from=dashboard")}
         />
         <HorizontalBarChart
-          title="Exceptions Status"
+          title="Exception Status"
           data={exceptionStatusData}
           yAxisDataKey="type"
           bars={[
+            { dataKey: "approved", fill: "#10B981", name: "Approved" },
+            { dataKey: "authorized", fill: "#6366F1", name: "Authorized" },
             { dataKey: "pending", fill: "#F59E0B", name: "Pending" },
-            { dataKey: "approved", fill: "#22C55E", name: "Approved" },
-            { dataKey: "authorized", fill: "#146FF4", name: "Authorized" },
-            { dataKey: "closed", fill: "#6C717E", name: "Closed" },
+            { dataKey: "closed", fill: "#94A3B8", name: "Closed" },
             { dataKey: "overdue", fill: "#EF4444", name: "Overdue" },
           ]}
+          onClick={() => router.push("/compliance/exceptions?from=dashboard")}
         />
       </div>
     </div>

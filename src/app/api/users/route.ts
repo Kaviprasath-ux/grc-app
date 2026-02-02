@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
 import prisma from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 
-// GET all users (with optional role filter)
+// GET all users (with optional role and department filters)
+// Note: User model doesn't have auditHeadId or reportingManagerId fields - those filters removed
 export async function GET(request: NextRequest) {
   try {
+    const session = await auth();
     const { searchParams } = new URL(request.url);
     const role = searchParams.get("role");
+    const departmentId = searchParams.get("departmentId");
 
-    // Build where clause for role filtering
+    // Build where clause for role filtering and multi-tenant isolation
     const where: any = {};
     if (role) {
       where.userRoles = {
@@ -17,6 +22,17 @@ export async function GET(request: NextRequest) {
           },
         },
       };
+    }
+
+    // Filter by department if provided
+    if (departmentId) {
+      where.departmentId = departmentId;
+    }
+
+    // Multi-tenant: Filter users by customerAccountId if user is not GRCAdministrator
+    const userRoles = session?.user?.roles || [];
+    if (!userRoles.includes("GRCAdministrator") && session?.user?.customerAccountId) {
+      where.customerAccountId = session.user.customerAccountId;
     }
 
     const users = await prisma.user.findMany({
@@ -41,8 +57,10 @@ export async function GET(request: NextRequest) {
 }
 
 // POST create new user
+// Note: User model doesn't have reportingManagerId field - removed
 export async function POST(request: NextRequest) {
   try {
+    const session = await auth();
     const body = await request.json();
     const {
       userId,
@@ -69,17 +87,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Find the role in the Role table (for UserRole junction)
-    const roleRecord = role ? await prisma.role.findFirst({
-      where: { name: role }
-    }) : null;
+    // Find or create the role in the Role table (for UserRole junction)
+    let roleRecord = null;
+    if (role) {
+      roleRecord = await prisma.role.findFirst({
+        where: { name: role }
+      });
+
+      // If role doesn't exist, create it (this handles cases where seeding wasn't run)
+      if (!roleRecord) {
+        roleRecord = await prisma.role.create({
+          data: {
+            name: role,
+            description: `${role} role`,
+            isSystem: false,
+          },
+        });
+      }
+    }
+
+    // Multi-tenant: Get customerAccountId from session (users created by CustomerAdmin belong to same account)
+    const customerAccountId = session?.user?.customerAccountId || null;
+
+    // Hash password before storing
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await prisma.user.create({
       data: {
         userId,
         userName,
         email,
-        password, // In production, hash this password!
+        password: hashedPassword,
         firstName,
         lastName,
         fullName,
@@ -90,7 +128,13 @@ export async function POST(request: NextRequest) {
         timezone: timezone || "UTC",
         isActive: isActive ?? true,
         isBlocked: isBlocked ?? false,
-        departmentId,
+        // Use relation connect syntax for foreign keys
+        ...(departmentId && {
+          department: { connect: { id: departmentId } },
+        }),
+        ...(customerAccountId && {
+          customerAccount: { connect: { id: customerAccountId } },
+        }),
         // Create UserRole entry if role exists in Role table
         ...(roleRecord && {
           userRoles: {

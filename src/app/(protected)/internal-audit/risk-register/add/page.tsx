@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Upload, X, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { DatePicker } from "@/components/ui/date-picker";
 
 interface Department {
   id: string;
@@ -278,18 +279,25 @@ export default function AddRiskPage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => router.back()}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.push("/internal-audit/risk-register")}
+            className="h-8 w-8 text-slate-400 hover:text-slate-600"
+          >
+            <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div>
-            <p className="text-sm text-muted-foreground">Internal Audit</p>
-            <h1 className="text-2xl font-semibold">Add Risk</h1>
-          </div>
+          <h1 className="text-2xl font-bold text-slate-800">Add Risk</h1>
         </div>
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="flex items-center justify-center h-[60vh]">
+          <div className="flex flex-col items-center gap-4">
+            <div className="relative">
+              <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
+              <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+            </div>
+            <p className="text-sm text-slate-500 font-medium">Loading...</p>
+          </div>
         </div>
       </div>
     );
@@ -298,55 +306,56 @@ export default function AddRiskPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" onClick={() => router.push("/internal-audit/risk-register")}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
+      <div className="flex items-center gap-3">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => router.push("/internal-audit/risk-register")}
+          className="h-8 w-8 text-slate-400 hover:text-slate-600"
+        >
+          <ArrowLeft className="h-5 w-5" />
         </Button>
-        <div>
-          <p className="text-sm text-muted-foreground">Internal Audit</p>
-          <h1 className="text-2xl font-semibold">Add Risk Manually</h1>
-        </div>
+        <h1 className="text-2xl font-bold text-slate-800">Add Risk</h1>
       </div>
 
       {/* Form */}
       <form onSubmit={handleSubmit}>
-        <div className="bg-card rounded-lg border p-6 space-y-6">
+        <div className="bg-white rounded-xl border border-slate-200 p-6 space-y-6">
           {/* Basic Information */}
           <div className="space-y-4">
-            <h3 className="text-lg font-medium border-b pb-2">Basic Information</h3>
+            <h3 className="text-base font-semibold text-slate-800 border-b border-slate-100 pb-3">Basic Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="riskId">Risk ID</Label>
+                <Label className="text-sm font-medium text-slate-700">Risk ID</Label>
                 <Input
                   id="riskId"
                   value={formData.riskId}
                   onChange={(e) => setFormData({ ...formData, riskId: e.target.value })}
                   placeholder="Enter risk ID (e.g., RISK-001)"
-                  className="mt-2"
+                  className="mt-1.5 w-full bg-white"
                 />
               </div>
               <div>
-                <Label htmlFor="riskName">Risk Name *</Label>
+                <Label className="text-sm font-medium text-slate-700">Risk Name <span className="text-red-500">*</span></Label>
                 <Input
                   id="riskName"
                   value={formData.riskName}
                   onChange={(e) => setFormData({ ...formData, riskName: e.target.value })}
                   placeholder="Enter risk name"
-                  className="mt-2"
+                  className="mt-1.5 w-full bg-white"
                   required
                 />
               </div>
               <div>
-                <Label htmlFor="departmentId">Department</Label>
+                <Label className="text-sm font-medium text-slate-700">Department</Label>
                 <Select
                   value={formData.departmentId}
                   onValueChange={(value) => setFormData({ ...formData, departmentId: value })}
                 >
-                  <SelectTrigger className="mt-2">
+                  <SelectTrigger className="mt-1.5 w-full bg-white">
                     <SelectValue placeholder="Select department" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper" sideOffset={4}>
                     {departments.map((dept) => (
                       <SelectItem key={dept.id} value={dept.id}>
                         {dept.name}
@@ -356,15 +365,15 @@ export default function AddRiskPage() {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="categoryId">Category</Label>
+                <Label className="text-sm font-medium text-slate-700">Category</Label>
                 <Select
                   value={formData.categoryId}
                   onValueChange={(value) => setFormData({ ...formData, categoryId: value })}
                 >
-                  <SelectTrigger className="mt-2">
+                  <SelectTrigger className="mt-1.5 w-full bg-white">
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper" sideOffset={4}>
                     {categories.map((cat) => (
                       <SelectItem key={cat.id} value={cat.id}>
                         {cat.name}
@@ -374,15 +383,15 @@ export default function AddRiskPage() {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="auditTypeId">Audit Type</Label>
+                <Label className="text-sm font-medium text-slate-700">Audit Type</Label>
                 <Select
                   value={formData.auditTypeId}
                   onValueChange={(value) => setFormData({ ...formData, auditTypeId: value })}
                 >
-                  <SelectTrigger className="mt-2">
+                  <SelectTrigger className="mt-1.5 w-full bg-white">
                     <SelectValue placeholder="Select audit type" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper" sideOffset={4}>
                     {auditTypes.map((type) => (
                       <SelectItem key={type.id} value={type.id}>
                         {type.name}
@@ -392,44 +401,44 @@ export default function AddRiskPage() {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="sectionProcess">Section/Process</Label>
+                <Label className="text-sm font-medium text-slate-700">Section/Process</Label>
                 <Input
                   id="sectionProcess"
                   value={formData.sectionProcess}
                   onChange={(e) => setFormData({ ...formData, sectionProcess: e.target.value })}
                   placeholder="Enter section/process"
-                  className="mt-2"
+                  className="mt-1.5 w-full bg-white"
                 />
               </div>
               <div>
-                <Label htmlFor="subProcess">Sub Process</Label>
+                <Label className="text-sm font-medium text-slate-700">Sub Process</Label>
                 <Input
                   id="subProcess"
                   value={formData.subProcess}
                   onChange={(e) => setFormData({ ...formData, subProcess: e.target.value })}
                   placeholder="Enter sub process"
-                  className="mt-2"
+                  className="mt-1.5 w-full bg-white"
                 />
               </div>
               <div>
-                <Label htmlFor="activity">Activity</Label>
+                <Label className="text-sm font-medium text-slate-700">Activity</Label>
                 <Input
                   id="activity"
                   value={formData.activity}
                   onChange={(e) => setFormData({ ...formData, activity: e.target.value })}
                   placeholder="Enter activity"
-                  className="mt-2"
+                  className="mt-1.5 w-full bg-white"
                 />
               </div>
             </div>
             <div>
-              <Label htmlFor="riskDescription">Risk Description</Label>
+              <Label className="text-sm font-medium text-slate-700">Risk Description</Label>
               <Textarea
                 id="riskDescription"
                 value={formData.riskDescription}
                 onChange={(e) => setFormData({ ...formData, riskDescription: e.target.value })}
                 placeholder="Enter risk description"
-                className="mt-2"
+                className="mt-1.5 w-full bg-white"
                 rows={3}
               />
             </div>
@@ -437,18 +446,18 @@ export default function AddRiskPage() {
 
           {/* Inherent Risk Assessment */}
           <div className="space-y-4">
-            <h3 className="text-lg font-medium border-b pb-2">Inherent Risk Assessment</h3>
+            <h3 className="text-base font-semibold text-slate-800 border-b border-slate-100 pb-3">Inherent Risk Assessment</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="inherentLikelihood">Likelihood</Label>
+                <Label className="text-sm font-medium text-slate-700">Likelihood</Label>
                 <Select
                   value={formData.inherentLikelihood}
                   onValueChange={(value) => setFormData({ ...formData, inherentLikelihood: value })}
                 >
-                  <SelectTrigger className="mt-2">
+                  <SelectTrigger className="mt-1.5 w-full bg-white">
                     <SelectValue placeholder="Select likelihood" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper" sideOffset={4}>
                     {probabilities.map((prob) => (
                       <SelectItem key={prob.id} value={prob.value.toString()}>
                         {prob.label} ({prob.value})
@@ -458,15 +467,15 @@ export default function AddRiskPage() {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="inherentImpact">Impact</Label>
+                <Label className="text-sm font-medium text-slate-700">Impact</Label>
                 <Select
                   value={formData.inherentImpact}
                   onValueChange={(value) => setFormData({ ...formData, inherentImpact: value })}
                 >
-                  <SelectTrigger className="mt-2">
+                  <SelectTrigger className="mt-1.5 w-full bg-white">
                     <SelectValue placeholder="Select impact" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper" sideOffset={4}>
                     {impacts.map((imp) => (
                       <SelectItem key={imp.id} value={imp.value.toString()}>
                         {imp.label} ({imp.value})
@@ -480,29 +489,29 @@ export default function AddRiskPage() {
 
           {/* Control Information */}
           <div className="space-y-4">
-            <h3 className="text-lg font-medium border-b pb-2">Control Information</h3>
+            <h3 className="text-base font-semibold text-slate-800 border-b border-slate-100 pb-3">Control Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="controlDescription">Control Description</Label>
+                <Label className="text-sm font-medium text-slate-700">Control Description</Label>
                 <Textarea
                   id="controlDescription"
                   value={formData.controlDescription}
                   onChange={(e) => setFormData({ ...formData, controlDescription: e.target.value })}
                   placeholder="Enter control description"
-                  className="mt-2"
+                  className="mt-1.5 w-full bg-white"
                   rows={3}
                 />
               </div>
               <div>
-                <Label htmlFor="controlEffectiveness">Control Effectiveness</Label>
+                <Label className="text-sm font-medium text-slate-700">Control Effectiveness</Label>
                 <Select
                   value={formData.controlEffectiveness}
                   onValueChange={(value) => setFormData({ ...formData, controlEffectiveness: value })}
                 >
-                  <SelectTrigger className="mt-2">
+                  <SelectTrigger className="mt-1.5 w-full bg-white">
                     <SelectValue placeholder="Select effectiveness" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper" sideOffset={4}>
                     <SelectItem value="Effective">Effective</SelectItem>
                     <SelectItem value="Partially Effective">Partially Effective</SelectItem>
                     <SelectItem value="Ineffective">Ineffective</SelectItem>
@@ -514,18 +523,18 @@ export default function AddRiskPage() {
 
           {/* Residual Risk Assessment */}
           <div className="space-y-4">
-            <h3 className="text-lg font-medium border-b pb-2">Residual Risk Assessment</h3>
+            <h3 className="text-base font-semibold text-slate-800 border-b border-slate-100 pb-3">Residual Risk Assessment</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="residualLikelihood">Likelihood</Label>
+                <Label className="text-sm font-medium text-slate-700">Likelihood</Label>
                 <Select
                   value={formData.residualLikelihood}
                   onValueChange={(value) => setFormData({ ...formData, residualLikelihood: value })}
                 >
-                  <SelectTrigger className="mt-2">
+                  <SelectTrigger className="mt-1.5 w-full bg-white">
                     <SelectValue placeholder="Select likelihood" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper" sideOffset={4}>
                     {probabilities.map((prob) => (
                       <SelectItem key={prob.id} value={prob.value.toString()}>
                         {prob.label} ({prob.value})
@@ -535,15 +544,15 @@ export default function AddRiskPage() {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="residualImpact">Impact</Label>
+                <Label className="text-sm font-medium text-slate-700">Impact</Label>
                 <Select
                   value={formData.residualImpact}
                   onValueChange={(value) => setFormData({ ...formData, residualImpact: value })}
                 >
-                  <SelectTrigger className="mt-2">
+                  <SelectTrigger className="mt-1.5 w-full bg-white">
                     <SelectValue placeholder="Select impact" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper" sideOffset={4}>
                     {impacts.map((imp) => (
                       <SelectItem key={imp.id} value={imp.value.toString()}>
                         {imp.label} ({imp.value})
@@ -557,28 +566,27 @@ export default function AddRiskPage() {
 
           {/* Additional Information */}
           <div className="space-y-4">
-            <h3 className="text-lg font-medium border-b pb-2">Additional Information</h3>
+            <h3 className="text-base font-semibold text-slate-800 border-b border-slate-100 pb-3">Additional Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="creationDate">Creation Date</Label>
-                <Input
-                  id="creationDate"
-                  type="date"
+                <Label className="text-sm font-medium text-slate-700">Creation Date</Label>
+                <DatePicker
                   value={formData.creationDate}
-                  onChange={(e) => setFormData({ ...formData, creationDate: e.target.value })}
-                  className="mt-2"
+                  onChange={(date) => setFormData({ ...formData, creationDate: date ? date.toISOString().split('T')[0] : "" })}
+                  placeholder="Select date"
+                  className="mt-1.5 w-full"
                 />
               </div>
               <div>
-                <Label htmlFor="status">Status</Label>
+                <Label className="text-sm font-medium text-slate-700">Status</Label>
                 <Select
                   value={formData.status}
                   onValueChange={(value) => setFormData({ ...formData, status: value })}
                 >
-                  <SelectTrigger className="mt-2">
+                  <SelectTrigger className="mt-1.5 w-full bg-white">
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper" sideOffset={4}>
                     <SelectItem value="Open">Open</SelectItem>
                     <SelectItem value="Under Review">Under Review</SelectItem>
                     <SelectItem value="Closed">Closed</SelectItem>
@@ -586,13 +594,13 @@ export default function AddRiskPage() {
                 </Select>
               </div>
               <div className="md:col-span-2">
-                <Label htmlFor="auditComment">Audit Comment</Label>
+                <Label className="text-sm font-medium text-slate-700">Audit Comment</Label>
                 <Textarea
                   id="auditComment"
                   value={formData.auditComment}
                   onChange={(e) => setFormData({ ...formData, auditComment: e.target.value })}
                   placeholder="Enter audit comment"
-                  className="mt-2"
+                  className="mt-1.5 w-full bg-white"
                   rows={2}
                 />
               </div>
@@ -600,10 +608,10 @@ export default function AddRiskPage() {
 
             {/* File Upload Section */}
             <div className="mt-4">
-              <Label>Attachments</Label>
+              <Label className="text-sm font-medium text-slate-700">Attachments</Label>
               <div
-                className={`mt-2 border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer ${
-                  isDragOver ? "border-primary bg-primary/5" : "border-gray-300 hover:border-gray-400"
+                className={`mt-1.5 border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer ${
+                  isDragOver ? "border-primary bg-primary/5" : "border-slate-200 hover:border-slate-300"
                 }`}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
@@ -613,14 +621,14 @@ export default function AddRiskPage() {
                 {uploading ? (
                   <div className="flex flex-col items-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-3"></div>
-                    <p className="text-gray-500 text-sm">Uploading...</p>
+                    <p className="text-slate-500 text-sm">Uploading...</p>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center">
-                    <Upload className="h-8 w-8 text-gray-400 mb-2" />
-                    <p className="text-gray-600 text-sm font-medium">Drag and drop files here</p>
-                    <p className="text-gray-400 text-xs mt-1">or click to browse</p>
-                    <p className="text-gray-400 text-xs mt-2">
+                    <Upload className="h-8 w-8 text-slate-400 mb-2" />
+                    <p className="text-slate-600 text-sm font-medium">Drag and drop files here</p>
+                    <p className="text-slate-400 text-xs mt-1">or click to browse</p>
+                    <p className="text-slate-400 text-xs mt-2">
                       Supported: PDF, DOC, DOCX, XLS, XLSX, CSV, TXT, PNG, JPG
                     </p>
                   </div>
@@ -641,13 +649,13 @@ export default function AddRiskPage() {
                   {uploadedFiles.map((file) => (
                     <div
                       key={file.id}
-                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border"
+                      className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200"
                     >
                       <div className="flex items-center gap-3">
-                        <FileText className="h-5 w-5 text-gray-500" />
+                        <FileText className="h-5 w-5 text-slate-500" />
                         <div>
-                          <p className="text-sm font-medium text-gray-700">{file.name}</p>
-                          <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
+                          <p className="text-sm font-medium text-slate-700">{file.name}</p>
+                          <p className="text-xs text-slate-500">{formatFileSize(file.size)}</p>
                         </div>
                       </div>
                       <Button
@@ -658,7 +666,7 @@ export default function AddRiskPage() {
                           e.stopPropagation();
                           removeFile(file.id);
                         }}
-                        className="h-8 w-8 p-0 text-gray-400 hover:text-red-500"
+                        className="h-8 w-8 p-0 text-slate-400 hover:text-red-500"
                       >
                         <X className="h-4 w-4" />
                       </Button>
@@ -670,7 +678,7 @@ export default function AddRiskPage() {
           </div>
 
           {/* Form Actions */}
-          <div className="flex justify-end gap-4 pt-4 border-t">
+          <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
             <Button
               type="button"
               variant="outline"

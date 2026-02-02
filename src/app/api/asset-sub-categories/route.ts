@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 // GET all asset sub-categories
+// NOTE: AssetSubCategory model doesn't have customerAccountId yet - tenant filtering disabled
 export async function GET() {
   try {
     const subCategories = await prisma.assetSubCategory.findMany({
@@ -24,6 +25,7 @@ export async function GET() {
 }
 
 // POST create new asset sub-category
+// NOTE: AssetSubCategory model doesn't have customerAccountId yet - tenant filtering disabled
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();

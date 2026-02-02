@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 // GET all asset groups
+// NOTE: AssetGroup model doesn't have customerAccountId yet - tenant filtering disabled
 export async function GET() {
   try {
     const groups = await prisma.assetGroup.findMany({
@@ -23,6 +24,7 @@ export async function GET() {
 }
 
 // POST create new asset group
+// NOTE: AssetGroup model doesn't have customerAccountId yet - tenant filtering disabled
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -31,6 +33,18 @@ export async function POST(request: NextRequest) {
     if (!name?.trim()) {
       return NextResponse.json(
         { error: "Group name is required" },
+        { status: 400 }
+      );
+    }
+
+    // Check for duplicate
+    const existing = await prisma.assetGroup.findFirst({
+      where: { name: name.trim() },
+    });
+
+    if (existing) {
+      return NextResponse.json(
+        { error: "Group with this name already exists" },
         { status: 400 }
       );
     }

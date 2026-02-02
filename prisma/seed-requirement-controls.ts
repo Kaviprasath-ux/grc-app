@@ -5,6 +5,16 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("🌱 Seeding requirement-control links...");
 
+  // Get the default customer account
+  const customerAccount = await prisma.customerAccount.findFirst({
+    where: { code: "GRC_001" },
+  });
+  if (!customerAccount) {
+    console.log("❌ Customer account GRC_001 not found. Please run main seed first.");
+    return;
+  }
+  const customerAccountId = customerAccount.id;
+
   // Get the ISO 27001:2022 framework
   const framework = await prisma.framework.findFirst({
     where: { name: "ISO 27001:2022" },
@@ -129,7 +139,9 @@ async function main() {
   for (const exc of requirementExceptions) {
     if (exc.requirementId) {
       await prisma.requirementException.upsert({
-        where: { code: exc.code },
+        where: {
+          customerAccountId_code: { customerAccountId, code: exc.code }
+        },
         update: {
           name: exc.name,
           description: exc.description,
@@ -137,6 +149,7 @@ async function main() {
           endDate: exc.endDate,
         },
         create: {
+          customerAccountId,
           code: exc.code,
           name: exc.name,
           description: exc.description,

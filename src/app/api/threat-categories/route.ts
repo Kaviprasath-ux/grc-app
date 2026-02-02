@@ -1,56 +1,85 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
 
-// GET all threat categories
-export async function GET() {
-  try {
-    const categories = await prisma.threatCategory.findMany({
-      orderBy: { name: "asc" },
-      include: {
-        _count: {
-          select: { threats: true },
+// GET all threat categories - with tenant filtering
+export const GET = withAuth(
+  async (req: NextRequest, context, session) => {
+    try {
+      const tenantFilter = getTenantFilter(session);
+
+      const categories = await prisma.threatCategory.findMany({
+        where: tenantFilter,
+        orderBy: { name: "asc" },
+        include: {
+          _count: {
+            select: { threats: true },
+          },
         },
-      },
-    });
-    return NextResponse.json(categories);
-  } catch (error) {
-    console.error("Error fetching threat categories:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch threat categories" },
-      { status: 500 }
-    );
-  }
-}
-
-// POST create threat category
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const { name } = body;
-
-    if (!name?.trim()) {
+      });
+      return NextResponse.json(categories);
+    } catch (error) {
+      console.error("Error fetching threat categories:", error);
       return NextResponse.json(
-        { error: "Name is required" },
-        { status: 400 }
+        { error: "Failed to fetch threat categories" },
+        { status: 500 }
       );
     }
+  },
+  { resource: "risk.settings", action: "view" }
+);
 
-    const category = await prisma.threatCategory.create({
-      data: { name: name.trim() },
-    });
+// POST create threat category - with tenant assignment
+export const POST = withAuth(
+  async (req: NextRequest, context, session) => {
+    try {
+      const customerAccountId = getCustomerAccountId(session);
+      const body = await req.json();
+      const { name } = body;
 
-    return NextResponse.json(category, { status: 201 });
-  } catch (error: unknown) {
-    console.error("Error creating threat category:", error);
-    if ((error as { code?: string }).code === "P2002") {
+      if (!name?.trim()) {
+        return NextResponse.json(
+          { error: "Name is required" },
+          { status: 400 }
+        );
+      }
+
+      // Check for duplicate within the same tenant
+      const existing = await prisma.threatCategory.findFirst({
+        where: {
+          customerAccountId,
+          name: name.trim(),
+        },
+      });
+
+      if (existing) {
+        return NextResponse.json(
+          { error: "Category already exists" },
+          { status: 409 }
+        );
+      }
+
+      const category = await prisma.threatCategory.create({
+        data: {
+          customerAccountId,
+          name: name.trim(),
+        },
+      });
+
+      return NextResponse.json(category, { status: 201 });
+    } catch (error: unknown) {
+      console.error("Error creating threat category:", error);
+      if ((error as { code?: string }).code === "P2002") {
+        return NextResponse.json(
+          { error: "Category already exists" },
+          { status: 409 }
+        );
+      }
       return NextResponse.json(
-        { error: "Category already exists" },
-        { status: 409 }
+        { error: "Failed to create threat category" },
+        { status: 500 }
       );
     }
-    return NextResponse.json(
-      { error: "Failed to create threat category" },
-      { status: 500 }
-    );
-  }
-}
+  },
+  { resource: "risk.settings", action: "create" }
+);

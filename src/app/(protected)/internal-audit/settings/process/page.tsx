@@ -32,7 +32,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, Plus, Pencil, Trash2, ArrowUpDown, Download, Upload, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, ArrowUpDown, Download, Upload, Search, Activity, CheckCircle, AlertTriangle, XCircle, Home, ChevronRight } from "lucide-react";
+import Link from "next/link";
 import {
   Table,
   TableBody,
@@ -42,6 +43,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
+import { DatePicker } from "@/components/ui/date-picker";
 
 interface Process {
   id: string;
@@ -545,78 +547,130 @@ export default function ProcessPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="space-y-6">
+        {/* Breadcrumb */}
+        <nav className="flex items-center gap-1.5 text-sm">
+          <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>Internal Audit</span>
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <Link href="/internal-audit/settings" className="text-slate-500 hover:text-primary-600 transition-colors">
+            Settings
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <span className="text-primary-700 font-medium">Process</span>
+        </nav>
+
+        <h1 className="text-2xl font-bold text-slate-800">Process</h1>
+        <div className="flex items-center justify-center h-[60vh]">
+          <div className="flex flex-col items-center gap-4">
+            <div className="relative">
+              <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
+              <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+            </div>
+            <p className="text-sm text-slate-500 font-medium">Loading processes...</p>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.push("/internal-audit/settings")}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold">Process</h1>
-            <p className="text-gray-600">Define audit processes and workflows</p>
-          </div>
-        </div>
-      </div>
+    <div className="space-y-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>Internal Audit</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <Link href="/internal-audit/settings" className="text-slate-500 hover:text-primary-600 transition-colors">
+          Settings
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">Process</span>
+      </nav>
 
-      {/* Content Card */}
-      <div className="bg-card rounded-lg border">
-        <div className="p-6 space-y-6">
-          <h2 className="text-xl font-semibold">Process Hub</h2>
+      {/* Page Header */}
+      <h1 className="text-2xl font-bold text-slate-800">Process</h1>
+
+      {/* Content */}
+      <div className="space-y-6">
 
         {/* Summary Cards */}
-        <div className="flex gap-4">
-          <Card className="flex-1 cursor-pointer hover:border-primary">
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold">{stats.notAssessed}</div>
-              <div className="text-sm text-muted-foreground">Not Assessed</div>
-            </CardContent>
-          </Card>
-          <Card className="flex-1 cursor-pointer hover:border-primary border-green-500">
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-green-600">{stats.low}</div>
-              <div className="text-sm text-muted-foreground">Low</div>
-            </CardContent>
-          </Card>
-          <Card className="flex-1 cursor-pointer hover:border-primary border-yellow-500">
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-yellow-600">{stats.medium}</div>
-              <div className="text-sm text-muted-foreground">Medium</div>
-            </CardContent>
-          </Card>
-          <Card className="flex-1 cursor-pointer hover:border-primary border-red-500">
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-red-600">{stats.high}</div>
-              <div className="text-sm text-muted-foreground">High</div>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white">
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
+                <Activity className="h-5 w-5" />
+              </div>
+            </div>
+            <div className="text-3xl font-bold tracking-tight text-slate-800">
+              {stats.notAssessed}
+            </div>
+            <div className="mt-1">
+              <span className="text-sm font-medium text-slate-500">Not Assessed</span>
+            </div>
+          </div>
+
+          <div className="relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white">
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
+                <CheckCircle className="h-5 w-5" />
+              </div>
+            </div>
+            <div className="text-3xl font-bold tracking-tight text-slate-800">
+              {stats.low}
+            </div>
+            <div className="mt-1">
+              <span className="text-sm font-medium text-slate-500">Low</span>
+            </div>
+          </div>
+
+          <div className="relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white">
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
+                <AlertTriangle className="h-5 w-5" />
+              </div>
+            </div>
+            <div className="text-3xl font-bold tracking-tight text-slate-800">
+              {stats.medium}
+            </div>
+            <div className="mt-1">
+              <span className="text-sm font-medium text-slate-500">Medium</span>
+            </div>
+          </div>
+
+          <div className="relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white">
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
+                <XCircle className="h-5 w-5" />
+              </div>
+            </div>
+            <div className="text-3xl font-bold tracking-tight text-slate-800">
+              {stats.high}
+            </div>
+            <div className="mt-1">
+              <span className="text-sm font-medium text-slate-500">High</span>
+            </div>
+          </div>
         </div>
 
         {/* Filters and Actions */}
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input
               placeholder="Search By Process ID, Name"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
+              className="pl-10 w-[250px] h-9 bg-white border-slate-200"
             />
           </div>
 
           <Select value={filterDepartment || "all"} onValueChange={(v) => setFilterDepartment(v === "all" ? "" : v)}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-[160px] h-9 bg-white border-slate-200">
               <SelectValue placeholder="Department" />
             </SelectTrigger>
             <SelectContent>
@@ -630,7 +684,7 @@ export default function ProcessPage() {
           </Select>
 
           <Select value={filterOwner || "all"} onValueChange={(v) => setFilterOwner(v === "all" ? "" : v)}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-[160px] h-9 bg-white border-slate-200">
               <SelectValue placeholder="Process Owner" />
             </SelectTrigger>
             <SelectContent>
@@ -644,7 +698,7 @@ export default function ProcessPage() {
           </Select>
 
           <Select value={filterFrequency || "all"} onValueChange={(v) => setFilterFrequency(v === "all" ? "" : v)}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-[160px] h-9 bg-white border-slate-200">
               <SelectValue placeholder="Process Frequency" />
             </SelectTrigger>
             <SelectContent>
@@ -657,7 +711,9 @@ export default function ProcessPage() {
             </SelectContent>
           </Select>
 
-          <div className="flex gap-2 ml-auto">
+          <div className="flex-1" />
+
+          <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={handleExport}>
               <Download className="h-4 w-4 mr-2" />
               Export
@@ -673,7 +729,7 @@ export default function ProcessPage() {
               className="hidden"
               onChange={handleImport}
             />
-            <Button onClick={openAddDialog}>
+            <Button size="sm" onClick={openAddDialog}>
               <Plus className="h-4 w-4 mr-2" />
               New Process
             </Button>
@@ -681,203 +737,151 @@ export default function ProcessPage() {
         </div>
 
         {/* Table */}
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>
-                <Button
-                  variant="ghost"
-                  onClick={() => handleSort("processCode")}
-                  className="flex items-center gap-2 -ml-4"
-                >
-                  Reference ID
-                  <ArrowUpDown className="h-4 w-4" />
-                </Button>
-              </TableHead>
-              <TableHead>
-                <Button
-                  variant="ghost"
-                  onClick={() => handleSort("name")}
-                  className="flex items-center gap-2 -ml-4"
-                >
-                  Name
-                  <ArrowUpDown className="h-4 w-4" />
-                </Button>
-              </TableHead>
-              <TableHead>
-                <Button
-                  variant="ghost"
-                  onClick={() => handleSort("department")}
-                  className="flex items-center gap-2 -ml-4"
-                >
-                  Department
-                  <ArrowUpDown className="h-4 w-4" />
-                </Button>
-              </TableHead>
-              <TableHead>
-                <Button
-                  variant="ghost"
-                  onClick={() => handleSort("owner")}
-                  className="flex items-center gap-2 -ml-4"
-                >
-                  Process Owner
-                  <ArrowUpDown className="h-4 w-4" />
-                </Button>
-              </TableHead>
-              <TableHead>
-                <Button
-                  variant="ghost"
-                  onClick={() => handleSort("processFrequency")}
-                  className="flex items-center gap-2 -ml-4"
-                >
-                  Process Frequency
-                  <ArrowUpDown className="h-4 w-4" />
-                </Button>
-              </TableHead>
-              <TableHead>
-                <Button
-                  variant="ghost"
-                  onClick={() => handleSort("natureOfImplementation")}
-                  className="flex items-center gap-2 -ml-4"
-                >
-                  Nature Of Implementation
-                  <ArrowUpDown className="h-4 w-4" />
-                </Button>
-              </TableHead>
-              <TableHead>
-                <Button
-                  variant="ghost"
-                  onClick={() => handleSort("riskRating")}
-                  className="flex items-center gap-2 -ml-4"
-                >
-                  Risk Rating
-                  <ArrowUpDown className="h-4 w-4" />
-                </Button>
-              </TableHead>
-              <TableHead className="w-[100px]">Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredProcesses.map((process) => (
-              <TableRow key={process.id}>
-                <TableCell>{process.processCode}</TableCell>
-                <TableCell>{process.name}</TableCell>
-                <TableCell>{process.department?.name || ""}</TableCell>
-                <TableCell>{process.owner?.fullName || ""}</TableCell>
-                <TableCell>{process.processFrequency || ""}</TableCell>
-                <TableCell>{process.natureOfImplementation || ""}</TableCell>
-                <TableCell>
-                  {process.riskRating && (
-                    <span
-                      className={`px-2 py-1 rounded text-xs font-medium ${
-                        process.riskRating === "High"
-                          ? "bg-red-100 text-red-700"
-                          : process.riskRating === "Medium"
-                          ? "bg-yellow-100 text-yellow-700"
-                          : "bg-green-100 text-green-700"
-                      }`}
-                    >
-                      {process.riskRating}
-                    </span>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => openEditDialog(process)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => openDeleteDialog(process)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </TableCell>
+        <div className="bg-white rounded-xl border border-slate-200">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-b border-slate-100 bg-slate-50/50">
+                <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4">Reference ID</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 h-12">Name</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 h-12">Department</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 h-12">Process Owner</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 h-12">Frequency</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 h-12">Implementation</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 h-12">Risk Rating</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[100px]">Action</TableHead>
               </TableRow>
-            ))}
-            {filteredProcesses.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                  No processes found.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {filteredProcesses.map((process) => (
+                <TableRow key={process.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                  <TableCell className="py-3 text-sm text-slate-600 pl-4">{process.processCode}</TableCell>
+                  <TableCell className="py-3 text-sm font-medium text-slate-800">{process.name}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-600">{process.department?.name || ""}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-600">{process.owner?.fullName || ""}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-600">{process.processFrequency || ""}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-600">{process.natureOfImplementation || ""}</TableCell>
+                  <TableCell className="py-3">
+                    {process.riskRating && (
+                      <span
+                        className={`px-2 py-1 rounded text-xs font-medium ${
+                          process.riskRating === "High"
+                            ? "bg-red-100 text-red-700"
+                            : process.riskRating === "Medium"
+                            ? "bg-yellow-100 text-yellow-700"
+                            : "bg-green-100 text-green-700"
+                        }`}
+                      >
+                        {process.riskRating}
+                      </span>
+                    )}
+                  </TableCell>
+                  <TableCell className="py-3 pr-4">
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                        onClick={() => openEditDialog(process)}
+                        title="Edit"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+                        onClick={() => openDeleteDialog(process)}
+                        title="Delete"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {filteredProcesses.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-8 text-slate-500">
+                    No processes found
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
 
           {/* Pagination info */}
-          <div className="mt-4 text-sm text-gray-500">
-            Showing {filteredProcesses.length} of {processes.length} processes
+          <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
+            <span className="text-sm text-slate-500">
+              Showing {filteredProcesses.length} of {processes.length} processes
+            </span>
           </div>
         </div>
       </div>
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={handleCloseDialog}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editItem ? "Edit Process" : "New Process"}</DialogTitle>
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] overflow-hidden flex flex-col">
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{editItem ? "Edit Process" : "New Process"}</DialogTitle>
+            </DialogHeader>
             <div className="flex items-center justify-center mt-4">
               {[1, 2, 3].map((step) => (
                 <div key={step} className="flex items-center">
-                  <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
+                  <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 text-sm font-medium ${
                     step === currentStep
                       ? "bg-primary text-primary-foreground border-primary"
                       : step < currentStep
-                      ? "bg-primary/20 border-primary"
-                      : "border-gray-300"
+                      ? "bg-primary/20 border-primary text-primary"
+                      : "border-slate-300 text-slate-400"
                   }`}>
                     {step}
                   </div>
                   {step < 3 && (
-                    <div className={`w-16 h-0.5 ${step < currentStep ? "bg-primary" : "bg-gray-300"}`} />
+                    <div className={`w-16 h-0.5 ${step < currentStep ? "bg-primary" : "bg-slate-200"}`} />
                   )}
                 </div>
               ))}
             </div>
-            <p className="text-center mt-2 font-medium">{getStepTitle()}</p>
-          </DialogHeader>
-          <div className="space-y-4 py-4">{currentStep === 1 && (
+            <p className="text-center mt-2 text-sm font-medium text-slate-600">{getStepTitle()}</p>
+          </div>
+
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            <div className="space-y-5">{currentStep === 1 && (
             <>
             <div className="grid grid-cols-2 gap-4">
               {/* Process ID (readonly) */}
               <div>
-                <Label>Process ID</Label>
+                <Label className="text-sm font-medium text-slate-700">Process ID</Label>
                 <Input
                   value={editItem ? editItem.processCode : nextProcessId}
                   disabled
-                  className="mt-2 bg-muted"
+                  className="mt-1.5 w-full bg-slate-50"
                 />
               </div>
 
               {/* Process Name */}
               <div>
-                <Label htmlFor="name">Process Name</Label>
+                <Label className="text-sm font-medium text-slate-700">Process Name <span className="text-red-500">*</span></Label>
                 <Input
-                  id="name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="Enter Process Name"
-                  className="mt-2"
+                  className="mt-1.5 w-full bg-white"
                 />
               </div>
             </div>
 
             {/* Description */}
             <div>
-              <Label htmlFor="description">Description</Label>
+              <Label className="text-sm font-medium text-slate-700">Description</Label>
               <Textarea
-                id="description"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="Enter Description"
-                className="mt-2"
+                className="mt-1.5 w-full bg-white"
                 rows={3}
               />
             </div>
@@ -885,12 +889,12 @@ export default function ProcessPage() {
             <div className="grid grid-cols-2 gap-4">
               {/* Department */}
               <div>
-                <Label>Department</Label>
+                <Label className="text-sm font-medium text-slate-700">Department</Label>
                 <Select
                   value={formData.departmentId}
                   onValueChange={(value) => setFormData({ ...formData, departmentId: value })}
                 >
-                  <SelectTrigger className="mt-2">
+                  <SelectTrigger className="mt-1.5 w-full bg-white border-slate-200">
                     <SelectValue placeholder="Select Department" />
                   </SelectTrigger>
                   <SelectContent>
@@ -905,12 +909,12 @@ export default function ProcessPage() {
 
               {/* Process Owner */}
               <div>
-                <Label>Process Owner</Label>
+                <Label className="text-sm font-medium text-slate-700">Process Owner</Label>
                 <Select
                   value={formData.ownerId}
                   onValueChange={(value) => setFormData({ ...formData, ownerId: value })}
                 >
-                  <SelectTrigger className="mt-2">
+                  <SelectTrigger className="mt-1.5 w-full bg-white border-slate-200">
                     <SelectValue placeholder="Select Owner" />
                   </SelectTrigger>
                   <SelectContent>
@@ -927,12 +931,12 @@ export default function ProcessPage() {
             <div className="grid grid-cols-2 gap-4">
               {/* Process Frequency */}
               <div>
-                <Label>Process Frequency</Label>
+                <Label className="text-sm font-medium text-slate-700">Process Frequency</Label>
                 <Select
                   value={formData.processFrequency}
                   onValueChange={(value) => setFormData({ ...formData, processFrequency: value })}
                 >
-                  <SelectTrigger className="mt-2">
+                  <SelectTrigger className="mt-1.5 w-full bg-white border-slate-200">
                     <SelectValue placeholder="Select Process Frequency" />
                   </SelectTrigger>
                   <SelectContent>
@@ -947,14 +951,14 @@ export default function ProcessPage() {
 
               {/* Nature of Implementation */}
               <div>
-                <Label>Nature of Implementation</Label>
+                <Label className="text-sm font-medium text-slate-700">Nature of Implementation</Label>
                 <Select
                   value={formData.natureOfImplementation}
                   onValueChange={(value) =>
                     setFormData({ ...formData, natureOfImplementation: value })
                   }
                 >
-                  <SelectTrigger className="mt-2">
+                  <SelectTrigger className="mt-1.5 w-full bg-white border-slate-200">
                     <SelectValue placeholder="Select Nature Of Implementation" />
                   </SelectTrigger>
                   <SelectContent>
@@ -1054,11 +1058,10 @@ export default function ProcessPage() {
               {/* Last Audit Date */}
               <div>
                 <Label htmlFor="lastAuditDate">Last Audit Date</Label>
-                <Input
-                  id="lastAuditDate"
-                  type="date"
+                <DatePicker
                   value={formData.lastAuditDate}
-                  onChange={(e) => setFormData({ ...formData, lastAuditDate: e.target.value })}
+                  onChange={(date) => setFormData({ ...formData, lastAuditDate: date ? date.toISOString().split('T')[0] : "" })}
+                  placeholder="Select date"
                   className="mt-2"
                 />
               </div>
@@ -1236,8 +1239,11 @@ export default function ProcessPage() {
             </div>
             </>
             )}
+            </div>
           </div>
-          <DialogFooter className="flex justify-between">
+
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex justify-between items-center px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={handleCloseDialog}>
               Cancel
             </Button>
@@ -1258,22 +1264,24 @@ export default function ProcessPage() {
                 </Button>
               )}
             </div>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmation</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this process?
+        <AlertDialogContent className="sm:max-w-[400px] p-0 gap-0">
+          <AlertDialogHeader className="px-6 py-5 border-b border-slate-100">
+            <AlertDialogTitle className="text-lg font-semibold text-slate-800">Confirm Delete</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm text-slate-500 mt-1">
+              Are you sure you want to delete this process? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction onClick={handleDelete}>OK</AlertDialogAction>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogFooter className="flex justify-end gap-2 px-6 py-4">
+            <AlertDialogCancel className="mt-0">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+              Delete
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

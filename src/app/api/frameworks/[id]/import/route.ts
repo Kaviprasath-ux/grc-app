@@ -1,26 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { withAuth, getCustomerAccountId } from "@/lib/api-auth";
 import { parseExcelFile, ColumnDefinition, ValidationError } from "@/lib/excel-import";
 
 // Column definitions for framework requirements import
 const REQUIREMENT_COLUMNS: ColumnDefinition[] = [
-  { name: "Requirement Category", required: true, type: "string" },
-  { name: "Requirement code", required: true, type: "string" },
-  { name: "Requirement", required: true, type: "string" },
+  { name: "Requirement Code", required: true, type: "string" },
+  { name: "Requirement Name", required: true, type: "string" },
   { name: "Description", required: false, type: "string" },
-  { name: "Control mapping", required: false, type: "string" },
-  { name: "Requirement type", required: false, type: "string" },
-  { name: "Chapter type", required: false, type: "string" },
+  { name: "Category", required: true, type: "string" },
+  { name: "Control Mapping", required: false, type: "string" },
 ];
 
 interface RequirementRow extends Record<string, unknown> {
-  "Requirement Category": string;
-  "Requirement code": string;
-  Requirement: string;
+  "Requirement Code": string;
+  "Requirement Name": string;
   Description: string;
-  "Control mapping": string;
-  "Requirement type": string;
-  "Chapter type": string;
+  Category: string;
+  "Control Mapping": string;
 }
 
 /**
@@ -78,12 +75,11 @@ function generateControlCode(existingCodes: Set<string>, baseName: string): stri
 }
 
 // POST import requirements from Excel
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id: frameworkId } = await params;
+export const POST = withAuth(
+  async (request: NextRequest, context: { params: Promise<{ id: string }> }, session) => {
+    try {
+      const customerAccountId = getCustomerAccountId(session);
+      const { id: frameworkId } = await context.params;
 
     // Check if framework exists
     const framework = await prisma.framework.findUnique({
@@ -94,6 +90,14 @@ export async function POST(
       return NextResponse.json(
         { error: "Framework not found" },
         { status: 404 }
+      );
+    }
+
+    // Validate tenant access - users can only import into their own frameworks
+    if (framework.customerAccountId !== customerAccountId) {
+      return NextResponse.json(
+        { error: "Access denied. You can only import into frameworks in your own account." },
+        { status: 403 }
       );
     }
 
@@ -147,7 +151,7 @@ export async function POST(
     // Group requirements by category
     const categoryMap = new Map<string, RequirementRow[]>();
     for (const row of result.data) {
-      const category = row["Requirement Category"];
+      const category = row["Category"];
       if (!categoryMap.has(category)) {
         categoryMap.set(category, []);
       }
@@ -157,7 +161,7 @@ export async function POST(
     // Track row numbers for error reporting
     const rowNumberMap = new Map<string, number>();
     result.data.forEach((row, index) => {
-      rowNumberMap.set(row["Requirement code"], index + 2); // +2 for header row and 0-index
+      rowNumberMap.set(row["Requirement Code"], index + 2); // +2 for header row and 0-index
     });
 
     // Fetch all existing controls for efficient lookup
@@ -203,6 +207,7 @@ export async function POST(
         if (!category) {
           category = await tx.requirementCategory.create({
             data: {
+              customerAccountId,
               name: categoryName,
               frameworkId,
               sortOrder: sortOrder++,
@@ -216,7 +221,7 @@ export async function POST(
           const existingReq = await tx.requirement.findFirst({
             where: {
               frameworkId,
-              code: req["Requirement code"],
+              code: req["Requirement Code"],
             },
           });
 
@@ -225,11 +230,12 @@ export async function POST(
           if (!existingReq) {
             const newReq = await tx.requirement.create({
               data: {
-                code: req["Requirement code"],
-                name: req.Requirement,
+                customerAccountId,
+                code: req["Requirement Code"],
+                name: req["Requirement Name"],
                 description: req.Description || null,
-                requirementType: req["Requirement type"] || "Mandatory",
-                chapterType: req["Chapter type"] || "Domain",
+                requirementType: "Mandatory",
+                chapterType: "Domain",
                 frameworkId,
                 categoryId: category.id,
                 level: 2,
@@ -243,11 +249,11 @@ export async function POST(
           }
 
           // Parse and store control references for later processing
-          const controlRefs = parseControlMapping(req["Control mapping"]);
+          const controlRefs = parseControlMapping(req["Control Mapping"]);
           if (controlRefs.length > 0) {
             createdRequirements.push({
               id: requirementId,
-              code: req["Requirement code"],
+              code: req["Requirement Code"],
               controlRefs,
             });
           }
@@ -275,6 +281,7 @@ export async function POST(
               // Create the new control with required defaults
               const newControl = await tx.control.create({
                 data: {
+                  customerAccountId,
                   controlCode: newControlCode,
                   name: controlRef, // Use exact trimmed token value
                   status: "Non Compliant", // Default status from schema
@@ -367,4 +374,6 @@ export async function POST(
       { status: 500 }
     );
   }
-}
+  },
+  { resource: "compliance.framework", action: "create" }
+);

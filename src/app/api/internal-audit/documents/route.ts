@@ -1,130 +1,158 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 
 // GET documents organized by category with pagination
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const category = searchParams.get("category");
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "10");
-    const skip = (page - 1) * limit;
+// NOTE: InternalAuditDocument doesn't have auditHeadId - using tenant filter only
+export const GET = withAuth(
+  async (request: NextRequest, context, session) => {
+    try {
+      const { searchParams } = new URL(request.url);
+      const category = searchParams.get("category");
+      const page = parseInt(searchParams.get("page") || "1");
+      const limit = parseInt(searchParams.get("limit") || "10");
+      const skip = (page - 1) * limit;
 
-    const where = category ? { category } : {};
+      // Apply tenant filter only (model doesn't have auditHeadId)
+      const tenantFilter = getTenantFilter(session);
+      const baseWhere = { ...tenantFilter };
 
-    const [documents, total] = await Promise.all([
-      prisma.internalAuditDocument.findMany({
-        where,
-        orderBy: { uploadedAt: "desc" },
-        skip,
-        take: limit,
-      }),
-      prisma.internalAuditDocument.count({ where }),
-    ]);
+      const where = category ? { ...baseWhere, category } : baseWhere;
 
-    // If no category filter, organize by category
-    if (!category) {
-      const policies = await prisma.internalAuditDocument.findMany({
-        where: { category: "Policy" },
-        orderBy: { uploadedAt: "desc" },
-      });
-      const regulations = await prisma.internalAuditDocument.findMany({
-        where: { category: "Regulation" },
-        orderBy: { uploadedAt: "desc" },
-      });
-      const auditReports = await prisma.internalAuditDocument.findMany({
-        where: { category: "PreviousReport" },
-        orderBy: { uploadedAt: "desc" },
-      });
+      const [documents, total] = await Promise.all([
+        prisma.internalAuditDocument.findMany({
+          where,
+          orderBy: { uploadedAt: "desc" },
+          skip,
+          take: limit,
+        }),
+        prisma.internalAuditDocument.count({ where }),
+      ]);
+
+      // If no category filter, organize by category
+      if (!category) {
+        const policies = await prisma.internalAuditDocument.findMany({
+          where: { ...baseWhere, category: "Policy" },
+          orderBy: { uploadedAt: "desc" },
+        });
+        const regulations = await prisma.internalAuditDocument.findMany({
+          where: { ...baseWhere, category: "Regulation" },
+          orderBy: { uploadedAt: "desc" },
+        });
+        const auditReports = await prisma.internalAuditDocument.findMany({
+          where: { ...baseWhere, category: "PreviousReport" },
+          orderBy: { uploadedAt: "desc" },
+        });
+
+        return NextResponse.json({
+          policies,
+          regulations,
+          auditReports,
+          policiesCount: policies.length,
+          regulationsCount: regulations.length,
+          auditReportsCount: auditReports.length,
+        });
+      }
 
       return NextResponse.json({
-        policies,
-        regulations,
-        auditReports,
-        policiesCount: policies.length,
-        regulationsCount: regulations.length,
-        auditReportsCount: auditReports.length,
+        documents,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+        },
       });
-    }
-
-    return NextResponse.json({
-      documents,
-      pagination: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
-    });
-  } catch (error) {
-    console.error("Error fetching documents:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch documents" },
-      { status: 500 }
-    );
-  }
-}
-
-// POST - Upload a new document
-export async function POST(request: NextRequest) {
-  try {
-    const formData = await request.formData();
-    const file = formData.get("file") as File;
-    const category = formData.get("category") as string || "Policy";
-    const name = formData.get("name") as string;
-    const description = formData.get("description") as string;
-
-    if (!file) {
+    } catch (error) {
+      console.error("Error fetching documents:", error);
       return NextResponse.json(
-        { error: "No file provided" },
-        { status: 400 }
+        { error: "Failed to fetch documents" },
+        { status: 500 }
       );
     }
+  },
+  { resource: "audit.documents", action: "view" }
+);
 
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = path.join(process.cwd(), "uploads", "documents");
-    await mkdir(uploadsDir, { recursive: true });
+// POST - Upload a new document
+// NOTE: InternalAuditDocument doesn't have auditHeadId - using tenant filter only
+export const POST = withAuth(
+  async (request: NextRequest, context, session) => {
+    try {
+      const formData = await request.formData();
+      const file = formData.get("file") as File;
+      const category = formData.get("category") as string || "Policy";
+      const name = formData.get("name") as string;
+      const description = formData.get("description") as string;
 
-    // Generate unique filename
-    const timestamp = Date.now();
-    const originalName = file.name;
-    const ext = path.extname(originalName);
-    const baseName = path.basename(originalName, ext);
-    const uniqueFileName = `${baseName}-${timestamp}${ext}`;
-    const filePath = path.join(uploadsDir, uniqueFileName);
+      // Get tenant ID for data isolation
+      const customerAccountId = getCustomerAccountId(session);
 
-    // Write file to disk
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    await writeFile(filePath, buffer);
+      if (!file) {
+        return NextResponse.json(
+          { error: "No file provided" },
+          { status: 400 }
+        );
+      }
 
-    // Generate document code
-    const count = await prisma.internalAuditDocument.count();
-    const documentCode = `DOC-${String(count + 1).padStart(4, "0")}`;
+      // Create uploads directory if it doesn't exist
+      const uploadsDir = path.join(process.cwd(), "uploads", "documents");
+      await mkdir(uploadsDir, { recursive: true });
 
-    // Create document record in database
-    const document = await prisma.internalAuditDocument.create({
-      data: {
-        documentCode,
-        name: name || originalName,
-        description: description || null,
-        category,
-        fileName: originalName,
-        fileType: ext.replace(".", "").toLowerCase(),
-        fileSize: buffer.length,
-        filePath: `/uploads/documents/${uniqueFileName}`,
-        uploadedAt: new Date(),
-      },
-    });
+      // Generate unique filename
+      const timestamp = Date.now();
+      const originalName = file.name;
+      const ext = path.extname(originalName);
+      const baseName = path.basename(originalName, ext);
+      const uniqueFileName = `${baseName}-${timestamp}${ext}`;
+      const filePath = path.join(uploadsDir, uniqueFileName);
 
-    return NextResponse.json(document, { status: 201 });
-  } catch (error) {
-    console.error("Error uploading document:", error);
-    return NextResponse.json(
-      { error: "Failed to upload document" },
-      { status: 500 }
-    );
-  }
-}
+      // Write file to disk
+      const bytes = await file.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+      await writeFile(filePath, buffer);
+
+      // Generate document code - find the highest existing code and increment
+      const lastDoc = await prisma.internalAuditDocument.findFirst({
+        orderBy: { documentCode: "desc" },
+        select: { documentCode: true },
+      });
+
+      let nextNum = 1;
+      if (lastDoc?.documentCode) {
+        const match = lastDoc.documentCode.match(/DOC-(\d+)/);
+        if (match) {
+          nextNum = parseInt(match[1], 10) + 1;
+        }
+      }
+      const documentCode = `DOC-${String(nextNum).padStart(4, "0")}`;
+
+      // Create document record in database
+      const document = await prisma.internalAuditDocument.create({
+        data: {
+          documentCode,
+          name: name || originalName,
+          description: description || null,
+          category,
+          fileName: originalName,
+          fileType: ext.replace(".", "").toLowerCase(),
+          fileSize: buffer.length,
+          filePath: `/uploads/documents/${uniqueFileName}`,
+          uploadedAt: new Date(),
+          ...(customerAccountId ? { customerAccountId } : {}),
+        },
+      });
+
+      return NextResponse.json(document, { status: 201 });
+    } catch (error) {
+      console.error("Error uploading document:", error);
+      return NextResponse.json(
+        { error: "Failed to upload document" },
+        { status: 500 }
+      );
+    }
+  },
+  { resource: "audit.documents", action: "create" }
+);

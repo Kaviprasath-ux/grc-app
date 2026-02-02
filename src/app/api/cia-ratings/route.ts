@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 // GET all CIA ratings
+// NOTE: CIARating model doesn't have customerAccountId yet - tenant filtering disabled
 export async function GET() {
   try {
     const ratings = await prisma.cIARating.findMany({
@@ -18,6 +19,7 @@ export async function GET() {
 }
 
 // POST create new CIA rating
+// NOTE: CIARating model doesn't have customerAccountId yet - tenant filtering disabled
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();

@@ -32,6 +32,7 @@ export const RESOURCES = {
   'organization.profile': '/organization/profile',
   'organization.context': '/organization/context',
   'organization.users': '/organization/users',
+  'organization.department': '/organization/department',
   'organization.process': '/organization/process',
   'organization.settings': '/organization/settings',
   'organization.settings.departments': '/organization/settings/departments',
@@ -56,6 +57,7 @@ export const RESOURCES = {
   // Asset Management Module
   'asset.dashboard': '/asset-management',
   'asset.inventory': '/asset-management/inventory',
+  'asset.my-inventory': '/asset-management/my-inventory',
   'asset.classification': '/asset-management/classification',
   'asset.settings': '/asset-management/settings',
   'asset.reports': '/asset-management/reports',
@@ -159,34 +161,61 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'compliance.evidence', actions: ['*'], scope: 'all' },
     { resource: 'compliance.domain', actions: ['*'], scope: 'all' },
     { resource: 'compliance.settings', actions: ['*'], scope: 'all' },
+    // Expanded Access for GRC Admin (Stabilization)
+    { resource: 'organization.*', actions: ['*'], scope: 'all' },
+    { resource: 'asset.*', actions: ['*'], scope: 'all' },
+    { resource: 'risk.*', actions: ['*'], scope: 'all' },
+    { resource: 'audit.*', actions: ['*'], scope: 'all' },
   ],
 
   // Customer Administrator - Full access to organization and all other modules (except audit)
+  // NOTE: Per UAT, Customer Admin does NOT have approve capability for Risk Response
+  // Note: asset.my-inventory is excluded - it's only for DepartmentReviewer/DepartmentContributor
   CustomerAdministrator: [
     { resource: 'organization.*', actions: ['*'], scope: 'all' },
     { resource: 'compliance.*', actions: ['*'], scope: 'all' },
-    { resource: 'asset.*', actions: ['*'], scope: 'all' },
-    { resource: 'risk.*', actions: ['*'], scope: 'all' },
+    // Asset Management - explicit resources (excluding asset.my-inventory)
+    { resource: 'asset.dashboard', actions: ['*'], scope: 'all' },
+    { resource: 'asset.inventory', actions: ['*'], scope: 'all' },
+    { resource: 'asset.classification', actions: ['*'], scope: 'all' },
+    { resource: 'asset.settings', actions: ['*'], scope: 'all' },
+    { resource: 'asset.reports', actions: ['*'], scope: 'all' },
+    // Risk Management - all actions EXCEPT approve (per UAT: only Reviewers can approve)
+    { resource: 'risk.dashboard', actions: ['view'], scope: 'all' },
+    { resource: 'risk.register', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
+    { resource: 'risk.assessment', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
+    { resource: 'risk.response', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
+    { resource: 'risk.risk-matrix', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
+    { resource: 'risk.settings', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
+    { resource: 'risk.reports', actions: ['view'], scope: 'all' },
     { resource: 'audit.risk-register', actions: ['view'], scope: 'all' },
+    // CustomerAdmin can view the settings page but NOT access internal pages (User Management, etc.)
+    // Only AuditHead has full access to audit.settings internal pages
     { resource: 'audit.settings', actions: ['view'], scope: 'all' },
   ],
 
   // Audit Head - Full access to Internal Audit module ONLY
+  // Also needs organization.department:view to see department dropdowns in CAPA, Fieldwork, etc.
   AuditHead: [
     { resource: 'audit.*', actions: ['*'], scope: 'all' },
+    { resource: 'organization.department', actions: ['view'], scope: 'all' },
   ],
 
-  // Audit Manager - Manage audits (NO Settings access per UAT)
+  // Audit Manager - Same access as AuditHead EXCEPT Settings
+  // Can see all sections and data that AuditHead sees, but cannot access Settings/User Management
   AuditManager: [
-    { resource: 'audit.dashboard', actions: ['view'], scope: 'all' },
-    { resource: 'audit.auditables', actions: ['view', 'create', 'edit'], scope: 'all' },
-    { resource: 'audit.risk-identification', actions: ['view', 'create', 'edit'], scope: 'all' },
-    { resource: 'audit.risk-register', actions: ['view', 'create', 'edit'], scope: 'all' },
+    { resource: 'audit.dashboard', actions: ['*'], scope: 'all' },
+    { resource: 'audit.auditables', actions: ['*'], scope: 'all' },
+    { resource: 'audit.risk-identification', actions: ['*'], scope: 'all' },
+    { resource: 'audit.risk-register', actions: ['*'], scope: 'all' },
     { resource: 'audit.planning', actions: ['*'], scope: 'all' },
-    { resource: 'audit.fieldwork', actions: ['view', 'create', 'edit', 'approve'], scope: 'all' },
+    { resource: 'audit.fieldwork', actions: ['*'], scope: 'all' },
     { resource: 'audit.reports', actions: ['*'], scope: 'all' },
     { resource: 'audit.capa', actions: ['*'], scope: 'all' },
-    { resource: 'audit.documents', actions: ['view', 'create', 'edit'], scope: 'all' },
+    { resource: 'audit.documents', actions: ['*'], scope: 'all' },
+    { resource: 'audit.risk-universe', actions: ['*'], scope: 'all' },
+    // NO audit.settings - AuditManager cannot access Settings/User Management
+    { resource: 'organization.department', actions: ['view'], scope: 'all' },
   ],
 
   // Audit User - Basic audit access (view-only, NO Settings/Risk Universe per UAT)
@@ -216,6 +245,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'audit.documents', actions: ['view', 'create'], scope: 'all' },
     { resource: 'organization.dashboard', actions: ['view'], scope: 'all' },
     { resource: 'organization.process', actions: ['view'], scope: 'all' },
+    { resource: 'organization.department', actions: ['view'], scope: 'all' },
     { resource: 'compliance.controls', actions: ['view'], scope: 'all' },
   ],
 
@@ -224,7 +254,9 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
   // NO access to: Dashboard, Audit Universe, Risk Identification, Risk Register,
   //               Audit Planning, Document Library, Settings, Risk Universe,
   //               or any other modules (Organization, Compliance, Asset, Risk)
+  // Note: organization.department:view is needed for department name lookups in UI
   Auditee: [
+    { resource: 'organization.department', actions: ['view'], scope: 'department' },
     { resource: 'audit.fieldwork', actions: ['view', 'edit'], scope: 'department' },
     { resource: 'audit.reports', actions: ['view'], scope: 'department' },
     { resource: 'audit.capa', actions: ['view', 'edit'], scope: 'department' },
@@ -238,6 +270,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'organization.dashboard', actions: ['view'], scope: 'all' },
     { resource: 'organization.context', actions: ['view'], scope: 'all' },
     { resource: 'organization.process', actions: ['view'], scope: 'all' },
+    { resource: 'organization.department', actions: ['view'], scope: 'all' }, // Needed for BIA department dropdown
     // Compliance - view only (NO settings/Master Data)
     { resource: 'compliance.dashboard', actions: ['view'], scope: 'all' },
     { resource: 'compliance.framework', actions: ['view'], scope: 'all' },
@@ -254,11 +287,12 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'asset.inventory', actions: ['view'], scope: 'all' },
     { resource: 'asset.classification', actions: ['view'], scope: 'all' },
     { resource: 'asset.reports', actions: ['view'], scope: 'all' },
-    // Risk Management - view only (NO settings)
+    // Risk Management - same as CustomerAdmin (view, create, edit, delete) - NO approve
     { resource: 'risk.dashboard', actions: ['view'], scope: 'all' },
-    { resource: 'risk.register', actions: ['view'], scope: 'all' },
-    { resource: 'risk.assessment', actions: ['view'], scope: 'all' },
-    { resource: 'risk.response', actions: ['view'], scope: 'all' },
+    { resource: 'risk.register', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
+    { resource: 'risk.assessment', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
+    { resource: 'risk.response', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
+    { resource: 'risk.risk-matrix', actions: ['view', 'create', 'edit', 'delete'], scope: 'all' },
     { resource: 'risk.reports', actions: ['view'], scope: 'all' },
     // Internal Audit - NO ACCESS (entire module excluded)
   ],
@@ -280,8 +314,8 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'risk.register', actions: ['view', 'create', 'edit'], scope: 'all' },
     { resource: 'risk.assessment', actions: ['view', 'create', 'edit'], scope: 'all' },
     { resource: 'risk.response', actions: ['view', 'create', 'edit'], scope: 'all' },
+    { resource: 'risk.risk-matrix', actions: ['view', 'create', 'edit'], scope: 'all' },
     { resource: 'asset.dashboard', actions: ['view'], scope: 'all' },
-    { resource: 'asset.inventory', actions: ['view', 'create', 'edit'], scope: 'all' },
     { resource: 'asset.classification', actions: ['view', 'create', 'edit'], scope: 'all' },
   ],
 
@@ -293,6 +327,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'organization.dashboard', actions: ['view'], scope: 'department' },
     { resource: 'organization.context', actions: ['view'], scope: 'department' },
     { resource: 'organization.users', actions: ['view'], scope: 'department' },
+    { resource: 'organization.department', actions: ['view'], scope: 'all' }, // Needed for department dropdowns
     { resource: 'organization.process', actions: ['view', 'approve'], scope: 'department' },
     // Compliance - Framework, Control, Governance, Evidence, Exception, KPI, Reports (NO Domain, NO Settings/Master Data, NO Risk Matrix)
     { resource: 'compliance.dashboard', actions: ['view'], scope: 'department' },
@@ -300,18 +335,22 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'compliance.controls', actions: ['view', 'approve'], scope: 'department' },
     { resource: 'compliance.governance', actions: ['view', 'approve'], scope: 'department' },
     { resource: 'compliance.evidence', actions: ['view', 'approve'], scope: 'department' },
-    { resource: 'compliance.exceptions', actions: ['view', 'approve'], scope: 'department' },
+    { resource: 'compliance.exceptions', actions: ['view', 'edit', 'approve'], scope: 'department' },
     { resource: 'compliance.kpi', actions: ['view'], scope: 'department' },
-    // Asset Management - Inventory, Classification, Reports (NO Settings)
+    // Asset Management - My Inventory, Classification, Reports only (NO full Inventory, NO Settings)
     { resource: 'asset.dashboard', actions: ['view'], scope: 'department' },
-    { resource: 'asset.inventory', actions: ['view', 'approve'], scope: 'department' },
+    { resource: 'asset.my-inventory', actions: ['view', 'create', 'edit', 'delete'], scope: 'own' },
     { resource: 'asset.classification', actions: ['view'], scope: 'department' },
     { resource: 'asset.reports', actions: ['view'], scope: 'department' },
     // Risk Management - Dashboard, Register, Assessment, Response, Reports (NO Settings)
+    // Per UAT: Approval workflow exists ONLY in Risk Response Strategy, NOT in Risk Assessment
     { resource: 'risk.dashboard', actions: ['view'], scope: 'department' },
-    { resource: 'risk.register', actions: ['view', 'approve'], scope: 'department' },
-    { resource: 'risk.assessment', actions: ['view', 'approve'], scope: 'department' },
-    { resource: 'risk.response', actions: ['view', 'approve'], scope: 'department' },
+    { resource: 'risk.register', actions: ['view', 'create', 'edit', 'delete'], scope: 'department' },
+    { resource: 'risk.assessment', actions: ['view', 'create', 'edit', 'delete'], scope: 'department' },
+    // DepartmentReviewer can create risk responses since they can create/edit assessments
+    // When completing an assessment with non-low risk, a response strategy must be provided
+    { resource: 'risk.response', actions: ['view', 'create', 'approve'], scope: 'department' },
+    { resource: 'risk.risk-matrix', actions: ['view', 'create', 'edit', 'delete'], scope: 'department' },
     { resource: 'risk.reports', actions: ['view'], scope: 'department' },
     // Internal Audit - ONLY RiskRegister page (NO Settings, NO other audit pages)
     { resource: 'audit.risk-register', actions: ['view'], scope: 'department' },
@@ -322,6 +361,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     // Organization - Dashboard, Context, Process, Reports (NO Profile, NO Users, NO Settings)
     { resource: 'organization.dashboard', actions: ['view'], scope: 'department' },
     { resource: 'organization.context', actions: ['view'], scope: 'department' },
+    { resource: 'organization.department', actions: ['view'], scope: 'all' }, // Needed for department dropdowns
     { resource: 'organization.process', actions: ['view', 'create', 'edit'], scope: 'department' },
     // Compliance - Framework, Control, Governance, Evidence, Exception, KPI, Reports (NO Domain, NO Risk Matrix, NO Settings)
     { resource: 'compliance.dashboard', actions: ['view'], scope: 'department' },
@@ -331,16 +371,16 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'compliance.evidence', actions: ['view', 'create', 'edit'], scope: 'department' },
     { resource: 'compliance.exceptions', actions: ['view', 'create', 'edit'], scope: 'department' },
     { resource: 'compliance.kpi', actions: ['view'], scope: 'department' },
-    // Asset Management - Inventory, Classification, Reports (NO Settings)
+    // Asset Management - My Inventory, Classification, Reports only (NO full Inventory, NO Settings)
     { resource: 'asset.dashboard', actions: ['view'], scope: 'department' },
-    { resource: 'asset.inventory', actions: ['view', 'create', 'edit'], scope: 'department' },
+    { resource: 'asset.my-inventory', actions: ['view', 'create', 'edit', 'delete'], scope: 'own' },
     { resource: 'asset.classification', actions: ['view'], scope: 'department' },
     { resource: 'asset.reports', actions: ['view'], scope: 'department' },
-    // Risk Management - Dashboard, Register, Assessment, Response, Reports (NO Settings)
+    // Risk Management - Same as CustomerAdmin but scoped to department (NO Risk Control Matrix, NO Settings)
     { resource: 'risk.dashboard', actions: ['view'], scope: 'department' },
-    { resource: 'risk.register', actions: ['view', 'create', 'edit'], scope: 'department' },
-    { resource: 'risk.assessment', actions: ['view', 'create', 'edit'], scope: 'department' },
-    { resource: 'risk.response', actions: ['view', 'create', 'edit'], scope: 'department' },
+    { resource: 'risk.register', actions: ['view', 'create', 'edit', 'delete'], scope: 'department' },
+    { resource: 'risk.assessment', actions: ['view', 'create', 'edit', 'delete'], scope: 'department' },
+    { resource: 'risk.response', actions: ['view', 'create', 'edit', 'delete'], scope: 'department' },
     { resource: 'risk.reports', actions: ['view'], scope: 'department' },
     // Internal Audit - ONLY RiskRegister (NO Settings)
     { resource: 'audit.risk-register', actions: ['view'], scope: 'department' },
@@ -483,6 +523,9 @@ export function hasPermission(
           if (options.userId === options.resourceOwnerId) {
             return true;
           }
+        } else {
+          // If no ownership context provided, allow access (for navigation filtering)
+          return true;
         }
         break;
     }

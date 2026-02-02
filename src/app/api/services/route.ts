@@ -1,42 +1,56 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
 
-// GET all services
-export async function GET() {
-  try {
-    const services = await prisma.service.findMany({
-      orderBy: { title: "asc" },
-    });
-    return NextResponse.json(services);
-  } catch (error) {
-    console.error("Error fetching services:", error);
-    return NextResponse.json({ error: "Failed to fetch services" }, { status: 500 });
-  }
-}
+// GET all services - filtered by customer account
+export const GET = withAuth(
+  async (req, context, session) => {
+    try {
+      const tenantFilter = getTenantFilter(session);
 
-// POST create new service
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const { title, description, serviceUser, serviceCategory, serviceItem } = body;
-
-    if (!title) {
-      return NextResponse.json({ error: "Title is required" }, { status: 400 });
+      const services = await prisma.service.findMany({
+        where: tenantFilter,
+        orderBy: { title: "asc" },
+      });
+      return NextResponse.json(services);
+    } catch (error) {
+      console.error("Error fetching services:", error);
+      return NextResponse.json({ error: "Failed to fetch services" }, { status: 500 });
     }
+  },
+  { resource: "organization.context", action: "view" }
+);
 
-    const service = await prisma.service.create({
-      data: {
-        title,
-        description,
-        serviceUser,
-        serviceCategory,
-        serviceItem,
-      },
-    });
+// POST create new service - with customer account assignment
+export const POST = withAuth(
+  async (req, context, session) => {
+    try {
+      const body = await req.json();
+      const { title, description, serviceUser, serviceCategory, serviceItem } = body;
 
-    return NextResponse.json(service, { status: 201 });
-  } catch (error) {
-    console.error("Error creating service:", error);
-    return NextResponse.json({ error: "Failed to create service" }, { status: 500 });
-  }
-}
+      if (!title) {
+        return NextResponse.json({ error: "Title is required" }, { status: 400 });
+      }
+
+      // Get customer account ID for the new record
+      const customerAccountId = getCustomerAccountId(session);
+
+      const service = await prisma.service.create({
+        data: {
+          customerAccountId,
+          title,
+          description,
+          serviceUser,
+          serviceCategory,
+          serviceItem,
+        },
+      });
+
+      return NextResponse.json(service, { status: 201 });
+    } catch (error) {
+      console.error("Error creating service:", error);
+      return NextResponse.json({ error: "Failed to create service" }, { status: 500 });
+    }
+  },
+  { resource: "organization.context", action: "create" }
+);

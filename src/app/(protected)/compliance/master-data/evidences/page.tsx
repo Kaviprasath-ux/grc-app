@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -19,7 +18,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -41,8 +39,13 @@ import {
   Check,
   Download,
   Upload,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Evidence {
   id: string;
@@ -67,7 +70,7 @@ interface Evidence {
   aiJustification: string | null;
   isAdded: boolean;
   department: { id: string; name: string } | null;
-  controls: any[];
+  controls: { id: string; name: string }[];
 }
 
 interface Department {
@@ -112,6 +115,7 @@ interface NewEvidenceFormData {
 export default function EvidencesMasterDataPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [evidences, setEvidences] = useState<Evidence[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -120,6 +124,10 @@ export default function EvidencesMasterDataPage() {
   const [frameworks, setFrameworks] = useState<Framework[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   // New Evidence Dialog (3-step wizard)
   const [isNewDialogOpen, setIsNewDialogOpen] = useState(false);
@@ -509,7 +517,7 @@ export default function EvidencesMasterDataPage() {
           if (!lines[i].trim()) continue;
 
           const values = lines[i].split(",").map((v) => v.trim().replace(/"/g, ""));
-          const evidenceData: any = {};
+          const evidenceData: Record<string, string> = {};
 
           headers.forEach((header, index) => {
             if (header === "Evidence Code") evidenceData.evidenceCode = values[index];
@@ -559,448 +567,511 @@ export default function EvidencesMasterDataPage() {
       (e.description && e.description.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredEvidences.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedEvidences = filteredEvidences.slice(startIndex, startIndex + itemsPerPage);
+
+  // Reset to page 1 when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="relative h-10 w-10">
+          <div className="absolute inset-0 rounded-full border-4 border-primary/30"></div>
+          <div className="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.push("/compliance/master-data")}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold">Evidences</h1>
-            <p className="text-gray-600">Manage evidence definitions and requirements</p>
-          </div>
+      <div className="flex items-center gap-3">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => router.push("/compliance/master-data")}
+          className="h-8 w-8 text-slate-400 hover:text-slate-600"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Evidences")}</h1>
+      </div>
+
+      {/* Search and Actions - same row */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input
+            placeholder={t("Search evidences...")}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 w-[300px] bg-white border-slate-200"
+          />
         </div>
-        <div className="flex gap-2">
-          <Button onClick={() => setIsNewDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Evidence
-          </Button>
+        <div className="flex items-center gap-2">
           <Button
             variant="outline"
+            size="sm"
             onClick={() => setDeleteAllDialogOpen(true)}
             disabled={evidences.length === 0}
           >
             <Trash2 className="h-4 w-4 mr-2" />
-            Delete All
+            {t("Delete All")}
           </Button>
-          <Button variant="outline" onClick={() => setImportDialogOpen(true)}>
+          <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
             <Upload className="h-4 w-4 mr-2" />
-            Import
+            {t("Import")}
           </Button>
-          <Button variant="outline" onClick={handleExport}>
+          <Button variant="outline" size="sm" onClick={handleExport}>
             <Download className="h-4 w-4 mr-2" />
-            Export
+            {t("Export")}
           </Button>
+          <Button size="sm" onClick={() => setIsNewDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            {t("New Evidence")}
+          </Button>
+
         </div>
       </div>
 
-      {/* Search and Table */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search evidences..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
+      {/* Table */}
+      <div className="bg-white rounded-xl border border-slate-200">
+        <Table>
+          <TableHeader>
+            <TableRow className="border-b border-slate-100 bg-slate-50/50">
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4">{t("Evidence Code")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Title")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Evidence Requirement")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[100px]">{t("Action")}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {paginatedEvidences.length === 0 ? (
               <TableRow>
-                <TableHead>Evidence Code</TableHead>
-                <TableHead>Title</TableHead>
-                <TableHead>Evidence Requirement</TableHead>
-                <TableHead className="w-[100px]">Action</TableHead>
+                <TableCell colSpan={4} className="text-center py-12">
+                  <p className="text-slate-500">{t("No evidences found")}</p>
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredEvidences.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center py-8">
-                    <p className="text-gray-500">No evidences found</p>
+            ) : (
+              paginatedEvidences.map((evidence) => (
+                <TableRow key={evidence.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                  <TableCell className="py-3 text-sm font-medium text-slate-800 pl-4">{evidence.evidenceCode}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-600">{evidence.name}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-600">{evidence.description || "-"}</TableCell>
+                  <TableCell className="py-3 text-sm pr-4">
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                        onClick={() => handleEdit(evidence)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+                        onClick={() => handleDelete(evidence.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
-              ) : (
-                filteredEvidences.map((evidence) => (
-                  <TableRow key={evidence.id}>
-                    <TableCell className="font-medium">{evidence.evidenceCode}</TableCell>
-                    <TableCell>{evidence.name}</TableCell>
-                    <TableCell>{evidence.description || "-"}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleEdit(evidence)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDelete(evidence.id)}
-                        >
-                          <Trash2 className="h-4 w-4 text-red-500" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-          <div className="mt-4 text-sm text-gray-500">
-            Showing {filteredEvidences.length} of {evidences.length} evidences
+              ))
+            )}
+          </TableBody>
+        </Table>
+
+        {/* Pagination */}
+        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
+          <p className="text-sm text-slate-500">
+            {t("Showing")} {filteredEvidences.length === 0 ? 0 : startIndex + 1} {t("to")}{" "}
+            {Math.min(startIndex + itemsPerPage, filteredEvidences.length)} {t("of")}{" "}
+            {filteredEvidences.length}
+          </p>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setCurrentPage(1)}
+              disabled={currentPage === 1}
+            >
+              <ChevronsLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-sm text-slate-600 px-2">
+              {t("Page")} {currentPage} {t("of")} {totalPages || 1}
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage >= totalPages}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setCurrentPage(totalPages)}
+              disabled={currentPage >= totalPages}
+            >
+              <ChevronsRight className="h-4 w-4" />
+            </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* New Evidence Dialog - 3 Step Wizard */}
       <Dialog open={isNewDialogOpen} onOpenChange={(open) => {
         setIsNewDialogOpen(open);
         if (!open) resetNewForm();
       }}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-primary">
-              {newStep === 1 ? "Evidence Details" : newStep === 2 ? "Controls" : "Review Information"}
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogTitle className="text-lg font-semibold text-slate-800">
+              {newStep === 1 ? t("Evidence Details") : newStep === 2 ? t("Controls") : t("Review Information")}
             </DialogTitle>
-            <DialogDescription>
-              {newStep === 1 ? "Enter evidence details" : newStep === 2 ? "Select controls to link" : "Review and confirm"}
-            </DialogDescription>
-          </DialogHeader>
-
-          {/* Stepper */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex flex-col items-center gap-1">
-              <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${newStep >= 1 ? 'bg-primary text-white border-primary' : 'bg-white border-gray-300'}`}>
-                {newStep > 1 ? <Check className="h-5 w-5" /> : "1"}
-              </div>
-              <span className={`text-xs ${newStep === 1 ? 'text-primary font-semibold' : 'text-gray-500'}`}>Evidence Details</span>
-            </div>
-            <div className="flex-1 h-0.5 bg-gray-300 mx-2 mt-[-20px]" />
-            <div className="flex flex-col items-center gap-1">
-              <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${newStep >= 2 ? 'bg-primary text-white border-primary' : 'bg-white border-gray-300'}`}>
-                {newStep > 2 ? <Check className="h-5 w-5" /> : "2"}
-              </div>
-              <span className={`text-xs ${newStep === 2 ? 'text-primary font-semibold' : 'text-gray-500'}`}>Controls</span>
-            </div>
-            <div className="flex-1 h-0.5 bg-gray-300 mx-2 mt-[-20px]" />
-            <div className="flex flex-col items-center gap-1">
-              <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${newStep >= 3 ? 'bg-primary text-white border-primary' : 'bg-white border-gray-300'}`}>
-                3
-              </div>
-              <span className={`text-xs ${newStep === 3 ? 'text-primary font-semibold' : 'text-gray-500'}`}>Review informations</span>
-            </div>
           </div>
 
-          {/* Step 1: Evidence Details */}
-          {newStep === 1 && (
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="evidence-name" className="text-primary">Evidence Requirement <span className="text-red-500">*</span></Label>
-                <Input
-                  id="evidence-name"
-                  value={newFormData.name}
-                  onChange={(e) => {
-                    setNewFormData({ ...newFormData, name: e.target.value });
-                    if (newFormErrors.name) {
-                      setNewFormErrors({ ...newFormErrors, name: "" });
-                    }
-                  }}
-                  className={newFormErrors.name ? "border-red-500" : ""}
-                />
-                {newFormErrors.name && (
-                  <p className="text-sm text-red-500 mt-1">{newFormErrors.name}</p>
-                )}
+          {/* Stepper */}
+          <div className="flex-shrink-0 flex items-center justify-center px-6 py-4 bg-slate-50/50 border-b border-slate-100">
+            {[1, 2, 3].map((step) => (
+              <div key={step} className="flex items-center">
+                <div className={`flex items-center justify-center w-8 h-8 rounded-full border-2 text-sm font-medium ${
+                  step === newStep
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : step < newStep
+                      ? "bg-success text-white border-success"
+                      : "bg-white border-slate-300 text-slate-500"
+                }`}>
+                  {step < newStep ? <Check className="h-4 w-4" /> : step}
+                </div>
+                <span className={`ml-2 text-sm ${
+                  step === newStep ? "text-slate-800 font-medium" : "text-slate-500"
+                }`}>
+                  {step === 1 ? t("Evidence Details") : step === 2 ? t("Controls") : t("Review")}
+                </span>
+                {step < 3 && <div className="w-12 h-0.5 bg-slate-200 mx-3" />}
               </div>
+            ))}
+          </div>
 
-              <div className="grid grid-cols-2 gap-4">
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            {/* Step 1: Evidence Details */}
+            {newStep === 1 && (
+              <div className="space-y-4">
                 <div>
-                  <Label htmlFor="recurrence" className="text-primary">Recurrence <span className="text-red-500">*</span></Label>
-                  <Select
-                    value={newFormData.recurrence}
-                    onValueChange={(value) => {
-                      setNewFormData({ ...newFormData, recurrence: value });
-                      if (newFormErrors.recurrence) {
-                        setNewFormErrors({ ...newFormErrors, recurrence: "" });
+                  <Label className="text-sm font-medium text-slate-700">
+                    {t("Evidence Requirement")} <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    value={newFormData.name}
+                    onChange={(e) => {
+                      setNewFormData({ ...newFormData, name: e.target.value });
+                      if (newFormErrors.name) {
+                        setNewFormErrors({ ...newFormErrors, name: "" });
                       }
                     }}
-                  >
-                    <SelectTrigger className={newFormErrors.recurrence ? "border-red-500" : ""}>
-                      <SelectValue placeholder="Select recurrence" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Yearly">Yearly</SelectItem>
-                      <SelectItem value="Half-yearly">Half-yearly</SelectItem>
-                      <SelectItem value="Quarterly">Quarterly</SelectItem>
-                      <SelectItem value="Monthly">Monthly</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {newFormErrors.recurrence && (
-                    <p className="text-sm text-red-500 mt-1">{newFormErrors.recurrence}</p>
+                    className={`mt-1.5 w-full bg-white ${newFormErrors.name ? "border-red-500" : ""}`}
+                  />
+                  {newFormErrors.name && (
+                    <p className="text-sm text-red-500 mt-1">{newFormErrors.name}</p>
                   )}
                 </div>
 
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">
+                      {t("Recurrence")} <span className="text-red-500">*</span>
+                    </Label>
+                    <Select
+                      value={newFormData.recurrence}
+                      onValueChange={(value) => {
+                        setNewFormData({ ...newFormData, recurrence: value });
+                        if (newFormErrors.recurrence) {
+                          setNewFormErrors({ ...newFormErrors, recurrence: "" });
+                        }
+                      }}
+                    >
+                      <SelectTrigger className={`mt-1.5 w-full bg-white ${newFormErrors.recurrence ? "border-red-500" : ""}`}>
+                        <SelectValue placeholder={t("Select recurrence")} />
+                      </SelectTrigger>
+                      <SelectContent position="popper" sideOffset={4}>
+                        <SelectItem value="Yearly">{t("Yearly")}</SelectItem>
+                        <SelectItem value="Half-yearly">{t("Half-yearly")}</SelectItem>
+                        <SelectItem value="Quarterly">{t("Quarterly")}</SelectItem>
+                        <SelectItem value="Monthly">{t("Monthly")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {newFormErrors.recurrence && (
+                      <p className="text-sm text-red-500 mt-1">{newFormErrors.recurrence}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">
+                      {t("Department")} <span className="text-red-500">*</span>
+                    </Label>
+                    <Select
+                      value={newFormData.departmentId}
+                      onValueChange={(value) => {
+                        setNewFormData({ ...newFormData, departmentId: value, assigneeId: "" });
+                        if (newFormErrors.departmentId) {
+                          setNewFormErrors({ ...newFormErrors, departmentId: "" });
+                        }
+                      }}
+                    >
+                      <SelectTrigger className={`mt-1.5 w-full bg-white ${newFormErrors.departmentId ? "border-red-500" : ""}`}>
+                        <SelectValue placeholder={t("Select department")} />
+                      </SelectTrigger>
+                      <SelectContent position="popper" sideOffset={4}>
+                        {departments.map((dept) => (
+                          <SelectItem key={dept.id} value={dept.id}>
+                            {dept.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {newFormErrors.departmentId && (
+                      <p className="text-sm text-red-500 mt-1">{newFormErrors.departmentId}</p>
+                    )}
+                  </div>
+                </div>
+
                 <div>
-                  <Label htmlFor="department" className="text-primary">Department <span className="text-red-500">*</span></Label>
+                  <Label className="text-sm font-medium text-slate-700">
+                    {t("Assignee")} <span className="text-red-500">*</span>
+                  </Label>
                   <Select
-                    value={newFormData.departmentId}
+                    value={newFormData.assigneeId}
                     onValueChange={(value) => {
-                      setNewFormData({ ...newFormData, departmentId: value, assigneeId: "" });
-                      if (newFormErrors.departmentId) {
-                        setNewFormErrors({ ...newFormErrors, departmentId: "" });
+                      setNewFormData({ ...newFormData, assigneeId: value });
+                      if (newFormErrors.assigneeId) {
+                        setNewFormErrors({ ...newFormErrors, assigneeId: "" });
                       }
                     }}
                   >
-                    <SelectTrigger className={newFormErrors.departmentId ? "border-red-500" : ""}>
-                      <SelectValue placeholder="Select department" />
+                    <SelectTrigger className={`mt-1.5 w-full bg-white ${newFormErrors.assigneeId ? "border-red-500" : ""}`}>
+                      <SelectValue placeholder={t("Select assignee")} />
                     </SelectTrigger>
-                    <SelectContent>
-                      {departments.map((dept) => (
-                        <SelectItem key={dept.id} value={dept.id}>
-                          {dept.name}
+                    <SelectContent position="popper" sideOffset={4}>
+                      {filteredUsers.map((user) => (
+                        <SelectItem key={user.id} value={user.id}>
+                          {user.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  {newFormErrors.departmentId && (
-                    <p className="text-sm text-red-500 mt-1">{newFormErrors.departmentId}</p>
+                  {newFormErrors.assigneeId && (
+                    <p className="text-sm text-red-500 mt-1">{newFormErrors.assigneeId}</p>
                   )}
                 </div>
-              </div>
 
-              <div>
-                <Label htmlFor="assignee" className="text-primary">Assignee <span className="text-red-500">*</span></Label>
-                <Select
-                  value={newFormData.assigneeId}
-                  onValueChange={(value) => {
-                    setNewFormData({ ...newFormData, assigneeId: value });
-                    if (newFormErrors.assigneeId) {
-                      setNewFormErrors({ ...newFormErrors, assigneeId: "" });
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
+                  <Textarea
+                    value={newFormData.description}
+                    onChange={(e) =>
+                      setNewFormData({ ...newFormData, description: e.target.value })
                     }
-                  }}
-                >
-                  <SelectTrigger className={newFormErrors.assigneeId ? "border-red-500" : ""}>
-                    <SelectValue placeholder="Select assignee" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {filteredUsers.map((user) => (
-                      <SelectItem key={user.id} value={user.id}>
-                        {user.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {newFormErrors.assigneeId && (
-                  <p className="text-sm text-red-500 mt-1">{newFormErrors.assigneeId}</p>
-                )}
+                    rows={4}
+                    className="mt-1.5 w-full bg-white"
+                  />
+                </div>
               </div>
+            )}
 
-              <div>
-                <Label htmlFor="description" className="text-primary">Description</Label>
-                <Textarea
-                  id="description"
-                  value={newFormData.description}
-                  onChange={(e) =>
-                    setNewFormData({ ...newFormData, description: e.target.value })
-                  }
-                  rows={4}
-                />
-              </div>
-            </div>
-          )}
+            {/* Step 2: Controls */}
+            {newStep === 2 && (
+              <div className="space-y-4">
+                {/* Filters Row */}
+                <div className="grid grid-cols-3 gap-4">
+                  <Select value={domainFilter || "_all"} onValueChange={(v) => setDomainFilter(v === "_all" ? "" : v)}>
+                    <SelectTrigger className="w-full bg-white">
+                      <SelectValue placeholder={t("Domain")} />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4}>
+                      <SelectItem value="_all">{t("All Domains")}</SelectItem>
+                      {controlDomains.map((domain) => (
+                        <SelectItem key={domain.id} value={domain.id}>
+                          {domain.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
 
-          {/* Step 2: Controls */}
-          {newStep === 2 && (
-            <div className="space-y-4">
-              {/* Filters Row */}
-              <div className="grid grid-cols-3 gap-4">
-                <Select value={domainFilter || "_all"} onValueChange={(v) => setDomainFilter(v === "_all" ? "" : v)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Domain" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="_all">All Domains</SelectItem>
-                    {controlDomains.map((domain) => (
-                      <SelectItem key={domain.id} value={domain.id}>
-                        {domain.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  <Select value={frameworkFilter || "_all"} onValueChange={(v) => setFrameworkFilter(v === "_all" ? "" : v)}>
+                    <SelectTrigger className="w-full bg-white">
+                      <SelectValue placeholder={t("Framework")} />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4}>
+                      <SelectItem value="_all">{t("All Frameworks")}</SelectItem>
+                      {frameworks.map((framework) => (
+                        <SelectItem key={framework.id} value={framework.id}>
+                          {framework.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
 
-                <Select value={frameworkFilter || "_all"} onValueChange={(v) => setFrameworkFilter(v === "_all" ? "" : v)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Framework" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="_all">All Frameworks</SelectItem>
-                    {frameworks.map((framework) => (
-                      <SelectItem key={framework.id} value={framework.id}>
-                        {framework.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  <Select value={functionalGroupingFilter || "_all"} onValueChange={(v) => setFunctionalGroupingFilter(v === "_all" ? "" : v)}>
+                    <SelectTrigger className="w-full bg-white">
+                      <SelectValue placeholder={t("Functional Grouping")} />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4}>
+                      <SelectItem value="_all">{t("All Groupings")}</SelectItem>
+                      {functionalGroupings.map((grouping) => (
+                        <SelectItem key={grouping} value={grouping!}>
+                          {grouping}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-                <Select value={functionalGroupingFilter || "_all"} onValueChange={(v) => setFunctionalGroupingFilter(v === "_all" ? "" : v)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Functional Grouping" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="_all">All Groupings</SelectItem>
-                    {functionalGroupings.map((grouping) => (
-                      <SelectItem key={grouping} value={grouping!}>
-                        {grouping}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                {/* Search Box */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Input
+                    placeholder={t("Search By Control Code, Name")}
+                    value={controlSearch}
+                    onChange={(e) => setControlSearch(e.target.value)}
+                    className="pl-10 bg-white"
+                  />
+                </div>
 
-              {/* Search Box */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Search By Control Code , Name"
-                  value={controlSearch}
-                  onChange={(e) => setControlSearch(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-
-              {/* Controls List */}
-              <div className="border rounded-md max-h-80 overflow-y-auto">
-                {filteredControls.length === 0 ? (
-                  <div className="p-4 text-center text-gray-500">No controls found</div>
-                ) : (
-                  filteredControls.map((control) => (
-                    <div
-                      key={control.id}
-                      className={`p-4 border-b last:border-b-0 cursor-pointer hover:bg-gray-50 ${
-                        newFormData.controlIds.includes(control.id) ? "bg-primary/5" : ""
-                      }`}
-                      onClick={() => {
-                        if (newFormData.controlIds.includes(control.id)) {
-                          setNewFormData({
-                            ...newFormData,
-                            controlIds: newFormData.controlIds.filter((id) => id !== control.id),
-                          });
-                        } else {
-                          setNewFormData({
-                            ...newFormData,
-                            controlIds: [...newFormData.controlIds, control.id],
-                          });
-                        }
-                      }}
-                    >
-                      <div className="flex items-start gap-3">
-                        <Checkbox
-                          checked={newFormData.controlIds.includes(control.id)}
-                          className="mt-1"
-                        />
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between">
-                            <span className="font-medium text-primary">
-                              {control.controlCode} : {control.name}
-                            </span>
-                            <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
-                              Organization Wide
-                            </span>
+                {/* Controls List */}
+                <div className="border border-slate-200 rounded-lg max-h-80 overflow-y-auto">
+                  {filteredControls.length === 0 ? (
+                    <div className="p-4 text-center text-slate-500">{t("No controls found")}</div>
+                  ) : (
+                    filteredControls.map((control) => (
+                      <div
+                        key={control.id}
+                        className={`p-4 border-b border-slate-200 last:border-b-0 cursor-pointer hover:bg-slate-50 ${
+                          newFormData.controlIds.includes(control.id) ? "bg-primary/5" : ""
+                        }`}
+                        onClick={() => {
+                          if (newFormData.controlIds.includes(control.id)) {
+                            setNewFormData({
+                              ...newFormData,
+                              controlIds: newFormData.controlIds.filter((id) => id !== control.id),
+                            });
+                          } else {
+                            setNewFormData({
+                              ...newFormData,
+                              controlIds: [...newFormData.controlIds, control.id],
+                            });
+                          }
+                        }}
+                      >
+                        <div className="flex items-start gap-3">
+                          <Checkbox
+                            checked={newFormData.controlIds.includes(control.id)}
+                            className="mt-1"
+                          />
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium text-slate-800">
+                                {control.controlCode} : {control.name}
+                              </span>
+                              <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
+                                Organization Wide
+                              </span>
+                            </div>
+                            {control.description && (
+                              <p className="text-sm text-slate-600 mt-1">{control.description}</p>
+                            )}
                           </div>
-                          {control.description && (
-                            <p className="text-sm text-gray-600 mt-1">{control.description}</p>
-                          )}
                         </div>
                       </div>
-                    </div>
-                  ))
-                )}
-              </div>
-              <p className="text-sm text-gray-500">
-                {newFormData.controlIds.length} control(s) selected
-              </p>
-            </div>
-          )}
-
-          {/* Step 3: Review */}
-          {newStep === 3 && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <Label className="text-primary font-semibold">Evidence Name</Label>
-                  <p className="mt-1">{newFormData.name}</p>
+                    ))
+                  )}
                 </div>
-                <div>
-                  <Label className="text-primary font-semibold">Control Domain</Label>
-                  <p className="mt-1">{selectedDomains.join(", ") || "-"}</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <Label className="text-primary font-semibold">Recurrence</Label>
-                  <p className="mt-1">{newFormData.recurrence}</p>
-                </div>
-                <div>
-                  <Label className="text-primary font-semibold">Entities</Label>
-                  <p className="mt-1">{newFormData.controlIds.length > 0 ? "Organization Wide" : "-"}</p>
-                </div>
-              </div>
-              <div>
-                <Label className="text-primary font-semibold">Department</Label>
-                <p className="mt-1">
-                  {departments.find((d) => d.id === newFormData.departmentId)?.name || "-"}
+                <p className="text-sm text-slate-500">
+                  {newFormData.controlIds.length} control(s) selected
                 </p>
               </div>
-              {newFormData.description && (
-                <div>
-                  <Label className="text-primary font-semibold">Description</Label>
-                  <p className="mt-1">{newFormData.description}</p>
-                </div>
-              )}
-              <div>
-                <Label className="text-primary font-semibold">Selected Controls</Label>
-                <p className="mt-1">{newFormData.controlIds.length} control(s) selected</p>
-              </div>
-            </div>
-          )}
+            )}
 
-          <DialogFooter>
+            {/* Step 3: Review */}
+            {newStep === 3 && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Evidence Name</Label>
+                    <p className="mt-1 text-slate-800">{newFormData.name}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Control Domain</Label>
+                    <p className="mt-1 text-slate-800">{selectedDomains.join(", ") || "-"}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Recurrence</Label>
+                    <p className="mt-1 text-slate-800">{newFormData.recurrence}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Entities</Label>
+                    <p className="mt-1 text-slate-800">{newFormData.controlIds.length > 0 ? "Organization Wide" : "-"}</p>
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Department</Label>
+                  <p className="mt-1 text-slate-800">
+                    {departments.find((d) => d.id === newFormData.departmentId)?.name || "-"}
+                  </p>
+                </div>
+                {newFormData.description && (
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Description</Label>
+                    <p className="mt-1 text-slate-800">{newFormData.description}</p>
+                  </div>
+                )}
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Selected Controls</Label>
+                  <p className="mt-1 text-slate-800">{newFormData.controlIds.length} control(s) selected</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             {newStep > 1 && (
-              <Button variant="outline" onClick={handleNewBack}>
-                Previous
+              <Button variant="outline" size="sm" onClick={handleNewBack}>
+                {t("Previous")}
               </Button>
             )}
-            <Button variant="outline" onClick={() => setIsNewDialogOpen(false)}>
-              Cancel
+            <Button variant="outline" size="sm" onClick={() => setIsNewDialogOpen(false)}>
+              {t("Cancel")}
             </Button>
             {newStep < 3 ? (
-              <Button onClick={handleNewNext} className="bg-primary">Next</Button>
+              <Button size="sm" onClick={handleNewNext}>{t("Next")}</Button>
             ) : (
-              <Button onClick={handleNewSubmit} className="bg-primary">Create Evidence</Button>
+              <Button size="sm" onClick={handleNewSubmit}>{t("Create Evidence")}</Button>
             )}
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -1012,42 +1083,47 @@ export default function EvidencesMasterDataPage() {
           setEditControlId("");
         }
       }}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-primary">Edit Evidence</DialogTitle>
-            <DialogDescription>Modify the evidence details below</DialogDescription>
-          </DialogHeader>
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Evidence")}</DialogTitle>
+          </div>
 
           {editingEvidence && (
-            <div className="space-y-4">
+            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-5">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-primary">Evidence code</Label>
-                  <Input value={editingEvidence.evidenceCode} disabled />
+                  <Label className="text-sm font-medium text-slate-700">Evidence code</Label>
+                  <Input value={editingEvidence.evidenceCode} disabled className="mt-1.5 bg-slate-50" />
                 </div>
                 <div>
-                  <Label className="text-primary">Name <span className="text-red-500">*</span></Label>
+                  <Label className="text-sm font-medium text-slate-700">
+                    Name <span className="text-red-500">*</span>
+                  </Label>
                   <Input
                     value={editingEvidence.name}
                     onChange={(e) =>
                       setEditingEvidence({ ...editingEvidence, name: e.target.value })
                     }
+                    className="mt-1.5 w-full bg-white"
                   />
                 </div>
               </div>
 
               <div>
-                <Label className="text-primary">Evidence requirement</Label>
+                <Label className="text-sm font-medium text-slate-700">Evidence requirement</Label>
                 <Input
                   value={editingEvidence.description || ""}
                   onChange={(e) =>
                     setEditingEvidence({ ...editingEvidence, description: e.target.value })
                   }
+                  className="mt-1.5 w-full bg-white"
                 />
               </div>
 
               <div>
-                <Label className="text-primary">Recurrence <span className="text-red-500">*</span></Label>
+                <Label className="text-sm font-medium text-slate-700">
+                  Recurrence <span className="text-red-500">*</span>
+                </Label>
                 <RadioGroup
                   value={editingEvidence.recurrence || ""}
                   onValueChange={(value) =>
@@ -1055,27 +1131,17 @@ export default function EvidencesMasterDataPage() {
                   }
                   className="flex flex-wrap gap-4 mt-2"
                 >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="Yearly" id="edit-yearly" />
-                    <Label htmlFor="edit-yearly">Yearly</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="Half-yearly" id="edit-half-yearly" />
-                    <Label htmlFor="edit-half-yearly">Half-yearly</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="Quarterly" id="edit-quarterly" />
-                    <Label htmlFor="edit-quarterly">Quarterly</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="Monthly" id="edit-monthly" />
-                    <Label htmlFor="edit-monthly">Monthly</Label>
-                  </div>
+                  {["Yearly", "Half-yearly", "Quarterly", "Monthly"].map((option) => (
+                    <div key={option} className="flex items-center space-x-2">
+                      <RadioGroupItem value={option} id={`edit-${option.toLowerCase()}`} />
+                      <Label htmlFor={`edit-${option.toLowerCase()}`} className="text-slate-600">{option}</Label>
+                    </div>
+                  ))}
                 </RadioGroup>
               </div>
 
               <div>
-                <Label className="text-primary">Entities</Label>
+                <Label className="text-sm font-medium text-slate-700">Entities</Label>
                 <RadioGroup
                   value={editingEvidence.entities || "Organization Wide"}
                   onValueChange={(value) =>
@@ -1085,13 +1151,13 @@ export default function EvidencesMasterDataPage() {
                 >
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="Organization Wide" id="edit-org-wide" />
-                    <Label htmlFor="edit-org-wide">Organization Wide</Label>
+                    <Label htmlFor="edit-org-wide" className="text-slate-600">Organization Wide</Label>
                   </div>
                 </RadioGroup>
               </div>
 
               <div>
-                <Label className="text-primary">Status</Label>
+                <Label className="text-sm font-medium text-slate-700">Status</Label>
                 <RadioGroup
                   value={editingEvidence.status}
                   onValueChange={(value) =>
@@ -1099,47 +1165,30 @@ export default function EvidencesMasterDataPage() {
                   }
                   className="flex flex-wrap gap-4 mt-2"
                 >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="Not Uploaded" id="edit-not-uploaded" />
-                    <Label htmlFor="edit-not-uploaded">Not Uploaded</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="Draft" id="edit-draft" />
-                    <Label htmlFor="edit-draft">Draft</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="Need Attention" id="edit-need-attention" />
-                    <Label htmlFor="edit-need-attention">Need Attention</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="Published" id="edit-published" />
-                    <Label htmlFor="edit-published">Published</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="Validated (For Filters)" id="edit-validated-filters" />
-                    <Label htmlFor="edit-validated-filters">Validated (For Filters)</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="Validated" id="edit-validated" />
-                    <Label htmlFor="edit-validated">Validated</Label>
-                  </div>
+                  {["Not Uploaded", "Draft", "Need Attention", "Published", "Validated (For Filters)", "Validated"].map((status) => (
+                    <div key={status} className="flex items-center space-x-2">
+                      <RadioGroupItem value={status} id={`edit-status-${status.toLowerCase().replace(/\s+/g, "-")}`} />
+                      <Label htmlFor={`edit-status-${status.toLowerCase().replace(/\s+/g, "-")}`} className="text-slate-600">{status}</Label>
+                    </div>
+                  ))}
                 </RadioGroup>
               </div>
 
               <div>
-                <Label className="text-primary">Review date</Label>
+                <Label className="text-sm font-medium text-slate-700">Review date</Label>
                 <Input
                   type="date"
                   value={editingEvidence.reviewDate?.split("T")[0] || ""}
                   onChange={(e) =>
                     setEditingEvidence({ ...editingEvidence, reviewDate: e.target.value })
                   }
+                  className="mt-1.5 w-full bg-white"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-primary">Is control linked</Label>
+                  <Label className="text-sm font-medium text-slate-700">Is control linked</Label>
                   <RadioGroup
                     value={editingEvidence.isControlLinked ? "Yes" : "No"}
                     onValueChange={(value) =>
@@ -1152,17 +1201,17 @@ export default function EvidencesMasterDataPage() {
                   >
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="Yes" id="edit-control-yes" />
-                      <Label htmlFor="edit-control-yes">Yes</Label>
+                      <Label htmlFor="edit-control-yes" className="text-slate-600">Yes</Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="No" id="edit-control-no" />
-                      <Label htmlFor="edit-control-no">No</Label>
+                      <Label htmlFor="edit-control-no" className="text-slate-600">No</Label>
                     </div>
                   </RadioGroup>
                 </div>
 
                 <div>
-                  <Label className="text-primary">Is policy linked</Label>
+                  <Label className="text-sm font-medium text-slate-700">Is policy linked</Label>
                   <RadioGroup
                     value={editingEvidence.isPolicyLinked ? "Yes" : "No"}
                     onValueChange={(value) =>
@@ -1175,18 +1224,18 @@ export default function EvidencesMasterDataPage() {
                   >
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="Yes" id="edit-policy-yes" />
-                      <Label htmlFor="edit-policy-yes">Yes</Label>
+                      <Label htmlFor="edit-policy-yes" className="text-slate-600">Yes</Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="No" id="edit-policy-no" />
-                      <Label htmlFor="edit-policy-no">No</Label>
+                      <Label htmlFor="edit-policy-no" className="text-slate-600">No</Label>
                     </div>
                   </RadioGroup>
                 </div>
               </div>
 
               <div>
-                <Label className="text-primary">Artifact description</Label>
+                <Label className="text-sm font-medium text-slate-700">Artifact description</Label>
                 <Input
                   value={editingEvidence.artifactDescription || ""}
                   onChange={(e) =>
@@ -1195,11 +1244,12 @@ export default function EvidencesMasterDataPage() {
                       artifactDescription: e.target.value,
                     })
                   }
+                  className="mt-1.5 w-full bg-white"
                 />
               </div>
 
               <div>
-                <Label className="text-primary">Is KPI</Label>
+                <Label className="text-sm font-medium text-slate-700">Is KPI</Label>
                 <RadioGroup
                   value={editingEvidence.isKPI ? "Yes" : "No"}
                   onValueChange={(value) =>
@@ -1209,11 +1259,11 @@ export default function EvidencesMasterDataPage() {
                 >
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="Yes" id="edit-kpi-yes" />
-                    <Label htmlFor="edit-kpi-yes">Yes</Label>
+                    <Label htmlFor="edit-kpi-yes" className="text-slate-600">Yes</Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="No" id="edit-kpi-no" />
-                    <Label htmlFor="edit-kpi-no">No</Label>
+                    <Label htmlFor="edit-kpi-no" className="text-slate-600">No</Label>
                   </div>
                 </RadioGroup>
               </div>
@@ -1221,7 +1271,7 @@ export default function EvidencesMasterDataPage() {
               {editingEvidence.isKPI && (
                 <>
                   <div>
-                    <Label className="text-primary">Kpi description</Label>
+                    <Label className="text-sm font-medium text-slate-700">KPI description</Label>
                     <Input
                       value={editingEvidence.kpiDescription || ""}
                       onChange={(e) =>
@@ -1230,11 +1280,12 @@ export default function EvidencesMasterDataPage() {
                           kpiDescription: e.target.value,
                         })
                       }
+                      className="mt-1.5 w-full bg-white"
                     />
                   </div>
 
                   <div>
-                    <Label className="text-primary">Kpi expected score</Label>
+                    <Label className="text-sm font-medium text-slate-700">KPI expected score</Label>
                     <Input
                       type="number"
                       value={editingEvidence.kpiExpectedScore || ""}
@@ -1244,11 +1295,12 @@ export default function EvidencesMasterDataPage() {
                           kpiExpectedScore: parseInt(e.target.value) || null,
                         })
                       }
+                      className="mt-1.5 w-full bg-white"
                     />
                   </div>
 
                   <div>
-                    <Label className="text-primary">Kpi objective</Label>
+                    <Label className="text-sm font-medium text-slate-700">KPI objective</Label>
                     <Input
                       value={editingEvidence.kpiObjective || ""}
                       onChange={(e) =>
@@ -1257,11 +1309,12 @@ export default function EvidencesMasterDataPage() {
                           kpiObjective: e.target.value,
                         })
                       }
+                      className="mt-1.5 w-full bg-white"
                     />
                   </div>
 
                   <div>
-                    <Label className="text-primary">Kpi data source</Label>
+                    <Label className="text-sm font-medium text-slate-700">KPI data source</Label>
                     <Input
                       value={editingEvidence.kpiDataSource || ""}
                       onChange={(e) =>
@@ -1270,11 +1323,12 @@ export default function EvidencesMasterDataPage() {
                           kpiDataSource: e.target.value,
                         })
                       }
+                      className="mt-1.5 w-full bg-white"
                     />
                   </div>
 
                   <div>
-                    <Label className="text-primary">Kpi calculation formula</Label>
+                    <Label className="text-sm font-medium text-slate-700">KPI calculation formula</Label>
                     <Input
                       value={editingEvidence.kpiCalculationFormula || ""}
                       onChange={(e) =>
@@ -1283,13 +1337,14 @@ export default function EvidencesMasterDataPage() {
                           kpiCalculationFormula: e.target.value,
                         })
                       }
+                      className="mt-1.5 w-full bg-white"
                     />
                   </div>
                 </>
               )}
 
               <div>
-                <Label className="text-primary">Is added</Label>
+                <Label className="text-sm font-medium text-slate-700">Is added</Label>
                 <RadioGroup
                   value={editingEvidence.isAdded ? "Yes" : "No"}
                   onValueChange={(value) =>
@@ -1299,17 +1354,17 @@ export default function EvidencesMasterDataPage() {
                 >
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="Yes" id="edit-added-yes" />
-                    <Label htmlFor="edit-added-yes">Yes</Label>
+                    <Label htmlFor="edit-added-yes" className="text-slate-600">Yes</Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="No" id="edit-added-no" />
-                    <Label htmlFor="edit-added-no">No</Label>
+                    <Label htmlFor="edit-added-no" className="text-slate-600">No</Label>
                   </div>
                 </RadioGroup>
               </div>
 
               <div>
-                <Label className="text-primary">AI status</Label>
+                <Label className="text-sm font-medium text-slate-700">AI status</Label>
                 <RadioGroup
                   value={editingEvidence.aiStatus || ""}
                   onValueChange={(value) =>
@@ -1317,23 +1372,17 @@ export default function EvidencesMasterDataPage() {
                   }
                   className="flex flex-wrap gap-4 mt-2"
                 >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="Compliant" id="edit-ai-compliant" />
-                    <Label htmlFor="edit-ai-compliant">Compliant</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="Non Compliant" id="edit-ai-non-compliant" />
-                    <Label htmlFor="edit-ai-non-compliant">Non Compliant</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="Partially Compliant" id="edit-ai-partial" />
-                    <Label htmlFor="edit-ai-partial">Partially Compliant</Label>
-                  </div>
+                  {["Compliant", "Non Compliant", "Partially Compliant"].map((status) => (
+                    <div key={status} className="flex items-center space-x-2">
+                      <RadioGroupItem value={status} id={`edit-ai-${status.toLowerCase().replace(/\s+/g, "-")}`} />
+                      <Label htmlFor={`edit-ai-${status.toLowerCase().replace(/\s+/g, "-")}`} className="text-slate-600">{status}</Label>
+                    </div>
+                  ))}
                 </RadioGroup>
               </div>
 
               <div>
-                <Label className="text-primary">AI response Justification</Label>
+                <Label className="text-sm font-medium text-slate-700">AI response Justification</Label>
                 <Input
                   value={editingEvidence.aiJustification || ""}
                   onChange={(e) =>
@@ -1342,16 +1391,17 @@ export default function EvidencesMasterDataPage() {
                       aiJustification: e.target.value,
                     })
                   }
+                  className="mt-1.5 w-full bg-white"
                 />
               </div>
 
               <div>
-                <Label className="text-primary">Control</Label>
+                <Label className="text-sm font-medium text-slate-700">Control</Label>
                 <Select value={editControlId || "_none"} onValueChange={(v) => setEditControlId(v === "_none" ? "" : v)}>
-                  <SelectTrigger>
+                  <SelectTrigger className="mt-1.5 w-full bg-white">
                     <SelectValue placeholder="Select control" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper" sideOffset={4}>
                     <SelectItem value="_none">No control</SelectItem>
                     {controls.map((control) => (
                       <SelectItem key={control.id} value={control.id}>
@@ -1364,50 +1414,50 @@ export default function EvidencesMasterDataPage() {
             </div>
           )}
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-              Cancel
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <Button variant="outline" size="sm" onClick={() => setIsEditDialogOpen(false)}>
+              {t("Cancel")}
             </Button>
-            <Button onClick={handleEditSave} className="bg-primary">Save</Button>
-          </DialogFooter>
+            <Button size="sm" onClick={handleEditSave}>{t("Save")}</Button>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="text-primary">Confirmation</DialogTitle>
-            <DialogDescription>Are you sure you want to delete this?</DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
-              Cancel
+        <DialogContent className="sm:max-w-[500px] p-0 gap-0">
+          <div className="px-6 py-5">
+            <DialogTitle className="text-lg font-semibold text-slate-800">{t("Confirmation")}</DialogTitle>
+            <DialogDescription className="text-sm text-slate-500 mt-1">{t("Are you sure you want to delete this?")}</DialogDescription>
+          </div>
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <Button variant="outline" size="sm" onClick={() => setDeleteDialogOpen(false)}>
+              {t("Cancel")}
             </Button>
-            <Button onClick={confirmDelete} className="bg-primary">
-              OK
+            <Button size="sm" variant="destructive" onClick={confirmDelete}>
+              {t("Delete")}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Delete All Confirmation Dialog */}
       <Dialog open={deleteAllDialogOpen} onOpenChange={setDeleteAllDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="text-primary">Confirmation</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete all {evidences.length} evidences?
+        <DialogContent className="sm:max-w-[500px] p-0 gap-0">
+          <div className="px-6 py-5">
+            <DialogTitle className="text-lg font-semibold text-slate-800">{t("Confirmation")}</DialogTitle>
+            <DialogDescription className="text-sm text-slate-500 mt-1">
+              {t("Are you sure you want to delete all")} {evidences.length} {t("evidences?")}
             </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteAllDialogOpen(false)}>
-              Cancel
+          </div>
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <Button variant="outline" size="sm" onClick={() => setDeleteAllDialogOpen(false)}>
+              {t("Cancel")}
             </Button>
-            <Button onClick={handleDeleteAll} className="bg-primary">
-              OK
+            <Button size="sm" variant="destructive" onClick={handleDeleteAll}>
+              {t("Delete All")}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -1419,40 +1469,45 @@ export default function EvidencesMasterDataPage() {
           setImportFile(null);
         }
       }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="text-primary">Edit Template document</DialogTitle>
-            <DialogDescription>Import evidences from a file</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogTitle className="text-lg font-semibold text-slate-800">{t("Import Evidences")}</DialogTitle>
+          </div>
+          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
             <div>
-              <Label className="text-primary">Name</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Name")}</Label>
               <Input
                 value={importName}
                 onChange={(e) => setImportName(e.target.value)}
-                placeholder="Enter name"
+                placeholder={t("Enter name")}
+                className="mt-1.5 w-full bg-white"
               />
             </div>
             <div>
-              <Label className="text-primary">File</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("File")}</Label>
               <Input
                 type="file"
                 accept=".csv,.xlsx,.xls"
                 onChange={(e) => setImportFile(e.target.files?.[0] || null)}
+                className="mt-1.5 w-full bg-white"
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={handleDownloadTemplate}>
-              Download Templete
+          <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
+              <Download className="h-4 w-4 mr-2" />
+              {t("Download Template")}
             </Button>
-            <Button onClick={handleImportSubmit} className="bg-primary">
-              Import
-            </Button>
-            <Button variant="outline" onClick={() => setImportDialogOpen(false)}>
-              Cancel
-            </Button>
-          </DialogFooter>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(false)}>
+                {t("Cancel")}
+              </Button>
+              <Button size="sm" onClick={handleImportSubmit}>
+                <Upload className="h-4 w-4 mr-2" />
+                {t("Import")}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

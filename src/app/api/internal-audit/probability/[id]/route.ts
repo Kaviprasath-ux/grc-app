@@ -49,9 +49,13 @@ export async function PUT(
     }
 
     // Check for duplicate label if label is being changed
+    // Note: AuditProbability model doesn't have customerAccountId field yet
     if (label && label !== existing.label) {
-      const duplicate = await prisma.auditProbability.findUnique({
-        where: { label },
+      const duplicate = await prisma.auditProbability.findFirst({
+        where: {
+          label,
+          id: { not: id }
+        },
       });
       if (duplicate) {
         return NextResponse.json(

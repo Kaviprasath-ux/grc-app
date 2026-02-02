@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, use } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -39,7 +40,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, MessageSquare, Send, Trash2 } from "lucide-react";
+import { ArrowLeft, CheckCircle, MessageSquare, Send, Trash2, XCircle } from "lucide-react";
+import { toast } from "sonner";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface ExceptionComment {
   id: string;
@@ -56,7 +59,11 @@ interface Department {
 
 interface User {
   id: string;
-  name: string;
+  name?: string;
+  fullName?: string;
+  userName?: string;
+  firstName?: string;
+  lastName?: string;
   email: string | null;
 }
 
@@ -94,6 +101,7 @@ interface Exception {
 const statusColors: Record<string, string> = {
   Pending: "bg-yellow-100 text-yellow-800",
   Approved: "bg-green-100 text-green-800",
+  Rejected: "bg-red-100 text-red-800",
   Authorised: "bg-blue-100 text-blue-800",
   "Submitted for Closure": "bg-purple-100 text-purple-800",
   Overdue: "bg-orange-100 text-orange-800",
@@ -112,6 +120,7 @@ const categories = ["Policy", "Control", "Compliance", "Risk"];
 const statuses = [
   "Pending",
   "Approved",
+  "Rejected",
   "Authorised",
   "Submitted for Closure",
   "Overdue",
@@ -126,9 +135,12 @@ export default function ExceptionDetailPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
+  const { data: session } = useSession();
+  const { t } = useLanguage();
   const [exception, setException] = useState<Exception | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [approving, setApproving] = useState(false);
 
   // Reference data
   const [users, setUsers] = useState<User[]>([]);
@@ -155,6 +167,19 @@ export default function ExceptionDetailPage({
 
   // Delete state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+  // Send Back state
+  const [sendBackDialogOpen, setSendBackDialogOpen] = useState(false);
+  const [sendBackComment, setSendBackComment] = useState("");
+
+  // Check if current user is the approver
+  const currentUserId = session?.user?.id;
+  const userRoles = (session?.user?.roles as string[]) || [];
+  const isApprover = currentUserId && exception?.approver?.id === currentUserId;
+  const isDepartmentReviewer = userRoles.includes("DepartmentReviewer");
+
+  // DepartmentReviewer can only view and approve/reject, not edit other fields
+  const isReadOnly = isDepartmentReviewer;
 
   const fetchException = useCallback(async () => {
     try {
@@ -276,6 +301,83 @@ export default function ExceptionDetailPage({
     }
   };
 
+  const handleApprove = async () => {
+    setApproving(true);
+    try {
+      const response = await fetch(`/api/exceptions/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "Approved",
+          approvedBy: session?.user?.name || "Approver",
+          approvedDate: new Date().toISOString(),
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to approve exception");
+      }
+
+      toast.success(t("Exception approved successfully"));
+      await fetchException();
+    } catch (error) {
+      console.error("Error approving exception:", error);
+      toast.error(error instanceof Error ? error.message : t("Failed to approve exception"));
+    } finally {
+      setApproving(false);
+    }
+  };
+
+  const handleSendBack = async () => {
+    if (!sendBackComment.trim()) {
+      toast.error(t("Please enter a comment"));
+      return;
+    }
+
+    setApproving(true);
+    try {
+      // First add the comment
+      const commentResponse = await fetch(`/api/exceptions/${id}/comments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content: `[Send Back] ${sendBackComment}`,
+          userName: session?.user?.name || "Approver",
+        }),
+      });
+
+      if (!commentResponse.ok) {
+        const errorData = await commentResponse.json();
+        throw new Error(errorData.error || "Failed to add comment");
+      }
+
+      // Then update status to Rejected
+      const response = await fetch(`/api/exceptions/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "Rejected",
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to update status");
+      }
+
+      toast.success(t("Exception sent back successfully"));
+      setSendBackComment("");
+      setSendBackDialogOpen(false);
+      await fetchException();
+    } catch (error) {
+      console.error("Error sending back exception:", error);
+      toast.error(error instanceof Error ? error.message : t("Failed to send back exception"));
+    } finally {
+      setApproving(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -287,7 +389,7 @@ export default function ExceptionDetailPage({
   if (!exception) {
     return (
       <div className="p-6">
-        <p className="text-gray-500">Exception not found</p>
+        <p className="text-gray-500">{t("Exception not found")}</p>
       </div>
     );
   }
@@ -305,7 +407,7 @@ export default function ExceptionDetailPage({
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">Exception Detail Page</h1>
+            <h1 className="text-2xl font-bold">{t("Exception Detail Page")}</h1>
             <p className="text-gray-600">{exception.exceptionCode} - {exception.name}</p>
           </div>
           <Badge className={statusColors[exception.status] || "bg-gray-100"}>
@@ -313,20 +415,45 @@ export default function ExceptionDetailPage({
           </Badge>
         </div>
         <div className="flex gap-2">
+          {/* Approve and Send Back buttons - visible only to Approver when status is Pending */}
+          {isApprover && exception.status === "Pending" && (
+            <>
+              <Button
+                variant="default"
+                className="bg-green-600 hover:bg-green-700"
+                onClick={handleApprove}
+                disabled={approving}
+              >
+                <CheckCircle className="h-4 w-4 mr-2" />
+                {approving ? t("Processing...") : t("Approve")}
+              </Button>
+              <Button
+                variant="outline"
+                className="border-red-500 text-red-600 hover:bg-red-50"
+                onClick={() => setSendBackDialogOpen(true)}
+                disabled={approving}
+              >
+                <XCircle className="h-4 w-4 mr-2" />
+                {t("Send Back")}
+              </Button>
+            </>
+          )}
           <Button
             variant="outline"
             onClick={() => setCommentDialogOpen(true)}
           >
             <MessageSquare className="h-4 w-4 mr-2" />
-            Comments ({exception.comments?.length || 0})
+            {t("Comments")} ({exception.comments?.length || 0})
           </Button>
-          <Button
-            variant="destructive"
-            onClick={() => setDeleteDialogOpen(true)}
-          >
-            <Trash2 className="h-4 w-4 mr-2" />
-            Delete
-          </Button>
+          {!isReadOnly && (
+            <Button
+              variant="destructive"
+              onClick={() => setDeleteDialogOpen(true)}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              {t("Delete")}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -335,133 +462,149 @@ export default function ExceptionDetailPage({
         {/* Left Column - Exception Details Form */}
         <Card>
           <CardHeader>
-            <CardTitle>Exception Details</CardTitle>
+            <CardTitle>{t("Exception Details")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="font-medium">Exception Code</Label>
+                <Label className="font-medium">{t("Exception Code")}</Label>
                 <Input value={exception.exceptionCode} disabled />
               </div>
               <div className="space-y-2">
-                <Label className="font-medium">Exception Name</Label>
+                <Label className="font-medium">{t("Exception Name")}</Label>
                 <Input
                   value={formData.name}
                   onChange={(e) =>
                     setFormData({ ...formData, name: e.target.value })
                   }
+                  disabled={isReadOnly}
+                  className={isReadOnly ? "bg-gray-100" : ""}
                 />
               </div>
               <div className="space-y-2">
-                <Label className="font-medium">Category</Label>
+                <Label className="font-medium">{t("Category")}</Label>
                 <Input value={exception.category} disabled />
               </div>
               <div className="space-y-2">
-                <Label className="font-medium">Status</Label>
-                <Select
-                  value={formData.status}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, status: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {statuses.map((s) => (
-                      <SelectItem key={s} value={s}>
-                        {s}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label className="font-medium">{t("Status")}</Label>
+                {isReadOnly ? (
+                  <Input
+                    value={formData.status}
+                    disabled
+                    className="bg-gray-100"
+                  />
+                ) : (
+                  <Select
+                    value={formData.status}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, status: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {statuses.map((s) => (
+                        <SelectItem key={s} value={s}>
+                          {s}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
               <div className="space-y-2">
-                <Label className="font-medium">Department</Label>
-                <Select
-                  value={formData.departmentId}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, departmentId: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select department" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {departments.map((d) => (
-                      <SelectItem key={d.id} value={d.id}>
-                        {d.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label className="font-medium">{t("Department")}</Label>
+                {isReadOnly ? (
+                  <Input
+                    value={exception.department?.name || "-"}
+                    disabled
+                    className="bg-gray-100"
+                  />
+                ) : (
+                  <Select
+                    value={formData.departmentId}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, departmentId: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={t("Select department")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {departments.map((d) => (
+                        <SelectItem key={d.id} value={d.id}>
+                          {d.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
               <div className="space-y-2">
-                <Label className="font-medium">End Date</Label>
+                <Label className="font-medium">{t("End Date")}</Label>
                 <Input
-                  type="date"
-                  value={formData.endDate}
+                  type={isReadOnly ? "text" : "date"}
+                  value={isReadOnly && formData.endDate ? new Date(formData.endDate).toLocaleDateString("en-GB") : formData.endDate}
                   onChange={(e) =>
                     setFormData({ ...formData, endDate: e.target.value })
                   }
+                  disabled={isReadOnly}
+                  className={isReadOnly ? "bg-gray-100" : ""}
                 />
               </div>
               <div className="space-y-2 col-span-2">
-                <Label className="font-medium">Reason For Exception</Label>
+                <Label className="font-medium">{t("Reason For Exception")}</Label>
                 <Textarea
                   value={formData.description}
                   onChange={(e) =>
                     setFormData({ ...formData, description: e.target.value })
                   }
                   rows={3}
+                  disabled={isReadOnly}
+                  className={isReadOnly ? "bg-gray-100" : ""}
                 />
               </div>
               <div className="space-y-2">
-                <Label className="font-medium">Requester</Label>
-                <Select
-                  value={formData.requesterId}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, requesterId: value })
+                <Label className="font-medium">{t("Requester")}</Label>
+                <Input
+                  value={
+                    exception.requester?.fullName ||
+                    exception.requester?.userName ||
+                    (exception.requester?.firstName && exception.requester?.lastName
+                      ? `${exception.requester.firstName} ${exception.requester.lastName}`
+                      : null) ||
+                    exception.requester?.name ||
+                    "-"
                   }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select requester" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {users.map((u) => (
-                      <SelectItem key={u.id} value={u.id}>
-                        {u.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  disabled
+                  className="bg-gray-100"
+                />
               </div>
               <div className="space-y-2">
-                <Label className="font-medium">Approver</Label>
-                <Select
-                  value={formData.approverId}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, approverId: value })
+                <Label className="font-medium">{t("Approver")}</Label>
+                <Input
+                  value={
+                    exception.approver?.fullName ||
+                    exception.approver?.userName ||
+                    (exception.approver?.firstName && exception.approver?.lastName
+                      ? `${exception.approver.firstName} ${exception.approver.lastName}`
+                      : null) ||
+                    exception.approver?.name ||
+                    "-"
                   }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select approver" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {users.map((u) => (
-                      <SelectItem key={u.id} value={u.id}>
-                        {u.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  disabled
+                  className="bg-gray-100"
+                />
               </div>
             </div>
-            <div className="mt-4 flex justify-end">
-              <Button onClick={handleSave} disabled={saving}>
-                {saving ? "Saving..." : "Save"}
-              </Button>
-            </div>
+            {!isReadOnly && (
+              <div className="mt-4 flex justify-end">
+                <Button onClick={handleSave} disabled={saving}>
+                  {saving ? t("Saving...") : t("Save")}
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -471,19 +614,19 @@ export default function ExceptionDetailPage({
           {exception.category === "Policy" && exception.policy && (
             <Card>
               <CardHeader>
-                <CardTitle>Policy Reference</CardTitle>
+                <CardTitle>{t("Policy Reference")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="font-medium text-gray-500">
-                      Policy code
+                      {t("Policy Code")}
                     </Label>
                     <p className="font-medium">{exception.policy.code}</p>
                   </div>
                   <div className="space-y-2">
                     <Label className="font-medium text-gray-500">
-                      Policies Name
+                      {t("Policy Name")}
                     </Label>
                     <p className="font-medium">{exception.policy.name}</p>
                   </div>
@@ -495,19 +638,19 @@ export default function ExceptionDetailPage({
           {exception.category === "Control" && exception.control && (
             <Card>
               <CardHeader>
-                <CardTitle>Control Reference</CardTitle>
+                <CardTitle>{t("Control Reference")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="font-medium text-gray-500">
-                      Control code
+                      {t("Control Code")}
                     </Label>
                     <p className="font-medium">{exception.control.controlId}</p>
                   </div>
                   <div className="space-y-2">
                     <Label className="font-medium text-gray-500">
-                      Control Name
+                      {t("Control Name")}
                     </Label>
                     <p className="font-medium">{exception.control.name}</p>
                   </div>
@@ -519,19 +662,19 @@ export default function ExceptionDetailPage({
           {exception.category === "Risk" && exception.risk && (
             <Card>
               <CardHeader>
-                <CardTitle>Risk Reference</CardTitle>
+                <CardTitle>{t("Risk Reference")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="font-medium text-gray-500">
-                      Risk Code
+                      {t("Risk Code")}
                     </Label>
                     <p className="font-medium">{exception.risk.riskCode}</p>
                   </div>
                   <div className="space-y-2">
                     <Label className="font-medium text-gray-500">
-                      Risk Name
+                      {t("Risk Name")}
                     </Label>
                     <p className="font-medium">{exception.risk.name}</p>
                   </div>
@@ -543,28 +686,32 @@ export default function ExceptionDetailPage({
           {/* Approval Information Card */}
           <Card>
             <CardHeader>
-              <CardTitle>Approval Information</CardTitle>
+              <CardTitle>{t("Approval Information")}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="font-medium">Approved by</Label>
+                  <Label className="font-medium">{t("Approved by")}</Label>
                   <Input
                     value={formData.approvedBy}
                     onChange={(e) =>
                       setFormData({ ...formData, approvedBy: e.target.value })
                     }
-                    placeholder="Enter approver name"
+                    placeholder={isReadOnly ? "-" : t("Enter approver name")}
+                    disabled={isReadOnly}
+                    className={isReadOnly ? "bg-gray-100" : ""}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="font-medium">Approved Date</Label>
+                  <Label className="font-medium">{t("Approved Date")}</Label>
                   <Input
-                    type="date"
-                    value={formData.approvedDate}
+                    type={isReadOnly ? "text" : "date"}
+                    value={isReadOnly && formData.approvedDate ? new Date(formData.approvedDate).toLocaleDateString("en-GB") : formData.approvedDate}
                     onChange={(e) =>
                       setFormData({ ...formData, approvedDate: e.target.value })
                     }
+                    disabled={isReadOnly}
+                    className={isReadOnly ? "bg-gray-100" : ""}
                   />
                 </div>
               </div>
@@ -575,14 +722,14 @@ export default function ExceptionDetailPage({
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>Recent Comments</CardTitle>
+                <CardTitle>{t("Recent Comments")}</CardTitle>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setCommentDialogOpen(true)}
                 >
                   <MessageSquare className="h-4 w-4 mr-2" />
-                  Add Comment
+                  {t("Add Comment")}
                 </Button>
               </div>
             </CardHeader>
@@ -596,7 +743,7 @@ export default function ExceptionDetailPage({
                     >
                       <div className="flex items-center justify-between mb-1">
                         <span className="font-medium text-sm">
-                          {comment.userName || "Unknown User"}
+                          {comment.userName || t("Unknown User")}
                         </span>
                         <span className="text-xs text-gray-500">
                           {new Date(comment.createdAt).toLocaleDateString(
@@ -613,13 +760,13 @@ export default function ExceptionDetailPage({
                       className="w-full"
                       onClick={() => setCommentDialogOpen(true)}
                     >
-                      View all {exception.comments.length} comments
+                      {t("View all")} {exception.comments.length} {t("comments")}
                     </Button>
                   )}
                 </div>
               ) : (
                 <p className="text-gray-500 text-center py-4">
-                  No comments yet
+                  {t("No comments yet")}
                 </p>
               )}
             </CardContent>
@@ -631,7 +778,7 @@ export default function ExceptionDetailPage({
       <Dialog open={commentDialogOpen} onOpenChange={setCommentDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Comments</DialogTitle>
+            <DialogTitle>{t("Comments")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             {/* Comment List */}
@@ -641,7 +788,7 @@ export default function ExceptionDetailPage({
                   <div key={comment.id} className="p-3 bg-gray-50 rounded-lg">
                     <div className="flex items-center justify-between mb-1">
                       <span className="font-medium text-sm">
-                        {comment.userName || "Unknown User"}
+                        {comment.userName || t("Unknown User")}
                       </span>
                       <span className="text-xs text-gray-500">
                         {new Date(comment.createdAt).toLocaleDateString("en-GB")}{" "}
@@ -656,19 +803,19 @@ export default function ExceptionDetailPage({
                 ))
               ) : (
                 <p className="text-gray-500 text-center py-4">
-                  No comments yet
+                  {t("No comments yet")}
                 </p>
               )}
             </div>
 
             {/* Add Comment */}
             <div className="border-t pt-4">
-              <Label className="font-medium">Add a comment</Label>
+              <Label className="font-medium">{t("Add a comment")}</Label>
               <div className="flex gap-2 mt-2">
                 <Textarea
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
-                  placeholder="Type your comment..."
+                  placeholder={t("Type your comment...")}
                   rows={2}
                   className="flex-1"
                 />
@@ -690,18 +837,62 @@ export default function ExceptionDetailPage({
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmation</AlertDialogTitle>
+            <AlertDialogTitle>{t("Confirmation")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this exception? This action cannot
-              be undone.
+              {t("Are you sure you want to delete this exception? This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+            <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>{t("Delete")}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Send Back Dialog */}
+      <Dialog open={sendBackDialogOpen} onOpenChange={setSendBackDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("Send Back Exception")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">
+              {t("Please provide a reason for sending back this exception request.")}
+            </p>
+            <div className="space-y-2">
+              <Label className="font-medium">
+                {t("Comment")} <span className="text-red-500">*</span>
+              </Label>
+              <Textarea
+                value={sendBackComment}
+                onChange={(e) => setSendBackComment(e.target.value)}
+                placeholder={t("Enter reason for sending back...")}
+                rows={4}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setSendBackComment("");
+                  setSendBackDialogOpen(false);
+                }}
+              >
+                {t("Cancel")}
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={handleSendBack}
+                disabled={!sendBackComment.trim() || approving}
+              >
+                {approving ? t("Processing...") : t("Send Back")}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

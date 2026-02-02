@@ -1,9 +1,60 @@
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log("🌱 Seeding database...");
+
+  // Hash passwords upfront
+  const hashedPassword1 = await bcrypt.hash("1", 10);
+  const hashedPasswordBaarez = await bcrypt.hash("Baarez@2025", 10);
+
+  // ==================== CUSTOMER ACCOUNT (MULTI-TENANT) ====================
+
+  // Create default CustomerAccount for all seeded data
+  const defaultCustomerAccount = await prisma.customerAccount.upsert({
+    where: { code: "GRC_001" },
+    update: {},
+    create: {
+      id: "customer-account-1",
+      code: "GRC_001",
+      name: "Baarez Technology Solutions",
+      isActive: true,
+    },
+  });
+  console.log("✅ Customer Account created");
+
+  // Store customerAccountId for use in all entity creations
+  const customerAccountId = defaultCustomerAccount.id;
+
+  // Create CustomerAccount for GRC Administrator (for GRC Admin data isolation)
+  const grcAdminCustomerAccount = await prisma.customerAccount.upsert({
+    where: { code: "GRC_ADMIN_001" },
+    update: {},
+    create: {
+      id: "grc-admin-account-1",
+      code: "GRC_ADMIN_001",
+      name: "GRC Administrator Account",
+      isActive: true,
+    },
+  });
+  console.log("✅ GRC Admin Customer Account created");
+  const grcAdminCustomerAccountId = grcAdminCustomerAccount.id;
+
+  // Create Second CustomerAccount for testing GRC Admin data isolation
+  const grcAdmin2CustomerAccount = await prisma.customerAccount.upsert({
+    where: { code: "GRC_ADMIN_002" },
+    update: {},
+    create: {
+      id: "grc-admin-account-2",
+      code: "GRC_ADMIN_002",
+      name: "GRC Administrator 2 Account",
+      isActive: true,
+    },
+  });
+  console.log("✅ GRC Admin 2 Customer Account created");
+  const grcAdmin2CustomerAccountId = grcAdmin2CustomerAccount.id;
 
   // ==================== ORGANIZATION MODULE ====================
 
@@ -11,6 +62,7 @@ async function main() {
   const organization = await prisma.organization.upsert({
     where: { id: "org-1" },
     update: {
+      customerAccountId,
       email: "info@baarez.com",
       phone: "+974 4444 1234",
       logo: "/uploads/baarez-logo.png",
@@ -24,6 +76,7 @@ async function main() {
     },
     create: {
       id: "org-1",
+      customerAccountId,
       name: "Baarez Technology Solutions",
       email: "info@baarez.com",
       phone: "+974 4444 1234",
@@ -120,12 +173,18 @@ async function main() {
 
   const createdDepts: { [key: string]: string } = {};
   for (const name of departments) {
-    const dept = await prisma.department.upsert({
-      where: { name },
-      update: {},
-      create: { name },
+    // Use findFirst to check if department exists for this customer
+    const existing = await prisma.department.findFirst({
+      where: { customerAccountId, name },
     });
-    createdDepts[name] = dept.id;
+    if (existing) {
+      createdDepts[name] = existing.id;
+    } else {
+      const dept = await prisma.department.create({
+        data: { customerAccountId, name },
+      });
+      createdDepts[name] = dept.id;
+    }
   }
   console.log("✅ Departments created");
 
@@ -146,18 +205,23 @@ async function main() {
     { userId: "USR-013", userName: "prakash.loganathan", email: "prakash.l@baarez.com", firstName: "Prakash", lastName: "L", department: "Internal Audit", designation: "IT Auditor", role: "Auditor", function: "Audit" },
     { userId: "USR-014", userName: "navita.singh", email: "navita.singh@baarez.com", firstName: "Navita", lastName: "S", department: "Internal Audit", designation: "Auditor", role: "Auditor", function: "Audit" },
     { userId: "USR-015", userName: "avinash.kumar", email: "avinash.kumar@baarez.com", firstName: "Avinash", lastName: "Kumar", department: "Internal Audit", designation: "Junior Auditor", role: "Auditor", function: "Audit" },
+    { userId: "USR-016", userName: "auditm", email: "auditm@baarez.com", firstName: "Audit", lastName: "Manager", department: "Internal Audit", designation: "Audit Manager", role: "AuditManager", function: "Audit" },
   ];
 
   const createdUsers: { [key: string]: string } = {};
   for (const user of users) {
     const created = await prisma.user.upsert({
       where: { userName: user.userName },
-      update: {},
+      update: {
+        customerAccountId, // Update existing users with customer account
+        password: hashedPassword1, // Ensure password is updated for existing users
+      },
       create: {
+        customerAccountId,
         userId: user.userId,
         userName: user.userName,
         email: user.email,
-        password: "1",
+        password: hashedPassword1,
         firstName: user.firstName,
         lastName: user.lastName,
         fullName: `${user.firstName} ${user.lastName}`,
@@ -202,6 +266,7 @@ async function main() {
     "Administrator": "CustomerAdministrator",
     "GRC Admin": "GRCAdministrator",
     "AuditHead": "AuditHead",
+    "AuditManager": "AuditManager",
     "Auditor": "Auditor",
     "Risk Manager": "Contributor",
     "User": "Contributor",
@@ -229,6 +294,86 @@ async function main() {
   }
   console.log("✅ User roles assigned");
 
+  // Create Superadmin user (GRCAdministrator) with their own CustomerAccount for data isolation
+  const superadminUser = await prisma.user.upsert({
+    where: { userName: "superadmin" },
+    update: {
+      customerAccountId: grcAdminCustomerAccountId, // Ensure existing superadmin gets the account
+      password: hashedPasswordBaarez, // Ensure password is updated for existing users
+    },
+    create: {
+      userId: "SUPERADMIN-001",
+      userName: "superadmin",
+      email: "superadmin@baarez.com",
+      password: hashedPasswordBaarez,
+      firstName: "Super",
+      lastName: "Admin",
+      fullName: "Super Admin",
+      designation: "System Administrator",
+      role: "GRCAdministrator",
+      function: "Administration",
+      isActive: true,
+      isBlocked: false,
+      customerAccountId: grcAdminCustomerAccountId, // GRC Admin data isolation
+    },
+  });
+
+  // Assign GRCAdministrator role to superadmin
+  await prisma.userRole.upsert({
+    where: {
+      userId_roleId: {
+        userId: superadminUser.id,
+        roleId: createdRoles["GRCAdministrator"],
+      },
+    },
+    update: {},
+    create: {
+      userId: superadminUser.id,
+      roleId: createdRoles["GRCAdministrator"],
+    },
+  });
+  console.log("✅ Superadmin user created (superadmin / Baarez@2025)");
+
+  // Create Second GRC Admin user for testing data isolation
+  const grcAdmin2User = await prisma.user.upsert({
+    where: { userName: "grcadmin2" },
+    update: {
+      customerAccountId: grcAdmin2CustomerAccountId,
+      password: hashedPasswordBaarez, // Ensure password is updated for existing users
+    },
+    create: {
+      userId: "GRCADMIN2-001",
+      userName: "grcadmin2",
+      email: "grcadmin2@baarez.com",
+      password: hashedPasswordBaarez,
+      firstName: "GRC",
+      lastName: "Admin2",
+      fullName: "GRC Admin 2",
+      designation: "GRC Administrator",
+      role: "GRCAdministrator",
+      function: "Administration",
+      isActive: true,
+      isBlocked: false,
+      customerAccountId: grcAdmin2CustomerAccountId,
+    },
+  });
+
+  // Assign GRCAdministrator role to grcadmin2
+  await prisma.userRole.upsert({
+    where: {
+      userId_roleId: {
+        userId: grcAdmin2User.id,
+        roleId: createdRoles["GRCAdministrator"],
+      },
+    },
+    update: {},
+    create: {
+      userId: grcAdmin2User.id,
+      roleId: createdRoles["GRCAdministrator"],
+    },
+  });
+  console.log("✅ GRC Admin 2 user created (grcadmin2 / Baarez@2025)");
+
   // Create Stakeholders
   const stakeholders = [
     { name: "John Smith", email: "john.smith@example.com", type: "Internal", status: "Active" },
@@ -241,7 +386,7 @@ async function main() {
   ];
 
   for (const stakeholder of stakeholders) {
-    await prisma.stakeholder.create({ data: stakeholder });
+    await prisma.stakeholder.create({ data: { customerAccountId, ...stakeholder } });
   }
   console.log("✅ Stakeholders created");
 
@@ -260,6 +405,7 @@ async function main() {
   for (const issue of issues) {
     await prisma.issue.create({
       data: {
+        customerAccountId,
         title: issue.title,
         domain: issue.domain,
         category: issue.category,
@@ -279,7 +425,7 @@ async function main() {
   ];
 
   for (const service of services) {
-    await prisma.service.create({ data: service });
+    await prisma.service.create({ data: { customerAccountId, ...service } });
   }
   console.log("✅ Services created");
 
@@ -447,23 +593,34 @@ async function main() {
 
   const createdFrameworks: { [key: string]: string } = {};
   for (const framework of frameworks) {
-    const created = await prisma.framework.upsert({
-      where: { name: framework.name },
-      update: {
-        description: framework.description,
-        version: framework.version,
-        type: framework.type,
-        status: framework.status,
-        country: framework.country,
-        industry: framework.industry,
-        isCustom: framework.isCustom,
-        compliancePercentage: framework.compliancePercentage,
-        policyPercentage: framework.policyPercentage,
-        evidencePercentage: framework.evidencePercentage,
-      },
-      create: framework,
+    // Use findFirst to check if framework exists for this customer
+    const existing = await prisma.framework.findFirst({
+      where: { customerAccountId, name: framework.name },
     });
-    createdFrameworks[framework.name] = created.id;
+    if (existing) {
+      // Update existing framework
+      await prisma.framework.update({
+        where: { id: existing.id },
+        data: {
+          description: framework.description,
+          version: framework.version,
+          type: framework.type,
+          status: framework.status,
+          country: framework.country,
+          industry: framework.industry,
+          isCustom: framework.isCustom,
+          compliancePercentage: framework.compliancePercentage,
+          policyPercentage: framework.policyPercentage,
+          evidencePercentage: framework.evidencePercentage,
+        },
+      });
+      createdFrameworks[framework.name] = existing.id;
+    } else {
+      const created = await prisma.framework.create({
+        data: { customerAccountId, ...framework },
+      });
+      createdFrameworks[framework.name] = created.id;
+    }
   }
   console.log("✅ Frameworks created (12 comprehensive frameworks)");
 
@@ -531,19 +688,26 @@ async function main() {
   for (const category of requirementCategories) {
     const key = `${category.framework}-${category.code}`;
     if (createdFrameworks[category.framework]) {
-      const created = await prisma.requirementCategory.upsert({
-        where: { id: key },
-        update: {},
-        create: {
-          id: key,
-          code: category.code,
-          name: category.name,
-          description: category.description,
-          sortOrder: category.sortOrder,
-          frameworkId: createdFrameworks[category.framework],
-        },
+      // Use findFirst to check if category exists for this customer
+      const existing = await prisma.requirementCategory.findFirst({
+        where: { customerAccountId, id: key },
       });
-      createdCategories[key] = created.id;
+      if (existing) {
+        createdCategories[key] = existing.id;
+      } else {
+        const created = await prisma.requirementCategory.create({
+          data: {
+            id: key,
+            customerAccountId,
+            code: category.code,
+            name: category.name,
+            description: category.description,
+            sortOrder: category.sortOrder,
+            frameworkId: createdFrameworks[category.framework],
+          },
+        });
+        createdCategories[key] = created.id;
+      }
     }
   }
   console.log("✅ Requirement Categories created (46 domains/chapters)");
@@ -644,21 +808,27 @@ async function main() {
   for (const req of requirements) {
     const categoryId = createdCategories[req.category];
     if (categoryId) {
-      await prisma.requirement.upsert({
-        where: { id: `${req.category}-${req.code}` },
-        update: {},
-        create: {
-          id: `${req.category}-${req.code}`,
-          code: req.code,
-          name: req.name,
-          description: req.description,
-          controlCompliance: req.compliance,
-          applicability: req.applicability,
-          implementationStatus: req.implementation,
-          categoryId: categoryId,
-          frameworkId: createdFrameworks[req.category.split("-")[0]],
-        },
+      const reqId = `${req.category}-${req.code}`;
+      // Use findFirst to check if requirement exists for this customer
+      const existing = await prisma.requirement.findFirst({
+        where: { customerAccountId, id: reqId },
       });
+      if (!existing) {
+        await prisma.requirement.create({
+          data: {
+            id: reqId,
+            customerAccountId,
+            code: req.code,
+            name: req.name,
+            description: req.description,
+            controlCompliance: req.compliance,
+            applicability: req.applicability,
+            implementationStatus: req.implementation,
+            categoryId: categoryId,
+            frameworkId: createdFrameworks[req.category.split("-")[0]],
+          },
+        });
+      }
     }
   }
   console.log("✅ Requirements created (70+ comprehensive requirements)");
@@ -742,17 +912,26 @@ async function main() {
   ];
 
   for (const reg of regulations) {
-    await prisma.regulation.upsert({
+    // Regulation is shared master data (no customerAccountId)
+    const existing = await prisma.regulation.findFirst({
       where: { name: reg.name },
-      update: {
-        version: reg.version,
-        scope: reg.scope,
-        status: reg.status,
-        sa1Date: reg.sa1Date,
-        sa2Date: reg.sa2Date,
-      },
-      create: reg,
     });
+    if (existing) {
+      await prisma.regulation.update({
+        where: { id: existing.id },
+        data: {
+          version: reg.version,
+          scope: reg.scope,
+          status: reg.status,
+          sa1Date: reg.sa1Date,
+          sa2Date: reg.sa2Date,
+        },
+      });
+    } else {
+      await prisma.regulation.create({
+        data: { ...reg },
+      });
+    }
   }
   console.log("✅ Regulations created (10 comprehensive regulations)");
 
@@ -792,12 +971,18 @@ async function main() {
 
   const createdDomains: { [key: string]: string } = {};
   for (const name of controlDomains) {
-    const domain = await prisma.controlDomain.upsert({
+    // ControlDomain is shared master data (no customerAccountId)
+    const existing = await prisma.controlDomain.findFirst({
       where: { name },
-      update: {},
-      create: { name },
     });
-    createdDomains[name] = domain.id;
+    if (existing) {
+      createdDomains[name] = existing.id;
+    } else {
+      const domain = await prisma.controlDomain.create({
+        data: { name },
+      });
+      createdDomains[name] = domain.id;
+    }
   }
   console.log("✅ Control Domains created");
 
@@ -899,23 +1084,29 @@ async function main() {
     const domainId = createdDomains[ctrl.domain];
 
     if (frameworkId && domainId) {
-      await prisma.control.upsert({
-        where: { controlCode: `CTRL-${String(controlIndex).padStart(4, "0")}` },
-        update: {},
-        create: {
-          controlCode: `CTRL-${String(controlIndex).padStart(4, "0")}`,
-          name: ctrl.name,
-          description: ctrl.description,
-          controlQuestion: ctrl.question,
-          functionalGrouping: ctrl.functional,
-          status: controlStatuses[controlIndex % 4],
-          domainId: domainId,
-          frameworkId: frameworkId,
-          departmentId: createdDepts[departments[controlIndex % departments.length]],
-          ownerId: createdUsers["john.doe"],
-          scope: controlIndex % 3 === 0 ? "Not In-Scope" : "In-Scope",
-        },
+      const controlCode = `CTRL-${String(controlIndex).padStart(4, "0")}`;
+      // Use findFirst to check if control exists for this customer
+      const existing = await prisma.control.findFirst({
+        where: { customerAccountId, controlCode },
       });
+      if (!existing) {
+        await prisma.control.create({
+          data: {
+            customerAccountId,
+            controlCode,
+            name: ctrl.name,
+            description: ctrl.description,
+            controlQuestion: ctrl.question,
+            functionalGrouping: ctrl.functional,
+            status: controlStatuses[controlIndex % 4],
+            domainId: domainId,
+            frameworkId: frameworkId,
+            departmentId: createdDepts[departments[controlIndex % departments.length]],
+            ownerId: createdUsers["john.doe"],
+            scope: controlIndex % 3 === 0 ? "Not In-Scope" : "In-Scope",
+          },
+        });
+      }
       controlIndex++;
     }
   }
@@ -934,17 +1125,22 @@ async function main() {
   ];
 
   for (const process of processes) {
-    await prisma.process.upsert({
-      where: { processCode: process.processCode },
-      update: {},
-      create: {
-        processCode: process.processCode,
-        name: process.name,
-        processType: process.processType,
-        departmentId: createdDepts[process.department],
-        ownerId: createdUsers["bts.admin"],
-      },
+    // Use findFirst to check if process exists for this customer
+    const existing = await prisma.process.findFirst({
+      where: { customerAccountId, processCode: process.processCode },
     });
+    if (!existing) {
+      await prisma.process.create({
+        data: {
+          customerAccountId,
+          processCode: process.processCode,
+          name: process.name,
+          processType: process.processType,
+          departmentId: createdDepts[process.department],
+          ownerId: createdUsers["bts.admin"],
+        },
+      });
+    }
   }
   console.log("✅ Processes created");
 
@@ -963,20 +1159,69 @@ async function main() {
   let policyIdx = 1;
   for (const policy of policies) {
     const code = `POL-${String(policyIdx++).padStart(3, "0")}`;
-    await prisma.policy.upsert({
-      where: { code },
-      update: {},
-      create: {
-        code,
-        name: policy.name,
-        documentType: policy.documentType,
-        departmentId: createdDepts[policy.department],
-        status: policy.status,
-        version: "1.0",
-      },
+    // Use findFirst to check if policy exists for this customer
+    const existing = await prisma.policy.findFirst({
+      where: { customerAccountId, code },
     });
+    if (!existing) {
+      await prisma.policy.create({
+        data: {
+          customerAccountId,
+          code,
+          name: policy.name,
+          documentType: policy.documentType,
+          departmentId: createdDepts[policy.department],
+          status: policy.status,
+          version: "1.0",
+        },
+      });
+    }
   }
   console.log("✅ Policies created");
+
+  // ==================== CREATE POLICY-CONTROL LINKS ====================
+  // Link policies to controls
+  console.log("🔗 Creating Policy-Control links...");
+
+  const allPolicies = await prisma.policy.findMany({
+    where: { customerAccountId },
+  });
+
+  const allControlsForPolicies = await prisma.control.findMany({
+    where: { customerAccountId },
+  });
+
+  let policyControlLinksCreated = 0;
+  // Link each policy to 3-5 controls
+  for (let i = 0; i < allPolicies.length; i++) {
+    const policy = allPolicies[i];
+    const controlCount = Math.min(3 + (i % 3), allControlsForPolicies.length); // 3-5 controls per policy
+
+    for (let j = 0; j < controlCount; j++) {
+      const controlIndex = (i * 3 + j) % allControlsForPolicies.length;
+      const control = allControlsForPolicies[controlIndex];
+
+      try {
+        await prisma.policyControl.upsert({
+          where: {
+            policyId_controlId: {
+              policyId: policy.id,
+              controlId: control.id,
+            },
+          },
+          update: {},
+          create: {
+            policyId: policy.id,
+            controlId: control.id,
+          },
+        });
+        policyControlLinksCreated++;
+      } catch (e) {
+        // Ignore duplicate key errors
+      }
+    }
+  }
+  console.log(`✅ Policy-Control links created (${policyControlLinksCreated} links)`);
 
   // Create Evidence Requests linked to multiple frameworks
   const evidences = [
@@ -1003,6 +1248,7 @@ async function main() {
     if (frameworkId) {
       await prisma.evidence.create({
         data: {
+          customerAccountId,
           evidenceCode: `EVD-${String(evidenceIdx++).padStart(3, "0")}`,
           name: evidence.name,
           description: evidence.description,
@@ -1017,6 +1263,103 @@ async function main() {
   }
   console.log("✅ Evidence requests created (15 evidence items)");
 
+  // ==================== CREATE REQUIREMENT-CONTROL LINKS ====================
+  // Link requirements to controls within the same framework
+  console.log("🔗 Creating Requirement-Control links...");
+
+  // Get all frameworks with their requirements and controls
+  const frameworksForLinking = await prisma.framework.findMany({
+    where: { customerAccountId },
+    include: {
+      requirements: true,
+      controls: true,
+    },
+  });
+
+  let reqControlLinksCreated = 0;
+  for (const framework of frameworksForLinking) {
+    if (framework.requirements.length === 0 || framework.controls.length === 0) continue;
+
+    // Link each requirement to 2-4 controls from the same framework
+    for (let i = 0; i < framework.requirements.length; i++) {
+      const req = framework.requirements[i];
+      const controlCount = Math.min(2 + (i % 3), framework.controls.length); // 2-4 controls per requirement
+
+      for (let j = 0; j < controlCount; j++) {
+        const controlIndex = (i * 2 + j) % framework.controls.length;
+        const control = framework.controls[controlIndex];
+
+        try {
+          await prisma.requirementControl.upsert({
+            where: {
+              requirementId_controlId: {
+                requirementId: req.id,
+                controlId: control.id,
+              },
+            },
+            update: {},
+            create: {
+              requirementId: req.id,
+              controlId: control.id,
+            },
+          });
+          reqControlLinksCreated++;
+        } catch (e) {
+          // Ignore duplicate key errors
+        }
+      }
+    }
+  }
+  console.log(`✅ Requirement-Control links created (${reqControlLinksCreated} links)`);
+
+  // ==================== CREATE EVIDENCE-CONTROL LINKS ====================
+  // Link evidences to controls within the same framework
+  console.log("🔗 Creating Evidence-Control links...");
+
+  const frameworksForEvidenceLinks = await prisma.framework.findMany({
+    where: { customerAccountId },
+    include: {
+      evidences: true,
+      controls: true,
+    },
+  });
+
+  let evControlLinksCreated = 0;
+  for (const framework of frameworksForEvidenceLinks) {
+    if (framework.evidences.length === 0 || framework.controls.length === 0) continue;
+
+    // Link each evidence to 1-3 controls from the same framework
+    for (let i = 0; i < framework.evidences.length; i++) {
+      const evidence = framework.evidences[i];
+      const controlCount = Math.min(1 + (i % 3), framework.controls.length); // 1-3 controls per evidence
+
+      for (let j = 0; j < controlCount; j++) {
+        const controlIndex = (i + j) % framework.controls.length;
+        const control = framework.controls[controlIndex];
+
+        try {
+          await prisma.evidenceControl.upsert({
+            where: {
+              evidenceId_controlId: {
+                evidenceId: evidence.id,
+                controlId: control.id,
+              },
+            },
+            update: {},
+            create: {
+              evidenceId: evidence.id,
+              controlId: control.id,
+            },
+          });
+          evControlLinksCreated++;
+        } catch (e) {
+          // Ignore duplicate key errors
+        }
+      }
+    }
+  }
+  console.log(`✅ Evidence-Control links created (${evControlLinksCreated} links)`);
+
   // Create Exceptions
   const exceptions = [
     { name: "Legacy System Exception", category: "Control", department: "IT Operations", status: "Approved", startDate: "2025-01-01", endDate: "2025-06-30" },
@@ -1030,6 +1373,7 @@ async function main() {
   for (const exception of exceptions) {
     await prisma.exception.create({
       data: {
+        customerAccountId,
         exceptionCode: `EXC-${String(exceptionIdx++).padStart(3, "0")}`,
         name: exception.name,
         category: exception.category,
@@ -1065,22 +1409,27 @@ async function main() {
   ];
 
   for (const kpi of kpis) {
-    await prisma.kPI.upsert({
-      where: { code: kpi.code },
-      update: {},
-      create: {
-        code: kpi.code,
-        objective: kpi.objective,
-        description: kpi.description,
-        dataSource: kpi.dataSource,
-        calculationFormula: kpi.calculationFormula,
-        expectedScore: kpi.expectedScore,
-        actualScore: kpi.actualScore,
-        status: kpi.status,
-        reviewDate: new Date(kpi.reviewDate),
-        departmentId: createdDepts[kpi.department],
-      },
+    // Use findFirst to check if KPI exists for this customer
+    const existing = await prisma.kPI.findFirst({
+      where: { customerAccountId, code: kpi.code },
     });
+    if (!existing) {
+      await prisma.kPI.create({
+        data: {
+          customerAccountId,
+          code: kpi.code,
+          objective: kpi.objective,
+          description: kpi.description,
+          dataSource: kpi.dataSource,
+          calculationFormula: kpi.calculationFormula,
+          expectedScore: kpi.expectedScore,
+          actualScore: kpi.actualScore,
+          status: kpi.status,
+          reviewDate: new Date(kpi.reviewDate),
+          departmentId: createdDepts[kpi.department],
+        },
+      });
+    }
   }
   console.log("✅ KPIs created (18 KPI items)");
 
@@ -1169,12 +1518,18 @@ async function main() {
   const createdClassifications: { [key: string]: string } = {};
 
   for (const name of classifications) {
-    const classification = await prisma.assetClassification.upsert({
+    // AssetClassification is shared master data (no customerAccountId)
+    const existing = await prisma.assetClassification.findFirst({
       where: { name },
-      update: {},
-      create: { name, description: `${name} priority asset` },
     });
-    createdClassifications[name] = classification.id;
+    if (existing) {
+      createdClassifications[name] = existing.id;
+    } else {
+      const classification = await prisma.assetClassification.create({
+        data: { name, description: `${name} priority asset` },
+      });
+      createdClassifications[name] = classification.id;
+    }
   }
   console.log("✅ Asset Classifications created");
 
@@ -1191,12 +1546,18 @@ async function main() {
 
   const createdAssetCategories: { [key: string]: string } = {};
   for (const cat of assetCategories) {
-    const category = await prisma.assetCategory.upsert({
+    // AssetCategory is shared master data (no customerAccountId)
+    const existing = await prisma.assetCategory.findFirst({
       where: { name: cat.name },
-      update: {},
-      create: cat,
     });
-    createdAssetCategories[cat.name] = category.id;
+    if (existing) {
+      createdAssetCategories[cat.name] = existing.id;
+    } else {
+      const category = await prisma.assetCategory.create({
+        data: { ...cat },
+      });
+      createdAssetCategories[cat.name] = category.id;
+    }
   }
   console.log("✅ Asset Categories created");
 
@@ -1224,21 +1585,25 @@ async function main() {
 
   const createdAssetSubCategories: { [key: string]: string } = {};
   for (const subCat of assetSubCategories) {
-    const subCategory = await prisma.assetSubCategory.upsert({
+    // AssetSubCategory is shared master data (no customerAccountId)
+    const existing = await prisma.assetSubCategory.findFirst({
       where: {
-        name_categoryId: {
-          name: subCat.name,
-          categoryId: createdAssetCategories[subCat.category],
-        },
-      },
-      update: {},
-      create: {
         name: subCat.name,
-        description: subCat.description,
         categoryId: createdAssetCategories[subCat.category],
       },
     });
-    createdAssetSubCategories[subCat.name] = subCategory.id;
+    if (existing) {
+      createdAssetSubCategories[subCat.name] = existing.id;
+    } else {
+      const subCategory = await prisma.assetSubCategory.create({
+        data: {
+          name: subCat.name,
+          description: subCat.description,
+          categoryId: createdAssetCategories[subCat.category],
+        },
+      });
+      createdAssetSubCategories[subCat.name] = subCategory.id;
+    }
   }
   console.log("✅ Asset Sub Categories created");
 
@@ -1256,12 +1621,18 @@ async function main() {
 
   const createdAssetGroups: { [key: string]: string } = {};
   for (const group of assetGroups) {
-    const created = await prisma.assetGroup.upsert({
+    // AssetGroup is shared master data (no customerAccountId)
+    const existing = await prisma.assetGroup.findFirst({
       where: { name: group.name },
-      update: {},
-      create: group,
     });
-    createdAssetGroups[group.name] = created.id;
+    if (existing) {
+      createdAssetGroups[group.name] = existing.id;
+    } else {
+      const created = await prisma.assetGroup.create({
+        data: { ...group },
+      });
+      createdAssetGroups[group.name] = created.id;
+    }
   }
   console.log("✅ Asset Groups created");
 
@@ -1275,12 +1646,18 @@ async function main() {
 
   const createdSensitivities: { [key: string]: string } = {};
   for (const sens of assetSensitivities) {
-    const created = await prisma.assetSensitivity.upsert({
+    // AssetSensitivity is shared master data (no customerAccountId)
+    const existing = await prisma.assetSensitivity.findFirst({
       where: { name: sens.name },
-      update: {},
-      create: sens,
     });
-    createdSensitivities[sens.name] = created.id;
+    if (existing) {
+      createdSensitivities[sens.name] = existing.id;
+    } else {
+      const created = await prisma.assetSensitivity.create({
+        data: { ...sens },
+      });
+      createdSensitivities[sens.name] = created.id;
+    }
   }
   console.log("✅ Asset Sensitivities created");
 
@@ -1297,12 +1674,18 @@ async function main() {
 
   const createdLifecycleStatuses: { [key: string]: string } = {};
   for (const status of lifecycleStatuses) {
-    const created = await prisma.assetLifecycleStatus.upsert({
+    // AssetLifecycleStatus is shared master data (no customerAccountId)
+    const existing = await prisma.assetLifecycleStatus.findFirst({
       where: { name: status.name },
-      update: {},
-      create: status,
     });
-    createdLifecycleStatuses[status.name] = created.id;
+    if (existing) {
+      createdLifecycleStatuses[status.name] = existing.id;
+    } else {
+      const created = await prisma.assetLifecycleStatus.create({
+        data: { ...status },
+      });
+      createdLifecycleStatuses[status.name] = created.id;
+    }
   }
   console.log("✅ Asset Lifecycle Statuses created");
 
@@ -1321,27 +1704,29 @@ async function main() {
     const maxScore = Math.max(cia.cScore, cia.iScore, cia.aScore);
     const criticality = maxScore >= 10 ? "high" : maxScore >= 5 ? "medium" : "low";
 
-    await prisma.assetCIAClassification.upsert({
+    // AssetCIAClassification is shared master data (no customerAccountId)
+    const existing = await prisma.assetCIAClassification.findFirst({
       where: {
-        subCategoryId_groupId: {
-          subCategoryId: createdAssetSubCategories[cia.subCategory],
-          groupId: createdAssetGroups[cia.group],
-        },
-      },
-      update: {},
-      create: {
         subCategoryId: createdAssetSubCategories[cia.subCategory],
         groupId: createdAssetGroups[cia.group],
-        confidentiality: cia.c,
-        confidentialityScore: cia.cScore,
-        integrity: cia.i,
-        integrityScore: cia.iScore,
-        availability: cia.a,
-        availabilityScore: cia.aScore,
-        assetCriticality: criticality,
-        assetCriticalityScore: maxScore,
       },
     });
+    if (!existing) {
+      await prisma.assetCIAClassification.create({
+        data: {
+          subCategoryId: createdAssetSubCategories[cia.subCategory],
+          groupId: createdAssetGroups[cia.group],
+          confidentiality: cia.c,
+          confidentialityScore: cia.cScore,
+          integrity: cia.i,
+          integrityScore: cia.iScore,
+          availability: cia.a,
+          availabilityScore: cia.aScore,
+          assetCriticality: criticality,
+          assetCriticalityScore: maxScore,
+        },
+      });
+    }
   }
   console.log("✅ CIA Classifications created");
 
@@ -1360,33 +1745,261 @@ async function main() {
   ];
 
   for (const asset of assets) {
-    await prisma.asset.upsert({
-      where: { assetId: asset.assetId },
-      update: {},
-      create: {
-        assetId: asset.assetId,
-        name: asset.name,
-        assetType: asset.assetType,
-        departmentId: createdDepts[asset.department],
-        classificationId: createdClassifications[asset.classification],
-        categoryId: createdAssetCategories[asset.category],
-        subCategoryId: createdAssetSubCategories[asset.subCategory],
-        groupId: createdAssetGroups[asset.group],
-        sensitivityId: createdSensitivities[asset.sensitivity],
-        lifecycleStatusId: createdLifecycleStatuses[asset.lifecycle],
-        ownerId: createdUsers[asset.owner],
-        custodianId: createdUsers[asset.custodian],
-        location: asset.location,
-        value: asset.value,
-        acquisitionDate: new Date(asset.acquisitionDate),
-        nextReviewDate: new Date(asset.nextReviewDate),
-        status: "Active",
-      },
+    // Use findFirst to check if asset exists for this customer
+    const existing = await prisma.asset.findFirst({
+      where: { customerAccountId, assetId: asset.assetId },
     });
+    if (!existing) {
+      await prisma.asset.create({
+        data: {
+          customerAccountId,
+          assetId: asset.assetId,
+          name: asset.name,
+          assetType: asset.assetType,
+          departmentId: createdDepts[asset.department],
+          classificationId: createdClassifications[asset.classification],
+          categoryId: createdAssetCategories[asset.category],
+          subCategoryId: createdAssetSubCategories[asset.subCategory],
+          groupId: createdAssetGroups[asset.group],
+          sensitivityId: createdSensitivities[asset.sensitivity],
+          lifecycleStatusId: createdLifecycleStatuses[asset.lifecycle],
+          ownerId: createdUsers[asset.owner],
+          custodianId: createdUsers[asset.custodian],
+          location: asset.location,
+          value: asset.value,
+          acquisitionDate: new Date(asset.acquisitionDate),
+          nextReviewDate: new Date(asset.nextReviewDate),
+          status: "Active",
+        },
+      });
+    }
   }
   console.log("✅ Assets created");
 
   // ==================== RISK MANAGEMENT MODULE ====================
+
+  // ==================== RISK SETTINGS ====================
+
+  // Create Vulnerability Categories
+  const vulnerabilityCategories = [
+    { name: "Technical" },
+    { name: "Operational" },
+    { name: "Physical" },
+    { name: "Administrative" },
+    { name: "Environmental" },
+  ];
+  const createdVulnCategories: { [key: string]: string } = {};
+
+  for (const cat of vulnerabilityCategories) {
+    const existing = await prisma.vulnerabilityCategory.findFirst({
+      where: { name: cat.name, customerAccountId: null },
+    });
+    if (existing) {
+      createdVulnCategories[cat.name] = existing.id;
+    } else {
+      const created = await prisma.vulnerabilityCategory.create({
+        data: { ...cat },
+      });
+      createdVulnCategories[cat.name] = created.id;
+    }
+  }
+  console.log("✅ Vulnerability Categories created");
+
+  // Create Threat Categories
+  const threatCategories = [
+    { name: "Cyber Threats" },
+    { name: "Physical Threats" },
+    { name: "Environmental Threats" },
+    { name: "Human Threats" },
+    { name: "Technical Threats" },
+  ];
+  const createdThreatCategories: { [key: string]: string } = {};
+
+  for (const cat of threatCategories) {
+    const existing = await prisma.threatCategory.findFirst({
+      where: { name: cat.name, customerAccountId: null },
+    });
+    if (existing) {
+      createdThreatCategories[cat.name] = existing.id;
+    } else {
+      const created = await prisma.threatCategory.create({
+        data: { ...cat },
+      });
+      createdThreatCategories[cat.name] = created.id;
+    }
+  }
+  console.log("✅ Threat Categories created");
+
+  // Create Control Strength
+  const controlStrengths = [
+    { name: "None", score: 0 },
+    { name: "Weak", score: 1 },
+    { name: "Moderate", score: 2 },
+    { name: "Strong", score: 3 },
+    { name: "Very Strong", score: 4 },
+  ];
+
+  for (const cs of controlStrengths) {
+    const existing = await prisma.controlStrength.findFirst({
+      where: { name: cs.name, customerAccountId: null },
+    });
+    if (!existing) {
+      await prisma.controlStrength.create({
+        data: { ...cs },
+      });
+    }
+  }
+  console.log("✅ Control Strengths created");
+
+  // Create Risk Likelihood
+  const riskLikelihoods = [
+    { title: "Rare", score: 1, timeFrame: "Once in 10+ years", probability: "<5%" },
+    { title: "Unlikely", score: 2, timeFrame: "Once in 5-10 years", probability: "5-20%" },
+    { title: "Possible", score: 3, timeFrame: "Once in 2-5 years", probability: "20-50%" },
+    { title: "Likely", score: 4, timeFrame: "Once in 1-2 years", probability: "50-80%" },
+    { title: "Almost Certain", score: 5, timeFrame: "Within 1 year", probability: ">80%" },
+  ];
+
+  for (const likelihood of riskLikelihoods) {
+    const existing = await prisma.riskLikelihood.findFirst({
+      where: { title: likelihood.title, customerAccountId: null },
+    });
+    if (!existing) {
+      await prisma.riskLikelihood.create({
+        data: { ...likelihood },
+      });
+    }
+  }
+  console.log("✅ Risk Likelihoods created");
+
+  // Create Impact Categories
+  const impactCategories = [
+    { name: "Financial" },
+    { name: "Operational" },
+    { name: "Reputational" },
+    { name: "Legal/Regulatory" },
+    { name: "Safety" },
+    { name: "Strategic" },
+  ];
+
+  for (const cat of impactCategories) {
+    const existing = await prisma.impactCategory.findFirst({
+      where: { name: cat.name, customerAccountId: null },
+    });
+    if (!existing) {
+      await prisma.impactCategory.create({
+        data: { ...cat },
+      });
+    }
+  }
+  console.log("✅ Impact Categories created");
+
+  // Create Impact Ratings
+  const impactRatings = [
+    { name: "Negligible", score: 1, description: "Minimal impact on operations, finances, or reputation" },
+    { name: "Minor", score: 2, description: "Limited impact with minor disruption or loss" },
+    { name: "Moderate", score: 3, description: "Noticeable impact requiring management attention" },
+    { name: "Major", score: 4, description: "Significant impact affecting business objectives" },
+    { name: "Catastrophic", score: 5, description: "Severe impact threatening business viability" },
+  ];
+
+  for (const rating of impactRatings) {
+    const existing = await prisma.impactRating.findFirst({
+      where: { name: rating.name, customerAccountId: null },
+    });
+    if (!existing) {
+      await prisma.impactRating.create({
+        data: { ...rating },
+      });
+    }
+  }
+  console.log("✅ Impact Ratings created");
+
+  // Create Vulnerability Ratings
+  const vulnerabilityRatings = [
+    { label: "Very Low", score: 1 },
+    { label: "Low", score: 2 },
+    { label: "Medium", score: 3 },
+    { label: "High", score: 4 },
+    { label: "Critical", score: 5 },
+  ];
+
+  for (const rating of vulnerabilityRatings) {
+    const existing = await prisma.vulnerabilityRating.findFirst({
+      where: { label: rating.label, customerAccountId: null },
+    });
+    if (!existing) {
+      await prisma.vulnerabilityRating.create({
+        data: { ...rating },
+      });
+    }
+  }
+  console.log("✅ Vulnerability Ratings created");
+
+  // Create Risk Sub Categories
+  const riskSubCategories = [
+    { type: "Information Security" },
+    { type: "Business Continuity" },
+    { type: "Vendor Management" },
+    { type: "Data Privacy" },
+    { type: "Infrastructure" },
+    { type: "Application Security" },
+    { type: "Network Security" },
+    { type: "Physical Security" },
+    { type: "Human Resources" },
+    { type: "Legal & Compliance" },
+  ];
+
+  for (const subCat of riskSubCategories) {
+    const existing = await prisma.riskSubCategory.findFirst({
+      where: { type: subCat.type, customerAccountId: null },
+    });
+    if (!existing) {
+      await prisma.riskSubCategory.create({
+        data: { ...subCat },
+      });
+    }
+  }
+  console.log("✅ Risk Sub Categories created");
+
+  // Create Risk Ranges (for Risk Methodology)
+  const riskRanges = [
+    { title: "Low", color: "#22c55e", lowRange: 1, highRange: 4, timelineDays: 90, description: "Low risk - monitor and manage as part of routine operations" },
+    { title: "Medium", color: "#f59e0b", lowRange: 5, highRange: 9, timelineDays: 60, description: "Medium risk - requires attention and planned mitigation actions" },
+    { title: "High", color: "#f97316", lowRange: 10, highRange: 16, timelineDays: 30, description: "High risk - requires priority attention and immediate action planning" },
+    { title: "Critical", color: "#ef4444", lowRange: 17, highRange: 25, timelineDays: 7, description: "Critical risk - requires immediate executive attention and urgent action" },
+  ];
+
+  for (const range of riskRanges) {
+    const existing = await prisma.riskRange.findFirst({
+      where: { title: range.title, customerAccountId: null },
+    });
+    if (!existing) {
+      await prisma.riskRange.create({
+        data: { ...range },
+      });
+    }
+  }
+  console.log("✅ Risk Ranges created");
+
+  // Create Risk Score Config (default configuration)
+  const existingConfig = await prisma.riskScoreConfig.findFirst({
+    where: { customerAccountId: null },
+  });
+  if (!existingConfig) {
+    await prisma.riskScoreConfig.create({
+      data: {
+        useLikelihood: true,
+        useImpact: true,
+        useAssetScore: false,
+        useVulnerabilityScore: false,
+        riskTolerance: 10,
+      },
+    });
+  }
+  console.log("✅ Risk Score Config created");
+
+  // ==================== END RISK SETTINGS ====================
 
   // Create Risk Categories
   const riskCategories = [
@@ -1400,76 +2013,123 @@ async function main() {
   const createdRiskCategories: { [key: string]: string } = {};
 
   for (const cat of riskCategories) {
-    const category = await prisma.riskCategory.upsert({
+    // RiskCategory is shared master data (no customerAccountId)
+    const existing = await prisma.riskCategory.findFirst({
       where: { name: cat.name },
-      update: {},
-      create: cat,
     });
-    createdRiskCategories[cat.name] = category.id;
+    if (existing) {
+      createdRiskCategories[cat.name] = existing.id;
+    } else {
+      const category = await prisma.riskCategory.create({
+        data: { ...cat },
+      });
+      createdRiskCategories[cat.name] = category.id;
+    }
   }
   console.log("✅ Risk Categories created");
 
-  // Create Risk Types
-  const riskTypes = ["Inherent", "Residual", "Target"];
+  // Create Risk Types (static: Asset Risk and Process Risk)
+  const riskTypes = [
+    { name: "Asset Risk", description: "Risk associated with impacted assets from Asset Inventory" },
+    { name: "Process Risk", description: "Risk associated with impacted processes from Process Repository" },
+  ];
   const createdRiskTypes: { [key: string]: string } = {};
 
-  for (const name of riskTypes) {
-    const type = await prisma.riskType.upsert({
-      where: { name },
-      update: {},
-      create: { name, description: `${name} risk assessment type` },
+  for (const type of riskTypes) {
+    // RiskType is shared master data (no customerAccountId)
+    const existing = await prisma.riskType.findFirst({
+      where: { name: type.name },
     });
-    createdRiskTypes[name] = type.id;
+    if (existing) {
+      createdRiskTypes[type.name] = existing.id;
+    } else {
+      const created = await prisma.riskType.create({
+        data: { name: type.name, description: type.description },
+      });
+      createdRiskTypes[type.name] = created.id;
+    }
   }
   console.log("✅ Risk Types created");
 
-  // Create Risk Threats
+  // Create Risk Threats (with category linking)
   const threats = [
-    { name: "Cyber Attack", description: "Malicious cyber intrusion or attack" },
-    { name: "Natural Disaster", description: "Earthquakes, floods, hurricanes, etc." },
-    { name: "Human Error", description: "Mistakes or negligence by employees" },
-    { name: "System Failure", description: "Hardware or software malfunction" },
-    { name: "Third-Party Failure", description: "Vendor or partner service disruption" },
-    { name: "Data Theft", description: "Unauthorized access to sensitive data" },
-    { name: "Malware", description: "Viruses, ransomware, and other malicious software" },
-    { name: "Phishing", description: "Social engineering attacks via email" },
-    { name: "Insider Threat", description: "Malicious actions by internal actors" },
-    { name: "Supply Chain Attack", description: "Compromise through supply chain" },
+    { name: "Cyber Attack", description: "Malicious cyber intrusion or attack", category: "Cyber Threats" },
+    { name: "Natural Disaster", description: "Earthquakes, floods, hurricanes, etc.", category: "Environmental Threats" },
+    { name: "Human Error", description: "Mistakes or negligence by employees", category: "Human Threats" },
+    { name: "System Failure", description: "Hardware or software malfunction", category: "Technical Threats" },
+    { name: "Third-Party Failure", description: "Vendor or partner service disruption", category: "Technical Threats" },
+    { name: "Data Theft", description: "Unauthorized access to sensitive data", category: "Cyber Threats" },
+    { name: "Malware", description: "Viruses, ransomware, and other malicious software", category: "Cyber Threats" },
+    { name: "Phishing", description: "Social engineering attacks via email", category: "Cyber Threats" },
+    { name: "Insider Threat", description: "Malicious actions by internal actors", category: "Human Threats" },
+    { name: "Supply Chain Attack", description: "Compromise through supply chain", category: "Cyber Threats" },
+    { name: "Fire", description: "Fire damage to facilities or equipment", category: "Physical Threats" },
+    { name: "Theft", description: "Physical theft of assets or equipment", category: "Physical Threats" },
+    { name: "Power Outage", description: "Loss of electrical power", category: "Environmental Threats" },
+    { name: "Vandalism", description: "Intentional damage to property", category: "Physical Threats" },
+    { name: "Social Engineering", description: "Manipulation of individuals to gain access", category: "Human Threats" },
   ];
   const createdThreats: { [key: string]: string } = {};
 
   for (const threat of threats) {
-    const created = await prisma.riskThreat.upsert({
+    // RiskThreat is shared master data (no customerAccountId)
+    const existing = await prisma.riskThreat.findFirst({
       where: { name: threat.name },
-      update: {},
-      create: threat,
     });
-    createdThreats[threat.name] = created.id;
+    if (existing) {
+      createdThreats[threat.name] = existing.id;
+    } else {
+      const created = await prisma.riskThreat.create({
+        data: {
+          name: threat.name,
+          description: threat.description,
+          categoryId: createdThreatCategories[threat.category],
+        },
+      });
+      createdThreats[threat.name] = created.id;
+    }
   }
   console.log("✅ Risk Threats created");
 
-  // Create Risk Vulnerabilities
+  // Create Risk Vulnerabilities (with category linking)
   const vulnerabilities = [
-    { name: "Weak Authentication", description: "Insufficient password policies or MFA" },
-    { name: "Unpatched Systems", description: "Systems without latest security patches" },
-    { name: "Misconfiguration", description: "Incorrectly configured systems or services" },
-    { name: "Lack of Encryption", description: "Data not encrypted at rest or in transit" },
-    { name: "Poor Access Controls", description: "Excessive or improper access rights" },
-    { name: "Inadequate Logging", description: "Insufficient audit trails and monitoring" },
-    { name: "Legacy Systems", description: "Outdated systems lacking security updates" },
-    { name: "Missing Backups", description: "Insufficient or untested backup procedures" },
-    { name: "Untrained Staff", description: "Employees lacking security awareness" },
-    { name: "Shadow IT", description: "Unauthorized technology usage" },
+    { name: "Weak Authentication", description: "Insufficient password policies or MFA", category: "Technical" },
+    { name: "Unpatched Systems", description: "Systems without latest security patches", category: "Technical" },
+    { name: "Misconfiguration", description: "Incorrectly configured systems or services", category: "Technical" },
+    { name: "Lack of Encryption", description: "Data not encrypted at rest or in transit", category: "Technical" },
+    { name: "Poor Access Controls", description: "Excessive or improper access rights", category: "Administrative" },
+    { name: "Inadequate Logging", description: "Insufficient audit trails and monitoring", category: "Operational" },
+    { name: "Legacy Systems", description: "Outdated systems lacking security updates", category: "Technical" },
+    { name: "Missing Backups", description: "Insufficient or untested backup procedures", category: "Operational" },
+    { name: "Untrained Staff", description: "Employees lacking security awareness", category: "Administrative" },
+    { name: "Shadow IT", description: "Unauthorized technology usage", category: "Operational" },
+    { name: "Inadequate Physical Security", description: "Insufficient physical access controls", category: "Physical" },
+    { name: "No Disaster Recovery Plan", description: "Missing or untested disaster recovery procedures", category: "Operational" },
+    { name: "Single Point of Failure", description: "Critical systems without redundancy", category: "Technical" },
+    { name: "Lack of Segmentation", description: "Network without proper segmentation", category: "Technical" },
+    { name: "Insufficient Monitoring", description: "Lack of real-time security monitoring", category: "Operational" },
+    { name: "Environmental Exposure", description: "Exposure to environmental hazards", category: "Environmental" },
+    { name: "Outdated Policies", description: "Security policies not updated regularly", category: "Administrative" },
   ];
   const createdVulnerabilities: { [key: string]: string } = {};
 
   for (const vuln of vulnerabilities) {
-    const created = await prisma.riskVulnerability.upsert({
+    // RiskVulnerability is shared master data (no customerAccountId)
+    const existing = await prisma.riskVulnerability.findFirst({
       where: { name: vuln.name },
-      update: {},
-      create: vuln,
     });
-    createdVulnerabilities[vuln.name] = created.id;
+    if (existing) {
+      createdVulnerabilities[vuln.name] = existing.id;
+    } else {
+      const created = await prisma.riskVulnerability.create({
+        data: {
+          name: vuln.name,
+          description: vuln.description,
+          categoryId: createdVulnCategories[vuln.category],
+        },
+      });
+      createdVulnerabilities[vuln.name] = created.id;
+    }
   }
   console.log("✅ Risk Vulnerabilities created");
 
@@ -1486,11 +2146,15 @@ async function main() {
   ];
 
   for (const cause of causes) {
-    await prisma.riskCause.upsert({
+    // RiskCause is shared master data (no customerAccountId)
+    const existing = await prisma.riskCause.findFirst({
       where: { name: cause.name },
-      update: {},
-      create: cause,
     });
+    if (!existing) {
+      await prisma.riskCause.create({
+        data: { ...cause },
+      });
+    }
   }
   console.log("✅ Risk Causes created");
 
@@ -1521,33 +2185,40 @@ async function main() {
     else if (riskScore >= 15) riskRating = "Very high";
     else if (riskScore >= 10) riskRating = "High";
 
-    const created = await prisma.risk.upsert({
-      where: { riskId: risk.riskId },
-      update: {},
-      create: {
-        riskId: risk.riskId,
-        name: risk.name,
-        description: risk.description,
-        categoryId: createdRiskCategories[risk.category],
-        departmentId: createdDepts[risk.department],
-        ownerId: createdUsers["mike.wilson"],
-        likelihood: risk.likelihood,
-        impact: risk.impact,
-        riskScore,
-        riskRating,
-        status: risk.status,
-        responseStrategy: risk.responseStrategy,
-        inherentLikelihood: risk.likelihood + 1 > 5 ? 5 : risk.likelihood + 1,
-        inherentImpact: risk.impact,
-        inherentRiskScore: (risk.likelihood + 1 > 5 ? 5 : risk.likelihood + 1) * risk.impact,
-        residualLikelihood: risk.likelihood,
-        residualImpact: risk.impact,
-        residualRiskScore: riskScore,
-        treatmentPlan: risk.responseStrategy ? `Implement controls to ${risk.responseStrategy === "Treat" ? "treat" : risk.responseStrategy.toLowerCase()} the risk` : null,
-        treatmentDueDate: risk.responseStrategy ? new Date(Date.now() + 90 * 24 * 60 * 60 * 1000) : null,
-      },
+    // Use findFirst to check if risk exists for this customer
+    const existing = await prisma.risk.findFirst({
+      where: { customerAccountId, riskId: risk.riskId },
     });
-    createdRisks[risk.riskId] = created.id;
+    if (existing) {
+      createdRisks[risk.riskId] = existing.id;
+    } else {
+      const created = await prisma.risk.create({
+        data: {
+          customerAccountId,
+          riskId: risk.riskId,
+          name: risk.name,
+          description: risk.description,
+          categoryId: createdRiskCategories[risk.category],
+          departmentId: createdDepts[risk.department],
+          ownerId: createdUsers["mike.wilson"],
+          likelihood: risk.likelihood,
+          impact: risk.impact,
+          riskScore,
+          riskRating,
+          status: risk.status,
+          responseStrategy: risk.responseStrategy,
+          inherentLikelihood: risk.likelihood + 1 > 5 ? 5 : risk.likelihood + 1,
+          inherentImpact: risk.impact,
+          inherentRiskScore: (risk.likelihood + 1 > 5 ? 5 : risk.likelihood + 1) * risk.impact,
+          residualLikelihood: risk.likelihood,
+          residualImpact: risk.impact,
+          residualRiskScore: riskScore,
+          treatmentPlan: risk.responseStrategy ? `Implement controls to ${risk.responseStrategy === "Treat" ? "treat" : risk.responseStrategy.toLowerCase()} the risk` : null,
+          treatmentDueDate: risk.responseStrategy ? new Date(Date.now() + 90 * 24 * 60 * 60 * 1000) : null,
+        },
+      });
+      createdRisks[risk.riskId] = created.id;
+    }
   }
   console.log("✅ Risks created");
 
@@ -1610,23 +2281,28 @@ async function main() {
     else if (riskScore >= 10) riskRating = "High";
     else if (riskScore >= 5) riskRating = "Medium";
 
-    await prisma.riskAssessment.upsert({
-      where: { assessmentId: assessment.assessmentId },
-      update: {},
-      create: {
-        assessmentId: assessment.assessmentId,
-        riskId: createdRisks[assessment.riskId],
-        assessmentType: "Periodic",
-        assessorName: "Mike Wilson",
-        likelihood: assessment.likelihood,
-        impact: assessment.impact,
-        riskScore,
-        riskRating,
-        status: assessment.status,
-        assessmentDate: new Date(assessment.date),
-        recommendations: "Continue monitoring and implementing controls",
-      },
+    // Use findFirst to check if risk assessment exists for this customer
+    const existing = await prisma.riskAssessment.findFirst({
+      where: { customerAccountId, assessmentId: assessment.assessmentId },
     });
+    if (!existing) {
+      await prisma.riskAssessment.create({
+        data: {
+          customerAccountId,
+          assessmentId: assessment.assessmentId,
+          riskId: createdRisks[assessment.riskId],
+          assessmentType: "Periodic",
+          assessorName: "Mike Wilson",
+          likelihood: assessment.likelihood,
+          impact: assessment.impact,
+          riskScore,
+          riskRating,
+          status: assessment.status,
+          assessmentDate: new Date(assessment.date),
+          recommendations: "Continue monitoring and implementing controls",
+        },
+      });
+    }
   }
   console.log("✅ Risk Assessments created");
 
@@ -1640,21 +2316,26 @@ async function main() {
   ];
 
   for (const response of responses) {
-    await prisma.riskResponse.upsert({
-      where: { responseId: response.responseId },
-      update: {},
-      create: {
-        responseId: response.responseId,
-        riskId: createdRisks[response.riskId],
-        responseType: response.responseType,
-        actionTitle: response.actionTitle,
-        actionDescription: `Action to ${response.responseType === "Treat" ? "treat" : response.responseType.toLowerCase()} the risk`,
-        assignee: "Mike Wilson",
-        status: response.status,
-        dueDate: new Date(response.dueDate),
-        completionDate: response.status === "Completed" ? new Date() : null,
-      },
+    // Use findFirst to check if risk response exists for this customer
+    const existing = await prisma.riskResponse.findFirst({
+      where: { customerAccountId, responseId: response.responseId },
     });
+    if (!existing) {
+      await prisma.riskResponse.create({
+        data: {
+          customerAccountId,
+          responseId: response.responseId,
+          riskId: createdRisks[response.riskId],
+          responseType: response.responseType,
+          actionTitle: response.actionTitle,
+          actionDescription: `Action to ${response.responseType === "Treat" ? "treat" : response.responseType.toLowerCase()} the risk`,
+          assignee: "Mike Wilson",
+          status: response.status,
+          dueDate: new Date(response.dueDate),
+          completionDate: response.status === "Completed" ? new Date() : null,
+        },
+      });
+    }
   }
   console.log("✅ Risk Responses created");
 
@@ -1671,21 +2352,28 @@ async function main() {
 
   const createdAudits: { [key: string]: string } = {};
   for (const audit of audits) {
-    const created = await prisma.audit.upsert({
-      where: { auditId: audit.auditId },
-      update: {},
-      create: {
-        auditId: audit.auditId,
-        name: audit.name,
-        auditType: audit.auditType,
-        departmentId: createdDepts[audit.department],
-        auditorId: createdUsers["sarah.smith"],
-        status: audit.status,
-        startDate: new Date(audit.startDate),
-        endDate: new Date(audit.endDate),
-      },
+    // Use findFirst to check if audit exists for this customer
+    const existing = await prisma.audit.findFirst({
+      where: { customerAccountId, auditId: audit.auditId },
     });
-    createdAudits[audit.auditId] = created.id;
+    if (existing) {
+      createdAudits[audit.auditId] = existing.id;
+    } else {
+      const created = await prisma.audit.create({
+        data: {
+          customerAccountId,
+          auditId: audit.auditId,
+          name: audit.name,
+          auditType: audit.auditType,
+          departmentId: createdDepts[audit.department],
+          auditorId: createdUsers["sarah.smith"],
+          status: audit.status,
+          startDate: new Date(audit.startDate),
+          endDate: new Date(audit.endDate),
+        },
+      });
+      createdAudits[audit.auditId] = created.id;
+    }
   }
   console.log("✅ Audits created");
 
@@ -1700,18 +2388,25 @@ async function main() {
 
   const createdFindings: { [key: string]: string } = {};
   for (const finding of findings) {
-    const created = await prisma.auditFinding.upsert({
-      where: { findingId: finding.findingId },
-      update: {},
-      create: {
-        findingId: finding.findingId,
-        title: finding.title,
-        auditId: createdAudits[finding.auditId],
-        severity: finding.severity,
-        status: finding.status,
-      },
+    // Use findFirst to check if audit finding exists for this customer
+    const existing = await prisma.auditFinding.findFirst({
+      where: { customerAccountId, findingId: finding.findingId },
     });
-    createdFindings[finding.findingId] = created.id;
+    if (existing) {
+      createdFindings[finding.findingId] = existing.id;
+    } else {
+      const created = await prisma.auditFinding.create({
+        data: {
+          customerAccountId,
+          findingId: finding.findingId,
+          title: finding.title,
+          auditId: createdAudits[finding.auditId],
+          severity: finding.severity,
+          status: finding.status,
+        },
+      });
+      createdFindings[finding.findingId] = created.id;
+    }
   }
   console.log("✅ Audit Findings created");
 
@@ -1725,18 +2420,23 @@ async function main() {
   ];
 
   for (const capa of capas) {
-    await prisma.cAPA.upsert({
-      where: { capaId: capa.capaId },
-      update: {},
-      create: {
-        capaId: capa.capaId,
-        title: capa.title,
-        findingId: createdFindings[capa.findingId],
-        actionType: capa.actionType,
-        status: capa.status,
-        dueDate: new Date(capa.dueDate),
-      },
+    // Use findFirst to check if CAPA exists for this customer
+    const existing = await prisma.cAPA.findFirst({
+      where: { customerAccountId, capaId: capa.capaId },
     });
+    if (!existing) {
+      await prisma.cAPA.create({
+        data: {
+          customerAccountId,
+          capaId: capa.capaId,
+          title: capa.title,
+          findingId: createdFindings[capa.findingId],
+          actionType: capa.actionType,
+          status: capa.status,
+          dueDate: new Date(capa.dueDate),
+        },
+      });
+    }
   }
   console.log("✅ CAPAs created");
 
@@ -1897,22 +2597,27 @@ async function main() {
   ];
 
   for (const artifact of artifacts) {
-    await prisma.artifact.upsert({
-      where: { artifactCode: artifact.artifactCode },
-      update: {},
-      create: {
-        artifactCode: artifact.artifactCode,
-        name: artifact.name,
-        fileName: artifact.fileName,
-        fileType: artifact.fileType,
-        fileSize: artifact.fileSize,
-        filePath: artifact.filePath,
-        uploadedById: createdUsers[artifact.uploadedBy],
-        aiReviewStatus: artifact.aiReviewStatus,
-        aiReviewScore: artifact.aiReviewScore,
-        aiReviewNotes: artifact.aiReviewNotes,
-      },
+    // Use findFirst to check if artifact exists for this customer
+    const existing = await prisma.artifact.findFirst({
+      where: { customerAccountId, artifactCode: artifact.artifactCode },
     });
+    if (!existing) {
+      await prisma.artifact.create({
+        data: {
+          customerAccountId,
+          artifactCode: artifact.artifactCode,
+          name: artifact.name,
+          fileName: artifact.fileName,
+          fileType: artifact.fileType,
+          fileSize: artifact.fileSize,
+          filePath: artifact.filePath,
+          uploadedById: createdUsers[artifact.uploadedBy],
+          aiReviewStatus: artifact.aiReviewStatus,
+          aiReviewScore: artifact.aiReviewScore,
+          aiReviewNotes: artifact.aiReviewNotes,
+        },
+      });
+    }
   }
   console.log("✅ Artifacts created");
 
@@ -1930,11 +2635,15 @@ async function main() {
   ];
 
   for (const name of auditCategories) {
-    await prisma.auditCategory.upsert({
+    // AuditCategory is shared master data (no customerAccountId)
+    const existing = await prisma.auditCategory.findFirst({
       where: { name },
-      update: {},
-      create: { name },
     });
+    if (!existing) {
+      await prisma.auditCategory.create({
+        data: { name },
+      });
+    }
   }
   console.log("✅ Audit Categories created");
 
@@ -1948,11 +2657,15 @@ async function main() {
   ];
 
   for (const label of natureOfControls) {
-    await prisma.auditNatureOfControl.upsert({
+    // AuditNatureOfControl is shared master data (no customerAccountId)
+    const existing = await prisma.auditNatureOfControl.findFirst({
       where: { label },
-      update: {},
-      create: { label },
     });
+    if (!existing) {
+      await prisma.auditNatureOfControl.create({
+        data: { label },
+      });
+    }
   }
   console.log("✅ Nature of Controls created");
 
@@ -1968,11 +2681,15 @@ async function main() {
   ];
 
   for (const label of riskFactors) {
-    await prisma.auditRiskFactor.upsert({
+    // AuditRiskFactor is shared master data (no customerAccountId)
+    const existing = await prisma.auditRiskFactor.findFirst({
       where: { label },
-      update: {},
-      create: { label },
     });
+    if (!existing) {
+      await prisma.auditRiskFactor.create({
+        data: { label },
+      });
+    }
   }
   console.log("✅ Risk Factors created");
 
@@ -1986,11 +2703,15 @@ async function main() {
   ];
 
   for (const prob of probabilities) {
-    await prisma.auditProbability.upsert({
+    // AuditProbability is shared master data (no customerAccountId)
+    const existing = await prisma.auditProbability.findFirst({
       where: { label: prob.label },
-      update: { value: prob.value },
-      create: prob,
     });
+    if (!existing) {
+      await prisma.auditProbability.create({
+        data: { ...prob },
+      });
+    }
   }
   console.log("✅ Probability Ratings created");
 
@@ -2004,11 +2725,15 @@ async function main() {
   ];
 
   for (const impact of impacts) {
-    await prisma.auditImpact.upsert({
+    // AuditImpact is shared master data (no customerAccountId)
+    const existing = await prisma.auditImpact.findFirst({
       where: { label: impact.label },
-      update: { value: impact.value },
-      create: impact,
     });
+    if (!existing) {
+      await prisma.auditImpact.create({
+        data: { ...impact },
+      });
+    }
   }
   console.log("✅ Impact Ratings created");
 
@@ -2021,24 +2746,32 @@ async function main() {
   ];
 
   for (const range of scoringRanges) {
-    await prisma.auditScoringRange.upsert({
-      where: { label_calculationType: { label: range.label, calculationType: range.calculationType } },
-      update: { lowValue: range.lowValue, highValue: range.highValue },
-      create: range,
+    // AuditScoringRange is shared master data (no customerAccountId)
+    const existing = await prisma.auditScoringRange.findFirst({
+      where: { label: range.label, calculationType: range.calculationType },
     });
+    if (!existing) {
+      await prisma.auditScoringRange.create({
+        data: { ...range },
+      });
+    }
   }
   console.log("✅ Scoring Ranges created");
 
-  // Scoring Configuration
-  await prisma.auditScoringConfig.upsert({
-    where: { id: "scoring-config-1" },
-    update: {},
-    create: {
-      id: "scoring-config-1",
-      probabilityImpactCalcType: "Product of all",
-      riskRatingCalcType: "High of all",
-    },
+  // Scoring Configuration - shared master data (no customerAccountId)
+  const scoringConfigId = "scoring-config-default";
+  const existingScoringConfig = await prisma.auditScoringConfig.findFirst({
+    where: { id: scoringConfigId },
   });
+  if (!existingScoringConfig) {
+    await prisma.auditScoringConfig.create({
+      data: {
+        id: scoringConfigId,
+        probabilityImpactCalcType: "Product of all",
+        riskRatingCalcType: "High of all",
+      },
+    });
+  }
   console.log("✅ Scoring Configuration created");
 
   // Periodicity
@@ -2052,26 +2785,34 @@ async function main() {
   ];
 
   for (const period of periodicities) {
-    await prisma.auditPeriodicity.upsert({
+    // AuditPeriodicity is shared master data (no customerAccountId)
+    const existing = await prisma.auditPeriodicity.findFirst({
       where: { interval: period.interval },
-      update: { months: period.months },
-      create: period,
     });
+    if (!existing) {
+      await prisma.auditPeriodicity.create({
+        data: { ...period },
+      });
+    }
   }
   console.log("✅ Periodicity created");
 
-  // Escalation Configuration
-  await prisma.auditEscalationConfig.upsert({
-    where: { id: "escalation-config-1" },
-    update: {},
-    create: {
-      id: "escalation-config-1",
-      responseSubmission: 5,
-      acknowledgement: 1,
-      clarification: 2,
-      issueResolution: 3,
-    },
+  // Escalation Configuration - shared master data (no customerAccountId)
+  const escalationConfigId = "escalation-config-default";
+  const existingEscalationConfig = await prisma.auditEscalationConfig.findFirst({
+    where: { id: escalationConfigId },
   });
+  if (!existingEscalationConfig) {
+    await prisma.auditEscalationConfig.create({
+      data: {
+        id: escalationConfigId,
+        responseSubmission: 5,
+        acknowledgement: 1,
+        clarification: 2,
+        issueResolution: 3,
+      },
+    });
+  }
   console.log("✅ Escalation Configuration created");
 
   // Audit Types
@@ -2084,11 +2825,15 @@ async function main() {
   ];
 
   for (const name of auditTypes) {
-    await prisma.auditType.upsert({
+    // AuditType is shared master data (no customerAccountId)
+    const existing = await prisma.auditType.findFirst({
       where: { name },
-      update: {},
-      create: { name },
     });
+    if (!existing) {
+      await prisma.auditType.create({
+        data: { name },
+      });
+    }
   }
   console.log("✅ Audit Types created");
 
@@ -2257,36 +3002,47 @@ async function main() {
   ];
 
   for (const proc of auditProcesses) {
-    await prisma.process.upsert({
-      where: { processCode: proc.processCode },
-      update: {
-        processFrequency: proc.processFrequency,
-        natureOfImplementation: proc.natureOfImplementation,
-        riskRating: proc.riskRating,
-        assetDependency: proc.assetDependency,
-        externalDependency: proc.externalDependency,
-        kpiMeasurementRequired: proc.kpiMeasurementRequired,
-        piiCapture: proc.piiCapture,
-        operationalComplexity: proc.operationalComplexity,
-      },
-      create: {
-        processCode: proc.processCode,
-        name: proc.name,
-        description: proc.description,
-        processType: proc.processType,
-        departmentId: createdDepts[proc.department],
-        ownerId: createdUsers[proc.owner],
-        processFrequency: proc.processFrequency,
-        natureOfImplementation: proc.natureOfImplementation,
-        riskRating: proc.riskRating,
-        assetDependency: proc.assetDependency,
-        externalDependency: proc.externalDependency,
-        kpiMeasurementRequired: proc.kpiMeasurementRequired,
-        piiCapture: proc.piiCapture,
-        operationalComplexity: proc.operationalComplexity,
-        lastAuditDate: proc.riskRating ? new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000) : null,
-      },
+    // Use findFirst to check if process exists for this customer
+    const existing = await prisma.process.findFirst({
+      where: { customerAccountId, processCode: proc.processCode },
     });
+    if (existing) {
+      // Update existing process
+      await prisma.process.update({
+        where: { id: existing.id },
+        data: {
+          processFrequency: proc.processFrequency,
+          natureOfImplementation: proc.natureOfImplementation,
+          riskRating: proc.riskRating,
+          assetDependency: proc.assetDependency,
+          externalDependency: proc.externalDependency,
+          kpiMeasurementRequired: proc.kpiMeasurementRequired,
+          piiCapture: proc.piiCapture,
+          operationalComplexity: proc.operationalComplexity,
+        },
+      });
+    } else {
+      await prisma.process.create({
+        data: {
+          customerAccountId,
+          processCode: proc.processCode,
+          name: proc.name,
+          description: proc.description,
+          processType: proc.processType,
+          departmentId: createdDepts[proc.department],
+          ownerId: createdUsers[proc.owner],
+          processFrequency: proc.processFrequency,
+          natureOfImplementation: proc.natureOfImplementation,
+          riskRating: proc.riskRating,
+          assetDependency: proc.assetDependency,
+          externalDependency: proc.externalDependency,
+          kpiMeasurementRequired: proc.kpiMeasurementRequired,
+          piiCapture: proc.piiCapture,
+          operationalComplexity: proc.operationalComplexity,
+          lastAuditDate: proc.riskRating ? new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000) : null,
+        },
+      });
+    }
   }
   console.log("✅ Audit Processes created");
 
@@ -2391,32 +3147,37 @@ async function main() {
     const category = fetchedAuditCategories.find(c => c.name === risk.category);
     const auditType = fetchedAuditTypes.find(t => t.name === risk.auditType);
 
-    await prisma.internalAuditRisk.upsert({
-      where: { riskId: risk.riskId },
-      update: {},
-      create: {
-        riskId: risk.riskId,
-        riskName: risk.riskName,
-        departmentId: createdDepts[risk.department],
-        sectionProcess: risk.sectionProcess,
-        subProcess: risk.subProcess,
-        activity: risk.activity,
-        categoryId: category?.id,
-        auditTypeId: auditType?.id,
-        riskDescription: risk.riskDescription,
-        inherentLikelihood: risk.inherentLikelihood,
-        inherentImpact: risk.inherentImpact,
-        inherentScore: risk.inherentLikelihood * risk.inherentImpact,
-        controlDescription: risk.controlDescription,
-        controlEffectiveness: risk.controlEffectiveness,
-        residualLikelihood: risk.residualLikelihood,
-        residualImpact: risk.residualImpact,
-        residualScore: risk.residualLikelihood * risk.residualImpact,
-        riskLevel: risk.residualLikelihood * risk.residualImpact > 14 ? "High" :
-                   risk.residualLikelihood * risk.residualImpact > 6 ? "Medium" : "Low",
-        status: risk.status,
-      },
+    // Use findFirst to check if internal audit risk exists for this customer
+    const existing = await prisma.internalAuditRisk.findFirst({
+      where: { customerAccountId, riskId: risk.riskId },
     });
+    if (!existing) {
+      await prisma.internalAuditRisk.create({
+        data: {
+          customerAccountId,
+          riskId: risk.riskId,
+          riskName: risk.riskName,
+          departmentId: createdDepts[risk.department],
+          sectionProcess: risk.sectionProcess,
+          subProcess: risk.subProcess,
+          activity: risk.activity,
+          categoryId: category?.id,
+          auditTypeId: auditType?.id,
+          riskDescription: risk.riskDescription,
+          inherentLikelihood: risk.inherentLikelihood,
+          inherentImpact: risk.inherentImpact,
+          inherentScore: risk.inherentLikelihood * risk.inherentImpact,
+          controlDescription: risk.controlDescription,
+          controlEffectiveness: risk.controlEffectiveness,
+          residualLikelihood: risk.residualLikelihood,
+          residualImpact: risk.residualImpact,
+          residualScore: risk.residualLikelihood * risk.residualImpact,
+          riskLevel: risk.residualLikelihood * risk.residualImpact > 14 ? "High" :
+                     risk.residualLikelihood * risk.residualImpact > 6 ? "Medium" : "Low",
+          status: risk.status,
+        },
+      });
+    }
   }
   console.log("✅ Internal Audit Risks created");
 
@@ -2507,12 +3268,18 @@ async function main() {
 
   const createdAuditableEntities: { [key: string]: string } = {};
   for (const entity of auditableEntities) {
-    const created = await prisma.auditableEntity.upsert({
-      where: { entityCode: entity.entityCode },
-      update: {},
-      create: entity,
+    // Use findFirst to check if auditable entity exists for this customer
+    const existing = await prisma.auditableEntity.findFirst({
+      where: { customerAccountId, entityCode: entity.entityCode },
     });
-    createdAuditableEntities[entity.entityCode] = created.id;
+    if (existing) {
+      createdAuditableEntities[entity.entityCode] = existing.id;
+    } else {
+      const created = await prisma.auditableEntity.create({
+        data: { customerAccountId, ...entity },
+      });
+      createdAuditableEntities[entity.entityCode] = created.id;
+    }
   }
   console.log("✅ Auditable Entities created");
 
@@ -2681,12 +3448,18 @@ async function main() {
 
   const createdEngagements: { [key: string]: string } = {};
   for (const engagement of auditEngagements) {
-    const created = await prisma.auditEngagement.upsert({
-      where: { auditId: engagement.auditId },
-      update: {},
-      create: engagement,
+    // Use findFirst to check if audit engagement exists for this customer
+    const existing = await prisma.auditEngagement.findFirst({
+      where: { customerAccountId, auditId: engagement.auditId },
     });
-    createdEngagements[engagement.auditId] = created.id;
+    if (existing) {
+      createdEngagements[engagement.auditId] = existing.id;
+    } else {
+      const created = await prisma.auditEngagement.create({
+        data: { customerAccountId, ...engagement },
+      });
+      createdEngagements[engagement.auditId] = created.id;
+    }
   }
   console.log("✅ Audit Engagements created");
 
@@ -2753,12 +3526,18 @@ async function main() {
 
   const createdInternalFindings: { [key: string]: string } = {};
   for (const finding of internalAuditFindings) {
-    const created = await prisma.internalAuditFinding.upsert({
-      where: { findingId: finding.findingId },
-      update: {},
-      create: finding,
+    // Use findFirst to check if internal audit finding exists for this customer
+    const existing = await prisma.internalAuditFinding.findFirst({
+      where: { customerAccountId, findingId: finding.findingId },
     });
-    createdInternalFindings[finding.findingId] = created.id;
+    if (existing) {
+      createdInternalFindings[finding.findingId] = existing.id;
+    } else {
+      const created = await prisma.internalAuditFinding.create({
+        data: { customerAccountId, ...finding },
+      });
+      createdInternalFindings[finding.findingId] = created.id;
+    }
   }
   console.log("✅ Internal Audit Findings created");
 
@@ -2819,11 +3598,15 @@ async function main() {
   ];
 
   for (const capa of internalAuditCapas) {
-    await prisma.internalAuditCAPA.upsert({
-      where: { capaId: capa.capaId },
-      update: {},
-      create: capa,
+    // Use findFirst to check if internal audit CAPA exists for this customer
+    const existing = await prisma.internalAuditCAPA.findFirst({
+      where: { customerAccountId, capaId: capa.capaId },
     });
+    if (!existing) {
+      await prisma.internalAuditCAPA.create({
+        data: { customerAccountId, ...capa },
+      });
+    }
   }
   console.log("✅ Internal Audit CAPAs created");
 
@@ -2970,9 +3753,15 @@ async function main() {
   ];
 
   for (const doc of auditDocuments) {
-    await prisma.internalAuditDocument.create({
-      data: doc,
+    // InternalAuditDocument is shared master data (no customerAccountId)
+    const existing = await prisma.internalAuditDocument.findFirst({
+      where: { documentCode: doc.documentCode },
     });
+    if (!existing) {
+      await prisma.internalAuditDocument.create({
+        data: { ...doc },
+      });
+    }
   }
   console.log("✅ Internal Audit Documents created");
 
@@ -3055,11 +3844,15 @@ async function main() {
   ];
 
   for (const report of auditReports) {
-    await prisma.auditReport.upsert({
-      where: { reportCode: report.reportCode },
-      update: {},
-      create: report,
+    // Use findFirst to check if audit report exists for this customer
+    const existing = await prisma.auditReport.findFirst({
+      where: { customerAccountId, reportCode: report.reportCode },
     });
+    if (!existing) {
+      await prisma.auditReport.create({
+        data: { customerAccountId, ...report },
+      });
+    }
   }
   console.log("✅ Audit Reports created");
 

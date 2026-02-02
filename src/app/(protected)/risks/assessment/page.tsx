@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { PageHeader } from "@/components/shared";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { usePermissions } from "@/hooks/usePermissions";
+import { usePermissions, useUserRoles } from "@/hooks/usePermissions";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Unauthorized } from "@/components/ui/unauthorized";
 import {
   Select,
@@ -21,15 +22,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { RiskRatingBadge } from "@/components/risks/risk-rating-badge";
+import { RiskAssessmentWizardDialog } from "@/components/risks/risk-assessment-wizard-dialog";
 import { cn } from "@/lib/utils";
-import { Search, ArrowUpDown, Check, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Home } from "lucide-react";
+import Link from "next/link";
 
 interface Risk {
   id: string;
@@ -56,23 +53,6 @@ interface RiskType {
   name: string;
 }
 
-interface Threat {
-  id: string;
-  name: string;
-}
-
-interface Vulnerability {
-  id: string;
-  name: string;
-}
-
-interface RiskSettingOption {
-  key: string;
-  label: string;
-  description?: string;
-  value: string;
-}
-
 interface RiskRatingThreshold {
   min: number;
   max: number;
@@ -81,44 +61,10 @@ interface RiskRatingThreshold {
 }
 
 interface RiskSettings {
-  likelihood_scale: RiskSettingOption[];
-  impact_scale: RiskSettingOption[];
   rating_matrix: {
     thresholds: RiskRatingThreshold[];
   };
 }
-
-const assessmentSteps = [
-  { id: 1, name: "Risk Context" },
-  { id: 2, name: "Likelihood" },
-  { id: 3, name: "Impact" },
-  { id: 4, name: "Vulnerability" },
-  { id: 5, name: "Risk Rating" },
-  { id: 6, name: "Risk Summary" },
-];
-
-// Default values used as fallback if API fails
-const defaultLikelihoodOptions = [
-  { label: "Rare", value: 1 },
-  { label: "Unlikely", value: 2 },
-  { label: "Possible", value: 3 },
-  { label: "Likely", value: 4 },
-  { label: "Almost Certain", value: 5 },
-];
-
-const defaultImpactOptions = [
-  { label: "Insignificant", value: 1 },
-  { label: "Minor", value: 2 },
-  { label: "Moderate", value: 3 },
-  { label: "Major", value: 4 },
-  { label: "Catastrophic", value: 5 },
-];
-
-const defaultVulnerabilityOptions = [
-  { label: "Strong", value: 10 },
-  { label: "Medium", value: 7 },
-  { label: "Weak", value: 5 },
-];
 
 const defaultRatingThresholds: RiskRatingThreshold[] = [
   { min: 1, max: 9, rating: "Low Risk", color: "#22c55e" },
@@ -127,27 +73,25 @@ const defaultRatingThresholds: RiskRatingThreshold[] = [
   { min: 20, max: 25, rating: "Catastrophic", color: "#dc2626" },
 ];
 
-const impactCategories = [
-  "Financial",
-  "Reputational Impact",
-  "Regulatory",
-  "Safety",
-  "Operational",
-];
-
 export default function RiskAssessmentPage() {
-  const { canView, isLoading: permissionsLoading } = usePermissions('risk.assessment');
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const fromDashboard = searchParams.get("from") === "dashboard";
+  const { canView, canCreate, canEdit, isLoading: permissionsLoading } = usePermissions('risk.assessment');
+  const userRoles = useUserRoles();
+  const { t } = useLanguage();
+
+  // Check if user can approve assessments (Reviewer, DepartmentReviewer, CustomerAdministrator, GRCAdministrator)
+  const canApprove = userRoles.some(role =>
+    ['Reviewer', 'DepartmentReviewer', 'CustomerAdministrator', 'GRCAdministrator'].includes(role)
+  );
   const [risks, setRisks] = useState<Risk[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [riskTypes, setRiskTypes] = useState<RiskType[]>([]);
-  const [threats, setThreats] = useState<Threat[]>([]);
-  const [vulnerabilities, setVulnerabilities] = useState<Vulnerability[]>([]);
   const [loading, setLoading] = useState(true);
 
+
   // Dynamic settings from API
-  const [likelihoodOptions, setLikelihoodOptions] = useState(defaultLikelihoodOptions);
-  const [impactOptions, setImpactOptions] = useState(defaultImpactOptions);
-  const [vulnerabilityOptions] = useState(defaultVulnerabilityOptions);
   const [ratingThresholds, setRatingThresholds] = useState<RiskRatingThreshold[]>(defaultRatingThresholds);
 
   // Filters
@@ -161,49 +105,16 @@ export default function RiskAssessmentPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 20;
 
-  // Assessment wizard state
-  const [wizardOpen, setWizardOpen] = useState(false);
-  const [selectedRisk, setSelectedRisk] = useState<Risk | null>(null);
-  const [currentStep, setCurrentStep] = useState(1);
-
-  // Assessment form data
-  const [threatLikelihoods, setThreatLikelihoods] = useState<Record<string, number>>({});
-  const [threatImpacts, setThreatImpacts] = useState<Record<string, Record<string, number>>>({});
-  const [vulnerabilityRatings, setVulnerabilityRatings] = useState<Record<string, number>>({});
-
-  // Helper function to get risk rating from score using dynamic thresholds
-  const getRiskRatingFromScore = useCallback((score: number): string => {
-    for (const threshold of ratingThresholds) {
-      if (score >= threshold.min && score <= threshold.max) {
-        return threshold.rating;
-      }
-    }
-    // If score exceeds all thresholds, return the highest rating
-    if (ratingThresholds.length > 0) {
-      const maxThreshold = ratingThresholds.reduce((prev, curr) =>
-        curr.max > prev.max ? curr : prev
-      );
-      if (score > maxThreshold.max) return maxThreshold.rating;
-    }
-    return "Low Risk";
-  }, [ratingThresholds]);
-
-  // Computed risk rating scale for display
-  const riskRatingScale = ratingThresholds.map(t => ({
-    label: t.rating,
-    range: `[${t.min} - ${t.max}]`,
-    min: t.min,
-    max: t.max,
-  }));
+  // Assessment modal state
+  const [assessmentDialogOpen, setAssessmentDialogOpen] = useState(false);
+  const [selectedRiskId, setSelectedRiskId] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
-      const [risksRes, categoriesRes, typesRes, threatsRes, vulnsRes, settingsRes] = await Promise.all([
+      const [risksRes, categoriesRes, typesRes, settingsRes] = await Promise.all([
         fetch("/api/risks"),
         fetch("/api/risk-categories"),
         fetch("/api/risk-types"),
-        fetch("/api/risk-threats"),
-        fetch("/api/risk-vulnerabilities"),
         fetch("/api/risk-settings"),
       ]);
 
@@ -219,14 +130,6 @@ export default function RiskAssessmentPage() {
         const data = await typesRes.json();
         setRiskTypes(data);
       }
-      if (threatsRes.ok) {
-        const data = await threatsRes.json();
-        setThreats(data);
-      }
-      if (vulnsRes.ok) {
-        const data = await vulnsRes.json();
-        setVulnerabilities(data);
-      }
 
       // Parse risk settings
       if (settingsRes.ok) {
@@ -234,22 +137,6 @@ export default function RiskAssessmentPage() {
         const defaults = settingsData.defaults as RiskSettings | undefined;
 
         if (defaults) {
-          // Set likelihood options from settings
-          if (defaults.likelihood_scale && defaults.likelihood_scale.length > 0) {
-            setLikelihoodOptions(defaults.likelihood_scale.map(opt => ({
-              label: opt.label,
-              value: parseInt(opt.value) || parseInt(opt.key),
-            })));
-          }
-
-          // Set impact options from settings
-          if (defaults.impact_scale && defaults.impact_scale.length > 0) {
-            setImpactOptions(defaults.impact_scale.map(opt => ({
-              label: opt.label,
-              value: parseInt(opt.value) || parseInt(opt.key),
-            })));
-          }
-
           // Set rating thresholds from settings
           if (defaults.rating_matrix?.thresholds && defaults.rating_matrix.thresholds.length > 0) {
             setRatingThresholds(defaults.rating_matrix.thresholds);
@@ -299,121 +186,109 @@ export default function RiskAssessmentPage() {
   const getActionButton = (risk: Risk) => {
     const status = risk.assessmentStatus || "Open";
     switch (status) {
+      case "Approved":
       case "Completed":
-        return (
+      case "Submitted":
+      case "Rejected":
+        // Users with create permission can re-assess completed risks
+        return canCreate ? (
           <Button size="sm" variant="outline" onClick={() => openAssessment(risk)}>
-            Re-assess
+            {t("Re-assess")}
           </Button>
-        );
+        ) : null;
+      case "Draft":
       case "In-Progress":
-        return (
+        // Users with edit permission can continue working
+        return canEdit ? (
           <Button size="sm" variant="outline" onClick={() => openAssessment(risk)}>
-            Resume
+            {t("Resume")}
           </Button>
-        );
+        ) : null;
       default:
-        return (
+        // Open status - users with create permission can initiate
+        return canCreate ? (
           <Button size="sm" onClick={() => openAssessment(risk)}>
-            Initiate
+            {t("Initiate")}
           </Button>
-        );
+        ) : null;
+    }
+  };
+
+  const handleApprove = async (riskId: string) => {
+    try {
+      // Find the latest assessment for this risk and approve it
+      const response = await fetch(`/api/risks/${riskId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          assessmentStatus: "Approved",
+        }),
+      });
+
+      if (response.ok) {
+        fetchData();
+      } else {
+        const error = await response.json();
+        console.error("Failed to approve:", error);
+      }
+    } catch (error) {
+      console.error("Failed to approve assessment:", error);
+    }
+  };
+
+  const handleReject = async (riskId: string) => {
+    try {
+      const response = await fetch(`/api/risks/${riskId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          assessmentStatus: "Rejected",
+        }),
+      });
+
+      if (response.ok) {
+        fetchData();
+      } else {
+        const error = await response.json();
+        console.error("Failed to reject:", error);
+      }
+    } catch (error) {
+      console.error("Failed to reject assessment:", error);
     }
   };
 
   const openAssessment = (risk: Risk) => {
-    setSelectedRisk(risk);
-    setCurrentStep(1);
-    // Reset form data
-    setThreatLikelihoods({});
-    setThreatImpacts({});
-    setVulnerabilityRatings({});
-    setWizardOpen(true);
+    setSelectedRiskId(risk.id);
+    setAssessmentDialogOpen(true);
   };
 
-  const handleNext = () => {
-    if (currentStep < assessmentSteps.length) {
-      setCurrentStep(currentStep + 1);
-    }
+  const handleAssessmentComplete = () => {
+    fetchData(); // Refresh the list after assessment is saved
   };
-
-  const handlePrevious = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
-
-  const handleSave = async () => {
-    if (!selectedRisk) return;
-
-    // Calculate scores
-    const likelihoodValues = Object.values(threatLikelihoods);
-    const avgLikelihood = likelihoodValues.length > 0
-      ? likelihoodValues.reduce((a, b) => a + b, 0) / likelihoodValues.length
-      : 0;
-
-    // For impact, take the max of each threat's max category
-    let maxImpact = 0;
-    Object.values(threatImpacts).forEach((categories) => {
-      const categoryMax = Math.max(...Object.values(categories), 0);
-      if (categoryMax > maxImpact) maxImpact = categoryMax;
-    });
-
-    const vulnerabilityValues = Object.values(vulnerabilityRatings);
-    const avgVulnerability = vulnerabilityValues.length > 0
-      ? vulnerabilityValues.reduce((a, b) => a + b, 0) / vulnerabilityValues.length
-      : 0;
-
-    const riskScore = avgLikelihood * maxImpact * (avgVulnerability / 10);
-    const riskRating = getRiskRatingFromScore(riskScore);
-
-    try {
-      // Update risk with assessment data
-      await fetch(`/api/risks/${selectedRisk.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          likelihood: Math.round(avgLikelihood),
-          impact: Math.round(maxImpact),
-          riskRating,
-          assessmentStatus: "Completed",
-        }),
-      });
-
-      setWizardOpen(false);
-      fetchData();
-    } catch (error) {
-      console.error("Failed to save assessment:", error);
-    }
-  };
-
-  const riskThreats = selectedRisk?.threats?.map((t) => t.threat) || threats.slice(0, 3);
-  const riskVulnerabilities = selectedRisk?.vulnerabilities?.map((v) => v.vulnerability) || vulnerabilities.slice(0, 3);
-
-  // Calculate current scores for display
-  const calcLikelihood = Object.values(threatLikelihoods).length > 0
-    ? Math.round(Object.values(threatLikelihoods).reduce((a, b) => a + b, 0) / Object.values(threatLikelihoods).length)
-    : 0;
-
-  let calcImpact = 0;
-  Object.values(threatImpacts).forEach((categories) => {
-    const categoryMax = Math.max(...Object.values(categories), 0);
-    if (categoryMax > calcImpact) calcImpact = categoryMax;
-  });
-
-  const calcVulnerability = Object.values(vulnerabilityRatings).length > 0
-    ? Math.round(Object.values(vulnerabilityRatings).reduce((a, b) => a + b, 0) / Object.values(vulnerabilityRatings).length)
-    : 0;
-
-  const riskScore = calcLikelihood * calcImpact * (calcVulnerability / 10 || 1);
-  const calculatedRating = getRiskRatingFromScore(riskScore);
 
   // Show loading state while permissions or data is being fetched
   if (permissionsLoading || loading) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Risk Assessment" description="Assess and evaluate risks" />
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        {/* Breadcrumb */}
+        <nav className="flex items-center gap-1.5 text-sm">
+          <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>{t("Risk Management")}</span>
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <span className="text-primary-700 font-medium">{t("Assessment")}</span>
+        </nav>
+
+        {/* Page Header */}
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-bold text-slate-800">{t("Risk Assessment")}</h1>
+        </div>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="relative h-8 w-8">
+            <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+          </div>
         </div>
       </div>
     );
@@ -421,45 +296,56 @@ export default function RiskAssessmentPage() {
 
   // Show unauthorized if user doesn't have view permission
   if (!canView) {
-    return <Unauthorized description="You don't have permission to access Risk Assessment." />;
+    return <Unauthorized description={t("You don't have permission to access Risk Assessment.")} />;
   }
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Risk Assessment"
-      />
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>{t("Risk Management")}</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">{t("Assessment")}</span>
+      </nav>
+
+      {/* Page Header */}
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold text-slate-800">{t("Risk Assessment")}</h1>
+      </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search By Risk ID, Name"
+            placeholder={t("Search risks...")}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9 w-64"
+            className="pl-10 w-[200px] bg-white"
           />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Status" />
+          <SelectTrigger className="w-[150px] bg-white">
+            <SelectValue placeholder={t("All Status")} />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Status</SelectItem>
-            <SelectItem value="Assessment Pending">Assessment Pending</SelectItem>
-            <SelectItem value="Open">Open</SelectItem>
-            <SelectItem value="In-Progress">In-Progress</SelectItem>
-            <SelectItem value="Completed">Completed</SelectItem>
-            <SelectItem value="Awaiting Approval">Awaiting Approval</SelectItem>
+          <SelectContent position="popper" sideOffset={4}>
+            <SelectItem value="all">{t("All Status")}</SelectItem>
+            <SelectItem value="Assessment Pending">{t("Assessment Pending")}</SelectItem>
+            <SelectItem value="Open">{t("Open")}</SelectItem>
+            <SelectItem value="In-Progress">{t("In-Progress")}</SelectItem>
+            <SelectItem value="Completed">{t("Completed")}</SelectItem>
+            <SelectItem value="Awaiting Approval">{t("Awaiting Approval")}</SelectItem>
           </SelectContent>
         </Select>
         <Select value={ratingFilter} onValueChange={setRatingFilter}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Risk Rating" />
+          <SelectTrigger className="w-[140px] bg-white">
+            <SelectValue placeholder={t("All Ratings")} />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Risk Rating</SelectItem>
+          <SelectContent position="popper" sideOffset={4}>
+            <SelectItem value="all">{t("All Ratings")}</SelectItem>
             {ratingThresholds.map((threshold) => (
               <SelectItem key={threshold.rating} value={threshold.rating}>
                 {threshold.rating}
@@ -468,11 +354,11 @@ export default function RiskAssessmentPage() {
           </SelectContent>
         </Select>
         <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Category" />
+          <SelectTrigger className="w-[150px] bg-white">
+            <SelectValue placeholder={t("All Categories")} />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Category</SelectItem>
+          <SelectContent position="popper" sideOffset={4}>
+            <SelectItem value="all">{t("All Categories")}</SelectItem>
             {categories.map((cat) => (
               <SelectItem key={cat.id} value={cat.id}>
                 {cat.name}
@@ -481,11 +367,11 @@ export default function RiskAssessmentPage() {
           </SelectContent>
         </Select>
         <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Risk type" />
+          <SelectTrigger className="w-[140px] bg-white">
+            <SelectValue placeholder={t("All Types")} />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Risk type</SelectItem>
+          <SelectContent position="popper" sideOffset={4}>
+            <SelectItem value="all">{t("All Types")}</SelectItem>
             {riskTypes.map((type) => (
               <SelectItem key={type.id} value={type.id}>
                 {type.name}
@@ -496,444 +382,119 @@ export default function RiskAssessmentPage() {
       </div>
 
       {/* Data Grid */}
-      <div className="rounded-md border">
+      <div className="bg-white rounded-xl border border-slate-200">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead className="cursor-pointer">
-                <div className="flex items-center gap-1">
-                  Risk ID <ArrowUpDown className="h-4 w-4" />
-                </div>
-              </TableHead>
-              <TableHead className="cursor-pointer">
-                <div className="flex items-center gap-1">
-                  Risk Name <ArrowUpDown className="h-4 w-4" />
-                </div>
-              </TableHead>
-              <TableHead className="cursor-pointer">
-                <div className="flex items-center gap-1">
-                  Risk Description <ArrowUpDown className="h-4 w-4" />
-                </div>
-              </TableHead>
-              <TableHead className="cursor-pointer">
-                <div className="flex items-center gap-1">
-                  Risk Rating <ArrowUpDown className="h-4 w-4" />
-                </div>
-              </TableHead>
-              <TableHead className="cursor-pointer">
-                <div className="flex items-center gap-1">
-                  Risk Category <ArrowUpDown className="h-4 w-4" />
-                </div>
-              </TableHead>
-              <TableHead className="cursor-pointer">
-                <div className="flex items-center gap-1">
-                  Risk Owner <ArrowUpDown className="h-4 w-4" />
-                </div>
-              </TableHead>
-              <TableHead className="cursor-pointer">
-                <div className="flex items-center gap-1">
-                  RiskType <ArrowUpDown className="h-4 w-4" />
-                </div>
-              </TableHead>
-              <TableHead className="cursor-pointer">
-                <div className="flex items-center gap-1">
-                  Status <ArrowUpDown className="h-4 w-4" />
-                </div>
-              </TableHead>
-              <TableHead></TableHead>
+            <TableRow className="h-12 bg-slate-50/50 hover:bg-slate-50/50">
+              <TableHead className="text-xs font-semibold text-slate-600 pl-4">{t("Risk ID")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600">{t("Risk Name")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600">{t("Risk Description")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600">{t("Risk Rating")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600">{t("Risk Category")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600">{t("Risk Owner")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600">{t("Risk Type")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600">{t("Status")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600">{t("Action")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {paginatedRisks.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                  No risks found
+                <TableCell colSpan={9} className="text-center py-8 text-slate-500">
+                  {t("No risks found")}
                 </TableCell>
               </TableRow>
             ) : (
               paginatedRisks.map((risk) => (
-                <TableRow key={risk.id}>
-                  <TableCell className="font-medium">{risk.riskId}</TableCell>
-                  <TableCell>{risk.name}</TableCell>
-                  <TableCell className="max-w-xs truncate">{risk.description}</TableCell>
-                  <TableCell>
+                <TableRow key={risk.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                  <TableCell className="py-3 pl-4 font-medium text-slate-800">{risk.riskId}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700">{risk.name}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700 max-w-[200px] truncate">{risk.description || "-"}</TableCell>
+                  <TableCell className="py-3">
                     {risk.riskRating ? <RiskRatingBadge rating={risk.riskRating} /> : "-"}
                   </TableCell>
-                  <TableCell>{risk.category?.name || "-"}</TableCell>
-                  <TableCell>{risk.owner?.fullName || "No items found"}</TableCell>
-                  <TableCell>{risk.type?.name || "-"}</TableCell>
-                  <TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700">{risk.category?.name || "-"}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700">{risk.owner?.fullName || "-"}</TableCell>
+                  <TableCell className="py-3 text-sm text-slate-700">{risk.type?.name || "-"}</TableCell>
+                  <TableCell className="py-3">
                     <span className={cn(
                       "px-2 py-1 rounded text-xs font-medium",
-                      (risk.assessmentStatus || "Open") === "Completed" && "bg-green-100 text-green-800",
+                      (risk.assessmentStatus || "Open") === "Approved" && "bg-green-100 text-green-800",
+                      (risk.assessmentStatus || "Open") === "Submitted" && "bg-purple-100 text-purple-800",
+                      (risk.assessmentStatus || "Open") === "Draft" && "bg-slate-100 text-slate-800",
+                      (risk.assessmentStatus || "Open") === "Rejected" && "bg-red-100 text-red-800",
                       (risk.assessmentStatus || "Open") === "In-Progress" && "bg-yellow-100 text-yellow-800",
                       (risk.assessmentStatus || "Open") === "Open" && "bg-blue-100 text-blue-800"
                     )}>
                       {risk.assessmentStatus || "Open"}
                     </span>
                   </TableCell>
-                  <TableCell>{getActionButton(risk)}</TableCell>
+                  <TableCell className="py-3">
+                    <div className="flex items-center gap-1">
+                      {getActionButton(risk)}
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))
             )}
           </TableBody>
         </Table>
-      </div>
 
-      {/* Pagination */}
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-muted-foreground">
-          Currently showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, filteredRisks.length)} of {filteredRisks.length}
-        </div>
-        <div className="flex gap-1">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage(1)}
-            disabled={currentPage === 1}
-          >
-            <ChevronLeft className="h-4 w-4" />
-            <ChevronLeft className="h-4 w-4 -ml-2" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage(currentPage - 1)}
-            disabled={currentPage === 1}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage(currentPage + 1)}
-            disabled={currentPage === totalPages || totalPages === 0}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage(totalPages)}
-            disabled={currentPage === totalPages || totalPages === 0}
-          >
-            <ChevronRight className="h-4 w-4" />
-            <ChevronRight className="h-4 w-4 -ml-2" />
-          </Button>
-        </div>
-      </div>
-
-      {/* Assessment Wizard Dialog */}
-      <Dialog open={wizardOpen} onOpenChange={setWizardOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Risk Assessment</DialogTitle>
-          </DialogHeader>
-
-          {/* Stepper */}
-          <nav className="mb-6">
-            <ol className="flex items-center justify-between">
-              {assessmentSteps.map((step, index) => (
-                <li key={step.id} className="flex-1 flex flex-col items-center relative">
-                  <div className="flex items-center">
-                    <button
-                      onClick={() => setCurrentStep(step.id)}
-                      className={cn(
-                        "flex h-8 w-8 items-center justify-center rounded-full border-2 text-sm font-medium transition-colors",
-                        currentStep > step.id
-                          ? "border-green-500 bg-green-500 text-white"
-                          : currentStep === step.id
-                          ? "border-primary bg-primary text-white"
-                          : "border-gray-300 bg-white text-gray-500"
-                      )}
-                    >
-                      {currentStep > step.id ? <Check className="h-4 w-4" /> : step.id}
-                    </button>
-                  </div>
-                  <button
-                    onClick={() => setCurrentStep(step.id)}
-                    className="mt-1 text-xs text-center text-muted-foreground hover:text-foreground"
-                  >
-                    {step.name}
-                  </button>
-                  {index < assessmentSteps.length - 1 && (
-                    <div
-                      className={cn(
-                        "absolute top-4 left-1/2 w-full h-0.5",
-                        currentStep > step.id ? "bg-green-500" : "bg-gray-200"
-                      )}
-                      style={{ marginLeft: "16px" }}
-                    />
-                  )}
-                </li>
-              ))}
-            </ol>
-          </nav>
-
-          {selectedRisk && (
-            <>
-              {/* Risk Header (shown on all steps) */}
-              <div className="mb-4 p-4 bg-muted rounded-lg">
-                <div className="flex gap-2 items-center">
-                  <h4 className="font-bold">{selectedRisk.riskId}</h4>
-                  <h4 className="font-bold">{selectedRisk.name}</h4>
-                </div>
-                <p className="text-sm text-muted-foreground mt-1">{selectedRisk.description}</p>
-              </div>
-
-              {/* Step 1: Risk Context */}
-              {currentStep === 1 && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Risk Category</p>
-                      <p className="font-medium">{selectedRisk.category?.name || "-"}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Risk Owner</p>
-                      <p className="font-medium">{selectedRisk.owner?.fullName || "No items found"}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Risk Sources</p>
-                      <p className="font-medium">{selectedRisk.riskSources || "-"}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Step 2: Likelihood */}
-              {currentStep === 2 && (
-                <div className="space-y-4">
-                  {riskThreats.length > 0 ? (
-                    riskThreats.map((threat) => (
-                      <div key={threat.id} className="border rounded-lg p-4">
-                        <h4 className="font-medium mb-3">{threat.name}</h4>
-                        <div className="flex gap-2">
-                          {likelihoodOptions.map((option) => (
-                            <button
-                              key={option.value}
-                              onClick={() => setThreatLikelihoods({
-                                ...threatLikelihoods,
-                                [threat.id]: option.value
-                              })}
-                              className={cn(
-                                "flex-1 p-3 rounded-lg border text-center transition-colors",
-                                threatLikelihoods[threat.id] === option.value
-                                  ? "border-primary bg-primary/10"
-                                  : "border-gray-200 hover:border-gray-300"
-                              )}
-                            >
-                              <p className="font-medium">{option.label}</p>
-                              <p className="text-lg font-bold">{option.value}</p>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-center text-muted-foreground py-4">
-                      No threats associated with this risk
-                    </p>
-                  )}
-                  <div className="flex justify-between text-sm text-muted-foreground">
-                    <span>Timeframe</span>
-                    <span>Probability</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Step 3: Impact */}
-              {currentStep === 3 && (
-                <div className="space-y-6">
-                  {riskThreats.map((threat) => (
-                    <div key={threat.id} className="border rounded-lg p-4">
-                      <h4 className="font-medium mb-3">{threat.name}</h4>
-                      <div className="grid grid-cols-2 gap-2 mb-2 text-sm text-muted-foreground">
-                        <span>Category</span>
-                        <span>Impact Rating</span>
-                      </div>
-                      {impactCategories.map((category) => (
-                        <div key={category} className="grid grid-cols-2 gap-2 py-2 border-t">
-                          <span className="text-sm">{category}</span>
-                          <Select
-                            value={threatImpacts[threat.id]?.[category]?.toString() || ""}
-                            onValueChange={(value) => {
-                              setThreatImpacts({
-                                ...threatImpacts,
-                                [threat.id]: {
-                                  ...threatImpacts[threat.id],
-                                  [category]: parseInt(value)
-                                }
-                              });
-                            }}
-                          >
-                            <SelectTrigger className="h-8">
-                              <SelectValue placeholder="Select" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {impactOptions.map((opt) => (
-                                <SelectItem key={opt.value} value={opt.value.toString()}>
-                                  {opt.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      ))}
-                      <div className="mt-2 pt-2 border-t">
-                        <p className="text-sm">
-                          Impact Rating = {Math.max(...Object.values(threatImpacts[threat.id] || {}), 0)}
-                        </p>
-                        <p className="text-xs text-muted-foreground">Note: The highest rating will be taken</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Step 4: Vulnerability */}
-              {currentStep === 4 && (
-                <div className="space-y-4">
-                  {riskVulnerabilities.length > 0 ? (
-                    riskVulnerabilities.map((vuln) => (
-                      <div key={vuln.id} className="border rounded-lg p-4">
-                        <h4 className="font-medium mb-3">{vuln.name}</h4>
-                        <div className="flex gap-2">
-                          {vulnerabilityOptions.map((option) => (
-                            <button
-                              key={option.value}
-                              onClick={() => setVulnerabilityRatings({
-                                ...vulnerabilityRatings,
-                                [vuln.id]: option.value
-                              })}
-                              className={cn(
-                                "flex-1 p-3 rounded-lg border text-center transition-colors",
-                                vulnerabilityRatings[vuln.id] === option.value
-                                  ? "border-primary bg-primary/10"
-                                  : "border-gray-200 hover:border-gray-300"
-                              )}
-                            >
-                              <p className="font-medium">{option.label}</p>
-                              <p className="text-lg font-bold">{option.value}</p>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-center text-muted-foreground py-4">
-                      No vulnerabilities associated with this risk
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {/* Step 5: Risk Rating */}
-              {currentStep === 5 && (
-                <div className="space-y-6">
-                  <div className="p-4 bg-muted rounded-lg">
-                    <h4 className="font-medium mb-4">Inherent Risk</h4>
-                    <div className="flex items-center gap-4 text-center">
-                      <div>
-                        <p className="text-sm text-muted-foreground">=</p>
-                        <p className="text-2xl font-bold">{calcLikelihood}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">*</p>
-                        <p className="text-2xl font-bold">{calcImpact}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">*</p>
-                        <p className="text-2xl font-bold">{calcVulnerability}</p>
-                      </div>
-                    </div>
-                    <div className="mt-4 flex items-center gap-2">
-                      <span className="text-sm">Inherent Risk Rating</span>
-                      <RiskRatingBadge rating={calculatedRating} />
-                      <span className="text-sm">({riskScore.toFixed(2)})</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Risk Score = Likelihood * Impact * Vulnerability
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Risk Tolerance = 10
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-4 gap-2">
-                    {riskRatingScale.map((scale) => (
-                      <div
-                        key={scale.label}
-                        className={cn(
-                          "p-3 rounded-lg border text-center",
-                          calculatedRating === scale.label && "border-primary bg-primary/10"
-                        )}
-                      >
-                        <p className="font-medium text-sm">{scale.label}</p>
-                        <p className="text-xs text-muted-foreground">{scale.range}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Step 6: Risk Summary */}
-              {currentStep === 6 && (
-                <div className="space-y-6">
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="p-4 bg-muted rounded-lg text-center">
-                      <p className="text-sm text-muted-foreground">Inherent Risk Rating</p>
-                      <div className="mt-2">
-                        <RiskRatingBadge rating={calculatedRating} />
-                      </div>
-                      <p className="text-xs mt-1">({riskScore.toFixed(2)})</p>
-                    </div>
-                    <div className="p-4 bg-muted rounded-lg text-center">
-                      <p className="text-sm text-muted-foreground">Overall Control Rating</p>
-                      <p className="text-lg font-bold mt-2">-</p>
-                    </div>
-                    <div className="p-4 bg-muted rounded-lg text-center">
-                      <p className="text-sm text-muted-foreground">Residual Risk Rating</p>
-                      <div className="mt-2">
-                        <RiskRatingBadge rating={calculatedRating} />
-                      </div>
-                      <p className="text-xs mt-1">({riskScore.toFixed(2)})</p>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h4 className="font-medium mb-3">Existing Controls</h4>
-                    <p className="text-sm text-muted-foreground">No controls linked to this risk</p>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-
-          {/* Navigation Buttons */}
-          <div className="flex justify-between mt-6 pt-4 border-t">
-            <Button variant="outline" onClick={() => setWizardOpen(false)}>
-              Cancel
-            </Button>
-            <div className="flex gap-2">
-              {currentStep > 1 && (
-                <Button variant="outline" onClick={handlePrevious}>
-                  Previous
-                </Button>
-              )}
-              {currentStep < assessmentSteps.length ? (
-                <Button onClick={handleNext}>
-                  Next
-                </Button>
-              ) : (
-                <Button onClick={handleSave}>
-                  Save
-                </Button>
-              )}
+        {/* Pagination */}
+        {filteredRisks.length > 0 && (
+          <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
+            <span className="text-sm text-slate-500">
+              {((currentPage - 1) * pageSize) + 1} {t("to")} {Math.min(currentPage * pageSize, filteredRisks.length)} {t("of")} {filteredRisks.length}
+            </span>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+              >
+                <ChevronsLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setCurrentPage(currentPage - 1)}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setCurrentPage(currentPage + 1)}
+                disabled={currentPage === totalPages || totalPages === 0}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages || totalPages === 0}
+              >
+                <ChevronsRight className="h-4 w-4" />
+              </Button>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        )}
+      </div>
+
+      {/* Assessment Wizard Modal */}
+      <RiskAssessmentWizardDialog
+        open={assessmentDialogOpen}
+        onOpenChange={setAssessmentDialogOpen}
+        riskId={selectedRiskId}
+        onAssessmentComplete={handleAssessmentComplete}
+      />
     </div>
   );
 }

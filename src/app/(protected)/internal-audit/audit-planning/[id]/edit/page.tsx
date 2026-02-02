@@ -19,7 +19,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { Checkbox } from "@/components/ui/checkbox";
-import { toast } from "sonner";
+import { useToast } from "@/hooks/use-toast";
 import {
   ArrowLeft,
   ChevronDown,
@@ -30,6 +30,7 @@ import {
   X,
   Loader2,
 } from "lucide-react";
+import { DatePicker } from "@/components/ui/date-picker";
 
 interface Department {
   id: string;
@@ -84,6 +85,7 @@ const defaultTasks: AuditTask[] = [
 export default function EditEngagementPage({ params }: PageProps) {
   const { id: engagementId } = use(params);
   const router = useRouter();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -91,6 +93,8 @@ export default function EditEngagementPage({ params }: PageProps) {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [risks, setRisks] = useState<Risk[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [auditees, setAuditees] = useState<User[]>([]);
+  const [auditors, setAuditors] = useState<User[]>([]);
   const [historicalRisks, setHistoricalRisks] = useState<Risk[]>([]);
 
   // Form data
@@ -142,9 +146,11 @@ export default function EditEngagementPage({ params }: PageProps) {
 
   const fetchReferenceData = async () => {
     try {
-      const [deptRes, usersRes, engagementRes] = await Promise.all([
+      const [deptRes, usersRes, auditeesRes, auditorsRes, engagementRes] = await Promise.all([
         fetch("/api/departments"),
         fetch("/api/users"),
+        fetch("/api/users?forAuditHead=auditees"), // Auditees managed by this Audit Head
+        fetch("/api/users?forAuditHead=auditors"), // Audit Managers for this Audit Head
         fetch(`/api/internal-audit/engagements/${engagementId}`),
       ]);
 
@@ -153,9 +159,19 @@ export default function EditEngagementPage({ params }: PageProps) {
         const usersData = await usersRes.json();
         setUsers(usersData.users || usersData || []);
       }
+      if (auditeesRes.ok) {
+        const auditeesData = await auditeesRes.json();
+        setAuditees(auditeesData.users || auditeesData || []);
+      }
+      if (auditorsRes.ok) {
+        const auditorsData = await auditorsRes.json();
+        setAuditors(auditorsData.users || auditorsData || []);
+      }
 
       if (engagementRes.ok) {
         const engagement = await engagementRes.json();
+        console.log("Loaded engagement:", engagement);
+
         setFormData({
           engagementTitle: engagement.engagementTitle || "",
           engagementObjective: engagement.engagementObjective || "",
@@ -173,12 +189,14 @@ export default function EditEngagementPage({ params }: PageProps) {
         });
 
       } else {
-        toast.error("Failed to load engagement");
+        const errorData = await engagementRes.json();
+        console.error("Failed to load engagement:", errorData);
+        toast({ title: "Error", description: errorData.error || "Failed to load engagement", variant: "destructive" });
         router.push("/internal-audit/audit-planning");
       }
     } catch (error) {
       console.error("Failed to fetch data:", error);
-      toast.error("Failed to load data");
+      toast({ title: "Error", description: "Failed to load data", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -288,56 +306,53 @@ export default function EditEngagementPage({ params }: PageProps) {
     e.preventDefault();
 
     if (!formData.engagementTitle.trim()) {
-      toast.error("Engagement Title is required");
+      toast({ title: "Error", description: "Engagement Title is required", variant: "destructive" });
       return;
     }
     if (!formData.engagementObjective.trim()) {
-      toast.error("Engagement Objective is required");
+      toast({ title: "Error", description: "Engagement Objective is required", variant: "destructive" });
       return;
     }
     if (!formData.engagementScope.trim()) {
-      toast.error("Engagement Scope is required");
+      toast({ title: "Error", description: "Engagement Scope is required", variant: "destructive" });
       return;
     }
     if (!formData.departmentId) {
-      toast.error("Department is required");
-      return;
-    }
-    if (!formData.auditorId) {
-      toast.error("Auditor is required");
+      toast({ title: "Error", description: "Department is required", variant: "destructive" });
       return;
     }
     if (!formData.startDate) {
-      toast.error("Start Date is required");
+      toast({ title: "Error", description: "Start Date is required", variant: "destructive" });
       return;
     }
     if (!formData.targetDate) {
-      toast.error("Target Date is required");
+      toast({ title: "Error", description: "Target Date is required", variant: "destructive" });
       return;
     }
 
     setSaving(true);
     try {
+      const payload = {
+        ...formData,
+        tasks,
+        plannedHours: calculateTotalHours("plannedHours"),
+      };
+
       const response = await fetch(`/api/internal-audit/engagements/${engagementId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...formData,
-          tasks,
-          plannedHours: calculateTotalHours("plannedHours"),
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (response.ok) {
-        toast.success("Engagement updated successfully");
+        toast({ title: "Success", description: "Engagement updated successfully" });
         router.push("/internal-audit/audit-planning");
       } else {
         const error = await response.json();
-        toast.error(error.error || "Failed to update engagement");
+        toast({ title: "Error", description: error.error || "Failed to update engagement", variant: "destructive" });
       }
     } catch (error) {
-      console.error("Failed to update engagement:", error);
-      toast.error("Failed to update engagement");
+      toast({ title: "Error", description: "Failed to update engagement", variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -519,7 +534,7 @@ export default function EditEngagementPage({ params }: PageProps) {
           </Select>
         </div>
 
-        {/* Auditor */}
+        {/* Auditor (Audit Manager) */}
         <div className="space-y-2">
           <Label className="text-blue-800">
             Auditor <span className="text-red-500">*</span>
@@ -532,11 +547,17 @@ export default function EditEngagementPage({ params }: PageProps) {
               <SelectValue placeholder="Select Auditor" />
             </SelectTrigger>
             <SelectContent>
-              {users.map((user) => (
-                <SelectItem key={user.id} value={user.id}>
-                  {user.fullName}
+              {auditors.length > 0 ? (
+                auditors.map((user) => (
+                  <SelectItem key={user.id} value={user.id}>
+                    {user.fullName}
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="none" disabled>
+                  No auditors available
                 </SelectItem>
-              ))}
+              )}
             </SelectContent>
           </Select>
         </div>
@@ -552,11 +573,17 @@ export default function EditEngagementPage({ params }: PageProps) {
               <SelectValue placeholder="Select Auditee" />
             </SelectTrigger>
             <SelectContent>
-              {users.map((user) => (
-                <SelectItem key={user.id} value={user.id}>
-                  {user.fullName}
+              {auditees.length > 0 ? (
+                auditees.map((user) => (
+                  <SelectItem key={user.id} value={user.id}>
+                    {user.fullName}
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="none" disabled>
+                  No auditees assigned to you
                 </SelectItem>
-              ))}
+              )}
             </SelectContent>
           </Select>
         </div>
@@ -567,20 +594,20 @@ export default function EditEngagementPage({ params }: PageProps) {
             <Label className="text-blue-800">
               Start Date <span className="text-red-500">*</span>
             </Label>
-            <Input
-              type="date"
+            <DatePicker
               value={formData.startDate}
-              onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+              onChange={(date) => setFormData({ ...formData, startDate: date ? date.toISOString().split('T')[0] : "" })}
+              placeholder="Select start date"
             />
           </div>
           <div className="space-y-2">
             <Label className="text-blue-800">
               Target Date <span className="text-red-500">*</span>
             </Label>
-            <Input
-              type="date"
+            <DatePicker
               value={formData.targetDate}
-              onChange={(e) => setFormData({ ...formData, targetDate: e.target.value })}
+              onChange={(date) => setFormData({ ...formData, targetDate: date ? date.toISOString().split('T')[0] : "" })}
+              placeholder="Select target date"
             />
           </div>
         </div>
@@ -748,11 +775,17 @@ export default function EditEngagementPage({ params }: PageProps) {
                             <SelectValue placeholder="Select Auditor" />
                           </SelectTrigger>
                           <SelectContent>
-                            {users.map((user) => (
-                              <SelectItem key={user.id} value={user.id}>
-                                {user.fullName}
+                            {auditors.length > 0 ? (
+                              auditors.map((user) => (
+                                <SelectItem key={user.id} value={user.id}>
+                                  {user.fullName}
+                                </SelectItem>
+                              ))
+                            ) : (
+                              <SelectItem value="none" disabled>
+                                No auditors available
                               </SelectItem>
-                            ))}
+                            )}
                           </SelectContent>
                         </Select>
                       </td>

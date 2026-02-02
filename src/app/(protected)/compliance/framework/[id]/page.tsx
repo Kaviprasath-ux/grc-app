@@ -48,6 +48,7 @@ import {
   ChevronsRight,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Framework {
   id: string;
@@ -761,6 +762,7 @@ export default function FrameworkDetailPage({
   const { id } = use(params);
   const router = useRouter();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [framework, setFramework] = useState<Framework | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -1091,7 +1093,7 @@ export default function FrameworkDetailPage({
   };
 
   const handleDownloadTemplate = () => {
-    const template = "Code,Name,Description,Requirement Type,Chapter Type,Applicability,Implementation Status\n";
+    const template = "Requirement Code,Requirement Name,Description,Category,Control Mapping\n";
     const blob = new Blob([template], { type: "text/csv" });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -1131,11 +1133,11 @@ export default function FrameworkDetailPage({
       } else {
         const error = await response.json();
         console.error("Import error:", error);
-        toast({ title: "Error", description: "Failed to import requirements. Please check the file format.", variant: "destructive" });
+        toast({ title: t("Error"), description: t("Failed to import requirements. Please check the file format."), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error importing requirements:", error);
-      toast({ title: "Error", description: "Failed to import requirements. Please try again.", variant: "destructive" });
+      toast({ title: t("Error"), description: t("Failed to import requirements. Please try again."), variant: "destructive" });
     } finally {
       setImporting(false);
     }
@@ -1254,14 +1256,27 @@ export default function FrameworkDetailPage({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="flex items-center justify-center h-[60vh]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative">
+            <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
+            <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+          </div>
+          <p className="text-sm text-slate-500 font-medium">{t("Loading framework...")}</p>
+        </div>
       </div>
     );
   }
 
   if (!framework) {
-    return <div className="text-center py-12">Framework not found</div>;
+    return (
+      <div className="flex items-center justify-center h-[60vh]">
+        <div className="text-center">
+          <p className="text-lg font-semibold text-slate-800">{t("Framework not found")}</p>
+          <p className="text-sm text-slate-500 mt-1">{t("The requested framework could not be loaded.")}</p>
+        </div>
+      </div>
+    );
   }
 
   // Use dummy data if no requirements from API
@@ -1285,70 +1300,72 @@ export default function FrameworkDetailPage({
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => router.push("/compliance/framework")}
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold">Total Requirements</h1>
-          <p className="text-gray-600">Manage framework requirements and controls</p>
+      {/* Page Header */}
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-slate-400 hover:text-slate-600"
+            onClick={() => router.push("/compliance/framework")}
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-800">{framework.name}</h1>
+            <p className="text-sm text-slate-500">{t("Manage framework requirements and controls")}</p>
+          </div>
         </div>
       </div>
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          <TabsTrigger value="requirements">All Requirements</TabsTrigger>
-          <TabsTrigger value="soa">SOA</TabsTrigger>
-          <TabsTrigger value="audit-logs">Audit Logs</TabsTrigger>
+          <TabsTrigger value="requirements">{t("All Requirements")}</TabsTrigger>
+          <TabsTrigger value="soa">{t("SOA")}</TabsTrigger>
+          <TabsTrigger value="audit-logs">{t("Audit Logs")}</TabsTrigger>
         </TabsList>
 
         {/* Requirements Tab */}
-        <TabsContent value="requirements" className="space-y-4">
-          {/* Actions */}
-          <div className="flex items-center justify-between">
+        <TabsContent value="requirements" className="mt-6">
+          {/* Header with actions */}
+          <div className="flex items-center justify-between mb-4">
+            <Input
+              placeholder={t("Search by requirement code, name, control code...")}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="max-w-sm bg-white"
+            />
             <div className="flex items-center gap-2">
-              <Button variant="outline" onClick={handleExportRequirements}>
+              <Button variant="outline" size="sm" onClick={handleExportRequirements}>
                 <Download className="h-4 w-4 mr-2" />
-                Export
+                {t("Export")}
               </Button>
               <Button
                 variant="outline"
+                size="sm"
                 onClick={() => setIsImportOpen(true)}
               >
                 <Upload className="h-4 w-4 mr-2" />
-                Import
+                {t("Import")}
               </Button>
-              <Button onClick={() => setIsAddRequirementOpen(true)}>
+              <Button size="sm" onClick={() => setIsAddRequirementOpen(true)}>
                 <Plus className="h-4 w-4 mr-2" />
-                New Requirements
+                {t("New Requirement")}
               </Button>
             </div>
           </div>
 
-          {/* Search */}
-          <Input
-            placeholder="Search By Requirement Code, Name, Control Code, Control Name"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="max-w-2xl"
-          />
-
           {/* Requirements Accordion */}
-          <div className="border rounded-lg">
+          <div className="bg-white rounded-xl border border-slate-200">
             <Accordion type="multiple" className="w-full">
               {filteredHierarchy.map((category) => (
                 <AccordionItem key={category.id} value={category.id}>
                   <AccordionTrigger className="px-4 hover:no-underline">
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{category.name}</span>
-                      <span className="text-muted-foreground text-sm">
-                        {category.children?.length || 0} items
+                      <span className="text-slate-400 text-sm">
+                        {category.children?.length || 0} {t("items")}
                       </span>
                     </div>
                   </AccordionTrigger>
@@ -1368,7 +1385,7 @@ export default function FrameworkDetailPage({
                             {/* Requirement Description */}
                             <div className="flex items-start justify-between p-4 bg-muted/50 rounded-lg">
                               <p className="text-sm flex-1">
-                                {requirement.description || "No description"}
+                                {requirement.description || t("No description")}
                               </p>
                               <Button
                                 variant="ghost"
@@ -1390,7 +1407,7 @@ export default function FrameworkDetailPage({
                                 }}
                               >
                                 <AlertTriangle className="h-4 w-4 mr-2" />
-                                Add Exception
+                                {t("Add Exception")}
                               </Button>
                               <Button
                                 variant="outline"
@@ -1401,7 +1418,7 @@ export default function FrameworkDetailPage({
                                 }}
                               >
                                 <Link2 className="h-4 w-4 mr-2" />
-                                Link Controls
+                                {t("Link Controls")}
                               </Button>
                             </div>
 
@@ -1410,15 +1427,15 @@ export default function FrameworkDetailPage({
                               requirement.controls.length > 0 && (
                                 <div className="mt-4">
                                   <h4 className="font-medium mb-2">
-                                    Linked Controls
+                                    {t("Linked Controls")}
                                   </h4>
                                   <Table>
                                     <TableHeader>
                                       <TableRow>
-                                        <TableHead>Control Code</TableHead>
-                                        <TableHead>Control Name</TableHead>
-                                        <TableHead>Status</TableHead>
-                                        <TableHead>Action</TableHead>
+                                        <TableHead>{t("Control Code")}</TableHead>
+                                        <TableHead>{t("Control Name")}</TableHead>
+                                        <TableHead>{t("Status")}</TableHead>
+                                        <TableHead>{t("Action")}</TableHead>
                                       </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -1455,7 +1472,7 @@ export default function FrameworkDetailPage({
                                                 )
                                               }
                                             >
-                                              Unlink
+                                              {t("Unlink")}
                                             </Button>
                                           </TableCell>
                                         </TableRow>
@@ -1476,175 +1493,187 @@ export default function FrameworkDetailPage({
         </TabsContent>
 
         {/* SOA Tab */}
-        <TabsContent value="soa" className="space-y-4">
-          <div className="border rounded-lg overflow-hidden">
+        <TabsContent value="soa" className="mt-6">
+          {/* Header with actions */}
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-semibold text-slate-800">{t("Statement of Applicability")}</h3>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm">
+                <Download className="h-4 w-4 mr-2" />
+                {t("Download Report")}
+              </Button>
+              <Button size="sm">{t("Save")}</Button>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-slate-200">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Code</TableHead>
-                  <TableHead>Requirement</TableHead>
-                  <TableHead>Applicability</TableHead>
-                  <TableHead>Justification</TableHead>
-                  <TableHead>Implementation Status</TableHead>
-                  <TableHead>Control Compliance</TableHead>
+                <TableRow className="border-b border-slate-100 bg-slate-50/50">
+                  <TableHead className="text-xs font-semibold text-slate-600 py-3">{t("Code")}</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600 py-3">{t("Requirement")}</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600 py-3">{t("Applicability")}</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600 py-3">{t("Justification")}</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600 py-3">{t("Implementation Status")}</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600 py-3">{t("Control Compliance")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {soaRequirements.map((req) => (
-                  <TableRow key={req.id}>
-                    <TableCell>{req.code}</TableCell>
-                    <TableCell className="max-w-xs truncate">
+                  <TableRow key={req.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                    <TableCell className="py-3 text-sm font-medium text-slate-800">{req.code}</TableCell>
+                    <TableCell className="py-3 text-sm text-slate-700 max-w-xs truncate">
                       {req.name}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="py-3">
                       <Select
                         value={req.applicability || ""}
                         onValueChange={(value) =>
                           handleSOAUpdate(req.id, "applicability", value)
                         }
                       >
-                        <SelectTrigger className="w-24">
+                        <SelectTrigger className="w-24 bg-white">
                           <SelectValue placeholder="-" />
                         </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Yes">Yes</SelectItem>
-                          <SelectItem value="No">No</SelectItem>
+                        <SelectContent className="bg-white">
+                          <SelectItem value="Yes">{t("Yes")}</SelectItem>
+                          <SelectItem value="No">{t("No")}</SelectItem>
                         </SelectContent>
                       </Select>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="py-3">
                       <Input
-                        className="w-40"
+                        className="w-40 bg-white"
                         value={req.justification || ""}
                         onChange={(e) =>
                           handleSOAUpdate(req.id, "justification", e.target.value)
                         }
-                        placeholder="Enter justification"
+                        placeholder={t("Enter justification")}
                       />
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="py-3">
                       <Select
                         value={req.implementationStatus || ""}
                         onValueChange={(value) =>
                           handleSOAUpdate(req.id, "implementationStatus", value)
                         }
                       >
-                        <SelectTrigger className="w-28">
+                        <SelectTrigger className="w-28 bg-white">
                           <SelectValue placeholder="-" />
                         </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Yes">Yes</SelectItem>
-                          <SelectItem value="No">No</SelectItem>
-                          <SelectItem value="Ongoing">Ongoing</SelectItem>
-                          <SelectItem value="N/A">N/A</SelectItem>
+                        <SelectContent className="bg-white">
+                          <SelectItem value="Yes">{t("Yes")}</SelectItem>
+                          <SelectItem value="No">{t("No")}</SelectItem>
+                          <SelectItem value="Ongoing">{t("Ongoing")}</SelectItem>
+                          <SelectItem value="N/A">{t("N/A")}</SelectItem>
                         </SelectContent>
                       </Select>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="py-3">
                       <span
-                        className={`px-2 py-1 rounded-full text-xs ${
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                           req.controlCompliance === "Compliant"
-                            ? "bg-green-100 text-green-800"
+                            ? "bg-success-light text-semantic-success-dark"
                             : req.controlCompliance === "Partial Compliant"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : "bg-red-100 text-red-800"
+                            ? "bg-warning-light text-warning-dark"
+                            : "bg-error-light text-semantic-error"
                         }`}
                       >
-                        {req.controlCompliance || "Non Compliant"}
+                        {req.controlCompliance || t("Non Compliant")}
                       </span>
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
-          </div>
 
-          {/* SOA Pagination */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">
-              {flatRequirements.length > 0
-                ? `${soaStartIndex + 1} to ${soaEndIndex} of ${flatRequirements.length}`
-                : "No requirements"}
-            </span>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setSoaPage(0)}
-                disabled={soaPage === 0}
-              >
-                <ChevronsLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setSoaPage(soaPage - 1)}
-                disabled={soaPage === 0}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setSoaPage(soaPage + 1)}
-                disabled={soaPage >= soaTotalPages - 1}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setSoaPage(soaTotalPages - 1)}
-                disabled={soaPage >= soaTotalPages - 1}
-              >
-                <ChevronsRight className="h-4 w-4" />
-              </Button>
+            {/* Pagination inside card */}
+            <div className="flex items-center justify-between p-4 border-t border-slate-100">
+              <div className="text-xs text-slate-500">
+                {flatRequirements.length > 0
+                  ? `${t("Showing")} ${soaStartIndex + 1} ${t("to")} ${soaEndIndex} ${t("of")} ${flatRequirements.length}`
+                  : t("No requirements")}
+              </div>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setSoaPage(0)}
+                  disabled={soaPage === 0}
+                >
+                  <ChevronsLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setSoaPage(soaPage - 1)}
+                  disabled={soaPage === 0}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setSoaPage(soaPage + 1)}
+                  disabled={soaPage >= soaTotalPages - 1}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setSoaPage(soaTotalPages - 1)}
+                  disabled={soaPage >= soaTotalPages - 1}
+                >
+                  <ChevronsRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
-          </div>
-
-          {/* SOA Actions */}
-          <div className="flex items-center gap-2">
-            <Button>Save</Button>
-            <Button variant="outline">
-              <Download className="h-4 w-4 mr-2" />
-              Download Report
-            </Button>
           </div>
         </TabsContent>
 
         {/* Audit Logs Tab */}
-        <TabsContent value="audit-logs">
-          <div className="text-center py-12 text-muted-foreground">
-            Audit logs will be displayed here.
+        <TabsContent value="audit-logs" className="mt-6">
+          <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
+            <p className="text-sm text-slate-500">{t("Audit logs will be displayed here.")}</p>
           </div>
         </TabsContent>
       </Tabs>
 
       {/* Add Requirement Dialog */}
       <Dialog open={isAddRequirementOpen} onOpenChange={setIsAddRequirementOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Add Requirement</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <p className="text-sm text-muted-foreground">
-              To add a requirement to this framework, please accurately fill in
-              the fields below.
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] overflow-y-auto" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Requirement")}</DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Content */}
+          <div className="px-6 py-6 space-y-5">
+            <p className="text-sm text-slate-500">
+              {t("To add a requirement to this framework, please accurately fill in the fields below.")}
             </p>
 
-            <div className="space-y-2">
-              <Label>Requirement Name</Label>
+            <div>
+              <Label className="text-sm font-medium text-slate-700">{t("Requirement Name")}</Label>
               <Input
                 value={newRequirement.name}
                 onChange={(e) =>
                   setNewRequirement({ ...newRequirement, name: e.target.value })
                 }
-                placeholder="Enter Name"
+                placeholder={t("Enter Name")}
+                className="mt-1.5 bg-white"
               />
             </div>
 
-            <div className="space-y-2">
-              <Label>Requirement Category</Label>
+            <div>
+              <Label className="text-sm font-medium text-slate-700">{t("Requirement Category")}</Label>
               <Input
                 value={newRequirement.category}
                 onChange={(e) =>
@@ -1653,23 +1682,25 @@ export default function FrameworkDetailPage({
                     category: e.target.value,
                   })
                 }
-                placeholder="Enter Category"
+                placeholder={t("Enter Category")}
+                className="mt-1.5 bg-white"
               />
             </div>
 
-            <div className="space-y-2">
-              <Label>Requirement Code</Label>
+            <div>
+              <Label className="text-sm font-medium text-slate-700">{t("Requirement Code")}</Label>
               <Input
                 value={newRequirement.code}
                 onChange={(e) =>
                   setNewRequirement({ ...newRequirement, code: e.target.value })
                 }
-                placeholder="Enter Code"
+                placeholder={t("Enter Code")}
+                className="mt-1.5 bg-white"
               />
             </div>
 
-            <div className="space-y-2">
-              <Label>Requirement Description</Label>
+            <div>
+              <Label className="text-sm font-medium text-slate-700">{t("Requirement Description")}</Label>
               <Textarea
                 value={newRequirement.description}
                 onChange={(e) =>
@@ -1678,72 +1709,79 @@ export default function FrameworkDetailPage({
                     description: e.target.value,
                   })
                 }
-                placeholder="Type here"
+                placeholder={t("Type here")}
+                className="mt-1.5 bg-white"
               />
             </div>
 
-            <div className="space-y-2">
-              <Label>Requirement Type</Label>
+            <div>
+              <Label className="text-sm font-medium text-slate-700">{t("Requirement Type")}</Label>
               <Select
                 value={newRequirement.requirementType}
                 onValueChange={(value) =>
                   setNewRequirement({ ...newRequirement, requirementType: value })
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger className="mt-1.5 bg-white">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Mandatory">Mandatory</SelectItem>
-                  <SelectItem value="Additional">Additional</SelectItem>
+                <SelectContent className="bg-white">
+                  <SelectItem value="Mandatory">{t("Mandatory")}</SelectItem>
+                  <SelectItem value="Additional">{t("Additional")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label>Chapter Type</Label>
+            <div>
+              <Label className="text-sm font-medium text-slate-700">{t("Chapter Type")}</Label>
               <Select
                 value={newRequirement.chapterType}
                 onValueChange={(value) =>
                   setNewRequirement({ ...newRequirement, chapterType: value })
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger className="mt-1.5 bg-white">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Domain">Domain</SelectItem>
-                  <SelectItem value="Process Domain">Process Domain</SelectItem>
-                  <SelectItem value="Technical Domain">Technical Domain</SelectItem>
+                <SelectContent className="bg-white">
+                  <SelectItem value="Domain">{t("Domain")}</SelectItem>
+                  <SelectItem value="Process Domain">{t("Process Domain")}</SelectItem>
+                  <SelectItem value="Technical Domain">{t("Technical Domain")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+          </div>
 
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setIsAddRequirementOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleAddRequirement}
-                disabled={!newRequirement.name || !newRequirement.code}
-              >
-                Add Requirement
-              </Button>
-            </div>
+          {/* Fixed Footer */}
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <Button
+              variant="outline"
+              onClick={() => setIsAddRequirementOpen(false)}
+            >
+              {t("Cancel")}
+            </Button>
+            <Button
+              onClick={handleAddRequirement}
+              disabled={!newRequirement.name || !newRequirement.code}
+            >
+              {t("Add Requirement")}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
 
       {/* Link Controls Dialog */}
       <Dialog open={isLinkControlsOpen} onOpenChange={setIsLinkControlsOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Control Select</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] overflow-y-auto" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Control Select")}</DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Content */}
+          <div className="px-6 py-6 space-y-4">
             {/* Filters */}
             <div className="grid grid-cols-3 gap-4">
               <Select
@@ -1752,11 +1790,11 @@ export default function FrameworkDetailPage({
                   setControlFilters({ ...controlFilters, domainId: value === "all" ? "" : value })
                 }
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Domain" />
+                <SelectTrigger className="bg-white">
+                  <SelectValue placeholder={t("Domain")} />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Domains</SelectItem>
+                <SelectContent className="bg-white">
+                  <SelectItem value="all">{t("All Domains")}</SelectItem>
                   {controlDomains.map((domain) => (
                     <SelectItem key={domain.id} value={domain.id}>
                       {domain.name}
@@ -1774,36 +1812,37 @@ export default function FrameworkDetailPage({
                   })
                 }
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Function Grouping" />
+                <SelectTrigger className="bg-white">
+                  <SelectValue placeholder={t("Function Grouping")} />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Functions</SelectItem>
-                  <SelectItem value="Govern">Govern</SelectItem>
-                  <SelectItem value="Identify">Identify</SelectItem>
-                  <SelectItem value="Protect">Protect</SelectItem>
-                  <SelectItem value="Detect">Detect</SelectItem>
-                  <SelectItem value="Respond">Respond</SelectItem>
-                  <SelectItem value="Recover">Recover</SelectItem>
+                <SelectContent className="bg-white">
+                  <SelectItem value="all">{t("All Functions")}</SelectItem>
+                  <SelectItem value="Govern">{t("Govern")}</SelectItem>
+                  <SelectItem value="Identify">{t("Identify")}</SelectItem>
+                  <SelectItem value="Protect">{t("Protect")}</SelectItem>
+                  <SelectItem value="Detect">{t("Detect")}</SelectItem>
+                  <SelectItem value="Respond">{t("Respond")}</SelectItem>
+                  <SelectItem value="Recover">{t("Recover")}</SelectItem>
                 </SelectContent>
               </Select>
 
               <Input
-                placeholder="Search By Control Code, Name"
+                placeholder={t("Search by code, name")}
                 value={controlFilters.search}
                 onChange={(e) =>
                   setControlFilters({ ...controlFilters, search: e.target.value })
                 }
+                className="bg-white"
               />
             </div>
 
             {/* Controls List */}
-            <div className="border rounded-lg max-h-64 overflow-y-auto">
+            <div className="border border-slate-200 rounded-lg max-h-64 overflow-y-auto">
               {filteredControls.map((control) => (
                 <div
                   key={control.id}
-                  className={`flex items-center gap-3 p-3 border-b last:border-b-0 cursor-pointer hover:bg-muted/50 ${
-                    selectedControlIds.includes(control.id) ? "bg-primary/10" : ""
+                  className={`flex items-center gap-3 p-3 border-b border-slate-100 last:border-b-0 cursor-pointer hover:bg-slate-50 ${
+                    selectedControlIds.includes(control.id) ? "bg-primary-50" : ""
                   }`}
                   onClick={() => {
                     setSelectedControlIds((prev) =>
@@ -1820,81 +1859,88 @@ export default function FrameworkDetailPage({
                     className="rounded"
                   />
                   <div>
-                    <div className="font-medium">{control.controlCode}</div>
-                    <div className="text-sm text-muted-foreground">
+                    <div className="text-sm font-medium text-slate-800">{control.controlCode}</div>
+                    <div className="text-xs text-slate-500">
                       {control.name}
                     </div>
                   </div>
                 </div>
               ))}
               {filteredControls.length === 0 && (
-                <div className="p-4 text-center text-muted-foreground">
-                  No controls found
+                <div className="p-4 text-center text-sm text-slate-500">
+                  {t("No controls found")}
                 </div>
               )}
             </div>
+          </div>
 
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setIsLinkControlsOpen(false);
-                  setSelectedControlIds([]);
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleLinkControls}
-                disabled={selectedControlIds.length === 0}
-              >
-                Link Controls ({selectedControlIds.length})
-              </Button>
-            </div>
+          {/* Fixed Footer */}
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsLinkControlsOpen(false);
+                setSelectedControlIds([]);
+              }}
+            >
+              {t("Cancel")}
+            </Button>
+            <Button
+              onClick={handleLinkControls}
+              disabled={selectedControlIds.length === 0}
+            >
+              {`${t("Link Controls")} (${selectedControlIds.length})`}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
 
       {/* Add Exception Dialog */}
       <Dialog open={isAddExceptionOpen} onOpenChange={setIsAddExceptionOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit Exception Management</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] overflow-y-auto" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Exception")}</DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Content */}
+          <div className="px-6 py-6 space-y-5">
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Exception Code</Label>
-                <Input disabled value="Auto-generated" />
+              <div>
+                <Label className="text-sm font-medium text-slate-700">{t("Exception Code")}</Label>
+                <Input disabled value={t("Auto-generated")} className="mt-1.5 bg-slate-50" />
               </div>
-              <div className="space-y-2">
-                <Label>Exception Name</Label>
+              <div>
+                <Label className="text-sm font-medium text-slate-700">{t("Exception Name")}</Label>
                 <Input
                   value={newException.name}
                   onChange={(e) =>
                     setNewException({ ...newException, name: e.target.value })
                   }
+                  className="mt-1.5 bg-white"
                 />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Category</Label>
-              <Input disabled value="Compliance" />
+            <div>
+              <Label className="text-sm font-medium text-slate-700">{t("Category")}</Label>
+              <Input disabled value={t("Compliance")} className="mt-1.5 bg-slate-50" />
             </div>
 
-            <div className="space-y-2">
-              <Label>Framework</Label>
-              <Input disabled value={framework.name} />
+            <div>
+              <Label className="text-sm font-medium text-slate-700">{t("Framework")}</Label>
+              <Input disabled value={framework.name} className="mt-1.5 bg-slate-50" />
             </div>
 
-            <div className="space-y-2">
-              <Label>Requirement Code</Label>
-              <Input disabled value={selectedRequirement?.code || ""} />
+            <div>
+              <Label className="text-sm font-medium text-slate-700">{t("Requirement Code")}</Label>
+              <Input disabled value={selectedRequirement?.code || ""} className="mt-1.5 bg-slate-50" />
             </div>
 
-            <div className="space-y-2">
-              <Label>Description/Justification</Label>
+            <div>
+              <Label className="text-sm font-medium text-slate-700">{t("Description/Justification")}</Label>
               <Textarea
                 value={newException.description}
                 onChange={(e) =>
@@ -1903,87 +1949,94 @@ export default function FrameworkDetailPage({
                     description: e.target.value,
                   })
                 }
+                className="mt-1.5 bg-white"
               />
             </div>
 
-            <div className="space-y-2">
-              <Label>Status</Label>
+            <div>
+              <Label className="text-sm font-medium text-slate-700">{t("Status")}</Label>
               <Select
                 value={newException.status}
                 onValueChange={(value) =>
                   setNewException({ ...newException, status: value })
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger className="mt-1.5 bg-white">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Pending">Pending</SelectItem>
-                  <SelectItem value="Approved">Approved</SelectItem>
-                  <SelectItem value="Authorised">Authorised</SelectItem>
+                <SelectContent className="bg-white">
+                  <SelectItem value="Pending">{t("Pending")}</SelectItem>
+                  <SelectItem value="Approved">{t("Approved")}</SelectItem>
+                  <SelectItem value="Authorised">{t("Authorised")}</SelectItem>
                   <SelectItem value="Submitted for Closure">
-                    Submitted for Closure
+                    {t("Submitted for Closure")}
                   </SelectItem>
-                  <SelectItem value="Overdue">Overdue</SelectItem>
-                  <SelectItem value="RiskAccepted">RiskAccepted</SelectItem>
-                  <SelectItem value="Closed">Closed</SelectItem>
+                  <SelectItem value="Overdue">{t("Overdue")}</SelectItem>
+                  <SelectItem value="RiskAccepted">{t("RiskAccepted")}</SelectItem>
+                  <SelectItem value="Closed">{t("Closed")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label>End Date</Label>
+            <div>
+              <Label className="text-sm font-medium text-slate-700">{t("End Date")}</Label>
               <Input
                 type="date"
                 value={newException.endDate}
                 onChange={(e) =>
                   setNewException({ ...newException, endDate: e.target.value })
                 }
+                className="mt-1.5 bg-white"
               />
             </div>
+          </div>
 
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setIsAddExceptionOpen(false);
-                  setSelectedRequirement(null);
-                }}
-              >
-                Cancel
-              </Button>
-              <Button onClick={handleAddException}>Save</Button>
-            </div>
+          {/* Fixed Footer */}
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsAddExceptionOpen(false);
+                setSelectedRequirement(null);
+              }}
+            >
+              {t("Cancel")}
+            </Button>
+            <Button onClick={handleAddException}>{t("Save")}</Button>
           </div>
         </DialogContent>
       </Dialog>
 
       {/* Import Requirements Dialog */}
       <Dialog open={isImportOpen} onOpenChange={setIsImportOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit Template document</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-6 py-4">
-            {/* Name Field */}
-            <div className="grid grid-cols-[80px_1fr] items-center gap-4">
-              <Label className="text-right font-medium">Name</Label>
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] overflow-y-auto" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Import Requirements")}</DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Content */}
+          <div className="px-6 py-6 space-y-5">
+            <div>
+              <Label className="text-sm font-medium text-slate-700">{t("Name")}</Label>
               <Input
                 value={importName}
                 onChange={(e) => setImportName(e.target.value)}
-                placeholder="Enter name"
+                placeholder={t("Enter Name")}
+                className="mt-1.5 bg-white"
               />
             </div>
 
-            {/* File Field */}
-            <div className="grid grid-cols-[80px_1fr] items-center gap-4">
-              <Label className="text-right font-medium">File</Label>
-              <div className="flex gap-2">
+            <div>
+              <Label className="text-sm font-medium text-slate-700">{t("File")}</Label>
+              <div className="flex gap-2 mt-1.5">
                 <Input
                   value={importFile?.name || ""}
                   readOnly
-                  placeholder="..."
-                  className="flex-1 bg-muted/30"
+                  placeholder={t("Select a file...")}
+                  className="flex-1 bg-slate-50"
                 />
                 <input
                   type="file"
@@ -1994,79 +2047,87 @@ export default function FrameworkDetailPage({
                 />
                 <Button
                   variant="outline"
+                  size="sm"
                   onClick={() => fileInputRef.current?.click()}
-                  className="text-primary border-primary hover:bg-primary/10"
                 >
-                  Browse...
+                  {t("Browse")}
                 </Button>
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex justify-center gap-3 pt-4">
-              <Button
-                variant="default"
-                onClick={handleDownloadTemplate}
-                className="bg-primary hover:bg-primary/90"
-              >
-                Download Template
-              </Button>
-              <Button
-                variant="default"
-                onClick={handleImportRequirements}
-                disabled={!importFile || importing}
-                className="bg-primary hover:bg-primary/90"
-              >
-                {importing ? "Importing..." : "Import"}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setIsImportOpen(false);
-                  setImportFile(null);
-                  setImportName("");
-                  if (fileInputRef.current) {
-                    fileInputRef.current.value = "";
-                  }
-                }}
-              >
-                Cancel
-              </Button>
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDownloadTemplate}
+              className="w-full"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              {t("Download Template")}
+            </Button>
+          </div>
+
+          {/* Fixed Footer */}
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsImportOpen(false);
+                setImportFile(null);
+                setImportName("");
+                if (fileInputRef.current) {
+                  fileInputRef.current.value = "";
+                }
+              }}
+            >
+              {t("Cancel")}
+            </Button>
+            <Button
+              onClick={handleImportRequirements}
+              disabled={!importFile || importing}
+            >
+              {importing ? t("Importing...") : t("Import")}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
 
       {/* Update Requirement Dialog */}
       <Dialog open={isUpdateRequirementOpen} onOpenChange={setIsUpdateRequirementOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Update Requirement</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] overflow-y-auto" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Update Requirement")}</DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Content */}
+          <div className="px-6 py-6 space-y-5">
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Requirement Code</Label>
+              <div>
+                <Label className="text-sm font-medium text-slate-700">{t("Requirement Code")}</Label>
                 <Input
                   value={updateRequirement.code}
                   onChange={(e) =>
                     setUpdateRequirement({ ...updateRequirement, code: e.target.value })
                   }
+                  className="mt-1.5 bg-white"
                 />
               </div>
-              <div className="space-y-2">
-                <Label>Requirement Name</Label>
+              <div>
+                <Label className="text-sm font-medium text-slate-700">{t("Requirement Name")}</Label>
                 <Input
                   value={updateRequirement.name}
                   onChange={(e) =>
                     setUpdateRequirement({ ...updateRequirement, name: e.target.value })
                   }
+                  className="mt-1.5 bg-white"
                 />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Description</Label>
+            <div>
+              <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
               <Textarea
                 value={updateRequirement.description}
                 onChange={(e) =>
@@ -2076,118 +2137,120 @@ export default function FrameworkDetailPage({
                   })
                 }
                 rows={3}
+                className="mt-1.5 bg-white"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Requirement Type</Label>
+              <div>
+                <Label className="text-sm font-medium text-slate-700">{t("Requirement Type")}</Label>
                 <Select
                   value={updateRequirement.requirementType}
                   onValueChange={(value) =>
                     setUpdateRequirement({ ...updateRequirement, requirementType: value })
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="mt-1.5 bg-white">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Mandatory">Mandatory</SelectItem>
-                    <SelectItem value="Additional">Additional</SelectItem>
+                  <SelectContent className="bg-white">
+                    <SelectItem value="Mandatory">{t("Mandatory")}</SelectItem>
+                    <SelectItem value="Additional">{t("Additional")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label>Chapter Type</Label>
+              <div>
+                <Label className="text-sm font-medium text-slate-700">{t("Chapter Type")}</Label>
                 <Select
                   value={updateRequirement.chapterType}
                   onValueChange={(value) =>
                     setUpdateRequirement({ ...updateRequirement, chapterType: value })
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="mt-1.5 bg-white">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Domain">Domain</SelectItem>
-                    <SelectItem value="Process Domain">Process Domain</SelectItem>
-                    <SelectItem value="Technical Domain">Technical Domain</SelectItem>
+                  <SelectContent className="bg-white">
+                    <SelectItem value="Domain">{t("Domain")}</SelectItem>
+                    <SelectItem value="Process Domain">{t("Process Domain")}</SelectItem>
+                    <SelectItem value="Technical Domain">{t("Technical Domain")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
             <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label>Applicability</Label>
+              <div>
+                <Label className="text-sm font-medium text-slate-700">{t("Applicability")}</Label>
                 <Select
                   value={updateRequirement.applicability}
                   onValueChange={(value) =>
                     setUpdateRequirement({ ...updateRequirement, applicability: value })
                   }
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select" />
+                  <SelectTrigger className="mt-1.5 bg-white">
+                    <SelectValue placeholder={t("Select")} />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Yes">Yes</SelectItem>
-                    <SelectItem value="No">No</SelectItem>
+                  <SelectContent className="bg-white">
+                    <SelectItem value="Yes">{t("Yes")}</SelectItem>
+                    <SelectItem value="No">{t("No")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label>Implementation</Label>
+              <div>
+                <Label className="text-sm font-medium text-slate-700">{t("Implementation")}</Label>
                 <Select
                   value={updateRequirement.implementationStatus}
                   onValueChange={(value) =>
                     setUpdateRequirement({ ...updateRequirement, implementationStatus: value })
                   }
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select" />
+                  <SelectTrigger className="mt-1.5 bg-white">
+                    <SelectValue placeholder={t("Select")} />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Yes">Yes</SelectItem>
-                    <SelectItem value="No">No</SelectItem>
-                    <SelectItem value="Ongoing">Ongoing</SelectItem>
-                    <SelectItem value="N/A">N/A</SelectItem>
+                  <SelectContent className="bg-white">
+                    <SelectItem value="Yes">{t("Yes")}</SelectItem>
+                    <SelectItem value="No">{t("No")}</SelectItem>
+                    <SelectItem value="Ongoing">{t("Ongoing")}</SelectItem>
+                    <SelectItem value="N/A">{t("N/A")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label>Compliance</Label>
+              <div>
+                <Label className="text-sm font-medium text-slate-700">{t("Compliance")}</Label>
                 <Select
                   value={updateRequirement.controlCompliance}
                   onValueChange={(value) =>
                     setUpdateRequirement({ ...updateRequirement, controlCompliance: value })
                   }
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select" />
+                  <SelectTrigger className="mt-1.5 bg-white">
+                    <SelectValue placeholder={t("Select")} />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Compliant">Compliant</SelectItem>
-                    <SelectItem value="Non Compliant">Non Compliant</SelectItem>
-                    <SelectItem value="Partial Compliant">Partial Compliant</SelectItem>
+                  <SelectContent className="bg-white">
+                    <SelectItem value="Compliant">{t("Compliant")}</SelectItem>
+                    <SelectItem value="Non Compliant">{t("Non Compliant")}</SelectItem>
+                    <SelectItem value="Partial Compliant">{t("Partial Compliant")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
+          </div>
 
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setIsUpdateRequirementOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleUpdateRequirement}
-                disabled={!updateRequirement.name || !updateRequirement.code}
-              >
-                Update
-              </Button>
-            </div>
+          {/* Fixed Footer */}
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <Button
+              variant="outline"
+              onClick={() => setIsUpdateRequirementOpen(false)}
+            >
+              {t("Cancel")}
+            </Button>
+            <Button
+              onClick={handleUpdateRequirement}
+              disabled={!updateRequirement.name || !updateRequirement.code}
+            >
+              {t("Update")}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

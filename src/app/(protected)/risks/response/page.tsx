@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { PageHeader } from "@/components/shared";
-import { Card, CardContent } from "@/components/ui/card";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Home, ChevronRight } from "lucide-react";
+import Link from "next/link";
 import { RiskRatingBadge } from "@/components/risks/risk-rating-badge";
 import {
   Select,
@@ -22,11 +22,19 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { cn } from "@/lib/utils";
-import { X } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useUserRoles, usePermissions } from "@/hooks/usePermissions";
 import { PermissionGate } from "@/components/ui/permission-gate";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Risk {
   id: string;
@@ -42,6 +50,7 @@ interface Risk {
   impact: number;
   owner: { fullName: string } | null;
   assessmentStatus?: string;
+  responseStatus?: string; // Separate status for Risk Response Strategy workflow
   department?: { id: string; name: string } | null;
 }
 
@@ -49,38 +58,40 @@ interface Risk {
 function ProgressBar({
   total,
   completed,
-  label
+  label,
+  t
 }: {
   total: number;
   completed: number;
   label: string;
+  t: (key: string) => string;
 }) {
   const percentage = total > 0 ? (completed / total) * 100 : 0;
 
   return (
     <div className="flex items-center gap-4">
       <div className="flex-1">
-        <div className="h-3 bg-gray-200 rounded-sm overflow-hidden">
+        <div className="h-3 bg-slate-200 rounded-sm overflow-hidden">
           <div
-            className="h-full bg-blue-500 transition-all duration-300"
+            className="h-full bg-primary-500 transition-all duration-300"
             style={{ width: `${percentage}%` }}
           />
         </div>
-        <div className="flex items-center gap-4 mt-2 text-xs">
+        <div className="flex items-center gap-4 mt-2 text-xs text-slate-600">
           <div className="flex items-center gap-1">
-            <div className="w-3 h-3 bg-gray-300"></div>
-            <span>Total</span>
+            <div className="w-3 h-3 bg-slate-300"></div>
+            <span>{t("Total")}</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-3 h-3 bg-blue-500"></div>
+            <div className="w-3 h-3 bg-primary-500"></div>
             <span>{label}</span>
           </div>
         </div>
       </div>
       <div className="text-right whitespace-nowrap">
-        <span className="text-sm">{completed}/{total}</span>
+        <span className="text-sm text-slate-700">{completed}/{total}</span>
         <br />
-        <span className="text-sm text-muted-foreground">{label}</span>
+        <span className="text-sm text-slate-500">{label}</span>
       </div>
     </div>
   );
@@ -88,9 +99,12 @@ function ProgressBar({
 
 export default function RiskResponsePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const fromRiskDashboard = searchParams.get("from") === "risk-dashboard";
   const { data: session } = useSession();
   const userRoles = useUserRoles();
   const { canEdit, canApprove } = usePermissions('risk.response');
+  const { t } = useLanguage();
   const [risks, setRisks] = useState<Risk[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -98,11 +112,12 @@ export default function RiskResponsePage() {
   const isDepartmentRole = userRoles.some(
     (role) => role === "DepartmentReviewer" || role === "DepartmentContributor"
   );
+  const isDepartmentReviewer = userRoles.includes("DepartmentReviewer");
   const userDepartmentId = session?.user?.departmentId;
 
-  // Filters - Default to first option (no "all" option per source system)
-  const [strategyFilter, setStrategyFilter] = useState("Treat");
-  const [progressFilter, setProgressFilter] = useState("Completed");
+  // Filters - "all" shows all items without filtering
+  const [strategyFilter, setStrategyFilter] = useState("all");
+  const [progressFilter, setProgressFilter] = useState("all");
 
   // Dialog states
   const [successDialogOpen, setSuccessDialogOpen] = useState(false);
@@ -135,6 +150,35 @@ export default function RiskResponsePage() {
     router.push(`/risks/response/${risk.id}`);
   };
 
+  // Handle Respond action - changes responseStatus from Open to In-Progress
+  const handleRespond = async (risk: Risk, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setActionLoading(risk.id);
+    try {
+      const response = await fetch(`/api/risks/${risk.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ responseStatus: "In-Progress" }),
+      });
+      if (response.ok) {
+        // Update local state and navigate to detail
+        setRisks(prev => prev.map(r =>
+          r.id === risk.id ? { ...r, responseStatus: "In-Progress" } : r
+        ));
+        router.push(`/risks/response/${risk.id}`);
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        console.error("PATCH failed:", response.status, errorData);
+        alert(`Failed to update: ${errorData.error || response.statusText}`);
+      }
+    } catch (error) {
+      console.error("Failed to respond:", error);
+      alert("Network error: Failed to respond");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   // Handle Submit for Approval action
   const handleSubmitForApproval = async (risk: Risk, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -143,14 +187,14 @@ export default function RiskResponsePage() {
       const response = await fetch(`/api/risks/${risk.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "Awaiting Approval" }),
+        body: JSON.stringify({ responseStatus: "Awaiting Approval" }),
       });
       if (response.ok) {
-        setSuccessMessage("Risk Submit for Approval Successfully !");
+        setSuccessMessage(t("Risk Submit for Approval Successfully !"));
         setSuccessDialogOpen(true);
         // Update local state
         setRisks(prev => prev.map(r =>
-          r.id === risk.id ? { ...r, status: "Awaiting Approval", assessmentStatus: "Awaiting Approval" } : r
+          r.id === risk.id ? { ...r, responseStatus: "Awaiting Approval" } : r
         ));
       }
     } catch (error) {
@@ -168,14 +212,14 @@ export default function RiskResponsePage() {
       const response = await fetch(`/api/risks/${risk.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "Completed" }),
+        body: JSON.stringify({ responseStatus: "Completed" }),
       });
       if (response.ok) {
-        setSuccessMessage("Risk Approved Successfully !");
+        setSuccessMessage(t("Risk Approved Successfully !"));
         setSuccessDialogOpen(true);
         // Update local state
         setRisks(prev => prev.map(r =>
-          r.id === risk.id ? { ...r, status: "Completed", assessmentStatus: "Completed" } : r
+          r.id === risk.id ? { ...r, responseStatus: "Completed" } : r
         ));
       }
     } catch (error) {
@@ -191,41 +235,72 @@ export default function RiskResponsePage() {
     if (normalized === 'in-progress') return 'In-Progress';
     if (normalized === 'awaiting-approval') return 'Awaiting Approval';
     if (normalized === 'completed' || normalized === 'closed') return 'Completed';
+    if (normalized === 'sent-back') return 'Sent Back';
     if (normalized === 'open') return 'Open';
     return status;
   };
 
-  // Get action buttons based on risk status - matching source system exactly
+  // Get action buttons based on risk responseStatus - matching source system exactly
   // Permission-gated: Submit for Approval requires edit, Approve requires approve permission
   const getActionButtons = (risk: Risk) => {
-    const rawStatus = risk.assessmentStatus || risk.status || "Open";
+    // Use responseStatus for Risk Response Strategy workflow (separate from assessmentStatus)
+    const rawStatus = risk.responseStatus || "Open";
     const status = normalizeStatus(rawStatus);
     const isLoading = actionLoading === risk.id;
 
     switch (status) {
       case "Open":
-        // Open status: "Submit for Approval" (if canEdit) + "View" buttons
+        // Open status: "Respond" button (changes status to In-Progress)
+        return canEdit ? (
+          <Button
+            size="sm"
+            className="bg-primary hover:bg-primary/90"
+            onClick={(e) => handleRespond(risk, e)}
+            disabled={isLoading}
+          >
+            {isLoading ? "..." : t("Respond")}
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-primary text-primary hover:bg-primary/10"
+            onClick={() => openDetail(risk)}
+          >
+            {t("View")}
+          </Button>
+        );
+      case "In-Progress":
+        // In-Progress status: "Resume" button only (Submit for Approval is in details page)
         return (
-          <div className="flex gap-2">
-            {canEdit && (
-              <Button
-                size="sm"
-                className="bg-primary hover:bg-primary/90"
-                onClick={(e) => handleSubmitForApproval(risk, e)}
-                disabled={isLoading}
-              >
-                {isLoading ? "..." : "Submit for Approval"}
-              </Button>
-            )}
-            <Button
-              size="sm"
-              variant="outline"
-              className="border-primary text-primary hover:bg-primary/10"
-              onClick={() => openDetail(risk)}
-            >
-              View
-            </Button>
-          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-primary text-primary hover:bg-primary/10"
+            onClick={() => openDetail(risk)}
+          >
+            {t("Resume")}
+          </Button>
+        );
+      case "Sent Back":
+        // Sent Back status: "Resume" button to view and resubmit (if canEdit)
+        return canEdit ? (
+          <Button
+            size="sm"
+            className="bg-orange-500 hover:bg-orange-600"
+            onClick={() => openDetail(risk)}
+          >
+            {t("Resume")}
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-primary text-primary hover:bg-primary/10"
+            onClick={() => openDetail(risk)}
+          >
+            {t("View")}
+          </Button>
         );
       case "Awaiting Approval":
         // Awaiting Approval status: "Approve" (if canApprove) + "View" buttons
@@ -238,7 +313,7 @@ export default function RiskResponsePage() {
                 onClick={(e) => handleApprove(risk, e)}
                 disabled={isLoading}
               >
-                {isLoading ? "..." : "Approve"}
+                {isLoading ? "..." : t("Approve")}
               </Button>
             )}
             <Button
@@ -247,20 +322,9 @@ export default function RiskResponsePage() {
               className="border-primary text-primary hover:bg-primary/10"
               onClick={() => openDetail(risk)}
             >
-              View
+              {t("View")}
             </Button>
           </div>
-        );
-      case "In-Progress":
-        // In-Progress status: "Resume" button only (navigates to detail)
-        return (
-          <Button
-            size="sm"
-            className="bg-primary hover:bg-primary/90"
-            onClick={() => openDetail(risk)}
-          >
-            Resume
-          </Button>
         );
       case "Completed":
         // Completed status: "View" button only
@@ -270,32 +334,29 @@ export default function RiskResponsePage() {
             className="bg-primary hover:bg-primary/90"
             onClick={() => openDetail(risk)}
           >
-            View
+            {t("View")}
           </Button>
         );
       default:
-        // Default fallback - treat as Open (view only unless has edit permission)
-        return (
-          <div className="flex gap-2">
-            {canEdit && (
-              <Button
-                size="sm"
-                className="bg-primary hover:bg-primary/90"
-                onClick={(e) => handleSubmitForApproval(risk, e)}
-                disabled={isLoading}
-              >
-                {isLoading ? "..." : "Submit for Approval"}
-              </Button>
-            )}
-            <Button
-              size="sm"
-              variant="outline"
-              className="border-primary text-primary hover:bg-primary/10"
-              onClick={() => openDetail(risk)}
-            >
-              View
-            </Button>
-          </div>
+        // Default fallback - treat as Open
+        return canEdit ? (
+          <Button
+            size="sm"
+            className="bg-primary hover:bg-primary/90"
+            onClick={(e) => handleRespond(risk, e)}
+            disabled={isLoading}
+          >
+            {isLoading ? "..." : t("Respond")}
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-primary text-primary hover:bg-primary/10"
+            onClick={() => openDetail(risk)}
+          >
+            {t("View")}
+          </Button>
         );
     }
   };
@@ -306,19 +367,31 @@ export default function RiskResponsePage() {
     ? risks.filter((risk) => risk.department?.id === userDepartmentId)
     : risks;
 
-  const filteredByStrategy = departmentFilteredRisks.filter((risk) => risk.responseStrategy === strategyFilter);
+  // DepartmentReviewer only sees items with "Awaiting Approval", "Sent Back", or "Completed" status
+  const reviewerFilteredRisks = isDepartmentReviewer
+    ? departmentFilteredRisks.filter((risk) => {
+        const status = normalizeStatus(risk.responseStatus || "Open");
+        return status === "Awaiting Approval" || status === "Sent Back" || status === "Completed";
+      })
+    : departmentFilteredRisks;
 
-  // Get normalized status for a risk
+  const filteredByStrategy = strategyFilter === "all"
+    ? reviewerFilteredRisks
+    : reviewerFilteredRisks.filter((risk) => risk.responseStrategy === strategyFilter);
+
+  // Get normalized responseStatus for a risk (for Risk Response Strategy workflow)
   const getRiskStatus = (risk: Risk) => {
-    const rawStatus = risk.assessmentStatus || risk.status || "Open";
+    const rawStatus = risk.responseStatus || "Open";
     return normalizeStatus(rawStatus);
   };
 
-  // Filter risks based on progress status (no "all" option per source system)
-  const filteredByProgress = filteredByStrategy.filter((risk) => {
-    const status = getRiskStatus(risk);
-    return status === progressFilter;
-  });
+  // Filter risks based on progress status ("all" shows all items)
+  const filteredByProgress = progressFilter === "all"
+    ? filteredByStrategy
+    : filteredByStrategy.filter((risk) => {
+        const status = getRiskStatus(risk);
+        return status === progressFilter;
+      });
 
   // Calculate stats for strategy card
   // Background bar = total risks with selected strategy
@@ -338,26 +411,41 @@ export default function RiskResponsePage() {
   // Get progress label based on filter selection
   const getProgressLabel = () => {
     switch (progressFilter) {
-      case "Open": return "Open";
-      case "In-Progress": return "InProgress";
-      case "Completed": return "Completed";
-      case "Awaiting Approval": return "Awaiting Approval";
+      case "all": return t("All");
+      case "Open": return t("Open");
+      case "In-Progress": return t("InProgress");
+      case "Completed": return t("Completed");
+      case "Awaiting Approval": return t("Awaiting Approval");
+      case "Sent Back": return t("Sent Back");
       default: return progressFilter;
     }
   };
 
-  // Display risks filtered by strategy only (list shows all statuses for selected strategy)
-  const displayRisks = filteredByStrategy;
-
-  const clearStrategyFilter = () => setStrategyFilter("Treat");
-  const clearProgressFilter = () => setProgressFilter("Completed");
+  // Display risks filtered by both strategy and progress status
+  const displayRisks = filteredByProgress;
 
   if (loading) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Risk Response Strategy" description="Risk Management" />
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        {/* Breadcrumb */}
+        <nav className="flex items-center gap-1.5 text-sm">
+          <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>{t("Risk Management")}</span>
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <span className="text-primary-700 font-medium">{t("Response")}</span>
+        </nav>
+
+        {/* Page Header */}
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-bold text-slate-800">{t("Risk Response Strategy")}</h1>
+        </div>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="relative h-8 w-8">
+            <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+          </div>
         </div>
       </div>
     );
@@ -365,106 +453,103 @@ export default function RiskResponsePage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Risk Response Strategy" description="Risk Management" />
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>{t("Risk Management")}</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">{t("Response")}</span>
+      </nav>
+
+      {/* Page Header */}
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold text-slate-800">{t("Risk Response Strategy")}</h1>
+      </div>
 
       {/* Summary Cards with Progress Bars */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Risk Response Strategy Card */}
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between mb-4">
-              <span className="font-medium">Risk Response Strategy</span>
-              <div className="flex items-center border rounded">
-                <Select value={strategyFilter} onValueChange={setStrategyFilter}>
-                  <SelectTrigger className="w-32 h-8 border-0">
-                    <SelectValue placeholder="Strategy" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Transfer">Transfer</SelectItem>
-                    <SelectItem value="Avoid">Avoid</SelectItem>
-                    <SelectItem value="Accept">Accept</SelectItem>
-                    <SelectItem value="Treat">Treat</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 px-2 border-l"
-                  onClick={clearStrategyFilter}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-            <ProgressBar
-              total={strategyTotal}
-              completed={strategyClosed}
-              label="Closed"
-            />
-          </CardContent>
-        </Card>
+        <div className="bg-white rounded-lg border border-slate-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <span className="font-medium text-slate-700">{t("Risk Response Strategy")}</span>
+            <Select value={strategyFilter} onValueChange={setStrategyFilter}>
+              <SelectTrigger className="w-32 h-8 bg-white">
+                <SelectValue placeholder={t("Strategy")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("All")}</SelectItem>
+                <SelectItem value="Transfer">{t("Transfer")}</SelectItem>
+                <SelectItem value="Avoid">{t("Avoid")}</SelectItem>
+                <SelectItem value="Accept">{t("Accept")}</SelectItem>
+                <SelectItem value="Treat">{t("Treat")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <ProgressBar
+            total={strategyTotal}
+            completed={strategyClosed}
+            label={t("Closed")}
+            t={t}
+          />
+        </div>
 
         {/* Risk Response Progress Card */}
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between mb-4">
-              <span className="font-medium">Risk Response Progress</span>
-              <div className="flex items-center border rounded">
-                <Select value={progressFilter} onValueChange={setProgressFilter}>
-                  <SelectTrigger className="w-40 h-8 border-0">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Open">Open</SelectItem>
-                    <SelectItem value="In-Progress">In-Progress</SelectItem>
-                    <SelectItem value="Completed">Completed</SelectItem>
-                    <SelectItem value="Awaiting Approval">Awaiting Approval</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 px-2 border-l"
-                  onClick={clearProgressFilter}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-            <ProgressBar
-              total={progressTotal}
-              completed={progressCount}
-              label={getProgressLabel()}
-            />
-          </CardContent>
-        </Card>
+        <div className="bg-white rounded-lg border border-slate-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <span className="font-medium text-slate-700">{t("Risk Response Progress")}</span>
+            <Select value={progressFilter} onValueChange={setProgressFilter}>
+              <SelectTrigger className="w-40 h-8 bg-white">
+                <SelectValue placeholder={t("Status")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("All")}</SelectItem>
+                {/* DepartmentReviewer only sees Awaiting Approval, Sent Back, and Completed */}
+                {!isDepartmentReviewer && <SelectItem value="Open">{t("Open")}</SelectItem>}
+                {!isDepartmentReviewer && <SelectItem value="In-Progress">{t("In-Progress")}</SelectItem>}
+                <SelectItem value="Awaiting Approval">{t("Awaiting Approval")}</SelectItem>
+                <SelectItem value="Sent Back">{t("Sent Back")}</SelectItem>
+                <SelectItem value="Completed">{t("Completed")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <ProgressBar
+            total={progressTotal}
+            completed={progressCount}
+            label={getProgressLabel()}
+            t={t}
+          />
+        </div>
       </div>
 
-      {/* Risk List */}
-      <div className="space-y-3">
-        {displayRisks.length === 0 ? (
-          <Card>
-            <CardContent className="py-8 text-center text-muted-foreground">
-              No risks found
-            </CardContent>
-          </Card>
-        ) : (
-          displayRisks.map((risk) => (
-            <Card key={risk.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="py-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-primary">{risk.riskId}</span>
-                      <span className="text-muted-foreground">|</span>
-                      <span className="font-medium">{risk.name}</span>
-                    </div>
-                  </div>
-                  {getActionButtons(risk)}
-                </div>
-                <div className="grid grid-cols-4 gap-4 mt-3 text-sm">
-                  <div>
-                    <p className="text-muted-foreground">Residual Risk Rating</p>
+      {/* Risk List Table */}
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="h-12 bg-slate-50 hover:bg-slate-50">
+              <TableHead className="text-slate-700 font-medium">{t("Risk ID")}</TableHead>
+              <TableHead className="text-slate-700 font-medium">{t("Risk Name")}</TableHead>
+              <TableHead className="text-slate-700 font-medium">{t("Residual Risk Rating")}</TableHead>
+              <TableHead className="text-slate-700 font-medium">{t("Risk Priority")}</TableHead>
+              <TableHead className="text-slate-700 font-medium">{t("Risk Due Date")}</TableHead>
+              <TableHead className="text-slate-700 font-medium">{t("Response Status")}</TableHead>
+              <TableHead className="text-slate-700 font-medium">{t("Action")}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {displayRisks.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-8 text-slate-500">
+                  {t("No risks found")}
+                </TableCell>
+              </TableRow>
+            ) : (
+              displayRisks.map((risk) => (
+                <TableRow key={risk.id} className="hover:bg-slate-50 transition-colors">
+                  <TableCell className="py-3 font-medium text-primary-600">{risk.riskId}</TableCell>
+                  <TableCell className="py-3 text-slate-800">{risk.name}</TableCell>
+                  <TableCell className="py-3">
                     <span className={cn(
                       "text-sm font-medium",
                       risk.riskRating === "Low Risk" && "text-green-600",
@@ -474,44 +559,47 @@ export default function RiskResponsePage() {
                     )}>
                       {risk.riskRating || "-"}
                     </span>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Risk Priority</p>
-                    <p className="font-medium"></p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Risk DueDate</p>
-                    <p className="font-medium">
-                      {risk.treatmentDueDate
-                        ? new Date(risk.treatmentDueDate).toLocaleDateString("en-GB")
-                        : ""}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Risk Status</p>
-                    <span className="text-sm font-medium">
-                      {risk.assessmentStatus || risk.status || "Open"}
+                  </TableCell>
+                  <TableCell className="py-3 text-slate-600">-</TableCell>
+                  <TableCell className="py-3 text-slate-600">
+                    {risk.treatmentDueDate
+                      ? new Date(risk.treatmentDueDate).toLocaleDateString("en-GB")
+                      : "-"}
+                  </TableCell>
+                  <TableCell className="py-3">
+                    <span className={cn(
+                      "px-2 py-1 rounded text-xs font-medium",
+                      (risk.responseStatus || "Open") === "Completed" && "bg-green-100 text-green-800",
+                      (risk.responseStatus || "Open") === "Awaiting Approval" && "bg-purple-100 text-purple-800",
+                      (risk.responseStatus || "Open") === "In-Progress" && "bg-yellow-100 text-yellow-800",
+                      (risk.responseStatus || "Open") === "Sent Back" && "bg-red-100 text-red-800",
+                      (risk.responseStatus || "Open") === "Open" && "bg-blue-100 text-blue-800"
+                    )}>
+                      {risk.responseStatus || "Open"}
                     </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))
-        )}
+                  </TableCell>
+                  <TableCell className="py-3">
+                    {getActionButtons(risk)}
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
       </div>
 
       {/* Success Dialog */}
       <AlertDialog open={successDialogOpen} onOpenChange={setSuccessDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Information</AlertDialogTitle>
+        <AlertDialogContent className="p-0 gap-0">
+          <AlertDialogHeader className="px-6 py-5 border-b border-slate-100">
+            <AlertDialogTitle>{t("Information")}</AlertDialogTitle>
             <AlertDialogDescription>
               {successMessage}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <AlertDialogAction onClick={() => setSuccessDialogOpen(false)}>
-              OK
+              {t("OK")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

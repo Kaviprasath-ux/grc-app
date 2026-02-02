@@ -2,17 +2,19 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ChevronRight, Home } from "lucide-react";
+import Link from "next/link";
+
+// Unified colors matching org-chart component
+const THEME_COLOR = "#64748b"; // slate-500 - subtle and professional
+const LINE_COLOR = "#cbd5e1"; // slate-300 - light for lines
 
 interface RiskItem {
   id: string;
   riskId: string;
   riskName: string;
-  riskLevel: string | null;
-  inherentScore: number | null;
-  residualScore: number | null;
+  riskLevel: string;
 }
 
 interface DepartmentData {
@@ -31,7 +33,6 @@ export default function RiskUniversePage() {
   const router = useRouter();
   const [data, setData] = useState<RiskUniverseData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [hoveredRisk, setHoveredRisk] = useState<RiskItem | null>(null);
 
   useEffect(() => {
     fetchRiskUniverse();
@@ -51,158 +52,197 @@ export default function RiskUniversePage() {
     }
   };
 
-  const getRiskLevelColor = (level: string | null) => {
-    switch (level?.toLowerCase()) {
-      case "extreme":
-        return "bg-red-500";
-      case "high":
-        return "bg-orange-500";
-      case "medium":
-        return "bg-yellow-500";
-      case "low":
-        return "bg-green-500";
+  const getRiskLevelColor = (level: string) => {
+    switch (level) {
+      case "Extreme":
+        return "#ef4444"; // red-500
+      case "High":
+        return "#f97316"; // orange-500
+      case "Medium":
+        return "#fbbf24"; // amber-400
+      case "Low":
+        return "#22c55e"; // green-500
       default:
-        return "bg-gray-400";
+        return "#94a3b8"; // slate-400
     }
+  };
+
+  const getRiskLevelTextColor = (level: string) => {
+    return level === "Medium" ? "#1e293b" : "#ffffff"; // slate-900 for medium, white for others
   };
 
   if (loading) {
     return (
-      <div className="p-6">
-        <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" size="sm" onClick={() => router.back()}>
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back
-          </Button>
-          <h1 className="text-2xl font-bold text-blue-900">Risk Universe</h1>
-        </div>
+      <div className="space-y-6">
+        {/* Breadcrumb */}
+        <nav className="flex items-center gap-1.5 text-sm">
+          <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>Internal Audit</span>
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <span className="text-primary-700 font-medium">Risk Universe</span>
+        </nav>
+
+        <h1 className="text-2xl font-bold text-slate-800">Risk Universe</h1>
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+          <p className="text-slate-500">Loading risk universe...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>Internal Audit</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">Risk Universe</span>
+      </nav>
+
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" onClick={() => router.back()}>
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          Back
-        </Button>
-        <h1 className="text-2xl font-bold text-blue-900">Risk Universe</h1>
-      </div>
+      <h1 className="text-2xl font-bold text-slate-800">Risk Universe</h1>
 
-      <Card>
-        <CardContent className="pt-6">
-          <div className="relative overflow-x-auto">
-            {/* Root Node */}
-            <div className="flex justify-center mb-8">
-              <div className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold shadow-md">
-                Risk Universe
+      {/* Tree Structure Container */}
+      <div className="overflow-x-auto">
+        <div className="min-w-max p-8">
+          {/* Root Node - Risk Universe (matching org-chart node style) */}
+          <div className="flex justify-center mb-6">
+            <div
+              className="rounded-lg shadow-sm overflow-hidden min-w-[200px]"
+              style={{ border: `1px solid ${LINE_COLOR}` }}
+            >
+              <div
+                className="px-4 py-2 text-white text-center"
+                style={{ backgroundColor: THEME_COLOR }}
+              >
+                <p className="text-xs font-medium">Risk Overview</p>
+              </div>
+              <div className="bg-white px-4 py-2 text-center">
+                <p className="text-sm font-semibold text-gray-700">Risk Universe</p>
               </div>
             </div>
+          </div>
 
-            {/* Connection line from root */}
-            <div className="flex justify-center mb-4">
-              <div className="w-0.5 h-8 bg-gray-300"></div>
-            </div>
+          {/* Vertical line from root */}
+          <div className="flex justify-center">
+            <div
+              style={{
+                width: "2px",
+                height: "20px",
+                backgroundColor: LINE_COLOR,
+              }}
+            />
+          </div>
 
-            {/* Horizontal line connecting all departments */}
-            {data?.departments && data.departments.length > 0 && (
-              <div className="flex justify-center mb-4">
-                <div className="h-0.5 bg-gray-300" style={{ width: `${Math.min(data.departments.length * 150, 1200)}px` }}></div>
+          {/* Horizontal line connecting departments */}
+          {data?.departments && data.departments.length > 0 && (
+            <>
+              <div className="flex justify-center">
+                <div
+                  style={{
+                    height: "2px",
+                    backgroundColor: LINE_COLOR,
+                    width: `${(data.departments.length - 1) * 180 + 160}px`,
+                  }}
+                />
               </div>
-            )}
+            </>
+          )}
 
-            {/* Department branches */}
-            <div className="flex flex-wrap justify-center gap-4">
-              {data?.departments.map((dept) => (
-                <div key={dept.id} className="flex flex-col items-center">
-                  {/* Vertical line to department */}
-                  <div className="w-0.5 h-4 bg-gray-300"></div>
+          {/* Departments and Risks Grid */}
+          {data?.departments && data.departments.length > 0 ? (
+            <div className="flex justify-center">
+              <div className="flex" style={{ gap: "24px" }}>
+                {data.departments.map((dept) => (
+                  <div
+                    key={dept.id}
+                    className="flex flex-col items-center"
+                    style={{ width: "160px" }}
+                  >
+                    {/* Vertical line to department */}
+                    <div
+                      style={{
+                        width: "2px",
+                        height: "30px",
+                        backgroundColor: LINE_COLOR,
+                      }}
+                    />
 
-                  {/* Department box */}
-                  <div className="border border-gray-300 rounded px-4 py-2 bg-white mb-4 min-w-[120px] text-center">
-                    <span className="text-sm font-medium">{dept.name}</span>
-                  </div>
+                    {/* Department Box (matching org-chart node style) */}
+                    <div
+                      className="rounded-lg shadow-sm overflow-hidden w-full mb-4"
+                      style={{ border: `1px solid ${LINE_COLOR}` }}
+                    >
+                      <div
+                        className="px-3 py-2 text-white text-center"
+                        style={{ backgroundColor: THEME_COLOR }}
+                      >
+                        <p className="text-xs font-medium">Department</p>
+                      </div>
+                      <div className="bg-white px-3 py-2 text-center">
+                        <p className="text-sm font-semibold text-gray-700 truncate">
+                          {dept.name}
+                        </p>
+                      </div>
+                    </div>
 
-                  {/* Risk items */}
-                  <div className="flex flex-col items-center gap-2">
-                    {dept.risks.map((risk) => (
-                      <div key={risk.id} className="flex flex-col items-center relative">
-                        {/* Connection line */}
-                        <div className="w-0.5 h-3 bg-gray-300"></div>
-
-                        {/* Risk card */}
+                    {/* Risk Items Column */}
+                    <div className="flex flex-col gap-2 w-full">
+                      {dept.risks.map((risk) => (
                         <div
-                          className={`${getRiskLevelColor(risk.riskLevel)} text-white rounded px-3 py-2 min-w-[90px] text-center shadow cursor-pointer`}
-                          onMouseEnter={() => setHoveredRisk(risk)}
-                          onMouseLeave={() => setHoveredRisk(null)}
+                          key={risk.id}
+                          className="rounded-lg shadow-sm overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                          style={{ border: `1px solid ${LINE_COLOR}` }}
+                          title={risk.riskName}
+                          onClick={() =>
+                            router.push(`/internal-audit/risk-register`)
+                          }
                         >
-                          <div className="font-semibold text-sm">{risk.riskId}</div>
-                          {risk.riskLevel && (
-                            <div className="text-xs mt-1">{risk.riskLevel}</div>
-                          )}
-                        </div>
-
-                        {/* Tooltip on hover */}
-                        {hoveredRisk?.id === risk.id && (
-                          <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 z-50 bg-white border rounded-lg shadow-lg p-3 min-w-[200px]">
-                            <p className="font-semibold text-gray-800">{risk.riskName}</p>
-                            <p className="text-sm text-gray-600 mt-1">
-                              Risk Level: <span className="font-medium">{risk.riskLevel || "-"}</span>
-                            </p>
-                            <p className="text-sm text-gray-600">
-                              Risk Score: <span className="font-medium">{risk.residualScore || risk.inherentScore || "-"}</span>
+                          <div
+                            className="px-3 py-2 text-center"
+                            style={{
+                              backgroundColor: getRiskLevelColor(risk.riskLevel),
+                              color: getRiskLevelTextColor(risk.riskLevel),
+                            }}
+                          >
+                            <p className="text-xs font-medium">{risk.riskLevel}</p>
+                          </div>
+                          <div className="bg-white px-3 py-2 text-center">
+                            <p className="text-sm font-semibold text-gray-700">
+                              {risk.riskId}
                             </p>
                           </div>
-                        )}
-                      </div>
-                    ))}
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Empty state */}
-            {(!data?.departments || data.departments.length === 0) && (
-              <div className="text-center py-12 text-gray-500">
-                <p>No risks in the universe yet</p>
-                <p className="text-sm mt-2">Risks will appear here once identified and assessed</p>
+                ))}
               </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Legend */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-medium">Risk Level Legend</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-6 flex-wrap">
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-red-500 rounded"></div>
-              <span className="text-sm">Extreme</span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-orange-500 rounded"></div>
-              <span className="text-sm">High</span>
+          ) : (
+            <div className="flex items-center justify-center h-64 border border-dashed border-slate-200 rounded-lg mt-8">
+              <div className="text-center">
+                <p className="text-slate-500">No risks in the risk register yet</p>
+                <p className="text-sm text-slate-400 mt-2">
+                  Add risks to the Risk Register to see them here
+                </p>
+                <Button
+                  variant="outline"
+                  className="mt-4 border-slate-200 text-slate-700 hover:bg-slate-50"
+                  onClick={() => router.push("/internal-audit/risk-register")}
+                >
+                  Go to Risk Register
+                </Button>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-yellow-500 rounded"></div>
-              <span className="text-sm">Medium</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-green-500 rounded"></div>
-              <span className="text-sm">Low</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

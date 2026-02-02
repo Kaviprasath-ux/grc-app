@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { withAuth } from '@/lib/api-auth';
+import { withAuth, getTenantFilter, getAuditHeadFilter, getAuditHeadRiskFilter } from '@/lib/api-auth';
 
 // GET /api/internal-audit/dashboard - Get dashboard stats
 export const GET = withAuth(
@@ -8,20 +8,42 @@ export const GET = withAuth(
     try {
       const isAuditee = session.roles.includes('Auditee') &&
                         !session.roles.includes('AuditHead') &&
+                        !session.roles.includes('AuditManager') &&
                         !session.roles.includes('Auditor');
 
-      // Base filters for auditee
-      const auditeeFilter = isAuditee ? { auditeeId: session.id } : {};
+      // Multi-tenant: Use consistent tenant filter helper
+      const tenantFilter = getTenantFilter(session);
+      const auditHeadFilter = getAuditHeadFilter(session);
+      const riskFilter = getAuditHeadRiskFilter(session);
+
+      // Debug logging
+      console.log('[DASHBOARD DEBUG] Session ID:', session.id);
+      console.log('[DASHBOARD DEBUG] Session roles:', session.roles);
+      console.log('[DASHBOARD DEBUG] Tenant filter:', JSON.stringify(tenantFilter));
+      console.log('[DASHBOARD DEBUG] AuditHead filter:', JSON.stringify(auditHeadFilter));
+
+      // Combined filters for engagement and risk queries
+      const engagementFilter = { ...tenantFilter, ...auditHeadFilter };
+      const riskQueryFilter = { ...tenantFilter, ...riskFilter };
+
+      console.log('[DASHBOARD DEBUG] Engagement filter:', JSON.stringify(engagementFilter));
+
+      // Base filters for auditee (combined with tenant filter)
+      const auditeeFilter = isAuditee
+        ? { ...tenantFilter, auditeeId: session.id }
+        : engagementFilter;
       const capaFilter = isAuditee ? {
+        ...tenantFilter,
         finding: {
           OR: [
             { responsiblePersonId: session.id },
             { department: { id: session.departmentId || '' } }
           ]
         }
-      } : {};
+      } : { ...tenantFilter, ...riskFilter };
 
-      // Get risk register stats
+      // Get risk register stats (with tenant + audit head filter)
+      // Handle different riskLevel case variations
       const [
         totalRisks,
         extremeRisks,
@@ -29,23 +51,100 @@ export const GET = withAuth(
         mediumRisks,
         lowRisks,
       ] = await Promise.all([
-        prisma.internalAuditRisk.count(),
-        prisma.internalAuditRisk.count({ where: { riskLevel: 'Extreme' } }),
-        prisma.internalAuditRisk.count({ where: { riskLevel: 'High' } }),
-        prisma.internalAuditRisk.count({ where: { riskLevel: 'Medium' } }),
-        prisma.internalAuditRisk.count({ where: { riskLevel: 'Low' } }),
+        prisma.internalAuditRisk.count({ where: riskQueryFilter }),
+        prisma.internalAuditRisk.count({
+          where: {
+            ...riskQueryFilter,
+            OR: [
+              { riskLevel: 'Extreme' },
+              { riskLevel: 'extreme' },
+              { riskLevel: 'EXTREME' },
+              { riskLevel: 'Critical' },
+              { riskLevel: 'critical' }
+            ]
+          }
+        }),
+        prisma.internalAuditRisk.count({
+          where: {
+            ...riskQueryFilter,
+            OR: [
+              { riskLevel: 'High' },
+              { riskLevel: 'high' },
+              { riskLevel: 'HIGH' }
+            ]
+          }
+        }),
+        prisma.internalAuditRisk.count({
+          where: {
+            ...riskQueryFilter,
+            OR: [
+              { riskLevel: 'Medium' },
+              { riskLevel: 'medium' },
+              { riskLevel: 'MEDIUM' },
+              { riskLevel: 'Moderate' }
+            ]
+          }
+        }),
+        prisma.internalAuditRisk.count({
+          where: {
+            ...riskQueryFilter,
+            OR: [
+              { riskLevel: 'Low' },
+              { riskLevel: 'low' },
+              { riskLevel: 'LOW' }
+            ]
+          }
+        }),
       ]);
 
-      // Get audit engagement stats
+      // Get audit engagement stats (with tenant + audit head filter)
+      // Count by common status variations to handle different data formats
       const [
         ongoingAudits,
         completedAudits,
         plannedAudits,
+        totalAudits,
       ] = await Promise.all([
-        prisma.auditEngagement.count({ where: { status: 'In Progress' } }),
-        prisma.auditEngagement.count({ where: { status: 'Completed' } }),
-        prisma.auditEngagement.count({ where: { status: 'Planned' } }),
+        prisma.auditEngagement.count({
+          where: {
+            ...engagementFilter,
+            OR: [
+              { status: 'In Progress' },
+              { status: 'InProgress' },
+              { status: 'Ongoing' },
+              { status: 'Active' }
+            ]
+          }
+        }),
+        prisma.auditEngagement.count({
+          where: {
+            ...engagementFilter,
+            OR: [
+              { status: 'Completed' },
+              { status: 'Complete' },
+              { status: 'Done' },
+              { status: 'Closed' }
+            ]
+          }
+        }),
+        prisma.auditEngagement.count({
+          where: {
+            ...engagementFilter,
+            OR: [
+              { status: 'Planned' },
+              { status: 'Planning' },
+              { status: 'Draft' },
+              { status: 'Pending' }
+            ]
+          }
+        }),
+        prisma.auditEngagement.count({ where: engagementFilter }),
       ]);
+
+      // If status-based counts are 0 but total > 0, use total for "ongoing"
+      const finalOngoing = (ongoingAudits === 0 && completedAudits === 0 && plannedAudits === 0 && totalAudits > 0)
+        ? totalAudits
+        : ongoingAudits;
 
       // Get CAPA stats by department and severity
       const capaByDepartment = await prisma.internalAuditCAPA.findMany({
@@ -95,13 +194,54 @@ export const GET = withAuth(
 
       const capaStatusByDepartment = Object.values(departmentCAPAMap);
 
-      // Get annual audit plan for current year
+      // Get annual audit plan - determine the best year to show
       const currentYear = new Date().getFullYear();
-      const annualAuditPlan = await prisma.auditEngagement.findMany({
+
+      // First, check if there's data in the current year
+      let targetYear = currentYear;
+      const currentYearCount = await prisma.auditEngagement.count({
         where: {
+          ...engagementFilter,
           OR: [
             { startDate: { gte: new Date(`${currentYear}-01-01`), lte: new Date(`${currentYear}-12-31`) } },
-            { endDate: { gte: new Date(`${currentYear}-01-01`), lte: new Date(`${currentYear}-12-31`) } }
+            { endDate: { gte: new Date(`${currentYear}-01-01`), lte: new Date(`${currentYear}-12-31`) } },
+            { year: currentYear }
+          ]
+        }
+      });
+
+      // If no data in current year, find the most recent year with data
+      if (currentYearCount === 0) {
+        // First try to find by year field (more reliable when startDate is null)
+        const mostRecentByYear = await prisma.auditEngagement.findFirst({
+          where: engagementFilter,
+          orderBy: { year: 'desc' },
+          select: { startDate: true, year: true }
+        });
+
+        // Also check by startDate in case year field is not set
+        const mostRecentByDate = await prisma.auditEngagement.findFirst({
+          where: { ...engagementFilter, startDate: { not: null } },
+          orderBy: { startDate: 'desc' },
+          select: { startDate: true, year: true }
+        });
+
+        // Use the most recent year from either source
+        const yearFromYearField = mostRecentByYear?.year || 0;
+        const yearFromDateField = mostRecentByDate?.startDate
+          ? new Date(mostRecentByDate.startDate).getFullYear()
+          : 0;
+
+        targetYear = Math.max(yearFromYearField, yearFromDateField) || currentYear;
+      }
+
+      const annualAuditPlan = await prisma.auditEngagement.findMany({
+        where: {
+          ...engagementFilter,
+          OR: [
+            { startDate: { gte: new Date(`${targetYear}-01-01`), lte: new Date(`${targetYear}-12-31`) } },
+            { endDate: { gte: new Date(`${targetYear}-01-01`), lte: new Date(`${targetYear}-12-31`) } },
+            { year: targetYear }
           ]
         },
         select: {
@@ -111,29 +251,47 @@ export const GET = withAuth(
           startDate: true,
           endDate: true,
           status: true,
-          department: { select: { name: true } }
+          department: { select: { name: true } },
+          assignedAuditor: { select: { id: true, fullName: true, firstName: true, lastName: true } }
         },
         orderBy: { startDate: 'asc' }
       });
 
       // Calculate duration in days for each audit
       const auditPlanWithDuration = annualAuditPlan.map(audit => {
-        const start = audit.startDate ? new Date(audit.startDate) : new Date();
-        const end = audit.endDate ? new Date(audit.endDate) : new Date();
+        // Use actual dates if available, otherwise use Q1 of target year as default
+        const defaultStart = new Date(`${targetYear}-01-01`);
+        const defaultEnd = new Date(`${targetYear}-03-31`);
+
+        const start = audit.startDate ? new Date(audit.startDate) : defaultStart;
+        const end = audit.endDate ? new Date(audit.endDate) : defaultEnd;
         const durationDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+
+        // Get auditor name
+        const auditorName = audit.assignedAuditor
+          ? audit.assignedAuditor.fullName ||
+            `${audit.assignedAuditor.firstName || ''} ${audit.assignedAuditor.lastName || ''}`.trim() ||
+            null
+          : null;
 
         return {
           ...audit,
-          durationDays: Math.max(durationDays, 1),
+          auditorName,
+          durationDays: Math.max(durationDays, 30), // Minimum 30 days for visibility
           startMonth: start.getMonth(), // 0-11
           endMonth: end.getMonth()
         };
       });
 
-      // Get auditor schedule for current year
+      // Get auditor schedule for target year (with tenant + audit head filter)
       const engagementsWithAuditors = await prisma.auditEngagement.findMany({
         where: {
-          year: currentYear,
+          ...engagementFilter,
+          OR: [
+            { year: targetYear },
+            { startDate: { gte: new Date(`${targetYear}-01-01`), lte: new Date(`${targetYear}-12-31`) } },
+            { endDate: { gte: new Date(`${targetYear}-01-01`), lte: new Date(`${targetYear}-12-31`) } }
+          ]
         },
         include: {
           assignedAuditor: {
@@ -173,27 +331,34 @@ export const GET = withAuth(
 
         const auditor = auditorMap.get(auditorId)!;
 
-        if (engagement.plannedStartDate || engagement.startDate) {
-          const startDate = engagement.plannedStartDate || engagement.startDate;
-          const endDate = engagement.plannedEndDate || engagement.endDate || startDate;
+        // Use actual dates if available, otherwise use Q1 of target year as default
+        const defaultStart = new Date(`${targetYear}-01-01`);
+        const defaultEnd = new Date(`${targetYear}-03-31`);
 
-          const start = new Date(startDate!);
-          const end = new Date(endDate!);
-          const durationDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+        const startDate = engagement.plannedStartDate || engagement.startDate || defaultStart;
+        const endDate = engagement.plannedEndDate || engagement.endDate || defaultEnd;
 
-          auditor.assignments.push({
-            auditId: engagement.auditId,
-            engagementTitle: engagement.engagementTitle,
-            startMonth: start.getMonth(),
-            endMonth: end.getMonth(),
-            durationDays: Math.max(durationDays, 1),
-          });
-        }
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        const durationDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+
+        auditor.assignments.push({
+          auditId: engagement.auditId,
+          engagementTitle: engagement.engagementTitle,
+          startMonth: start.getMonth(),
+          endMonth: end.getMonth(),
+          durationDays: Math.max(durationDays, 30),
+        });
       });
 
       const auditorSchedule = Array.from(auditorMap.values());
 
       // Get evidence request stats (for auditee view)
+      // FieldworkEvidenceRequest doesn't have customerAccountId, filter through engagement relation
+      const evidenceRequestTenantFilter = isAuditee
+        ? { engagement: { ...tenantFilter }, auditeeId: session.id }
+        : { engagement: { ...tenantFilter } };
+
       const [
         pendingEvidenceRequests,
         inProgressEvidenceRequests,
@@ -202,20 +367,20 @@ export const GET = withAuth(
         overdueEvidenceRequests,
       ] = await Promise.all([
         prisma.fieldworkEvidenceRequest.count({
-          where: { ...auditeeFilter, status: 'Pending' }
+          where: { ...evidenceRequestTenantFilter, status: 'Pending' }
         }),
         prisma.fieldworkEvidenceRequest.count({
-          where: { ...auditeeFilter, status: 'In Progress' }
+          where: { ...evidenceRequestTenantFilter, status: 'In Progress' }
         }),
         prisma.fieldworkEvidenceRequest.count({
-          where: { ...auditeeFilter, status: 'Submitted' }
+          where: { ...evidenceRequestTenantFilter, status: 'Submitted' }
         }),
         prisma.fieldworkEvidenceRequest.count({
-          where: { ...auditeeFilter, status: 'Reviewed' }
+          where: { ...evidenceRequestTenantFilter, status: 'Reviewed' }
         }),
         prisma.fieldworkEvidenceRequest.count({
           where: {
-            ...auditeeFilter,
+            ...evidenceRequestTenantFilter,
             status: { in: ['Pending', 'In Progress'] },
             dueDate: { lt: new Date() }
           }
@@ -247,9 +412,9 @@ export const GET = withAuth(
         }),
       ]);
 
-      // Get recent evidence requests
+      // Get recent evidence requests (filter through engagement relation)
       const recentEvidenceRequests = await prisma.fieldworkEvidenceRequest.findMany({
-        where: auditeeFilter,
+        where: evidenceRequestTenantFilter,
         include: {
           engagement: {
             select: {
@@ -281,10 +446,10 @@ export const GET = withAuth(
         take: 5
       });
 
-      // Get upcoming due dates
+      // Get upcoming due dates (filter through engagement relation)
       const upcomingDueDates = await prisma.fieldworkEvidenceRequest.findMany({
         where: {
-          ...auditeeFilter,
+          ...evidenceRequestTenantFilter,
           status: { in: ['Pending', 'In Progress'] },
           dueDate: { gte: new Date() }
         },
@@ -307,14 +472,15 @@ export const GET = withAuth(
           low: lowRisks
         },
         auditStats: {
-          ongoing: ongoingAudits,
+          ongoing: finalOngoing,
           completed: completedAudits,
-          planned: plannedAudits
+          planned: plannedAudits,
+          total: totalAudits
         },
         capaStatusByDepartment,
         annualAuditPlan: auditPlanWithDuration,
         auditorSchedule,
-        currentYear,
+        currentYear: targetYear,
 
         // Auditee-specific stats
         stats: {
@@ -346,5 +512,5 @@ export const GET = withAuth(
       );
     }
   },
-  { resource: 'audit.fieldwork', action: 'view' }
+  { resource: 'audit.dashboard', action: 'view' }
 );

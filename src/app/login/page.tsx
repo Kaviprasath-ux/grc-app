@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { Eye, EyeOff } from "lucide-react";
@@ -18,6 +18,18 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Bootstrap superadmin user on page load
+  useEffect(() => {
+    const bootstrap = async () => {
+      try {
+        await fetch("/api/bootstrap", { method: "POST" });
+      } catch (error) {
+        console.error("Bootstrap failed:", error);
+      }
+    };
+    bootstrap();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,15 +58,15 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-grc-primary/10 via-background to-grc-bg p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-background to-muted p-4">
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="text-center space-y-2 pb-6">
           <div className="flex justify-center mb-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-grc-primary">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary">
               <span className="text-2xl font-bold text-white">G</span>
             </div>
           </div>
-          <h1 className="text-2xl font-semibold text-grc-text">Welcome Back !</h1>
+          <h1 className="text-2xl font-semibold text-foreground">Welcome Back !</h1>
           <p className="text-sm text-muted-foreground">Log into your account</p>
         </CardHeader>
         <CardContent>
@@ -116,7 +128,7 @@ export default function LoginPage() {
               </div>
               <button
                 type="button"
-                className="text-sm text-grc-link hover:underline"
+                className="text-sm text-primary hover:underline"
               >
                 Forgot passcode?
               </button>
@@ -124,7 +136,7 @@ export default function LoginPage() {
 
             <Button
               type="submit"
-              className="w-full bg-grc-primary hover:bg-grc-primary/90"
+              className="w-full"
               disabled={isLoading}
             >
               {isLoading ? "Logging in..." : "Login"}

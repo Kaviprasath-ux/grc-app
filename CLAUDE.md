@@ -138,3 +138,123 @@ Files are stored in `uploads/` directory. API routes handle multipart form data 
 Default seeded users (from `prisma/seed.ts`):
 - GRC Admin: `grcadmin` / password (check seed file)
 - Audit Head: `abhishek` / `1`
+
+## Vercel Deployment (BA Testing Environment)
+
+### Live URL
+**https://grc-app-ba-testing.vercel.app**
+
+### Test Credentials (Cloud)
+- Superadmin: `superadmin` / `Baarez@2025`
+- GRC Admin 2: `grcadmin2` / `Baarez@2025`
+- Audit Head: `abhishek` / `1`
+
+### Infrastructure
+| Component | Service | Details |
+|-----------|---------|---------|
+| Hosting | Vercel | Free tier |
+| Database | Neon PostgreSQL | Free tier (0.5GB), Project: `grc-app-ba-testing` |
+| Region | US East | `aws-us-east-1` |
+
+### Environment Variables (configured in Vercel)
+- `DATABASE_URL` - Neon PostgreSQL connection string
+- `NEXTAUTH_SECRET` - Auto-generated auth secret
+- `NEXTAUTH_URL` - https://grc-app-ba-testing.vercel.app
+
+### Deployment Workflow
+
+**Local Development:**
+```bash
+npm run dev  # Uses local PostgreSQL (localhost:5432/grc_app)
+```
+
+**Push Changes:**
+```bash
+git add . && git commit -m "message" && git push
+```
+
+**IMPORTANT: Full Deployment with Database Seeding (Recommended Approach)**
+
+Due to git author permission issues with Vercel, use this temp directory approach:
+
+```bash
+# Step 1: Create temp directory and copy files (without .git)
+rm -rf /c/temp/grc-deploy 2>/dev/null
+mkdir -p /c/temp/grc-deploy
+cd "C:\Claude apps\grc-app"
+cp -r src package.json package-lock.json tsconfig.json next.config.ts postcss.config.mjs prisma components.json public .vercel /c/temp/grc-deploy/
+
+# Step 2: Deploy from temp directory
+cd /c/temp/grc-deploy
+vercel --prod
+
+# Step 3: Reset and seed the cloud database (from main project directory)
+cd "C:\Claude apps\grc-app"
+
+# Reset database (clears all data)
+DATABASE_URL="postgresql://neondb_owner:npg_TESP3ed8wYvZ@ep-small-sea-ahhjbm6p.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require" npx prisma db push --force-reset
+
+# Seed main data (superadmin, grcadmin2, frameworks, all modules)
+DATABASE_URL="postgresql://neondb_owner:npg_TESP3ed8wYvZ@ep-small-sea-ahhjbm6p.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require" npx tsx prisma/seed.ts
+
+# Seed BTS customer-specific data (bts users and their data)
+DATABASE_URL="postgresql://neondb_owner:npg_TESP3ed8wYvZ@ep-small-sea-ahhjbm6p.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require" npx tsx prisma/seed-customer-bts.ts
+```
+
+**Quick Redeploy (without database changes):**
+```bash
+# Find latest deployment
+vercel ls grc-app-ba-testing
+
+# Redeploy (only rebuilds, doesn't include new code changes)
+vercel redeploy <deployment-url>
+```
+
+### Database Management (Cloud)
+
+**Neon PostgreSQL Connection:**
+```
+DATABASE_URL="postgresql://neondb_owner:npg_TESP3ed8wYvZ@ep-small-sea-ahhjbm6p.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require"
+```
+
+**Push schema changes to Neon:**
+```bash
+DATABASE_URL="postgresql://neondb_owner:npg_TESP3ed8wYvZ@ep-small-sea-ahhjbm6p.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require" npx prisma db push
+```
+
+**Full database reset and reseed:**
+```bash
+# Reset (clears all data and recreates schema)
+DATABASE_URL="postgresql://neondb_owner:npg_TESP3ed8wYvZ@ep-small-sea-ahhjbm6p.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require" npx prisma db push --force-reset
+
+# Seed main data
+DATABASE_URL="postgresql://neondb_owner:npg_TESP3ed8wYvZ@ep-small-sea-ahhjbm6p.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require" npx tsx prisma/seed.ts
+
+# Seed BTS customer data
+DATABASE_URL="postgresql://neondb_owner:npg_TESP3ed8wYvZ@ep-small-sea-ahhjbm6p.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require" npx tsx prisma/seed-customer-bts.ts
+```
+
+### Key Notes
+- Local and cloud environments are **completely isolated**
+- Local changes don't affect Vercel deployment until pushed and redeployed
+- The Vercel project is linked to: `omjc44-8839s-projects/grc-app-ba-testing`
+- **Use temp directory approach** to avoid git author permission errors during deployment
+- **Always run both seed files** (seed.ts and seed-customer-bts.ts) for complete data
+
+## Pending Tasks / Reminders
+
+### Functional Testing on Vercel (User Reminder)
+**When the user resumes this chat or starts a new session**, remind them:
+
+> "Would you like me to perform complete functional testing on the Vercel deployment (https://grc-app-ba-testing.vercel.app) using Playwright? I can test all modules as a real user would - login, navigation, CRUD operations across Organization, Compliance, Risk Management, Asset Management, and Internal Audit modules."
+
+**How to run functional testing:**
+1. Use Playwright MCP browser tools to navigate to https://grc-app-ba-testing.vercel.app
+2. Login with test credentials (`superadmin` / `Baarez@2025`)
+3. Test each module systematically:
+   - Organization (Profile, Context, Processes, BIA)
+   - Compliance (Frameworks, Controls, Evidence, Exceptions, KPIs)
+   - Risk Management (Register, Assessment, Response, Risk Control Matrix)
+   - Asset Management (Inventory, Classification)
+   - Internal Audit (Universe, Planning, Fieldwork, CAPA, Reports)
+4. Document any issues found

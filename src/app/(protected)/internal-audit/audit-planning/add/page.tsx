@@ -31,6 +31,7 @@ import {
   X,
   Loader2,
 } from "lucide-react";
+import { DatePicker } from "@/components/ui/date-picker";
 
 interface Department {
   id: string;
@@ -87,6 +88,8 @@ export default function AddEngagementPage() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [risks, setRisks] = useState<Risk[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [auditees, setAuditees] = useState<User[]>([]);
+  const [auditors, setAuditors] = useState<User[]>([]);
   const [historicalRisks, setHistoricalRisks] = useState<Risk[]>([]);
 
   // Form data
@@ -138,15 +141,25 @@ export default function AddEngagementPage() {
 
   const fetchReferenceData = async () => {
     try {
-      const [deptRes, usersRes] = await Promise.all([
+      const [deptRes, usersRes, auditeesRes, auditorsRes] = await Promise.all([
         fetch("/api/departments"),
         fetch("/api/users"),
+        fetch("/api/users?forAuditHead=auditees"), // Auditees managed by this Audit Head
+        fetch("/api/users?forAuditHead=auditors"), // Audit Managers for this Audit Head
       ]);
 
       if (deptRes.ok) setDepartments(await deptRes.json());
       if (usersRes.ok) {
         const usersData = await usersRes.json();
         setUsers(usersData.users || usersData || []);
+      }
+      if (auditeesRes.ok) {
+        const auditeesData = await auditeesRes.json();
+        setAuditees(auditeesData.users || auditeesData || []);
+      }
+      if (auditorsRes.ok) {
+        const auditorsData = await auditorsRes.json();
+        setAuditors(auditorsData.users || auditorsData || []);
       }
     } catch (error) {
       console.error("Failed to fetch reference data:", error);
@@ -490,7 +503,7 @@ export default function AddEngagementPage() {
           </Select>
         </div>
 
-        {/* Auditor */}
+        {/* Auditor (Audit Manager) */}
         <div className="space-y-2">
           <Label className="text-blue-800">
             Auditor <span className="text-red-500">*</span>
@@ -503,11 +516,17 @@ export default function AddEngagementPage() {
               <SelectValue placeholder="Select Auditor" />
             </SelectTrigger>
             <SelectContent>
-              {users.map((user) => (
-                <SelectItem key={user.id} value={user.id}>
-                  {user.fullName}
+              {auditors.length > 0 ? (
+                auditors.map((user) => (
+                  <SelectItem key={user.id} value={user.id}>
+                    {user.fullName}
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="none" disabled>
+                  No auditors available
                 </SelectItem>
-              ))}
+              )}
             </SelectContent>
           </Select>
         </div>
@@ -523,11 +542,17 @@ export default function AddEngagementPage() {
               <SelectValue placeholder="Select Auditee" />
             </SelectTrigger>
             <SelectContent>
-              {users.map((user) => (
-                <SelectItem key={user.id} value={user.id}>
-                  {user.fullName}
+              {auditees.length > 0 ? (
+                auditees.map((user) => (
+                  <SelectItem key={user.id} value={user.id}>
+                    {user.fullName}
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="none" disabled>
+                  No auditees assigned to you
                 </SelectItem>
-              ))}
+              )}
             </SelectContent>
           </Select>
         </div>
@@ -538,20 +563,20 @@ export default function AddEngagementPage() {
             <Label className="text-blue-800">
               Start Date <span className="text-red-500">*</span>
             </Label>
-            <Input
-              type="date"
+            <DatePicker
               value={formData.startDate}
-              onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+              onChange={(date) => setFormData({ ...formData, startDate: date ? date.toISOString().split('T')[0] : "" })}
+              placeholder="Select start date"
             />
           </div>
           <div className="space-y-2">
             <Label className="text-blue-800">
               Target Date <span className="text-red-500">*</span>
             </Label>
-            <Input
-              type="date"
+            <DatePicker
               value={formData.targetDate}
-              onChange={(e) => setFormData({ ...formData, targetDate: e.target.value })}
+              onChange={(date) => setFormData({ ...formData, targetDate: date ? date.toISOString().split('T')[0] : "" })}
+              placeholder="Select target date"
             />
           </div>
         </div>
@@ -719,11 +744,17 @@ export default function AddEngagementPage() {
                             <SelectValue placeholder="Select Auditor" />
                           </SelectTrigger>
                           <SelectContent>
-                            {users.map((user) => (
-                              <SelectItem key={user.id} value={user.id}>
-                                {user.fullName}
+                            {auditors.length > 0 ? (
+                              auditors.map((user) => (
+                                <SelectItem key={user.id} value={user.id}>
+                                  {user.fullName}
+                                </SelectItem>
+                              ))
+                            ) : (
+                              <SelectItem value="none" disabled>
+                                No auditors available
                               </SelectItem>
-                            ))}
+                            )}
                           </SelectContent>
                         </Select>
                       </td>

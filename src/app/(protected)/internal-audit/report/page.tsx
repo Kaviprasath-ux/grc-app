@@ -22,7 +22,15 @@ import {
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import {
+  Loader2,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Home,
+} from "lucide-react";
+import Link from "next/link";
 import { useHasRole } from "@/hooks/usePermissions";
 
 interface CompletedEngagement {
@@ -47,6 +55,11 @@ interface Pagination {
 export default function ReportsPage() {
   const router = useRouter();
   const isAuditHead = useHasRole("AuditHead");
+  const isAuditManager = useHasRole("AuditManager");
+  const isAuditor = useHasRole("Auditor");
+  const isAuditee = useHasRole("Auditee");
+  const isAuditTeam = isAuditHead || isAuditManager || isAuditor;
+  const isAuditeeOnly = isAuditee && !isAuditTeam;
 
   const [loading, setLoading] = useState(true);
   const [engagements, setEngagements] = useState<CompletedEngagement[]>([]);
@@ -92,7 +105,8 @@ export default function ReportsPage() {
     if (engagement.hasReport) {
       // If report already exists, navigate to view it
       router.push(`/internal-audit/report/${engagement.id}`);
-    } else {
+    } else if (!isAuditeeOnly) {
+      // Only non-auditee can generate reports
       // Open dialog to select Pass/Fail
       setSelectedEngagement(engagement);
       setOverallResult("Pass");
@@ -136,118 +150,158 @@ export default function ReportsPage() {
   const endIndex = Math.min(pagination.page * pagination.limit, pagination.total);
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>Internal Audit</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">Reports</span>
+      </nav>
+
       {/* Header */}
-      <div className="border-b pb-4">
-        <h1 className="text-xl font-bold text-[#1e3a5f]">Reports</h1>
+      <div>
+        <h1 className="text-2xl font-bold text-slate-800">Reports</h1>
       </div>
 
       {/* Table */}
-      <div className="border rounded-lg overflow-hidden">
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="bg-[#1e3a5f]">
-              <TableHead className="text-white font-semibold">Engagement</TableHead>
-              <TableHead className="text-white font-semibold">Department</TableHead>
-              <TableHead className="text-white font-semibold">Audit Type</TableHead>
-              <TableHead className="text-white font-semibold">Assigned Auditor</TableHead>
-              <TableHead className="text-white font-semibold">Status</TableHead>
-              <TableHead className="text-white font-semibold">Action</TableHead>
+            <TableRow className="border-b border-slate-100 bg-slate-50/50">
+              <TableHead className="text-xs font-semibold text-slate-600 py-4 pl-4">Engagement</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4">Department</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4">Audit Type</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4">Assigned Auditor</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4">Status</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin mx-auto text-[#1e3a5f]" />
+                  <div className="flex items-center justify-center">
+                    <div className="relative h-6 w-6">
+                      <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
+                      <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+                    </div>
+                  </div>
                 </TableCell>
               </TableRow>
             ) : engagements.length > 0 ? (
               engagements.map((engagement) => (
-                <TableRow key={engagement.id} className="hover:bg-gray-50">
-                  <TableCell className="max-w-[200px]">
+                <TableRow key={engagement.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                  <TableCell className="py-4 pl-4 text-sm font-medium text-slate-900 max-w-[200px]">
                     <span className="line-clamp-2">{engagement.engagementTitle}</span>
                   </TableCell>
-                  <TableCell>{engagement.departmentName}</TableCell>
-                  <TableCell>{engagement.auditType}</TableCell>
-                  <TableCell>{engagement.assignedAuditorName}</TableCell>
-                  <TableCell>{engagement.status}</TableCell>
-                  <TableCell>
-                    <Button
-                      className="bg-[#1e3a5f] hover:bg-[#2e4a6f] text-white text-sm"
-                      onClick={() => handleGenerateReport(engagement)}
-                    >
-                      {engagement.hasReport ? "View Report" : "Generate Draft Report"}
-                    </Button>
+                  <TableCell className="py-4 text-sm text-slate-700">{engagement.departmentName}</TableCell>
+                  <TableCell className="py-4 text-sm text-slate-700">{engagement.auditType}</TableCell>
+                  <TableCell className="py-4 text-sm text-slate-700">{engagement.assignedAuditorName}</TableCell>
+                  <TableCell className="py-4 text-sm text-slate-700">{engagement.status}</TableCell>
+                  <TableCell className="py-4">
+                    {/* Auditee can only view existing reports, not generate new ones */}
+                    {isAuditeeOnly ? (
+                      engagement.hasReport ? (
+                        <Button
+                          size="sm"
+                          className="bg-primary-600 hover:bg-primary-700 text-white"
+                          onClick={() => router.push(`/internal-audit/report/${engagement.id}`)}
+                        >
+                          View Report
+                        </Button>
+                      ) : (
+                        <span className="text-slate-400 text-sm">No report</span>
+                      )
+                    ) : (
+                      <Button
+                        size="sm"
+                        className="bg-primary-600 hover:bg-primary-700 text-white"
+                        onClick={() => handleGenerateReport(engagement)}
+                      >
+                        {engagement.hasReport ? "View Report" : "Generate Draft Report"}
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                <TableCell colSpan={6} className="text-center py-8 text-slate-500">
                   No completed engagements found
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
-      </div>
 
-      {/* Pagination */}
-      {pagination.total > 0 && (
-        <div className="flex items-center justify-end text-sm text-gray-600">
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled={pagination.page === 1}
-              onClick={() => setPagination((prev) => ({ ...prev, page: 1 }))}
-            >
-              {"<<"}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled={pagination.page === 1}
-              onClick={() => setPagination((prev) => ({ ...prev, page: prev.page - 1 }))}
-            >
-              {"<"}
-            </Button>
-            <span>
+        {/* Pagination */}
+        {pagination.total > 0 && (
+          <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
+            <span className="text-sm text-slate-500">
               {startIndex} to {endIndex} of {pagination.total}
             </span>
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled={pagination.page >= pagination.totalPages}
-              onClick={() => setPagination((prev) => ({ ...prev, page: prev.page + 1 }))}
-            >
-              {">"}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled={pagination.page >= pagination.totalPages}
-              onClick={() => setPagination((prev) => ({ ...prev, page: pagination.totalPages }))}
-            >
-              {">>"}
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                disabled={pagination.page === 1}
+                onClick={() => setPagination((prev) => ({ ...prev, page: 1 }))}
+                className="h-8 w-8"
+              >
+                <ChevronsLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                disabled={pagination.page === 1}
+                onClick={() => setPagination((prev) => ({ ...prev, page: prev.page - 1 }))}
+                className="h-8 w-8"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                disabled={pagination.page >= pagination.totalPages}
+                onClick={() => setPagination((prev) => ({ ...prev, page: prev.page + 1 }))}
+                className="h-8 w-8"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                disabled={pagination.page >= pagination.totalPages}
+                onClick={() => setPagination((prev) => ({ ...prev, page: pagination.totalPages }))}
+                className="h-8 w-8"
+              >
+                <ChevronsRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Generate Report Dialog - Pass/Fail Selection */}
       {isAuditHead && (
         <Dialog open={generateDialogOpen} onOpenChange={setGenerateDialogOpen}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle className="text-[#1e3a5f]">Generate Audit Report</DialogTitle>
-              <DialogDescription>
-                Select the overall audit result for "{selectedEngagement?.engagementTitle}"
-              </DialogDescription>
-            </DialogHeader>
-            <div className="py-4">
-              <Label className="text-[#1e3a5f] font-medium mb-3 block">Overall Audit Result</Label>
+          <DialogContent className="sm:max-w-[450px] p-0 gap-0">
+            {/* Fixed Header */}
+            <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+              <DialogHeader>
+                <DialogTitle className="text-lg font-semibold text-slate-800">Generate Audit Report</DialogTitle>
+                <DialogDescription className="text-sm text-slate-500 mt-1">
+                  Select the overall audit result for "{selectedEngagement?.engagementTitle}"
+                </DialogDescription>
+              </DialogHeader>
+            </div>
+
+            {/* Content */}
+            <div className="px-6 py-6">
+              <Label className="text-sm font-medium text-slate-700 mb-3 block">Overall Audit Result</Label>
               <RadioGroup
                 value={overallResult}
                 onValueChange={setOverallResult}
@@ -267,7 +321,9 @@ export default function ReportsPage() {
                 </div>
               </RadioGroup>
             </div>
-            <DialogFooter>
+
+            {/* Fixed Footer */}
+            <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
               <Button
                 variant="outline"
                 onClick={() => setGenerateDialogOpen(false)}
@@ -275,7 +331,7 @@ export default function ReportsPage() {
                 Cancel
               </Button>
               <Button
-                className="bg-[#1e3a5f] hover:bg-[#2e4a6f]"
+                className="bg-primary-600 hover:bg-primary-700"
                 onClick={handleConfirmGenerate}
                 disabled={generating}
               >
@@ -288,7 +344,7 @@ export default function ReportsPage() {
                   "Generate Report"
                 )}
               </Button>
-            </DialogFooter>
+            </div>
           </DialogContent>
         </Dialog>
       )}

@@ -25,8 +25,10 @@ import {
   ChevronsRight,
   ArrowUpDown,
   Settings2,
-  ArrowLeft,
+  Home,
 } from "lucide-react";
+import { Unauthorized } from "@/components/ui/unauthorized";
+import Link from "next/link";
 
 interface Control {
   id: string;
@@ -80,7 +82,7 @@ export default function ControlsByFrameworkPage() {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   // Framework info
-  const [framework, setFramework] = useState<{ id: string; name: string } | null>(null);
+  const [framework, setFramework] = useState<{ id: string; name: string; status: string } | null>(null);
 
   // Column visibility
   const [visibleColumns, setVisibleColumns] = useState({
@@ -116,8 +118,8 @@ export default function ControlsByFrameworkPage() {
 
         const frameworkData: FrameworkData = await response.json();
 
-        // Store framework info
-        setFramework({ id: frameworkData.id, name: frameworkData.name });
+        // Store framework info including status for access control
+        setFramework({ id: frameworkData.id, name: frameworkData.name, status: (frameworkData as { status?: string }).status || "Subscribed" });
 
         // Step 2: Extract Controls from all Requirements
         // Data path: framework.requirements[].controls[].control
@@ -232,121 +234,113 @@ export default function ControlsByFrameworkPage() {
     return control.assignee.fullName || control.assignee.userName || "-";
   };
 
+  // Block access to not-subscribed frameworks
+  if (!loading && framework && framework.status !== "Subscribed") {
+    return (
+      <Unauthorized
+        title="Framework Not Subscribed"
+        description="You do not have access to this framework. Please subscribe to view its contents."
+      />
+    );
+  }
+
   return (
-    <div className="space-y-4">
-      {/* Header Section */}
-      <div className="bg-white rounded-lg shadow-sm border p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => router.push("/roles/customer-administrator/compliance/framework")}
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Controls</h3>
-              {framework && (
-                <p className="text-sm text-muted-foreground">
-                  Filtered by: {framework.name}
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+    <div className="space-y-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/roles/customer-administrator/compliance" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>Compliance</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <Link href="/roles/customer-administrator/compliance/framework" className="text-slate-500 hover:text-primary-600 transition-colors">
+          Integrated Frameworks
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">Controls</span>
+      </nav>
+
+      {/* Page Header */}
+      <h1 className="text-2xl font-bold text-slate-800">Controls</h1>
 
       {/* Search Row */}
-      <div className="bg-white rounded-lg shadow-sm border p-4">
-        <div className="flex items-center gap-4">
-          <div className="flex-1">
-            <Input
-              placeholder=" Search By Control Code , Name"
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setCurrentPage(0); // Reset page on search input change
-              }}
-              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-              className="max-w-md"
-            />
-          </div>
-          <div className="text-sm text-muted-foreground">
-            Framework: <span className="font-medium">{framework?.name || "Loading..."}</span>
-          </div>
-        </div>
+      <div className="flex items-center gap-4">
+        <Input
+          placeholder="Search by control code or name..."
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setCurrentPage(0);
+          }}
+          onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+          className="max-w-md bg-white"
+        />
       </div>
 
       {/* Data Table */}
-      <div className="bg-white rounded-lg shadow-sm border">
+      <div className="bg-white rounded-xl border border-slate-200">
         <Table>
           <TableHeader>
-            <TableRow className="bg-gray-50">
+            <TableRow className="border-b border-slate-100 bg-slate-50/50">
               {visibleColumns.controlName && (
-                <TableHead>
-                  <Button
-                    variant="ghost"
-                    onClick={() => handleSort("name")}
-                    className="h-8 px-2 font-semibold"
-                  >
+                <TableHead
+                  className="text-xs font-semibold text-slate-600 py-4 pl-4 cursor-pointer select-none"
+                  onClick={() => handleSort("name")}
+                >
+                  <div className="flex items-center gap-2">
                     Control Name
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                  </Button>
+                    <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
+                  </div>
                 </TableHead>
               )}
               {visibleColumns.controlCode && (
-                <TableHead>
-                  <Button
-                    variant="ghost"
-                    onClick={() => handleSort("controlCode")}
-                    className="h-8 px-2 font-semibold"
-                  >
+                <TableHead
+                  className="text-xs font-semibold text-slate-600 py-4 cursor-pointer select-none"
+                  onClick={() => handleSort("controlCode")}
+                >
+                  <div className="flex items-center gap-2">
                     Control Code
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                  </Button>
+                    <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
+                  </div>
                 </TableHead>
               )}
               {visibleColumns.functionalGrouping && (
-                <TableHead>
-                  <Button
-                    variant="ghost"
-                    onClick={() => handleSort("functionalGrouping")}
-                    className="h-8 px-2 font-semibold"
-                  >
-                    FunctionalGrouping
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                  </Button>
+                <TableHead
+                  className="text-xs font-semibold text-slate-600 py-4 cursor-pointer select-none"
+                  onClick={() => handleSort("functionalGrouping")}
+                >
+                  <div className="flex items-center gap-2">
+                    Functional Grouping
+                    <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
+                  </div>
                 </TableHead>
               )}
               {visibleColumns.status && (
-                <TableHead>
-                  <Button
-                    variant="ghost"
-                    onClick={() => handleSort("status")}
-                    className="h-8 px-2 font-semibold"
-                  >
+                <TableHead
+                  className="text-xs font-semibold text-slate-600 py-4 cursor-pointer select-none"
+                  onClick={() => handleSort("status")}
+                >
+                  <div className="flex items-center gap-2">
                     Status
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                  </Button>
+                    <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
+                  </div>
                 </TableHead>
               )}
               {visibleColumns.assignee && (
-                <TableHead className="font-semibold">Assignee</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 py-4">Assignee</TableHead>
               )}
               {visibleColumns.domain && (
-                <TableHead>
-                  <Button
-                    variant="ghost"
-                    onClick={() => handleSort("domain")}
-                    className="h-8 px-2 font-semibold"
-                  >
+                <TableHead
+                  className="text-xs font-semibold text-slate-600 py-4 cursor-pointer select-none"
+                  onClick={() => handleSort("domain")}
+                >
+                  <div className="flex items-center gap-2">
                     Domain Name
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                  </Button>
+                    <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
+                  </div>
                 </TableHead>
               )}
-              <TableHead className="w-[50px]">
+              <TableHead className="w-[50px] py-4">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -400,13 +394,16 @@ export default function ControlsByFrameworkPage() {
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-8">
                   <div className="flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                    <div className="relative h-6 w-6">
+                      <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
+                      <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+                    </div>
                   </div>
                 </TableCell>
               </TableRow>
             ) : paginatedControls.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={7} className="text-center py-8 text-slate-500">
                   No controls found for this framework.
                 </TableCell>
               </TableRow>
@@ -414,28 +411,28 @@ export default function ControlsByFrameworkPage() {
               paginatedControls.map((control) => (
                 <TableRow
                   key={control.id}
-                  className="cursor-pointer hover:bg-gray-50"
+                  className="border-b border-slate-100 last:border-0 cursor-pointer hover:bg-slate-50"
                   onDoubleClick={() => router.push(`/compliance/control/${control.id}`)}
                 >
                   {visibleColumns.controlName && (
-                    <TableCell className="font-medium">{control.name}</TableCell>
+                    <TableCell className="py-4 pl-4 text-sm font-medium text-slate-900">{control.name}</TableCell>
                   )}
                   {visibleColumns.controlCode && (
-                    <TableCell>{control.controlCode}</TableCell>
+                    <TableCell className="py-4 text-sm text-slate-700">{control.controlCode}</TableCell>
                   )}
                   {visibleColumns.functionalGrouping && (
-                    <TableCell>{control.functionalGrouping || "-"}</TableCell>
+                    <TableCell className="py-4 text-sm text-slate-700">{control.functionalGrouping || "-"}</TableCell>
                   )}
                   {visibleColumns.status && (
-                    <TableCell>{control.status}</TableCell>
+                    <TableCell className="py-4 text-sm text-slate-700">{control.status}</TableCell>
                   )}
                   {visibleColumns.assignee && (
-                    <TableCell>{getAssigneeName(control)}</TableCell>
+                    <TableCell className="py-4 text-sm text-slate-700">{getAssigneeName(control)}</TableCell>
                   )}
                   {visibleColumns.domain && (
-                    <TableCell>{control.domain?.name || "-"}</TableCell>
+                    <TableCell className="py-4 text-sm text-slate-700">{control.domain?.name || "-"}</TableCell>
                   )}
-                  <TableCell></TableCell>
+                  <TableCell className="py-4"></TableCell>
                 </TableRow>
               ))
             )}
@@ -443,48 +440,50 @@ export default function ControlsByFrameworkPage() {
         </Table>
 
         {/* Pagination */}
-        <div className="flex items-center justify-center gap-2 p-4 border-t">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setCurrentPage(0)}
-            disabled={currentPage === 0}
-            className="h-8 w-8"
-          >
-            <ChevronsLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setCurrentPage(currentPage - 1)}
-            disabled={currentPage === 0}
-            className="h-8 w-8"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <span className="text-sm text-muted-foreground px-3 py-1">
+        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
+          <span className="text-sm text-slate-500">
             {total > 0
-              ? `Currently showing ${startIndex + 1} to ${endIndex} of ${total}`
+              ? `${startIndex + 1} to ${endIndex} of ${total}`
               : "No controls"}
           </span>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setCurrentPage(currentPage + 1)}
-            disabled={currentPage >= totalPages - 1}
-            className="h-8 w-8"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setCurrentPage(totalPages - 1)}
-            disabled={currentPage >= totalPages - 1}
-            className="h-8 w-8"
-          >
-            <ChevronsRight className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setCurrentPage(0)}
+              disabled={currentPage === 0}
+              className="h-8 w-8"
+            >
+              <ChevronsLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setCurrentPage(currentPage - 1)}
+              disabled={currentPage === 0}
+              className="h-8 w-8"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setCurrentPage(currentPage + 1)}
+              disabled={currentPage >= totalPages - 1}
+              className="h-8 w-8"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setCurrentPage(totalPages - 1)}
+              disabled={currentPage >= totalPages - 1}
+              className="h-8 w-8"
+            >
+              <ChevronsRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
     </div>

@@ -49,9 +49,13 @@ export async function PUT(
     }
 
     // Check for duplicate label if label is being changed
+    // NOTE: AuditImpact model doesn't have customerAccountId - tenant filtering disabled
     if (label && label !== existing.label) {
-      const duplicate = await prisma.auditImpact.findUnique({
-        where: { label },
+      const duplicate = await prisma.auditImpact.findFirst({
+        where: {
+          label,
+          id: { not: id }
+        },
       });
       if (duplicate) {
         return NextResponse.json(

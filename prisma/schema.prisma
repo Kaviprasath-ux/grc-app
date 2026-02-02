@@ -7,8 +7,112 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+// ==================== CUSTOMER ACCOUNT (MULTI-TENANT) ====================
+
+// CustomerAccount represents a tenant in the multi-tenant system
+// All business data is isolated by customerAccountId
+model CustomerAccount {
+  id                     String                   @id @default(cuid())
+  code                   String                   @unique // e.g., GRC_001
+  name                   String                   // Customer organization name
+  logoUrl                String?                  // Customer logo
+  isActive               Boolean                  @default(true)
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @updatedAt
+  // Relations - all data belonging to this customer
+  users                  User[]
+  organizations          Organization[]
+  departments            Department[]
+  stakeholders           Stakeholder[]
+  issues                 Issue[]
+  services               Service[]
+  frameworks             Framework[]
+  requirementCategories  RequirementCategory[]
+  requirements           Requirement[]
+  requirementExceptions  RequirementException[]
+  controls               Control[]
+  processes              Process[]
+  policies               Policy[]
+  evidences              Evidence[]
+  artifacts              Artifact[]
+  exceptions             Exception[]
+  kpis                   KPI[]
+  assets                 Asset[]
+  risks                  Risk[]
+  riskControlMatrixEntries RiskControlMatrixEntry[]
+  riskAssessments        RiskAssessment[]
+  riskResponses          RiskResponse[]
+  audits                 Audit[]
+  auditFindings          AuditFinding[]
+  capas                  CAPA[]
+  internalAuditRisks     InternalAuditRisk[]
+  auditableEntities      AuditableEntity[]
+  auditEngagements       AuditEngagement[]
+  internalAuditFindings  InternalAuditFinding[]
+  internalAuditCAPAs     InternalAuditCAPA[]
+  auditReports           AuditReport[]
+  internalAuditDocuments InternalAuditDocument[]
+  governanceVaultDocuments GovernanceVaultDocument[]
+  subscriptionPlans      SubscriptionPlan[]
+  // Master data relations (tenant-specific)
+  regulations            Regulation[]
+  controlDomains         ControlDomain[]
+  assetCategories        AssetCategory[]
+  assetSubCategories     AssetSubCategory[]
+  assetGroups            AssetGroup[]
+  ciaRatings             CIARating[]
+  assetSensitivities     AssetSensitivity[]
+  assetCIAClassifications AssetCIAClassification[]
+  assetLifecycleStatuses AssetLifecycleStatus[]
+  assetClassifications   AssetClassification[]
+  riskCategories         RiskCategory[]
+  riskTypes              RiskType[]
+  riskThreats            RiskThreat[]
+  riskVulnerabilities    RiskVulnerability[]
+  riskCauses             RiskCause[]
+  vulnerabilityCategories VulnerabilityCategory[]
+  threatCategories       ThreatCategory[]
+  controlStrengths       ControlStrength[]
+  riskLikelihoods        RiskLikelihood[]
+  impactCategories       ImpactCategory[]
+  impactRatings          ImpactRating[]
+  vulnerabilityRatings   VulnerabilityRating[]
+  riskSubCategories      RiskSubCategory[]
+  riskRanges             RiskRange[]
+  riskScoreConfigs       RiskScoreConfig[]
+  auditCategories        AuditCategory[]
+  auditNatureOfControls  AuditNatureOfControl[]
+  auditRiskFactors       AuditRiskFactor[]
+  auditProbabilities     AuditProbability[]
+  auditImpacts           AuditImpact[]
+  auditScoringRanges     AuditScoringRange[]
+  auditScoringConfigs    AuditScoringConfig[]
+  auditPeriodicities     AuditPeriodicity[]
+  auditEscalationConfigs AuditEscalationConfig[]
+  auditTypes             AuditType[]
+  auditLocations         AuditLocation[]
+  processFrequencies     ProcessFrequency[]
+  natureOfImplementations NatureOfImplementation[]
+}
+
+// Subscription Plan for Customer Accounts
+model SubscriptionPlan {
+  id                  String          @id @default(cuid())
+  customerAccountId   String
+  customerAccount     CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+  startDate           DateTime
+  expiryDate          DateTime
+  maxFrameworksAllowed Int            @default(0)
+  maxAccountsAllowed   Int            @default(0)
+  frameworksUsed      Int             @default(0)
+  accountsUsed        Int             @default(0)
+  status              String          @default("Active") // Active, Inactive, Expired
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
 }
 
 // ==================== ROLE-BASED ACCESS CONTROL (RBAC) ====================
@@ -66,6 +170,9 @@ model UserRole {
 // Organization Profile
 model Organization {
   id                 String           @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId  String
+  customerAccount    CustomerAccount  @relation(fields: [customerAccountId], references: [id])
   name               String
   email              String?
   phone              String?
@@ -91,6 +198,8 @@ model Organization {
   branches           Branch[]
   dataCenters        DataCenter[]
   cloudProviders     CloudProvider[]
+
+  @@index([customerAccountId])
 }
 
 // Branch Office
@@ -130,7 +239,10 @@ model CloudProvider {
 // Departments
 model Department {
   id                    String                 @id @default(cuid())
-  name                  String                 @unique
+  // Multi-tenant: Link to customer account
+  customerAccountId     String
+  customerAccount       CustomerAccount        @relation(fields: [customerAccountId], references: [id])
+  name                  String
   description           String?
   headId                String?
   createdAt             DateTime               @default(now())
@@ -152,31 +264,45 @@ model Department {
   auditableEntities     AuditableEntity[]
   auditEngagements      AuditEngagement[]
   internalAuditFindings InternalAuditFinding[]
+
+  @@unique([customerAccountId, name])
+  @@index([customerAccountId])
 }
 
 // Users
 model User {
-  id                  String      @id @default(cuid())
-  userId              String      @unique
-  userName            String      @unique
-  email               String      @unique
+  id                  String           @id @default(cuid())
+  userId              String           @unique
+  userName            String           @unique
+  email               String           @unique
   password            String
   firstName           String
   lastName            String
   fullName            String
   designation         String?
   function            String?
-  role                String      @default("User")
-  language            String      @default("English")
-  timezone            String      @default("UTC")
-  isActive            Boolean     @default(true)
-  isBlocked           Boolean     @default(false)
-  // CustomerAdmin fields
-  customerCode        String?     // Customer account code (e.g., GRC_001)
-  logoUrl             String?     // Customer logo URL
-  lastLogin           DateTime?   // Last login timestamp
+  role                String           @default("User")
+  language            String           @default("English")
+  timezone            String           @default("UTC")
+  isActive            Boolean          @default(true)
+  isBlocked           Boolean          @default(false)
+  // Multi-tenant: Link user to customer account
+  customerAccountId   String?
+  customerAccount     CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  // CustomerAdmin fields (legacy - kept for backwards compatibility)
+  customerCode        String?          // Customer account code (e.g., GRC_001)
+  logoUrl             String?          // Customer logo URL
+  lastLogin           DateTime?        // Last login timestamp
   departmentId        String?
-  department          Department? @relation(fields: [departmentId], references: [id])
+  department          Department?      @relation(fields: [departmentId], references: [id])
+  // Audit Head assignment - links auditee to their audit head
+  auditHeadId         String?
+  auditHead           User?            @relation("AuditHeadAuditees", fields: [auditHeadId], references: [id])
+  managedAuditees     User[]           @relation("AuditHeadAuditees")
+  // Reporting Manager - for organization hierarchy
+  reportingManagerId  String?
+  reportingManager    User?            @relation("ReportingManagerReports", fields: [reportingManagerId], references: [id])
+  directReports       User[]           @relation("ReportingManagerReports")
   createdAt           DateTime    @default(now())
   updatedAt           DateTime    @updatedAt
   // Relations
@@ -199,6 +325,27 @@ model User {
   assignedEngagements AuditEngagement[]   @relation("EngagementAuditor")
   auditeeEngagements  AuditEngagement[]   @relation("EngagementAuditee")
   memberOfEngagements AuditEngagement[]   @relation("EngagementTeamMembers")
+  // Audit Head owned data
+  ownedEngagements    AuditEngagement[]   @relation("AuditHeadEngagements")
+  ownedAuditRisks     InternalAuditRisk[] @relation("AuditHeadRisks")
+  ownedAuditFindings  InternalAuditFinding[] @relation("AuditHeadFindings")
+  ownedAuditCAPAs     InternalAuditCAPA[] @relation("AuditHeadCAPAs")
+  ownedAuditReports   AuditReport[]       @relation("AuditHeadReports")
+  ownedAuditDocuments InternalAuditDocument[] @relation("AuditHeadDocuments")
+  // Audit Head owned settings (each Audit Head has their own settings)
+  ownedCategories         AuditCategory[]          @relation("AuditHeadCategories")
+  ownedNatureOfControls   AuditNatureOfControl[]   @relation("AuditHeadNatureOfControls")
+  ownedRiskFactors        AuditRiskFactor[]        @relation("AuditHeadRiskFactors")
+  ownedProbabilities      AuditProbability[]       @relation("AuditHeadProbabilities")
+  ownedImpacts            AuditImpact[]            @relation("AuditHeadImpacts")
+  ownedScoringRanges      AuditScoringRange[]      @relation("AuditHeadScoringRanges")
+  ownedScoringConfigs     AuditScoringConfig[]     @relation("AuditHeadScoringConfigs")
+  ownedPeriodicities      AuditPeriodicity[]       @relation("AuditHeadPeriodicities")
+  ownedEscalationConfigs  AuditEscalationConfig[]  @relation("AuditHeadEscalationConfigs")
+  ownedAuditTypes         AuditType[]              @relation("AuditHeadTypes")
+  ownedLocations          AuditLocation[]          @relation("AuditHeadLocations")
+  ownedProcessFrequencies ProcessFrequency[]       @relation("AuditHeadProcessFrequencies")
+  ownedNatureOfImplementations NatureOfImplementation[] @relation("AuditHeadNatureOfImplementations")
   // Process RACI relations
   responsibleProcesses Process[]          @relation("ProcessResponsible")
   accountableProcesses Process[]          @relation("ProcessAccountable")
@@ -207,42 +354,55 @@ model User {
   // Issue relations
   ownedIssues          Issue[]       @relation("IssueOwner")
   createdActions       IssueAction[]
+  // AI relations
+  aiOperations        AIOperation[]
+  aiJobs              AIJob[]
 }
 
 // Stakeholders
 model Stakeholder {
-  id           String             @id @default(cuid())
-  name         String
-  email        String?
-  type         String             @default("Internal") // Internal, External, Third Party
-  status       String             @default("Active") // Active, Inactive
-  departmentId String?
-  department   Department?        @relation(fields: [departmentId], references: [id])
-  issues       IssueStakeholder[]
-  createdAt    DateTime           @default(now())
-  updatedAt    DateTime           @updatedAt
+  id                String             @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String
+  customerAccount   CustomerAccount    @relation(fields: [customerAccountId], references: [id])
+  name              String
+  email             String?
+  type              String             @default("Internal") // Internal, External, Third Party
+  status            String             @default("Active") // Active, Inactive
+  departmentId      String?
+  department        Department?        @relation(fields: [departmentId], references: [id])
+  issues            IssueStakeholder[]
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@index([customerAccountId])
 }
 
 // Issues
 model Issue {
-  id           String             @id @default(cuid())
-  title        String
-  description  String?
-  domain       String // Internal, External, IT, GRC
-  category     String // Finance, Human Resources, Data breach, etc.
-  issueType    String? // Financial, Operational, Compliance, Security, etc.
-  status       String             @default("Open") // Open, In Progress, Pending, Resolved, Closed
-  dueDate      DateTime?
-  departmentId String?
-  department   Department?        @relation(fields: [departmentId], references: [id])
-  ownerId      String?
-  owner        User?              @relation("IssueOwner", fields: [ownerId], references: [id])
-  actions      IssueAction[]
-  regulations  IssueRegulation[]
-  processes    IssueProcess[]
-  stakeholders IssueStakeholder[]
-  createdAt    DateTime           @default(now())
-  updatedAt    DateTime           @updatedAt
+  id                String             @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String
+  customerAccount   CustomerAccount    @relation(fields: [customerAccountId], references: [id])
+  title             String
+  description       String?
+  domain            String // Internal, External, IT, GRC
+  category          String // Finance, Human Resources, Data breach, etc.
+  issueType         String? // Financial, Operational, Compliance, Security, etc.
+  status            String             @default("Open") // Open, In Progress, Pending, Resolved, Closed
+  dueDate           DateTime?
+  departmentId      String?
+  department        Department?        @relation(fields: [departmentId], references: [id])
+  ownerId           String?
+  owner             User?              @relation("IssueOwner", fields: [ownerId], references: [id])
+  actions           IssueAction[]
+  regulations       IssueRegulation[]
+  processes         IssueProcess[]
+  stakeholders      IssueStakeholder[]
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@index([customerAccountId])
 }
 
 // Issue Actions (created by DepartmentReviewer, reviewed by CustomerAdmin/Reviewer)
@@ -315,14 +475,19 @@ model IssueStakeholder {
 
 // Services
 model Service {
-  id              String   @id @default(cuid())
-  title           String
-  description     String?
-  serviceUser     String // Internal, External, Public
-  serviceCategory String?
-  serviceItem     String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                String          @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id])
+  title             String
+  description       String?
+  serviceUser       String // Internal, External, Public
+  serviceCategory   String?
+  serviceItem       String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([customerAccountId])
 }
 
 // ==================== COMPLIANCE MODULE ====================
@@ -330,15 +495,24 @@ model Service {
 // Frameworks
 model Framework {
   id                    String                @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId     String
+  customerAccount       CustomerAccount       @relation(fields: [customerAccountId], references: [id])
   code                  String?
-  name                  String                @unique
+  name                  String
   description           String?
   version               String?
   type                  String                @default("Framework") // Framework, Standard, Regulation
-  status                String                @default("Subscribed") // Subscribed, Not Subscribed
+  status                String                @default("Subscribed") // Subscribed, Not Subscribed, Suggested, Archived
   country               String?
   industry              String?
   isCustom              Boolean               @default(false)
+  // Master template flag: true = this is a master template that customers can subscribe to
+  isMasterTemplate      Boolean               @default(false)
+  // Source framework: links a customer's subscribed copy back to the original master
+  sourceFrameworkId     String?
+  sourceFramework       Framework?            @relation("FrameworkSubscriptions", fields: [sourceFrameworkId], references: [id], onDelete: SetNull)
+  subscribedCopies      Framework[]           @relation("FrameworkSubscriptions")
   logo                  String?
   supportDocumentUrl    String?
   compliancePercentage  Float                 @default(0)
@@ -350,27 +524,38 @@ model Framework {
   evidences             Evidence[]
   requirements          Requirement[]
   requirementCategories RequirementCategory[]
+
+  @@unique([customerAccountId, name])
+  @@index([customerAccountId])
+  @@index([sourceFrameworkId])
 }
 
 // Requirement Categories (Domains/Chapters in a framework)
 model RequirementCategory {
-  id           String        @id @default(cuid())
-  name         String
-  code         String?
-  description  String?
-  sortOrder    Int           @default(0)
-  frameworkId  String
-  framework    Framework     @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
-  requirements Requirement[]
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  id                String          @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id])
+  name              String
+  code              String?
+  description       String?
+  sortOrder         Int             @default(0)
+  frameworkId       String
+  framework         Framework       @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+  requirements      Requirement[]
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
 
   @@unique([frameworkId, name])
+  @@index([customerAccountId])
 }
 
 // Requirements (Framework Requirements with hierarchy)
 model Requirement {
   id                   String                 @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId    String
+  customerAccount      CustomerAccount        @relation(fields: [customerAccountId], references: [id])
   code                 String
   name                 String
   description          String?
@@ -397,6 +582,7 @@ model Requirement {
   updatedAt            DateTime               @updatedAt
 
   @@unique([frameworkId, code])
+  @@index([customerAccountId])
 }
 
 // Requirement-Control Many-to-Many Junction Table
@@ -413,26 +599,35 @@ model RequirementControl {
 
 // Requirement Exceptions (for compliance exceptions from requirements)
 model RequirementException {
-  id            String      @id @default(cuid())
-  code          String      @unique
-  name          String
-  description   String?
-  category      String      @default("Compliance") // Policy, Control, Compliance, Risk
-  requirementId String
-  requirement   Requirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
-  departmentId  String?
-  department    Department? @relation(fields: [departmentId], references: [id])
-  requesterId   String?
-  status        String      @default("Pending") // Pending, Approved, Authorised, Submitted for Closure, Overdue, RiskAccepted, Closed
-  endDate       DateTime?
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  id                String          @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id])
+  code              String
+  name              String
+  description       String?
+  category          String          @default("Compliance") // Policy, Control, Compliance, Risk
+  requirementId     String
+  requirement       Requirement     @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  departmentId      String?
+  department        Department?     @relation(fields: [departmentId], references: [id])
+  requesterId       String?
+  status            String          @default("Pending") // Pending, Approved, Authorised, Submitted for Closure, Overdue, RiskAccepted, Closed
+  endDate           DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@unique([customerAccountId, code])
+  @@index([customerAccountId])
 }
 
 // Regulations (legacy - keeping for backwards compatibility)
 model Regulation {
   id                     String            @id @default(cuid())
-  name                   String            @unique
+  // Multi-tenant: Link to customer account
+  customerAccountId      String?
+  customerAccount        CustomerAccount?  @relation(fields: [customerAccountId], references: [id])
+  name                   String
   version                String?
   sa1Date                String?
   sa2Date                String?
@@ -444,22 +639,34 @@ model Regulation {
   issues                 IssueRegulation[]
   createdAt              DateTime          @default(now())
   updatedAt              DateTime          @updatedAt
+
+  @@unique([customerAccountId, name])
+  @@index([customerAccountId])
 }
 
 // Control Domains
 model ControlDomain {
-  id        String    @id @default(cuid())
-  code      String?
-  name      String    @unique
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  controls  Control[]
+  id                String           @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  code              String?
+  name              String
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  controls          Control[]
+
+  @@unique([customerAccountId, name])
+  @@index([customerAccountId])
 }
 
 // Controls
 model Control {
   id                       String               @id @default(cuid())
-  controlCode              String               @unique
+  // Multi-tenant: Link to customer account
+  customerAccountId        String
+  customerAccount          CustomerAccount      @relation(fields: [customerAccountId], references: [id])
+  controlCode              String
   name                     String
   description              String?
   controlQuestion          String?
@@ -495,46 +702,80 @@ model Control {
   controlRisks             ControlRisk[]
   policyControls           PolicyControl[]
   evidenceControls         EvidenceControl[]      @relation("EvidenceControls")
+  // Risk Control Matrix control links
+  riskControlMatrixControls RiskControlMatrixControl[]
+
+  @@unique([customerAccountId, controlCode])
+  @@index([customerAccountId])
 }
 
 // Processes
 model Process {
-  id                     String       @id @default(cuid())
-  processCode            String       @unique
+  id                     String          @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId      String
+  customerAccount        CustomerAccount @relation(fields: [customerAccountId], references: [id])
+  processCode            String
   name                   String
   description            String?
-  processType            String       @default("Primary") // Primary, Management, Supporting
+  processType            String          @default("Primary") // Primary, Management, Supporting
   departmentId           String?
-  department             Department?  @relation(fields: [departmentId], references: [id])
+  department             Department?     @relation(fields: [departmentId], references: [id])
   ownerId                String?
-  owner                  User?        @relation("ProcessOwner", fields: [ownerId], references: [id])
-  status                 String       @default("Active")
+  owner                  User?           @relation("ProcessOwner", fields: [ownerId], references: [id])
+  status                 String          @default("Active")
   // Audit Library fields
-  processFrequency       String?      // Annually, As needed, Bi-annually, Daily, monthly, Monthly, Quarterly, Weekly
-  natureOfImplementation String?      // Manual, Automated, Manual + Automated
-  riskRating             String?      // Low, Medium, High, Not Assessed
-  assetDependency        Boolean      @default(false)
-  externalDependency     Boolean      @default(false)
-  location               String?      // JSON array of locations
-  kpiMeasurementRequired Boolean      @default(false)
-  piiCapture             Boolean      @default(false)
-  operationalComplexity  String?      // Low, Medium, High
+  processFrequency       String?         // Annually, As needed, Bi-annually, Daily, monthly, Monthly, Quarterly, Weekly
+  natureOfImplementation String?         // Manual, Automated, Manual + Automated
+  riskRating             String?         // Low, Medium, High, Not Assessed
+  assetDependency        Boolean         @default(false)
+  assetId                String?         // Link to Asset when assetDependency is true
+  asset                  Asset?          @relation("ProcessAsset", fields: [assetId], references: [id])
+  externalDependency     Boolean         @default(false)
+  externalParty          String?         // Name of external party when externalDependency is true
+  location               String?         // JSON array of locations
+  kpiMeasurementRequired Boolean         @default(false)
+  piiCapture             Boolean         @default(false)
+  recurrence             String?         // Daily, Weekly, Monthly, Quarterly, Annually
+  reviewDate             DateTime?       // Review date for KPI or PII
+  operationalComplexity  String?         // Low, Medium, High
   lastAuditDate          DateTime?
   // RACI fields
   responsibleId          String?
-  responsible            User?          @relation("ProcessResponsible", fields: [responsibleId], references: [id])
+  responsible            User?           @relation("ProcessResponsible", fields: [responsibleId], references: [id])
   accountableId          String?
-  accountable            User?          @relation("ProcessAccountable", fields: [accountableId], references: [id])
+  accountable            User?           @relation("ProcessAccountable", fields: [accountableId], references: [id])
   consultedId            String?
-  consulted              User?          @relation("ProcessConsulted", fields: [consultedId], references: [id])
+  consulted              User?           @relation("ProcessConsulted", fields: [consultedId], references: [id])
   informedId             String?
-  informed               User?          @relation("ProcessInformed", fields: [informedId], references: [id])
-  createdAt              DateTime       @default(now())
-  updatedAt              DateTime       @updatedAt
+  informed               User?           @relation("ProcessInformed", fields: [informedId], references: [id])
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
   // BIA Relation
   biaAssessment          ProcessBIA?
   // Issue Relation
   issues                 IssueProcess[]
+  // Risks impacted by this process
+  impactedByRisks        Risk[]          @relation("RiskImpactedProcess")
+  // Attachments
+  attachments            ProcessAttachment[]
+
+  @@unique([customerAccountId, processCode])
+  @@index([customerAccountId])
+}
+
+// Process Attachment (files associated with processes)
+model ProcessAttachment {
+  id         String   @id @default(cuid())
+  fileName   String
+  fileType   String?  // pdf, docx, xlsx, png, jpg, etc.
+  fileSize   Int?
+  filePath   String
+  uploadedAt DateTime @default(now())
+  processId  String
+  process    Process  @relation(fields: [processId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 // ==================== BUSINESS IMPACT ANALYSIS (BIA) ====================
@@ -660,7 +901,10 @@ model ProcessBIARating {
 // Governance - Policies, Standards, Procedures
 model Policy {
   id                    String             @id @default(cuid())
-  code                  String             @unique
+  // Multi-tenant: Link to customer account
+  customerAccountId     String
+  customerAccount       CustomerAccount    @relation(fields: [customerAccountId], references: [id])
+  code                  String
   name                  String
   version               String             @default("1.0")
   documentType          String             @default("Policy") // Policy, Standard, Procedure
@@ -683,14 +927,22 @@ model Policy {
   updatedAt             DateTime           @updatedAt
   attachments           PolicyAttachment[]
   policyControls        PolicyControl[]
+  policyAIReviews       PolicyAIReview[]
   policyExceptions      PolicyException[]
   exceptions            Exception[]        @relation("PolicyExceptions")
+  vaultDocumentLinks    GovernanceVaultDocumentLink[]
+
+  @@unique([customerAccountId, code])
+  @@index([customerAccountId])
 }
 
 // Evidence
 model Evidence {
   id                    String               @id @default(cuid())
-  evidenceCode          String               @unique
+  // Multi-tenant: Link to customer account
+  customerAccountId     String
+  customerAccount       CustomerAccount      @relation(fields: [customerAccountId], references: [id])
+  evidenceCode          String
   name                  String
   description           String?
   domain                String? // Compliance, Change Management, Education, Risk Management, etc.
@@ -720,6 +972,10 @@ model Evidence {
   kpis                  KPI[]
   evidenceControls      EvidenceControl[]
   linkedArtifacts       EvidenceArtifact[]
+  evidenceAIReviews     EvidenceAIReview[]
+
+  @@unique([customerAccountId, evidenceCode])
+  @@index([customerAccountId])
 }
 
 // Evidence-Control Many-to-Many Junction Table
@@ -736,22 +992,28 @@ model EvidenceControl {
 
 // Standalone Artifact for the Artifacts tab
 model Artifact {
-  id              String            @id @default(cuid())
-  artifactCode    String            @unique
-  name            String
-  fileName        String
-  fileType        String? // pdf, docx, xlsx, png, jpg, etc.
-  fileSize        Int?
-  filePath        String
-  uploadedBy      String?
-  uploadedById    String?
-  uploader        User?             @relation("ArtifactUploader", fields: [uploadedById], references: [id])
-  aiReviewStatus  String? // Pending, Reviewed
-  aiReviewScore   Float?
-  aiReviewNotes   String?
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-  linkedEvidences EvidenceArtifact[]
+  id                String             @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String
+  customerAccount   CustomerAccount    @relation(fields: [customerAccountId], references: [id])
+  artifactCode      String
+  name              String
+  fileName          String
+  fileType          String? // pdf, docx, xlsx, png, jpg, etc.
+  fileSize          Int?
+  filePath          String
+  uploadedBy        String?
+  uploadedById      String?
+  uploader          User?              @relation("ArtifactUploader", fields: [uploadedById], references: [id])
+  aiReviewStatus    String? // Pending, Reviewed
+  aiReviewScore     Float?
+  aiReviewNotes     String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  linkedEvidences   EvidenceArtifact[]
+
+  @@unique([customerAccountId, artifactCode])
+  @@index([customerAccountId])
 }
 
 // Evidence-Artifact Many-to-Many Junction Table
@@ -768,37 +1030,43 @@ model EvidenceArtifact {
 
 // Exceptions
 model Exception {
-  id               String             @id @default(cuid())
-  exceptionCode    String             @unique
-  name             String
-  description      String? // Reason For Exception
-  category         String // Policy, Control, Compliance, Risk
-  departmentId     String?
-  department       Department?        @relation(fields: [departmentId], references: [id])
+  id                String             @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String
+  customerAccount   CustomerAccount    @relation(fields: [customerAccountId], references: [id])
+  exceptionCode     String
+  name              String
+  description       String? // Reason For Exception
+  category          String // Policy, Control, Compliance, Risk
+  departmentId      String?
+  department        Department?        @relation(fields: [departmentId], references: [id])
   // Category-specific references
-  controlId        String?
-  control          Control?           @relation(fields: [controlId], references: [id])
-  policyId         String?
-  policy           Policy?            @relation("PolicyExceptions", fields: [policyId], references: [id])
-  riskId           String?
-  risk             Risk?              @relation("RiskExceptions", fields: [riskId], references: [id])
+  controlId         String?
+  control           Control?           @relation(fields: [controlId], references: [id])
+  policyId          String?
+  policy            Policy?            @relation("PolicyExceptions", fields: [policyId], references: [id])
+  riskId            String?
+  risk              Risk?              @relation("RiskExceptions", fields: [riskId], references: [id])
   // Requester and Approver
-  requesterId      String?
-  requester        User?              @relation("ExceptionRequester", fields: [requesterId], references: [id])
-  approverId       String?
-  approver         User?              @relation("ExceptionApprover", fields: [approverId], references: [id])
+  requesterId       String?
+  requester         User?              @relation("ExceptionRequester", fields: [requesterId], references: [id])
+  approverId        String?
+  approver          User?              @relation("ExceptionApprover", fields: [approverId], references: [id])
   // Approval details
-  approvedBy       String? // Name of person who approved
-  approvedDate     DateTime?
+  approvedBy        String? // Name of person who approved
+  approvedDate      DateTime?
   // Status and dates
-  status           String             @default("Pending") // Pending, Approved, Authorised, Submitted for Closure, Overdue, RiskAccepted, Closed
-  startDate        DateTime?
-  endDate          DateTime?
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
+  status            String             @default("Pending") // Pending, Approved, Authorised, Submitted for Closure, Overdue, RiskAccepted, Closed
+  startDate         DateTime?
+  endDate           DateTime?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
   // Relations
-  comments         ExceptionComment[]
-  policyExceptions PolicyException[]
+  comments          ExceptionComment[]
+  policyExceptions  PolicyException[]
+
+  @@unique([customerAccountId, exceptionCode])
+  @@index([customerAccountId])
 }
 
 // Exception Comments
@@ -815,8 +1083,11 @@ model ExceptionComment {
 
 // KPI (Key Performance Indicators)
 model KPI {
-  id                 String      @id @default(cuid())
-  code               String      @unique
+  id                 String          @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId  String
+  customerAccount    CustomerAccount @relation(fields: [customerAccountId], references: [id])
+  code               String
   objective          String? // KPI Objective
   description        String? // KPI Description
   dataSource         String? // KPI Data Source
@@ -824,15 +1095,18 @@ model KPI {
   expectedScore      Float? // Expected Score
   actualScore        Float? // Current Actual Score
   reviewDate         DateTime? // Next Review Date
-  status             String      @default("Scheduled") // Scheduled, Missed, Overdue, Achieved
+  status             String          @default("Scheduled") // Scheduled, Missed, Overdue, Achieved
   departmentId       String?
-  department         Department? @relation(fields: [departmentId], references: [id])
+  department         Department?     @relation(fields: [departmentId], references: [id])
   evidenceId         String?
-  evidence           Evidence?   @relation(fields: [evidenceId], references: [id])
-  createdAt          DateTime    @default(now())
-  updatedAt          DateTime    @updatedAt
+  evidence           Evidence?       @relation(fields: [evidenceId], references: [id])
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
   // KPI Review History
   reviews            KPIReview[]
+
+  @@unique([customerAccountId, code])
+  @@index([customerAccountId])
 }
 
 // KPI Review History (tracks actual score submissions over time)
@@ -876,6 +1150,39 @@ model PolicyAttachment {
   policy     Policy   @relation(fields: [policyId], references: [id], onDelete: Cascade)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+}
+
+// Governance Vault Document (Information Security Vault)
+model GovernanceVaultDocument {
+  id                String                        @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String
+  customerAccount   CustomerAccount               @relation(fields: [customerAccountId], references: [id])
+  documentCode      String                        // Auto-generated code like VD-001
+  fileName          String
+  fileType          String?                       // pdf, docx, xlsx, etc.
+  fileSize          Int?
+  filePath          String
+  status            String                        @default("Active") // Active, Archived
+  uploadedAt        DateTime                      @default(now())
+  createdAt         DateTime                      @default(now())
+  updatedAt         DateTime                      @updatedAt
+  linkedPolicies    GovernanceVaultDocumentLink[]
+
+  @@unique([customerAccountId, documentCode])
+  @@index([customerAccountId])
+}
+
+// Junction table for linking vault documents to policies (many-to-many)
+model GovernanceVaultDocumentLink {
+  id         String                  @id @default(cuid())
+  documentId String
+  document   GovernanceVaultDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  policyId   String
+  policy     Policy                  @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  linkedAt   DateTime                @default(now())
+
+  @@unique([documentId, policyId])
 }
 
 // Evidence Attachments (Artifacts)
@@ -932,19 +1239,28 @@ model PolicyException {
 
 // Asset Category (Top-level categories: Hardware, Software, Data, etc.)
 model AssetCategory {
-  id            String             @id @default(cuid())
-  name          String             @unique
-  description   String?
-  status        String             @default("Active") // Active, Inactive
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
-  subCategories AssetSubCategory[]
-  assets        Asset[]
+  id                String             @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?
+  customerAccount   CustomerAccount?   @relation(fields: [customerAccountId], references: [id])
+  name              String
+  description       String?
+  status            String             @default("Active") // Active, Inactive
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  subCategories     AssetSubCategory[]
+  assets            Asset[]
+
+  @@unique([customerAccountId, name])
+  @@index([customerAccountId])
 }
 
 // Asset Sub Category (e.g., Server, Firewall under Hardware)
 model AssetSubCategory {
   id                      String                   @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId       String?
+  customerAccount         CustomerAccount?         @relation(fields: [customerAccountId], references: [id])
   name                    String
   description             String?
   categoryId              String
@@ -955,45 +1271,65 @@ model AssetSubCategory {
   assets                  Asset[]
   assetCIAClassifications AssetCIAClassification[]
 
-  @@unique([name, categoryId])
+  @@unique([customerAccountId, name, categoryId])
+  @@index([customerAccountId])
 }
 
 // Asset Group (Logical groupings: Security Tools, Payment Systems, etc.)
 model AssetGroup {
   id                      String                   @id @default(cuid())
-  name                    String                   @unique
+  // Multi-tenant: Link to customer account
+  customerAccountId       String?
+  customerAccount         CustomerAccount?         @relation(fields: [customerAccountId], references: [id])
+  name                    String
   description             String?
   createdAt               DateTime                 @default(now())
   updatedAt               DateTime                 @updatedAt
   assets                  Asset[]
   assetCIAClassifications AssetCIAClassification[]
+
+  @@unique([customerAccountId, name])
+  @@index([customerAccountId])
 }
 
 // CIA Rating Levels (for Confidentiality, Integrity, Availability)
 model CIARating {
-  id        String   @id @default(cuid())
-  type      String   // Confidentiality, Integrity, Availability
-  label     String   // high, medium, low
-  value     Int      // Score value (e.g., 10, 5, 1)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                String           @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  type              String           // Confidentiality, Integrity, Availability
+  label             String           // high, medium, low
+  value             Int              // Score value (e.g., 10, 5, 1)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
 
-  @@unique([type, label])
+  @@unique([customerAccountId, type, label])
+  @@index([customerAccountId])
 }
 
 // Asset Sensitivity Levels
 model AssetSensitivity {
-  id          String   @id @default(cuid())
-  name        String   @unique // Public, Internal, Confidential, Restricted
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  assets      Asset[]
+  id                String           @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  name              String           // Public, Internal, Confidential, Restricted
+  description       String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  assets            Asset[]
+
+  @@unique([customerAccountId, name])
+  @@index([customerAccountId])
 }
 
 // Asset CIA Classification (Links Sub Category + Group with CIA ratings)
 model AssetCIAClassification {
   id                    String           @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId     String?
+  customerAccount       CustomerAccount? @relation(fields: [customerAccountId], references: [id])
   subCategoryId         String
   subCategory           AssetSubCategory @relation(fields: [subCategoryId], references: [id], onDelete: Cascade)
   groupId               String
@@ -1009,34 +1345,50 @@ model AssetCIAClassification {
   createdAt             DateTime         @default(now())
   updatedAt             DateTime         @updatedAt
 
-  @@unique([subCategoryId, groupId])
+  @@unique([customerAccountId, subCategoryId, groupId])
+  @@index([customerAccountId])
 }
 
 // Asset Lifecycle Status
 model AssetLifecycleStatus {
-  id          String   @id @default(cuid())
-  name        String   @unique // Active, In Use, Needs Maintenance, Retired
-  description String?
-  order       Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  assets      Asset[]
+  id                String           @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  name              String           // Active, In Use, Needs Maintenance, Retired
+  description       String?
+  order             Int              @default(0)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  assets            Asset[]
+
+  @@unique([customerAccountId, name])
+  @@index([customerAccountId])
 }
 
 // Asset Classification (Legacy - keeping for backwards compatibility)
 model AssetClassification {
-  id          String   @id @default(cuid())
-  name        String   @unique // Critical, High, Medium, Low
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  assets      Asset[]
+  id                String           @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  name              String           // Critical, High, Medium, Low
+  description       String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  assets            Asset[]
+
+  @@unique([customerAccountId, name])
+  @@index([customerAccountId])
 }
 
 // Assets
 model Asset {
   id                String                @id @default(cuid())
-  assetId           String                @unique
+  // Multi-tenant: Link to customer account
+  customerAccountId String
+  customerAccount   CustomerAccount       @relation(fields: [customerAccountId], references: [id])
+  assetId           String
   name              String
   description       String?
   // Category hierarchy
@@ -1072,66 +1424,105 @@ model Asset {
   // Timestamps
   createdAt         DateTime              @default(now())
   updatedAt         DateTime              @updatedAt
+  // Risks impacted by this asset
+  impactedByRisks   Risk[]                @relation("RiskImpactedAsset")
+  // Processes that depend on this asset
+  processes         Process[]             @relation("ProcessAsset")
+
+  @@unique([customerAccountId, assetId])
+  @@index([customerAccountId])
 }
 
 // ==================== RISK MANAGEMENT MODULE ====================
 
 // Risk Categories
 model RiskCategory {
-  id          String   @id @default(cuid())
-  name        String   @unique // Strategic, Operational, Financial, Compliance, IT/Cyber, Reputational
-  description String?
-  color       String?  // Color code for UI display
-  status      String   @default("Active") // Active, Inactive
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  risks       Risk[]
+  id                String           @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  name              String           // Strategic, Operational, Financial, Compliance, IT/Cyber, Reputational
+  description       String?
+  color             String?          // Color code for UI display
+  status            String           @default("Active") // Active, Inactive
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  risks             Risk[]
+
+  @@unique([customerAccountId, name])
+  @@index([customerAccountId])
 }
 
 // Risk Types
 model RiskType {
-  id          String   @id @default(cuid())
-  name        String   @unique // Inherent, Residual, Target
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  risks       Risk[]
+  id                String           @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  name              String           // Inherent, Residual, Target
+  description       String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  risks             Risk[]
+
+  @@unique([customerAccountId, name])
+  @@index([customerAccountId])
 }
 
 // Risk Threats
 model RiskThreat {
-  id          String          @id @default(cuid())
-  threatId    String?         @unique
-  name        String          @unique
-  description String?
-  categoryId  String?
-  category    ThreatCategory? @relation(fields: [categoryId], references: [id])
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-  risks       RiskThreatMapping[]
+  id                String              @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?
+  customerAccount   CustomerAccount?    @relation(fields: [customerAccountId], references: [id])
+  threatId          String?
+  name              String
+  description       String?
+  categoryId        String?
+  category          ThreatCategory?     @relation(fields: [categoryId], references: [id])
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  risks             RiskThreatMapping[]
+
+  @@unique([customerAccountId, name])
+  @@unique([customerAccountId, threatId])
+  @@index([customerAccountId])
 }
 
 // Risk Vulnerabilities
 model RiskVulnerability {
-  id          String                 @id @default(cuid())
-  vulnId      String?                @unique
-  name        String                 @unique
-  description String?
-  categoryId  String?
-  category    VulnerabilityCategory? @relation(fields: [categoryId], references: [id])
-  createdAt   DateTime               @default(now())
-  updatedAt   DateTime               @updatedAt
-  risks       RiskVulnerabilityMapping[]
+  id                String                     @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?
+  customerAccount   CustomerAccount?           @relation(fields: [customerAccountId], references: [id])
+  vulnId            String?
+  name              String
+  description       String?
+  categoryId        String?
+  category          VulnerabilityCategory?     @relation(fields: [categoryId], references: [id])
+  createdAt         DateTime                   @default(now())
+  updatedAt         DateTime                   @updatedAt
+  risks             RiskVulnerabilityMapping[]
+
+  @@unique([customerAccountId, name])
+  @@unique([customerAccountId, vulnId])
+  @@index([customerAccountId])
 }
 
 // Risk Causes
 model RiskCause {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  risks       RiskCauseMapping[]
+  id                String             @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?
+  customerAccount   CustomerAccount?   @relation(fields: [customerAccountId], references: [id])
+  name              String
+  description       String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  risks             RiskCauseMapping[]
+
+  @@unique([customerAccountId, name])
+  @@index([customerAccountId])
 }
 
 // Risk-Threat Mapping (many-to-many)
@@ -1172,24 +1563,32 @@ model RiskCauseMapping {
 
 // Risks
 model Risk {
-  id                  String        @id @default(cuid())
-  riskId              String        @unique
+  id                  String          @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId   String
+  customerAccount     CustomerAccount @relation(fields: [customerAccountId], references: [id])
+  riskId              String
   name                String
   description         String?
-  riskSources         String?       // Sources of the risk
+  riskSources         String?         // Sources of the risk
   categoryId          String?
-  category            RiskCategory? @relation(fields: [categoryId], references: [id])
+  category            RiskCategory?   @relation(fields: [categoryId], references: [id])
   typeId              String?
-  type                RiskType?     @relation(fields: [typeId], references: [id])
+  type                RiskType?       @relation(fields: [typeId], references: [id])
   departmentId        String?
-  department          Department?   @relation(fields: [departmentId], references: [id])
+  department          Department?     @relation(fields: [departmentId], references: [id])
   ownerId             String?
-  owner               User?         @relation("RiskOwner", fields: [ownerId], references: [id])
+  owner               User?           @relation("RiskOwner", fields: [ownerId], references: [id])
+  // Impacted Asset or Process (based on Risk Type selection)
+  impactedAssetId     String?
+  impactedAsset       Asset?          @relation("RiskImpactedAsset", fields: [impactedAssetId], references: [id])
+  impactedProcessId   String?
+  impactedProcess     Process?        @relation("RiskImpactedProcess", fields: [impactedProcessId], references: [id])
   // Assessment scores
-  likelihood          Int           @default(1) // 1-5 scale
-  impact              Int           @default(1) // 1-5 scale
-  riskScore           Int           @default(1) // likelihood * impact
-  riskRating          String        @default("Low") // Catastrophic, Very High, High, Medium, Low
+  likelihood          Int             @default(1) // 1-5 scale
+  impact              Int             @default(1) // 1-5 scale
+  riskScore           Int             @default(1) // likelihood * impact
+  riskRating          String          @default("Low") // Catastrophic, Very High, High, Medium, Low
   // Inherent, Residual, Target risk scores
   inherentLikelihood  Int?
   inherentImpact      Int?
@@ -1201,17 +1600,21 @@ model Risk {
   targetImpact        Int?
   targetRiskScore     Int?
   // Response
-  status              String        @default("Open") // Awaiting Approval, Pending Assessment, Open, In Progress, Closed
-  responseStrategy    String?       // Treat, Transfer, Avoid, Accept
+  status              String          @default("Open") // Awaiting Approval, Pending Assessment, Open, In Progress, Closed
+  assessmentStatus    String          @default("Open") // Open, In-Progress, Draft, Submitted, Approved, Rejected, Completed
+  responseStatus      String          @default("Open") // Open, In-Progress, Awaiting Approval, Sent Back, Completed (for Risk Response Strategy)
+  responseStrategy    String?         // Treat, Transfer, Avoid, Accept
   treatmentPlan       String?
   treatmentDueDate    DateTime?
-  treatmentStatus     String?       // Not Started, In Progress, Completed
+  treatmentStatus     String?         // Not Started, In Progress, Completed
+  // Assessment form data (JSON) - stores per-threat likelihoods, impacts, and per-vulnerability ratings
+  assessmentFormData  String?         // JSON: { threatLikelihoods: {}, threatImpacts: {}, vulnerabilityRatings: {} }
   // Timestamps
-  identifiedDate      DateTime      @default(now())
+  identifiedDate      DateTime        @default(now())
   lastAssessmentDate  DateTime?
   nextReviewDate      DateTime?
-  createdAt           DateTime      @default(now())
-  updatedAt           DateTime      @updatedAt
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
   // Relations
   threats             RiskThreatMapping[]
   vulnerabilities     RiskVulnerabilityMapping[]
@@ -1220,55 +1623,113 @@ model Risk {
   responses           RiskResponse[]
   activityLogs        RiskActivityLog[]
   controlRisks        ControlRisk[]
-  exceptions          Exception[]   @relation("RiskExceptions")
+  exceptions          Exception[]     @relation("RiskExceptions")
+  // Risk Control Matrix entries (independent, deleting entry doesn't delete this risk)
+  riskControlMatrixEntries RiskControlMatrixEntry[]
+
+  @@unique([customerAccountId, riskId])
+  @@index([customerAccountId])
+}
+
+// Risk Control Matrix Entry - Independent entries for Risk Control Matrix view
+// Deleting these entries does NOT delete the underlying Risk
+model RiskControlMatrixEntry {
+  id                  String          @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId   String
+  customerAccount     CustomerAccount @relation(fields: [customerAccountId], references: [id])
+  // Reference to the source Risk (optional - allows matrix entry to exist even if risk is deleted)
+  riskId              String?
+  risk                Risk?           @relation(fields: [riskId], references: [id], onDelete: SetNull)
+  // Matrix entry identifier
+  matrixEntryId       String          // e.g., "RCM-001"
+  // Snapshot of risk data (so matrix entry is independent)
+  riskCode            String          // Copy of risk.riskId
+  name                String
+  description         String?
+  riskRating          String?
+  residualRiskRating  String?
+  status              String          @default("Open")
+  ownerName           String?
+  // Linked controls through junction table
+  linkedControls      RiskControlMatrixControl[]
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  @@unique([customerAccountId, matrixEntryId])
+  @@index([customerAccountId])
+}
+
+// Junction table for Risk Control Matrix Entry to Control
+model RiskControlMatrixControl {
+  id                        String                  @id @default(cuid())
+  riskControlMatrixEntryId  String
+  riskControlMatrixEntry    RiskControlMatrixEntry  @relation(fields: [riskControlMatrixEntryId], references: [id], onDelete: Cascade)
+  controlId                 String
+  control                   Control                 @relation(fields: [controlId], references: [id], onDelete: Cascade)
+  createdAt                 DateTime                @default(now())
+
+  @@unique([riskControlMatrixEntryId, controlId])
 }
 
 // Risk Assessment Records
 model RiskAssessment {
-  id                 String   @id @default(cuid())
-  assessmentId       String   @unique
-  riskId             String
-  risk               Risk     @relation(fields: [riskId], references: [id], onDelete: Cascade)
-  assessmentType     String   @default("Periodic") // Initial, Periodic, Ad-hoc
-  assessorName       String?
+  id                        String          @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId         String
+  customerAccount           CustomerAccount @relation(fields: [customerAccountId], references: [id])
+  assessmentId              String
+  riskId                    String
+  risk                      Risk            @relation(fields: [riskId], references: [id], onDelete: Cascade)
+  assessmentType            String          @default("Periodic") // Initial, Periodic, Ad-hoc
+  assessorName              String?
   // Assessment scores
-  likelihood         Int      @default(1)
-  likelihoodRationale String?
-  impact             Int      @default(1)
-  impactRationale    String?
-  riskScore          Int      @default(1)
-  riskRating         String   @default("Low")
+  likelihood                Int             @default(1)
+  likelihoodRationale       String?
+  impact                    Int             @default(1)
+  impactRationale           String?
+  riskScore                 Int             @default(1)
+  riskRating                String          @default("Low")
   // Identified items during assessment
-  threatsIdentified  String?  // JSON array of threat names
+  threatsIdentified         String?  // JSON array of threat names
   vulnerabilitiesIdentified String? // JSON array of vulnerability names
-  causesIdentified   String?  // JSON array of cause names
+  causesIdentified          String?  // JSON array of cause names
   // Recommendations
-  recommendations    String?
-  notes              String?
+  recommendations           String?
+  notes                     String?
   // Status
-  status             String   @default("Draft") // Draft, Submitted, Approved, Rejected
-  assessmentDate     DateTime @default(now())
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  status                    String          @default("Draft") // Draft, Submitted, Approved, Rejected
+  assessmentDate            DateTime        @default(now())
+  createdAt                 DateTime        @default(now())
+  updatedAt                 DateTime        @updatedAt
+
+  @@unique([customerAccountId, assessmentId])
+  @@index([customerAccountId])
 }
 
 // Risk Response Records
 model RiskResponse {
-  id               String    @id @default(cuid())
-  responseId       String    @unique
-  riskId           String
-  risk             Risk      @relation(fields: [riskId], references: [id], onDelete: Cascade)
-  responseType     String    @default("Mitigate") // Mitigate, Transfer, Accept, Avoid
-  actionTitle      String
-  actionDescription String?
-  assignee         String?
-  dueDate          DateTime?
-  status           String    @default("Open") // Open, In Progress, Completed, Overdue
-  completionDate   DateTime?
+  id                  String          @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId   String
+  customerAccount     CustomerAccount @relation(fields: [customerAccountId], references: [id])
+  responseId          String
+  riskId              String
+  risk                Risk            @relation(fields: [riskId], references: [id], onDelete: Cascade)
+  responseType        String          @default("Mitigate") // Mitigate, Transfer, Accept, Avoid
+  actionTitle         String
+  actionDescription   String?
+  assignee            String?
+  dueDate             DateTime?
+  status              String          @default("Open") // Open, In Progress, Completed, Overdue
+  completionDate      DateTime?
   effectivenessRating Int?   // 1-5 scale
-  notes            String?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  notes               String?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  @@unique([customerAccountId, responseId])
+  @@index([customerAccountId])
 }
 
 // Risk Settings (configurable parameters)
@@ -1290,100 +1751,159 @@ model RiskSetting {
 
 // Vulnerability Category (for categorizing vulnerabilities)
 model VulnerabilityCategory {
-  id              String            @id @default(cuid())
-  name            String            @unique
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-  vulnerabilities RiskVulnerability[]
+  id                String             @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?
+  customerAccount   CustomerAccount?   @relation(fields: [customerAccountId], references: [id])
+  name              String
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  vulnerabilities   RiskVulnerability[]
+
+  @@unique([customerAccountId, name])
+  @@index([customerAccountId])
 }
 
 // Threat Category (for categorizing threats)
 model ThreatCategory {
-  id        String       @id @default(cuid())
-  name      String       @unique
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
-  threats   RiskThreat[]
+  id                String           @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  name              String
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  threats           RiskThreat[]
+
+  @@unique([customerAccountId, name])
+  @@index([customerAccountId])
 }
 
 // Control Strength (effectiveness rating of controls)
 model ControlStrength {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  score     Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                String           @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  name              String
+  score             Int              @default(0)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@unique([customerAccountId, name])
+  @@index([customerAccountId])
 }
 
 // Risk Likelihood (probability scale)
 model RiskLikelihood {
-  id          String   @id @default(cuid())
-  title       String   @unique
-  score       Int      @default(0)
-  timeFrame   String?  // e.g., "Within 1 year", "Within 5 years"
-  probability String?  // e.g., ">90%", "50-90%", "<10%"
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                String           @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  title             String
+  score             Int              @default(0)
+  timeFrame         String?          // e.g., "Within 1 year", "Within 5 years"
+  probability       String?          // e.g., ">90%", "50-90%", "<10%"
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@unique([customerAccountId, title])
+  @@index([customerAccountId])
 }
 
 // Impact Category (types of impact)
 model ImpactCategory {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                String           @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  name              String
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@unique([customerAccountId, name])
+  @@index([customerAccountId])
 }
 
 // Impact Rating (severity scale)
 model ImpactRating {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  score       Int      @default(0)
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                String           @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  name              String
+  score             Int              @default(0)
+  description       String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@unique([customerAccountId, name])
+  @@index([customerAccountId])
 }
 
 // Vulnerability Rating (severity of vulnerabilities)
 model VulnerabilityRating {
-  id        String   @id @default(cuid())
-  label     String   @unique
-  score     Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                String           @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  label             String
+  score             Int              @default(0)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@unique([customerAccountId, label])
+  @@index([customerAccountId])
 }
 
 // Risk Sub Category
 model RiskSubCategory {
-  id        String   @id @default(cuid())
-  type      String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                String           @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  type              String
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@unique([customerAccountId, type])
+  @@index([customerAccountId])
 }
 
 // Risk Range (risk rating thresholds with colors and timelines)
 model RiskRange {
-  id           String   @id @default(cuid())
-  title        String   @unique
-  color        String?  // Hex color code
-  lowRange     Int      @default(0)
-  highRange    Int      @default(0)
-  timelineDays Int      @default(0)  // Days to remediate
-  description  String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                String           @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  title             String
+  color             String?          // Hex color code
+  lowRange          Int              @default(0)
+  highRange         Int              @default(0)
+  timelineDays      Int              @default(0) // Days to remediate
+  description       String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@unique([customerAccountId, title])
+  @@index([customerAccountId])
 }
 
 // Risk Score Configuration (formula settings)
 model RiskScoreConfig {
-  id                    String   @id @default(cuid())
-  useLikelihood         Boolean  @default(true)
-  useImpact             Boolean  @default(true)
-  useAssetScore         Boolean  @default(false)
-  useVulnerabilityScore Boolean  @default(false)
-  riskTolerance         Int      @default(10)
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  id                    String           @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId     String?
+  customerAccount       CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  useLikelihood         Boolean          @default(true)
+  useImpact             Boolean          @default(true)
+  useAssetScore         Boolean          @default(false)
+  useVulnerabilityScore Boolean          @default(false)
+  riskTolerance         Int              @default(10)
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+
+  @@index([customerAccountId])
 }
 
 // ==================== END RISK SETTINGS MASTER DATA ====================
@@ -1405,51 +1925,69 @@ model RiskActivityLog {
 
 // Legacy Audits (keeping for backwards compatibility)
 model Audit {
-  id           String         @id @default(cuid())
-  auditId      String         @unique
-  name         String
-  description  String?
-  auditType    String? // Internal, External
-  departmentId String?
-  department   Department?    @relation(fields: [departmentId], references: [id])
-  auditorId    String?
-  auditor      User?          @relation("Auditor", fields: [auditorId], references: [id])
-  status       String         @default("Planned") // Planned, In Progress, Completed, Cancelled
-  startDate    DateTime?
-  endDate      DateTime?
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  findings     AuditFinding[]
+  id                String          @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id])
+  auditId           String
+  name              String
+  description       String?
+  auditType         String? // Internal, External
+  departmentId      String?
+  department        Department?     @relation(fields: [departmentId], references: [id])
+  auditorId         String?
+  auditor           User?           @relation("Auditor", fields: [auditorId], references: [id])
+  status            String          @default("Planned") // Planned, In Progress, Completed, Cancelled
+  startDate         DateTime?
+  endDate           DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  findings          AuditFinding[]
+
+  @@unique([customerAccountId, auditId])
+  @@index([customerAccountId])
 }
 
 // Audit Findings
 model AuditFinding {
-  id          String   @id @default(cuid())
-  findingId   String   @unique
-  title       String
-  description String?
-  auditId     String?
-  audit       Audit?   @relation(fields: [auditId], references: [id])
-  severity    String   @default("Medium") // High, Medium, Low
-  status      String   @default("Open") // Open, In Progress, Closed
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  capas       CAPA[]
+  id                String          @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id])
+  findingId         String
+  title             String
+  description       String?
+  auditId           String?
+  audit             Audit?          @relation(fields: [auditId], references: [id])
+  severity          String          @default("Medium") // High, Medium, Low
+  status            String          @default("Open") // Open, In Progress, Closed
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  capas             CAPA[]
+
+  @@unique([customerAccountId, findingId])
+  @@index([customerAccountId])
 }
 
 // CAPA (Corrective and Preventive Actions)
 model CAPA {
-  id          String        @id @default(cuid())
-  capaId      String        @unique
-  title       String
-  description String?
-  findingId   String?
-  finding     AuditFinding? @relation(fields: [findingId], references: [id])
-  actionType  String        @default("Corrective") // Corrective, Preventive
-  status      String        @default("Open") // Open, In Progress, Closed, Overdue
-  dueDate     DateTime?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id                String          @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id])
+  capaId            String
+  title             String
+  description       String?
+  findingId         String?
+  finding           AuditFinding?   @relation(fields: [findingId], references: [id])
+  actionType        String          @default("Corrective") // Corrective, Preventive
+  status            String          @default("Open") // Open, In Progress, Closed, Overdue
+  dueDate           DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@unique([customerAccountId, capaId])
+  @@index([customerAccountId])
 }
 
 // ==================== INTERNAL AUDIT SETTINGS ====================
@@ -1457,184 +1995,355 @@ model CAPA {
 // Audit Category (e.g., Financial Audit, Operational Audit, Compliance Audit)
 model AuditCategory {
   id                  String              @id @default(cuid())
-  name                String              @unique
+  // Multi-tenant: Link to customer account
+  customerAccountId   String?
+  customerAccount     CustomerAccount?    @relation(fields: [customerAccountId], references: [id])
+  // Audit Head isolation: each Audit Head has their own settings
+  auditHeadId         String?
+  auditHead           User?               @relation("AuditHeadCategories", fields: [auditHeadId], references: [id])
+  name                String
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
   internalAuditRisks  InternalAuditRisk[]
+
+  @@unique([auditHeadId, name])
+  @@index([customerAccountId])
+  @@index([auditHeadId])
 }
 
 // Nature of Controls (e.g., Preventive, Detective, Corrective)
 model AuditNatureOfControl {
-  id        String   @id @default(cuid())
-  label     String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                String           @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  // Audit Head isolation: each Audit Head has their own settings
+  auditHeadId       String?
+  auditHead         User?            @relation("AuditHeadNatureOfControls", fields: [auditHeadId], references: [id])
+  label             String
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@unique([auditHeadId, label])
+  @@index([customerAccountId])
+  @@index([auditHeadId])
 }
 
 // Risk Factors for Internal Audit (e.g., Financial, Reputational, Regulatory)
 model AuditRiskFactor {
-  id        String   @id @default(cuid())
-  label     String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                String           @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  // Audit Head isolation: each Audit Head has their own settings
+  auditHeadId       String?
+  auditHead         User?            @relation("AuditHeadRiskFactors", fields: [auditHeadId], references: [id])
+  label             String
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@unique([auditHeadId, label])
+  @@index([customerAccountId])
+  @@index([auditHeadId])
 }
 
 // Probability ratings (e.g., Very Low=1, Low=2, Medium=3, High=4, Very High=5)
 model AuditProbability {
-  id        String   @id @default(cuid())
-  label     String   @unique
-  value     Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                String           @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  // Audit Head isolation: each Audit Head has their own settings
+  auditHeadId       String?
+  auditHead         User?            @relation("AuditHeadProbabilities", fields: [auditHeadId], references: [id])
+  label             String
+  value             Int              @default(0)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@unique([auditHeadId, label])
+  @@index([customerAccountId])
+  @@index([auditHeadId])
 }
 
 // Impact ratings (e.g., Very Low Probability=1, Low Probability=2, etc.)
 model AuditImpact {
-  id        String   @id @default(cuid())
-  label     String   @unique
-  value     Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                String           @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  // Audit Head isolation: each Audit Head has their own settings
+  auditHeadId       String?
+  auditHead         User?            @relation("AuditHeadImpacts", fields: [auditHeadId], references: [id])
+  label             String
+  value             Int              @default(0)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@unique([auditHeadId, label])
+  @@index([customerAccountId])
+  @@index([auditHeadId])
 }
 
 // Scoring Range Configuration (e.g., High: 250+, Medium: 100-249, Low: 50-99)
 model AuditScoringRange {
-  id              String   @id @default(cuid())
-  label           String
-  lowValue        Int      @default(0)
-  highValue       Int?
-  calculationType String   @default("High of all") // High of all, Addition of all, Product of all
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                String           @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  // Audit Head isolation: each Audit Head has their own settings
+  auditHeadId       String?
+  auditHead         User?            @relation("AuditHeadScoringRanges", fields: [auditHeadId], references: [id])
+  label             String
+  lowValue          Int              @default(0)
+  highValue         Int?
+  calculationType   String           @default("High of all") // High of all, Addition of all, Product of all
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
 
-  @@unique([label, calculationType])
+  @@unique([auditHeadId, label, calculationType])
+  @@index([customerAccountId])
+  @@index([auditHeadId])
 }
 
 // Audit Scoring Configuration (stores the calculation type settings)
 model AuditScoringConfig {
-  id                        String   @id @default(cuid())
-  probabilityImpactCalcType String   @default("Product of all") // High of all, Addition of all, Product of all
-  riskRatingCalcType        String   @default("High of all") // High of all, Addition of all, Product of all
-  createdAt                 DateTime @default(now())
-  updatedAt                 DateTime @updatedAt
+  id                        String           @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId         String?
+  customerAccount           CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  // Audit Head isolation: each Audit Head has their own settings
+  auditHeadId               String?
+  auditHead                 User?            @relation("AuditHeadScoringConfigs", fields: [auditHeadId], references: [id])
+  probabilityImpactCalcType String           @default("Product of all") // High of all, Addition of all, Product of all
+  riskRatingCalcType        String           @default("High of all") // High of all, Addition of all, Product of all
+  createdAt                 DateTime         @default(now())
+  updatedAt                 DateTime         @updatedAt
+
+  @@index([customerAccountId])
+  @@index([auditHeadId])
 }
 
 // Periodicity (e.g., Annual=12, Semiannual=6, Monthly=1)
 model AuditPeriodicity {
-  id        String   @id @default(cuid())
-  interval  String   @unique
-  months    Int      @default(1)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                String           @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  // Audit Head isolation: each Audit Head has their own settings
+  auditHeadId       String?
+  auditHead         User?            @relation("AuditHeadPeriodicities", fields: [auditHeadId], references: [id])
+  interval          String
+  months            Int              @default(1)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@unique([auditHeadId, interval])
+  @@index([customerAccountId])
+  @@index([auditHeadId])
 }
 
 // Escalation Configuration (reminder days for various events)
 model AuditEscalationConfig {
-  id                  String   @id @default(cuid())
-  responseSubmission  Int      @default(5)
-  acknowledgement     Int      @default(1)
-  clarification       Int      @default(2)
-  issueResolution     Int      @default(3)
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  id                  String           @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId   String?
+  customerAccount     CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  // Audit Head isolation: each Audit Head has their own settings
+  auditHeadId         String?
+  auditHead           User?            @relation("AuditHeadEscalationConfigs", fields: [auditHeadId], references: [id])
+  responseSubmission  Int              @default(5)
+  acknowledgement     Int              @default(1)
+  clarification       Int              @default(2)
+  issueResolution     Int              @default(3)
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  @@index([customerAccountId])
+  @@index([auditHeadId])
 }
 
 // Audit Type (e.g., Consult, Assurance, Follow-up)
 model AuditType {
   id                  String              @id @default(cuid())
-  name                String              @unique
+  // Multi-tenant: Link to customer account
+  customerAccountId   String?
+  customerAccount     CustomerAccount?    @relation(fields: [customerAccountId], references: [id])
+  // Audit Head isolation: each Audit Head has their own settings
+  auditHeadId         String?
+  auditHead           User?               @relation("AuditHeadTypes", fields: [auditHeadId], references: [id])
+  name                String
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
   internalAuditRisks  InternalAuditRisk[]
   engagements         AuditEngagement[]   @relation("EngagementAuditType")
+
+  @@unique([auditHeadId, name])
+  @@index([customerAccountId])
+  @@index([auditHeadId])
+}
+
+// Location (e.g., Head Office, Branch A, Remote)
+model AuditLocation {
+  id                String           @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  // Audit Head isolation: each Audit Head has their own settings
+  auditHeadId       String?
+  auditHead         User?            @relation("AuditHeadLocations", fields: [auditHeadId], references: [id])
+  name              String
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@unique([auditHeadId, name])
+  @@index([customerAccountId])
+  @@index([auditHeadId])
+}
+
+// Process Frequency (e.g., Daily, Weekly, Monthly, Quarterly, Annually)
+model ProcessFrequency {
+  id                String           @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  // Audit Head isolation: each Audit Head has their own settings
+  auditHeadId       String?
+  auditHead         User?            @relation("AuditHeadProcessFrequencies", fields: [auditHeadId], references: [id])
+  name              String
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@unique([auditHeadId, name])
+  @@index([customerAccountId])
+  @@index([auditHeadId])
+}
+
+// Nature of Implementation (e.g., Manual, Automated, Manual + Automated)
+model NatureOfImplementation {
+  id                String           @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  // Audit Head isolation: each Audit Head has their own settings
+  auditHeadId       String?
+  auditHead         User?            @relation("AuditHeadNatureOfImplementations", fields: [auditHeadId], references: [id])
+  name              String
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@unique([auditHeadId, name])
+  @@index([customerAccountId])
+  @@index([auditHeadId])
 }
 
 // ==================== INTERNAL AUDIT RISK REGISTER ====================
 
 // Internal Audit Risk (separate from general Risk for the Internal Audit module)
 model InternalAuditRisk {
-  id                   String         @id @default(cuid())
-  riskId               String         @unique // Auto-generated RID001, RID002, etc.
+  id                   String           @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId    String
+  customerAccount      CustomerAccount  @relation(fields: [customerAccountId], references: [id])
+  // Audit Head isolation
+  auditHeadId          String?
+  auditHead            User?            @relation("AuditHeadRisks", fields: [auditHeadId], references: [id])
+  riskId               String // Auto-generated RID001, RID002, etc.
   riskName             String
   departmentId         String?
-  department           Department?    @relation("InternalAuditDepartment", fields: [departmentId], references: [id])
+  department           Department?      @relation("InternalAuditDepartment", fields: [departmentId], references: [id])
   sectionProcess       String?
   subProcess           String?
   activity             String?
   categoryId           String?
-  category             AuditCategory? @relation(fields: [categoryId], references: [id])
+  category             AuditCategory?   @relation(fields: [categoryId], references: [id])
   auditTypeId          String?
-  auditType            AuditType?     @relation(fields: [auditTypeId], references: [id])
+  auditType            AuditType?       @relation(fields: [auditTypeId], references: [id])
   riskDescription      String?
   // Inherent Risk Scoring
   inherentLikelihood   Int?
   inherentImpact       Int?
-  inherentScore        Int?           // Calculated: likelihood * impact or based on config
+  inherentScore        Int?             // Calculated: likelihood * impact or based on config
   // Controls
   controlDescription   String?
-  controlEffectiveness String?        // Effective, Partially Effective, Ineffective
+  controlEffectiveness String?          // Effective, Partially Effective, Ineffective
   // Residual Risk Scoring
   residualLikelihood   Int?
   residualImpact       Int?
-  residualScore        Int?           // Calculated
-  riskLevel            String?        // Low, Medium, High, Extreme - based on scoring ranges
+  residualScore        Int?             // Calculated
+  riskLevel            String?          // Low, Medium, High, Extreme - based on scoring ranges
   // Audit Information
-  creationDate         DateTime       @default(now())
+  creationDate         DateTime         @default(now())
   auditComment         String?
-  status               String         @default("Open") // Open, Closed, Under Review
+  status               String           @default("Open") // Open, Closed, Under Review
   evidenceFilePath     String?
   evidenceFileName     String?
   // Engagement link
   engagementId         String?
   engagement           AuditEngagement? @relation(fields: [engagementId], references: [id])
-  createdAt            DateTime       @default(now())
-  updatedAt            DateTime       @updatedAt
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  @@unique([customerAccountId, riskId])
+  @@index([customerAccountId])
 }
 
 // ==================== INTERNAL AUDIT - AUDIT UNIVERSE ====================
 
 // Auditable Entity (items within departments that can be audited)
 model AuditableEntity {
-  id              String            @id @default(cuid())
-  entityCode      String            @unique
-  name            String
-  description     String?
-  departmentId    String
-  department      Department        @relation(fields: [departmentId], references: [id], onDelete: Cascade)
-  plannedHours    Float             @default(0)
-  actualHours     Float             @default(0)
-  lastAuditDate   DateTime?
-  nextAuditDate   DateTime?
-  riskRating      String?           // Low, Medium, High
-  status          String            @default("Active") // Active, Inactive
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-  engagements     AuditEngagement[]
+  id                String            @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String
+  customerAccount   CustomerAccount   @relation(fields: [customerAccountId], references: [id])
+  entityCode        String
+  name              String
+  description       String?
+  departmentId      String
+  department        Department        @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  plannedHours      Float             @default(0)
+  actualHours       Float             @default(0)
+  lastAuditDate     DateTime?
+  nextAuditDate     DateTime?
+  riskRating        String?           // Low, Medium, High
+  status            String            @default("Active") // Active, Inactive
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  engagements       AuditEngagement[]
+
+  @@unique([customerAccountId, entityCode])
+  @@index([customerAccountId])
 }
 
 // ==================== INTERNAL AUDIT - AUDIT PLANNING ====================
 
 // Audit Engagement (Annual Audit Plan items)
 model AuditEngagement {
-  id                  String           @id @default(cuid())
-  auditId             String           @unique // Auto-generated AUD001, AUD002
+  id                  String            @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId   String
+  customerAccount     CustomerAccount   @relation(fields: [customerAccountId], references: [id])
+  // Audit Head isolation: Link to the audit head who owns this engagement
+  auditHeadId         String?
+  auditHead           User?             @relation("AuditHeadEngagements", fields: [auditHeadId], references: [id])
+  auditId             String // Auto-generated AUD001, AUD002
   engagementTitle     String
   engagementObjective String?
   engagementScope     String?
   description         String?
   departmentId        String?
-  department          Department?      @relation(fields: [departmentId], references: [id])
+  department          Department?       @relation(fields: [departmentId], references: [id])
   auditableEntityId   String?
-  auditableEntity     AuditableEntity? @relation(fields: [auditableEntityId], references: [id])
+  auditableEntity     AuditableEntity?  @relation(fields: [auditableEntityId], references: [id])
   auditTypeId         String?
-  auditType           String?          // Internal Audit, Compliance, Financial, etc.
-  auditTypeRef        AuditType?       @relation("EngagementAuditType", fields: [auditTypeId], references: [id])
-  auditRating         String?          // Satisfactory, Needs Improvement, Unsatisfactory
+  auditType           String?           // Internal Audit, Compliance, Financial, etc.
+  auditTypeRef        AuditType?        @relation("EngagementAuditType", fields: [auditTypeId], references: [id])
+  auditRating         String?           // Satisfactory, Needs Improvement, Unsatisfactory
   assignedAuditorId   String?
-  assignedAuditor     User?            @relation("EngagementAuditor", fields: [assignedAuditorId], references: [id])
+  assignedAuditor     User?             @relation("EngagementAuditor", fields: [assignedAuditorId], references: [id])
   auditeeId           String?
-  auditee             User?            @relation("EngagementAuditee", fields: [auditeeId], references: [id])
-  teamMembers         User[]           @relation("EngagementTeamMembers")
+  auditee             User?             @relation("EngagementAuditee", fields: [auditeeId], references: [id])
+  teamMembers         User[]            @relation("EngagementTeamMembers")
   // Planning dates
   plannedStartDate    DateTime?
   plannedEndDate      DateTime?
@@ -1643,25 +2352,28 @@ model AuditEngagement {
   startDate           DateTime?
   endDate             DateTime?
   // Hours
-  plannedHours        Float            @default(0)
-  actualHours         Float            @default(0)
+  plannedHours        Float             @default(0)
+  actualHours         Float             @default(0)
   // Additional fields
   initialObservation  String?
   relatedPolicies     String?
   // Status
-  status              String           @default("Planned") // Planned, In Progress, Completed, Cancelled
-  priority            String           @default("Medium") // Low, Medium, High
-  year                Int              @default(2026)
-  quarter             String?          // Q1, Q2, Q3, Q4
+  status              String            @default("Planned") // Planned, In Progress, Completed, Cancelled
+  priority            String            @default("Medium") // Low, Medium, High
+  year                Int               @default(2026)
+  quarter             String?           // Q1, Q2, Q3, Q4
   // Timestamps
-  createdAt           DateTime         @default(now())
-  updatedAt           DateTime         @updatedAt
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
   // Relations
   fieldwork           AuditFieldwork?
   report              AuditReport?
   findings            InternalAuditFinding[]
   evidenceRequests    FieldworkEvidenceRequest[]
   linkedRisks         InternalAuditRisk[]
+
+  @@unique([customerAccountId, auditId])
+  @@index([customerAccountId])
 }
 
 // ==================== INTERNAL AUDIT - FIELDWORK ====================
@@ -1723,6 +2435,12 @@ model FieldworkEvidenceRequest {
   // Auditee assignment (assigned by Audit Head)
   auditeeId       String?
   auditeeName     String?
+  // Clarification request fields (sent by Audit Head to Auditee)
+  clarificationComment      String?
+  clarificationDocumentName String?
+  clarificationByUserId     String?
+  clarificationByUserName   String?
+  clarificationSentAt       DateTime?
   createdAt       DateTime                       @default(now())
   updatedAt       DateTime                       @updatedAt
   attachments     FieldworkEvidenceAttachment[]
@@ -1748,7 +2466,13 @@ model FieldworkEvidenceAttachment {
 // Audit Report
 model AuditReport {
   id                  String          @id @default(cuid())
-  reportCode          String          @unique // Auto-generated RPT001, RPT002
+  // Multi-tenant: Link to customer account
+  customerAccountId   String
+  customerAccount     CustomerAccount @relation(fields: [customerAccountId], references: [id])
+  // Audit Head isolation
+  auditHeadId         String?
+  auditHead           User?           @relation("AuditHeadReports", fields: [auditHeadId], references: [id])
+  reportCode          String // Auto-generated RPT001, RPT002
   engagementId        String          @unique
   engagement          AuditEngagement @relation(fields: [engagementId], references: [id], onDelete: Cascade)
   // Report content
@@ -1779,65 +2503,109 @@ model AuditReport {
   // Timestamps
   createdAt           DateTime        @default(now())
   updatedAt           DateTime        @updatedAt
+
+  @@unique([customerAccountId, reportCode])
+  @@index([customerAccountId])
 }
 
 // ==================== INTERNAL AUDIT - FINDINGS & CAPA ====================
 
 // Internal Audit Finding (linked to engagement, separate from general AuditFinding)
 model InternalAuditFinding {
-  id                 String                @id @default(cuid())
-  findingId          String                @unique // Auto-generated FND001, FND002
-  engagementId       String
-  engagement         AuditEngagement       @relation(fields: [engagementId], references: [id], onDelete: Cascade)
+  id                  String                @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId   String
+  customerAccount     CustomerAccount       @relation(fields: [customerAccountId], references: [id])
+  // Audit Head isolation
+  auditHeadId         String?
+  auditHead           User?                 @relation("AuditHeadFindings", fields: [auditHeadId], references: [id])
+  findingId           String // Auto-generated FND001, FND002
+  engagementId        String
+  engagement          AuditEngagement       @relation(fields: [engagementId], references: [id], onDelete: Cascade)
   // Finding details
-  finding            String
-  description        String?
-  severity           String                @default("Medium") // Low, Medium, High, Critical
-  departmentId       String?
-  department         Department?           @relation(fields: [departmentId], references: [id])
-  responsiblePerson  String?
+  finding             String
+  description         String?
+  severity            String                @default("Medium") // Low, Medium, High, Critical
+  departmentId        String?
+  department          Department?           @relation(fields: [departmentId], references: [id])
+  responsiblePerson   String?
   responsiblePersonId String?
   // Audit Finding Fields (Criteria, Condition, Cause, Effect)
-  criteria           String?               // What should be
-  condition          String?               // What is
-  cause              String?               // Why it happened
-  effect             String?               // The consequence
-  recommendation     String?               // Recommendation
+  criteria            String?               // What should be
+  condition           String?               // What is
+  cause               String?               // Why it happened
+  effect              String?               // The consequence
+  recommendation      String?               // Recommendation
   // Dates
-  identifiedDate     DateTime              @default(now())
-  targetDate         DateTime?
-  closedDate         DateTime?
+  identifiedDate      DateTime              @default(now())
+  targetDate          DateTime?
+  closedDate          DateTime?
   // Status
-  status             String                @default("Open") // Open, In Progress, Closed, Overdue
+  status              String                @default("Open") // Open, In Progress, Closed, Overdue, Under Review
+  // AI Review fields
+  aiReviewStatus      String?               // "Satisfactory" | "Unsatisfactory" | null
+  aiReviewDescription String?               // AI-generated description
+  aiReviewedAt        DateTime?             // When AI review was completed
+  aiReviewApproved    Boolean               @default(false) // Has Audit Head approved the review?
+  aiApprovedAt        DateTime?             // When Audit Head approved
+  aiApprovedBy        String?               // Audit Head user ID who approved
   // Timestamps
-  createdAt          DateTime              @default(now())
-  updatedAt          DateTime              @updatedAt
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
   // Relations
-  capas              InternalAuditCAPA[]
+  capas               InternalAuditCAPA[]
+  attachments         FindingAttachment[]
+
+  @@unique([customerAccountId, findingId])
+  @@index([customerAccountId])
+}
+
+// Finding Attachment (for auditee uploads in CAPA tracking)
+model FindingAttachment {
+  id          String               @id @default(cuid())
+  findingId   String
+  finding     InternalAuditFinding @relation(fields: [findingId], references: [id], onDelete: Cascade)
+  fileName    String
+  fileType    String?
+  fileSize    Int?
+  filePath    String
+  uploadedBy  String?
+  uploadedAt  DateTime             @default(now())
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
 }
 
 // Internal Audit CAPA (Corrective and Preventive Actions for internal audit findings)
 model InternalAuditCAPA {
-  id              String                @id @default(cuid())
-  capaId          String                @unique // Auto-generated CAPA001, CAPA002
-  findingId       String
-  finding         InternalAuditFinding  @relation(fields: [findingId], references: [id], onDelete: Cascade)
+  id                String                @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String
+  customerAccount   CustomerAccount       @relation(fields: [customerAccountId], references: [id])
+  // Audit Head isolation
+  auditHeadId       String?
+  auditHead         User?                 @relation("AuditHeadCAPAs", fields: [auditHeadId], references: [id])
+  capaId            String // Auto-generated CAPA001, CAPA002
+  findingId         String
+  finding           InternalAuditFinding  @relation(fields: [findingId], references: [id], onDelete: Cascade)
   // CAPA details
-  title           String
-  description     String?
-  actionType      String                @default("Corrective") // Corrective, Preventive
+  title             String
+  description       String?
+  actionType        String                @default("Corrective") // Corrective, Preventive
   responsiblePerson String?
   // Dates
-  targetDate      DateTime?
-  completedDate   DateTime?
+  targetDate        DateTime?
+  completedDate     DateTime?
   // Status
-  status          String                @default("Open") // Open, In Progress, Closed, Overdue
+  status            String                @default("Open") // Open, In Progress, Closed, Overdue
   // Evidence
-  evidenceFilePath String?
-  evidenceFileName String?
+  evidenceFilePath  String?
+  evidenceFileName  String?
   // Timestamps
-  createdAt       DateTime              @default(now())
-  updatedAt       DateTime              @updatedAt
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+
+  @@unique([customerAccountId, capaId])
+  @@index([customerAccountId])
 }
 
 // ==================== INTERNAL AUDIT - DOCUMENT LIBRARY ====================
@@ -1845,6 +2613,12 @@ model InternalAuditCAPA {
 // Internal Audit Document (for document library)
 model InternalAuditDocument {
   id           String   @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  // Audit Head isolation - documents are NOT shared between Audit Heads
+  auditHeadId       String?
+  auditHead         User?            @relation("AuditHeadDocuments", fields: [auditHeadId], references: [id])
   documentCode String   @unique
   name         String
   description  String?
@@ -1896,4 +2670,78 @@ model AuditLog {
   userName   String?
   changes    String? // JSON string of old/new values
   createdAt  DateTime @default(now())
+}
+
+// ==================== AI INFRASTRUCTURE ====================
+
+model AIOperation {
+  id                String           @id @default(cuid())
+  endpoint          String
+  method            String           @default("POST")
+  requestBody       String?          // Store as JSON string
+  responseBody      String?          // Store as JSON string
+  statusCode        Int?
+  latencyMs         Int?
+  error             String?
+  jobId             String?          // Link to AIJob if applicable
+  userId            String?
+  user              User?            @relation(fields: [userId], references: [id])
+  evidenceAIReviews EvidenceAIReview[]
+  policyAIReviews   PolicyAIReview[]
+  createdAt         DateTime         @default(now())
+
+  @@index([userId])
+  @@index([jobId])
+}
+
+model AIJob {
+  id                String           @id @default(cuid())
+  type              String           // e.g., "RISK_GENERATION", "SEMANTIC_MATCHING"
+  status            String           @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+  providerJobId     String?          @unique // External ID from Runpod/AI Service
+  result            String?          // JSON result or reference
+  error             String?
+  metadata          String?          // JSON metadata
+  userId            String?
+  user              User?            @relation(fields: [userId], references: [id])
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@index([userId])
+}
+
+model EvidenceAIReview {
+  id                String           @id @default(cuid())
+  evidenceId        String
+  evidence          Evidence         @relation(fields: [evidenceId], references: [id], onDelete: Cascade)
+  status            String           @default("pending") // pending, completed, failed
+  critique          String?          @db.Text
+  similarityScore   Float?
+  recommendations   String?          @db.Text // JSON string
+  aiOperationId     String?
+  aiOperation       AIOperation?     @relation(fields: [aiOperationId], references: [id])
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@index([evidenceId])
+}
+
+model PolicyAIReview {
+  id                String           @id @default(cuid())
+  policyId          String
+  policy            Policy           @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  documentId        String?          // External AI document ID
+  status            String           @default("ingested") // ingested, completed, failed
+  complianceSummary String?          @db.Text
+  riskScore         Float?
+  matchedControls   String?          @db.Text // JSON
+  gaps              String?          @db.Text // JSON
+  recommendations   String?          @db.Text // JSON
+  reviewedAt        DateTime?
+  aiOperationId     String?
+  aiOperation       AIOperation?     @relation(fields: [aiOperationId], references: [id])
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@index([policyId])
 }

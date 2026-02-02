@@ -1,111 +1,133 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { withAuth, getTenantFilter, validateTenantAccess, forbidden } from "@/lib/api-auth";
 
-// GET single control with all related data
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const control = await prisma.control.findUnique({
-      where: { id },
-      include: {
-        domain: true,
-        framework: true,
-        department: true,
-        owner: true,
-        assignee: true,
-        evidences: {
-          include: {
-            assignee: true,
-            attachments: true,
-          },
-        },
-        exceptions: true,
-        requirements: {
-          include: {
-            requirement: {
-              include: {
-                framework: true,
-              },
-            },
-          },
-        },
-        controlRisks: {
-          include: {
-            risk: {
-              include: {
-                category: true,
-                owner: true,
-              },
-            },
-          },
-        },
-        policyControls: {
-          include: {
-            policy: true,
-          },
-        },
-      },
-    });
-
-    if (!control) {
-      return NextResponse.json(
-        { error: "Control not found" },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json(control);
-  } catch (error) {
-    console.error("Error fetching control:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch control" },
-      { status: 500 }
-    );
-  }
+interface RouteContext {
+  params: Promise<{ id: string }>;
 }
 
-// PUT update control
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const body = await request.json();
-    const {
-      name,
-      controlCode,
-      description,
-      controlQuestion,
-      functionalGrouping,
-      status,
-      entities,
-      isControlList,
-      relativeControlWeighting,
-      scope,
-      // CMM Maturity Level Descriptions
-      notPerformed,
-      performedInformally,
-      plannedAndTracked,
-      wellDefined,
-      quantitativelyControlled,
-      continuouslyImproving,
-      // Relations
-      domainId,
-      frameworkId,
-      departmentId,
-      ownerId,
-      assigneeId,
-      // Multi-select relations
-      riskIds,
-      requirementIds,
-    } = body;
+// GET single control with all related data - filtered by customer account
+export const GET = withAuth(
+  async (req, context: RouteContext, session) => {
+    try {
+      const { id } = await context.params;
+      const tenantFilter = getTenantFilter(session);
 
-    // Build update data object, only including defined values
-    const updateData: Record<string, unknown> = {};
+      const control = await prisma.control.findFirst({
+        where: { id, ...tenantFilter },
+        include: {
+          domain: true,
+          framework: true,
+          department: true,
+          owner: true,
+          assignee: true,
+          evidences: {
+            include: {
+              assignee: true,
+              attachments: true,
+            },
+          },
+          exceptions: true,
+          requirements: {
+            include: {
+              requirement: {
+                include: {
+                  framework: true,
+                },
+              },
+            },
+          },
+          controlRisks: {
+            include: {
+              risk: {
+                include: {
+                  category: true,
+                  owner: true,
+                },
+              },
+            },
+          },
+          policyControls: {
+            include: {
+              policy: true,
+            },
+          },
+        },
+      });
+
+      if (!control) {
+        return NextResponse.json(
+          { error: "Control not found" },
+          { status: 404 }
+        );
+      }
+
+      return NextResponse.json(control);
+    } catch (error) {
+      console.error("Error fetching control:", error);
+      return NextResponse.json(
+        { error: "Failed to fetch control" },
+        { status: 500 }
+      );
+    }
+  },
+  { resource: "compliance.controls", action: "view" }
+);
+
+// PUT update control - with tenant validation
+export const PUT = withAuth(
+  async (req, context: RouteContext, session) => {
+    try {
+      const { id } = await context.params;
+      const body = await req.json();
+      const {
+        name,
+        controlCode,
+        description,
+        controlQuestion,
+        functionalGrouping,
+        status,
+        entities,
+        isControlList,
+        relativeControlWeighting,
+        scope,
+        // CMM Maturity Level Descriptions
+        notPerformed,
+        performedInformally,
+        plannedAndTracked,
+        wellDefined,
+        quantitativelyControlled,
+        continuouslyImproving,
+        // Relations
+        domainId,
+        frameworkId,
+        departmentId,
+        ownerId,
+        assigneeId,
+        // Multi-select relations
+        riskIds,
+        requirementIds,
+      } = body;
+
+      // First, verify the control belongs to the user's customer account
+      const existing = await prisma.control.findUnique({
+        where: { id },
+        select: { customerAccountId: true },
+      });
+
+      if (!existing) {
+        return NextResponse.json(
+          { error: "Control not found" },
+          { status: 404 }
+        );
+      }
+
+      if (!validateTenantAccess(session, existing.customerAccountId)) {
+        return forbidden("Access denied to this control");
+      }
+
+      // Build update data object, only including defined values
+      const updateData: Record<string, unknown> = {};
     if (name !== undefined) updateData.name = name;
     if (controlCode !== undefined) updateData.controlCode = controlCode;
     if (description !== undefined) updateData.description = description;
@@ -175,45 +197,65 @@ export async function PUT(
       }
     }
 
-    return NextResponse.json(control);
-  } catch (error: unknown) {
-    console.error("Error updating control:", error);
-    if ((error as { code?: string }).code === "P2025") {
+      return NextResponse.json(control);
+    } catch (error: unknown) {
+      console.error("Error updating control:", error);
+      if ((error as { code?: string }).code === "P2025") {
+        return NextResponse.json(
+          { error: "Control not found" },
+          { status: 404 }
+        );
+      }
       return NextResponse.json(
-        { error: "Control not found" },
-        { status: 404 }
+        { error: "Failed to update control" },
+        { status: 500 }
       );
     }
-    return NextResponse.json(
-      { error: "Failed to update control" },
-      { status: 500 }
-    );
-  }
-}
+  },
+  { resource: "compliance.controls", action: "edit" }
+);
 
-// DELETE control
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    await prisma.control.delete({
-      where: { id },
-    });
+// DELETE control - with tenant validation
+export const DELETE = withAuth(
+  async (req, context: RouteContext, session) => {
+    try {
+      const { id } = await context.params;
 
-    return NextResponse.json({ message: "Control deleted successfully" });
-  } catch (error: unknown) {
-    console.error("Error deleting control:", error);
-    if ((error as { code?: string }).code === "P2025") {
+      // First, verify the control belongs to the user's customer account
+      const existing = await prisma.control.findUnique({
+        where: { id },
+        select: { customerAccountId: true },
+      });
+
+      if (!existing) {
+        return NextResponse.json(
+          { error: "Control not found" },
+          { status: 404 }
+        );
+      }
+
+      if (!validateTenantAccess(session, existing.customerAccountId)) {
+        return forbidden("Access denied to this control");
+      }
+
+      await prisma.control.delete({
+        where: { id },
+      });
+
+      return NextResponse.json({ message: "Control deleted successfully" });
+    } catch (error: unknown) {
+      console.error("Error deleting control:", error);
+      if ((error as { code?: string }).code === "P2025") {
+        return NextResponse.json(
+          { error: "Control not found" },
+          { status: 404 }
+        );
+      }
       return NextResponse.json(
-        { error: "Control not found" },
-        { status: 404 }
+        { error: "Failed to delete control" },
+        { status: 500 }
       );
     }
-    return NextResponse.json(
-      { error: "Failed to delete control" },
-      { status: 500 }
-    );
-  }
-}
+  },
+  { resource: "compliance.controls", action: "delete" }
+);

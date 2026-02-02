@@ -21,6 +21,7 @@ import {
   Save,
   Edit2,
 } from "lucide-react";
+import { DatePicker } from "@/components/ui/date-picker";
 
 interface User {
   id: string;
@@ -102,13 +103,14 @@ export default function ViewFindingPage() {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch("/api/users");
+      // Fetch only auditees associated with the current audit head
+      const response = await fetch("/api/users/my-auditees");
       if (response.ok) {
         const data = await response.json();
-        setUsers(data.users || data || []);
+        setUsers(data.auditees || data || []);
       }
     } catch (error) {
-      console.error("Failed to fetch users:", error);
+      console.error("Failed to fetch auditees:", error);
     }
   };
 
@@ -424,11 +426,10 @@ export default function ViewFindingPage() {
             <div className="space-y-2">
               <Label className="text-[#1e3a5f] font-medium">Target Closure Date</Label>
               {isEditing ? (
-                <Input
-                  type="date"
-                  value={formatDate(formData.targetDate)}
-                  onChange={(e) => handleInputChange("targetDate", e.target.value)}
-                  className="border-gray-300"
+                <DatePicker
+                  value={formData.targetDate || undefined}
+                  onChange={(date) => handleInputChange("targetDate", date ? date.toISOString().split('T')[0] : "")}
+                  placeholder="Select date"
                 />
               ) : (
                 <div className="p-3 bg-gray-50 rounded-md border">

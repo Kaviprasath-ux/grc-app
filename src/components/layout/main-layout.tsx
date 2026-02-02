@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Sidebar } from "./sidebar";
 import { Header } from "./header";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -11,9 +12,10 @@ interface MainLayoutProps {
 
 export function MainLayout({ children }: MainLayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { isRTL } = useLanguage();
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-surface-secondary">
       {/* Desktop Sidebar */}
       <div className="hidden lg:block">
         <Sidebar />
@@ -21,13 +23,13 @@ export function MainLayout({ children }: MainLayoutProps) {
 
       {/* Mobile Sidebar */}
       <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-        <SheetContent side="left" className="w-[205px] p-0 bg-sidebar">
+        <SheetContent side={isRTL ? "right" : "left"} className="w-[260px] p-0 bg-white">
           <Sidebar />
         </SheetContent>
       </Sheet>
 
       {/* Main Content */}
-      <div className="lg:pl-[205px]">
+      <div className="ltr:lg:pl-[260px] rtl:lg:pr-[260px]">
         <Header onMenuClick={() => setMobileMenuOpen(true)} />
         <main className="p-4 lg:p-6">{children}</main>
       </div>

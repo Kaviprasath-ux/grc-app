@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { DatePicker } from "@/components/ui/date-picker";
 
 interface Department {
   id: string;
@@ -225,9 +226,8 @@ export default function EditRiskPage() {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => router.back()}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
+          <Button variant="ghost" size="icon" onClick={() => router.back()}>
+            <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
             <p className="text-sm text-muted-foreground">Internal Audit</p>
@@ -245,9 +245,8 @@ export default function EditRiskPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" onClick={() => router.push("/internal-audit/risk-register")}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
+        <Button variant="ghost" size="icon" onClick={() => router.push("/internal-audit/risk-register")}>
+          <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
           <p className="text-sm text-muted-foreground">Internal Audit</p>
@@ -359,11 +358,10 @@ export default function EditRiskPage() {
               </div>
               <div>
                 <Label htmlFor="creationDate">Creation Date</Label>
-                <Input
-                  id="creationDate"
-                  type="date"
+                <DatePicker
                   value={formData.creationDate}
-                  onChange={(e) => setFormData({ ...formData, creationDate: e.target.value })}
+                  onChange={(date) => setFormData({ ...formData, creationDate: date ? date.toISOString().split('T')[0] : "" })}
+                  placeholder="Select date"
                   className="mt-2"
                 />
               </div>

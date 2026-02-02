@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 
 // GET all control domains
 export async function GET() {
   try {
+    const session = await auth();
+    const userRoles = session?.user?.roles || [];
+    const isGRCAdmin = userRoles.includes("GRCAdministrator");
+    const customerAccountId = session?.user?.customerAccountId;
+    const tenantFilter = !isGRCAdmin && customerAccountId ? { customerAccountId } : {};
+
     const domains = await prisma.controlDomain.findMany({
+      where: tenantFilter,
       include: {
         _count: {
           select: { controls: true },
@@ -25,6 +33,9 @@ export async function GET() {
 // POST create new control domain
 export async function POST(request: NextRequest) {
   try {
+    const session = await auth();
+    const customerAccountId = session?.user?.customerAccountId;
+
     const body = await request.json();
     const { name } = body;
 
@@ -35,12 +46,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Auto-generate sequential code in DOM-XXX format
+    // Check for duplicate within the same tenant
+    const existingByName = await prisma.controlDomain.findFirst({
+      where: {
+        name,
+        ...(customerAccountId ? { customerAccountId } : {}),
+      },
+    });
+
+    if (existingByName) {
+      return NextResponse.json(
+        { error: "Domain with this name already exists" },
+        { status: 409 }
+      );
+    }
+
+    // Auto-generate sequential code in DOM-XXX format within the tenant
     const lastDomain = await prisma.controlDomain.findFirst({
       where: {
         code: {
           startsWith: "DOM-",
         },
+        ...(customerAccountId ? { customerAccountId } : {}),
       },
       orderBy: { code: "desc" },
     });
@@ -56,7 +83,11 @@ export async function POST(request: NextRequest) {
     const domainCode = `DOM-${nextSequence.toString().padStart(3, "0")}`;
 
     const domain = await prisma.controlDomain.create({
-      data: { code: domainCode, name },
+      data: {
+        code: domainCode,
+        name,
+        ...(customerAccountId ? { customerAccountId } : {}),
+      },
     });
 
     return NextResponse.json(domain, { status: 201 });

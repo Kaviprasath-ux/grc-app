@@ -1,60 +1,76 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
 
-// GET all departments
-export async function GET() {
-  try {
-    const departments = await prisma.department.findMany({
-      include: {
-        _count: {
-          select: { users: true, issues: true, stakeholders: true },
+// GET all departments - filtered by customer account
+// Uses organization.department (basic view) instead of organization.settings.departments (admin)
+// This allows roles like Auditee to see department names for display purposes
+export const GET = withAuth(
+  async (req, context, session) => {
+    try {
+      const tenantFilter = getTenantFilter(session);
+
+      const departments = await prisma.department.findMany({
+        where: tenantFilter,
+        include: {
+          _count: {
+            select: { users: true, issues: true, stakeholders: true },
+          },
         },
-      },
-      orderBy: { name: "asc" },
-    });
-    return NextResponse.json(departments);
-  } catch (error) {
-    console.error("Error fetching departments:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch departments" },
-      { status: 500 }
-    );
-  }
-}
-
-// POST create new department
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const { name, description, headId } = body;
-
-    if (!name) {
+        orderBy: { name: "asc" },
+      });
+      return NextResponse.json(departments);
+    } catch (error) {
+      console.error("Error fetching departments:", error);
       return NextResponse.json(
-        { error: "Department name is required" },
-        { status: 400 }
+        { error: "Failed to fetch departments" },
+        { status: 500 }
       );
     }
+  },
+  { resource: "organization.department", action: "view" }
+);
 
-    const department = await prisma.department.create({
-      data: {
-        name,
-        description: description || null,
-        headId: headId || null,
-      },
-    });
+// POST create new department - with customer account assignment
+export const POST = withAuth(
+  async (req, context, session) => {
+    try {
+      const body = await req.json();
+      const { name, description, headId } = body;
 
-    return NextResponse.json(department, { status: 201 });
-  } catch (error: unknown) {
-    console.error("Error creating department:", error);
-    if ((error as { code?: string }).code === "P2002") {
+      if (!name) {
+        return NextResponse.json(
+          { error: "Department name is required" },
+          { status: 400 }
+        );
+      }
+
+      // Get customer account ID for the new record
+      const customerAccountId = getCustomerAccountId(session);
+
+      const department = await prisma.department.create({
+        data: {
+          customerAccountId,
+          name,
+          description: description || null,
+          headId: headId || null,
+        },
+      });
+
+      return NextResponse.json(department, { status: 201 });
+    } catch (error: unknown) {
+      console.error("Error creating department:", error);
+      if ((error as { code?: string }).code === "P2002") {
+        return NextResponse.json(
+          { error: "Department with this name already exists" },
+          { status: 409 }
+        );
+      }
       return NextResponse.json(
-        { error: "Department with this name already exists" },
-        { status: 409 }
+        { error: "Failed to create department" },
+        { status: 500 }
       );
     }
-    return NextResponse.json(
-      { error: "Failed to create department" },
-      { status: 500 }
-    );
-  }
-}
+  },
+  { resource: "organization.settings.departments", action: "create" }
+);

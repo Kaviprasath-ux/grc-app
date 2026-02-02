@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { withAuth } from '@/lib/api-auth';
+import { withAuth, getCustomerAccountId, getTenantFilter } from '@/lib/api-auth';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
 }
 
-// Helper to generate finding ID
-async function generateFindingId(): Promise<string> {
+// Helper to generate finding ID - scoped to customer account
+async function generateFindingId(customerAccountId: string): Promise<string> {
   const lastFinding = await prisma.internalAuditFinding.findFirst({
+    where: { customerAccountId },
     orderBy: { findingId: 'desc' },
     select: { findingId: true },
   });
@@ -24,13 +25,14 @@ async function generateFindingId(): Promise<string> {
 
 // GET /api/internal-audit/fieldwork/[id]/findings - Get findings for an engagement
 export const GET = withAuth(
-  async (req: NextRequest, context: RouteContext) => {
+  async (req, context: RouteContext, session) => {
     try {
       const { id: engagementId } = await context.params;
+      const tenantFilter = getTenantFilter(session);
 
       // Verify engagement exists
       const engagement = await prisma.auditEngagement.findUnique({
-        where: { id: engagementId },
+        where: { id: engagementId, ...tenantFilter },
       });
 
       if (!engagement) {
@@ -42,7 +44,7 @@ export const GET = withAuth(
 
       // Get findings for this engagement
       const findings = await prisma.internalAuditFinding.findMany({
-        where: { engagementId },
+        where: { engagementId, ...tenantFilter },
         include: {
           department: true,
         },
@@ -86,25 +88,39 @@ export const GET = withAuth(
 
 // POST /api/internal-audit/fieldwork/[id]/findings - Create a new finding
 export const POST = withAuth(
-  async (req: NextRequest, context: RouteContext) => {
+  async (req, context: RouteContext, session) => {
     try {
       const { id: engagementId } = await context.params;
       const body = await req.json();
+      const tenantFilter = getTenantFilter(session);
+
+      // Get customer account ID - handle missing customerAccountId gracefully
+      let customerAccountId: string;
+      try {
+        customerAccountId = getCustomerAccountId(session);
+      } catch (error) {
+        console.error('User does not have customerAccountId:', session.id, session.roles);
+        return NextResponse.json(
+          { error: 'User account not properly configured. Please contact administrator.' },
+          { status: 400 }
+        );
+      }
 
       // Verify engagement exists
       const engagement = await prisma.auditEngagement.findUnique({
-        where: { id: engagementId },
+        where: { id: engagementId, ...tenantFilter },
       });
 
       if (!engagement) {
+        console.error('Engagement not found:', engagementId, 'tenantFilter:', tenantFilter);
         return NextResponse.json(
-          { error: 'Engagement not found' },
+          { error: 'Engagement not found or access denied' },
           { status: 404 }
         );
       }
 
-      // Generate finding ID
-      const findingId = await generateFindingId();
+      // Generate finding ID - scoped to customer account
+      const findingId = await generateFindingId(customerAccountId);
 
       // Get responsible person name if ID provided
       let responsiblePersonName = body.responsiblePerson || null;
@@ -138,6 +154,7 @@ export const POST = withAuth(
           cause: body.cause || null,
           effect: body.effect || null,
           recommendation: body.recommendation || null,
+          customerAccountId,
         },
         include: {
           department: true,
@@ -166,8 +183,9 @@ export const POST = withAuth(
       }, { status: 201 });
     } catch (error) {
       console.error('Error creating finding:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       return NextResponse.json(
-        { error: 'Failed to create finding' },
+        { error: `Failed to create finding: ${errorMessage}` },
         { status: 500 }
       );
     }

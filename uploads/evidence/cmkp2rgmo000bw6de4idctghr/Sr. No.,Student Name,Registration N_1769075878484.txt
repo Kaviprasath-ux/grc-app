@@ -1,0 +1,555 @@
+Sr. No.,Student Name,Registration No.,Discipline,Year Of Passing,Employer Name,Salary Offered (LPA)
+1,Kaushal Patel,200101010,Bio-chemical Engineering,2024,Adani Wilmar,7
+2,Harshit Yadav,200101006,Bio-chemical Engineering,2024,Adani Wilmar,7
+3,Devansh Singh,200101028,Bio-chemical Engineering,2024,TCS Ninja,3.36
+4,Varsha Yadav,200101021,Bio-chemical Engineering,2024,Rinex Technologies,5.3
+5,Paritosh Shukla,200101037,Bio-chemical Engineering,2024,PlanetSpark,6.5
+6,Abhishek Singh,,Bio-chemical Engineering,2024,TalentServe (Full Stack Engineering),6
+7,Vidushi Srivastava,200101022,Civil Engineering,2024,Technip Energies,6.5
+8,Rohit Chaudhary,200102052,Civil Engineering,2024,Technip Energies,6.5
+9,Shubh Trivedi,200102062,Civil Engineering,2024,L&T,6
+10,Aman Haider,210002001,Civil Engineering,2024,Aarti Industries,5.5
+11,Mohit Bajaj,200102072,Civil Engineering,2024,Aarti Industries,5.5
+12,Tanisha Singh,200102004,Civil Engineering,2024,Aarti Industries,5.5
+13,Soniya Choudhary,200102064,Civil Engineering,2024,Aarti Industries,5.5
+14,Hemant Gera,200102028,Civil Engineering,2024,Aarti Industries,5.5
+15,Himalaya Singh,200102029,Civil Engineering,2024,Samsung Engineering,8
+16,ADITYA TIWARI,200102012,Civil Engineering,2024,Aarti Industries,5.5
+17,Khushi Sonker,200102031,Civil Engineering,2024,Aarti Industries,5.5
+18,SHWETA KUMARI,210002009,Civil Engineering,2024,Aarti Industries,5.5
+19,Nikhil Yadav,200102035,Civil Engineering,2024,"Aarti Industries, TCS Ninja","5.5, 3.3"
+20,Pushpendra Kumar kushwaha,200102043,Civil Engineering,2024,Aarti Industries,5.5
+21,Amrita Yadav,200102014,Civil Engineering,2024,Airblack,6.3
+22,Sudheer Chaudhary,200102078,Civil Engineering,2024,Unacademy,10
+23,Shalabh Agarwal,200102058,Civil Engineering,2024,TCS Ninja,3.3
+24,Vedant Katiyar,200102068,Civil Engineering,2024,Greenko,5.5
+25,Tushar Garg,200102066,Civil Engineering,2024,Greenko,5.5
+26,Samraddha Gupta,200102053,Civil Engineering,2024,Structures Online,5
+27,SARVAGYA SHUKLA,200103056,Chemical Engineering,2024,ExxonMobil,11.67
+28,SNEHA AGARWAL,200103065,Chemical Engineering,2024,"ExxonMobil, Jubilant Ingrevia","11.67, 8"
+29,HARBHAJAN SINGH GAGA,200103027,Chemical Engineering,2024,"Chambal Fertilizers, Jubilant Ingrevia","7.66, 8"
+30,KANIKA TYAGI,200103039,Chemical Engineering,2024,"Shalimar Paints, Jubilant Ingrevia, Chambal Fertilizers","6.3, 8, 7.66"
+31,NIKHIL KUMAR,200103042,Chemical Engineering,2024,Reliance Industries,7.5
+32,AKANKSHA SINGH TOMAR,200103007,Chemical Engineering,2024,Technip Energies,10
+33,HARSH KUMAR,200103028,Chemical Engineering,2024,Technip Energies,10
+34,HARSHITA SHARMA,210003007,Chemical Engineering,2024,Technip Energies,10
+35,JATIN VERMA,200103036,Chemical Engineering,2024,Reliance Industries,10.5
+36,PRASHANT KUMAR,200103048,Chemical Engineering,2024,Reliance Industries,10.5
+37,SHIVANSHU KUSHWAHA,200103061,Chemical Engineering,2024,Reliance Industries,10.5
+38,SRIJAN TIWARI,200103066,Chemical Engineering,2024,Evalueserve,5
+39,UMESH JASAWAT,200103068,Chemical Engineering,2024,Evalueserve,5
+40,ARPIT MISHRA,200103018,Chemical Engineering,2024,Lummus,11.85
+42,HARSHIT BARANWAL,200103030,Chemical Engineering,2024,Lummus,11.85
+42,NITIN SHUKLA,200103045,Chemical Engineering,2024,Lummus,11.85
+44,DEEPAK RAJ YADAV,200103022,Chemical Engineering,2024,Lummus,11.85
+44,VEDANSH VED,200113037,Chemical Engineering,2024,HUL (R&D),7
+46,ANUJ KUMAR UPADHYAY,200103016,Chemical Engineering,2024,HUL (Supply Chain),9.98
+46,VIRAT DWIVEDI,200103077,Chemical Engineering,2024,Naini Group,7
+47,ANKIT KUMAR,200103012,Chemical Engineering,2024,Atul Industries,5.16
+48,PRAKHAR SHANKHDHAR,200103046,Chemical Engineering,2024,Atul Industries,5.16
+49,RAJNEESH DUBEY,200103053,Chemical Engineering,2024,Atul Industries,5.16
+50,UTSAV BARNWAL,200103069,Chemical Engineering,2024,"Atul Industries, TCS Ninja","5.16, 3.3"
+51,AYUSH VERMA,200103019,Chemical Engineering,2024,Aarti Industries,5.5
+52,ABHISHEK KAPIL,200103005,Chemical Engineering,2024,Aarti Industries,5.5
+53,HARSHIT PRATAP SINGH,200103031,Chemical Engineering,2024,Aarti Industries,5.5
+54,KRISHNA KUMAR,200103040,Chemical Engineering,2024,Aarti Industries,5.5
+55,RAGHAV PANDEY,200103050,Chemical Engineering,2024,Aarti Industries,5.5
+56,RAJ MOHAN,200103051,Chemical Engineering,2024,Aarti Industries,5.5
+57,RAJAT SINGH,200103052,Chemical Engineering,2024,Aarti Industries,5.5
+58,SATYAM,200103058,Chemical Engineering,2024,Aarti Industries,5.5
+59,SAURABH CHAUDHARY,200103059,Chemical Engineering,2024,Aarti Industries,5.5
+60,SHOBHAN SRIVASTAVA,200103062,Chemical Engineering,2024,Aarti Industries,5.5
+61,VISHAL SINGH,200103072,Chemical Engineering,2024,"Aarti Industries, Chambal Fertilizers","5.5, 7.66"
+62,RITESH KUMAR SINGH,200103076,Chemical Engineering,2024,Reliance Industries,7.5
+63,Bhrigvendra pratap,210003003,Chemical Engineering,2024,Aarti Industries,5.5
+64,SUMIT KUMAR SINGH,210003009,Chemical Engineering,2024,Aarti Industries,5.5
+65,ANAND SINGH,200103010,Chemical Engineering,2024,GFL,9.75
+66,AKARSHITA SINGH,200103008,Chemical Engineering,2024,Samsung Engineering,8
+67,KANDARP TRIVEDI,200103038,Chemical Engineering,2024,OCCL,7
+68,SHIVAM SINGH,200103060,Chemical Engineering,2024,OCCL,7
+69,Abhishek Patel,200103006,Chemical Engineering,2024,Samsung Engineering,8
+70,Harshit Rastogi,200103032,Chemical Engineering,2024,Samsung Engineering,8
+71,Tripta Sharma,200103078,Chemical Engineering,2024,Unacademy,10
+72,Nishant Pradey,200103043,Chemical Engineering,2024,DCM Shriram,6.5
+73,Isha Chaudhary,200103034,Chemical Engineering,2024,GFL,6.5
+74,Prakhar Srivastava,200103046,Chemical Engineering,2024,GFL,6.5
+75,Vikas Gupta,200103071,Chemical Engineering,2024,GFL,6.5
+76,Varchasva Agarwal,200103070,Chemical Engineering,2024,Haldia Petrochemicals Ltd,8
+77,Abhinav Katiyar,200112009,Chemical Engineering,2024,Haldia Petrochemicals Ltd,8
+78,Divyanshi Chakrawarti,200103024,Chemical Engineering,2024,Haldia Petrochemicals Ltd,8
+79,Shrutika Agarwal,200103064,Chemical Engineering,2024,Haldia Petrochemicals Ltd,8
+80,Gautam Chandna,200103026,Chemical Engineering,2024,Haldia Petrochemicals Ltd,8
+81,Arun Shihora,210003002,Chemical Engineering,2024,Century Group,7.5
+82,Durgesh Kumar,200103025,Chemical Engineering,2024,"Century Group, Chambal Fertilizer","7.5, 7.66"
+83,Ishan Singh,200112008,Chemical Engineering,2024,Reliance Industries,7.5
+84,Anukriti Bhaskar,200103017,Chemical Engineering,2024,ADAMA,10
+85,Jaysareal,,Chemical Engineering,2024,ADAMA,10
+86,Divyansh Kumar,200103023,Chemical Engineering,2024,Greenko Group,5.5
+87,Annu Rani,200112018,Chemical Engineering,2024,Greenko Group,5.5
+88,Ashna Singh,,Chemical Engineering,2024,Nerolac,4.5
+89,Ankita Mishra,200103001,Chemical Engineering,2024,JK Cement,5.8
+90,Vivek Gupta,200103073,Chemical Engineering,2024,Mahindra & Mahindra Swaraj Division,4.2
+91,Priya Kanaujia,200103049,Chemical Engineering,2024,Rinex Technologies,5.2
+92,Anubhav Shukla,200103014,Chemical Engineering,2024,PlanetSpark,6.5
+93,Satendra Kumar,200103057,Chemical Engineering,2024,Standard Surfactants,4.2
+94,Zakir Ali Ansari,200103074,Chemical Engineering,2024,Standard Surfactants,4.2
+95,Anoop Kumar,200104010,Computer Science & Engineering,2024,Newgen Software,4.25
+96,Aviral Chauhan,200104077,Computer Science & Engineering,2024,Newgen Software,4.25
+97,RAM SINGHAL,200104048,Computer Science & Engineering,2024,TCS Ninja,3.3
+98,Anjali Verma,200103011,Computer Science & Engineering,2024,"Newgen Software, Synopsys","4.25, 4.8"
+99,Vaishali Verma,200104066,Computer Science & Engineering,2024,Effiya,11.5
+100,Shweta Gupta,210004009,Computer Science & Engineering,2024,Effiya,11.5
+101,Smriti Shukla,200104057,Computer Science & Engineering,2024,Effiya,11.5
+102,Tushar Bhatia,200104061,Computer Science & Engineering,2024,Samsung R & D Noida,15.5
+103,Utkarsh Dixit,200104064,Computer Science & Engineering,2024,Samsung R & D Noida,15.5
+104,ISHITA GUPTA,200104036,Computer Science & Engineering,2024,Samsung R & D Noida,15.5
+105,Rachit Bhatia,200104045,Computer Science & Engineering,2024,IBM,4.25
+106,Abhay Singh Verma,200104003,Computer Science & Engineering,2024,Servosys Solutions,6
+107,Vaibhav Kumar,190104073,Computer Science & Engineering,2024,Servosys Solutions,6
+108,Ankur Bajpai,200104076,Computer Science & Engineering,2024,Servosys Solutions,6
+109,Ujjwal Singh,200104062,Computer Science & Engineering,2024,Servosys Solutions,6
+110,Aditi Singh,200104006,Computer Science & Engineering,2024,Fantaclaus,8
+111,Nitin Sharma,200104080,Computer Science & Engineering,2024,Fantaclaus,8
+112,Prasoon Yadav,200104044,Computer Science & Engineering,2024,Insurance Dekho,12
+113,Ved Prakash Tiwari,200104067,Computer Science & Engineering,2024,Insurance Dekho,12
+114,Harsh Kushwaha,200104030,Computer Science & Engineering,2024,Aarti Industries Ltd.,5.5
+115,Mukesh Viswakarma,210004007,Computer Science & Engineering,2024,Aarti Industries Ltd.,5.5
+116,Amarjeet Prajapati,210004004,Computer Science & Engineering,2024,Aarti Industries Ltd.,5.5
+117,Divyanshi Gupta,200104025,Computer Science & Engineering,2024,Denso International,5.5
+118,Shubhangi Biltoria,200104093,Computer Science & Engineering,2024,Tata Communication,33.5
+119,Sarthak Singhal,200104053,Computer Science & Engineering,2024,Commvault,18.25
+120,Syed Mohammad Luqman,200104060,Computer Science & Engineering,2024,"Commvault, TCS Ninja","18.75, 3.3"
+121,Akash Singh,200104008,Computer Science & Engineering,2024,TalentServe,6
+122,Harsh Prajapati,200104031,Computer Science & Engineering,2024,TCS Ninja,3.3
+123,ASTITVA YADAV,200104017,Computer Science & Engineering,2024,TCS Digital,7
+124,Rachit Bhatia,200104045,Computer Science & Engineering,2024,TCS Digital,7
+125,Atharva Agrawal,200104018,Computer Science & Engineering,2024,TCS Digital,7
+126,Madhav Patel,200104037,Computer Science & Engineering,2024,TCS Digital,7
+127,Rohit Multani,200103054,Computer Science & Engineering,2024,TCS Digital,7
+128,Saumya Keservani,200104054,Computer Science & Engineering,2024,TCS Digital,7
+129,Anoop Kumar,200104010,Computer Science & Engineering,2024,TCS Prime,9
+130,Manish Sharma,200104038,Computer Science & Engineering,2024,TCS Prime,9
+131,Vishal Kumar,200104070,Computer Science & Engineering,2024,Synopsys,9
+132,HARSH SINGH,200104032,Computer Science & Engineering,2024,TCS Ninja,3.3
+133,DEEPAK RATHORE,200104013,Computer Science & Engineering,2024,TCS Digital,7
+134,Aman Madhuku,,Computer Science & Engineering,2024,Born,
+135,Anshita Singh,210004005,Computer Science & Engineering,2024,Turing,7.5
+136,NEELABH AGARWAL,200104041,Computer Science & Engineering,2024,Turing,7.5
+137,Sahil Singh,200104050,Computer Science & Engineering,2024,"TalentServe, TCS Digital","6, 7"
+138,Sachin Kumar Singh,200104049,Computer Science & Engineering,2024,"Infinite Locus, TalentServe, HCL Tech","6, 6, 3.25"
+139,Aakash Deep Singh,200104001,Computer Science & Engineering,2024,"TCS Ninja, TalentServe","3.3, 6"
+140,Anushk Tiwari,200104012,Computer Science & Engineering,2024,"TCS Digital, TalentServe","7, 6"
+141,Saransh Gangwar,200104052,Computer Science & Engineering,2024,Infinite Locus,6
+142,Ashish Paresar,200104016,Computer Science & Engineering,2024,"TalentServe, Eninrac","6, 3.5"
+143,Himanshu Singh,200104035,Computer Science & Engineering,2024,TCS Ninja,3.3
+144,Ashish Dev,200104015,Computer Science & Engineering,2024,Rinex Technologies,5.2
+145,Goldee Arora,200104027,Computer Science & Engineering,2024,Infinite Locus,6
+146,Abhishek Kumar,200104005,Computer Science & Engineering,2024,HCL Tech,3.25
+147,Dhaneswar Tripathi,210004006,Computer Science & Engineering,2024,HCL Tech,3.25
+148,Mansi Purwar,200104039,Computer Science & Engineering,2024,TCS Ninja,3.3
+149,Vikas Yadav,200104068,Computer Science & Engineering,2024,"HCL Tech, TCS Digital","3.35, 7"
+150,Rahul Vishwakarma,200104047,Computer Science & Engineering,2024,MeriLife,3
+151,Chetan Sharma,200104022,Computer Science & Engineering,2024,TCS Ninja,3.3
+152,Vikas Kumar,200104075,Computer Science & Engineering,2024,TCS Ninja,3.3
+153,Nitin Diwakar,200104042,Computer Science & Engineering,2024,TCS Ninja,3.3
+154,Samakshi Srivastava,200104051,Computer Science & Engineering,2024,TCS Prime,9
+155,Ayushi Pal,200104020,Computer Science & Engineering,2024,UKG,15.1
+156,Vanshika Garg,200104074,Computer Science & Engineering,2024,UKG,15.1
+157,Anant Singh,200105012,Electrical Engineering,2024,Technip,6.5
+158,Gagan Singh,200105025,Electrical Engineering,2024,Technip,6.5
+159,Jyotsana Singh,200105072,Electrical Engineering,2024,Technip,6.5
+160,Divyansh Gupta,200105024,Electrical Engineering,2024,Effiya,11.5
+161,Harsh Vardhan Pandey,200102002,Electrical Engineering,2024,Reliance Industries,10.5
+162,Aditya Kumar Gupta,200105010,Electrical Engineering,2024,L&T,6.5
+163,Mayank Pandey,200105030,Electrical Engineering,2024,L&T,6.5
+164,Manas Pandey,200105077,Electrical Engineering,2024,L&T,6.5
+165,Vikas Gaur,200105071,Electrical Engineering,2024,L&T,6.5
+166,Rajan Upadhyay,200105079,Electrical Engineering,2024,L&T,6.5
+167,Tanav Pratap Singh,200105059,Electrical Engineering,2024,Tata Communication,5.15
+168,Ritesh Gupta,200105042,Electrical Engineering,2024,Tata Communication,5.15
+169,Vaibhav Kumar,200105070,Electrical Engineering,2024,Tata Communication,5.15
+170,Chandan Sharma,200105076,Electrical Engineering,2024,Tata Communication,5.15
+171,Shivam Kumar,190105031,Electrical Engineering,2024,Tata Communication,5.15
+172,Nishu Singh,200105034,Electrical Engineering,2024,Havells India Ltd.,6
+173,Navneet Kumar Yadav,200105033,Electrical Engineering,2024,Havells India Ltd.,6
+174,Saurabh Patel,200105048,Electrical Engineering,2024,Samsung Engineering,8
+175,Ritik Kumar Singh,200105067,Electrical Engineering,2024,Unacademy,10
+176,Jai Prakash Yadav,200105027,Electrical Engineering,2024,Unacademy,10
+177,Abhishek Maurya,200105006,Electrical Engineering,2024,Unacademy,10
+178,Kausaal Mathurya,210005004,Electrical Engineering,2024,Unacademy,10
+179,Naishrit,20014504,Electrical Engineering,2024,Unacademy,10
+180,Aastha Tripathi,210005001,Electrical Engineering,2024,Airblack,6.3
+181,Sai Pranam Tripathi,200105046,Electrical Engineering,2024,DCM Shriram,7
+182,Aayush Srivastava,200105003,Electrical Engineering,2024,Unacademy,10
+183,Abhinav Gupta,200105004,Electrical Engineering,2024,Intellismart,7
+184,Akshat Srivastava,200105001,Electrical Engineering,2024,"Intellismart, Century Group","7.5, 7.5"
+185,Adarsh Singh,200105008,Electrical Engineering,2024,Century Group,7.5
+186,Neeresh Kumar,210005006,Electrical Engineering,2024,"Century Group, Greenko Group","7.5, 5.5"
+187,Sachin Tiwari,200105045,Electrical Engineering,2024,Samsung Engineering,8
+188,Priya Pandey,210005008,Electrical Engineering,2024,Greenko Group,5.5
+189,Prateek Pandey,200105039,Electrical Engineering,2024,Ufony (School Diary),
+190,Sparsh Tripathi,200105080,Electrical Engineering,2024,DCM Shriram Hardoi,4.5
+191,Lovink Singhal,200105028,Electrical Engineering,2024,"DCM Shriram Hardoi, Zuari Industries","4.5, 4.5"
+192,Mahek Pandey,200105029,Electrical Engineering,2024,Eninrac,3.5
+193,Aman Shahi,200111018,Electrical Engineering,2024,"Super Smelters, Tata Chemical","4.5, 6.5"
+194,Siddhant Singh,200105057,Electrical Engineering,2024,Super Smelters,
+195,Vandita Mishra,200105002,Electrical Engineering,2024,"Super Smelters, Shalimar Paints","-, 6.3"
+196,Pranav Mishra,200105066,Electrical Engineering,2024,TCS Ninja,3.3
+197,Nandini Tandon,200105073,Electrical Engineering,2024,Mahindra & Mahindra Swaraj Division,4.2
+198,Akash Kumar,210005005,Electrical Engineering,2024,Mahindra & Mahindra Swaraj Division,4.2
+199,Sandeep Dixit,200105068,Electrical Engineering,2024,Rinex Technologies,5.2
+200,Shivani Modanwal,200105053,Electrical Engineering,2024,"Rinex Technologies, TalentServe","5.2, 6"
+201,Vaibhav Gupta,200105075,Electrical Engineering,2024,"Rinex Technologies, KEI Industries Ltd.","5.2, -"
+202,Vishant Kumar,,Electrical Engineering,2024,Rinex Technologies,5.2
+203,Anshika,200105014,Electrical Engineering,2024,Rinex Technologies,5.2
+204,Dewang Kumar Singh,200105023,Electrical Engineering,2024,TalentServe (Sales Marketing & Operations),10.5
+205,Arpit Gautam,200105016,Electrical Engineering,2024,TalentServe,6
+206,Avnish Kumar Singh,200105020,Electrical Engineering,2024,TalentServe (Sales Marketing & Operations),10.5
+207,Shatakshi Sachan,200105051,Electrical Engineering,2024,TalentServe (Sales Marketing & Operations),10.5
+208,Akshay Shukla,210005004,Electrical Engineering,2024,Valency International,22
+209,Naman Tiwari,200105032,Electrical Engineering,2024,KEI Industries Ltd.,
+210,Ayush Shandilya,200105021,Electrical Engineering,2024,KEI Industries Ltd.,
+211,Sachin Maurya,200105044,Electrical Engineering,2024,KEI Industries Ltd.,4.2
+212,Saurabh,200105048,Electrical Engineering,2024,KEI Industries Ltd.,
+213,Yuvraj Singh Yadav,200105063,Electrical Engineering,2024,Lenskart,6.5
+214,Aayushi Singh,200106014,Electronics Engineering,2024,Newgen Technologies,4
+215,Nimisha Upman,200106001,Electronics Engineering,2024,Newgen Technologies,4
+216,Aditya Gupta,200101039,Electronics Engineering,2024,Newgen Technologies,4
+217,Anshuman Singh Sisodia,200106029,Electronics Engineering,2024,Newgen Technologies,4
+218,Suryansh Srivastava,200106069,Electronics Engineering,2024,Newgen Technologies,4
+219,Yash Agrawal,200106072,Electronics Engineering,2024,"IBM, Fantaclaus","4.25, 8"
+220,Harshit Pandey,200106039,Electronics Engineering,2024,Fantaclaus,8
+221,Mayank Gupta,200106009,Electronics Engineering,2024,Fantaclaus,8
+222,Shashank Srivastava,200106064,Electronics Engineering,2024,Fantaclaus,8
+223,Nikhil Singh,210006004,Electronics Engineering,2024,Tata Communications,5.25
+224,Sujata Gupta,200106008,Electronics Engineering,2024,Tata Communications,5.25
+226,Aryan Shukla,200106032,Electronics Engineering,2024,Tata Communications,5.25
+227,Pachauri,200106006,Electronics Engineering,2024,Tata Communications,5.25
+227,Sonal Katiyar,200106068,Electronics Engineering,2024,Tata Communications,5.25
+228,Anuj Singh,200106076,Electronics Engineering,2024,Tata Communications,5.25
+229,Anshul Mishra,200106013,Electronics Engineering,2024,Tata Communications,5.25
+230,Saurabh Tiwari,200106028,Electronics Engineering,2024,Tata Communications,5.25
+231,Akash Suryavanshi,200102057,Electronics Engineering,2024,Unacademy,10
+232,Nakshatra,200106025,Electronics Engineering,2024,Unacademy,10
+233,Chinmayee Mishra,200106047,Electronics Engineering,2024,Nippon Data,10
+234,Harshit Mall,200106007,Electronics Engineering,2024,Nippon Data,10
+235,HARSH PRATAP SINGH,200113022,Electronics Engineering,2024,"TCS Ninja, TCS Digital","3.3, 7"
+236,Akshat Srivastava,200106038,Electronics Engineering,2024,TCS Digital,7
+237,Chetan Gupta,200106026,Electronics Engineering,2024,TCS Ninja,3.3
+238,Mayank Kumar,200106035,Electronics Engineering,2024,TCS Digital,7
+239,Prabhat Shukla,200106043,Electronics Engineering,2024,TCS Ninja,3.3
+240,Shivam Gulia,200106075,Electronics Engineering,2024,TCS Ninja,3.3
+241,Priyansh Gupta,200106077,Electronics Engineering,2024,TCS Prime,9
+242,Adi Dixit,200106019,Electronics Engineering,2024,TCS Prime,9
+243,Akash Jaiswal,200106024,Electronics Engineering,2024,Century Group,
+245,Siddharth Shreyaskar,200106067,Electronics Engineering,2024,Century Group,
+246,Yash Vardhan,200106073,Electronics Engineering,2024,Greenko Group,5.5
+246,Mayank Prakash,200106044,Electronics Engineering,2024,Greenko Group,5.5
+247,Anshika Tripathi,200106004,Electronics Engineering,2024,Indorama,5.5
+248,Priyank Gupta,200106053,Electronics Engineering,2024,Indorama,5.5
+249,Aditya Mishra,200106021,Electronics Engineering,2024,TCS Digital,7
+250,Princy Soni,200106052,Electronics Engineering,2024,Ufony (School Diary),
+251,Alok Singh,200106027,Electronics Engineering,2024,Super Smelters,
+252,Satyam Singh,200106062,Electronics Engineering,2024,Super Smelters,
+253,Abhinav Singh,200106018,Electronics Engineering,2024,Super Smelters,
+254,Aditya Gupta,200101039,Electronics Engineering,2024,Super Smelters,
+255,Abhay Verma,200106017,Electronics Engineering,2024,Rinex Technologies,5.2
+256,Shreyanshi Pandey,200106066,Electronics Engineering,2024,Eninrac,3.5
+257,Divyansh,200106036,Electronics Engineering,2024,HCL Tech,3.25
+258,Praveen Kumar,200106051,Electronics Engineering,2024,TCS Ninja,3.3
+259,Riya Jaiswal,200106058,Electronics Engineering,2024,TCS Digital,7
+260,Stuti Agarwal,200109007,Electronics Engineering,2024,UKG,15
+261,Mansi Choudhari,200106042,Electronics Engineering,2024,Lenskart,6.5
+262,Manjeet Singh,200106041,Electronics Engineering,2024,Lenskart,6.5
+263,Rajesh Tiwari,200107022,Food Technology,2024,Adani Wilmar,7
+264,Aman Yadav,200107038,Food Technology,2024,Adani Wilmar,7
+265,Aprajit Singh,200107007,Food Technology,2024,Barmalt Malting,
+266,Pranjal Sachan,200107021,Food Technology,2024,Barmalt Malting,
+267,Devanshu Mishra,200107013,Food Technology,2024,"United Breweries, Rinex Technologies","-, 5.2"
+268,Tanish Tiwari,200107030,Food Technology,2024,TalentServe,
+269,Ujjwal Rai,200107031,Food Technology,2024,"Rinex Technologies, Devyani Food Industries Pvt Ltd","5.2, 3.5"
+270,Arpit Singh,200107009,Food Technology,2024,"Devyani Food Industries, Rinex Technologies","3.5, 5.2"
+271,Parth Tripathi,200107020,Food Technology,2024,TalentServe (Sales Marketing & Operations),10.5
+272,Saumya Tripathi,200107015,Food Technology,2024,Devyani Food Industries Pvt Ltd,3.5
+272,Ashu,,Food Technology,2024,Devyani Food Industries Pvt Ltd,3.5
+273,Shagun Tiwari,200107026,Food Technology,2024,Valency International,22
+274,Subhi Pathak,200107027,Food Technology,2024,Devyani Food Industries Pvt Ltd,3.5
+275,Kartik Wadhwani,200107002,Food Technology,2024,Valency International,22
+276,Chetna Dubey,200109020,Food Technology,2024,Devyani Food Industries Pvt Ltd,3.5
+277,Amit Maurya,200107004,Food Technology,2024,Dabur,7.5
+278,Abhinav Awasthi,200108076,Information Technology,2024,Zscaler,19.5
+279,Shubham Pandey,200108058,Information Technology,2024,Effiya,11.5
+280,Amartya Yadav,200108020,Information Technology,2024,"Samsung R&D, IBM","15.5, 4.25"
+281,Yashi Gupta,200108072,Information Technology,2024,"TalentServe, IBM","6, 4.25"
+282,Srishti Porwal,200108062,Information Technology,2024,InsuranceDekho,12
+283,Anuj Srivastava,200108023,Information Technology,2024,Servosys Solutions,6
+284,Naman Rajput,200108037,Information Technology,2024,Servosys Solutions,6
+285,Aditya Pandey,200108012,Information Technology,2024,Fantaclaus,8
+286,Harsh Vardhan Singh,200108032,Information Technology,2024,"Tata Communication, TCS Digital","5.25, 7"
+287,Shubhancy Gupta,210008007,Information Technology,2024,"Tata Communication, TCS Ninja","5.25, 3.36"
+288,Tushar Gupta,200108066,Information Technology,2024,"InsuranceDekho, Unacademy","12, 10"
+289,Preeti Singh,200103078,Information Technology,2024,TalentServe,6
+290,Aditya Singh,200108014,Information Technology,2024,Commvault,18.25
+291,Shlok Kumar Suman,200108057,Information Technology,2024,TCS Ninja,3.3
+292,Utsav Agrawal,200108067,Information Technology,2024,"Infinite Locus, TCS Digital","6, 7"
+293,Aastha Singh,200108075,Information Technology,2024,Intellismart,7
+294,Rishu Bajpai,200108049,Information Technology,2024,TCS Digital,7
+295,Prateek Shukla,200105043,Information Technology,2024,TCS Prime,9
+296,Priyanshi Porwal,200108045,Information Technology,2024,TCS Prime,9
+297,Aditya Shukla,200102071,Information Technology,2024,TCS Prime,9
+298,Shivam Agarwal,200108056,Information Technology,2024,TCS Prime,9
+299,Shailesh Kumar Maurya,200108054,Information Technology,2024,Synopsys,4.8
+300,SUYASH VERMA,200108064,Information Technology,2024,TCS Ninja,3.3
+301,Akash Chaurasiya,200108016,Information Technology,2024,TCS Ninja,3.3
+302,Aditya Singh,200108013,Information Technology,2024,TCS Digital,7
+303,Pankaj Vishwakarma,200108038,Information Technology,2024,TCS Digital,7
+304,Yash Mishra,200108071,Information Technology,2024,TCS Digital,7
+305,Ajitesh Srivastava,200108015,Information Technology,2024,Ufony (School Diary),7
+306,Sankalp Kumar Mishra,200108078,Information Technology,2024,Ufony (School Diary),7
+307,Aman Singh,200108019,Information Technology,2024,Brimo Software,3 to 5
+308,Abhishek Rai,210008001,Information Technology,2024,Brimo Software,3 to 5
+309,Jasmeen Kaur,200108033,Information Technology,2024,TCS Ninja,3.3
+310,Sagar Kasana,200108052,Information Technology,2024,TCS Digital,7
+311,Abhinav Goyal,200108009,Information Technology,2024,TCS Digital,7
+312,Prashant Shukla,200108042,Information Technology,2024,TCS Digital,7
+313,Anuj Singh,200103015,Information Technology,2024,TCS Ninja,3.36
+314,Ravi Verma,200108047,Information Technology,2024,"Turing, TCS Prime","7.5, 9"
+315,Simran Yadav,200108060,Information Technology,2024,Turing,7.5
+316,Astha Srivastava,200108025,Information Technology,2024,UKG,10
+317,AMAN KUMAR SINGH,200108019,Information Technology,2024,Codebugged,8
+318,Abhay Kumar,200106015,Information Technology,2024,"Rinex Technologies, TalentServe","5.2, 6"
+319,Sudhanshu Maurya,210008009,Information Technology,2024,"Rinex Technologies, TCS Ninja, HCL Tech","5.2, 3.36, 3.25"
+320,Akshat Shukla,200108018,Information Technology,2024,"TCS Digital, Rinex Technologies","7, 5.2"
+321,Rishabh Agnihotri,200108048,Information Technology,2024,"TCS Ninja, Rinex Technologies","3.36, 5.2"
+322,Yuvraj Kumar,200108074,Information Technology,2024,"Mediamonk, TalentServe","6, 6"
+323,Suryansh Singh,200108063,Information Technology,2024,TCS Ninja,3.36
+324,Sachin Kumar Siddhu,200108051,Information Technology,2024,TalentServe (Human Resource/ Finance),5.5
+325,Sonali Patel,200108061,Information Technology,2024,TalentServe,6
+326,Anuj Kumar Singh,200103015,Information Technology,2024,"TalentServe, HCL Tech","10.5, 3.25"
+327,Yug Gupta,200108073,Information Technology,2024,TCS Ninja,3.36
+328,Ayushi Vishwakarma,200108028,Information Technology,2024,TalentServe (Sales Marketing & Operations),10.5
+329,Shivam Kumar,200108002,Information Technology,2024,Talent Serve,6
+330,Ayushi Srivastava,200108001,Information Technology,2024,Mediamonk,6
+331,Adarsh Gupta,200108011,Information Technology,2024,TalentServe,6
+332,Kavish Singh,200108034,Information Technology,2024,TalentServe,6
+333,Abhay Bhardwaj,200108008,Information Technology,2024,"Mediamonk, Talent Serve","6, 6"
+334,Vidhi Singh,200108068,Information Technology,2024,TCS Digital,7
+335,Deepak Kumar,200108029,Information Technology,2024,"TalentServe (Sales Marketing), TalentServe","10.5, 6"
+336,Krishna Nath Sharma,200108035,Information Technology,2024,Newgensis,7
+337,Priya Gupta,200108004,Information Technology,2024,Eninrac,3.5
+338,Shubham Singh,200108059,Information Technology,2024,Innosight,3
+339,Yashashwani Singh,200108005,Information Technology,2024,TCS Ninja,3.36
+340,Prakhar Shukla,200109018,Leather Technology,2024,Tata International,3.6
+341,Ankita Yadav,200109011,Leather Technology,2024,Tata International,3.6
+342,Aditya Yadav,200109021,Leather Technology,2024,"Kabir Leather, Rinex Technologies","4.2, 5.2"
+343,Akriti Trivedi,200109013,Leather Technology,2024,TalentServe (Sales Marketing & Operations),10.5
+344,PURVI GUPTA,200109019,Leather Technology,2024,Rinex Technologies,5.2
+345,Ajay Sharma,200109002,Leather Technology,2024,PlanetSpark,6
+346,Arpit Katiyar,200109003,Leather Technology,2024,Rinex Technologies,5.2
+347,Manu Upadhyay,200103006,Leather Technology,2024,"PlanetSpark, Hiremi","6.6, 10"
+348,Iqra Jafri,200111010,MBA,2024,AR Thermosets,3
+349,Priyanshi Sexena,200111035,MBA,2024,Hiremi,10
+350,Sachin Mishra,200111027,MBA,2024,Hiremi,10
+351,Saumya Tiwari,200111033,MBA,2024,"Axis Bank, PlanetSpark","4.6, 6.5"
+352,Lav Singh,200113004,MBA,2024,AR Thermosets,3
+353,Asheesh Chaurasia,200113016,MBA,2024,RSPL,3.5
+354,Anurag Dwivedi,200113036,MBA,2024,AR Thermosets,3.5
+355,Akash Verma,200113006,MBA,2024,AR Thermosets,3.5
+356,Ravindra Singh,200113028,MBA,2024,AR Thermosets,3.5
+357,Ayush Tiwari,200112031,MBA,2024,Bharat Electronics Ltd.,13
+358,KRISHNA DATT,220231028,MCA,2024,IBM,4.75
+359,Sayantani Biswas,220231059,MCA,2024,Airblack,6.3
+360,Shubham Dubey,220231062,MCA,2024,"TCS Digital, TCS Ninja","7.3, 3.5"
+361,Satyam Mishra,220231057,MCA,2024,Carnation,5.5
+362,Naveen Agrahari,220231039,MCA,2024,TCS Ninja,3.5
+363,Himanshu Kumar,220231021,MCA,2024,TCS Ninja,3.5
+364,Deepak Kumar,220231014,MCA,2024,IPH Technology,3
+365,Jigyasu Gupta,220231024,MCA,2024,FareLabs,3
+366,SPRIYHA MAURYA,220231064,MCA,2024,IPH Technology,3
+367,Jaya Mishra,220231022,MCA,2024,IPH Technology,3
+368,Riya Banerjee,220231076,MCA,2024,IPH Technology,3
+369,Dushyant Kumar,220231017,MCA,2024,IPH Technology,3
+370,Kushal Bankhede,220231031,MCA,2024,IPH Technology,3
+371,Rajeev Kumar Singh,220231051,MCA,2024,TCS Digital,7.3
+372,Tannu Garg,220231069,MCA,2024,TCS Ninja,3.5
+373,Aditya Verma,220231004,MCA,2024,TCS Ninja,3.5
+374,Tripurari Kumar Sharma,220231070,MCA,2024,TCS Ninja,3.5
+375,Annu,,MCA,2024,"Airblack, Rinex Technologies, FareLabs","6.3, 5.2, 3"
+376,Prashant Mathur,220231047,MCA,2024,TCS Ninja,3.5
+377,Shreya Sharma,220231061,MCA,2024,"Rinex Technologies, Dataman, FareLabs","5.2, 4.2, 3"
+378,Palak Sakhuja,220231043,MCA,2024,Mediamonk,6
+379,Varsha Singh,220231072,MCA,2024,Dataman,4.2
+380,Mradul Sharma,220231037,MCA,2024,Dataman,4.2
+381,Dipesh Mate,220231015,MCA,2024,Dataman,4.2
+382,Rupam Kumari,220231053,MCA,2024,Dataman,4.2
+383,Prakhar Shukla,220231046,MCA,2024,"Dataman, Farelabs","4.2, 3"
+384,Manisha Jha,220231032,MCA,2024,Mediamonk,
+385,Vishvjeet Rana,220231073,MCA,2024,Dataman,4.2
+386,Anup Kumar,220231010,MCA,2024,"Dataman, TCS Ninja","4.2, 3.5"
+387,Abhay Kumar Pandey,220231002,MCA,2024,TCS Ninja,3.5
+388,Anshu Kumar,220231008,MCA,2024,Dataman,4.2
+389,Navya,220231040,MCA,2024,FareLabs,3
+390,Anshu Gupta,220231008,MCA,2024,TCS Ninja,3.5
+391,Anurag Pal,220231011,MCA,2024,TCS Ninja,3.5
+392,Priyanshu Bajpai,220231049,MCA,2024,TCS Digital,7.3
+393,Jeeru Vankatesh,220231023,MCA,2024,TCS Digital,7.3
+394,Aastha Chauhan,200110009,Mechanical Engineering,2024,Technip Energies,6.5
+395,KRATIKA UMRAO,200110040,Mechanical Engineering,2024,Technip Energies,6.5
+396,Kansh Maura,200110031,Mechanical Engineering,2024,Technip Energies,6.5
+397,SURYA PRATAP SINGH,200110066,Mechanical Engineering,2024,Technip Energies,6.5
+398,YASH KAUSHIK,200110072,Mechanical Engineering,2024,Technip Energies,6.5
+399,Alok Shukla,200110007,Mechanical Engineering,2024,Reliance Industries (PPO),7.5
+400,Harshdeep Kushwaha,200110035,Mechanical Engineering,2024,Evalueserve,5
+401,Shivang Mishra,200111034,Mechanical Engineering,2024,Evalueserve,5
+402,Shikar Chaubey,200110056,Mechanical Engineering,2024,L&T,6
+403,Anuruddh Tiwari,200110020,Mechanical Engineering,2024,L&T,6
+404,Harsh Deep Nath,200110033,Mechanical Engineering,2024,L&T,6
+405,Jahnava Sachan,200110039,Mechanical Engineering,2024,L&T,6
+406,Varshnav Sachan,200110069,Mechanical Engineering,2024,L&T,6
+407,Aditya Saxena,200110015,Mechanical Engineering,2024,L&T,6
+408,Barmendu Chakraborty,200110025,Mechanical Engineering,2024,Hero,9
+409,Devendra Singh,200110029,Mechanical Engineering,2024,Hero,9
+410,Adarsh Kumar,200110011,Mechanical Engineering,2024,Hero,9
+411,Amar Pandey,200110002,Mechanical Engineering,2024,Hero,9
+412,Shreya Tripathi,200110074,Mechanical Engineering,2024,Hero,9
+413,Shruti Dwivedi,200110060,Mechanical Engineering,2024,Hero,9
+414,SUMIT KUMAR PATEL,200110065,Mechanical Engineering,2024,Atul,5.15
+415,Yashi Bajpai,200107034,Mechanical Engineering,2024,HUL,9.98
+416,Prateek Verma,200110003,Mechanical Engineering,2024,"Lenskart, Havells","6.5, 6"
+417,Gaurav Nikam,200110034,Mechanical Engineering,2024,Samsung Engineering,8
+418,Harshit Sharma,200110033,Mechanical Engineering,2024,Havells,6
+419,Ramesh Tiwari,200110077,Mechanical Engineering,2024,Havells,6
+420,Samarthya,200110052,Mechanical Engineering,2024,Havells,6
+421,Ashish Kumar,210011003,Mechanical Engineering,2024,Havells,6
+422,Aryan Tiwari,200110022,Mechanical Engineering,2024,Havells,6
+423,Naushad,200110045,Mechanical Engineering,2024,Havells,6
+424,Aman Gurbuxani,200110018,Mechanical Engineering,2024,Aarti Industries,5.5
+425,Shikhar TIWARI,200110004,Mechanical Engineering,2024,Aarti Industries,5.5
+426,Nilesh Agrahari,210010004,Mechanical Engineering,2024,Aarti Industries,5.5
+427,Anshul Gautam,210010001,Mechanical Engineering,2024,Aarti Industries,5.5
+428,Shivam KUMAR,200110057,Mechanical Engineering,2024,Aarti Industries,5.5
+429,Anshumali Singh,210010002,Mechanical Engineering,2024,Aarti Industries,5.5
+430,Sundaram Tripathi,200111013,Mechanical Engineering,2024,Aarti Industries,5.5
+431,Manor KUMAR,200110042,Mechanical Engineering,2024,Aarti Industries,5.5
+432,Pradeep Gangwar,200110047,Mechanical Engineering,2024,Aarti Industries,5.5
+433,Divyam Pandey,200110076,Mechanical Engineering,2024,Aarti Industries,5.5
+434,Divyanshi Gupta,200110030,Mechanical Engineering,2024,Aarti Industries,5.5
+435,Priyam Pal,210010005,Mechanical Engineering,2024,Aarti Industries,5.5
+436,Harsh Mishra,200110034,Mechanical Engineering,2024,Aarti Industries,5.5
+437,Sanjog Banerjee,200110053,Mechanical Engineering,2024,Maruti Suzuki,9.2
+438,Arin Verma,200111023,Mechanical Engineering,2024,Samsung Engineering,8
+439,Satyam Maurya,200110055,Mechanical Engineering,2024,Samsung Engineering,8
+440,Ameyanshu Mishra,200110019,Mechanical Engineering,2024,DCM Shriram,7
+441,Shobhit Singh,200110059,Mechanical Engineering,2024,DCM Shriram,
+442,Sarvendra Singh,200110054,Mechanical Engineering,2024,Adani Wilmar,7
+443,Aman Singh Yadav,200110001,Mechanical Engineering,2024,Century Group,7.5
+444,Tarun Pratap Singh,200110068,Mechanical Engineering,2024,Century Group,7.5
+445,Vishesh Srivastava,200110070,Mechanical Engineering,2024,Samsung Engineering,
+446,Devansh Agarwal,200110028,Mechanical Engineering,2024,Century Group,7.5
+447,Divyansh Vaibhav,200110075,Mechanical Engineering,2024,Greenko Group,5.5
+448,Yash Chaurasia,200110071,Mechanical Engineering,2024,Greenko Group,5.5
+449,Aryan Chaturvedi,200110021,Mechanical Engineering,2024,Timken India Ltd.,4.8
+450,Ashish Prajapati,200110023,Mechanical Engineering,2024,Timken India Ltd.,4.5
+451,Akhand Pratap,200110016,Mechanical Engineering,2024,"DCM Shriram Hardoi, Super Smelters","4.5, 8"
+452,Varun Jain,200110005,Mechanical Engineering,2024,"Tata Chemicals, Shalimar Paints","6.5, 6.3"
+453,Amit Kumar Yadav,200111020,Mechanical Engineering,2024,Lenskart,6.5
+454,Madhuri Singh,200110041,Mechanical Engineering,2024,JK Cement,5.8
+455,Charchit Singh Sahay,,Mechanical Engineering,2024,PlanetSpark,6.5
+456,Suryanshu Rai,200110078,Mechanical Engineering,2024,Dabur,7.5
+457,Anup Kumar Gupta,200111022,Oil Technology,2024,HUL R&D,7
+458,Utkarsh Mishra,200111005,Oil Technology,2024,Gemini Oils,5.5
+459,Ashutosh Singh,200111024,Oil Technology,2024,Gemini Oils,5.5
+460,Vaibhav Mishra,200111037,Oil Technology,2024,Unacademy,10
+461,Arvind Kumar,200111039,Oil Technology,2024,Adani Wilmar,7
+462,AFSHAN SHEKH,200111001,Oil Technology,2024,Adani Wilmar,
+463,PRASHANT SINGH,200111006,Oil Technology,2024,Adani Wilmar,
+464,Avineesh Nigam,200111025,Oil Technology,2024,Adani Wilmar,
+465,Khyati Sinha,200111004,Oil Technology,2024,ADM,6.6
+466,Aditi Tiwari,200111015,Oil Technology,2024,ADM,6.6
+467,Kalash Pathak,200111028,Oil Technology,2024,ADM,6.6
+468,Ayush Yadav,200111002,Oil Technology,2024,RSPL,4.25
+469,Khushi Dixit,200111003,Oil Technology,2024,Khandelia Oils,7.2
+470,Kshitij Singh,200111030,Oil Technology,2024,Khandelia Oils,7.2
+471,Srijan Singh,200111036,Oil Technology,2024,Khandelia Oils,7.2
+472,Gaurav Wadhawani,200111026,Oil Technology,2024,Patanjali Foods Ltd.,6.5
+473,Anjali Agrahari,200111021,Oil Technology,2024,Patanjali Foods Ltd.,6.5
+474,Aditya Singh,200111016,Oil Technology,2024,Patanjali Foods Ltd.,6.5
+475,Shivam Dixit,200111007,Oil Technology,2024,Patanjali Foods Ltd.,6.5
+476,Vishal Rajbhar,200111008,Oil Technology,2024,Patanjali Foods Ltd.,6.3
+477,Sachin Kumar,200111011,Oil Technology,2024,Patanjali Foods Ltd.,6.5
+478,Avnish Mani Mishra,190111011,Oil Technology,2024,B. L. Agro,3.5
+479,Munaf Ahmad,200111010,Oil Technology,2024,B. L. Agro,3.5
+480,Sikandar Ali,200111035,Oil Technology,2024,B. L. Agro,3.5
+481,Jatin Lalwani,200111027,Oil Technology,2024,TCS Ninja,3.3
+482,APOORVA AWASTHI,200111009,Oil Technology,2024,Gnosis Partners,5
+483,Sarthak Singh Chauhan,200111033,Paint Technology,2024,Mankiewicz,
+484,Rishabh Sharma,200113004,Paint Technology,2024,Mankiewicz,
+485,Apurva Singh,200113016,Paint Technology,2024,Verroc Group,11.5
+486,Varun Anshwani,200113036,Paint Technology,2024,Verroc Group,11.5
+487,Saumya Khandelwal,200113006,Paint Technology,2024,Asian Paints,12.08
+488,NIKITA ARORA,200113028,Paint Technology,2024,Asian Paints,12.08
+489,Ravi Pandey,200112031,Paint Technology,2024,Asian Paints,12.08
+490,HUZAIFA KHAN,200101007,Paint Technology,2024,HeroMotoCorp,9
+491,Ankit Saxena,200112017,Paint Technology,2024,HeroMotoCorp,9
+492,Chetan Sharma,200113017,Paint Technology,2024,HeroMotoCorp,9
+493,Tanu Singh,200113034,Paint Technology,2024,HeroMotoCorp,9
+494,Sulabh Kumar,200113002,Paint Technology,2024,MLA Group,6.24
+495,Mohit Singh Chauhan,200113026,Paint Technology,2024,Maruti Suzuki,9.2
+496,Shivansh Gupta,200113007,Paint Technology,2024,Maruti Suzuki,9.2
+497,Anmol Krishna,200113014,Paint Technology,2024,Maruti Suzuki,9.2
+498,Shivam Kumar Agrawal,200113031,Paint Technology,2024,Maruti Suzuki,9.2
+499,Harshit Gaur,200113021,Paint Technology,2024,Maruti Suzuki,9.2
+500,Ananya Kakati,200113040,Paint Technology,2024,Maruti Suzuki,9.2
+501,Shivam Sharma,200113001,Paint Technology,2024,Maruti Suzuki,9.2
+502,Aditya Kumar Trivedi,200110014,Paint Technology,2024,Maruti Suzuki,
+503,Gaurav Tiwari,200113019,Paint Technology,2024,Maruti Suzuki,
+504,Abhinay Mishra,200111014,Paint Technology,2024,Maruti Suzuki,
+505,Abhishek Singh,200113008,Paint Technology,2024,Maruti Suzuki,9.2
+506,Aishwarya Mishra,200113010,Paint Technology,2024,Indigo Paints,
+507,Sandeep Kumar Agrahari,200113005,Paint Technology,2024,Indigo Paints,7
+508,Twinkle Verma,200113035,Paint Technology,2024,Escorts Kubota,
+509,Prince Kumar,200113003,Paint Technology,2024,Escorts Kubota,5
+510,Ishank Singh,210013001,Paint Technology,2024,Uno Minda Ltd,4
+511,Vishal Verma,200113038,Paint Technology,2024,Uno Minda Ltd,4.8
+512,Alok Dubey,200113012,Paint Technology,2024,Tata AutoComp,5
+513,Keshav Shukla,200113025,Paint Technology,2024,Tata AutoComp,
+514,Aditya Prasad,200113009,Paint Technology,2024,Yamaha Motors,5.5
+515,Pundir,200113030,Paint Technology,2024,Berger Paints,5.5
+516,Akash Bind,200113011,Paint Technology,2024,Berger Paints,5.5
+517,Harsh Mishra,200113020,Paint Technology,2024,Eicher,6.5
+518,Amoli Tiwari,200113013,Paint Technology,2024,Shalimar Paints,6.3
+519,Sumal Gaur,200113033,Paint Technology,2024,Shalimar Paints,6.3
+520,Aman Lakhotia,190113005,Paint Technology,2024,Nerolac,
+521,Rajat Dixit,200112028,Paint Technology,2024,Steel Strips Wheels Ltd,5.04
+522,Mayank Dwivedi,200113039,Paint Technology,2024,Berger Paints,5.5
+523,Muskan Singh,200112026,Plastic Technology,2024,Verroc Group,11.5
+524,ABHISHEK YADAV,200112012,Plastic Technology,2024,Verroc Group,11.5
+525,Raviansh Sharma,200112032,Plastic Technology,2024,Reliance Industries,7.5
+526,CHIRAG OBEROI,200112022,Plastic Technology,2024,Evalueserve,5
+527,Ayush Singh,200112020,Plastic Technology,2024,MLA Group,5.4
+528,Mahak Gupta,200112024,Plastic Technology,2024,MLA Group,5.4
+529,Anay Sharma,200112016,Plastic Technology,2024,GFL,6.5
+530,Aman Chandra Gupta,200112015,Plastic Technology,2024,GFL,6.5
+531,Utkarsh Pandey,200112039,Plastic Technology,2024,GFL,6.5
+532,Ruchit Arora,200112034,Plastic Technology,2024,GFL,6.5
+533,Manu Srivastava,200112025,Plastic Technology,2024,Maruti Suzuki,9.2
+534,Abhishek Kumar,200112010,Plastic Technology,2024,Maruti Suzuki,9.2
+535,Shaila Gupta,200112036,Plastic Technology,2024,Maruti Suzuki,9.2
+536,Disha Budholiya,200112006,Plastic Technology,2024,Maruti Suzuki,9.2
+537,Vikas Patel,200107037,Plastic Technology,2024,Maruti Suzuki,9.2
+538,Amit Singh,200112001,Plastic Technology,2024,Maruti Suzuki,9.2
+539,Anand Kumar,200107005,Plastic Technology,2024,Maruti Suzuki,9.2
+540,ANSHU ALOK,200112005,Plastic Technology,2024,Indigo Paints,
+541,Aman Kumar,200112004,Plastic Technology,2024,Tata AutoComp,5
+542,Aditi Sachan,200112002,Plastic Technology,2024,Tata AutoComp,5
+543,Stikker Srivastava,200112037,Plastic Technology,2024,TCS Digital,7
+544,Vaishali Gupta,200107033,Plastic Technology,2024,Airblack,6.3
+545,Babar Mirza,200112021,Plastic Technology,2024,Shalimar Paints,6.3
+546,Gray Singh,200112007,Plastic Technology,2024,Planet Spark,6.5
+547,Harshit Tripathi,200112023,Plastic Technology,2024,Kanpur Plastipack,4.5
+548,Pranjal Singh,200112027,Plastic Technology,2024,"Kanpur Plastipack, TCS Ninja","4.5, 3.3"
+550,Abhay Vishwakarma,200102007,Civil Engineering,2024,NCC LTD,4.5
+551,Abdul Aleem Siddiqui,200102005,Civil Engineering,2024,NCC LTD,4.5
+552,Nikhil Singh Patel,200102074,Civil Engineering,2024,NCC LTD,4.5
+553,Amit Singh,200102073,Civil Engineering,2024,NCC LTD,4.5
+554,Abhishek Kumar Vishwakarma,200112011,Civil Engineering,2024,NCC LTD,4.5

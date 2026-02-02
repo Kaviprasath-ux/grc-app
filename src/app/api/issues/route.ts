@@ -1,36 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
 
 // GET all issues
-export async function GET() {
-  try {
-    const session = await auth();
-    const userRoles = session?.user?.roles || [];
+export const GET = withAuth(
+  async (req, context, session) => {
+    try {
+      const userRoles = session.roles || [];
+      const tenantFilter = getTenantFilter(session);
 
-    // Debug logging
-    console.log("Issues API - Session user:", {
-      id: session?.user?.id,
-      name: session?.user?.name,
-      roles: userRoles,
-    });
+      // Debug logging
+      console.log("Issues API - Session user:", {
+        id: session.id,
+        name: session.name,
+        roles: userRoles,
+      });
 
-    // Check if user is DeptReviewer or DeptContributor (read-only roles that can only see their own issues)
-    const isReadOnlyRole = userRoles.some((r: string) =>
-      ["DepartmentReviewer", "DepartmentContributor"].includes(r)
-    ) && !userRoles.some((r: string) =>
-      ["Administrator", "CustomerAdministrator", "Reviewer", "Contributor"].includes(r)
-    );
+      // Check if user is DeptReviewer or DeptContributor (read-only roles that can only see their own issues)
+      const isReadOnlyRole = userRoles.some((r: string) =>
+        ["DepartmentReviewer", "DepartmentContributor"].includes(r)
+      ) && !userRoles.some((r: string) =>
+        ["Administrator", "CustomerAdministrator", "Reviewer", "Contributor"].includes(r)
+      );
 
-    // Build where clause - if read-only role, filter by ownerId directly
-    const whereClause = isReadOnlyRole && session?.user?.id
-      ? { ownerId: session.user.id }
-      : {};
+      // Build where clause - if read-only role, filter by ownerId directly
+      const whereClause = isReadOnlyRole && session.id
+        ? { ...tenantFilter, ownerId: session.id }
+        : { ...tenantFilter };
 
-    console.log("Issues API - isReadOnlyRole:", isReadOnlyRole, "whereClause:", JSON.stringify(whereClause));
+      console.log("Issues API - isReadOnlyRole:", isReadOnlyRole, "whereClause:", JSON.stringify(whereClause));
 
-    const issues = await prisma.issue.findMany({
-      where: whereClause,
+      const issues = await prisma.issue.findMany({
+        where: whereClause,
       include: {
         department: true,
         owner: {
@@ -68,19 +69,22 @@ export async function GET() {
         },
       },
       orderBy: { createdAt: "desc" },
-    });
-    console.log("Issues API - Returning", issues.length, "issues:", issues.map(i => i.title));
-    return NextResponse.json(issues);
-  } catch (error) {
-    console.error("Error fetching issues:", error);
-    return NextResponse.json({ error: "Failed to fetch issues" }, { status: 500 });
-  }
-}
+      });
+      console.log("Issues API - Returning", issues.length, "issues:", issues.map(i => i.title));
+      return NextResponse.json(issues);
+    } catch (error) {
+      console.error("Error fetching issues:", error);
+      return NextResponse.json({ error: "Failed to fetch issues" }, { status: 500 });
+    }
+  },
+  { resource: "organization.context", action: "view" }
+);
 
 // POST create new issue
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
+export const POST = withAuth(
+  async (req, context, session) => {
+    try {
+      const body = await req.json();
     const {
       title,
       description,
@@ -96,53 +100,55 @@ export async function POST(request: NextRequest) {
       stakeholderNeeds,
     } = body;
 
-    if (!title || !domain || !category) {
-      return NextResponse.json(
-        { error: "Title, domain, and category are required" },
-        { status: 400 }
-      );
-    }
+      if (!title || !domain || !category) {
+        return NextResponse.json(
+          { error: "Title, domain, and category are required" },
+          { status: 400 }
+        );
+      }
 
-    const issue = await prisma.issue.create({
-      data: {
-        title,
-        description,
-        domain,
-        category,
-        issueType,
-        status: status || "Open",
-        dueDate: dueDate ? new Date(dueDate) : null,
-        // Use connect syntax for relations
-        department: departmentId ? { connect: { id: departmentId } } : undefined,
-        owner: ownerId ? { connect: { id: ownerId } } : undefined,
-        // Create regulation associations
-        regulations: selectedRegulations?.length
-          ? {
-              create: selectedRegulations.map((regulationId: string) => ({
-                regulation: { connect: { id: regulationId } },
-              })),
-            }
-          : undefined,
-        // Create process associations
-        processes: selectedProcesses?.length
-          ? {
-              create: selectedProcesses.map((processId: string) => ({
-                process: { connect: { id: processId } },
-              })),
-            }
-          : undefined,
-        // Create stakeholder associations with need/expectation
-        stakeholders: stakeholderNeeds?.length
-          ? {
-              create: stakeholderNeeds.map(
-                (item: { stakeholderId: string; needExpectation: string }) => ({
-                  stakeholder: { connect: { id: item.stakeholderId } },
-                  needExpectation: item.needExpectation,
-                })
-              ),
-            }
-          : undefined,
-      },
+      const customerAccountId = getCustomerAccountId(session);
+
+      const issue = await prisma.issue.create({
+        data: {
+          customerAccountId,
+          title,
+          description,
+          domain,
+          category,
+          issueType,
+          status: status || "Open",
+          dueDate: dueDate ? new Date(dueDate) : null,
+          departmentId: departmentId || null,
+          ownerId: ownerId || null,
+          // Create regulation associations
+          regulations: selectedRegulations?.length
+            ? {
+                create: selectedRegulations.map((regulationId: string) => ({
+                  regulationId,
+                })),
+              }
+            : undefined,
+          // Create process associations
+          processes: selectedProcesses?.length
+            ? {
+                create: selectedProcesses.map((processId: string) => ({
+                  processId,
+                })),
+              }
+            : undefined,
+          // Create stakeholder associations with need/expectation
+          stakeholders: stakeholderNeeds?.length
+            ? {
+                create: stakeholderNeeds.map(
+                  (item: { stakeholderId: string; needExpectation: string }) => ({
+                    stakeholderId: item.stakeholderId,
+                    needExpectation: item.needExpectation,
+                  })
+                ),
+              }
+            : undefined,
+        },
       include: {
         department: true,
         owner: {
@@ -166,11 +172,13 @@ export async function POST(request: NextRequest) {
           },
         },
       },
-    });
+      });
 
-    return NextResponse.json(issue, { status: 201 });
-  } catch (error) {
-    console.error("Error creating issue:", error);
-    return NextResponse.json({ error: "Failed to create issue" }, { status: 500 });
-  }
-}
+      return NextResponse.json(issue, { status: 201 });
+    } catch (error) {
+      console.error("Error creating issue:", error);
+      return NextResponse.json({ error: "Failed to create issue" }, { status: 500 });
+    }
+  },
+  { resource: "organization.context", action: "create" }
+);

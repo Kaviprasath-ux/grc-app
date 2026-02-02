@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
@@ -14,6 +15,24 @@ const prisma = new PrismaClient();
 
 async function main() {
   console.log("🏢 Seeding Customer Account 'bts'...");
+
+  // Hash passwords upfront
+  const hashedPassword1 = await bcrypt.hash("1", 10);
+
+  // ==================== GET/CREATE CUSTOMER ACCOUNT ====================
+  console.log("\n🏛️ Getting Customer Account...");
+  const customerAccount = await prisma.customerAccount.upsert({
+    where: { code: "GRC_001" },
+    update: {},
+    create: {
+      id: "customer-account-1",
+      code: "GRC_001",
+      name: "Baarez Technology Solutions",
+      isActive: true,
+    },
+  });
+  const customerAccountId = customerAccount.id;
+  console.log("  ✓ Customer Account ready");
 
   // ==================== CREATE CUSTOMERADMIN USER 'bts' ====================
   console.log("\n👤 Creating CustomerAdmin user 'bts'...");
@@ -33,18 +52,19 @@ async function main() {
   const btsUser = await prisma.user.upsert({
     where: { userName: "bts" },
     update: {
-      password: "1",
+      password: hashedPassword1,
       email: "bts@customer.com",
       firstName: "BTS",
       lastName: "Customer",
       fullName: "BTS Customer Admin",
       role: "CustomerAdministrator",
+      customerAccountId,
     },
     create: {
       userId: "BTS-001",
       userName: "bts",
       email: "bts@customer.com",
-      password: "1",
+      password: hashedPassword1,
       firstName: "BTS",
       lastName: "Customer",
       fullName: "BTS Customer Admin",
@@ -52,6 +72,7 @@ async function main() {
       role: "CustomerAdministrator",
       function: "Administration",
       customerCode: "GRC_001",
+      customerAccountId,
     },
   });
 
@@ -79,6 +100,7 @@ async function main() {
     update: {},
     create: {
       id: "org-bts",
+      customerAccountId,
       name: "BTS Financial Services",
       email: "info@btsfinancial.com",
       phone: "+1 555 123 4567",
@@ -164,9 +186,11 @@ async function main() {
   const createdDepts: Record<string, string> = {};
   for (const dept of departmentData) {
     const created = await prisma.department.upsert({
-      where: { name: dept.name },
+      where: {
+        customerAccountId_name: { customerAccountId, name: dept.name }
+      },
       update: { description: dept.description },
-      create: dept,
+      create: { customerAccountId, ...dept },
     });
     createdDepts[dept.name] = created.id;
   }
@@ -194,11 +218,9 @@ async function main() {
   const createdUsers: Record<string, string> = {};
   createdUsers["bts"] = btsUser.id;
 
-  // UAT test users have simple password "1"
-  const uatTestUsers = ["Khalid", "Tamil"];
-
+  // All users get simple password "1" for easy testing
   for (const user of users) {
-    const password = uatTestUsers.includes(user.userName) ? "1" : "password123";
+    const password = hashedPassword1;
     const created = await prisma.user.upsert({
       where: { userName: user.userName },
       update: {
@@ -222,10 +244,50 @@ async function main() {
   }
   console.log("  ✓ Users created");
 
-  // ==================== ASSIGN RBAC ROLES TO UAT TEST USERS ====================
-  console.log("\n🔐 Assigning RBAC roles to UAT test users...");
+  // ==================== ASSIGN RBAC ROLES TO ALL USERS ====================
+  console.log("\n🔐 Assigning RBAC roles to all users...");
 
-  // Ensure DepartmentReviewer and DepartmentContributor roles exist
+  // Ensure all required roles exist
+  const reviewerRole = await prisma.role.upsert({
+    where: { name: "Reviewer" },
+    update: {},
+    create: {
+      name: "Reviewer",
+      description: "Reviews and approves compliance, risk, and asset content",
+      isSystem: true,
+    },
+  });
+
+  const contributorRole = await prisma.role.upsert({
+    where: { name: "Contributor" },
+    update: {},
+    create: {
+      name: "Contributor",
+      description: "Creates and edits content across modules",
+      isSystem: true,
+    },
+  });
+
+  const auditHeadRole = await prisma.role.upsert({
+    where: { name: "AuditHead" },
+    update: {},
+    create: {
+      name: "AuditHead",
+      description: "Full access to Internal Audit module",
+      isSystem: true,
+    },
+  });
+
+  const auditeeRole = await prisma.role.upsert({
+    where: { name: "Auditee" },
+    update: {},
+    create: {
+      name: "Auditee",
+      description: "Receives audit requests, responds to findings",
+      isSystem: true,
+    },
+  });
+
   const deptReviewerRole = await prisma.role.upsert({
     where: { name: "DepartmentReviewer" },
     update: {},
@@ -246,41 +308,36 @@ async function main() {
     },
   });
 
-  // Assign DepartmentReviewer role to Khalid
-  if (createdUsers["Khalid"]) {
-    await prisma.userRole.upsert({
-      where: {
-        userId_roleId: {
-          userId: createdUsers["Khalid"],
-          roleId: deptReviewerRole.id,
-        },
-      },
-      update: {},
-      create: {
-        userId: createdUsers["Khalid"],
-        roleId: deptReviewerRole.id,
-      },
-    });
-    console.log("  ✓ Assigned DepartmentReviewer role to Khalid");
-  }
+  // Role mapping for assignment
+  const roleMap: Record<string, string> = {
+    "Reviewer": reviewerRole.id,
+    "Contributor": contributorRole.id,
+    "AuditHead": auditHeadRole.id,
+    "Auditee": auditeeRole.id,
+    "DepartmentReviewer": deptReviewerRole.id,
+    "DepartmentContributor": deptContributorRole.id,
+  };
 
-  // Assign DepartmentContributor role to Tamil
-  if (createdUsers["Tamil"]) {
-    await prisma.userRole.upsert({
-      where: {
-        userId_roleId: {
-          userId: createdUsers["Tamil"],
-          roleId: deptContributorRole.id,
+  // Assign RBAC roles to all users based on their role field
+  for (const user of users) {
+    const roleId = roleMap[user.role];
+    if (roleId && createdUsers[user.userName]) {
+      await prisma.userRole.upsert({
+        where: {
+          userId_roleId: {
+            userId: createdUsers[user.userName],
+            roleId: roleId,
+          },
         },
-      },
-      update: {},
-      create: {
-        userId: createdUsers["Tamil"],
-        roleId: deptContributorRole.id,
-      },
-    });
-    console.log("  ✓ Assigned DepartmentContributor role to Tamil");
+        update: {},
+        create: {
+          userId: createdUsers[user.userName],
+          roleId: roleId,
+        },
+      });
+    }
   }
+  console.log("  ✓ RBAC roles assigned to all users");
 
   // ==================== CREATE STAKEHOLDERS ====================
   console.log("\n🤝 Creating Stakeholders...");
@@ -301,6 +358,7 @@ async function main() {
       update: {},
       create: {
         id: `stakeholder-${stakeholder.name.toLowerCase().replace(/\s+/g, '-')}`,
+        customerAccountId,
         ...stakeholder,
       },
     });
@@ -328,9 +386,11 @@ async function main() {
   const createdDomains: Record<string, string> = {};
   for (const domain of domains) {
     const created = await prisma.controlDomain.upsert({
-      where: { name: domain.name },
+      where: {
+        customerAccountId_name: { customerAccountId, name: domain.name }
+      },
       update: { code: domain.code },
-      create: domain,
+      create: { customerAccountId, ...domain },
     });
     createdDomains[domain.name] = created.id;
   }
@@ -412,7 +472,12 @@ async function main() {
   const createdControls: Record<string, string> = {};
   for (const control of controls) {
     const created = await prisma.control.upsert({
-      where: { controlCode: control.code },
+      where: {
+        customerAccountId_controlCode: {
+          customerAccountId,
+          controlCode: control.code,
+        },
+      },
       update: {
         name: control.name,
         description: control.description,
@@ -420,6 +485,7 @@ async function main() {
         domainId: createdDomains[control.domain],
       },
       create: {
+        customerAccountId,
         controlCode: control.code,
         name: control.name,
         description: control.description,
@@ -462,9 +528,15 @@ async function main() {
   const createdEvidences: Record<string, string> = {};
   for (const evidence of evidences) {
     const created = await prisma.evidence.upsert({
-      where: { evidenceCode: evidence.code },
+      where: {
+        customerAccountId_evidenceCode: {
+          customerAccountId,
+          evidenceCode: evidence.code,
+        },
+      },
       update: {},
       create: {
+        customerAccountId,
         evidenceCode: evidence.code,
         name: evidence.name,
         description: evidence.description,
@@ -518,9 +590,15 @@ async function main() {
 
   for (const policy of policies) {
     await prisma.policy.upsert({
-      where: { code: policy.code },
+      where: {
+        customerAccountId_code: {
+          customerAccountId,
+          code: policy.code,
+        },
+      },
       update: {},
       create: {
+        customerAccountId,
         code: policy.code,
         name: policy.name,
         documentType: policy.type,
@@ -552,9 +630,11 @@ async function main() {
   const createdRiskCategories: Record<string, string> = {};
   for (const cat of riskCategories) {
     const created = await prisma.riskCategory.upsert({
-      where: { name: cat.name },
+      where: {
+        customerAccountId_name: { customerAccountId, name: cat.name }
+      },
       update: {},
-      create: cat,
+      create: { customerAccountId, ...cat },
     });
     createdRiskCategories[cat.name] = created.id;
   }
@@ -582,9 +662,15 @@ async function main() {
     else if (riskScore >= 5) riskRating = "Medium";
 
     const created = await prisma.risk.upsert({
-      where: { riskId: risk.id },
+      where: {
+        customerAccountId_riskId: {
+          customerAccountId,
+          riskId: risk.id,
+        },
+      },
       update: {},
       create: {
+        customerAccountId,
         riskId: risk.id,
         name: risk.name,
         description: risk.description,
@@ -618,9 +704,11 @@ async function main() {
   const createdAssetCategories: Record<string, string> = {};
   for (const cat of assetCategories) {
     const created = await prisma.assetCategory.upsert({
-      where: { name: cat.name },
+      where: {
+        customerAccountId_name: { customerAccountId, name: cat.name }
+      },
       update: {},
-      create: cat,
+      create: { customerAccountId, ...cat },
     });
     createdAssetCategories[cat.name] = created.id;
   }
@@ -645,13 +733,15 @@ async function main() {
     const key = `${subCat.category}-${subCat.name}`;
     const created = await prisma.assetSubCategory.upsert({
       where: {
-        name_categoryId: {
+        customerAccountId_name_categoryId: {
+          customerAccountId,
           name: subCat.name,
           categoryId: createdAssetCategories[subCat.category],
         },
       },
       update: {},
       create: {
+        customerAccountId,
         name: subCat.name,
         categoryId: createdAssetCategories[subCat.category],
       },
@@ -671,9 +761,11 @@ async function main() {
   const createdAssetGroups: Record<string, string> = {};
   for (const group of assetGroups) {
     const created = await prisma.assetGroup.upsert({
-      where: { name: group.name },
+      where: {
+        customerAccountId_name: { customerAccountId, name: group.name }
+      },
       update: {},
-      create: group,
+      create: { customerAccountId, ...group },
     });
     createdAssetGroups[group.name] = created.id;
   }
@@ -693,9 +785,15 @@ async function main() {
 
   for (const asset of assets) {
     await prisma.asset.upsert({
-      where: { assetId: asset.id },
+      where: {
+        customerAccountId_assetId: {
+          customerAccountId,
+          assetId: asset.id,
+        },
+      },
       update: {},
       create: {
+        customerAccountId,
         assetId: asset.id,
         name: asset.name,
         assetType: asset.category,
@@ -729,9 +827,15 @@ async function main() {
   const createdAudits: Record<string, string> = {};
   for (const audit of audits) {
     const created = await prisma.audit.upsert({
-      where: { auditId: audit.id },
+      where: {
+        customerAccountId_auditId: {
+          customerAccountId,
+          auditId: audit.id,
+        },
+      },
       update: {},
       create: {
+        customerAccountId,
         auditId: audit.id,
         name: audit.name,
         auditType: audit.type,
@@ -758,9 +862,15 @@ async function main() {
 
   for (const exception of exceptions) {
     await prisma.exception.upsert({
-      where: { exceptionCode: exception.code },
+      where: {
+        customerAccountId_exceptionCode: {
+          customerAccountId,
+          exceptionCode: exception.code,
+        },
+      },
       update: {},
       create: {
+        customerAccountId,
         exceptionCode: exception.code,
         name: exception.name,
         description: exception.description,
@@ -790,9 +900,15 @@ async function main() {
 
   for (const kpi of kpis) {
     await prisma.kPI.upsert({
-      where: { code: kpi.code },
+      where: {
+        customerAccountId_code: {
+          customerAccountId,
+          code: kpi.code,
+        },
+      },
       update: {},
       create: {
+        customerAccountId,
         code: kpi.code,
         objective: kpi.objective,
         description: kpi.description,
@@ -822,9 +938,15 @@ async function main() {
 
   for (const process of processes) {
     await prisma.process.upsert({
-      where: { processCode: process.code },
+      where: {
+        customerAccountId_processCode: {
+          customerAccountId,
+          processCode: process.code,
+        },
+      },
       update: {},
       create: {
+        customerAccountId,
         processCode: process.code,
         name: process.name,
         processType: process.type,
@@ -857,6 +979,7 @@ async function main() {
       update: {},
       create: {
         id: `svc-${service.title.toLowerCase().replace(/\s+/g, '-')}`,
+        customerAccountId,
         title: service.title,
         description: service.description,
         serviceUser: service.serviceUser,
@@ -883,6 +1006,7 @@ async function main() {
       update: {},
       create: {
         id: `issue-${issue.title.toLowerCase().replace(/\s+/g, '-').slice(0, 20)}`,
+        customerAccountId,
         title: issue.title,
         domain: issue.domain,
         category: issue.category,

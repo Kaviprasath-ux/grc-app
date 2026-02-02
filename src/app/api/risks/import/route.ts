@@ -1,5 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { withAuth, getCustomerAccountId, withAuthOnly } from "@/lib/api-auth";
+
+// Required template columns in exact order
+const TEMPLATE_COLUMNS = [
+  "Risk name",
+  "Risk description",
+  "Department",
+  "Risk sources",
+  "Risk category",
+  "Potential threat",
+  "Associated vulnerabilities",
+] as const;
 
 // Helper function to calculate risk rating based on score
 function calculateRiskRating(score: number): string {
@@ -10,8 +22,9 @@ function calculateRiskRating(score: number): string {
 }
 
 // Helper function to generate risk ID
-async function generateRiskId(): Promise<string> {
+async function generateRiskId(customerAccountId: string): Promise<string> {
   const lastRisk = await prisma.risk.findFirst({
+    where: { customerAccountId },
     orderBy: { createdAt: "desc" },
     select: { riskId: true },
   });
@@ -26,214 +39,313 @@ async function generateRiskId(): Promise<string> {
     return `RID${String(nextNum).padStart(3, "0")}`;
   }
 
-  const count = await prisma.risk.count();
+  const count = await prisma.risk.count({ where: { customerAccountId } });
   return `RID${String(count + 1).padStart(3, "0")}`;
 }
 
-// GET import template structure
-export async function GET() {
+// GET - Download import template (CSV with required columns only - no sample data)
+export const GET = withAuthOnly(async () => {
   try {
-    // Fetch available options for dropdowns
-    const [categories, types, departments] = await Promise.all([
-      prisma.riskCategory.findMany({ select: { name: true } }),
-      prisma.riskType.findMany({ select: { name: true } }),
-      prisma.department.findMany({ select: { name: true } }),
-    ]);
+    // Create CSV template with required columns only (no sample data)
+    const csvContent = TEMPLATE_COLUMNS.join(",");
 
-    const template = {
-      columns: [
-        { name: "Risk Name", required: true, type: "string", description: "Name of the risk" },
-        { name: "Description", required: false, type: "string", description: "Risk description" },
-        { name: "Risk Sources", required: false, type: "string", description: "Sources of the risk" },
-        {
-          name: "Category",
-          required: false,
-          type: "dropdown",
-          options: categories.map((c) => c.name),
-          description: "Risk category",
-        },
-        {
-          name: "Risk Type",
-          required: false,
-          type: "dropdown",
-          options: types.map((t) => t.name),
-          description: "Type of risk (Asset Risk, Process Risk)",
-        },
-        {
-          name: "Department",
-          required: false,
-          type: "dropdown",
-          options: departments.map((d) => d.name),
-          description: "Department responsible",
-        },
-        { name: "Risk Owner", required: false, type: "string", description: "Name of risk owner" },
-        { name: "Likelihood", required: false, type: "number", min: 1, max: 5, description: "Likelihood score (1-5)" },
-        { name: "Impact", required: false, type: "number", min: 1, max: 5, description: "Impact score (1-5)" },
-        {
-          name: "Status",
-          required: false,
-          type: "dropdown",
-          options: ["Open", "In Progress", "Closed", "Awaiting Approval", "Pending Assessment"],
-          description: "Risk status",
-        },
-        {
-          name: "Response Strategy",
-          required: false,
-          type: "dropdown",
-          options: ["Treat", "Transfer", "Avoid", "Accept"],
-          description: "Risk response strategy",
-        },
-        { name: "Treatment Plan", required: false, type: "string", description: "Treatment plan description" },
-      ],
-      sampleData: [
-        {
-          "Risk Name": "Sample Risk 1",
-          Description: "Description of the sample risk",
-          "Risk Sources": "External",
-          Category: categories[0]?.name || "Operational",
-          "Risk Type": types[0]?.name || "Asset Risk",
-          Department: departments[0]?.name || "IT",
-          "Risk Owner": "John Doe",
-          Likelihood: 3,
-          Impact: 4,
-          Status: "Open",
-          "Response Strategy": "Treat",
-          "Treatment Plan": "Implement additional controls",
-        },
-      ],
-    };
-
-    return NextResponse.json(template);
-  } catch (error) {
-    console.error("Error getting import template:", error);
-    return NextResponse.json(
-      { error: "Failed to get import template" },
-      { status: 500 }
-    );
-  }
-}
-
-// POST import risks from data
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const { data, actor = "System" } = body;
-
-    if (!Array.isArray(data) || data.length === 0) {
-      return NextResponse.json(
-        { error: "Data must be a non-empty array" },
-        { status: 400 }
-      );
-    }
-
-    // Fetch lookup data
-    const [categories, types, departments, users] = await Promise.all([
-      prisma.riskCategory.findMany(),
-      prisma.riskType.findMany(),
-      prisma.department.findMany(),
-      prisma.user.findMany({ select: { id: true, fullName: true } }),
-    ]);
-
-    const results = {
-      success: 0,
-      failed: 0,
-      errors: [] as { row: number; error: string }[],
-      created: [] as { riskId: string; name: string }[],
-    };
-
-    for (let i = 0; i < data.length; i++) {
-      const row = data[i];
-      try {
-        // Validate required fields
-        if (!row["Risk Name"] && !row.name) {
-          results.errors.push({ row: i + 1, error: "Risk Name is required" });
-          results.failed++;
-          continue;
-        }
-
-        const name = row["Risk Name"] || row.name;
-        const description = row.Description || row.description || null;
-        const riskSources = row["Risk Sources"] || row.riskSources || null;
-        const likelihood = parseInt(row.Likelihood || row.likelihood) || 1;
-        const impact = parseInt(row.Impact || row.impact) || 1;
-        const status = row.Status || row.status || "Open";
-        const responseStrategy = row["Response Strategy"] || row.responseStrategy || null;
-        const treatmentPlan = row["Treatment Plan"] || row.treatmentPlan || null;
-
-        // Lookup foreign keys
-        const categoryName = row.Category || row.category;
-        const typeName = row["Risk Type"] || row.riskType || row.type;
-        const departmentName = row.Department || row.department;
-        const ownerName = row["Risk Owner"] || row.riskOwner || row.owner;
-
-        const category = categoryName
-          ? categories.find((c) => c.name.toLowerCase() === categoryName.toLowerCase())
-          : null;
-        const type = typeName
-          ? types.find((t) => t.name.toLowerCase() === typeName.toLowerCase())
-          : null;
-        const department = departmentName
-          ? departments.find((d) => d.name.toLowerCase() === departmentName.toLowerCase())
-          : null;
-        const owner = ownerName
-          ? users.find((u) => u.fullName.toLowerCase().includes(ownerName.toLowerCase()))
-          : null;
-
-        // Calculate risk score and rating
-        const riskScore = likelihood * impact;
-        const riskRating = calculateRiskRating(riskScore);
-
-        // Generate risk ID
-        const riskId = await generateRiskId();
-
-        // Create the risk
-        const risk = await prisma.risk.create({
-          data: {
-            riskId,
-            name,
-            description,
-            riskSources,
-            categoryId: category?.id || null,
-            typeId: type?.id || null,
-            departmentId: department?.id || null,
-            ownerId: owner?.id || null,
-            likelihood,
-            impact,
-            riskScore,
-            riskRating,
-            status,
-            responseStrategy,
-            treatmentPlan,
-            activityLogs: {
-              create: {
-                activity: "Imported",
-                description: `Risk "${name}" was imported`,
-                actor,
-              },
-            },
-          },
-        });
-
-        results.success++;
-        results.created.push({ riskId: risk.riskId, name: risk.name });
-      } catch (error) {
-        results.errors.push({
-          row: i + 1,
-          error: error instanceof Error ? error.message : "Unknown error",
-        });
-        results.failed++;
-      }
-    }
-
-    return NextResponse.json({
-      message: `Import completed: ${results.success} successful, ${results.failed} failed`,
-      results,
+    return new NextResponse(csvContent, {
+      headers: {
+        "Content-Type": "text/csv",
+        "Content-Disposition": "attachment; filename=Risk-Import-Template.csv",
+      },
     });
   } catch (error) {
-    console.error("Error importing risks:", error);
+    console.error("Error generating import template:", error);
     return NextResponse.json(
-      { error: "Failed to import risks" },
+      { error: "Failed to generate import template" },
       { status: 500 }
     );
   }
-}
+});
+
+// POST - Import risks from uploaded data
+// Note: Some related models (RiskCategory, RiskThreat, RiskVulnerability) don't have customerAccountId
+// field yet - tenant filtering disabled for those entities
+export const POST = withAuth(
+  async (request: NextRequest, context, session) => {
+    try {
+      const customerAccountId = getCustomerAccountId(session);
+
+      if (!customerAccountId) {
+        return NextResponse.json(
+          { error: "Customer account not found. Cannot import risks." },
+          { status: 400 }
+        );
+      }
+
+      const body = await request.json();
+      const { data, columns, actor = session?.name || "System" } = body;
+
+      if (!Array.isArray(data) || data.length === 0) {
+        return NextResponse.json(
+          { error: "No data provided. Please upload a file with at least one row of data." },
+          { status: 400 }
+        );
+      }
+
+      // Validate columns match the required template
+      if (columns && Array.isArray(columns)) {
+        const normalizedColumns = columns.map((c: string) => c.toLowerCase().trim());
+        const requiredColumns = TEMPLATE_COLUMNS.map((c) => c.toLowerCase());
+
+        const missingColumns = requiredColumns.filter(
+          (req) => !normalizedColumns.some((col: string) => col === req)
+        );
+
+        if (missingColumns.length > 0) {
+          return NextResponse.json(
+            {
+              error: `Invalid template. Missing required columns: ${missingColumns.join(", ")}. Please download and use the correct template.`,
+            },
+            { status: 400 }
+          );
+        }
+      }
+
+      // Fetch existing lookup data for caching
+      // Note: RiskCategory, RiskThreat, RiskVulnerability don't have customerAccountId
+      const [existingCategories, existingDepartments, existingThreats, existingVulnerabilities] = await Promise.all([
+        prisma.riskCategory.findMany(),
+        prisma.department.findMany({
+          where: { customerAccountId },
+        }),
+        prisma.riskThreat.findMany(),
+        prisma.riskVulnerability.findMany(),
+      ]);
+
+      // Mutable caches for created entities during import
+      const categoriesCache = [...existingCategories];
+      const departmentsCache = [...existingDepartments];
+      const threatsCache = [...existingThreats];
+      const vulnerabilitiesCache = [...existingVulnerabilities];
+
+      const results = {
+        success: 0,
+        failed: 0,
+        errors: [] as { row: number; error: string }[],
+        created: [] as { riskId: string; name: string }[],
+      };
+
+      for (let i = 0; i < data.length; i++) {
+        const row = data[i];
+        const rowNum = i + 2; // +2 because row 1 is header, data starts at row 2
+
+        try {
+          // Get column values (case-insensitive matching)
+          const getValue = (columnName: string): string => {
+            const key = Object.keys(row).find(
+              (k) => k.toLowerCase().trim() === columnName.toLowerCase()
+            );
+            return key ? String(row[key] || "").trim() : "";
+          };
+
+          const riskName = getValue("Risk name");
+          const riskDescription = getValue("Risk description");
+          const departmentName = getValue("Department");
+          const riskSources = getValue("Risk sources");
+          const riskCategoryName = getValue("Risk category");
+          const potentialThreat = getValue("Potential threat");
+          const associatedVulnerabilities = getValue("Associated vulnerabilities");
+
+          // Skip empty rows
+          if (!riskName && !riskDescription && !departmentName) {
+            continue;
+          }
+
+          // Validate required field: Risk name
+          if (!riskName) {
+            results.errors.push({ row: rowNum, error: "Risk name is required" });
+            results.failed++;
+            continue;
+          }
+
+          // Handle Department - find existing or create new (tenant-scoped)
+          let department = null;
+          if (departmentName) {
+            department = departmentsCache.find(
+              (d) => d.name.toLowerCase() === departmentName.toLowerCase()
+            );
+
+            if (!department) {
+              // Create new department for this tenant
+              department = await prisma.department.create({
+                data: {
+                  customerAccountId,
+                  name: departmentName,
+                },
+              });
+              departmentsCache.push(department);
+            }
+          }
+
+          // Handle Risk Category - find existing or create new (global - no tenant scope)
+          let category = null;
+          if (riskCategoryName) {
+            category = categoriesCache.find(
+              (c) => c.name.toLowerCase() === riskCategoryName.toLowerCase()
+            );
+
+            if (!category) {
+              // Create new category (global - no customerAccountId)
+              category = await prisma.riskCategory.create({
+                data: {
+                  name: riskCategoryName,
+                  status: "Active",
+                },
+              });
+              categoriesCache.push(category);
+            }
+          }
+
+          // Generate risk ID
+          const riskId = await generateRiskId(customerAccountId);
+
+          // Default values for assessment
+          const likelihood = 1;
+          const impact = 1;
+          const riskScore = likelihood * impact;
+          const riskRating = calculateRiskRating(riskScore);
+
+          // Create the risk with activity log
+          const risk = await prisma.risk.create({
+            data: {
+              customerAccountId,
+              riskId,
+              name: riskName,
+              description: riskDescription || null,
+              riskSources: riskSources || null,
+              categoryId: category?.id || null,
+              departmentId: department?.id || null,
+              likelihood,
+              impact,
+              riskScore,
+              riskRating,
+              status: "Open",
+              activityLogs: {
+                create: {
+                  activity: "Imported",
+                  description: `Risk "${riskName}" was imported from template`,
+                  actor,
+                },
+              },
+            },
+          });
+
+          // Handle Potential Threat - find existing or create new (global - no tenant scope)
+          if (potentialThreat) {
+            const threatNames = potentialThreat.split(",").map((t) => t.trim()).filter(Boolean);
+
+            for (const threatName of threatNames) {
+              let threat = threatsCache.find(
+                (t) => t.name.toLowerCase() === threatName.toLowerCase()
+              );
+
+              if (!threat) {
+                // Create new threat (global - no customerAccountId)
+                threat = await prisma.riskThreat.create({
+                  data: {
+                    name: threatName,
+                  },
+                });
+                threatsCache.push(threat);
+              }
+
+              // Create mapping (use upsert to avoid duplicates)
+              await prisma.riskThreatMapping.upsert({
+                where: {
+                  riskId_threatId: {
+                    riskId: risk.id,
+                    threatId: threat.id,
+                  },
+                },
+                update: {},
+                create: {
+                  riskId: risk.id,
+                  threatId: threat.id,
+                },
+              });
+            }
+          }
+
+          // Handle Associated Vulnerabilities - find existing or create new (global - no tenant scope)
+          if (associatedVulnerabilities) {
+            const vulnNames = associatedVulnerabilities.split(",").map((v) => v.trim()).filter(Boolean);
+
+            for (const vulnName of vulnNames) {
+              let vulnerability = vulnerabilitiesCache.find(
+                (v) => v.name.toLowerCase() === vulnName.toLowerCase()
+              );
+
+              if (!vulnerability) {
+                // Create new vulnerability (global - no customerAccountId)
+                vulnerability = await prisma.riskVulnerability.create({
+                  data: {
+                    name: vulnName,
+                  },
+                });
+                vulnerabilitiesCache.push(vulnerability);
+              }
+
+              // Create mapping (use upsert to avoid duplicates)
+              await prisma.riskVulnerabilityMapping.upsert({
+                where: {
+                  riskId_vulnerabilityId: {
+                    riskId: risk.id,
+                    vulnerabilityId: vulnerability.id,
+                  },
+                },
+                update: {},
+                create: {
+                  riskId: risk.id,
+                  vulnerabilityId: vulnerability.id,
+                },
+              });
+            }
+          }
+
+          results.success++;
+          results.created.push({ riskId: risk.riskId, name: risk.name });
+        } catch (error) {
+          console.error(`Error importing row ${rowNum}:`, error);
+          results.errors.push({
+            row: rowNum,
+            error: error instanceof Error ? error.message : "Unknown error occurred",
+          });
+          results.failed++;
+        }
+      }
+
+      // Return appropriate response based on results
+      if (results.success === 0 && results.failed > 0) {
+        return NextResponse.json(
+          {
+            error: "Import failed. No risks were created.",
+            results,
+          },
+          { status: 400 }
+        );
+      }
+
+      return NextResponse.json({
+        message:
+          results.failed === 0
+            ? `Successfully imported ${results.success} risk(s)`
+            : `Import completed: ${results.success} successful, ${results.failed} failed`,
+        results,
+      });
+    } catch (error) {
+      console.error("Error importing risks:", error);
+      return NextResponse.json(
+        { error: "Failed to import risks. Please try again." },
+        { status: 500 }
+      );
+    }
+  },
+  { resource: "risk.register", action: "create" }
+);

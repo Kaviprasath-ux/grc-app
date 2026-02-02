@@ -1,124 +1,77 @@
+
 /**
- * Centralized HTTP Client for External AI APIs
+ * ai-api-client.ts
  * 
- * This module provides a configured axios instance for making requests
- * to the Python backend AI services. It handles:
- * - Base URL configuration
- * - Authentication headers
- * - Request/response interceptors
- * - Error transformation
+ * Standardized client for interacting with the Python AI Backend (Runpod).
  */
 
-import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
+const BASE_URL = process.env.PYTHON_BACKEND_URL?.replace(/\/$/, "");
+const API_SECRET = process.env.PYTHON_API_SECRET;
 
-// ==================== CONFIGURATION ====================
-
-const PYTHON_BACKEND_URL = process.env.PYTHON_BACKEND_URL;
-const PYTHON_API_SECRET = process.env.PYTHON_API_SECRET;
-
-if (!PYTHON_BACKEND_URL) {
-    throw new Error('PYTHON_BACKEND_URL environment variable is not set');
-}
-
-if (!PYTHON_API_SECRET) {
-    throw new Error('PYTHON_API_SECRET environment variable is not set');
-}
-
-// ==================== AXIOS INSTANCE ====================
-
-/**
- * Configured axios instance for AI API calls
- */
-export const aiApiClient: AxiosInstance = axios.create({
-    baseURL: PYTHON_BACKEND_URL,
-    timeout: 60000, // 60 seconds timeout
-    headers: {
-        'Content-Type': 'application/json',
-    },
-});
-
-// ==================== REQUEST INTERCEPTOR ====================
-
-aiApiClient.interceptors.request.use(
-    (config: InternalAxiosRequestConfig) => {
-        // Add authentication header to all requests
-        config.headers.set('auth', PYTHON_API_SECRET);
-
-        // Log request for debugging (only in development)
-        if (process.env.NODE_ENV === 'development') {
-            console.log('[AI API Request]', {
-                method: config.method?.toUpperCase(),
-                url: config.url,
-                baseURL: config.baseURL,
-            });
+class AIApiClient {
+    private async request(endpoint: string, options: RequestInit = {}) {
+        const url = `${BASE_URL}${endpoint}`;
+        
+        // Debug logging
+        if (!API_SECRET) {
+            console.warn("⚠️ WARNING: PYTHON_API_SECRET is not set in environment variables");
+        } else {
+            console.log(`✓ API Secret loaded (${API_SECRET.substring(0, 4)}...)`);
         }
-
-        return config;
-    },
-    (error) => {
-        console.error('[AI API Request Error]', error);
-        return Promise.reject(error);
-    }
-);
-
-// ==================== RESPONSE INTERCEPTOR ====================
-
-aiApiClient.interceptors.response.use(
-    (response) => {
-        // Log successful response (only in development)
-        if (process.env.NODE_ENV === 'development') {
-            console.log('[AI API Response]', {
-                status: response.status,
-                url: response.config.url,
-            });
-        }
-
-        return response;
-    },
-    (error: AxiosError) => {
-        // Transform error for better handling
-        const transformedError = {
-            message: error.message,
-            status: error.response?.status,
-            statusText: error.response?.statusText,
-            data: error.response?.data,
-            url: error.config?.url,
+        
+        const headers = {
+            "Content-Type": "application/json",
+            // Backend expects 'auth' header for API key
+            "auth": API_SECRET || "",
+            ...options.headers,
         };
 
-        console.error('[AI API Response Error]', transformedError);
+        try {
+            const response = await fetch(url, {
+                ...options,
+                headers,
+            });
 
-        return Promise.reject(transformedError);
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw {
+                    status: response.status,
+                    message: data.error || data.message || "AI Service Error",
+                    data: data,
+                };
+            }
+
+            return { data, status: response.status };
+        } catch (error: any) {
+            if (error.status) throw error;
+            throw {
+                status: 500,
+                message: error.message || "Failed to connect to AI service",
+            };
+        }
     }
-);
 
-// ==================== HELPER FUNCTIONS ====================
+    async post(endpoint: string, body: any, options: RequestInit = {}) {
+        const isFormData = body instanceof FormData;
+        return this.request(endpoint, {
+            method: "POST",
+            body: isFormData ? body : JSON.stringify(body),
+            ...options,
+            headers: {
+                ...(isFormData ? {} : { "Content-Type": "application/json" }),
+                ...options.headers,
+            },
+        });
+    }
 
-/**
- * Check if the AI API is healthy
- */
-export async function checkAiApiHealth(): Promise<boolean> {
-    try {
-        const response = await aiApiClient.get('/api/health_check');
-        return response.status === 200;
-    } catch (error) {
-        console.error('AI API health check failed:', error);
-        return false;
+    async get(endpoint: string, options: RequestInit = {}) {
+        return this.request(endpoint, {
+            method: "GET",
+            ...options,
+        });
     }
 }
 
-/**
- * Create form data for multipart/form-data requests
- */
-export function createFormData(data: Record<string, string | Blob>): FormData {
-    const formData = new FormData();
-
-    Object.entries(data).forEach(([key, value]) => {
-        formData.append(key, value);
-    });
-
-    return formData;
-}
-
-// ==================== EXPORTS ====================
-
+const aiApiClient = new AIApiClient();
 export default aiApiClient;

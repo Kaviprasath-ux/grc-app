@@ -1,9 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { PageHeader } from "@/components/shared";
+import { Button } from "@/components/ui/button";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Unauthorized } from "@/components/ui/unauthorized";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   Users,
   Shield,
@@ -15,84 +16,97 @@ import {
   BarChart3,
   Target,
   FolderTree,
+  LucideIcon,
+  Home,
+  ChevronRight,
 } from "lucide-react";
+import Link from "next/link";
 
 interface SettingCard {
   id: string;
   title: string;
-  icon: React.ReactNode;
+  description: string;
+  icon: LucideIcon;
   href: string;
 }
-
-const settingCards: SettingCard[] = [
-  // Row 1
-  {
-    id: "category",
-    title: "Category",
-    icon: <Users className="h-12 w-12" />,
-    href: "/risks/settings/category",
-  },
-  {
-    id: "control-strength",
-    title: "Control Strength",
-    icon: <Shield className="h-12 w-12" />,
-    href: "/risks/settings/control-strength",
-  },
-  {
-    id: "likelihood",
-    title: "Likelihood",
-    icon: <TrendingUp className="h-12 w-12" />,
-    href: "/risks/settings/likelihood",
-  },
-  {
-    id: "threat",
-    title: "Threat",
-    icon: <AlertTriangle className="h-12 w-12" />,
-    href: "/risks/settings/threat",
-  },
-  // Row 2
-  {
-    id: "vulnerability",
-    title: "Vulnerability",
-    icon: <ShieldAlert className="h-12 w-12" />,
-    href: "/risks/settings/vulnerability",
-  },
-  {
-    id: "risk-methodology",
-    title: "Risk Methodology",
-    icon: <Settings className="h-12 w-12" />,
-    href: "/risks/settings/risk-methodology",
-  },
-  {
-    id: "risk-category",
-    title: "Risk Category",
-    icon: <Layers className="h-12 w-12" />,
-    href: "/risks/settings/risk-category",
-  },
-  {
-    id: "impact",
-    title: "Impact",
-    icon: <BarChart3 className="h-12 w-12" />,
-    href: "/risks/settings/impact",
-  },
-  // Row 3
-  {
-    id: "vulnerability-rating",
-    title: "Vulnerability Rating",
-    icon: <Target className="h-12 w-12" />,
-    href: "/risks/settings/vulnerability-rating",
-  },
-  {
-    id: "risk-sub-category",
-    title: "Risk Sub Category",
-    icon: <FolderTree className="h-12 w-12" />,
-    href: "/risks/settings/risk-sub-category",
-  },
-];
 
 export default function RiskSettingsPage() {
   const router = useRouter();
   const { canView, isLoading: permissionsLoading } = usePermissions('risk.settings');
+  const { t } = useLanguage();
+
+  const settingCards: SettingCard[] = [
+    {
+      id: "category",
+      title: t("Category"),
+      description: t("Manage vulnerability and threat categories"),
+      icon: Users,
+      href: "/risks/settings/category",
+    },
+    {
+      id: "control-strength",
+      title: t("Control Strength"),
+      description: t("Configure control strength levels and scores"),
+      icon: Shield,
+      href: "/risks/settings/control-strength",
+    },
+    {
+      id: "likelihood",
+      title: t("Likelihood"),
+      description: t("Define risk likelihood ratings and scores"),
+      icon: TrendingUp,
+      href: "/risks/settings/likelihood",
+    },
+    {
+      id: "threat",
+      title: t("Threat"),
+      description: t("Manage threat definitions and categories"),
+      icon: AlertTriangle,
+      href: "/risks/settings/threat",
+    },
+    {
+      id: "vulnerability",
+      title: t("Vulnerability"),
+      description: t("Manage vulnerability definitions"),
+      icon: ShieldAlert,
+      href: "/risks/settings/vulnerability",
+    },
+    {
+      id: "risk-methodology",
+      title: t("Risk Methodology"),
+      description: t("Configure risk scoring and ranges"),
+      icon: Settings,
+      href: "/risks/settings/risk-methodology",
+    },
+    {
+      id: "risk-category",
+      title: t("Risk Category"),
+      description: t("Define risk categories and types"),
+      icon: Layers,
+      href: "/risks/settings/risk-category",
+    },
+    {
+      id: "impact",
+      title: t("Impact"),
+      description: t("Configure impact categories and ratings"),
+      icon: BarChart3,
+      href: "/risks/settings/impact",
+    },
+    {
+      id: "vulnerability-rating",
+      title: t("Vulnerability Rating"),
+      description: t("Define vulnerability rating levels"),
+      icon: Target,
+      href: "/risks/settings/vulnerability-rating",
+    },
+    {
+      id: "risk-sub-category",
+      title: t("Risk Sub Category"),
+      description: t("Manage risk sub-categories"),
+      icon: FolderTree,
+      href: "/risks/settings/risk-sub-category",
+    },
+  ];
 
   if (permissionsLoading) {
     return (
@@ -103,89 +117,59 @@ export default function RiskSettingsPage() {
   }
 
   if (!canView) {
-    return <Unauthorized description="You don't have permission to access Risk Settings." />;
+    return <Unauthorized description={t("You don't have permission to access Risk Settings.")} />;
   }
 
   return (
-    <div className="space-y-6 p-6">
-      <PageHeader title="Risk Settings" />
+    <div className="space-y-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>{t("Risk Management")}</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">{t("Settings")}</span>
+      </nav>
+
+      {/* Page Header */}
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold text-slate-800">{t("Risk Settings")}</h1>
+      </div>
 
       {/* Settings Card Grid */}
-      <div className="space-y-6">
-        {/* Row 1 */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {settingCards.slice(0, 4).map((card) => (
-            <button
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {settingCards.map((card) => {
+          const Icon = card.icon;
+
+          return (
+            <div
               key={card.id}
-              onClick={() => router.push(card.href)}
-              className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 p-8 text-white shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              className="bg-white rounded-xl border border-slate-200 p-5 flex flex-col h-full min-h-[160px]"
             >
-              {/* Background pattern */}
-              <div className="absolute inset-0 opacity-10">
-                <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/20" />
-                <div className="absolute -left-10 -bottom-10 h-32 w-32 rounded-full bg-white/10" />
-              </div>
-
-              {/* Content */}
-              <div className="relative flex flex-col items-center justify-center space-y-4">
-                <div className="rounded-full bg-white/10 p-4 group-hover:bg-white/20 transition-colors">
-                  {card.icon}
+              <div className="flex items-start gap-4 flex-1">
+                <div className="p-3 bg-blue-50 rounded-lg flex-shrink-0">
+                  <Icon className="h-6 w-6 text-blue-600" />
                 </div>
-                <h4 className="text-lg font-semibold text-center">{card.title}</h4>
-              </div>
-            </button>
-          ))}
-        </div>
-
-        {/* Row 2 */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {settingCards.slice(4, 8).map((card) => (
-            <button
-              key={card.id}
-              onClick={() => router.push(card.href)}
-              className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 p-8 text-white shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-            >
-              {/* Background pattern */}
-              <div className="absolute inset-0 opacity-10">
-                <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/20" />
-                <div className="absolute -left-10 -bottom-10 h-32 w-32 rounded-full bg-white/10" />
-              </div>
-
-              {/* Content */}
-              <div className="relative flex flex-col items-center justify-center space-y-4">
-                <div className="rounded-full bg-white/10 p-4 group-hover:bg-white/20 transition-colors">
-                  {card.icon}
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-base font-semibold text-slate-800">{card.title}</h4>
+                  <p className="text-sm text-slate-500 line-clamp-2">
+                    {card.description}
+                  </p>
                 </div>
-                <h4 className="text-lg font-semibold text-center">{card.title}</h4>
               </div>
-            </button>
-          ))}
-        </div>
-
-        {/* Row 3 */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {settingCards.slice(8, 10).map((card) => (
-            <button
-              key={card.id}
-              onClick={() => router.push(card.href)}
-              className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 p-8 text-white shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-            >
-              {/* Background pattern */}
-              <div className="absolute inset-0 opacity-10">
-                <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/20" />
-                <div className="absolute -left-10 -bottom-10 h-32 w-32 rounded-full bg-white/10" />
+              <div className="flex items-center justify-end pt-3 mt-4 border-t border-slate-100">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push(card.href)}
+                >
+                  {t("Manage")}
+                </Button>
               </div>
-
-              {/* Content */}
-              <div className="relative flex flex-col items-center justify-center space-y-4">
-                <div className="rounded-full bg-white/10 p-4 group-hover:bg-white/20 transition-colors">
-                  {card.icon}
-                </div>
-                <h4 className="text-lg font-semibold text-center">{card.title}</h4>
-              </div>
-            </button>
-          ))}
-        </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

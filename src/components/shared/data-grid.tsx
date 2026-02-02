@@ -92,16 +92,16 @@ export function DataGrid<TData, TValue>({
   const endRow = Math.min((pageIndex + 1) * currentPageSize, totalRows);
 
   return (
-    <div className={cn("space-y-4", className)}>
+    <div className={cn("bg-white rounded-xl border border-slate-200", className)}>
       {/* Search and Column Selector */}
       {(!hideSearch || showColumnSelector) && (
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center justify-between gap-4 p-4 border-b border-slate-100">
           {!hideSearch && (
             <Input
               placeholder={searchPlaceholder}
               value={globalFilter ?? ""}
               onChange={(e) => setGlobalFilter(e.target.value)}
-              className="max-w-sm"
+              className="max-w-sm h-9 border-slate-200"
             />
           )}
           {hideSearch && !showColumnSelector && <div />}
@@ -138,15 +138,18 @@ export function DataGrid<TData, TValue>({
       )}
 
       {/* Table */}
-      <div className="rounded-md border">
+      <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
+              <TableRow key={headerGroup.id} className="h-12 border-b border-slate-100 bg-slate-50/50 hover:bg-slate-50/50">
+                {headerGroup.headers.map((header, index) => (
                   <TableHead
                     key={header.id}
+                    style={header.column.columnDef.size ? { minWidth: header.column.columnDef.size, width: header.column.columnDef.size } : undefined}
                     className={cn(
+                      "text-xs font-semibold text-slate-600 py-3 whitespace-nowrap",
+                      index === 0 && "pl-4",
                       header.column.getCanSort() && "cursor-pointer select-none"
                     )}
                     onClick={header.column.getToggleSortingHandler()}
@@ -159,7 +162,7 @@ export function DataGrid<TData, TValue>({
                             header.getContext()
                           )}
                       {header.column.getCanSort() && (
-                        <ArrowUpDown className="h-4 w-4" />
+                        <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
                       )}
                     </div>
                   </TableHead>
@@ -173,11 +176,18 @@ export function DataGrid<TData, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
-                  className={cn(onRowClick && "cursor-pointer")}
+                  className={cn(
+                    "border-b border-slate-100 last:border-0",
+                    onRowClick && "cursor-pointer hover:bg-slate-50"
+                  )}
                   onClick={() => onRowClick?.(row.original)}
                 >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                  {row.getVisibleCells().map((cell, index) => (
+                    <TableCell
+                      key={cell.id}
+                      style={cell.column.columnDef.size ? { minWidth: cell.column.columnDef.size, width: cell.column.columnDef.size } : undefined}
+                      className={cn("py-3 text-sm text-slate-700", index === 0 && "pl-4")}
+                    >
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()
@@ -190,7 +200,7 @@ export function DataGrid<TData, TValue>({
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  className="h-24 text-center"
+                  className="h-24 text-center text-slate-500"
                 >
                   No results.
                 </TableCell>
@@ -201,38 +211,42 @@ export function DataGrid<TData, TValue>({
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-muted-foreground">
-          Currently showing {startRow} to {endRow} of {totalRows}
-        </div>
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
+        <span className="text-sm text-slate-500">
+          {totalRows > 0 ? `${startRow} to ${endRow} of ${totalRows}` : "No results"}
+        </span>
+        <div className="flex items-center gap-1">
           <Button
-            variant="outline"
+            variant="ghost"
             size="icon"
+            className="h-8 w-8"
             onClick={() => table.setPageIndex(0)}
             disabled={!table.getCanPreviousPage()}
           >
             <ChevronsLeft className="h-4 w-4" />
           </Button>
           <Button
-            variant="outline"
+            variant="ghost"
             size="icon"
+            className="h-8 w-8"
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <Button
-            variant="outline"
+            variant="ghost"
             size="icon"
+            className="h-8 w-8"
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
           <Button
-            variant="outline"
+            variant="ghost"
             size="icon"
+            className="h-8 w-8"
             onClick={() => table.setPageIndex(table.getPageCount() - 1)}
             disabled={!table.getCanNextPage()}
           >

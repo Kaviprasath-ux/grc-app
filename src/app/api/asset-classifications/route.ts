@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
 // GET all asset classifications
+// NOTE: AssetClassification model doesn't have customerAccountId yet - tenant filtering disabled
 export async function GET() {
   try {
     const classifications = await prisma.assetClassification.findMany({
@@ -23,6 +24,7 @@ export async function GET() {
 }
 
 // POST create new asset classification
+// NOTE: AssetClassification model doesn't have customerAccountId yet - tenant filtering disabled
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -36,7 +38,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if classification already exists
-    const existingClassification = await prisma.assetClassification.findUnique({
+    const existingClassification = await prisma.assetClassification.findFirst({
       where: { name },
     });
 

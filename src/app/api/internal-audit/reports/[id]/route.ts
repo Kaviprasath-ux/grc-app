@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { withAuth } from '@/lib/api-auth';
+import { withAuth, getTenantFilter, getAuditHeadFilter } from '@/lib/api-auth';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -11,9 +11,19 @@ export const GET = withAuth(
   async (req: NextRequest, context: RouteContext, session) => {
     try {
       const { id } = await context.params;
+      const tenantFilter = getTenantFilter(session);
+      const auditHeadFilter = getAuditHeadFilter(session);
 
-      const report = await prisma.auditReport.findUnique({
-        where: { id },
+      // Build where clause with tenant and auditHead isolation
+      // Reports are NOT shared between Audit Heads
+      const whereClause = {
+        id,
+        ...tenantFilter,
+        ...auditHeadFilter,
+      };
+
+      const report = await prisma.auditReport.findFirst({
+        where: whereClause,
         include: {
           engagement: {
             select: {

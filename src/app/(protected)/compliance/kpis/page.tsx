@@ -2,8 +2,16 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -14,11 +22,14 @@ import {
 } from "@/components/ui/table";
 import {
   BarChart3,
-  CheckCircle,
-  Clock,
-  AlertTriangle,
-  XCircle,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  ClipboardList,
+  Building2,
 } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface KPI {
   id: string;
@@ -30,27 +41,31 @@ interface KPI {
   reviewDate: string | null;
   status: string;
   department?: { id: string; name: string } | null;
-  evidence?: { id: string; evidenceCode: string; name: string } | null;
+  evidence?: {
+    id: string;
+    evidenceCode: string;
+    name: string;
+    reviewDate: string | null;
+    department?: { id: string; name: string } | null;
+  } | null;
 }
 
 const statusColors: Record<string, string> = {
-  Scheduled: "bg-blue-100 text-blue-800",
-  Missed: "bg-red-100 text-red-800",
-  Overdue: "bg-orange-100 text-orange-800",
-  Achieved: "bg-green-100 text-green-800",
+  Scheduled: "bg-info-light text-info-dark",
+  Missed: "bg-error-light text-error-dark",
+  Overdue: "bg-warning-light text-warning-dark",
+  Achieved: "bg-success-light text-success-dark",
 };
 
-const statusIcons: Record<string, React.ReactNode> = {
-  Scheduled: <Clock className="h-5 w-5 text-blue-600" />,
-  Missed: <XCircle className="h-5 w-5 text-red-600" />,
-  Overdue: <AlertTriangle className="h-5 w-5 text-orange-600" />,
-  Achieved: <CheckCircle className="h-5 w-5 text-green-600" />,
-};
+const statuses = ["Scheduled", "Missed", "Overdue", "Achieved"];
 
 export default function KPIsPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [kpis, setKpis] = useState<KPI[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
 
   const fetchKPIs = useCallback(async () => {
     try {
@@ -70,6 +85,18 @@ export default function KPIsPage() {
     fetchKPIs();
   }, [fetchKPIs]);
 
+  // Filter KPIs based on search and status
+  const filteredKpis = kpis.filter((kpi) => {
+    const matchesSearch =
+      !searchTerm ||
+      kpi.code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      kpi.objective?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      kpi.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      kpi.evidence?.evidenceCode?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = !statusFilter || kpi.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
   // Status counts
   const statusCounts = {
     total: kpis.length,
@@ -79,12 +106,16 @@ export default function KPIsPage() {
     achieved: kpis.filter((k) => k.status === "Achieved").length,
   };
 
-  // Department counts
-  const departmentCounts = kpis.reduce((acc, kpi) => {
-    const deptName = kpi.department?.name || "Unassigned";
-    acc[deptName] = (acc[deptName] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  // Department counts - use evidence department if KPI department is not set
+  const departmentCounts = kpis.reduce(
+    (acc, kpi) => {
+      const deptName =
+        kpi.department?.name || kpi.evidence?.department?.name || "Unassigned";
+      acc[deptName] = (acc[deptName] || 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>
+  );
 
   // Calculate status percentages
   const getStatusPercentage = (count: number) => {
@@ -94,182 +125,234 @@ export default function KPIsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="relative h-8 w-8">
+          <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
+          <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 p-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold">KPI Dashboard</h1>
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold text-slate-800">{t("KPI Dashboard")}</h1>
       </div>
 
       {/* Summary Charts Row */}
       <div className="grid grid-cols-2 gap-6">
         {/* Status Chart Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Status</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div className="space-y-2 flex-1">
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded-full bg-blue-500" />
-                  <span className="text-sm">Scheduled</span>
-                  <span className="text-sm font-medium ml-auto">
-                    {getStatusPercentage(statusCounts.scheduled)}%
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded-full bg-red-500" />
-                  <span className="text-sm">Missed</span>
-                  <span className="text-sm font-medium ml-auto">
-                    {getStatusPercentage(statusCounts.missed)}%
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded-full bg-orange-500" />
-                  <span className="text-sm">Overdue</span>
-                  <span className="text-sm font-medium ml-auto">
-                    {getStatusPercentage(statusCounts.overdue)}%
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded-full bg-green-500" />
-                  <span className="text-sm">Achieved</span>
-                  <span className="text-sm font-medium ml-auto">
-                    {getStatusPercentage(statusCounts.achieved)}%
-                  </span>
-                </div>
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
+              <ClipboardList className="h-5 w-5" />
+            </div>
+            <h3 className="text-base font-semibold text-slate-800">{t("Status")}</h3>
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="space-y-2 flex-1">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded-full bg-info" />
+                <span className="text-sm text-slate-600">{t("Scheduled")}</span>
+                <span className="text-sm font-medium text-slate-800 ml-auto">
+                  {getStatusPercentage(statusCounts.scheduled)}%
+                </span>
               </div>
-              <div className="text-center ml-8">
-                <p className="text-sm text-gray-500">Total</p>
-                <p className="text-3xl font-bold">{statusCounts.total}</p>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded-full bg-error" />
+                <span className="text-sm text-slate-600">{t("Missed")}</span>
+                <span className="text-sm font-medium text-slate-800 ml-auto">
+                  {getStatusPercentage(statusCounts.missed)}%
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded-full bg-warning" />
+                <span className="text-sm text-slate-600">{t("Overdue")}</span>
+                <span className="text-sm font-medium text-slate-800 ml-auto">
+                  {getStatusPercentage(statusCounts.overdue)}%
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded-full bg-success" />
+                <span className="text-sm text-slate-600">{t("Achieved")}</span>
+                <span className="text-sm font-medium text-slate-800 ml-auto">
+                  {getStatusPercentage(statusCounts.achieved)}%
+                </span>
               </div>
             </div>
-          </CardContent>
-        </Card>
+            <div className="text-center ml-8">
+              <p className="text-sm text-slate-500">{t("Total")}</p>
+              <p className="text-3xl font-bold tracking-tight text-slate-800">{statusCounts.total}</p>
+            </div>
+          </div>
+        </div>
 
         {/* Department Chart Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Department</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div className="space-y-2 flex-1">
-                {Object.entries(departmentCounts)
-                  .slice(0, 4)
-                  .map(([dept, count], idx) => (
-                    <div key={dept} className="flex items-center gap-2">
-                      <div
-                        className={`w-4 h-4 rounded-full ${
-                          idx === 0
-                            ? "bg-blue-500"
-                            : idx === 1
-                            ? "bg-green-500"
-                            : idx === 2
-                            ? "bg-yellow-500"
-                            : "bg-purple-500"
-                        }`}
-                      />
-                      <span className="text-sm truncate max-w-[150px]">{dept}</span>
-                      <span className="text-sm font-medium ml-auto">{count}</span>
-                    </div>
-                  ))}
-              </div>
-              <div className="text-center ml-8">
-                <p className="text-sm text-gray-500">Total</p>
-                <p className="text-3xl font-bold">{statusCounts.total}</p>
-              </div>
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
+              <Building2 className="h-5 w-5" />
             </div>
-          </CardContent>
-        </Card>
+            <h3 className="text-base font-semibold text-slate-800">{t("Department")}</h3>
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="space-y-2 flex-1">
+              {Object.entries(departmentCounts)
+                .slice(0, 4)
+                .map(([dept, count], idx) => (
+                  <div key={dept} className="flex items-center gap-2">
+                    <div
+                      className={`w-4 h-4 rounded-full ${
+                        idx === 0
+                          ? "bg-info"
+                          : idx === 1
+                            ? "bg-success"
+                            : idx === 2
+                              ? "bg-warning"
+                              : "bg-primary-500"
+                      }`}
+                    />
+                    <span className="text-sm text-slate-600 truncate max-w-[150px]">
+                      {dept}
+                    </span>
+                    <span className="text-sm font-medium text-slate-800 ml-auto">
+                      {count}
+                    </span>
+                  </div>
+                ))}
+            </div>
+            <div className="text-center ml-8">
+              <p className="text-sm text-slate-500">{t("Total")}</p>
+              <p className="text-3xl font-bold tracking-tight text-slate-800">{statusCounts.total}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Search and Filter Row */}
+      <div className="flex items-center gap-3">
+        <Input
+          placeholder={t("Search by code, objective or description...")}
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="max-w-sm h-9 border-slate-200 bg-white"
+        />
+        <Select
+          value={statusFilter || "all"}
+          onValueChange={(value) => setStatusFilter(value === "all" ? "" : value)}
+        >
+          <SelectTrigger className="w-[180px] h-9 bg-white border-slate-200">
+            <SelectValue placeholder={t("All Statuses")} />
+          </SelectTrigger>
+          <SelectContent position="popper" sideOffset={4}>
+            <SelectItem value="all">{t("All Statuses")}</SelectItem>
+            {statuses.map((s) => (
+              <SelectItem key={s} value={s}>
+                {t(s)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <div className="flex-1" />
       </div>
 
       {/* KPI Table */}
-      <Card>
-        <CardContent className="pt-6">
-          <Table>
-            <TableHeader>
+      <div className="bg-white rounded-xl border border-slate-200">
+        <Table>
+          <TableHeader>
+            <TableRow className="border-b border-slate-100 bg-slate-50/50">
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4 w-[120px]">{t("Code")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("KPI Objective")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("KPI Description")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 w-[100px]">{t("Expected")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 w-[110px]">{t("Review Date")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 w-[100px]">{t("Status")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[140px]">{t("Department")}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredKpis.length === 0 ? (
               <TableRow>
-                <TableHead className="cursor-pointer hover:bg-gray-50">
-                  <div className="flex items-center gap-1">Code</div>
-                </TableHead>
-                <TableHead className="cursor-pointer hover:bg-gray-50">
-                  <div className="flex items-center gap-1">KPI Objective</div>
-                </TableHead>
-                <TableHead className="cursor-pointer hover:bg-gray-50">
-                  <div className="flex items-center gap-1">Kpi Description</div>
-                </TableHead>
-                <TableHead className="cursor-pointer hover:bg-gray-50">
-                  <div className="flex items-center gap-1">Expected Score</div>
-                </TableHead>
-                <TableHead className="cursor-pointer hover:bg-gray-50">
-                  <div className="flex items-center gap-1">Review Date</div>
-                </TableHead>
-                <TableHead className="cursor-pointer hover:bg-gray-50">
-                  <div className="flex items-center gap-1">Status</div>
-                </TableHead>
-                <TableHead className="cursor-pointer hover:bg-gray-50">
-                  <div className="flex items-center gap-1">Department</div>
-                </TableHead>
+                <TableCell colSpan={7} className="text-center py-12">
+                  <BarChart3 className="h-10 w-10 mx-auto mb-2 text-slate-300" />
+                  <p className="text-sm text-slate-500">{t("No KPIs found")}</p>
+                  <p className="text-xs text-slate-400 mt-1">{t("Try adjusting your search or filter")}</p>
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {kpis.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8">
-                    <BarChart3 className="h-12 w-12 mx-auto mb-2 text-gray-300" />
-                    <p className="text-gray-500">No KPIs found</p>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                kpis.map((kpi) => (
+            ) : (
+              filteredKpis.map((kpi) => {
+                const displayCode = kpi.evidence?.evidenceCode || kpi.code;
+                const displayDepartment =
+                  kpi.department?.name || kpi.evidence?.department?.name || "-";
+                const displayReviewDate = kpi.reviewDate || kpi.evidence?.reviewDate;
+
+                return (
                   <TableRow
                     key={kpi.id}
-                    className="cursor-pointer hover:bg-gray-50"
+                    className="border-b border-slate-100 last:border-0 cursor-pointer hover:bg-slate-50"
                     onClick={() => router.push(`/compliance/kpis/${kpi.id}`)}
                   >
-                    <TableCell className="font-medium">{kpi.code}</TableCell>
-                    <TableCell>
+                    <TableCell className="py-5 text-sm font-medium text-slate-800 pl-4">
+                      {displayCode}
+                    </TableCell>
+                    <TableCell className="py-5 text-sm text-slate-700">
                       <span className="line-clamp-1">{kpi.objective || "-"}</span>
                     </TableCell>
-                    <TableCell>
-                      <span className="line-clamp-1 max-w-[200px]">
-                        {kpi.description || "-"}
-                      </span>
+                    <TableCell className="py-5 text-sm text-slate-700">
+                      <span className="line-clamp-1">{kpi.description || "-"}</span>
                     </TableCell>
-                    <TableCell>{kpi.expectedScore ?? "-"}</TableCell>
-                    <TableCell>
-                      {kpi.reviewDate
-                        ? new Date(kpi.reviewDate).toLocaleDateString("en-GB")
+                    <TableCell className="py-5 text-sm text-slate-700">
+                      {kpi.expectedScore ?? "-"}
+                    </TableCell>
+                    <TableCell className="py-5 text-sm text-slate-700">
+                      {displayReviewDate
+                        ? new Date(displayReviewDate).toLocaleDateString("en-GB", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          })
                         : "-"}
                     </TableCell>
-                    <TableCell>
-                      <Badge className={statusColors[kpi.status] || "bg-gray-100"}>
-                        {kpi.status}
+                    <TableCell className="py-5 text-sm">
+                      <Badge className={statusColors[kpi.status] || "bg-slate-100 text-slate-600"}>
+                        {t(kpi.status)}
                       </Badge>
                     </TableCell>
-                    <TableCell>{kpi.department?.name || "-"}</TableCell>
+                    <TableCell className="py-5 text-sm text-slate-700 pr-4">
+                      {displayDepartment}
+                    </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                );
+              })
+            )}
+          </TableBody>
+        </Table>
 
-          {/* Pagination */}
-          <div className="flex items-center justify-between mt-4 text-sm text-gray-500">
-            <span>
-              Currently showing 1 to {kpis.length} of {kpis.length}
-            </span>
+        {/* Pagination */}
+        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
+          <span className="text-sm text-slate-500">
+            {filteredKpis.length > 0
+              ? `${t("Showing")} 1 ${t("to")} ${filteredKpis.length} ${t("of")} ${filteredKpis.length}`
+              : t("No KPIs")}
+          </span>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" disabled={true} className="h-8 w-8">
+              <ChevronsLeft className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" disabled={true} className="h-8 w-8">
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" disabled={true} className="h-8 w-8">
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" disabled={true} className="h-8 w-8">
+              <ChevronsRight className="h-4 w-4" />
+            </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

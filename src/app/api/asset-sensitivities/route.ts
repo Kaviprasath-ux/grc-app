@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 // GET all asset sensitivities
+// NOTE: AssetSensitivity model doesn't have customerAccountId yet - tenant filtering disabled
 export async function GET() {
   try {
     const sensitivities = await prisma.assetSensitivity.findMany({
@@ -23,6 +24,7 @@ export async function GET() {
 }
 
 // POST create new asset sensitivity
+// NOTE: AssetSensitivity model doesn't have customerAccountId yet - tenant filtering disabled
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -31,6 +33,18 @@ export async function POST(request: NextRequest) {
     if (!name?.trim()) {
       return NextResponse.json(
         { error: "Sensitivity name is required" },
+        { status: 400 }
+      );
+    }
+
+    // Check for duplicate
+    const existing = await prisma.assetSensitivity.findFirst({
+      where: { name: name.trim() },
+    });
+
+    if (existing) {
+      return NextResponse.json(
+        { error: "Sensitivity with this name already exists" },
         { status: 400 }
       );
     }

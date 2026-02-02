@@ -2,10 +2,10 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Plus, Pencil, Trash2, Upload, X, ArrowLeft, Sparkles } from "lucide-react";
-import { PageHeader, DataGrid } from "@/components/shared";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { Plus, Pencil, Trash2, Upload, X, Building2, Users, MapPin, Globe, Calendar, Target, Eye, Briefcase, Scale, ArrowLeft } from "lucide-react";
+import { DataGrid } from "@/components/shared";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,7 +36,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ColumnDef } from "@tanstack/react-table";
 import { EditProfileWizard } from "@/components/profile/edit-profile-wizard";
-import { syncMendixData } from "@/actions/mendix";
+import { OrgChart } from "@/components/organization/org-chart";
+import { DatePicker } from "@/components/ui/date-picker";
+import { format } from "date-fns";
 
 interface Branch {
   id?: string;
@@ -114,7 +116,9 @@ interface Regulation {
 function ProfilePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t } = useLanguage();
   const initialTab = searchParams.get("tab") || "overview";
+  const fromDashboard = searchParams.get("from") === "dashboard";
   const [activeTab, setActiveTab] = useState(initialTab);
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -159,8 +163,8 @@ function ProfilePageContent() {
     title: "",
     description: "",
     serviceUser: "Internal",
-    serviceCategory: "consulting",
-    serviceItem: "Advisory",
+    serviceCategory: "",
+    serviceItem: "",
   });
   const [newRegulation, setNewRegulation] = useState({
     name: "",
@@ -280,8 +284,8 @@ function ProfilePageContent() {
           title: "",
           description: "",
           serviceUser: "Internal",
-          serviceCategory: "consulting",
-          serviceItem: "Advisory",
+          serviceCategory: "",
+          serviceItem: "",
         });
         setIsAddServiceOpen(false);
       }
@@ -496,17 +500,18 @@ function ProfilePageContent() {
   const departmentColumns: ColumnDef<Department>[] = [
     {
       accessorKey: "name",
-      header: "Department Name",
-      cell: ({ row }) => <span className="font-medium">{row.getValue("name")}</span>,
+      header: t("Department Name"),
+      cell: ({ row }) => <span className="font-medium text-slate-800">{row.getValue("name")}</span>,
     },
     {
       id: "actions",
-      header: "Actions",
+      header: t("Actions"),
       cell: ({ row }) => (
-        <div className="flex gap-2">
+        <div className="flex gap-1">
           <Button
             variant="ghost"
             size="icon"
+            className="h-8 w-8 text-slate-400 hover:text-slate-600"
             onClick={() => {
               setEditingDepartment(row.original);
               setIsEditDepartmentOpen(true);
@@ -517,7 +522,7 @@ function ProfilePageContent() {
           <Button
             variant="ghost"
             size="icon"
-            className="text-destructive"
+            className="h-8 w-8 text-slate-400 hover:text-semantic-error"
             onClick={() => handleDeleteDepartment(row.original.id)}
           >
             <Trash2 className="h-4 w-4" />
@@ -531,28 +536,32 @@ function ProfilePageContent() {
   const regulationColumns: ColumnDef<Regulation>[] = [
     {
       accessorKey: "name",
-      header: "Regulation Name",
-      cell: ({ row }) => <span className="font-medium">{row.getValue("name")}</span>,
+      header: t("Regulation Name"),
+      cell: ({ row }) => <span className="font-medium text-slate-800">{row.getValue("name")}</span>,
     },
     {
       accessorKey: "version",
-      header: "Version",
+      header: t("Version"),
+      cell: ({ row }) => <span className="text-slate-600">{row.getValue("version")}</span>,
     },
     {
       accessorKey: "status",
-      header: "Compliance Status",
+      header: t("Compliance Status"),
       cell: ({ row }) => (
-        <span className="text-grc-primary">{row.getValue("status")}</span>
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-compliance-compliant-bg text-semantic-success-dark">
+          {row.getValue("status")}
+        </span>
       ),
     },
     {
       id: "actions",
-      header: "Actions",
+      header: t("Actions"),
       cell: ({ row }) => (
-        <div className="flex gap-2">
+        <div className="flex gap-1">
           <Button
             variant="ghost"
             size="icon"
+            className="h-8 w-8 text-slate-400 hover:text-slate-600"
             onClick={() => {
               setEditingRegulation(row.original);
               setIsEditRegulationOpen(true);
@@ -563,7 +572,7 @@ function ProfilePageContent() {
           <Button
             variant="ghost"
             size="icon"
-            className="text-destructive"
+            className="h-8 w-8 text-slate-400 hover:text-semantic-error"
             onClick={() => handleDeleteRegulation(row.original.id)}
           >
             <Trash2 className="h-4 w-4" />
@@ -575,372 +584,425 @@ function ProfilePageContent() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Loading...</p>
+      <div className="flex items-center justify-center h-[60vh]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative">
+            <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
+            <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+          </div>
+          <p className="text-sm text-slate-500 font-medium">{t("Loading profile...")}</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Profile"
-        backAction={{
-          label: "",
-          icon: ArrowLeft,
-          onClick: () => router.back(),
-        }}
-      />
+      {/* Back to Dashboard Button */}
+      {fromDashboard && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => router.push("/dashboard")}
+          className="flex items-center gap-2 text-slate-600 hover:text-slate-800 -ms-2"
+        >
+          <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
+          {t("Back")}
+        </Button>
+      )}
+
+      {/* Page Header */}
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold text-slate-800">{t("Organization Profile")}</h1>
+
+      </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="services">Services</TabsTrigger>
-          <TabsTrigger value="regulations">Regulations</TabsTrigger>
-          <TabsTrigger value="departments">Departments</TabsTrigger>
-          <TabsTrigger value="orgchart">Organization Chart</TabsTrigger>
+        <TabsList>
+          <TabsTrigger value="overview">{t("Company Info")}</TabsTrigger>
+          <TabsTrigger value="services">{t("Services")}</TabsTrigger>
+          <TabsTrigger value="regulations">{t("Regulations")}</TabsTrigger>
+          <TabsTrigger value="departments">{t("Departments")}</TabsTrigger>
+          <TabsTrigger value="orgchart">{t("Organization Chart")}</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
-        <TabsContent value="overview" className="space-y-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Organization Information</CardTitle>
-              {organization ? (
+        <TabsContent value="overview" className="mt-6">
+          {organization ? (
+            <div className="bg-white rounded-xl border border-slate-200">
+              {/* Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+                <h3 className="text-base font-semibold text-slate-800">{t("Organization Information")}</h3>
                 <Button variant="outline" size="sm" onClick={openEditOrganization}>
-                  <Pencil className="h-4 w-4 mr-2" />
-                  Edit
+                  <Pencil className="h-4 w-4 me-2" />
+                  {t("Edit")}
                 </Button>
-              ) : (
-                <Button size="sm" onClick={openEditOrganization}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  New Profile
-                </Button>
-              )}
-              <Button variant="secondary" size="sm" className="ml-2" onClick={async () => {
-                try {
-                  const res = await syncMendixData();
-                  if (res.success) {
-                    // Using alert or toast if available in this scope? Page has no toast hook usage shown but likely available
-                    // Actually ProfilePageContent has no `toast` defined.
-                    alert("Mendix Sync Triggered Successfully");
-                  }
-                } catch (e) {
-                  console.error(e);
-                  alert("Failed to sync Mendix data");
-                }
-              }}>
-                <Sparkles className="h-4 w-4 mr-2" />
-                Sync Mendix Data
-              </Button>
-            </CardHeader>
-            <CardContent>
-              {organization ? (
-                <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <div>
-                      <Label className="text-muted-foreground">Established Date</Label>
-                      <p className="font-medium">{organization.establishedDate || "-"}</p>
-                    </div>
-                    <div>
-                      <Label className="text-muted-foreground">Employee Count</Label>
-                      <p className="font-medium">{organization.employeeCount}</p>
-                    </div>
-                    <div>
-                      <Label className="text-muted-foreground">Branch Count</Label>
-                      <p className="font-medium">{organization.branchCount}</p>
-                    </div>
-                    <div>
-                      <Label className="text-muted-foreground">Head Office Location</Label>
-                      <p className="font-medium">{organization.headOfficeLocation || "-"}</p>
-                    </div>
-                    <div>
-                      <Label className="text-muted-foreground">Head Office Address</Label>
-                      <p className="font-medium">{organization.headOfficeAddress || "-"}</p>
-                    </div>
-                    <div>
-                      <Label className="text-muted-foreground">Website</Label>
-                      <p className="font-medium text-grc-link">{organization.website || "-"}</p>
-                    </div>
-                  </div>
-                  <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <Label className="text-muted-foreground font-semibold">{organization.name}</Label>
-                      <p className="text-sm mt-1">{organization.description || "-"}</p>
-                    </div>
-                    <div className="space-y-4">
-                      <div>
-                        <Label className="text-muted-foreground">Vision</Label>
-                        <p className="text-sm">{organization.vision || "-"}</p>
-                      </div>
-                      <div>
-                        <Label className="text-muted-foreground">Mission</Label>
-                        <p className="text-sm">{organization.mission || "-"}</p>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <div className="rounded-full bg-muted p-6 mb-4">
-                    <Plus className="h-8 w-8 text-muted-foreground" />
-                  </div>
-                  <h3 className="text-lg font-medium mb-2">No Profile Added</h3>
-                  <p className="text-muted-foreground mb-4 max-w-md">
-                    Create your organization profile to display company information, vision, mission, and more.
-                  </p>
-                  <Button onClick={openEditOrganization}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create Profile
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+              </div>
 
-        {/* Services Tab */}
-        <TabsContent value="services" className="space-y-6">
-          <div className="flex justify-between items-center">
-            <Input placeholder="Search services..." className="max-w-sm" />
-            <Button onClick={() => setIsAddServiceOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add New
-            </Button>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {services.map((service) => (
-              <Card key={service.id}>
-                <CardHeader className="flex flex-row items-start justify-between pb-2">
+              {/* Content */}
+              <div className="p-6">
+                {/* Basic Info Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-8 gap-y-6">
                   <div>
-                    <CardTitle className="text-base">{service.title}</CardTitle>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {service.serviceUser}
-                    </p>
+                    <p className="text-xs text-slate-500 mb-1">{t("Organization Name")}</p>
+                    <p className="text-sm font-medium text-slate-800">{organization.name || "-"}</p>
                   </div>
-                  <div className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => {
-                        setEditingService(service);
-                        setIsEditServiceOpen(true);
-                      }}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-destructive"
-                      onClick={() => handleDeleteService(service.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">{t("Established Date")}</p>
+                    <p className="text-sm font-medium text-slate-800">{organization.establishedDate || "-"}</p>
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex gap-4 text-sm">
-                    <div>
-                      <span className="text-muted-foreground">Item: </span>
-                      <span>{service.serviceItem}</span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Category: </span>
-                      <span>{service.serviceCategory}</span>
-                    </div>
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">{t("Employee Count")}</p>
+                    <p className="text-sm font-medium text-slate-800">{organization.employeeCount?.toLocaleString() || "0"}</p>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-
-        {/* Regulations Tab */}
-        <TabsContent value="regulations" className="space-y-6">
-          <div className="flex justify-end">
-            <Button onClick={() => setIsAddRegulationOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Regulation
-            </Button>
-          </div>
-          <DataGrid
-            columns={regulationColumns}
-            data={regulations}
-            searchPlaceholder="Search by name..."
-          />
-        </TabsContent>
-
-        {/* Departments Tab */}
-        <TabsContent value="departments" className="space-y-6">
-          <div className="flex justify-end">
-            <Button onClick={() => setIsAddDepartmentOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add New
-            </Button>
-          </div>
-          <DataGrid
-            columns={departmentColumns}
-            data={departments}
-            searchPlaceholder="Search by name..."
-            showColumnSelector
-          />
-        </TabsContent>
-
-        {/* Organization Chart Tab */}
-        <TabsContent value="orgchart" className="space-y-6">
-          <Card>
-            <CardContent className="py-12">
-              <div className="flex flex-col items-center">
-                {/* CEO */}
-                <div className="bg-grc-primary text-white px-6 py-3 rounded-lg text-center">
-                  <p className="font-medium">CEO</p>
-                  <p className="text-sm">John Doe</p>
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">{t("Branch Count")}</p>
+                    <p className="text-sm font-medium text-slate-800">{organization.branchCount || "0"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">{t("Head Office Location")}</p>
+                    <p className="text-sm font-medium text-slate-800">{organization.headOfficeLocation || "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">{t("Head Office Address")}</p>
+                    <p className="text-sm font-medium text-slate-800">{organization.headOfficeAddress || "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">{t("Website")}</p>
+                    <p className="text-sm font-medium text-primary-600">{organization.website || "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">{t("Email")}</p>
+                    <p className="text-sm font-medium text-slate-800">{organization.email || "-"}</p>
+                  </div>
                 </div>
-                {/* Connection line */}
-                <div className="w-px h-8 bg-border" />
-                {/* Second level */}
-                <div className="flex gap-8">
-                  <div className="flex flex-col items-center">
-                    <div className="bg-grc-bg border px-4 py-2 rounded-lg text-center">
-                      <p className="font-medium text-sm">CTO</p>
-                      <p className="text-xs text-muted-foreground">Tech Lead</p>
-                    </div>
+
+                {/* Divider */}
+                <div className="border-t border-slate-100 my-6"></div>
+
+                {/* Description */}
+                <div className="mb-6">
+                  <p className="text-xs text-slate-500 mb-1">{t("Description")}</p>
+                  <p className="text-sm text-slate-700 leading-relaxed">{organization.description || "-"}</p>
+                </div>
+
+                {/* Vision & Mission */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">{t("Vision")}</p>
+                    <p className="text-sm text-slate-700 leading-relaxed">{organization.vision || "-"}</p>
                   </div>
-                  <div className="flex flex-col items-center">
-                    <div className="bg-grc-bg border px-4 py-2 rounded-lg text-center">
-                      <p className="font-medium text-sm">CFO</p>
-                      <p className="text-xs text-muted-foreground">Finance Lead</p>
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <div className="bg-grc-bg border px-4 py-2 rounded-lg text-center">
-                      <p className="font-medium text-sm">COO</p>
-                      <p className="text-xs text-muted-foreground">Operations Lead</p>
-                    </div>
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">{t("Mission")}</p>
+                    <p className="text-sm text-slate-700 leading-relaxed">{organization.mission || "-"}</p>
                   </div>
                 </div>
               </div>
-              <p className="text-center text-muted-foreground mt-8">
-                Full organization chart visualization coming soon...
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
+              <div className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                <Building2 className="h-6 w-6 text-slate-400" />
+              </div>
+              <h3 className="text-base font-semibold text-slate-800 mb-1">{t("No Profile")}</h3>
+              <p className="text-sm text-slate-500 mb-6">
+                {t("Create your organization profile to get started.")}
               </p>
-            </CardContent>
-          </Card>
+              <Button onClick={openEditOrganization}>
+                <Plus className="h-4 w-4 me-2" />
+                {t("Create Profile")}
+              </Button>
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Services Tab */}
+        <TabsContent value="services" className="mt-6">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-semibold text-slate-800">{t("Services")}</h3>
+            <Button size="sm" onClick={() => setIsAddServiceOpen(true)}>
+              <Plus className="h-4 w-4 me-2" />
+              {t("Add Service")}
+            </Button>
+          </div>
+
+          {services.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {services.map((service) => (
+                <div key={service.id} className="bg-white rounded-xl border border-slate-200 p-5">
+                  {/* Header with actions */}
+                  <div className="flex items-start justify-between mb-3">
+                    <h4 className="text-sm font-semibold text-slate-800">{service.title}</h4>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-slate-400 hover:text-slate-600"
+                        onClick={() => {
+                          setEditingService(service);
+                          setIsEditServiceOpen(true);
+                        }}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-slate-400 hover:text-semantic-error"
+                        onClick={() => handleDeleteService(service.id)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Info */}
+                  <div className="space-y-2 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-500">{t("User Type")}</span>
+                      <span className="font-medium text-slate-700">{service.serviceUser}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-500">{t("Category")}</span>
+                      <span className="font-medium text-slate-700">{service.serviceCategory}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-500">{t("Item")}</span>
+                      <span className="font-medium text-slate-700">{service.serviceItem}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
+              <div className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                <Briefcase className="h-6 w-6 text-slate-400" />
+              </div>
+              <h3 className="text-base font-semibold text-slate-800 mb-1">{t("No Services")}</h3>
+              <p className="text-sm text-slate-500 mb-6">
+                {t("Add services your organization provides.")}
+              </p>
+              <Button onClick={() => setIsAddServiceOpen(true)}>
+                <Plus className="h-4 w-4 me-2" />
+                {t("Add Service")}
+              </Button>
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Regulations Tab */}
+        <TabsContent value="regulations" className="mt-6">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-semibold text-slate-800">{t("Regulations")}</h3>
+            <Button size="sm" onClick={() => setIsAddRegulationOpen(true)}>
+              <Plus className="h-4 w-4 me-2" />
+              {t("Add Regulation")}
+            </Button>
+          </div>
+
+          {regulations.length > 0 ? (
+            <DataGrid
+              columns={regulationColumns}
+              data={regulations}
+              searchPlaceholder={t("Search regulations...")}
+            />
+          ) : (
+            <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
+              <div className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                <Scale className="h-6 w-6 text-slate-400" />
+              </div>
+              <h3 className="text-base font-semibold text-slate-800 mb-1">{t("No Regulations")}</h3>
+              <p className="text-sm text-slate-500 mb-6">
+                {t("Add regulations that apply to your organization.")}
+              </p>
+              <Button onClick={() => setIsAddRegulationOpen(true)}>
+                <Plus className="h-4 w-4 me-2" />
+                {t("Add Regulation")}
+              </Button>
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Departments Tab */}
+        <TabsContent value="departments" className="mt-6">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-semibold text-slate-800">{t("Departments")}</h3>
+            <Button size="sm" onClick={() => setIsAddDepartmentOpen(true)}>
+              <Plus className="h-4 w-4 me-2" />
+              {t("Add Department")}
+            </Button>
+          </div>
+
+          {departments.length > 0 ? (
+            <DataGrid
+              columns={departmentColumns}
+              data={departments}
+              searchPlaceholder={t("Search departments...")}
+            />
+          ) : (
+            <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
+              <div className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                <Users className="h-6 w-6 text-slate-400" />
+              </div>
+              <h3 className="text-base font-semibold text-slate-800 mb-1">{t("No Departments")}</h3>
+              <p className="text-sm text-slate-500 mb-6">
+                {t("Add departments to organize your team structure.")}
+              </p>
+              <Button onClick={() => setIsAddDepartmentOpen(true)}>
+                <Plus className="h-4 w-4 me-2" />
+                {t("Add Department")}
+              </Button>
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Organization Chart Tab */}
+        <TabsContent value="orgchart" className="mt-6">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-semibold text-slate-800">{t("Organization Structure")}</h3>
+          </div>
+
+          <div className="bg-white rounded-xl border border-slate-200 p-6">
+            <OrgChart />
+          </div>
         </TabsContent>
       </Tabs>
 
       {/* Add Department Dialog */}
       <Dialog open={isAddDepartmentOpen} onOpenChange={setIsAddDepartmentOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add Department</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <Label htmlFor="departmentName">Department Name</Label>
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Department")}</DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Content */}
+          <div className="px-6 py-6">
+            <Label className="text-sm font-medium text-slate-700">{t("Department Name")}</Label>
             <Input
-              id="departmentName"
               value={newDepartmentName}
               onChange={(e) => setNewDepartmentName(e.target.value)}
-              placeholder="Enter department name"
-              className="mt-2"
+              placeholder={t("Enter department name")}
+              className="mt-1.5"
             />
           </div>
-          <DialogFooter>
+
+          {/* Fixed Footer */}
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsAddDepartmentOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
-            <Button onClick={handleAddDepartment}>Save</Button>
-          </DialogFooter>
+            <Button onClick={handleAddDepartment}>{t("Save")}</Button>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Edit Department Dialog */}
       <Dialog open={isEditDepartmentOpen} onOpenChange={setIsEditDepartmentOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Department</DialogTitle>
-          </DialogHeader>
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Department")}</DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Content */}
           {editingDepartment && (
-            <div className="py-4">
-              <Label htmlFor="editDepartmentName">Department Name</Label>
+            <div className="px-6 py-6">
+              <Label className="text-sm font-medium text-slate-700">{t("Department Name")}</Label>
               <Input
-                id="editDepartmentName"
                 value={editingDepartment.name}
                 onChange={(e) => setEditingDepartment({ ...editingDepartment, name: e.target.value })}
-                placeholder="Enter department name"
-                className="mt-2"
+                placeholder={t("Enter department name")}
+                className="mt-1.5"
               />
             </div>
           )}
-          <DialogFooter>
+
+          {/* Fixed Footer */}
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsEditDepartmentOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
-            <Button onClick={handleEditDepartment}>Save</Button>
-          </DialogFooter>
+            <Button onClick={handleEditDepartment}>{t("Save")}</Button>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Add Service Dialog */}
       <Dialog open={isAddServiceOpen} onOpenChange={setIsAddServiceOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add Service</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Service")}</DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Content */}
+          <div className="px-6 py-6 space-y-5">
+            {/* Service Title */}
             <div>
-              <Label htmlFor="serviceTitle">Title</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Service Title")}</Label>
               <Input
-                id="serviceTitle"
                 value={newService.title}
                 onChange={(e) => setNewService({ ...newService, title: e.target.value })}
-                placeholder="Enter service title"
-                className="mt-2"
+                placeholder={t("Enter service title")}
+                className="mt-1.5"
               />
             </div>
+
+            {/* Description */}
             <div>
-              <Label htmlFor="serviceDescription">Description</Label>
-              <Input
-                id="serviceDescription"
+              <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
+              <Textarea
                 value={newService.description}
                 onChange={(e) => setNewService({ ...newService, description: e.target.value })}
-                placeholder="Enter description"
-                className="mt-2"
+                placeholder={t("Enter service description")}
+                className="mt-1.5"
+                rows={3}
               />
             </div>
+
+            {/* Service User */}
             <div>
-              <Label>Service User</Label>
-              <div className="flex gap-4 mt-2">
+              <Label className="text-sm font-medium text-slate-700">{t("Service User")}</Label>
+              <div className="flex gap-6 mt-2">
                 {["Internal", "External", "Public"].map((userType) => (
-                  <div key={userType} className="flex items-center space-x-2">
+                  <label key={userType} className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="radio"
-                      id={`add-${userType}`}
                       name="addServiceUser"
                       checked={newService.serviceUser === userType}
-                      onChange={() =>
-                        setNewService({ ...newService, serviceUser: userType })
-                      }
-                      className="h-4 w-4"
+                      onChange={() => setNewService({ ...newService, serviceUser: userType })}
+                      className="w-4 h-4 text-primary-600 border-slate-300 focus:ring-primary-500"
                     />
-                    <Label htmlFor={`add-${userType}`} className="font-normal">
-                      {userType}
-                    </Label>
-                  </div>
+                    <span className="text-sm text-slate-600">{t(userType)}</span>
+                  </label>
                 ))}
               </div>
             </div>
+
+            {/* Service Category */}
             <div>
-              <Label>Service Category</Label>
-              <div className="flex gap-2 mt-2">
+              <Label className="text-sm font-medium text-slate-700">{t("Service Category")}</Label>
+              <div className="flex gap-2 mt-1.5">
                 <Select
                   value={newService.serviceCategory}
                   onValueChange={(value) => setNewService({ ...newService, serviceCategory: value })}
                 >
                   <SelectTrigger className="flex-1">
-                    <SelectValue />
+                    <SelectValue placeholder={t("Select category")} />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper" sideOffset={4}>
                     {serviceCategories.map((cat) => (
                       <SelectItem key={cat} value={cat}>
                         {cat}
@@ -950,24 +1012,28 @@ function ProfilePageContent() {
                 </Select>
                 <Button
                   type="button"
+                  variant="outline"
                   size="icon"
                   onClick={() => setIsAddCategoryOpen(true)}
+                  className="flex-shrink-0"
                 >
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
             </div>
+
+            {/* Service Item */}
             <div>
-              <Label>Service Item</Label>
-              <div className="flex gap-2 mt-2">
+              <Label className="text-sm font-medium text-slate-700">{t("Service Item")}</Label>
+              <div className="flex gap-2 mt-1.5">
                 <Select
                   value={newService.serviceItem}
                   onValueChange={(value) => setNewService({ ...newService, serviceItem: value })}
                 >
                   <SelectTrigger className="flex-1">
-                    <SelectValue />
+                    <SelectValue placeholder={t("Select item")} />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper" sideOffset={4}>
                     {serviceItems.map((item) => (
                       <SelectItem key={item} value={item}>
                         {item}
@@ -977,88 +1043,94 @@ function ProfilePageContent() {
                 </Select>
                 <Button
                   type="button"
+                  variant="outline"
                   size="icon"
                   onClick={() => setIsAddItemOpen(true)}
+                  className="flex-shrink-0"
                 >
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
             </div>
           </div>
-          <DialogFooter>
+
+          {/* Fixed Footer */}
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsAddServiceOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
-            <Button onClick={handleAddService}>Save</Button>
-          </DialogFooter>
+            <Button onClick={handleAddService}>{t("Save")}</Button>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Edit Service Dialog */}
       <Dialog open={isEditServiceOpen} onOpenChange={setIsEditServiceOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Service</DialogTitle>
-          </DialogHeader>
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0">
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Service")}</DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Content */}
           {editingService && (
-            <div className="space-y-4 py-4">
+            <div className="px-6 py-6 space-y-5">
+              {/* Service Title */}
               <div>
-                <Label htmlFor="editServiceTitle">Title</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Service Title")}</Label>
                 <Input
-                  id="editServiceTitle"
                   value={editingService.title}
-                  onChange={(e) =>
-                    setEditingService({ ...editingService, title: e.target.value })
-                  }
-                  className="mt-2"
+                  onChange={(e) => setEditingService({ ...editingService, title: e.target.value })}
+                  placeholder={t("Enter service title")}
+                  className="mt-1.5"
                 />
               </div>
+
+              {/* Description */}
               <div>
-                <Label htmlFor="editServiceDescription">Description</Label>
-                <Input
-                  id="editServiceDescription"
+                <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
+                <Textarea
                   value={editingService.description || ""}
-                  onChange={(e) =>
-                    setEditingService({ ...editingService, description: e.target.value })
-                  }
-                  className="mt-2"
+                  onChange={(e) => setEditingService({ ...editingService, description: e.target.value })}
+                  placeholder={t("Enter service description")}
+                  className="mt-1.5"
+                  rows={3}
                 />
               </div>
+
+              {/* Service User */}
               <div>
-                <Label>Service User</Label>
-                <div className="flex gap-4 mt-2">
+                <Label className="text-sm font-medium text-slate-700">{t("Service User")}</Label>
+                <div className="flex gap-6 mt-2">
                   {["Internal", "External", "Public"].map((userType) => (
-                    <div key={userType} className="flex items-center space-x-2">
+                    <label key={userType} className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="radio"
-                        id={`edit-${userType}`}
                         name="editServiceUser"
                         checked={editingService.serviceUser === userType}
-                        onChange={() =>
-                          setEditingService({ ...editingService, serviceUser: userType })
-                        }
-                        className="h-4 w-4"
+                        onChange={() => setEditingService({ ...editingService, serviceUser: userType })}
+                        className="w-4 h-4 text-primary-600 border-slate-300 focus:ring-primary-500"
                       />
-                      <Label htmlFor={`edit-${userType}`} className="font-normal">
-                        {userType}
-                      </Label>
-                    </div>
+                      <span className="text-sm text-slate-600">{t(userType)}</span>
+                    </label>
                   ))}
                 </div>
               </div>
+
+              {/* Service Category */}
               <div>
-                <Label>Service Category</Label>
-                <div className="flex gap-2 mt-2">
+                <Label className="text-sm font-medium text-slate-700">{t("Service Category")}</Label>
+                <div className="flex gap-2 mt-1.5">
                   <Select
                     value={editingService.serviceCategory}
-                    onValueChange={(value) =>
-                      setEditingService({ ...editingService, serviceCategory: value })
-                    }
+                    onValueChange={(value) => setEditingService({ ...editingService, serviceCategory: value })}
                   >
                     <SelectTrigger className="flex-1">
-                      <SelectValue />
+                      <SelectValue placeholder={t("Select category")} />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" sideOffset={4}>
                       {serviceCategories.map((cat) => (
                         <SelectItem key={cat} value={cat}>
                           {cat}
@@ -1068,26 +1140,28 @@ function ProfilePageContent() {
                   </Select>
                   <Button
                     type="button"
+                    variant="outline"
                     size="icon"
                     onClick={() => setIsAddCategoryOpen(true)}
+                    className="flex-shrink-0"
                   >
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
+
+              {/* Service Item */}
               <div>
-                <Label>Service Item</Label>
-                <div className="flex gap-2 mt-2">
+                <Label className="text-sm font-medium text-slate-700">{t("Service Item")}</Label>
+                <div className="flex gap-2 mt-1.5">
                   <Select
                     value={editingService.serviceItem}
-                    onValueChange={(value) =>
-                      setEditingService({ ...editingService, serviceItem: value })
-                    }
+                    onValueChange={(value) => setEditingService({ ...editingService, serviceItem: value })}
                   >
                     <SelectTrigger className="flex-1">
-                      <SelectValue />
+                      <SelectValue placeholder={t("Select item")} />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" sideOffset={4}>
                       {serviceItems.map((item) => (
                         <SelectItem key={item} value={item}>
                           {item}
@@ -1097,8 +1171,10 @@ function ProfilePageContent() {
                   </Select>
                   <Button
                     type="button"
+                    variant="outline"
                     size="icon"
                     onClick={() => setIsAddItemOpen(true)}
+                    className="flex-shrink-0"
                   >
                     <Plus className="h-4 w-4" />
                   </Button>
@@ -1106,252 +1182,301 @@ function ProfilePageContent() {
               </div>
             </div>
           )}
-          <DialogFooter>
+
+          {/* Fixed Footer */}
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsEditServiceOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
-            <Button onClick={handleEditService}>Save</Button>
-          </DialogFooter>
+            <Button onClick={handleEditService}>{t("Save")}</Button>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Add Regulation Dialog */}
       <Dialog open={isAddRegulationOpen} onOpenChange={setIsAddRegulationOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Add Regulation</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="regulationName">Regulation Name *</Label>
-                <Input
-                  id="regulationName"
-                  value={newRegulation.name}
-                  onChange={(e) => setNewRegulation({ ...newRegulation, name: e.target.value })}
-                  placeholder="Enter regulation name"
-                  className="mt-2"
-                />
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Regulation")}</DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            <div className="space-y-5">
+              {/* Name and Version */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Regulation Name")} <span className="text-error">*</span></Label>
+                  <Input
+                    value={newRegulation.name}
+                    onChange={(e) => setNewRegulation({ ...newRegulation, name: e.target.value })}
+                    placeholder={t("Enter regulation name")}
+                    className="mt-1.5"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Version")} <span className="text-error">*</span></Label>
+                  <Input
+                    value={newRegulation.version}
+                    onChange={(e) => setNewRegulation({ ...newRegulation, version: e.target.value })}
+                    placeholder={t("Enter version")}
+                    className="mt-1.5"
+                  />
+                </div>
               </div>
-              <div>
-                <Label htmlFor="regulationVersion">Version *</Label>
-                <Input
-                  id="regulationVersion"
-                  value={newRegulation.version}
-                  onChange={(e) => setNewRegulation({ ...newRegulation, version: e.target.value })}
-                  placeholder="Enter version"
-                  className="mt-2"
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="sa1Date">SA1 Date</Label>
-                <Input
-                  id="sa1Date"
-                  type="date"
-                  value={newRegulation.sa1Date}
-                  onChange={(e) => setNewRegulation({ ...newRegulation, sa1Date: e.target.value })}
-                  className="mt-2"
-                />
-              </div>
-              <div>
-                <Label htmlFor="sa2Date">SA2 Date</Label>
-                <Input
-                  id="sa2Date"
-                  type="date"
-                  value={newRegulation.sa2Date}
-                  onChange={(e) => setNewRegulation({ ...newRegulation, sa2Date: e.target.value })}
-                  className="mt-2"
-                />
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="scope">Scope</Label>
-              <Textarea
-                id="scope"
-                value={newRegulation.scope}
-                onChange={(e) => setNewRegulation({ ...newRegulation, scope: e.target.value })}
-                placeholder="Enter scope"
-                className="mt-2"
-                rows={3}
-              />
-            </div>
-            <div>
-              <Label htmlFor="exclusionJustification">Exclusion and Justification</Label>
-              <Textarea
-                id="exclusionJustification"
-                value={newRegulation.exclusionJustification}
-                onChange={(e) => setNewRegulation({ ...newRegulation, exclusionJustification: e.target.value })}
-                placeholder="Enter exclusion and justification"
-                className="mt-2"
-                rows={3}
-              />
-            </div>
-            <div>
-              <Label>Document</Label>
-              <div className="mt-2 border-2 border-dashed rounded-lg p-4">
-                {documentFile ? (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">{documentFile.name}</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setDocumentFile(null)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ) : (
-                  <label className="flex flex-col items-center cursor-pointer">
-                    <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-                    <span className="text-sm text-muted-foreground">Click here, or drop files here to upload</span>
-                    <input
-                      type="file"
-                      className="hidden"
-                      onChange={(e) => {
-                        if (e.target.files?.[0]) {
-                          setDocumentFile(e.target.files[0]);
-                        }
-                      }}
+
+              {/* SA1 and SA2 Dates */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("SA1 Date")}</Label>
+                  <div className="mt-1.5">
+                    <DatePicker
+                      value={newRegulation.sa1Date}
+                      onChange={(date) => setNewRegulation({ ...newRegulation, sa1Date: date ? format(date, "yyyy-MM-dd") : "" })}
+                      placeholder={t("Select SA1 date")}
                     />
-                  </label>
-                )}
-              </div>
-            </div>
-            <div>
-              <Label>Certificate</Label>
-              <div className="mt-2 border-2 border-dashed rounded-lg p-4">
-                {certificateFile ? (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">{certificateFile.name}</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setCertificateFile(null)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
                   </div>
-                ) : (
-                  <label className="flex flex-col items-center cursor-pointer">
-                    <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-                    <span className="text-sm text-muted-foreground">Click here, or drop files here to upload</span>
-                    <input
-                      type="file"
-                      className="hidden"
-                      onChange={(e) => {
-                        if (e.target.files?.[0]) {
-                          setCertificateFile(e.target.files[0]);
-                        }
-                      }}
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("SA2 Date")}</Label>
+                  <div className="mt-1.5">
+                    <DatePicker
+                      value={newRegulation.sa2Date}
+                      onChange={(date) => setNewRegulation({ ...newRegulation, sa2Date: date ? format(date, "yyyy-MM-dd") : "" })}
+                      placeholder={t("Select SA2 date")}
                     />
-                  </label>
-                )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Scope */}
+              <div>
+                <Label className="text-sm font-medium text-slate-700">{t("Scope")}</Label>
+                <Textarea
+                  value={newRegulation.scope}
+                  onChange={(e) => setNewRegulation({ ...newRegulation, scope: e.target.value })}
+                  placeholder={t("Enter scope")}
+                  className="mt-1.5"
+                  rows={3}
+                />
+              </div>
+
+              {/* Exclusion and Justification */}
+              <div>
+                <Label className="text-sm font-medium text-slate-700">{t("Exclusion and Justification")}</Label>
+                <Textarea
+                  value={newRegulation.exclusionJustification}
+                  onChange={(e) => setNewRegulation({ ...newRegulation, exclusionJustification: e.target.value })}
+                  placeholder={t("Enter exclusion and justification")}
+                  className="mt-1.5"
+                  rows={3}
+                />
+              </div>
+
+              {/* Document Upload */}
+              <div>
+                <Label className="text-sm font-medium text-slate-700">{t("Document")}</Label>
+                <div className="mt-1.5 border border-dashed border-slate-200 rounded-lg p-4">
+                  {documentFile ? (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-600">{documentFile.name}</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-slate-400 hover:text-error"
+                        onClick={() => setDocumentFile(null)}
+                      >
+                        {t("Remove")}
+                      </Button>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center cursor-pointer py-2">
+                      <Upload className="h-6 w-6 text-slate-300 mb-2" />
+                      <span className="text-sm text-slate-500">{t("Click to upload document")}</span>
+                      <input
+                        type="file"
+                        className="hidden"
+                        onChange={(e) => {
+                          if (e.target.files?.[0]) {
+                            setDocumentFile(e.target.files[0]);
+                          }
+                        }}
+                      />
+                    </label>
+                  )}
+                </div>
+              </div>
+
+              {/* Certificate Upload */}
+              <div>
+                <Label className="text-sm font-medium text-slate-700">{t("Certificate")}</Label>
+                <div className="mt-1.5 border border-dashed border-slate-200 rounded-lg p-4">
+                  {certificateFile ? (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-600">{certificateFile.name}</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-slate-400 hover:text-error"
+                        onClick={() => setCertificateFile(null)}
+                      >
+                        {t("Remove")}
+                      </Button>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center cursor-pointer py-2">
+                      <Upload className="h-6 w-6 text-slate-300 mb-2" />
+                      <span className="text-sm text-slate-500">{t("Click to upload certificate")}</span>
+                      <input
+                        type="file"
+                        className="hidden"
+                        onChange={(e) => {
+                          if (e.target.files?.[0]) {
+                            setCertificateFile(e.target.files[0]);
+                          }
+                        }}
+                      />
+                    </label>
+                  )}
+                </div>
               </div>
             </div>
           </div>
-          <DialogFooter>
+
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsAddRegulationOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
-            <Button onClick={handleAddRegulation}>Save</Button>
-          </DialogFooter>
+            <Button onClick={handleAddRegulation}>{t("Save")}</Button>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Edit Regulation Dialog */}
       <Dialog open={isEditRegulationOpen} onOpenChange={setIsEditRegulationOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit Regulation</DialogTitle>
-          </DialogHeader>
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Regulation")}</DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Scrollable Content */}
           {editingRegulation && (
-            <div className="space-y-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="editRegulationName">Regulation Name *</Label>
-                  <Input
-                    id="editRegulationName"
-                    value={editingRegulation.name}
-                    onChange={(e) => setEditingRegulation({ ...editingRegulation, name: e.target.value })}
-                    className="mt-2"
-                  />
+            <div className="flex-1 overflow-y-auto px-6 py-6">
+              <div className="space-y-5">
+                {/* Name and Version */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">{t("Regulation Name")} <span className="text-error">*</span></Label>
+                    <Input
+                      value={editingRegulation.name}
+                      onChange={(e) => setEditingRegulation({ ...editingRegulation, name: e.target.value })}
+                      className="mt-1.5"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">{t("Version")} <span className="text-error">*</span></Label>
+                    <Input
+                      value={editingRegulation.version}
+                      onChange={(e) => setEditingRegulation({ ...editingRegulation, version: e.target.value })}
+                      className="mt-1.5"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="editRegulationVersion">Version *</Label>
-                  <Input
-                    id="editRegulationVersion"
-                    value={editingRegulation.version}
-                    onChange={(e) => setEditingRegulation({ ...editingRegulation, version: e.target.value })}
-                    className="mt-2"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="editSa1Date">SA1 Date</Label>
-                  <Input
-                    id="editSa1Date"
-                    type="date"
-                    value={editingRegulation.sa1Date}
-                    onChange={(e) => setEditingRegulation({ ...editingRegulation, sa1Date: e.target.value })}
-                    className="mt-2"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="editSa2Date">SA2 Date</Label>
-                  <Input
-                    id="editSa2Date"
-                    type="date"
-                    value={editingRegulation.sa2Date}
-                    onChange={(e) => setEditingRegulation({ ...editingRegulation, sa2Date: e.target.value })}
-                    className="mt-2"
-                  />
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="editScope">Scope</Label>
-                <Textarea
-                  id="editScope"
-                  value={editingRegulation.scope}
-                  onChange={(e) => setEditingRegulation({ ...editingRegulation, scope: e.target.value })}
-                  className="mt-2"
-                  rows={3}
-                />
-              </div>
-              <div>
-                <Label htmlFor="editExclusionJustification">Exclusion and Justification</Label>
-                <Textarea
-                  id="editExclusionJustification"
-                  value={editingRegulation.exclusionJustification}
-                  onChange={(e) => setEditingRegulation({ ...editingRegulation, exclusionJustification: e.target.value })}
-                  className="mt-2"
-                  rows={3}
-                />
-              </div>
-              <div>
-                <Label>Document</Label>
-                <div className="mt-2 border-2 border-dashed rounded-lg p-4">
-                  {editDocumentFile ? (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">{editDocumentFile.name}</span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setEditDocumentFile(null)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
+
+                {/* SA1 and SA2 Dates */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">{t("SA1 Date")}</Label>
+                    <div className="mt-1.5">
+                      <DatePicker
+                        value={editingRegulation.sa1Date}
+                        onChange={(date) => setEditingRegulation({ ...editingRegulation, sa1Date: date ? format(date, "yyyy-MM-dd") : "" })}
+                        placeholder={t("Select SA1 date")}
+                      />
                     </div>
-                  ) : editingRegulation.document ? (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Current: {editingRegulation.document.split("/").pop()}</span>
-                      <label className="cursor-pointer text-sm text-primary hover:underline">
-                        Replace
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">{t("SA2 Date")}</Label>
+                    <div className="mt-1.5">
+                      <DatePicker
+                        value={editingRegulation.sa2Date}
+                        onChange={(date) => setEditingRegulation({ ...editingRegulation, sa2Date: date ? format(date, "yyyy-MM-dd") : "" })}
+                        placeholder={t("Select SA2 date")}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Scope */}
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Scope")}</Label>
+                  <Textarea
+                    value={editingRegulation.scope}
+                    onChange={(e) => setEditingRegulation({ ...editingRegulation, scope: e.target.value })}
+                    placeholder={t("Enter scope")}
+                    className="mt-1.5"
+                    rows={3}
+                  />
+                </div>
+
+                {/* Exclusion and Justification */}
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Exclusion and Justification")}</Label>
+                  <Textarea
+                    value={editingRegulation.exclusionJustification}
+                    onChange={(e) => setEditingRegulation({ ...editingRegulation, exclusionJustification: e.target.value })}
+                    placeholder={t("Enter exclusion and justification")}
+                    className="mt-1.5"
+                    rows={3}
+                  />
+                </div>
+
+                {/* Document Upload */}
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Document")}</Label>
+                  <div className="mt-1.5 border border-dashed border-slate-200 rounded-lg p-4">
+                    {editDocumentFile ? (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-600">{editDocumentFile.name}</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="text-slate-400 hover:text-error"
+                          onClick={() => setEditDocumentFile(null)}
+                        >
+                          {t("Remove")}
+                        </Button>
+                      </div>
+                    ) : editingRegulation.document ? (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-500">{editingRegulation.document.split("/").pop()}</span>
+                        <label className="cursor-pointer text-sm text-primary-600 hover:text-primary-700">
+                          {t("Replace")}
+                          <input
+                            type="file"
+                            className="hidden"
+                            onChange={(e) => {
+                              if (e.target.files?.[0]) {
+                                setEditDocumentFile(e.target.files[0]);
+                              }
+                            }}
+                          />
+                        </label>
+                      </div>
+                    ) : (
+                      <label className="flex flex-col items-center cursor-pointer py-2">
+                        <Upload className="h-6 w-6 text-slate-300 mb-2" />
+                        <span className="text-sm text-slate-500">{t("Click to upload document")}</span>
                         <input
                           type="file"
                           className="hidden"
@@ -1362,44 +1487,47 @@ function ProfilePageContent() {
                           }}
                         />
                       </label>
-                    </div>
-                  ) : (
-                    <label className="flex flex-col items-center cursor-pointer">
-                      <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-                      <span className="text-sm text-muted-foreground">Click here, or drop files here to upload</span>
-                      <input
-                        type="file"
-                        className="hidden"
-                        onChange={(e) => {
-                          if (e.target.files?.[0]) {
-                            setEditDocumentFile(e.target.files[0]);
-                          }
-                        }}
-                      />
-                    </label>
-                  )}
+                    )}
+                  </div>
                 </div>
-              </div>
-              <div>
-                <Label>Certificate</Label>
-                <div className="mt-2 border-2 border-dashed rounded-lg p-4">
-                  {editCertificateFile ? (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">{editCertificateFile.name}</span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setEditCertificateFile(null)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ) : editingRegulation.certificate ? (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Current: {editingRegulation.certificate.split("/").pop()}</span>
-                      <label className="cursor-pointer text-sm text-primary hover:underline">
-                        Replace
+
+                {/* Certificate Upload */}
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Certificate")}</Label>
+                  <div className="mt-1.5 border border-dashed border-slate-200 rounded-lg p-4">
+                    {editCertificateFile ? (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-600">{editCertificateFile.name}</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="text-slate-400 hover:text-error"
+                          onClick={() => setEditCertificateFile(null)}
+                        >
+                          {t("Remove")}
+                        </Button>
+                      </div>
+                    ) : editingRegulation.certificate ? (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-500">{editingRegulation.certificate.split("/").pop()}</span>
+                        <label className="cursor-pointer text-sm text-primary-600 hover:text-primary-700">
+                          {t("Replace")}
+                          <input
+                            type="file"
+                            className="hidden"
+                            onChange={(e) => {
+                              if (e.target.files?.[0]) {
+                                setEditCertificateFile(e.target.files[0]);
+                              }
+                            }}
+                          />
+                        </label>
+                      </div>
+                    ) : (
+                      <label className="flex flex-col items-center cursor-pointer py-2">
+                        <Upload className="h-6 w-6 text-slate-300 mb-2" />
+                        <span className="text-sm text-slate-500">{t("Click to upload certificate")}</span>
                         <input
                           type="file"
                           className="hidden"
@@ -1410,82 +1538,82 @@ function ProfilePageContent() {
                           }}
                         />
                       </label>
-                    </div>
-                  ) : (
-                    <label className="flex flex-col items-center cursor-pointer">
-                      <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-                      <span className="text-sm text-muted-foreground">Click here, or drop files here to upload</span>
-                      <input
-                        type="file"
-                        className="hidden"
-                        onChange={(e) => {
-                          if (e.target.files?.[0]) {
-                            setEditCertificateFile(e.target.files[0]);
-                          }
-                        }}
-                      />
-                    </label>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
           )}
-          <DialogFooter>
+
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsEditRegulationOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
-            <Button onClick={handleEditRegulation}>Save</Button>
-          </DialogFooter>
+            <Button onClick={handleEditRegulation}>{t("Save")}</Button>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Add Service Category Dialog */}
       <Dialog open={isAddCategoryOpen} onOpenChange={setIsAddCategoryOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add Service Category</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <Label htmlFor="categoryName">Category Name</Label>
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0">
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Service Category")}</DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Content */}
+          <div className="px-6 py-6">
+            <Label className="text-sm font-medium text-slate-700">{t("Category Name")}</Label>
             <Input
-              id="categoryName"
               value={newCategoryName}
               onChange={(e) => setNewCategoryName(e.target.value)}
-              placeholder="Enter category name"
-              className="mt-2"
+              placeholder={t("Enter category name")}
+              className="mt-1.5"
             />
           </div>
-          <DialogFooter>
+
+          {/* Fixed Footer */}
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsAddCategoryOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
-            <Button onClick={handleAddCategory}>Save</Button>
-          </DialogFooter>
+            <Button onClick={handleAddCategory}>{t("Save")}</Button>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Add Service Item Dialog */}
       <Dialog open={isAddItemOpen} onOpenChange={setIsAddItemOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add Service Item</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <Label htmlFor="itemName">Item Name</Label>
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0">
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Service Item")}</DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Content */}
+          <div className="px-6 py-6">
+            <Label className="text-sm font-medium text-slate-700">{t("Item Name")}</Label>
             <Input
-              id="itemName"
               value={newItemName}
               onChange={(e) => setNewItemName(e.target.value)}
-              placeholder="Enter item name"
-              className="mt-2"
+              placeholder={t("Enter item name")}
+              className="mt-1.5"
             />
           </div>
-          <DialogFooter>
+
+          {/* Fixed Footer */}
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsAddItemOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
-            <Button onClick={handleAddItem}>Save</Button>
-          </DialogFooter>
+            <Button onClick={handleAddItem}>{t("Save")}</Button>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -1501,14 +1629,14 @@ function ProfilePageContent() {
       <AlertDialog open={!!deleteDepartmentId} onOpenChange={(open) => !open && setDeleteDepartmentId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Department</AlertDialogTitle>
+            <AlertDialogTitle>{t("Delete Department")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this department? This action cannot be undone.
+              {t("Are you sure you want to delete this department? This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteDepartment}>Delete</AlertDialogAction>
+            <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteDepartment}>{t("Delete")}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -1517,14 +1645,14 @@ function ProfilePageContent() {
       <AlertDialog open={!!deleteServiceId} onOpenChange={(open) => !open && setDeleteServiceId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Service</AlertDialogTitle>
+            <AlertDialogTitle>{t("Delete Service")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this service? This action cannot be undone.
+              {t("Are you sure you want to delete this service? This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteService}>Delete</AlertDialogAction>
+            <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteService}>{t("Delete")}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -1533,14 +1661,14 @@ function ProfilePageContent() {
       <AlertDialog open={!!deleteRegulationId} onOpenChange={(open) => !open && setDeleteRegulationId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Unsubscribe from Regulation</AlertDialogTitle>
+            <AlertDialogTitle>{t("Unsubscribe from Regulation")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to unsubscribe from this regulation? This action cannot be undone.
+              {t("Are you sure you want to unsubscribe from this regulation? This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteRegulation}>Unsubscribe</AlertDialogAction>
+            <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteRegulation}>{t("Unsubscribe")}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -1548,9 +1676,24 @@ function ProfilePageContent() {
   );
 }
 
+function LoadingFallback() {
+  const { t } = useLanguage();
+  return (
+    <div className="flex items-center justify-center h-[60vh]">
+      <div className="flex flex-col items-center gap-4">
+        <div className="relative">
+          <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
+          <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+        </div>
+        <p className="text-sm text-slate-500 font-medium">{t("Loading profile...")}</p>
+      </div>
+    </div>
+  );
+}
+
 export default function ProfilePage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center h-64"><p className="text-muted-foreground">Loading...</p></div>}>
+    <Suspense fallback={<LoadingFallback />}>
       <ProfilePageContent />
     </Suspense>
   );

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Check } from "lucide-react";
+import { ChevronLeft, Check, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -44,6 +44,8 @@ export default function AddProcessPage() {
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
   const [saving, setSaving] = useState(false);
+  const [extracting, setExtracting] = useState(false);
+  const [extractedControls, setExtractedControls] = useState<any[]>([]);
 
   const [departments, setDepartments] = useState<Department[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -87,6 +89,32 @@ export default function AddProcessPage() {
     fetchData();
   }, []);
 
+  const handleExtractControls = async (file: File) => {
+    setExtracting(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/ai/control-extraction", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setExtractedControls(data.controls || []);
+        toast({ title: "Success", description: `Extracted ${data.controls?.length || 0} controls from document` });
+      } else {
+        const error = await res.json();
+        toast({ title: "Error", description: error.error || "Failed to extract controls", variant: "destructive" });
+      }
+    } catch (error) {
+      console.error("Error extracting controls:", error);
+      toast({ title: "Error", description: "Failed to extract controls", variant: "destructive" });
+    }
+    setExtracting(false);
+  };
+
   const handleSave = async () => {
     if (!formData.processCode.trim() || !formData.name.trim()) {
       toast({ title: "Error", description: "Process ID and Name are required", variant: "destructive" });
@@ -102,6 +130,7 @@ export default function AddProcessPage() {
           ...formData,
           departmentId: formData.departmentId || null,
           ownerId: formData.ownerId || null,
+          controls: extractedControls,
         }),
       });
 
@@ -301,8 +330,6 @@ export default function AddProcessPage() {
           </div>
         )}
 
-        import {extractProcessControls} from "@/actions/control-extraction";
-
         {/* Step 2: Process Flow */}
         {currentStep === 2 && (
           <div className="space-y-4">
@@ -343,6 +370,52 @@ export default function AddProcessPage() {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            <div className="space-y-4">
+              <Label>Process Flow Document (AI Control Extraction)</Label>
+              <div className="flex items-center gap-4 p-4 border-2 border-dashed rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+                <div className="flex-1">
+                  <p className="text-sm font-medium">Upload a process flow document to automatically extract controls</p>
+                  <p className="text-xs text-muted-foreground">PDF, DOCX, or Image</p>
+                </div>
+                <Input
+                  id="process-file"
+                  type="file"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleExtractControls(file);
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={extracting}
+                  onClick={() => document.getElementById('process-file')?.click()}
+                >
+                  {extracting ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
+                  ) : (
+                    <Upload className="h-4 w-4 mr-2" />
+                  )}
+                  {extracting ? "Extracting..." : "Upload & Extract"}
+                </Button>
+              </div>
+
+              {extractedControls.length > 0 && (
+                <div className="mt-4 p-4 bg-green-50 border border-green-100 rounded-lg">
+                  <h4 className="text-sm font-semibold text-green-800 mb-2">Extracted Controls</h4>
+                  <ul className="space-y-1">
+                    {extractedControls.map((ctrl, idx) => (
+                      <li key={idx} className="text-xs text-green-700 flex items-center gap-2">
+                        <Check className="h-3 w-3" />
+                        {ctrl.control_name || ctrl.name}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">

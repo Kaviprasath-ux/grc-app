@@ -1,65 +1,82 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { withAuth, getTenantFilter, getCustomerAccountId } from "@/lib/api-auth";
 
-// GET all risk vulnerabilities
-export async function GET() {
-  try {
-    const vulnerabilities = await prisma.riskVulnerability.findMany({
-      include: {
-        _count: {
-          select: { risks: true },
+// GET all risk vulnerabilities - with tenant filtering
+export const GET = withAuth(
+  async (req: NextRequest, context, session) => {
+    try {
+      const tenantFilter = getTenantFilter(session);
+
+      const vulnerabilities = await prisma.riskVulnerability.findMany({
+        where: tenantFilter,
+        include: {
+          category: true,
+          _count: {
+            select: { risks: true },
+          },
         },
-      },
-      orderBy: { name: "asc" },
-    });
+        orderBy: { name: "asc" },
+      });
 
-    return NextResponse.json(vulnerabilities);
-  } catch (error) {
-    console.error("Error fetching risk vulnerabilities:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch risk vulnerabilities" },
-      { status: 500 }
-    );
-  }
-}
-
-// POST create a new risk vulnerability
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const { name, description } = body;
-
-    if (!name) {
+      return NextResponse.json(vulnerabilities);
+    } catch (error) {
+      console.error("Error fetching risk vulnerabilities:", error);
       return NextResponse.json(
-        { error: "Vulnerability name is required" },
-        { status: 400 }
+        { error: "Failed to fetch risk vulnerabilities" },
+        { status: 500 }
       );
     }
+  },
+  { resource: "risk.settings", action: "view" }
+);
 
-    const existing = await prisma.riskVulnerability.findUnique({
-      where: { name },
-    });
+// POST create a new risk vulnerability - with tenant assignment
+export const POST = withAuth(
+  async (req: NextRequest, context, session) => {
+    try {
+      const customerAccountId = getCustomerAccountId(session);
+      const body = await req.json();
+      const { name, description } = body;
 
-    if (existing) {
+      if (!name) {
+        return NextResponse.json(
+          { error: "Vulnerability name is required" },
+          { status: 400 }
+        );
+      }
+
+      // Check for duplicate within the same tenant
+      const existing = await prisma.riskVulnerability.findFirst({
+        where: {
+          customerAccountId,
+          name,
+        },
+      });
+
+      if (existing) {
+        return NextResponse.json(
+          { error: "Vulnerability with this name already exists" },
+          { status: 400 }
+        );
+      }
+
+      const vulnerability = await prisma.riskVulnerability.create({
+        data: {
+          customerAccountId,
+          name,
+          description,
+        },
+      });
+
+      return NextResponse.json(vulnerability, { status: 201 });
+    } catch (error) {
+      console.error("Error creating risk vulnerability:", error);
       return NextResponse.json(
-        { error: "Vulnerability with this name already exists" },
-        { status: 400 }
+        { error: "Failed to create risk vulnerability" },
+        { status: 500 }
       );
     }
-
-    const vulnerability = await prisma.riskVulnerability.create({
-      data: {
-        name,
-        description,
-      },
-    });
-
-    return NextResponse.json(vulnerability, { status: 201 });
-  } catch (error) {
-    console.error("Error creating risk vulnerability:", error);
-    return NextResponse.json(
-      { error: "Failed to create risk vulnerability" },
-      { status: 500 }
-    );
-  }
-}
+  },
+  { resource: "risk.settings", action: "create" }
+);

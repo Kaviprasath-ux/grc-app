@@ -64,8 +64,8 @@ export const POST = withAuth(
       const url = getExternalApiUrl("PYTHON_BACKEND", "/api/simple_query");
       console.log(
         "[RunPod simple_query] Document Library search, question=" +
-          query.slice(0, 80) +
-          "..."
+        query.slice(0, 80) +
+        "..."
       );
       console.log("[RunPod simple_query] Calling RunPod POST " + url);
 
@@ -84,8 +84,8 @@ export const POST = withAuth(
       );
       console.log(
         "[RunPod simple_query] Document Library response body: " +
-          resText.slice(0, 300) +
-          (resText.length > 300 ? "..." : "")
+        resText.slice(0, 300) +
+        (resText.length > 300 ? "..." : "")
       );
 
       let result: string;

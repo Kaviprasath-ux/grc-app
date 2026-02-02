@@ -5,9 +5,25 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("🌱 Seeding requirements data...");
 
+  // Get the customer account first
+  const customerAccount = await prisma.customerAccount.findFirst({
+    where: { code: "GRC_001" },
+  });
+  if (!customerAccount) {
+    console.log("❌ Customer account not found. Run main seed first.");
+    return;
+  }
+  const customerAccountId = customerAccount.id;
+  console.log(`✅ Found customer account: ${customerAccount.name} (${customerAccount.id})`);
+
   // First, get the ISO 27001:2022 framework
-  const framework = await prisma.framework.findFirst({
-    where: { name: "ISO 27001:2022" },
+  const framework = await prisma.framework.findUnique({
+    where: {
+      customerAccountId_name: {
+        customerAccountId: customerAccountId,
+        name: "ISO 27001:2022"
+      }
+    },
   });
 
   if (!framework) {
@@ -42,6 +58,7 @@ async function main() {
         description: cat.description,
         sortOrder: cat.sortOrder,
         frameworkId: framework.id,
+        customerAccountId: customerAccountId,
       },
     });
     categoryIds[cat.code] = created.id;
@@ -123,6 +140,7 @@ async function main() {
           implementationStatus: req.implementation,
           categoryId: categoryId,
           frameworkId: framework.id,
+          customerAccountId: customerAccountId,
         },
       });
       reqCount++;

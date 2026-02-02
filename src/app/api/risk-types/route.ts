@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
 // GET all risk types
+// Note: RiskType model doesn't have customerAccountId field yet - tenant filtering disabled
 export async function GET() {
   try {
     const types = await prisma.riskType.findMany({
@@ -24,6 +25,7 @@ export async function GET() {
 }
 
 // POST create a new risk type
+// Note: RiskType model doesn't have customerAccountId field yet - tenant assignment disabled
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -36,7 +38,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const existing = await prisma.riskType.findUnique({
+    // Check for duplicate
+    const existing = await prisma.riskType.findFirst({
       where: { name },
     });
 

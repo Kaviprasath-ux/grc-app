@@ -10,6 +10,11 @@ declare module "next-auth" {
       department: string; // Legacy - keeping for backwards compatibility
       departmentId: string | null;
       departmentName: string | null;
+      // Multi-tenant: Customer account information
+      customerAccountId: string | null;
+      customerAccountCode: string | null;
+      customerAccountName: string | null;
+      // Note: User model doesn't have auditHeadId field yet
       roles: string[];
       permissions: UserPermission[];
     } & DefaultSession["user"];
@@ -20,6 +25,11 @@ declare module "next-auth" {
     department: string;
     departmentId: string | null;
     departmentName: string | null;
+    // Multi-tenant: Customer account information
+    customerAccountId: string | null;
+    customerAccountCode: string | null;
+    customerAccountName: string | null;
+    // Note: User model doesn't have auditHeadId field yet
     roles: string[];
     permissions: UserPermission[];
   }
@@ -31,6 +41,11 @@ declare module "next-auth/jwt" {
     department: string;
     departmentId: string | null;
     departmentName: string | null;
+    // Multi-tenant: Customer account information
+    customerAccountId: string | null;
+    customerAccountCode: string | null;
+    customerAccountName: string | null;
+    // Note: User model doesn't have auditHeadId field yet
     roles: string[];
     permissions: UserPermission[];
   }

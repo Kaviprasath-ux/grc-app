@@ -1,18 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 
 // GET auditor schedule
 export async function GET(request: NextRequest) {
   try {
+    const session = await auth();
+
+    // Multi-tenant: Build filter based on customerAccountId
+    const userRoles = session?.user?.roles || [];
+    const isGRCAdmin = userRoles.includes("GRCAdministrator");
+    const customerAccountId = session?.user?.customerAccountId;
+
+    // Build tenant filter (GRCAdmin sees all, others see only their tenant)
+    const tenantFilter = !isGRCAdmin && customerAccountId
+      ? { customerAccountId }
+      : {};
+
     const currentYear = new Date().getFullYear();
     const startOfYear = new Date(currentYear, 0, 1);
     const endOfYear = new Date(currentYear, 11, 31);
 
-    // Get audit engagements with auditors for the current year
+    // Get audit engagements with auditors for the current year (with tenant filter)
     let engagements: any[] = [];
     try {
       engagements = await prisma.auditEngagement.findMany({
         where: {
+          ...tenantFilter,
           year: currentYear,
         },
         include: {

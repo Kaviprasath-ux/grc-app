@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { usePermissions } from "@/hooks/usePermissions";
+import { usePermissions, useHasRole } from "@/hooks/usePermissions";
 import { PermissionGate } from "@/components/ui/permission-gate";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -25,6 +27,16 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Table,
   TableBody,
   TableCell,
@@ -32,6 +44,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   Edit,
   FileText,
@@ -46,6 +63,7 @@ import {
   Download,
   Calendar,
   ChevronLeft,
+  Layers,
 } from "lucide-react";
 
 interface Policy {
@@ -53,7 +71,7 @@ interface Policy {
   code: string;
   name: string;
   description: string | null;
-  type: string;
+  documentType: string;
   status: string;
   version: string | null;
   owner: string | null;
@@ -68,6 +86,7 @@ interface Policy {
   departmentId: string | null;
   assigneeId: string | null;
   approverId: string | null;
+  updatedAt: string;
   framework?: { id: string; name: string } | null;
   department?: { id: string; name: string } | null;
   assignee?: { id: string; fullName: string } | null;
@@ -79,6 +98,7 @@ interface Policy {
       name: string;
       status: string;
       domain?: { name: string } | null;
+      framework?: { id: string; name: string } | null;
     };
   }>;
   attachments?: Array<{
@@ -86,6 +106,7 @@ interface Policy {
     fileName: string;
     fileType: string;
     fileSize: number;
+    filePath: string;
     uploadedAt: string;
   }>;
   policyExceptions?: Array<{
@@ -103,13 +124,6 @@ interface Policy {
     type: string;
     code: string;
   }>;
-  policyFrameworks?: Array<{
-    framework: {
-      id: string;
-      name: string;
-      code: string;
-    };
-  }>;
 }
 
 interface Framework {
@@ -123,10 +137,19 @@ interface Department {
   name: string;
 }
 
+interface UserRole {
+  role: {
+    name: string;
+  };
+}
+
 interface User {
   id: string;
   fullName: string;
   departmentId?: string;
+  designation?: string;
+  department?: { id: string; name: string };
+  userRoles?: UserRole[];
 }
 
 interface Control {
@@ -162,18 +185,41 @@ const typeLabels: Record<string, string> = {
 
 const RECURRENCE_OPTIONS = ["Weekly", "Monthly", "Quarterly", "Yearly"];
 
-// Status workflow steps
+// Status workflow steps - 3 visual steps with status mapping
+// Step 1 (Upload): Active when status is Draft, Approved, or Published
+// Step 2 (Draft): Active when status is Approved or Published
+// Step 3 (Publish): Active when status is Published
 const STATUS_WORKFLOW = [
-  { key: "Not Uploaded", label: "Upload", icon: Upload },
+  { key: "Upload", label: "Upload", icon: Upload },
   { key: "Draft", label: "Draft", icon: FileText },
-  { key: "Published", label: "Publish", icon: Check },
+  { key: "Publish", label: "Publish", icon: Check },
 ];
+
+// Helper to determine which steps are active/completed based on status
+const getStepStates = (status: string) => {
+  switch (status) {
+    case "Not Uploaded":
+      return { upload: false, draft: false, publish: false };
+    case "Draft":
+      return { upload: true, draft: false, publish: false };
+    case "Approved":
+      return { upload: true, draft: true, publish: false };
+    case "Published":
+      return { upload: true, draft: true, publish: true };
+    default:
+      return { upload: false, draft: false, publish: false };
+  }
+};
 
 export default function GovernanceDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
+  const { data: session } = useSession();
+  const currentUserId = session?.user?.id as string | undefined;
   const { canEdit, canApprove, canDelete, isLoading: permissionsLoading } = usePermissions('compliance.governance');
+  const isCustomerAdmin = useHasRole('CustomerAdministrator');
+  const { t } = useLanguage();
 
   const [policy, setPolicy] = useState<Policy | null>(null);
   const [loading, setLoading] = useState(true);
@@ -182,12 +228,22 @@ export default function GovernanceDetailPage() {
   const [linkControlDialogOpen, setLinkControlDialogOpen] = useState(false);
   const [assigneeDialogOpen, setAssigneeDialogOpen] = useState(false);
   const [approverDialogOpen, setApproverDialogOpen] = useState(false);
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [publishDialogOpen, setPublishDialogOpen] = useState(false);
+  const [signatureDialogOpen, setSignatureDialogOpen] = useState(false);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [hasSignature, setHasSignature] = useState(false);
+  const [unpublishDialogOpen, setUnpublishDialogOpen] = useState(false);
+  const [storedSignature, setStoredSignature] = useState<string | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // Edit form state
   const [editForm, setEditForm] = useState({
     name: "",
     description: "",
-    type: "",
+    documentType: "",
     status: "",
     version: "",
     owner: "",
@@ -222,7 +278,7 @@ export default function GovernanceDetailPage() {
         setEditForm({
           name: data.name || "",
           description: data.description || "",
-          type: data.type || "",
+          documentType: data.documentType || "",
           status: data.status || "",
           version: data.version || "",
           owner: data.owner || "",
@@ -278,6 +334,35 @@ export default function GovernanceDetailPage() {
     fetchPolicy();
     fetchReferenceData();
   }, [fetchPolicy, fetchReferenceData]);
+
+  // Filtered user lists for role-based assignment restrictions
+  // Assignees: Only DepartmentContributor and DepartmentReviewer from the selected department
+  const filteredAssigneeUsers = users.filter((u) => {
+    // Must be in the same department as the governance document
+    if (selectedDepartmentId && u.departmentId !== selectedDepartmentId) return false;
+    // Must have DepartmentContributor or DepartmentReviewer role
+    return u.userRoles?.some((ur) =>
+      ["DepartmentContributor", "DepartmentReviewer"].includes(ur.role?.name)
+    );
+  });
+
+  // Approvers: Only DepartmentReviewer from the selected department
+  const filteredApproverUsers = users.filter((u) => {
+    // Must be in the same department as the governance document
+    if (selectedDepartmentId && u.departmentId !== selectedDepartmentId) return false;
+    // Must have DepartmentReviewer role only
+    return u.userRoles?.some((ur) => ur.role?.name === "DepartmentReviewer");
+  });
+
+  // Load stored signature from localStorage when policy is loaded and Published
+  useEffect(() => {
+    if (policy?.id && policy.status === "Published") {
+      const signature = localStorage.getItem(`policy-signature-${policy.id}`);
+      setStoredSignature(signature);
+    } else {
+      setStoredSignature(null);
+    }
+  }, [policy?.id, policy?.status]);
 
   const handleSave = async () => {
     try {
@@ -427,6 +512,173 @@ export default function GovernanceDetailPage() {
     setApproverDialogOpen(false);
   };
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setUploadFile(file);
+    }
+  };
+
+  const handleUploadAttachment = async () => {
+    if (!uploadFile) return;
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", uploadFile);
+
+      const response = await fetch(`/api/policies/${id}/attachments`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (response.ok) {
+        setUploadDialogOpen(false);
+        setUploadFile(null);
+
+        // Auto-transition to Draft status when first attachment is uploaded
+        // Also set approver = assignee if not already set
+        if (policy?.status === "Not Uploaded") {
+          const updateData: Record<string, string | null> = { status: "Draft" };
+
+          // Auto-set approver to assignee if approver is not set
+          if (!policy.approverId && policy.assigneeId) {
+            updateData.approverId = policy.assigneeId;
+          }
+
+          await fetch(`/api/policies/${id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(updateData),
+          });
+        }
+
+        fetchPolicy(); // Refresh policy data including attachments
+      } else {
+        const error = await response.json();
+        console.error("Upload failed:", error);
+      }
+    } catch (error) {
+      console.error("Error uploading attachment:", error);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDeleteAttachment = async (attachmentId: string) => {
+    try {
+      const response = await fetch(`/api/policies/${id}/attachments?attachmentId=${attachmentId}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        fetchPolicy(); // Refresh policy data
+      }
+    } catch (error) {
+      console.error("Error deleting attachment:", error);
+    }
+  };
+
+  const handlePublish = async () => {
+    try {
+      // Save signature to localStorage before publishing
+      const canvas = canvasRef.current;
+      if (canvas && hasSignature) {
+        const signatureDataUrl = canvas.toDataURL("image/png");
+        localStorage.setItem(`policy-signature-${id}`, signatureDataUrl);
+        // Also store the publish timestamp
+        localStorage.setItem(`policy-publishedAt-${id}`, new Date().toISOString());
+      }
+
+      const response = await fetch(`/api/policies/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "Published" }),
+      });
+
+      if (response.ok) {
+        setPublishDialogOpen(false);
+        setSignatureDialogOpen(false);
+        clearSignature();
+        fetchPolicy();
+      }
+    } catch (error) {
+      console.error("Error publishing policy:", error);
+    }
+  };
+
+  const handleUnpublish = async () => {
+    try {
+      const response = await fetch(`/api/policies/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "Approved" }),
+      });
+
+      if (response.ok) {
+        // Clear stored signature and publishedAt from localStorage
+        localStorage.removeItem(`policy-signature-${id}`);
+        localStorage.removeItem(`policy-publishedAt-${id}`);
+        setStoredSignature(null);
+        setUnpublishDialogOpen(false);
+        fetchPolicy();
+      }
+    } catch (error) {
+      console.error("Error unpublishing policy:", error);
+    }
+  };
+
+  // Signature canvas functions
+  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    setIsDrawing(true);
+    setHasSignature(true);
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      const rect = canvas.getBoundingClientRect();
+      ctx.beginPath();
+      ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+    }
+  };
+
+  const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDrawing) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      const rect = canvas.getBoundingClientRect();
+      ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+      ctx.strokeStyle = "#000";
+      ctx.lineWidth = 2;
+      ctx.lineCap = "round";
+      ctx.stroke();
+    }
+  };
+
+  const stopDrawing = () => {
+    setIsDrawing(false);
+  };
+
+  const clearSignature = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      setHasSignature(false);
+    }
+  };
+
+  const openSignatureDialog = () => {
+    setSignatureDialogOpen(true);
+    setHasSignature(false);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -439,7 +691,7 @@ export default function GovernanceDetailPage() {
     return (
       <div className="p-6">
         <div className="text-center text-gray-500">
-          Governance document not found
+          {t("Governance document not found")}
         </div>
       </div>
     );
@@ -449,27 +701,50 @@ export default function GovernanceDetailPage() {
   const linkedExceptions = policy.policyExceptions || [];
   const attachments = policy.attachments || [];
   const linkedDocuments = policy.linkedDocuments || [];
-  const policyFrameworks = policy.policyFrameworks || [];
 
-  // Get current status step index
-  const currentStatusIndex = STATUS_WORKFLOW.findIndex(s => s.key === policy.status);
+  // Derive linked frameworks from policyControls -> control -> framework
+  const linkedFrameworksFromControls = linkedControls
+    .filter((pc) => pc.control.framework)
+    .map((pc) => pc.control.framework!)
+    .filter((fw, index, self) =>
+      self.findIndex((f) => f.id === fw.id) === index
+    ); // Remove duplicates
+
+  // Get step states based on current status
+  const stepStates = getStepStates(policy.status);
+
+  // Approve button visibility: Only CustomerAdmin who is the Approver can approve
+  // And only when status is Draft
+  const canShowApproveButton =
+    isCustomerAdmin &&
+    currentUserId &&
+    policy.approverId &&
+    currentUserId === policy.approverId &&
+    policy.status === "Draft";
+
+  // Publish button visibility: Only when status is Approved
+  // And only if user is Assignee OR CustomerAdmin
+  const canShowPublishButton =
+    policy.status === "Approved" &&
+    currentUserId &&
+    (currentUserId === policy.assigneeId || isCustomerAdmin);
 
   const tabs = [
     {
       id: "controls",
-      label: "Linked Control",
+      label: t("Linked Control"),
       icon: Shield,
       count: linkedControls.length,
     },
     {
       id: "exceptions",
-      label: "Linked Exception",
+      label: t("Linked Exception"),
       icon: AlertTriangle,
       count: linkedExceptions.length,
     },
     {
       id: "documents",
-      label: "Linked Documents",
+      label: t("Linked Documents"),
       icon: FileText,
       count: linkedDocuments.length,
     },
@@ -486,27 +761,33 @@ export default function GovernanceDetailPage() {
             className="flex items-center gap-1 text-primary hover:underline"
           >
             <ChevronLeft className="h-4 w-4" />
-            <span>{typeLabels[policy.type] || "Policy"}</span>
+            <span>{t(typeLabels[policy.documentType] || "Policy")}</span>
           </button>
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Approve Button - Only show if user can approve */}
-          <PermissionGate resource="compliance.governance" action="approve">
-            {policy.status !== "Approved" && policy.status !== "Published" && (
-              <Button variant="outline" onClick={handleApprove}>
-                <Check className="h-4 w-4 mr-2" />
-                Approve
-              </Button>
-            )}
-          </PermissionGate>
+          {/* Approve Button - Only CustomerAdmin who is the Approver can see */}
+          {canShowApproveButton && (
+            <Button variant="outline" onClick={handleApprove}>
+              <Check className="h-4 w-4 mr-2" />
+              {t("Approve")}
+            </Button>
+          )}
+
+          {/* Publish Button - Only when Approved, visible to Assignee or CustomerAdmin */}
+          {canShowPublishButton && (
+            <Button onClick={openSignatureDialog}>
+              <Check className="h-4 w-4 mr-2" />
+              {t("Publish")}
+            </Button>
+          )}
 
           {/* Start AI Review Button - Requires edit permission */}
           <PermissionGate resource="compliance.governance" action="edit">
             {policy.aiReviewStatus !== "In Progress" && (
               <Button variant="outline" onClick={handleTriggerAIReview}>
                 <Sparkles className="h-4 w-4 mr-2" />
-                {policy.aiReviewStatus === "Completed" ? "Re-run AI Review" : "Start AI Review"}
+                {policy.aiReviewStatus === "Completed" ? t("Re-run AI Review") : t("Start AI Review")}
               </Button>
             )}
           </PermissionGate>
@@ -517,16 +798,16 @@ export default function GovernanceDetailPage() {
               <DialogTrigger asChild>
                 <Button>
                   <Edit className="h-4 w-4 mr-2" />
-                  Edit
+                  {t("Edit")}
                 </Button>
               </DialogTrigger>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Edit {typeLabels[policy.type]}</DialogTitle>
+                <DialogTitle>{t("Edit")} {t(typeLabels[policy.documentType])}</DialogTitle>
               </DialogHeader>
               <div className="grid grid-cols-2 gap-4 py-4">
                 <div className="col-span-2">
-                  <Label>Name</Label>
+                  <Label>{t("Name")}</Label>
                   <Input
                     value={editForm.name}
                     onChange={(e) =>
@@ -535,7 +816,7 @@ export default function GovernanceDetailPage() {
                   />
                 </div>
                 <div className="col-span-2">
-                  <Label>Description</Label>
+                  <Label>{t("Description")}</Label>
                   <Textarea
                     value={editForm.description}
                     onChange={(e) =>
@@ -545,25 +826,25 @@ export default function GovernanceDetailPage() {
                   />
                 </div>
                 <div>
-                  <Label>Type</Label>
+                  <Label>{t("Type")}</Label>
                   <Select
-                    value={editForm.type}
+                    value={editForm.documentType}
                     onValueChange={(value) =>
-                      setEditForm({ ...editForm, type: value })
+                      setEditForm({ ...editForm, documentType: value })
                     }
                   >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Policy">Policy</SelectItem>
-                      <SelectItem value="Standard">Standard</SelectItem>
-                      <SelectItem value="Procedure">Procedure</SelectItem>
+                      <SelectItem value="Policy">{t("Policy")}</SelectItem>
+                      <SelectItem value="Standard">{t("Standard")}</SelectItem>
+                      <SelectItem value="Procedure">{t("Procedure")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label>Status</Label>
+                  <Label>{t("Status")}</Label>
                   <Select
                     value={editForm.status}
                     onValueChange={(value) =>
@@ -574,28 +855,28 @@ export default function GovernanceDetailPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Not Uploaded">Not Uploaded</SelectItem>
-                      <SelectItem value="Draft">Draft</SelectItem>
-                      <SelectItem value="Under Review">Under Review</SelectItem>
-                      <SelectItem value="Approved">Approved</SelectItem>
-                      <SelectItem value="Published">Published</SelectItem>
-                      <SelectItem value="Needs Review">Needs Review</SelectItem>
-                      <SelectItem value="Archived">Archived</SelectItem>
+                      <SelectItem value="Not Uploaded">{t("Not Uploaded")}</SelectItem>
+                      <SelectItem value="Draft">{t("Draft")}</SelectItem>
+                      <SelectItem value="Under Review">{t("Under Review")}</SelectItem>
+                      <SelectItem value="Approved">{t("Approved")}</SelectItem>
+                      <SelectItem value="Published">{t("Published")}</SelectItem>
+                      <SelectItem value="Needs Review">{t("Needs Review")}</SelectItem>
+                      <SelectItem value="Archived">{t("Archived")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label>Version</Label>
+                  <Label>{t("Version")}</Label>
                   <Input
                     value={editForm.version}
                     onChange={(e) =>
                       setEditForm({ ...editForm, version: e.target.value })
                     }
-                    placeholder="e.g., 1.0"
+                    placeholder={t("e.g., 1.0")}
                   />
                 </div>
                 <div>
-                  <Label>Recurrence</Label>
+                  <Label>{t("Recurrence")}</Label>
                   <Select
                     value={editForm.recurrence}
                     onValueChange={(value) =>
@@ -603,7 +884,7 @@ export default function GovernanceDetailPage() {
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select recurrence" />
+                      <SelectValue placeholder={t("Select recurrence")} />
                     </SelectTrigger>
                     <SelectContent>
                       {RECURRENCE_OPTIONS.map((r) => (
@@ -613,7 +894,7 @@ export default function GovernanceDetailPage() {
                   </Select>
                 </div>
                 <div>
-                  <Label>Framework</Label>
+                  <Label>{t("Framework")}</Label>
                   <Select
                     value={editForm.frameworkId}
                     onValueChange={(value) =>
@@ -621,7 +902,7 @@ export default function GovernanceDetailPage() {
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select framework" />
+                      <SelectValue placeholder={t("Select framework")} />
                     </SelectTrigger>
                     <SelectContent>
                       {frameworks.map((f) => (
@@ -633,7 +914,7 @@ export default function GovernanceDetailPage() {
                   </Select>
                 </div>
                 <div>
-                  <Label>Department</Label>
+                  <Label>{t("Department")}</Label>
                   <Select
                     value={editForm.departmentId}
                     onValueChange={(value) =>
@@ -641,7 +922,7 @@ export default function GovernanceDetailPage() {
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select department" />
+                      <SelectValue placeholder={t("Select department")} />
                     </SelectTrigger>
                     <SelectContent>
                       {departments.map((d) => (
@@ -653,7 +934,7 @@ export default function GovernanceDetailPage() {
                   </Select>
                 </div>
                 <div>
-                  <Label>Effective Date</Label>
+                  <Label>{t("Effective Date")}</Label>
                   <Input
                     type="date"
                     value={editForm.effectiveDate}
@@ -663,7 +944,7 @@ export default function GovernanceDetailPage() {
                   />
                 </div>
                 <div>
-                  <Label>Review Date</Label>
+                  <Label>{t("Review Date")}</Label>
                   <Input
                     type="date"
                     value={editForm.reviewDate}
@@ -678,9 +959,9 @@ export default function GovernanceDetailPage() {
                   variant="outline"
                   onClick={() => setEditDialogOpen(false)}
                 >
-                  Cancel
+                  {t("Cancel")}
                 </Button>
-                <Button onClick={handleSave}>Save Changes</Button>
+                <Button onClick={handleSave}>{t("Save Changes")}</Button>
               </div>
             </DialogContent>
           </Dialog>
@@ -696,53 +977,43 @@ export default function GovernanceDetailPage() {
             {policy.status}
           </Badge>
         </div>
-        <p className="text-muted-foreground">{policy.code}</p>
+        <p className="text-slate-400">{policy.code}</p>
       </div>
 
-      {/* Framework Tags */}
-      {(policyFrameworks.length > 0 || policy.framework) && (
-        <div className="flex flex-wrap gap-2">
-          {policyFrameworks.map((pf) => (
-            <Badge key={pf.framework.id} variant="outline" className="bg-blue-50">
-              {pf.framework.name}
-            </Badge>
-          ))}
-          {policy.framework && policyFrameworks.length === 0 && (
-            <Badge variant="outline" className="bg-blue-50">
-              {policy.framework.name}
-            </Badge>
-          )}
-        </div>
-      )}
 
-      {/* Status Workflow Steps - Only clickable with edit permission */}
+      {/* Status Workflow Steps - Visual display of current state */}
       <Card>
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
             {STATUS_WORKFLOW.map((step, index) => {
-              const isActive = step.key === policy.status;
-              const isCompleted = currentStatusIndex > index;
+              // Determine step state based on status
+              const isStepActive =
+                (step.key === "Upload" && stepStates.upload) ||
+                (step.key === "Draft" && stepStates.draft) ||
+                (step.key === "Publish" && stepStates.publish);
+
+              // Determine if connecting line should be green
+              const isLineGreen =
+                (index === 0 && stepStates.upload) ||
+                (index === 1 && stepStates.draft);
+
               const Icon = step.icon;
 
               return (
                 <div key={step.key} className="flex items-center flex-1">
-                  <button
-                    onClick={() => canEdit && handleStatusChange(step.key)}
-                    disabled={!canEdit}
+                  <div
                     className={`flex flex-col items-center gap-2 p-3 rounded-lg transition-colors ${
-                      isActive
-                        ? "bg-primary text-primary-foreground"
-                        : isCompleted
-                        ? "bg-green-100 text-green-800 hover:bg-green-200"
-                        : "bg-muted text-muted-foreground hover:bg-muted/80"
-                    } ${!canEdit ? "cursor-not-allowed opacity-60" : ""}`}
+                      isStepActive
+                        ? "bg-green-100 text-green-800"
+                        : "bg-muted text-slate-400"
+                    }`}
                   >
                     <Icon className="h-6 w-6" />
-                    <span className="text-sm font-medium">{step.label}</span>
-                  </button>
+                    <span className="text-sm font-medium">{t(step.label)}</span>
+                  </div>
                   {index < STATUS_WORKFLOW.length - 1 && (
                     <div className={`flex-1 h-1 mx-2 ${
-                      isCompleted || isActive ? "bg-green-500" : "bg-muted"
+                      isLineGreen ? "bg-green-500" : "bg-muted"
                     }`} />
                   )}
                 </div>
@@ -752,16 +1023,53 @@ export default function GovernanceDetailPage() {
         </CardContent>
       </Card>
 
+      {/* Linked Frameworks Indicator */}
+      {(() => {
+        // Use frameworks derived from policyControls, fallback to direct framework field
+        const linkedFrameworks: Array<{ id: string; name: string }> =
+          linkedFrameworksFromControls.length > 0
+            ? linkedFrameworksFromControls
+            : policy.framework
+            ? [policy.framework]
+            : [];
+        const frameworkCount = linkedFrameworks.length;
+
+        return (
+          <div className="flex items-center gap-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors">
+                  <Layers className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm font-medium text-blue-700">
+                    {t("Linked Frameworks")}: {frameworkCount}
+                  </span>
+                </div>
+              </TooltipTrigger>
+              {frameworkCount > 0 && (
+                <TooltipContent side="bottom" className="max-w-xs bg-slate-800 text-white p-2">
+                  <div className="space-y-1">
+                    <p className="font-medium text-xs text-slate-300">{t("Linked Frameworks")}:</p>
+                    {linkedFrameworks.map((fw) => (
+                      <p key={fw.id} className="text-sm">{fw.name}</p>
+                    ))}
+                  </div>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </div>
+        );
+      })()}
+
       {/* Policy Details - Inline Editable (with permission check) */}
       <Card>
         <CardHeader>
-          <CardTitle>Policy Details</CardTitle>
+          <CardTitle>{t("Policy Details")}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
             {/* Department - Inline Dropdown (editable only with permission) */}
             <div>
-              <Label className="text-muted-foreground text-sm">Department</Label>
+              <Label className="text-slate-400 text-sm">{t("Department")}</Label>
               {canEdit ? (
                 <Select
                   value={selectedDepartmentId}
@@ -771,7 +1079,7 @@ export default function GovernanceDetailPage() {
                   }}
                 >
                   <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Select department" />
+                    <SelectValue placeholder={t("Select department")} />
                   </SelectTrigger>
                   <SelectContent>
                     {departments.map((d) => (
@@ -786,7 +1094,7 @@ export default function GovernanceDetailPage() {
 
             {/* Assigned To - With Edit Button (only with edit permission) */}
             <div>
-              <Label className="text-muted-foreground text-sm">Assigned To</Label>
+              <Label className="text-slate-400 text-sm">{t("Assigned To")}</Label>
               <div className="flex items-center gap-2 mt-1">
                 <span className="font-medium">{policy.assignee?.fullName || "-"}</span>
                 <PermissionGate resource="compliance.governance" action="edit">
@@ -798,26 +1106,35 @@ export default function GovernanceDetailPage() {
                     </DialogTrigger>
                     <DialogContent>
                       <DialogHeader>
-                        <DialogTitle>Edit Assignee</DialogTitle>
+                        <DialogTitle>{t("Edit Assignee")}</DialogTitle>
                       </DialogHeader>
                       <div className="py-4">
-                        <Label>Select Assignee</Label>
+                        <Label>{t("Select Assignee")}</Label>
+                        <p className="text-xs text-slate-500 mt-1 mb-2">
+                          {t("Only Department Contributors and Department Reviewers from the assigned department are shown.")}
+                        </p>
                         <Select value={selectedAssigneeId} onValueChange={setSelectedAssigneeId}>
                           <SelectTrigger className="mt-2">
-                            <SelectValue placeholder="Select assignee" />
+                            <SelectValue placeholder={t("Select assignee")} />
                           </SelectTrigger>
                           <SelectContent>
-                            {users.map((u) => (
-                              <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
-                            ))}
+                            {filteredAssigneeUsers.length > 0 ? (
+                              filteredAssigneeUsers.map((u) => (
+                                <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
+                              ))
+                            ) : (
+                              <div className="py-2 px-2 text-sm text-slate-500 text-center">
+                                {t("No eligible users found in this department")}
+                              </div>
+                            )}
                           </SelectContent>
                         </Select>
                       </div>
                       <div className="flex justify-end gap-2">
                         <Button variant="outline" onClick={() => setAssigneeDialogOpen(false)}>
-                          Cancel
+                          {t("Cancel")}
                         </Button>
-                        <Button onClick={handleSaveAssignee}>Save</Button>
+                        <Button onClick={handleSaveAssignee} disabled={!selectedAssigneeId}>{t("Save")}</Button>
                       </div>
                     </DialogContent>
                   </Dialog>
@@ -827,7 +1144,7 @@ export default function GovernanceDetailPage() {
 
             {/* Approvers - With Add Button (only with edit permission) */}
             <div>
-              <Label className="text-muted-foreground text-sm">Approvers</Label>
+              <Label className="text-slate-400 text-sm">{t("Approvers")}</Label>
               <div className="flex items-center gap-2 mt-1">
                 <span className="font-medium">{policy.approver?.fullName || "-"}</span>
                 <PermissionGate resource="compliance.governance" action="edit">
@@ -839,26 +1156,35 @@ export default function GovernanceDetailPage() {
                     </DialogTrigger>
                     <DialogContent>
                       <DialogHeader>
-                        <DialogTitle>Add Approver</DialogTitle>
+                        <DialogTitle>{t("Add Approver")}</DialogTitle>
                       </DialogHeader>
                       <div className="py-4">
-                        <Label>Select Approver</Label>
+                        <Label>{t("Select Approver")}</Label>
+                        <p className="text-xs text-slate-500 mt-1 mb-2">
+                          {t("Only Department Reviewers from the assigned department are shown.")}
+                        </p>
                         <Select value={selectedApproverId} onValueChange={setSelectedApproverId}>
                           <SelectTrigger className="mt-2">
-                            <SelectValue placeholder="Select approver" />
+                            <SelectValue placeholder={t("Select approver")} />
                           </SelectTrigger>
                           <SelectContent>
-                            {users.map((u) => (
-                              <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
-                            ))}
+                            {filteredApproverUsers.length > 0 ? (
+                              filteredApproverUsers.map((u) => (
+                                <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
+                              ))
+                            ) : (
+                              <div className="py-2 px-2 text-sm text-slate-500 text-center">
+                                {t("No Department Reviewers found in this department")}
+                              </div>
+                            )}
                           </SelectContent>
                         </Select>
                       </div>
                       <div className="flex justify-end gap-2">
                         <Button variant="outline" onClick={() => setApproverDialogOpen(false)}>
-                          Cancel
+                          {t("Cancel")}
                         </Button>
-                        <Button onClick={handleSaveApprover}>Save</Button>
+                        <Button onClick={handleSaveApprover} disabled={!selectedApproverId}>{t("Save")}</Button>
                       </div>
                     </DialogContent>
                   </Dialog>
@@ -868,7 +1194,7 @@ export default function GovernanceDetailPage() {
 
             {/* Recurrence - Inline Dropdown (editable only with permission) */}
             <div>
-              <Label className="text-muted-foreground text-sm">Recurrence</Label>
+              <Label className="text-slate-400 text-sm">{t("Recurrence")}</Label>
               {canEdit ? (
                 <Select
                   value={selectedRecurrence}
@@ -878,7 +1204,7 @@ export default function GovernanceDetailPage() {
                   }}
                 >
                   <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Select recurrence" />
+                    <SelectValue placeholder={t("Select recurrence")} />
                   </SelectTrigger>
                   <SelectContent>
                     {RECURRENCE_OPTIONS.map((r) => (
@@ -893,7 +1219,7 @@ export default function GovernanceDetailPage() {
 
             {/* Review Date - Inline Date Picker (editable only with permission) */}
             <div>
-              <Label className="text-muted-foreground text-sm">Review Date</Label>
+              <Label className="text-slate-400 text-sm">{t("Review Date")}</Label>
               <div className="flex items-center gap-2 mt-1">
                 {canEdit ? (
                   <Input
@@ -913,14 +1239,14 @@ export default function GovernanceDetailPage() {
 
             {/* Version - Read-only */}
             <div>
-              <Label className="text-muted-foreground text-sm">Version</Label>
+              <Label className="text-slate-400 text-sm">{t("Version")}</Label>
               <p className="font-medium mt-1">{policy.version || "-"}</p>
             </div>
           </div>
 
           {policy.description && (
             <div className="mt-6">
-              <Label className="text-muted-foreground text-sm">Description</Label>
+              <Label className="text-slate-400 text-sm">{t("Description")}</Label>
               <p className="mt-1">{policy.description}</p>
             </div>
           )}
@@ -932,23 +1258,23 @@ export default function GovernanceDetailPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5" />
-            AI Review
+            {t("AI Review")}
           </CardTitle>
         </CardHeader>
         <CardContent>
           {!policy.aiReviewStatus || policy.aiReviewStatus === "Pending" ? (
-            <div className="text-center py-4 text-muted-foreground">
-              <p>AI Review has not been performed yet</p>
+            <div className="text-center py-4 text-slate-400">
+              <p>{t("AI Review has not been performed yet")}</p>
             </div>
           ) : policy.aiReviewStatus === "In Progress" ? (
             <div className="flex items-center gap-4">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-              <p>AI Review in progress...</p>
+              <p>{t("AI Review in progress...")}</p>
             </div>
           ) : (
             <div className="grid grid-cols-3 gap-6">
               <div>
-                <Label className="text-muted-foreground text-sm">Status</Label>
+                <Label className="text-slate-400 text-sm">{t("Status")}</Label>
                 <div className="mt-1">
                   <Badge className={aiStatusColors[policy.aiReviewStatus] || "bg-gray-100"}>
                     {policy.aiReviewStatus}
@@ -957,7 +1283,7 @@ export default function GovernanceDetailPage() {
               </div>
               {policy.aiReviewScore !== null && (
                 <div>
-                  <Label className="text-muted-foreground text-sm">Score</Label>
+                  <Label className="text-slate-400 text-sm">{t("Score")}</Label>
                   <div className="mt-1">
                     <span className={`text-2xl font-bold ${
                       policy.aiReviewScore >= 80
@@ -973,7 +1299,7 @@ export default function GovernanceDetailPage() {
               )}
               {policy.aiReviewJustification && (
                 <div className="col-span-3">
-                  <Label className="text-muted-foreground text-sm">Justification</Label>
+                  <Label className="text-slate-400 text-sm">{t("Justification")}</Label>
                   <p className="mt-1 p-3 bg-muted rounded-lg">{policy.aiReviewJustification}</p>
                 </div>
               )}
@@ -982,31 +1308,236 @@ export default function GovernanceDetailPage() {
         </CardContent>
       </Card>
 
+      {/* Published Section - Only show when status is Published */}
+      {policy.status === "Published" && (
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Check className="h-5 w-5 text-green-600" />
+              {t("Published")}
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              {/* Download Published Document Button */}
+              {attachments.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.open(attachments[0].filePath, "_blank")}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  {t("Download")}
+                </Button>
+              )}
+              {/* Unpublish Button */}
+              <PermissionGate resource="compliance.governance" action="edit">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setUnpublishDialogOpen(true)}
+                  className="text-orange-600 hover:text-orange-700"
+                >
+                  {t("Unpublish")}
+                </Button>
+              </PermissionGate>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Left Column - Published Info */}
+              <div className="space-y-4">
+                {/* Published On */}
+                <div>
+                  <Label className="text-slate-400 text-sm">{t("Published On")}</Label>
+                  <p className="font-medium mt-1">
+                    {(() => {
+                      // Try to get stored publishedAt from localStorage, fallback to updatedAt
+                      const storedPublishedAt = localStorage.getItem(`policy-publishedAt-${policy.id}`);
+                      const publishDate = storedPublishedAt
+                        ? new Date(storedPublishedAt)
+                        : new Date(policy.updatedAt);
+                      return publishDate.toLocaleString("en-US", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      });
+                    })()}
+                  </p>
+                </div>
+
+                {/* Published Document */}
+                <div>
+                  <Label className="text-slate-400 text-sm">{t("Published Document")}</Label>
+                  {attachments.length > 0 ? (
+                    <div className="flex items-center gap-2 mt-1 p-2 bg-muted rounded-lg">
+                      <FileText className="h-5 w-5 text-blue-600" />
+                      <span className="font-medium">{attachments[0].fileName}</span>
+                    </div>
+                  ) : (
+                    <p className="text-slate-400 mt-1">{t("No document attached")}</p>
+                  )}
+                </div>
+
+                {/* Approver Details */}
+                <div>
+                  <Label className="text-slate-400 text-sm">{t("Approved By")}</Label>
+                  {policy.approver ? (
+                    <div className="mt-1 p-3 bg-muted rounded-lg space-y-1">
+                      <p className="font-medium">{policy.approver.fullName}</p>
+                      {(() => {
+                        // Find the approver in users array to get full details
+                        const approverUser = users.find(u => u.id === policy.approverId);
+                        return (
+                          <>
+                            {approverUser?.department && (
+                              <p className="text-sm text-slate-400">
+                                {t("Department")}: {approverUser.department.name}
+                              </p>
+                            )}
+                            {approverUser?.designation && (
+                              <p className="text-sm text-slate-400">
+                                {t("Designation")}: {approverUser.designation}
+                              </p>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </div>
+                  ) : (
+                    <p className="text-slate-400 mt-1">-</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Right Column - Signature */}
+              <div>
+                <Label className="text-slate-400 text-sm">{t("Signature")}</Label>
+                <div className="mt-1 border rounded-lg p-4 bg-white min-h-[150px] flex items-center justify-center">
+                  {storedSignature ? (
+                    <img
+                      src={storedSignature}
+                      alt={t("Signature")}
+                      className="max-w-full max-h-[140px] object-contain"
+                    />
+                  ) : (
+                    <p className="text-slate-400 text-sm">{t("Signature not available")}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Unpublish Confirmation Dialog */}
+      <AlertDialog open={unpublishDialogOpen} onOpenChange={setUnpublishDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("Unpublish")} {t(typeLabels[policy.documentType] || "Document")}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("This will revert the status from Published to Approved. The document will need to be published again after any changes.")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleUnpublish} className="bg-orange-600 hover:bg-orange-700">
+              {t("Unpublish")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Attachments Section */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Attachments</CardTitle>
+          <CardTitle>{t("Attachments")}</CardTitle>
           <PermissionGate resource="compliance.governance" action="edit">
-            <Button size="sm">
-              <Upload className="h-4 w-4 mr-2" />
-              Upload
-            </Button>
+            {isCustomerAdmin ? (
+              /* Customer Admin: Upload dialog with full functionality */
+              <Dialog open={uploadDialogOpen} onOpenChange={(open) => {
+                setUploadDialogOpen(open);
+                if (!open) setUploadFile(null);
+              }}>
+                <DialogTrigger asChild>
+                  <Button size="sm">
+                    <Upload className="h-4 w-4 mr-2" />
+                    {t("Upload")}
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>{t("Upload Document")}</DialogTitle>
+                  </DialogHeader>
+                  <div className="py-4 space-y-4">
+                    <div>
+                      <Label>{t("Select File")}</Label>
+                      <Input
+                        type="file"
+                        onChange={handleFileSelect}
+                        className="mt-2"
+                        accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
+                      />
+                    </div>
+                    {uploadFile && (
+                      <div className="p-3 bg-muted rounded-lg">
+                        <p className="text-sm font-medium">{uploadFile.name}</p>
+                        <p className="text-xs text-slate-400">
+                          {(uploadFile.size / 1024).toFixed(2)} KB
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setUploadDialogOpen(false);
+                        setUploadFile(null);
+                      }}
+                      disabled={uploading}
+                    >
+                      {t("Cancel")}
+                    </Button>
+                    <Button
+                      onClick={handleUploadAttachment}
+                      disabled={!uploadFile || uploading}
+                    >
+                      {uploading ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                          {t("Uploading...")}
+                        </>
+                      ) : (
+                        t("Upload")
+                      )}
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            ) : (
+              /* GRC Admin / Other roles: Original simple button (no functionality) */
+              <Button size="sm">
+                <Upload className="h-4 w-4 mr-2" />
+                {t("Upload")}
+              </Button>
+            )}
           </PermissionGate>
         </CardHeader>
         <CardContent>
           {attachments.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className="text-center py-8 text-slate-400">
               <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p>No attachments uploaded</p>
+              <p>{t("No attachments uploaded")}</p>
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>File Name</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Uploaded</TableHead>
-                  <TableHead className="w-[100px]">Actions</TableHead>
+                  <TableHead>{t("File Name")}</TableHead>
+                  <TableHead>{t("Type")}</TableHead>
+                  <TableHead>{t("Uploaded")}</TableHead>
+                  <TableHead className="w-[100px]">{t("Actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1017,13 +1548,38 @@ export default function GovernanceDetailPage() {
                     <TableCell>{new Date(att.uploadedAt).toLocaleDateString()}</TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        <Button variant="ghost" size="icon">
-                          <Download className="h-4 w-4" />
-                        </Button>
-                        <PermissionGate resource="compliance.governance" action="delete">
-                          <Button variant="ghost" size="icon">
-                            <Trash2 className="h-4 w-4 text-red-500" />
+                        {isCustomerAdmin ? (
+                          /* Customer Admin: Functional download button */
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => window.open(att.filePath, "_blank")}
+                            title="Download"
+                          >
+                            <Download className="h-4 w-4" />
                           </Button>
+                        ) : (
+                          /* GRC Admin / Other: Original button (no functionality) */
+                          <Button variant="ghost" size="icon">
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        )}
+                        <PermissionGate resource="compliance.governance" action="delete">
+                          {isCustomerAdmin ? (
+                            /* Customer Admin: Functional delete button */
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDeleteAttachment(att.id)}
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                          ) : (
+                            /* GRC Admin / Other: Original button (no functionality) */
+                            <Button variant="ghost" size="icon">
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                          )}
                         </PermissionGate>
                       </div>
                     </TableCell>
@@ -1034,6 +1590,59 @@ export default function GovernanceDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Signature Publish Dialog */}
+      <Dialog open={signatureDialogOpen} onOpenChange={(open) => {
+        setSignatureDialogOpen(open);
+        if (!open) clearSignature();
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t(typeLabels[policy.documentType] || "Policy")} {t("signature Publish")}</DialogTitle>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <p className="text-sm text-slate-400">
+              {t("Please sign below to publish this")} {(policy.documentType || "document").toLowerCase()}.
+            </p>
+            <div className="border rounded-lg p-2 bg-white">
+              <canvas
+                ref={canvasRef}
+                width={400}
+                height={150}
+                className="w-full border border-dashed border-gray-300 rounded cursor-crosshair"
+                onMouseDown={startDrawing}
+                onMouseMove={draw}
+                onMouseUp={stopDrawing}
+                onMouseLeave={stopDrawing}
+              />
+            </div>
+            <div className="flex justify-between items-center">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearSignature}
+                disabled={!hasSignature}
+              >
+                {t("Clear Signature")}
+              </Button>
+              <span className="text-xs text-slate-400">
+                {t("Draw your signature above")}
+              </span>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => {
+              setSignatureDialogOpen(false);
+              clearSignature();
+            }}>
+              {t("Cancel")}
+            </Button>
+            <Button onClick={handlePublish} disabled={!hasSignature}>
+              {t("Publish")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Tabs */}
       <div className="border-b">
@@ -1064,24 +1673,24 @@ export default function GovernanceDetailPage() {
       {activeTab === "controls" && (
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Linked Control</CardTitle>
+            <CardTitle>{t("Linked Control")}</CardTitle>
             <PermissionGate resource="compliance.governance" action="edit">
               <Dialog open={linkControlDialogOpen} onOpenChange={setLinkControlDialogOpen}>
                 <DialogTrigger asChild>
                   <Button size="sm">
                     <Plus className="h-4 w-4 mr-2" />
-                    Link Control
+                    {t("Link Control")}
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Link Control</DialogTitle>
+                    <DialogTitle>{t("Link Control")}</DialogTitle>
                   </DialogHeader>
                   <div className="py-4">
-                    <Label>Select Control</Label>
+                    <Label>{t("Select Control")}</Label>
                     <Select value={selectedControlId} onValueChange={setSelectedControlId}>
                       <SelectTrigger className="mt-2">
-                        <SelectValue placeholder="Select a control" />
+                        <SelectValue placeholder={t("Select a control")} />
                       </SelectTrigger>
                       <SelectContent>
                         {availableControls
@@ -1096,9 +1705,9 @@ export default function GovernanceDetailPage() {
                   </div>
                   <div className="flex justify-end gap-2">
                     <Button variant="outline" onClick={() => setLinkControlDialogOpen(false)}>
-                      Cancel
+                      {t("Cancel")}
                     </Button>
-                    <Button onClick={handleLinkControl}>Link</Button>
+                    <Button onClick={handleLinkControl}>{t("Link")}</Button>
                   </div>
                 </DialogContent>
               </Dialog>
@@ -1106,19 +1715,19 @@ export default function GovernanceDetailPage() {
           </CardHeader>
           <CardContent>
             {linkedControls.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
+              <div className="text-center py-8 text-slate-400">
                 <Link2 className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p>No controls linked to this {(policy.type || "policy").toLowerCase()}</p>
+                <p>{t("No controls linked to this")} {(policy.documentType || "policy").toLowerCase()}</p>
               </div>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Control ID</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Domain</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="w-[80px]">Actions</TableHead>
+                    <TableHead>{t("Control ID")}</TableHead>
+                    <TableHead>{t("Name")}</TableHead>
+                    <TableHead>{t("Domain")}</TableHead>
+                    <TableHead>{t("Status")}</TableHead>
+                    <TableHead className="w-[80px]">{t("Actions")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1140,7 +1749,7 @@ export default function GovernanceDetailPage() {
                             onClick={() => handleUnlinkControl(pc.control.id)}
                             className="text-red-500 hover:text-red-700"
                           >
-                            Unlink
+                            {t("Unlink")}
                           </Button>
                         </PermissionGate>
                       </TableCell>
@@ -1156,22 +1765,22 @@ export default function GovernanceDetailPage() {
       {activeTab === "exceptions" && (
         <Card>
           <CardHeader>
-            <CardTitle>Linked Exception</CardTitle>
+            <CardTitle>{t("Linked Exception")}</CardTitle>
           </CardHeader>
           <CardContent>
             {linkedExceptions.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
+              <div className="text-center py-8 text-slate-400">
                 <AlertTriangle className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p>No exceptions linked to this {(policy.type || "policy").toLowerCase()}</p>
+                <p>{t("No exceptions linked to this")} {(policy.documentType || "policy").toLowerCase()}</p>
               </div>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Exception Code</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>{t("Exception Code")}</TableHead>
+                    <TableHead>{t("Name")}</TableHead>
+                    <TableHead>{t("Category")}</TableHead>
+                    <TableHead>{t("Status")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1197,28 +1806,28 @@ export default function GovernanceDetailPage() {
       {activeTab === "documents" && (
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Linked Documents</CardTitle>
+            <CardTitle>{t("Linked Documents")}</CardTitle>
             <PermissionGate resource="compliance.governance" action="edit">
               <Button size="sm">
                 <Plus className="h-4 w-4 mr-2" />
-                Link Document
+                {t("Link Document")}
               </Button>
             </PermissionGate>
           </CardHeader>
           <CardContent>
             {linkedDocuments.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
+              <div className="text-center py-8 text-slate-400">
                 <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p>No documents linked to this {(policy.type || "policy").toLowerCase()}</p>
+                <p>{t("No documents linked to this")} {(policy.documentType || "policy").toLowerCase()}</p>
               </div>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Code</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead className="w-[80px]">Actions</TableHead>
+                    <TableHead>{t("Code")}</TableHead>
+                    <TableHead>{t("Name")}</TableHead>
+                    <TableHead>{t("Type")}</TableHead>
+                    <TableHead className="w-[80px]">{t("Actions")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1230,7 +1839,7 @@ export default function GovernanceDetailPage() {
                       <TableCell>
                         <PermissionGate resource="compliance.governance" action="edit">
                           <Button variant="ghost" size="sm" className="text-red-500">
-                            Unlink
+                            {t("Unlink")}
                           </Button>
                         </PermissionGate>
                       </TableCell>

@@ -1,57 +1,82 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { withAuth, validateTenantAccess, forbidden } from "@/lib/api-auth";
 
-// GET all controls linked to evidence
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-
-    const evidenceControls = await prisma.evidenceControl.findMany({
-      where: { evidenceId: id },
-      include: {
-        control: {
-          include: {
-            domain: true,
-            framework: true,
-          },
-        },
-      },
-    });
-
-    return NextResponse.json(evidenceControls);
-  } catch (error) {
-    console.error("Error fetching evidence controls:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch evidence controls" },
-      { status: 500 }
-    );
-  }
+interface RouteContext {
+  params: Promise<{ id: string }>;
 }
 
-// POST link control to evidence
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const body = await request.json();
-    const { controlId, controlIds } = body;
+// GET all controls linked to evidence - with tenant validation
+export const GET = withAuth(
+  async (req, context: RouteContext, session) => {
+    try {
+      const { id } = await context.params;
 
-    // Check if evidence exists
-    const evidence = await prisma.evidence.findUnique({
-      where: { id },
-    });
+      // Check if evidence belongs to user's tenant
+      const evidence = await prisma.evidence.findUnique({
+        where: { id },
+        select: { customerAccountId: true },
+      });
 
-    if (!evidence) {
+      if (!evidence) {
+        return NextResponse.json(
+          { error: "Evidence not found" },
+          { status: 404 }
+        );
+      }
+
+      if (!validateTenantAccess(session, evidence.customerAccountId)) {
+        return forbidden("Access denied to this evidence");
+      }
+
+      const evidenceControls = await prisma.evidenceControl.findMany({
+        where: { evidenceId: id },
+        include: {
+          control: {
+            include: {
+              domain: true,
+              framework: true,
+            },
+          },
+        },
+      });
+
+      return NextResponse.json(evidenceControls);
+    } catch (error) {
+      console.error("Error fetching evidence controls:", error);
       return NextResponse.json(
-        { error: "Evidence not found" },
-        { status: 404 }
+        { error: "Failed to fetch evidence controls" },
+        { status: 500 }
       );
     }
+  },
+  { resource: "compliance.evidence", action: "view" }
+);
+
+// POST link control to evidence - with tenant validation
+export const POST = withAuth(
+  async (req, context: RouteContext, session) => {
+    try {
+      const { id } = await context.params;
+      const body = await req.json();
+      const { controlId, controlIds } = body;
+
+      // Check if evidence exists and verify tenant access
+      const evidence = await prisma.evidence.findUnique({
+        where: { id },
+        select: { id: true, customerAccountId: true },
+      });
+
+      if (!evidence) {
+        return NextResponse.json(
+          { error: "Evidence not found" },
+          { status: 404 }
+        );
+      }
+
+      if (!validateTenantAccess(session, evidence.customerAccountId)) {
+        return forbidden("Access denied to this evidence");
+      }
 
     // Handle multiple control IDs
     const idsToLink = controlIds || (controlId ? [controlId] : []);
@@ -100,66 +125,85 @@ export async function POST(
       results.push(evidenceControl);
     }
 
-    return NextResponse.json(results, { status: 201 });
-  } catch (error) {
-    console.error("Error linking control to evidence:", error);
-    return NextResponse.json(
-      { error: "Failed to link control" },
-      { status: 500 }
-    );
-  }
-}
-
-// DELETE unlink all controls (or specific ones via body)
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-
-    let controlId: string | null = null;
-    try {
-      const body = await request.json();
-      controlId = body.controlId;
-    } catch {
-      // No body provided, that's ok
+      return NextResponse.json(results, { status: 201 });
+    } catch (error) {
+      console.error("Error linking control to evidence:", error);
+      return NextResponse.json(
+        { error: "Failed to link control" },
+        { status: 500 }
+      );
     }
+  },
+  { resource: "compliance.evidence", action: "edit" }
+);
 
-    if (controlId) {
-      // Delete specific link
-      const link = await prisma.evidenceControl.findFirst({
-        where: {
-          evidenceId: id,
-          controlId,
-        },
+// DELETE unlink all controls (or specific ones via body) - with tenant validation
+export const DELETE = withAuth(
+  async (req, context: RouteContext, session) => {
+    try {
+      const { id } = await context.params;
+
+      // Check if evidence exists and verify tenant access
+      const evidence = await prisma.evidence.findUnique({
+        where: { id },
+        select: { customerAccountId: true },
       });
 
-      if (!link) {
+      if (!evidence) {
         return NextResponse.json(
-          { error: "Control is not linked to this evidence" },
+          { error: "Evidence not found" },
           { status: 404 }
         );
       }
 
-      await prisma.evidenceControl.delete({
-        where: { id: link.id },
+      if (!validateTenantAccess(session, evidence.customerAccountId)) {
+        return forbidden("Access denied to this evidence");
+      }
+
+      let controlId: string | null = null;
+      try {
+        const body = await req.json();
+        controlId = body.controlId;
+      } catch {
+        // No body provided, that's ok
+      }
+
+      if (controlId) {
+        // Delete specific link
+        const link = await prisma.evidenceControl.findFirst({
+          where: {
+            evidenceId: id,
+            controlId,
+          },
+        });
+
+        if (!link) {
+          return NextResponse.json(
+            { error: "Control is not linked to this evidence" },
+            { status: 404 }
+          );
+        }
+
+        await prisma.evidenceControl.delete({
+          where: { id: link.id },
+        });
+
+        return NextResponse.json({ message: "Control unlinked successfully" });
+      }
+
+      // Delete all links for this evidence
+      await prisma.evidenceControl.deleteMany({
+        where: { evidenceId: id },
       });
 
-      return NextResponse.json({ message: "Control unlinked successfully" });
+      return NextResponse.json({ message: "All controls unlinked successfully" });
+    } catch (error) {
+      console.error("Error unlinking control from evidence:", error);
+      return NextResponse.json(
+        { error: "Failed to unlink control" },
+        { status: 500 }
+      );
     }
-
-    // Delete all links for this evidence
-    await prisma.evidenceControl.deleteMany({
-      where: { evidenceId: id },
-    });
-
-    return NextResponse.json({ message: "All controls unlinked successfully" });
-  } catch (error) {
-    console.error("Error unlinking control from evidence:", error);
-    return NextResponse.json(
-      { error: "Failed to unlink control" },
-      { status: 500 }
-    );
-  }
-}
+  },
+  { resource: "compliance.evidence", action: "edit" }
+);
