@@ -29,6 +29,10 @@ import {
   Search,
   ArrowLeft,
   Eye,
+  Shield,
+  AlertCircle,
+  Clock,
+  CheckCircle,
 } from "lucide-react";
 import { RiskDetailDialog } from "@/components/risks/risk-detail-dialog";
 import { NewRiskWizard } from "@/components/risks/new-risk-wizard";
@@ -116,7 +120,8 @@ function RiskRegisterContent() {
   const { canView, canCreate, canEdit, canDelete, isLoading: permissionsLoading } = usePermissions('risk.register');
   const initialStatus = searchParams.get("status") || "";
   const initialRating = searchParams.get("riskRating") || "";
-  const fromDashboard = searchParams.get("from") === "dashboard";
+  const fromParam = searchParams.get("from");
+  const fromDashboard = fromParam === "dashboard" || fromParam === "risk-dashboard";
 
   // Check if user is DepartmentReviewer or DepartmentContributor (department-scoped)
   const isDepartmentRole = userRoles.some(
@@ -455,11 +460,11 @@ function RiskRegisterContent() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => router.push("/dashboard")}
+          onClick={() => router.push(fromParam === "risk-dashboard" ? "/risks/dashboard" : "/dashboard")}
           className="flex items-center gap-2 text-slate-600 hover:text-slate-800 -ml-2"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to Dashboard
+          {fromParam === "risk-dashboard" ? "Back to Risk Dashboard" : "Back to Dashboard"}
         </Button>
       )}
 
@@ -470,39 +475,75 @@ function RiskRegisterContent() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <p className="text-sm font-medium text-slate-500 mb-1">Total Risks</p>
-          <p className="text-3xl font-bold text-slate-800">{stats.totalRisks}</p>
+        <div className="relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white">
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
+              <Shield className="h-5 w-5" />
+            </div>
+          </div>
+          <div className="text-3xl font-bold tracking-tight text-slate-800">
+            {stats.totalRisks}
+          </div>
+          <div className="mt-1">
+            <span className="text-sm font-medium text-slate-500">Total Risks</span>
+          </div>
         </div>
         <button
           onClick={() => handleStatusCardClick("Open")}
           className={cn(
-            "bg-white rounded-xl border border-slate-200 p-5 text-left",
+            "relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white text-left transition-colors",
             statusFilter === "Open" && "border-red-500 ring-2 ring-red-200"
           )}
         >
-          <p className="text-sm font-medium text-slate-500 mb-1">Open Risks</p>
-          <p className="text-3xl font-bold text-semantic-error">{stats.openRisks}</p>
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
+              <AlertCircle className="h-5 w-5" />
+            </div>
+          </div>
+          <div className="text-3xl font-bold tracking-tight text-semantic-error">
+            {stats.openRisks}
+          </div>
+          <div className="mt-1">
+            <span className="text-sm font-medium text-slate-500">Open Risks</span>
+          </div>
         </button>
         <button
           onClick={() => handleStatusCardClick("In Progress")}
           className={cn(
-            "bg-white rounded-xl border border-slate-200 p-5 text-left",
+            "relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white text-left transition-colors",
             statusFilter === "In Progress" && "border-amber-500 ring-2 ring-amber-200"
           )}
         >
-          <p className="text-sm font-medium text-slate-500 mb-1">In Progress</p>
-          <p className="text-3xl font-bold text-warning-600">{stats.inProgressRisks}</p>
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
+              <Clock className="h-5 w-5" />
+            </div>
+          </div>
+          <div className="text-3xl font-bold tracking-tight text-warning-600">
+            {stats.inProgressRisks}
+          </div>
+          <div className="mt-1">
+            <span className="text-sm font-medium text-slate-500">In Progress</span>
+          </div>
         </button>
         <button
           onClick={() => handleStatusCardClick("Closed")}
           className={cn(
-            "bg-white rounded-xl border border-slate-200 p-5 text-left",
+            "relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white text-left transition-colors",
             statusFilter === "Closed" && "border-green-500 ring-2 ring-green-200"
           )}
         >
-          <p className="text-sm font-medium text-slate-500 mb-1">Closed Risks</p>
-          <p className="text-3xl font-bold text-semantic-success">{stats.closedRisks}</p>
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
+              <CheckCircle className="h-5 w-5" />
+            </div>
+          </div>
+          <div className="text-3xl font-bold tracking-tight text-semantic-success">
+            {stats.closedRisks}
+          </div>
+          <div className="mt-1">
+            <span className="text-sm font-medium text-slate-500">Closed Risks</span>
+          </div>
         </button>
       </div>
 

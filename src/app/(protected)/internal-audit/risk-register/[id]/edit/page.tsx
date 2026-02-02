@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { DatePicker } from "@/components/ui/date-picker";
 
 interface Department {
   id: string;
@@ -357,11 +358,10 @@ export default function EditRiskPage() {
               </div>
               <div>
                 <Label htmlFor="creationDate">Creation Date</Label>
-                <Input
-                  id="creationDate"
-                  type="date"
+                <DatePicker
                   value={formData.creationDate}
-                  onChange={(e) => setFormData({ ...formData, creationDate: e.target.value })}
+                  onChange={(date) => setFormData({ ...formData, creationDate: date ? date.toISOString().split('T')[0] : "" })}
+                  placeholder="Select date"
                   className="mt-2"
                 />
               </div>

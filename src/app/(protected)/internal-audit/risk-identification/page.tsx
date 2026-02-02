@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Send, Check } from "lucide-react";
+import { Check, Sparkles, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 
 interface Department {
@@ -38,6 +37,8 @@ export default function RiskIdentificationPage() {
   const [suggestedRisks, setSuggestedRisks] = useState<SuggestedRisk[]>([]);
   const [addedRisks, setAddedRisks] = useState<Set<string>>(new Set());
   const [addingRisk, setAddingRisk] = useState<string | null>(null);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
     fetchDepartments();
@@ -126,6 +127,50 @@ export default function RiskIdentificationPage() {
     }
   };
 
+  // File upload handlers
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const files = Array.from(e.dataTransfer.files);
+    const validFiles = files.filter(file =>
+      /\.(pdf|doc|docx|xls|xlsx)$/i.test(file.name)
+    );
+    if (validFiles.length > 0) {
+      setUploadedFiles(prev => [...prev, ...validFiles]);
+    }
+    if (validFiles.length < files.length) {
+      toast.error("Some files were skipped. Only PDF, DOC, DOCX, XLS, XLSX are supported.");
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const validFiles = Array.from(files).filter(file =>
+        /\.(pdf|doc|docx|xls|xlsx)$/i.test(file.name)
+      );
+      if (validFiles.length > 0) {
+        setUploadedFiles(prev => [...prev, ...validFiles]);
+      }
+    }
+    // Reset input to allow selecting the same file again
+    e.target.value = "";
+  };
+
+  const removeFile = (index: number) => {
+    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleAddToRegister = async (risk: SuggestedRisk) => {
     setAddingRisk(risk.id);
 
@@ -172,35 +217,43 @@ export default function RiskIdentificationPage() {
 
   if (pageLoading) {
     return (
-      <div className="p-6">
-        <h1 className="text-2xl font-bold text-blue-900 mb-6">Risk Identification</h1>
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold text-slate-800">Risk Identification</h1>
+        <div className="flex items-center justify-center h-[60vh]">
+          <div className="flex flex-col items-center gap-4">
+            <div className="relative">
+              <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
+              <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+            </div>
+            <p className="text-sm text-slate-500 font-medium">Loading...</p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-blue-900">Risk Identification</h1>
+        <h1 className="text-2xl font-bold text-slate-800">Risk Identification</h1>
         <Button
-          variant="link"
-          className="text-blue-600"
+          variant="outline"
+          size="sm"
+          className="bg-primary-50 hover:bg-primary-100 text-primary-700 border-primary-200"
           onClick={() => router.push("/internal-audit/risk-register")}
         >
-          AI-Powered Risk Assessment
+          <Sparkles className="h-4 w-4 mr-2" />
+          AI Integrated
         </Button>
       </div>
 
       {/* Main Form Card */}
-      <Card>
-        <CardContent className="pt-6 space-y-6">
+      <div className="bg-white rounded-xl border border-slate-200">
+        <div className="p-6 space-y-6">
           {/* Department Selection */}
           <div>
-            <label className="text-sm font-medium text-blue-800 mb-2 block">
+            <label className="text-sm font-medium text-slate-700 mb-2 block">
               Select a Department to Assess
             </label>
             <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
@@ -219,7 +272,7 @@ export default function RiskIdentificationPage() {
 
           {/* Specific Audit Focus */}
           <div>
-            <label className="text-sm font-medium text-blue-800 mb-2 block">
+            <label className="text-sm font-medium text-slate-700 mb-2 block">
               Specific Audit Focus (Optional)
             </label>
             <Textarea
@@ -231,51 +284,107 @@ export default function RiskIdentificationPage() {
             />
           </div>
 
-          {/* File Upload Area - Placeholder */}
+          {/* File Upload Area */}
           <div>
-            <label className="text-sm font-medium text-blue-800 mb-2 block">
+            <label className="text-sm font-medium text-slate-700 mb-2 block">
               Supporting Documents (Optional)
             </label>
-            <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center text-gray-500">
-              <p>Drag and drop files here or click to upload</p>
-              <p className="text-xs mt-1">Supported formats: PDF, DOC, DOCX, XLS, XLSX</p>
+            <div
+              className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                isDragging
+                  ? "border-primary-500 bg-primary-50"
+                  : "border-slate-200"
+              }`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
+              <input
+                id="file-upload"
+                type="file"
+                className="hidden"
+                multiple
+                accept=".pdf,.doc,.docx,.xls,.xlsx"
+                onChange={handleFileSelect}
+              />
+              <Upload className="h-10 w-10 mx-auto text-slate-300 mb-3" />
+              <p className="text-slate-500 mb-2">Drag and drop files here, or</p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => document.getElementById("file-upload")?.click()}
+              >
+                Click to Upload
+              </Button>
+              <p className="text-xs text-slate-400 mt-3">Supported formats: PDF, DOC, DOCX, XLS, XLSX</p>
             </div>
+
+            {/* Uploaded Files List */}
+            {uploadedFiles.length > 0 && (
+              <div className="mt-3 space-y-2">
+                {uploadedFiles.map((file, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2"
+                  >
+                    <span className="text-sm text-slate-700 truncate flex-1">
+                      {file.name}
+                    </span>
+                    <span className="text-xs text-slate-400 mx-2">
+                      {(file.size / 1024).toFixed(1)} KB
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeFile(index);
+                      }}
+                      className="text-slate-400 hover:text-red-500 transition-colors"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Submit Button */}
-          <Button
-            onClick={handleSuggestRisks}
-            disabled={loading || !selectedDepartment}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Analyzing...
-              </>
-            ) : (
-              <>
-                <Send className="h-4 w-4 mr-2" />
-                Suggest Risks with AI
-              </>
-            )}
-          </Button>
-        </CardContent>
-      </Card>
+          <div className="flex justify-end">
+            <Button
+              onClick={handleSuggestRisks}
+              disabled={loading || !selectedDepartment}
+            >
+              {loading ? (
+                <>
+                  <div className="h-4 w-4 mr-2 rounded-full border-2 border-white border-t-transparent animate-spin"></div>
+                  Analyzing...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Suggest Risks with AI
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      </div>
 
       {/* AI Suggested Risks */}
       {suggestedRisks.length > 0 && (
-        <div className="space-y-0">
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           {suggestedRisks.map((risk, index) => (
             <div
               key={risk.id}
-              className={`flex items-center justify-between gap-4 p-4 bg-white ${
-                index !== suggestedRisks.length - 1 ? "border-b" : ""
+              className={`flex items-center justify-between gap-4 p-4 ${
+                index !== suggestedRisks.length - 1 ? "border-b border-slate-100" : ""
               }`}
             >
               {/* Risk Description */}
               <div className="flex-1">
-                <p className="text-sm text-gray-800 leading-relaxed">
+                <p className="text-sm text-slate-700 leading-relaxed">
                   {risk.description}
                 </p>
               </div>
@@ -304,10 +413,9 @@ export default function RiskIdentificationPage() {
                   size="sm"
                   onClick={() => handleAddToRegister(risk)}
                   disabled={addingRisk === risk.id || addedRisks.has(risk.id)}
-                  className="bg-blue-600 hover:bg-blue-700"
                 >
                   {addingRisk === risk.id ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <div className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin"></div>
                   ) : (
                     "Add to Register"
                   )}
@@ -318,7 +426,7 @@ export default function RiskIdentificationPage() {
 
           {/* Summary when all risks are added */}
           {addedRisks.size === suggestedRisks.length && suggestedRisks.length > 0 && (
-            <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <div className="p-4 bg-green-50 border-t border-green-200">
               <div className="flex items-center gap-2 text-green-700">
                 <Check className="h-5 w-5" />
                 <span className="font-medium">

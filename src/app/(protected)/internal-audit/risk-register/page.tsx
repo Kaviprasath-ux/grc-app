@@ -1023,7 +1023,7 @@ export default function RiskRegisterPage() {
       <Dialog open={aiDialogOpen} onOpenChange={setAiDialogOpen}>
         <DialogContent className="sm:max-w-[900px] max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-blue-900">
+            <DialogTitle className="flex items-center gap-2 text-slate-800">
               <Sparkles className="h-5 w-5 text-purple-500" />
               AI Recommended Audits
             </DialogTitle>
@@ -1322,33 +1322,31 @@ export default function RiskRegisterPage() {
               {/* Control Information */}
               <div className="space-y-4">
                 <h3 className="text-base font-semibold text-slate-800 border-b border-slate-100 pb-3">Control Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium text-slate-700">Control Description</Label>
-                    <Textarea
-                      value={formData.controlDescription}
-                      onChange={(e) => setFormData({ ...formData, controlDescription: e.target.value })}
-                      placeholder="Enter control description"
-                      className="mt-1.5 w-full bg-white"
-                      rows={3}
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-slate-700">Control Effectiveness</Label>
-                    <Select
-                      value={formData.controlEffectiveness}
-                      onValueChange={(value) => setFormData({ ...formData, controlEffectiveness: value })}
-                    >
-                      <SelectTrigger className="mt-1.5 w-full bg-white">
-                        <SelectValue placeholder="Select effectiveness" />
-                      </SelectTrigger>
-                      <SelectContent position="popper" sideOffset={4}>
-                        <SelectItem value="Effective">Effective</SelectItem>
-                        <SelectItem value="Partially Effective">Partially Effective</SelectItem>
-                        <SelectItem value="Ineffective">Ineffective</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Control Description</Label>
+                  <Textarea
+                    value={formData.controlDescription}
+                    onChange={(e) => setFormData({ ...formData, controlDescription: e.target.value })}
+                    placeholder="Enter control description"
+                    className="mt-1.5 w-full bg-white"
+                    rows={3}
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">Control Effectiveness</Label>
+                  <Select
+                    value={formData.controlEffectiveness}
+                    onValueChange={(value) => setFormData({ ...formData, controlEffectiveness: value })}
+                  >
+                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                      <SelectValue placeholder="Select effectiveness" />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4}>
+                      <SelectItem value="Effective">Effective</SelectItem>
+                      <SelectItem value="Partially Effective">Partially Effective</SelectItem>
+                      <SelectItem value="Ineffective">Ineffective</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
@@ -1708,33 +1706,31 @@ export default function RiskRegisterPage() {
                 {/* Control Information */}
                 <div className="space-y-4">
                   <h3 className="text-base font-semibold text-slate-800 border-b border-slate-100 pb-3">Control Information</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-sm font-medium text-slate-700">Control Description</Label>
-                      <Textarea
-                        value={formData.controlDescription}
-                        onChange={(e) => setFormData({ ...formData, controlDescription: e.target.value })}
-                        placeholder="Enter control description"
-                        className="mt-1.5 w-full bg-white"
-                        rows={3}
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-slate-700">Control Effectiveness</Label>
-                      <Select
-                        value={formData.controlEffectiveness}
-                        onValueChange={(value) => setFormData({ ...formData, controlEffectiveness: value })}
-                      >
-                        <SelectTrigger className="mt-1.5 w-full bg-white">
-                          <SelectValue placeholder="Select effectiveness" />
-                        </SelectTrigger>
-                        <SelectContent position="popper" sideOffset={4}>
-                          <SelectItem value="Effective">Effective</SelectItem>
-                          <SelectItem value="Partially Effective">Partially Effective</SelectItem>
-                          <SelectItem value="Ineffective">Ineffective</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Control Description</Label>
+                    <Textarea
+                      value={formData.controlDescription}
+                      onChange={(e) => setFormData({ ...formData, controlDescription: e.target.value })}
+                      placeholder="Enter control description"
+                      className="mt-1.5 w-full bg-white"
+                      rows={3}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">Control Effectiveness</Label>
+                    <Select
+                      value={formData.controlEffectiveness}
+                      onValueChange={(value) => setFormData({ ...formData, controlEffectiveness: value })}
+                    >
+                      <SelectTrigger className="mt-1.5 w-full bg-white">
+                        <SelectValue placeholder="Select effectiveness" />
+                      </SelectTrigger>
+                      <SelectContent position="popper" sideOffset={4}>
+                        <SelectItem value="Effective">Effective</SelectItem>
+                        <SelectItem value="Partially Effective">Partially Effective</SelectItem>
+                        <SelectItem value="Ineffective">Ineffective</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 

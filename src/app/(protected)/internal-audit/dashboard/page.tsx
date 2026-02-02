@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Unauthorized } from "@/components/ui/unauthorized";
+import { StatsCard } from "@/components/shared";
 import {
   Dialog,
   DialogContent,
@@ -35,7 +36,6 @@ import {
   Shield,
   ClipboardList,
   Calendar,
-  ArrowUpRight,
 } from "lucide-react";
 
 interface DashboardData {
@@ -632,73 +632,32 @@ export default function InternalAuditDashboard() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div
-            className="relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white cursor-pointer hover:border-slate-300 transition-colors"
-            onClick={() => router.push("/internal-audit/fieldwork")}
-          >
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
-                <Activity className="h-5 w-5" />
-              </div>
-              <ArrowUpRight className="h-4 w-4 text-slate-400" />
-            </div>
-            <div className="text-3xl font-bold tracking-tight text-slate-800">
-              {data?.stats.evidenceRequests.total || 0}
-            </div>
-            <div className="mt-1">
-              <span className="text-sm font-medium text-slate-500">Evidence Requests</span>
-              <p className="text-xs text-slate-400 mt-0.5">{data?.stats.evidenceRequests.pending || 0} Pending</p>
-            </div>
-          </div>
-
-          <div
-            className="relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white cursor-pointer hover:border-slate-300 transition-colors"
-            onClick={() => router.push("/internal-audit/capa-tracking")}
-          >
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-green-50 text-green-600">
-                <CheckCircle className="h-5 w-5" />
-              </div>
-              <ArrowUpRight className="h-4 w-4 text-slate-400" />
-            </div>
-            <div className="text-3xl font-bold tracking-tight text-slate-800">
-              {data?.stats.capa.total || 0}
-            </div>
-            <div className="mt-1">
-              <span className="text-sm font-medium text-slate-500">Corrective Actions</span>
-              <p className="text-xs text-slate-400 mt-0.5">{data?.stats.capa.open || 0} Open</p>
-            </div>
-          </div>
-
-          <div className="relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white">
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-amber-50 text-amber-600">
-                <Clock className="h-5 w-5" />
-              </div>
-            </div>
-            <div className="text-3xl font-bold tracking-tight text-slate-800">
-              {(data?.stats.evidenceRequests.pending || 0) + (data?.stats.capa.open || 0)}
-            </div>
-            <div className="mt-1">
-              <span className="text-sm font-medium text-slate-500">Pending Actions</span>
-              <p className="text-xs text-slate-400 mt-0.5">Items requiring attention</p>
-            </div>
-          </div>
-
-          <div className="relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white">
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-red-50 text-red-600">
-                <AlertTriangle className="h-5 w-5" />
-              </div>
-            </div>
-            <div className="text-3xl font-bold tracking-tight text-red-600">
-              {(data?.stats.evidenceRequests.overdue || 0) + (data?.stats.capa.overdue || 0)}
-            </div>
-            <div className="mt-1">
-              <span className="text-sm font-medium text-slate-500">Overdue Items</span>
-              <p className="text-xs text-red-400 mt-0.5">Requires immediate attention</p>
-            </div>
-          </div>
+          <StatsCard
+            label="Evidence Requests"
+            value={data?.stats.evidenceRequests.total || 0}
+            href="/internal-audit/fieldwork"
+            icon={Activity}
+            description={`${data?.stats.evidenceRequests.pending || 0} Pending`}
+          />
+          <StatsCard
+            label="Corrective Actions"
+            value={data?.stats.capa.total || 0}
+            href="/internal-audit/capa-tracking"
+            icon={CheckCircle}
+            description={`${data?.stats.capa.open || 0} Open`}
+          />
+          <StatsCard
+            label="Pending Actions"
+            value={(data?.stats.evidenceRequests.pending || 0) + (data?.stats.capa.open || 0)}
+            icon={Clock}
+            description="Items requiring attention"
+          />
+          <StatsCard
+            label="Overdue Items"
+            value={(data?.stats.evidenceRequests.overdue || 0) + (data?.stats.capa.overdue || 0)}
+            icon={AlertTriangle}
+            description="Requires immediate attention"
+          />
         </div>
       </div>
     );
@@ -726,76 +685,33 @@ export default function InternalAuditDashboard() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div
-          className="relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white cursor-pointer hover:border-slate-300 transition-colors"
-          onClick={() => handleRiskCardClick('all', 'All Risks')}
-        >
-          <div className="flex items-start justify-between mb-3">
-            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
-              <Shield className="h-5 w-5" />
-            </div>
-            <ArrowUpRight className="h-4 w-4 text-slate-400" />
-          </div>
-          <div className="text-3xl font-bold tracking-tight text-slate-800">
-            {data?.riskStats.total || 0}
-          </div>
-          <div className="mt-1">
-            <span className="text-sm font-medium text-slate-500">Total Risks</span>
-          </div>
+        <div onClick={() => handleRiskCardClick('all', 'All Risks')} className="cursor-pointer [&>div]:hover:border-slate-300 [&>div]:transition-colors">
+          <StatsCard
+            label="Total Risks"
+            value={data?.riskStats.total || 0}
+            icon={Shield}
+          />
         </div>
-
-        <div
-          className="relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white cursor-pointer hover:border-slate-300 transition-colors"
-          onClick={() => handleRiskCardClick('extreme', 'Extreme Severity Risks')}
-        >
-          <div className="flex items-start justify-between mb-3">
-            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-red-50 text-red-600">
-              <AlertTriangle className="h-5 w-5" />
-            </div>
-            <ArrowUpRight className="h-4 w-4 text-slate-400" />
-          </div>
-          <div className="text-3xl font-bold tracking-tight text-slate-800">
-            {data?.riskStats.extreme || 0}
-          </div>
-          <div className="mt-1">
-            <span className="text-sm font-medium text-slate-500">Extreme Severity</span>
-          </div>
+        <div onClick={() => handleRiskCardClick('extreme', 'Extreme Severity Risks')} className="cursor-pointer [&>div]:hover:border-slate-300 [&>div]:transition-colors">
+          <StatsCard
+            label="Extreme Severity"
+            value={data?.riskStats.extreme || 0}
+            icon={AlertTriangle}
+          />
         </div>
-
-        <div
-          className="relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white cursor-pointer hover:border-slate-300 transition-colors"
-          onClick={() => handleAuditCardClick('ongoing', 'Ongoing Audits')}
-        >
-          <div className="flex items-start justify-between mb-3">
-            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-amber-50 text-amber-600">
-              <Activity className="h-5 w-5" />
-            </div>
-            <ArrowUpRight className="h-4 w-4 text-slate-400" />
-          </div>
-          <div className="text-3xl font-bold tracking-tight text-slate-800">
-            {data?.auditStats.ongoing || 0}
-          </div>
-          <div className="mt-1">
-            <span className="text-sm font-medium text-slate-500">Ongoing Audits</span>
-          </div>
+        <div onClick={() => handleAuditCardClick('ongoing', 'Ongoing Audits')} className="cursor-pointer [&>div]:hover:border-slate-300 [&>div]:transition-colors">
+          <StatsCard
+            label="Ongoing Audits"
+            value={data?.auditStats.ongoing || 0}
+            icon={Activity}
+          />
         </div>
-
-        <div
-          className="relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white cursor-pointer hover:border-slate-300 transition-colors"
-          onClick={() => handleAuditCardClick('completed', 'Completed Audits')}
-        >
-          <div className="flex items-start justify-between mb-3">
-            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-green-50 text-green-600">
-              <CheckCircle className="h-5 w-5" />
-            </div>
-            <ArrowUpRight className="h-4 w-4 text-slate-400" />
-          </div>
-          <div className="text-3xl font-bold tracking-tight text-slate-800">
-            {data?.auditStats.completed || 0}
-          </div>
-          <div className="mt-1">
-            <span className="text-sm font-medium text-slate-500">Completed Audits</span>
-          </div>
+        <div onClick={() => handleAuditCardClick('completed', 'Completed Audits')} className="cursor-pointer [&>div]:hover:border-slate-300 [&>div]:transition-colors">
+          <StatsCard
+            label="Completed Audits"
+            value={data?.auditStats.completed || 0}
+            icon={CheckCircle}
+          />
         </div>
       </div>
 

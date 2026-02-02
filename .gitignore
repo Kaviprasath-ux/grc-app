@@ -76,3 +76,4 @@ src/app/api/debug-session/
 uploads/
 
 .env*.local
+inline-validation-changes.patch

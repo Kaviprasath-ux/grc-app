@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { usePermissions, useUserRoles } from "@/hooks/usePermissions";
@@ -21,9 +22,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { RiskRatingBadge } from "@/components/risks/risk-rating-badge";
-import { RiskAssessmentWizardDialog } from "@/components/risks/risk-assessment-wizard-dialog";
 import { cn } from "@/lib/utils";
-import { Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Eye } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowLeft } from "lucide-react";
 
 interface Risk {
   id: string;
@@ -71,6 +71,9 @@ const defaultRatingThresholds: RiskRatingThreshold[] = [
 ];
 
 export default function RiskAssessmentPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const fromDashboard = searchParams.get("from") === "dashboard";
   const { canView, canCreate, canEdit, isLoading: permissionsLoading } = usePermissions('risk.assessment');
   const userRoles = useUserRoles();
 
@@ -83,9 +86,6 @@ export default function RiskAssessmentPage() {
   const [riskTypes, setRiskTypes] = useState<RiskType[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Assessment dialog state
-  const [assessmentDialogOpen, setAssessmentDialogOpen] = useState(false);
-  const [selectedRiskId, setSelectedRiskId] = useState<string | null>(null);
 
   // Dynamic settings from API
   const [ratingThresholds, setRatingThresholds] = useState<RiskRatingThreshold[]>(defaultRatingThresholds);
@@ -250,12 +250,7 @@ export default function RiskAssessmentPage() {
   };
 
   const openAssessment = (risk: Risk) => {
-    setSelectedRiskId(risk.id);
-    setAssessmentDialogOpen(true);
-  };
-
-  const handleAssessmentComplete = () => {
-    fetchData();
+    router.push(`/risks/assessment/${risk.id}`);
   };
 
   // Show loading state while permissions or data is being fetched
@@ -263,7 +258,19 @@ export default function RiskAssessmentPage() {
     return (
       <div className="space-y-6">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold text-slate-800">Risk Assessment</h1>
+          <div className="flex items-center gap-3">
+            {fromDashboard && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => router.push("/dashboard")}
+                className="h-8 w-8"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            )}
+            <h1 className="text-2xl font-bold text-slate-800">Risk Assessment</h1>
+          </div>
         </div>
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="relative h-8 w-8">
@@ -283,7 +290,19 @@ export default function RiskAssessmentPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">Risk Assessment</h1>
+        <div className="flex items-center gap-3">
+          {fromDashboard && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => router.push("/dashboard")}
+              className="h-8 w-8"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          )}
+          <h1 className="text-2xl font-bold text-slate-800">Risk Assessment</h1>
+        </div>
       </div>
 
       {/* Filters */}
@@ -401,14 +420,6 @@ export default function RiskAssessmentPage() {
                   </TableCell>
                   <TableCell className="py-3">
                     <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => openAssessment(risk)}
-                        className="h-8 w-8 text-slate-400 hover:text-slate-600"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
                       {getActionButton(risk)}
                     </div>
                   </TableCell>
@@ -466,13 +477,6 @@ export default function RiskAssessmentPage() {
         )}
       </div>
 
-      {/* Risk Assessment Wizard Dialog */}
-      <RiskAssessmentWizardDialog
-        open={assessmentDialogOpen}
-        onOpenChange={setAssessmentDialogOpen}
-        riskId={selectedRiskId}
-        onAssessmentComplete={handleAssessmentComplete}
-      />
     </div>
   );
 }

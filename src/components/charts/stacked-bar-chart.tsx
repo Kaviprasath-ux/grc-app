@@ -22,6 +22,7 @@ interface StackedBarChartProps {
   yAxisDataKey: string;
   layout?: "horizontal" | "vertical";
   className?: string;
+  onClick?: () => void;
 }
 
 export function StackedBarChart({
@@ -31,6 +32,7 @@ export function StackedBarChart({
   yAxisDataKey,
   layout = "vertical",
   className,
+  onClick,
 }: StackedBarChartProps) {
   const isVertical = layout === "vertical";
 
@@ -43,10 +45,14 @@ export function StackedBarChart({
     : 200;
 
   return (
-    <div className={cn(
-      "bg-white rounded-xl border border-slate-200 p-4",
-      className
-    )}>
+    <div
+      className={cn(
+        "bg-white rounded-xl border border-slate-200 p-4",
+        onClick && "cursor-pointer hover:border-slate-300 transition-colors",
+        className
+      )}
+      onClick={onClick}
+    >
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold text-slate-800">{title}</h3>

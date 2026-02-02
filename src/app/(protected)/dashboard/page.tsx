@@ -179,10 +179,10 @@ export default function DashboardPage() {
             // Role-aware navigation for framework clicks
             const isGRCAdmin = session?.user?.roles?.includes("GRCAdministrator");
             if (isGRCAdmin) {
-              router.push(`/compliance/control?frameworkId=${frameworkId}`);
+              router.push(`/compliance/control?frameworkId=${frameworkId}&from=dashboard`);
             } else {
               // Customer Admin and other roles use role-specific framework controls page
-              router.push(`/roles/customer-administrator/compliance/framework/${frameworkId}/controls`);
+              router.push(`/roles/customer-administrator/compliance/framework/${frameworkId}/controls?from=dashboard`);
             }
           }}
         />
@@ -194,7 +194,7 @@ export default function DashboardPage() {
             { dataKey: "closed", fill: "#10B981", name: "Closed" },
             { dataKey: "total", fill: "#6366F1", name: "Total" },
           ]}
-          onClick={() => router.push("/risks/assessment")}
+          onClick={() => router.push("/risks/assessment?from=dashboard")}
         />
       </div>
 
@@ -205,28 +205,28 @@ export default function DashboardPage() {
           data={issueByCategoryData}
           centerLabel={issueCategoryTotal}
           centerSubLabel="Total"
-          onClick={() => router.push("/organization/context?tab=issuelist")}
+          onClick={() => router.push("/organization/context?tab=issuelist&from=dashboard")}
         />
         <DonutChart
           title="Issue By Department"
           data={issueByDepartmentData}
           centerLabel={issueDepartmentTotal}
           centerSubLabel="Total"
-          onClick={() => router.push("/organization/context?tab=issuelist")}
+          onClick={() => router.push("/organization/context?tab=issuelist&from=dashboard")}
         />
         <DonutChart
           title="Issue By Domain"
           data={issueByDomainData}
           centerLabel={issueDomainTotal}
           centerSubLabel="Total"
-          onClick={() => router.push("/organization/context?tab=issuelist")}
+          onClick={() => router.push("/organization/context?tab=issuelist&from=dashboard")}
         />
         <DonutChart
           title="Exceptions"
           data={exceptionByTypeData}
           centerLabel={exceptionTotal}
           centerSubLabel="Total"
-          onClick={() => router.push("/compliance/exceptions")}
+          onClick={() => router.push("/compliance/exceptions?from=dashboard")}
         />
       </div>
 
@@ -259,17 +259,18 @@ export default function DashboardPage() {
       {/* Governance & Status Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <StackedBarChart
-          title="Document Status"
+          title="Governance Status"
           data={governanceStatusData}
           yAxisDataKey="type"
           bars={[
-            { dataKey: "published", fill: "#6366F1", name: "Published" },
-            { dataKey: "approved", fill: "#10B981", name: "Approved" },
+            { dataKey: "notUploaded", fill: "#EF4444", name: "Not Uploaded" },
             { dataKey: "draft", fill: "#F59E0B", name: "Draft" },
-            { dataKey: "needsReview", fill: "#EF4444", name: "Needs Review" },
-            { dataKey: "notUploaded", fill: "#94A3B8", name: "Not Uploaded" },
+            { dataKey: "approved", fill: "#3B82F6", name: "Approved" },
+            { dataKey: "needsReview", fill: "#1E3A5F", name: "Needs Review" },
+            { dataKey: "published", fill: "#22C55E", name: "Published" },
           ]}
           layout="horizontal"
+          onClick={() => router.push("/compliance/governance?from=dashboard")}
         />
         <HorizontalBarChart
           title="Exception Status"
@@ -282,6 +283,7 @@ export default function DashboardPage() {
             { dataKey: "closed", fill: "#94A3B8", name: "Closed" },
             { dataKey: "overdue", fill: "#EF4444", name: "Overdue" },
           ]}
+          onClick={() => router.push("/compliance/exceptions?from=dashboard")}
         />
       </div>
     </div>

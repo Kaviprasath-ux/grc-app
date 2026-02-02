@@ -28,6 +28,7 @@ import {
   Loader2,
   Upload,
 } from "lucide-react";
+import { DatePicker } from "@/components/ui/date-picker";
 
 interface Engagement {
   id: string;
@@ -417,10 +418,10 @@ export default function AddEvidenceRequestPage() {
           <Label className="text-blue-800">
             Due Date <span className="text-red-500">*</span>
           </Label>
-          <Input
-            type="date"
+          <DatePicker
             value={formData.dueDate}
-            onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+            onChange={(date) => setFormData({ ...formData, dueDate: date ? date.toISOString().split('T')[0] : "" })}
+            placeholder="Select due date"
           />
         </div>
 

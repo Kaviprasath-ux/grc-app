@@ -731,24 +731,57 @@ export default function AssetInventoryPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <p className="text-sm font-medium text-slate-500 mb-1">Total Assets</p>
-          <p className="text-3xl font-bold text-slate-800">{stats.total}</p>
+        <div className="relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white">
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
+              <Package className="h-5 w-5" />
+            </div>
+          </div>
+          <div className="text-3xl font-bold tracking-tight text-slate-800">
+            {stats.total}
+          </div>
+          <div className="mt-1">
+            <span className="text-sm font-medium text-slate-500">Total Assets</span>
+          </div>
         </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <p className="text-sm font-medium text-slate-500 mb-1">Active Assets</p>
-          <p className="text-3xl font-bold text-semantic-success">{stats.active}</p>
+        <div className="relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white">
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
+              <Server className="h-5 w-5" />
+            </div>
+          </div>
+          <div className="text-3xl font-bold tracking-tight text-slate-800">
+            {stats.active}
+          </div>
+          <div className="mt-1">
+            <span className="text-sm font-medium text-slate-500">Active Assets</span>
+          </div>
         </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <p className="text-sm font-medium text-slate-500 mb-1">Critical Assets</p>
-          <p className="text-3xl font-bold text-semantic-error">{stats.critical}</p>
+        <div className="relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white">
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
+              <Database className="h-5 w-5" />
+            </div>
+          </div>
+          <div className="text-3xl font-bold tracking-tight text-slate-800">
+            {stats.critical}
+          </div>
+          <div className="mt-1">
+            <span className="text-sm font-medium text-slate-500">Critical Assets</span>
+          </div>
         </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <p className="text-sm font-medium text-slate-500 mb-1 flex items-center gap-1">
-            <Calendar className="h-4 w-4" />
-            Needs Review
-          </p>
-          <p className="text-3xl font-bold text-warning-600">{stats.needsReview}</p>
+        <div className="relative flex flex-col p-5 rounded-xl border border-slate-200 bg-white">
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
+              <Calendar className="h-5 w-5" />
+            </div>
+          </div>
+          <div className="text-3xl font-bold tracking-tight text-slate-800">
+            {stats.needsReview}
+          </div>
+          <div className="mt-1">
+            <span className="text-sm font-medium text-slate-500">Needs Review</span>
+          </div>
         </div>
       </div>
 
