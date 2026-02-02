@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
-import { Plus, Pencil, Trash2, Download, Upload, Search, ChevronRight, MessageSquare, File, FileText, FileImage, FileSpreadsheet, Eye, X, Check } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Plus, Pencil, Trash2, Download, Upload, Search, ChevronRight, MessageSquare, File, FileText, FileImage, FileSpreadsheet, Eye, X, Check, ArrowLeft } from "lucide-react";
 import { DataGrid } from "@/components/shared";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
@@ -165,6 +165,8 @@ const ISSUE_STEPS = [
 
 export default function ContextPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const fromDashboard = searchParams.get("from") === "dashboard";
   const { toast } = useToast();
   const { data: session } = useSession();
   const userRoles = useUserRoles();
@@ -2854,7 +2856,17 @@ export default function ContextPage() {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div>
+      <div className="flex items-center gap-3">
+        {fromDashboard && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.push("/dashboard")}
+            className="h-8 w-8"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+        )}
         <h1 className="text-2xl font-bold text-slate-800">Context</h1>
       </div>
 

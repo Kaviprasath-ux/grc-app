@@ -60,6 +60,7 @@ import {
   ArrowUpDown,
   Settings2,
   Download,
+  ArrowLeft,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -120,6 +121,7 @@ const ITEMS_PER_PAGE = 20;
 function ControlListPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const fromDashboard = searchParams.get("from") === "dashboard";
   const { data: session } = useSession();
   const { toast } = useToast();
   const { canView, canCreate, canDelete, isLoading: permissionsLoading } = usePermissions('compliance.controls');
@@ -453,7 +455,17 @@ function ControlListPageContent() {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div>
+      <div className="flex items-center gap-3">
+        {fromDashboard && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.push("/dashboard")}
+            className="h-8 w-8"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+        )}
         <h1 className="text-2xl font-bold text-slate-800">Controls</h1>
       </div>
 
