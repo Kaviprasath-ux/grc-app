@@ -1091,7 +1091,7 @@ export default function FrameworkDetailPage({
   };
 
   const handleDownloadTemplate = () => {
-    const template = "Code,Name,Description,Requirement Type,Chapter Type,Applicability,Implementation Status\n";
+    const template = "Requirement Code,Requirement Name,Description,Category,Control Mapping\n";
     const blob = new Blob([template], { type: "text/csv" });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");

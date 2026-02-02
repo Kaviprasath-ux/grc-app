@@ -151,7 +151,6 @@ export async function POST(req: NextRequest) {
             data: {
                 status: aiData.similarity_score > 0.7 ? "Published" : "Need Attention",
                 reviewDate: new Date(),
-                qualityScore: aiData.similarity_score * 100,
             }
         });
 

@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
             }
         });
 
-        console.log(`[Governance Cleanup] Cleaning up ${reviews.length} AI docs for ${policy.policyCode} (Contract Sync)`);
+        console.log(`[Governance Cleanup] Cleaning up ${reviews.length} AI docs for ${policy.code} (Contract Sync)`);
 
         const results: any[] = [];
 
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
                 base_id: policyId,
                 doc_type: "policy",
                 document_id: review.documentId,
-                file_name: policy.policyCode || "policy-doc"
+                file_name: policy.code || "policy-doc"
             };
 
             try {
@@ -71,7 +71,18 @@ export async function POST(req: NextRequest) {
                 });
 
                 // Call RunPod grc_delete
-                const response = await aiApiClient.post("/api/grc_delete", runpodPayload);
+                // Use URLSearchParams for application/x-www-form-urlencoded
+                const params = new URLSearchParams();
+                params.append("base_id", runpodPayload.base_id);
+                params.append("doc_type", runpodPayload.doc_type);
+                params.append("document_id", runpodPayload.document_id);
+                params.append("file_name", runpodPayload.file_name);
+
+                const response = await aiApiClient.post("/api/grc_delete", params, {
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded",
+                    },
+                });
 
                 // Log AIOperation (Success Update)
                 if (operation) {

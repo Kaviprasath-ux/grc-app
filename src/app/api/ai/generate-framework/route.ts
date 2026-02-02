@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { withAuthOnly, AuthenticatedRequest } from "@/lib/api-auth";
 import aiApiClient from "@/lib/ai-api-client";
 import { aiAuditService } from "@/services/ai-audit-service";
+import { prisma } from "@/lib/prisma";
 
 /**
  * POST /api/ai/generate-framework
@@ -15,9 +16,14 @@ import { aiAuditService } from "@/services/ai-audit-service";
  * - library: string (optional)
  * 
  * Response:
- * - job_id: string
+ * - job_id: string (use this for polling)
  * - status: "queued"
  * - message: string
+ * 
+ * TESTING FLOW:
+ * Step 1: POST /api/ai/generate-framework → Get job_id
+ * Step 2: Poll GET /api/ai/framework-status/{job_id} every 15s
+ * Step 3: When complete, GET /api/ai/framework-result/{job_id} → Persists data
  */
 async function handler(req: NextRequest, _context: any, session: AuthenticatedRequest['user']) {
     const startTime = Date.now();
@@ -55,6 +61,45 @@ async function handler(req: NextRequest, _context: any, session: AuthenticatedRe
             );
         }
 
+        // ═══════════════════════════════════════════════════════════════
+        // DUPLICATE DETECTION: Check if framework already exists
+        // ═══════════════════════════════════════════════════════════════
+        const existingFramework = await prisma.framework.findFirst({
+            where: {
+                ...(session.customerAccountId && { customerAccountId: session.customerAccountId }),
+                name: frameworkName,
+            },
+        });
+
+        if (existingFramework) {
+            console.log(`
+⚠️  DUPLICATE FRAMEWORK DETECTED
+[${new Date().toISOString()}]
+
+📊 FRAMEWORK DETAILS:
+  • Name: ${frameworkName}
+  • Existing ID: ${existingFramework.id}
+  • Status: ${existingFramework.status}
+  • Created: ${existingFramework.createdAt}
+
+❌ REQUEST REJECTED: Framework with this name already exists
+`);
+
+            return NextResponse.json(
+                {
+                    error: "Framework with this name already exists",
+                    existingFrameworkId: existingFramework.id,
+                    existingFramework: {
+                        id: existingFramework.id,
+                        name: existingFramework.name,
+                        code: existingFramework.code,
+                        status: existingFramework.status,
+                    },
+                },
+                { status: 409 } // Conflict
+            );
+        }
+
         // Prepare request to Python backend using aiApiClient
         const backendFormData = new FormData();
         backendFormData.append("framework_name", frameworkName);
@@ -67,7 +112,30 @@ async function handler(req: NextRequest, _context: any, session: AuthenticatedRe
             backendFormData.append("library", library);
         }
 
-        console.log(`[AI Framework] Submitting job for framework: ${frameworkName}`);
+        const createdAt = new Date().toISOString();
+        console.log(`
+╔════════════════════════════════════════════════════════════════╗
+║          🔵 STEP 1/3: JOB CREATION                              ║
+║          POST /api/ai/generate-framework                       ║
+╚════════════════════════════════════════════════════════════════╝
+[${createdAt}]
+
+📋 REQUEST PARAMETERS:
+  Framework Name    : ${frameworkName}
+  Code              : ${code || 'AUTO-GENERATED'}
+  Type              : ${type || 'N/A'}
+  Country           : ${country || 'N/A'}
+  Industry          : ${industry || 'N/A'}
+  Description       : ${description ? 'YES' : 'NO'}
+  Library           : ${library || 'N/A'}
+  Attachment        : ${attachment ? 'YES (' + attachment.name + ')' : 'NO'}
+  Customer ID       : ${session.customerAccountId || 'NOT SET'}
+  User ID           : ${session.id}
+
+📤 SUBMITTING TO PYTHON BACKEND:
+  Endpoint          : POST /api/generate_framework_job
+  Backend URL       : https://a4t2jogsl4815o-9000.proxy.runpod.net/
+`);
 
         // Call Python backend via centralized client
         const response = await aiApiClient.post(endpoint, backendFormData, {
@@ -78,20 +146,74 @@ async function handler(req: NextRequest, _context: any, session: AuthenticatedRe
 
         const result = response.data;
         jobId = result.job_id;
+        const latency = Date.now() - startTime;
 
-        console.log(`[AI Framework] Job submitted successfully: ${jobId}`);
+        console.log(`
+✅ JOB CREATED SUCCESSFULLY
+[${new Date().toISOString()}]
 
-        // PERSISTENCE: Create Job and Log Operation
+📊 JOB RESPONSE FROM PYTHON BACKEND:
+  Job ID            : ${jobId} ← USE THIS FOR POLLING
+  Status            : ${result.status}
+  Response Time     : ${latency}ms
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⏳ STEP 2/3: POLLING (Every 15 seconds for 120 minutes)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 POLLING SETUP:
+  Endpoint          : GET /api/ai/framework-status/${jobId}
+  Interval          : Every 15 seconds
+  Timeout           : 120 minutes
+  
+✅ This is automatic - UI will poll in background
+
+Expected Status Transitions:
+  QUEUED → PROCESSING → COMPLETED
+
+Manual Test (if needed):
+  curl "http://localhost:3000/api/ai/framework-status/${jobId}" \\
+    -H "Authorization: Bearer YOUR_TOKEN"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✨ STEP 3/3: RESULT RETRIEVAL & PERSISTENCE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+When Job COMPLETED:
+  Endpoint          : GET /api/ai/framework-result/${jobId}
+  
+This automatically:
+  1. Fetches results from Python backend
+  2. Extracts 114+ requirements & 200+ controls
+  3. Persists to database (ATOMIC TRANSACTION)
+  4. Returns success response
+
+Manual Test (after COMPLETED):
+  curl "http://localhost:3000/api/ai/framework-result/${jobId}" \\
+    -H "Authorization: Bearer YOUR_TOKEN"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⏱️  TIMELINE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  T=0s         : ✅ Job submitted
+  T=0-120min   : ⏳ AI processing (background)
+  T=Completion : 📥 Result fetched & persisted
+  
+Job ID Reference: ${jobId}
+`);
+
+        // DATABASE: Create Job and Log Operation
         if (jobId) {
-            await aiAuditService.createJob({
+            const jobRecord = await aiAuditService.createJob({
                 providerJobId: jobId,
                 type: 'FRAMEWORK_GEN',
                 userId: session.id,
-                metadata: requestPayload // Save all metadata for server-side persistence later
+                metadata: requestPayload
             });
+            console.log(`✅ Database: AIJob record created [ID: ${jobRecord.id}]`);
         }
 
-        await aiAuditService.logOperation({
+        const logRecord = await aiAuditService.logOperation({
             jobId,
             endpoint,
             method: 'POST',
@@ -101,10 +223,64 @@ async function handler(req: NextRequest, _context: any, session: AuthenticatedRe
             latencyMs: Date.now() - startTime,
             userId: session.id
         });
+        console.log(`✅ Database: Operation logged [ID: ${logRecord.id}]\\n`);
 
         return NextResponse.json(result);
     } catch (error: any) {
-        console.error("[AI Framework] Error submitting job:", error);
+        const errorTime = new Date().toISOString();
+        const latency = Date.now() - startTime;
+        console.error(`
+╔════════════════════════════════════════════════════════════════╗
+║          ❌ STEP 1/3: JOB CREATION FAILED                       ║
+║          Cannot submit to Python backend                       ║
+╚════════════════════════════════════════════════════════════════╝
+[${errorTime}]
+
+📊 ERROR DETAILS:
+  Framework Name    : ${frameworkName || 'NOT SET'}
+  Error Message     : ${error.message || 'Unknown error'}
+  HTTP Status       : ${error.status || 'N/A'}
+  Response Time     : ${latency}ms
+  Error Code        : ${error.code || 'UNKNOWN'}
+
+📍 FAILURE POINT:
+  Stage             : Job Submission to Python Backend
+  Endpoint Called   : POST /api/generate_framework_job
+  Backend URL       : https://a4t2jogsl4815o-9000.proxy.runpod.net/
+
+🔧 TROUBLESHOOTING:
+
+1️⃣  Check Python Backend Status:
+    • Visit: https://a4t2jogsl4815o-9000.proxy.runpod.net/health
+    • Should return 200 OK
+
+2️⃣  Verify Environment Variables:
+    • PYTHON_API_SECRET - Must be set and valid
+    • PYTHON_API_URL - Check value
+    • Run: grep -E 'PYTHON_API' .env
+
+3️⃣  Check Network Connectivity:
+    • Test connection: curl https://a4t2jogsl4815o-9000.proxy.runpod.net/
+    • Check firewall/proxy settings
+    • Verify VPN if required
+
+4️⃣  Review Python Backend Logs:
+    • SSH to RunPod instance
+    • Check job submission logs
+    • Look for validation errors
+
+5️⃣  Validate Request Data:
+    • Framework Name provided: ${frameworkName ? 'YES' : 'NO'}
+    • Customer ID available: ${session.customerAccountId ? 'YES' : 'NO'}
+    • All fields valid JSON: Check logs above
+
+📋 REQUEST THAT FAILED:
+  Framework     : ${frameworkName}
+  Type          : ${requestPayload.type || 'N/A'}
+  Country       : ${requestPayload.country || 'N/A'}
+  Industry      : ${requestPayload.industry || 'N/A'}
+  Description   : ${requestPayload.description || 'N/A'}
+`);
 
         const statusCode = error.status || 500;
         const errorMsg = error.message || "Internal server error";

@@ -139,13 +139,11 @@ interface DomainItem {
 
 // Template columns for framework requirements (same as GRC Admin)
 const TEMPLATE_COLUMNS = [
-  "Requirement Category",
-  "Requirement code",
-  "Requirement",
+  "Requirement Code",
+  "Requirement Name",
   "Description",
-  "Control mapping",
-  "Requirement type",
-  "Chapter type",
+  "Category",
+  "Control Mapping",
 ];
 
 export default function CustomerFrameworkOverviewPage() {

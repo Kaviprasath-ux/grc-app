@@ -1,84 +1,87 @@
-import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
-
-export interface CreateAIOperationParams {
-    jobId?: string;
-    endpoint: string;
-    method: string;
-    requestBody?: any;
-    responseBody?: any;
-    statusCode?: number;
-    latencyMs?: number;
-    error?: string;
-    userId?: string;
-}
+import { prisma } from "@/lib/prisma";
 
 /**
- * AI Audit Service
+ * ai-audit-service.ts
  * 
- * Responsible for persisting AI operation logs and job tracking data.
+ * Service for logging AI operations and managing AI jobs.
  */
 export const aiAuditService = {
     /**
-     * Log an atomic AI operation
+     * Logs a pre-flight or post-flight AI operation.
      */
-    async logOperation(params: CreateAIOperationParams) {
+    async logOperation(data: {
+        endpoint: string;
+        method?: string;
+        requestBody?: any;
+        responseBody?: any;
+        statusCode?: number;
+        latencyMs?: number;
+        error?: string;
+        userId?: string;
+        jobId?: string;
+    }) {
         try {
             return await prisma.aIOperation.create({
                 data: {
-                    jobId: params.jobId,
-                    endpoint: params.endpoint,
-                    method: params.method,
-                    requestBody: params.requestBody ? JSON.stringify(params.requestBody) : null,
-                    responseBody: params.responseBody ? JSON.stringify(params.responseBody) : null,
-                    statusCode: params.statusCode,
-                    latencyMs: params.latencyMs,
-                    error: params.error,
-                    userId: params.userId,
+                    endpoint: data.endpoint,
+                    method: data.method || "POST",
+                    requestBody: data.requestBody ? JSON.stringify(data.requestBody) : null,
+                    responseBody: data.responseBody ? JSON.stringify(data.responseBody) : null,
+                    statusCode: data.statusCode,
+                    latencyMs: data.latencyMs,
+                    error: data.error,
+                    userId: data.userId,
+                    jobId: data.jobId,
                 },
             });
-        } catch (error) {
-            console.error('[AI Audit Service] Failed to log operation:', error);
-            // We don't throw here to avoid failing the business process due to logging failure
+        } catch (err) {
+            console.error("Failed to log AI operation:", err);
+            return null;
         }
     },
 
     /**
-     * Create a new AI Job record
+     * Creates an AI job for tracking asynchronous tasks.
      */
-    async createJob(params: { providerJobId: string; type: string; userId?: string; metadata?: any }) {
+    async createJob(data: {
+        type: string;
+        userId?: string;
+        metadata?: any;
+        providerJobId?: string;
+    }) {
         try {
-            return await prisma.aIJob.create({
+            return await (prisma.aIJob as any).create({
                 data: {
-                    providerJobId: params.providerJobId,
-                    type: params.type,
-                    userId: params.userId,
-                    metadata: params.metadata ? JSON.stringify(params.metadata) : null,
-                    status: 'QUEUED',
-                },
+                    type: data.type,
+                    userId: data.userId,
+                    metadata: data.metadata ? JSON.stringify(data.metadata) : null,
+                    providerJobId: data.providerJobId,
+                    status: "PENDING",
+                } as any,
             });
-        } catch (error) {
-            console.error('[AI Audit Service] Failed to create job:', error);
-            throw error;
+        } catch (err) {
+            console.error("Failed to create AI job:", err);
+            return null;
         }
     },
 
     /**
-     * Update an existing AI Job status
+     * Updates the status and result of an AI job.
      */
-    async updateJobStatus(providerJobId: string, status: string, resultPath?: string) {
+    async updateJobStatus(jobId: string, status: string, result?: any, error?: string) {
         try {
-            return await prisma.aIJob.update({
-                where: { providerJobId },
+            return await (prisma.aIJob as any).update({
+                where: { id: jobId } as any,
                 data: {
-                    status,
-                    resultPath,
-                    updatedAt: new Date(),
-                },
+                    status: status,
+                    result: result ? JSON.stringify(result) : undefined,
+                    error: error,
+                } as any,
             });
-        } catch (error) {
-            console.error('[AI Audit Service] Failed to update job status:', error);
+        } catch (err) {
+            console.error("Failed to update AI job status:", err);
+            return null;
         }
-    }
+    },
 };

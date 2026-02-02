@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
 import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 
@@ -108,12 +109,15 @@ export async function POST(request: NextRequest) {
     // Multi-tenant: Get customerAccountId from session (users created by CustomerAdmin belong to same account)
     const customerAccountId = session?.user?.customerAccountId || null;
 
+    // Hash password before storing
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     const user = await prisma.user.create({
       data: {
         userId,
         userName,
         email,
-        password, // In production, hash this password!
+        password: hashedPassword,
         firstName,
         lastName,
         fullName,

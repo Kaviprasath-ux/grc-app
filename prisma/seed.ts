@@ -1,9 +1,14 @@
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log("🌱 Seeding database...");
+
+  // Hash passwords upfront
+  const hashedPassword1 = await bcrypt.hash("1", 10);
+  const hashedPasswordBaarez = await bcrypt.hash("Baarez@2025", 10);
 
   // ==================== CUSTOMER ACCOUNT (MULTI-TENANT) ====================
 
@@ -215,7 +220,7 @@ async function main() {
         userId: user.userId,
         userName: user.userName,
         email: user.email,
-        password: "1",
+        password: hashedPassword1,
         firstName: user.firstName,
         lastName: user.lastName,
         fullName: `${user.firstName} ${user.lastName}`,
@@ -298,7 +303,7 @@ async function main() {
       userId: "SUPERADMIN-001",
       userName: "superadmin",
       email: "superadmin@baarez.com",
-      password: "Baarez@2025",
+      password: hashedPasswordBaarez,
       firstName: "Super",
       lastName: "Admin",
       fullName: "Super Admin",
@@ -337,7 +342,7 @@ async function main() {
       userId: "GRCADMIN2-001",
       userName: "grcadmin2",
       email: "grcadmin2@baarez.com",
-      password: "Baarez@2025",
+      password: hashedPasswordBaarez,
       firstName: "GRC",
       lastName: "Admin2",
       fullName: "GRC Admin 2",
@@ -1171,6 +1176,50 @@ async function main() {
   }
   console.log("✅ Policies created");
 
+  // ==================== CREATE POLICY-CONTROL LINKS ====================
+  // Link policies to controls
+  console.log("🔗 Creating Policy-Control links...");
+
+  const allPolicies = await prisma.policy.findMany({
+    where: { customerAccountId },
+  });
+
+  const allControlsForPolicies = await prisma.control.findMany({
+    where: { customerAccountId },
+  });
+
+  let policyControlLinksCreated = 0;
+  // Link each policy to 3-5 controls
+  for (let i = 0; i < allPolicies.length; i++) {
+    const policy = allPolicies[i];
+    const controlCount = Math.min(3 + (i % 3), allControlsForPolicies.length); // 3-5 controls per policy
+
+    for (let j = 0; j < controlCount; j++) {
+      const controlIndex = (i * 3 + j) % allControlsForPolicies.length;
+      const control = allControlsForPolicies[controlIndex];
+
+      try {
+        await prisma.policyControl.upsert({
+          where: {
+            policyId_controlId: {
+              policyId: policy.id,
+              controlId: control.id,
+            },
+          },
+          update: {},
+          create: {
+            policyId: policy.id,
+            controlId: control.id,
+          },
+        });
+        policyControlLinksCreated++;
+      } catch (e) {
+        // Ignore duplicate key errors
+      }
+    }
+  }
+  console.log(`✅ Policy-Control links created (${policyControlLinksCreated} links)`);
+
   // Create Evidence Requests linked to multiple frameworks
   const evidences = [
     { name: "Access Control Logs", framework: "ISO 27001:2022", department: "IT Operations", status: "Pending", dueDate: "2025-01-15", description: "Monthly access control logs showing user authentication and authorization events" },
@@ -1210,6 +1259,103 @@ async function main() {
     }
   }
   console.log("✅ Evidence requests created (15 evidence items)");
+
+  // ==================== CREATE REQUIREMENT-CONTROL LINKS ====================
+  // Link requirements to controls within the same framework
+  console.log("🔗 Creating Requirement-Control links...");
+
+  // Get all frameworks with their requirements and controls
+  const frameworksForLinking = await prisma.framework.findMany({
+    where: { customerAccountId },
+    include: {
+      requirements: true,
+      controls: true,
+    },
+  });
+
+  let reqControlLinksCreated = 0;
+  for (const framework of frameworksForLinking) {
+    if (framework.requirements.length === 0 || framework.controls.length === 0) continue;
+
+    // Link each requirement to 2-4 controls from the same framework
+    for (let i = 0; i < framework.requirements.length; i++) {
+      const req = framework.requirements[i];
+      const controlCount = Math.min(2 + (i % 3), framework.controls.length); // 2-4 controls per requirement
+
+      for (let j = 0; j < controlCount; j++) {
+        const controlIndex = (i * 2 + j) % framework.controls.length;
+        const control = framework.controls[controlIndex];
+
+        try {
+          await prisma.requirementControl.upsert({
+            where: {
+              requirementId_controlId: {
+                requirementId: req.id,
+                controlId: control.id,
+              },
+            },
+            update: {},
+            create: {
+              requirementId: req.id,
+              controlId: control.id,
+            },
+          });
+          reqControlLinksCreated++;
+        } catch (e) {
+          // Ignore duplicate key errors
+        }
+      }
+    }
+  }
+  console.log(`✅ Requirement-Control links created (${reqControlLinksCreated} links)`);
+
+  // ==================== CREATE EVIDENCE-CONTROL LINKS ====================
+  // Link evidences to controls within the same framework
+  console.log("🔗 Creating Evidence-Control links...");
+
+  const frameworksForEvidenceLinks = await prisma.framework.findMany({
+    where: { customerAccountId },
+    include: {
+      evidences: true,
+      controls: true,
+    },
+  });
+
+  let evControlLinksCreated = 0;
+  for (const framework of frameworksForEvidenceLinks) {
+    if (framework.evidences.length === 0 || framework.controls.length === 0) continue;
+
+    // Link each evidence to 1-3 controls from the same framework
+    for (let i = 0; i < framework.evidences.length; i++) {
+      const evidence = framework.evidences[i];
+      const controlCount = Math.min(1 + (i % 3), framework.controls.length); // 1-3 controls per evidence
+
+      for (let j = 0; j < controlCount; j++) {
+        const controlIndex = (i + j) % framework.controls.length;
+        const control = framework.controls[controlIndex];
+
+        try {
+          await prisma.evidenceControl.upsert({
+            where: {
+              evidenceId_controlId: {
+                evidenceId: evidence.id,
+                controlId: control.id,
+              },
+            },
+            update: {},
+            create: {
+              evidenceId: evidence.id,
+              controlId: control.id,
+            },
+          });
+          evControlLinksCreated++;
+        } catch (e) {
+          // Ignore duplicate key errors
+        }
+      }
+    }
+  }
+  console.log(`✅ Evidence-Control links created (${evControlLinksCreated} links)`);
 
   // Create Exceptions
   const exceptions = [
