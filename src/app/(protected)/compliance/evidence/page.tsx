@@ -53,6 +53,11 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Check,
+  User,
+  FileText,
+  CheckCircle,
+  Upload,
+  AlertTriangle,
 } from "lucide-react";
 
 interface Evidence {
@@ -124,6 +129,16 @@ const statusColors: Record<string, string> = {
 
 const recurrenceOptions = ["Yearly", "Half-yearly", "Quarterly", "Monthly"];
 
+// Status counts interface
+interface StatusCounts {
+  notUploaded: number;
+  draft: number;
+  validated: number;
+  published: number;
+  needAttention: number;
+  total: number;
+}
+
 export default function EvidencePage() {
   const router = useRouter();
   const { data: session } = useSession();
@@ -135,6 +150,18 @@ export default function EvidencePage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [createStep, setCreateStep] = useState(1);
+
+  // Tab and status filter states
+  const [activeTab, setActiveTab] = useState<"dashboard" | "list">("dashboard");
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [statusCounts, setStatusCounts] = useState<StatusCounts>({
+    notUploaded: 0,
+    draft: 0,
+    validated: 0,
+    published: 0,
+    needAttention: 0,
+    total: 0,
+  });
 
   // Import dialog states
   const importFileInputRef = useRef<HTMLInputElement>(null);
@@ -148,6 +175,7 @@ export default function EvidencePage() {
 
   // Filters
   const [frameworkFilter, setFrameworkFilter] = useState<string>("all");
+  const [departmentFilter, setDepartmentFilter] = useState<string>("all");
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -185,6 +213,8 @@ export default function EvidencePage() {
       setLoading(true);
       const params = new URLSearchParams();
       if (frameworkFilter && frameworkFilter !== "all") params.append("frameworkId", frameworkFilter);
+      if (departmentFilter && departmentFilter !== "all") params.append("departmentId", departmentFilter);
+      if (statusFilter) params.append("status", statusFilter);
       if (searchTerm) params.append("search", searchTerm);
       params.append("page", currentPage.toString());
       params.append("limit", itemsPerPage.toString());
@@ -201,7 +231,30 @@ export default function EvidencePage() {
     } finally {
       setLoading(false);
     }
-  }, [frameworkFilter, searchTerm, currentPage]);
+  }, [frameworkFilter, departmentFilter, statusFilter, searchTerm, currentPage]);
+
+  // Fetch status counts for dashboard
+  const fetchStatusCounts = useCallback(async () => {
+    try {
+      const params = new URLSearchParams();
+      if (frameworkFilter && frameworkFilter !== "all") params.append("frameworkId", frameworkFilter);
+
+      const response = await fetch(`/api/evidences/status-counts?${params.toString()}`);
+      if (response.ok) {
+        const data = await response.json();
+        setStatusCounts({
+          notUploaded: data.notUploaded || 0,
+          draft: data.draft || 0,
+          validated: data.validated || 0,
+          published: data.published || 0,
+          needAttention: data.needAttention || 0,
+          total: data.total || 0,
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching status counts:", error);
+    }
+  }, [frameworkFilter]);
 
   const fetchReferenceData = useCallback(async () => {
     try {
@@ -257,6 +310,17 @@ export default function EvidencePage() {
   useEffect(() => {
     fetchEvidences();
   }, [fetchEvidences]);
+
+  useEffect(() => {
+    fetchStatusCounts();
+  }, [fetchStatusCounts]);
+
+  // Handle status card click - filter and switch to list view
+  const handleStatusCardClick = (status: string | null) => {
+    setStatusFilter(status);
+    setActiveTab("list");
+    setCurrentPage(1);
+  };
 
   // The /api/users and /api/departments endpoints already apply tenant filtering,
   // so data is already scoped to the user's customerAccountId.
@@ -443,56 +507,231 @@ export default function EvidencePage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">Evidence</h1>
+        <h1 className="text-2xl font-bold text-primary-600">Evidence</h1>
+        <Button variant="outline" className="bg-primary-600 text-white hover:bg-primary-700 border-primary-600">
+          <FileSpreadsheet className="h-4 w-4 mr-2" />
+          Export
+        </Button>
       </div>
 
-      {/* Search, Filter, and Action Buttons Row */}
-      <div className="flex items-center gap-3">
-        <Input
-          placeholder="Search by name, domain or assignee..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-          className="max-w-md bg-white"
-        />
-        <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
-          <SelectTrigger className="w-[200px] bg-white">
-            <SelectValue placeholder="Integrated Framework" />
-          </SelectTrigger>
-          <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
-            <SelectItem value="all">Integrated Framework</SelectItem>
-            {frameworks.map((f) => (
-              <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <div className="flex-1" />
-        <PermissionGate resource="compliance.evidence" action="create">
-          <Button variant="outline" size="sm" onClick={() => setIsImportDialogOpen(true)}>
-            <FileSpreadsheet className="h-4 w-4 mr-2" />
-            Import
-          </Button>
-        </PermissionGate>
-        <PermissionGate resource="compliance.evidence" action="delete">
-          <Button variant="outline" size="sm" className="text-semantic-error hover:text-semantic-error hover:bg-red-50" onClick={() => setIsDeleteAllDialogOpen(true)}>
-            <Trash2 className="h-4 w-4 mr-2" />
-            Delete All
-          </Button>
-        </PermissionGate>
-        {isCustomerAdmin ? (
-          <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Evidence
-          </Button>
-        ) : (
-          <PermissionGate resource="compliance.evidence" action="create">
-            <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              New Evidence
-            </Button>
-          </PermissionGate>
-        )}
+      {/* Tab Navigation */}
+      <div className="flex items-center gap-1 border-b border-slate-200">
+        <button
+          onClick={() => {
+            setActiveTab("dashboard");
+            setStatusFilter(null);
+          }}
+          className={`px-4 py-2 text-sm font-medium transition-colors ${
+            activeTab === "dashboard"
+              ? "text-slate-700 border-b-2 border-transparent"
+              : "text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          Dashboard
+        </button>
+        <button
+          onClick={() => setActiveTab("list")}
+          className={`px-4 py-2 text-sm font-medium transition-colors rounded-t-lg ${
+            activeTab === "list"
+              ? "bg-primary-600 text-white"
+              : "text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          Evidence Request List
+        </button>
       </div>
+
+      {/* Dashboard View */}
+      {activeTab === "dashboard" && (
+        <>
+          {/* Framework Filter */}
+          <div className="flex justify-end">
+            <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
+              <SelectTrigger className="w-[220px] bg-white border-primary-600 text-primary-600">
+                <SelectValue placeholder="Integrated Framework" />
+              </SelectTrigger>
+              <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                <SelectItem value="all">Integrated Framework</SelectItem>
+                {frameworks.map((f) => (
+                  <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Status Cards */}
+          <div className="grid grid-cols-5 gap-4">
+            {/* Not Uploaded Card */}
+            <div
+              onClick={() => handleStatusCardClick("Not Uploaded")}
+              className="relative overflow-hidden rounded-2xl p-6 cursor-pointer transition-transform hover:scale-105"
+              style={{
+                background: "linear-gradient(135deg, #1e3a5f 0%, #2d4a6f 50%, #1a2f4a 100%)",
+              }}
+            >
+              <div className="absolute top-0 right-0 w-32 h-32 opacity-10">
+                <div className="w-full h-full rounded-full border-[3px] border-dashed border-white" />
+              </div>
+              <div className="flex flex-col items-center text-white">
+                <div className="w-16 h-16 rounded-full border-2 border-dashed border-white/40 flex items-center justify-center mb-4">
+                  <User className="h-8 w-8 text-white/80" />
+                </div>
+                <span className="text-4xl font-bold mb-2">{statusCounts.notUploaded}</span>
+                <span className="text-sm text-white/80">Not Uploaded</span>
+              </div>
+            </div>
+
+            {/* Draft Card */}
+            <div
+              onClick={() => handleStatusCardClick("Draft")}
+              className="relative overflow-hidden rounded-2xl p-6 cursor-pointer transition-transform hover:scale-105"
+              style={{
+                background: "linear-gradient(135deg, #1e3a5f 0%, #2d4a6f 50%, #1a2f4a 100%)",
+              }}
+            >
+              <div className="absolute top-0 right-0 w-32 h-32 opacity-10">
+                <div className="w-full h-full rounded-full border-[3px] border-dashed border-white" />
+              </div>
+              <div className="flex flex-col items-center text-white">
+                <div className="w-16 h-16 rounded-full border-2 border-dashed border-white/40 flex items-center justify-center mb-4">
+                  <FileText className="h-8 w-8 text-white/80" />
+                </div>
+                <span className="text-4xl font-bold mb-2">{statusCounts.draft}</span>
+                <span className="text-sm text-white/80">Draft</span>
+              </div>
+            </div>
+
+            {/* Validated Card */}
+            <div
+              onClick={() => handleStatusCardClick("Validated")}
+              className="relative overflow-hidden rounded-2xl p-6 cursor-pointer transition-transform hover:scale-105"
+              style={{
+                background: "linear-gradient(135deg, #1e3a5f 0%, #2d4a6f 50%, #1a2f4a 100%)",
+              }}
+            >
+              <div className="absolute top-0 right-0 w-32 h-32 opacity-10">
+                <div className="w-full h-full rounded-full border-[3px] border-dashed border-white" />
+              </div>
+              <div className="flex flex-col items-center text-white">
+                <div className="w-16 h-16 rounded-full border-2 border-dashed border-white/40 flex items-center justify-center mb-4">
+                  <User className="h-8 w-8 text-white/80" />
+                </div>
+                <span className="text-4xl font-bold mb-2">{statusCounts.validated}</span>
+                <span className="text-sm text-white/80">Validated</span>
+              </div>
+            </div>
+
+            {/* Published Card */}
+            <div
+              onClick={() => handleStatusCardClick("Published")}
+              className="relative overflow-hidden rounded-2xl p-6 cursor-pointer transition-transform hover:scale-105"
+              style={{
+                background: "linear-gradient(135deg, #1e3a5f 0%, #2d4a6f 50%, #1a2f4a 100%)",
+              }}
+            >
+              <div className="absolute top-0 right-0 w-32 h-32 opacity-10">
+                <div className="w-full h-full rounded-full border-[3px] border-dashed border-white" />
+              </div>
+              <div className="flex flex-col items-center text-white">
+                <div className="w-16 h-16 rounded-full border-2 border-dashed border-white/40 flex items-center justify-center mb-4">
+                  <Upload className="h-8 w-8 text-white/80" />
+                </div>
+                <span className="text-4xl font-bold mb-2">
+                  {statusCounts.published}/{statusCounts.total}
+                </span>
+                <span className="text-sm text-white/80">Published</span>
+              </div>
+            </div>
+
+            {/* Need Attention Card */}
+            <div
+              onClick={() => handleStatusCardClick("Need Attention")}
+              className="relative overflow-hidden rounded-2xl p-6 cursor-pointer transition-transform hover:scale-105"
+              style={{
+                background: "linear-gradient(135deg, #1e3a5f 0%, #2d4a6f 50%, #1a2f4a 100%)",
+              }}
+            >
+              <div className="absolute top-0 right-0 w-32 h-32 opacity-10">
+                <div className="w-full h-full rounded-full border-[3px] border-dashed border-white" />
+              </div>
+              <div className="flex flex-col items-center text-white">
+                <div className="w-16 h-16 rounded-full border-2 border-dashed border-white/40 flex items-center justify-center mb-4">
+                  <CheckCircle className="h-8 w-8 text-white/80" />
+                </div>
+                <span className="text-4xl font-bold mb-2">{statusCounts.needAttention}</span>
+                <span className="text-sm text-white/80">Need Attention</span>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* List View */}
+      {activeTab === "list" && (
+        <>
+          {/* Search, Filter, and Action Buttons Row */}
+          <div className="flex items-center gap-3">
+            <Input
+              placeholder="Search by Name, Domain and Assignee"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+              className="flex-1 bg-white"
+            />
+            <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+              <SelectTrigger className="w-[200px] bg-white border-primary-600 text-primary-600">
+                <SelectValue placeholder="Department" />
+              </SelectTrigger>
+              <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                <SelectItem value="all">Department</SelectItem>
+                {departments.map((d) => (
+                  <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="flex-1" />
+            <PermissionGate resource="compliance.evidence" action="create">
+              <Button variant="outline" size="sm" onClick={() => setIsImportDialogOpen(true)}>
+                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                Import
+              </Button>
+            </PermissionGate>
+            <PermissionGate resource="compliance.evidence" action="delete">
+              <Button variant="outline" size="sm" className="text-semantic-error hover:text-semantic-error hover:bg-red-50" onClick={() => setIsDeleteAllDialogOpen(true)}>
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete All
+              </Button>
+            </PermissionGate>
+            {isCustomerAdmin ? (
+              <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                New Evidence
+              </Button>
+            ) : (
+              <PermissionGate resource="compliance.evidence" action="create">
+                <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  New Evidence
+                </Button>
+              </PermissionGate>
+            )}
+          </div>
+
+          {/* Status Filter Badge */}
+          {statusFilter && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-slate-500">Filtered by:</span>
+              <Badge variant="secondary" className="flex items-center gap-1">
+                {statusFilter}
+                <button
+                  onClick={() => setStatusFilter(null)}
+                  className="ml-1 hover:text-red-500"
+                >
+                  ×
+                </button>
+              </Badge>
+            </div>
+          )}
 
       {/* Table */}
       {loading ? (
@@ -503,16 +742,16 @@ export default function EvidencePage() {
           </div>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-slate-200">
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <Table>
             <TableHeader>
-              <TableRow className="border-b border-slate-100 bg-slate-50/50">
-                <TableHead className="text-xs font-semibold text-slate-600 py-4 pl-4">Evidence Code</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-4">Evidence Name</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-4">Domain</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-4">Status</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-4">Assignee</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-4">Department Name</TableHead>
+              <TableRow className="bg-primary-600 hover:bg-primary-600">
+                <TableHead className="text-xs font-semibold text-white py-4 pl-4">Evidence Name</TableHead>
+                <TableHead className="text-xs font-semibold text-white py-4">Domain</TableHead>
+                <TableHead className="text-xs font-semibold text-white py-4">Status</TableHead>
+                <TableHead className="text-xs font-semibold text-white py-4">Full Name</TableHead>
+                <TableHead className="text-xs font-semibold text-white py-4">Department Name</TableHead>
+                <TableHead className="text-xs font-semibold text-white py-4">IsIssueIdentifiedByAI</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -522,8 +761,7 @@ export default function EvidencePage() {
                   className="border-b border-slate-100 last:border-0 cursor-pointer hover:bg-slate-50"
                   onDoubleClick={() => router.push(`/compliance/evidence/${evidence.id}`)}
                 >
-                  <TableCell className="py-4 pl-4 text-sm font-medium text-slate-900">{evidence.evidenceCode}</TableCell>
-                  <TableCell className="py-4 text-sm text-slate-700">{evidence.name}</TableCell>
+                  <TableCell className="py-4 pl-4 text-sm text-slate-700">{evidence.name}</TableCell>
                   <TableCell className="py-4 text-sm text-slate-700">{evidence.domain || "-"}</TableCell>
                   <TableCell className="py-4">
                     <Badge className={statusColors[evidence.status] || "bg-gray-100 text-gray-800"}>
@@ -532,6 +770,7 @@ export default function EvidencePage() {
                   </TableCell>
                   <TableCell className="py-4 text-sm text-slate-700">{evidence.assignee?.fullName || "-"}</TableCell>
                   <TableCell className="py-4 text-sm text-slate-700">{evidence.department?.name || "-"}</TableCell>
+                  <TableCell className="py-4 text-sm text-slate-700">NO</TableCell>
                 </TableRow>
               ))}
               {evidences.length === 0 && (
@@ -589,6 +828,8 @@ export default function EvidencePage() {
             </div>
           </div>
         </div>
+      )}
+        </>
       )}
 
       {/* Create Evidence Dialog - 3 Step Wizard */}
