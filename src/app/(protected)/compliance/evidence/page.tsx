@@ -58,7 +58,14 @@ import {
   CheckCircle,
   Upload,
   AlertTriangle,
+  Link2,
+  Eye,
+  Download,
+  Search,
+  X,
+  FileIcon,
 } from "lucide-react";
+import { toast } from "sonner";
 
 interface Evidence {
   id: string;
@@ -119,6 +126,17 @@ interface ControlDomain {
   name: string;
 }
 
+interface Artifact {
+  id: string;
+  artifactCode: string;
+  fileName: string;
+  fileType: string;
+  filePath: string;
+  uploadedAt: string;
+  uploadedBy?: { id: string; fullName: string } | null;
+  linkedEvidences?: { evidenceId: string; evidence: { id: string; evidenceCode: string; name: string } }[];
+}
+
 const statusColors: Record<string, string> = {
   "Not Uploaded": "bg-slate-100 text-slate-600",
   Draft: "bg-warning-light text-warning-dark",
@@ -152,7 +170,7 @@ export default function EvidencePage() {
   const [createStep, setCreateStep] = useState(1);
 
   // Tab and status filter states
-  const [activeTab, setActiveTab] = useState<"dashboard" | "list">("dashboard");
+  const [activeTab, setActiveTab] = useState<"list" | "artifacts">("list");
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [statusCounts, setStatusCounts] = useState<StatusCounts>({
     notUploaded: 0,
@@ -162,6 +180,21 @@ export default function EvidencePage() {
     needAttention: 0,
     total: 0,
   });
+
+  // Artifacts tab states
+  const [artifacts, setArtifacts] = useState<Artifact[]>([]);
+  const [artifactsLoading, setArtifactsLoading] = useState(false);
+  const [artifactFile, setArtifactFile] = useState<File | null>(null);
+  const [uploadingArtifact, setUploadingArtifact] = useState(false);
+  const [isArtifactDragging, setIsArtifactDragging] = useState(false);
+  const artifactFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Link evidence dialog states
+  const [linkEvidenceDialogOpen, setLinkEvidenceDialogOpen] = useState(false);
+  const [selectedArtifactForLink, setSelectedArtifactForLink] = useState<Artifact | null>(null);
+  const [selectedEvidenceIds, setSelectedEvidenceIds] = useState<string[]>([]);
+  const [evidenceSearchTerm, setEvidenceSearchTerm] = useState("");
+  const [linkingEvidence, setLinkingEvidence] = useState(false);
 
   // Import dialog states
   const importFileInputRef = useRef<HTMLInputElement>(null);
@@ -315,11 +348,191 @@ export default function EvidencePage() {
     fetchStatusCounts();
   }, [fetchStatusCounts]);
 
+  // Fetch artifacts
+  const fetchArtifacts = useCallback(async () => {
+    try {
+      setArtifactsLoading(true);
+      const response = await fetch("/api/artifacts");
+      if (response.ok) {
+        const data = await response.json();
+        setArtifacts(data.data || data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching artifacts:", error);
+    } finally {
+      setArtifactsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === "artifacts") {
+      fetchArtifacts();
+    }
+  }, [activeTab, fetchArtifacts]);
+
   // Handle status card click - filter and switch to list view
   const handleStatusCardClick = (status: string | null) => {
     setStatusFilter(status);
-    setActiveTab("list");
     setCurrentPage(1);
+  };
+
+  // Artifact file handling
+  const handleArtifactDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsArtifactDragging(true);
+  };
+
+  const handleArtifactDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsArtifactDragging(false);
+  };
+
+  const handleArtifactDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsArtifactDragging(false);
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      handleArtifactUpload(files[0]);
+    }
+  };
+
+  const handleArtifactFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      handleArtifactUpload(file);
+    }
+  };
+
+  const handleArtifactUpload = async (file: File) => {
+    setUploadingArtifact(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/api/artifacts", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (response.ok) {
+        toast.success("Artifact uploaded successfully");
+        fetchArtifacts();
+      } else {
+        toast.error("Failed to upload artifact");
+      }
+    } catch (error) {
+      console.error("Error uploading artifact:", error);
+      toast.error("Failed to upload artifact");
+    } finally {
+      setUploadingArtifact(false);
+      setArtifactFile(null);
+      if (artifactFileInputRef.current) {
+        artifactFileInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleDeleteArtifact = async (artifactId: string) => {
+    try {
+      const response = await fetch(`/api/artifacts/${artifactId}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        toast.success("Artifact deleted successfully");
+        fetchArtifacts();
+      } else {
+        toast.error("Failed to delete artifact");
+      }
+    } catch (error) {
+      console.error("Error deleting artifact:", error);
+      toast.error("Failed to delete artifact");
+    }
+  };
+
+  // Link evidence to artifact
+  const openLinkEvidenceDialog = (artifact: Artifact) => {
+    setSelectedArtifactForLink(artifact);
+    // Pre-select already linked evidences
+    const linkedIds = artifact.linkedEvidences?.map(le => le.evidenceId) || [];
+    setSelectedEvidenceIds(linkedIds);
+    setEvidenceSearchTerm("");
+    setLinkEvidenceDialogOpen(true);
+  };
+
+  const handleLinkEvidences = async () => {
+    if (!selectedArtifactForLink) return;
+
+    setLinkingEvidence(true);
+    try {
+      const response = await fetch(`/api/artifacts/${selectedArtifactForLink.id}/link-evidences`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ evidenceIds: selectedEvidenceIds }),
+      });
+
+      if (response.ok) {
+        toast.success("Evidences linked successfully");
+        setLinkEvidenceDialogOpen(false);
+        fetchArtifacts();
+      } else {
+        toast.error("Failed to link evidences");
+      }
+    } catch (error) {
+      console.error("Error linking evidences:", error);
+      toast.error("Failed to link evidences");
+    } finally {
+      setLinkingEvidence(false);
+    }
+  };
+
+  const toggleEvidenceSelection = (evidenceId: string) => {
+    setSelectedEvidenceIds((prev) =>
+      prev.includes(evidenceId)
+        ? prev.filter((id) => id !== evidenceId)
+        : [...prev, evidenceId]
+    );
+  };
+
+  // Filter evidences for link dialog
+  const filteredEvidencesForLink = evidences.filter((e) => {
+    if (!evidenceSearchTerm) return true;
+    const search = evidenceSearchTerm.toLowerCase();
+    return (
+      e.evidenceCode.toLowerCase().includes(search) ||
+      e.name.toLowerCase().includes(search)
+    );
+  });
+
+  // Get file icon based on type
+  const getFileIcon = (fileType: string) => {
+    const type = fileType.toLowerCase();
+    if (type.includes("doc") || type.includes("word")) {
+      return (
+        <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+          <span className="text-blue-600 text-xs font-bold">W</span>
+        </div>
+      );
+    }
+    if (type.includes("pdf")) {
+      return (
+        <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+          <span className="text-red-600 text-xs font-bold">PDF</span>
+        </div>
+      );
+    }
+    if (type.includes("xls") || type.includes("sheet")) {
+      return (
+        <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+          <span className="text-green-600 text-xs font-bold">XLS</span>
+        </div>
+      );
+    }
+    return (
+      <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+        <FileIcon className="h-6 w-6 text-gray-500" />
+      </div>
+    );
   };
 
   // The /api/users and /api/departments endpoints already apply tenant filtering,
@@ -518,19 +731,9 @@ export default function EvidencePage() {
       <div className="flex items-center gap-1 border-b border-slate-200">
         <button
           onClick={() => {
-            setActiveTab("dashboard");
+            setActiveTab("list");
             setStatusFilter(null);
           }}
-          className={`px-4 py-2 text-sm font-medium transition-colors ${
-            activeTab === "dashboard"
-              ? "text-slate-700 border-b-2 border-transparent"
-              : "text-slate-500 hover:text-slate-700"
-          }`}
-        >
-          Dashboard
-        </button>
-        <button
-          onClick={() => setActiveTab("list")}
           className={`px-4 py-2 text-sm font-medium transition-colors rounded-t-lg ${
             activeTab === "list"
               ? "bg-primary-600 text-white"
@@ -539,13 +742,23 @@ export default function EvidencePage() {
         >
           Evidence Request List
         </button>
+        <button
+          onClick={() => setActiveTab("artifacts")}
+          className={`px-4 py-2 text-sm font-medium transition-colors rounded-t-lg ${
+            activeTab === "artifacts"
+              ? "bg-primary-600 text-white"
+              : "text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          Artifacts
+        </button>
       </div>
 
-      {/* Dashboard View */}
-      {activeTab === "dashboard" && (
+      {/* Evidence Request List View */}
+      {activeTab === "list" && (
         <>
-          {/* Framework Filter */}
-          <div className="flex justify-end">
+          {/* Framework Filter and Action Buttons */}
+          <div className="flex justify-end items-center gap-3">
             <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
               <SelectTrigger className="w-[220px] bg-white border-primary-600 text-primary-600">
                 <SelectValue placeholder="Integrated Framework" />
@@ -557,6 +770,29 @@ export default function EvidencePage() {
                 ))}
               </SelectContent>
             </Select>
+            <Button variant="outline" className="bg-primary-600 text-white hover:bg-primary-700 border-primary-600">
+              <Upload className="h-4 w-4 mr-2" />
+              Export
+            </Button>
+            <PermissionGate resource="compliance.evidence" action="create">
+              <Button variant="outline" size="sm" onClick={() => setIsImportDialogOpen(true)} className="bg-primary-600 text-white hover:bg-primary-700 border-primary-600">
+                <Download className="h-4 w-4 mr-2" />
+                Import
+              </Button>
+            </PermissionGate>
+            {isCustomerAdmin ? (
+              <Button size="sm" onClick={() => setCreateDialogOpen(true)} className="bg-primary-600 text-white hover:bg-primary-700">
+                <Plus className="h-4 w-4 mr-2" />
+                New Evidence
+              </Button>
+            ) : (
+              <PermissionGate resource="compliance.evidence" action="create">
+                <Button size="sm" onClick={() => setCreateDialogOpen(true)} className="bg-primary-600 text-white hover:bg-primary-700">
+                  <Plus className="h-4 w-4 mr-2" />
+                  New Evidence
+                </Button>
+              </PermissionGate>
+            )}
           </div>
 
           {/* Status Cards */}
@@ -564,7 +800,7 @@ export default function EvidencePage() {
             {/* Not Uploaded Card */}
             <div
               onClick={() => handleStatusCardClick("Not Uploaded")}
-              className="relative overflow-hidden rounded-2xl p-6 cursor-pointer transition-transform hover:scale-105"
+              className={`relative overflow-hidden rounded-2xl p-6 cursor-pointer transition-transform hover:scale-105 ${statusFilter === "Not Uploaded" ? "ring-4 ring-white" : ""}`}
               style={{
                 background: "linear-gradient(135deg, #1e3a5f 0%, #2d4a6f 50%, #1a2f4a 100%)",
               }}
@@ -584,7 +820,7 @@ export default function EvidencePage() {
             {/* Draft Card */}
             <div
               onClick={() => handleStatusCardClick("Draft")}
-              className="relative overflow-hidden rounded-2xl p-6 cursor-pointer transition-transform hover:scale-105"
+              className={`relative overflow-hidden rounded-2xl p-6 cursor-pointer transition-transform hover:scale-105 ${statusFilter === "Draft" ? "ring-4 ring-white" : ""}`}
               style={{
                 background: "linear-gradient(135deg, #1e3a5f 0%, #2d4a6f 50%, #1a2f4a 100%)",
               }}
@@ -604,7 +840,7 @@ export default function EvidencePage() {
             {/* Validated Card */}
             <div
               onClick={() => handleStatusCardClick("Validated")}
-              className="relative overflow-hidden rounded-2xl p-6 cursor-pointer transition-transform hover:scale-105"
+              className={`relative overflow-hidden rounded-2xl p-6 cursor-pointer transition-transform hover:scale-105 ${statusFilter === "Validated" ? "ring-4 ring-white" : ""}`}
               style={{
                 background: "linear-gradient(135deg, #1e3a5f 0%, #2d4a6f 50%, #1a2f4a 100%)",
               }}
@@ -624,7 +860,7 @@ export default function EvidencePage() {
             {/* Published Card */}
             <div
               onClick={() => handleStatusCardClick("Published")}
-              className="relative overflow-hidden rounded-2xl p-6 cursor-pointer transition-transform hover:scale-105"
+              className={`relative overflow-hidden rounded-2xl p-6 cursor-pointer transition-transform hover:scale-105 ${statusFilter === "Published" ? "ring-4 ring-white" : ""}`}
               style={{
                 background: "linear-gradient(135deg, #1e3a5f 0%, #2d4a6f 50%, #1a2f4a 100%)",
               }}
@@ -646,7 +882,7 @@ export default function EvidencePage() {
             {/* Need Attention Card */}
             <div
               onClick={() => handleStatusCardClick("Need Attention")}
-              className="relative overflow-hidden rounded-2xl p-6 cursor-pointer transition-transform hover:scale-105"
+              className={`relative overflow-hidden rounded-2xl p-6 cursor-pointer transition-transform hover:scale-105 ${statusFilter === "Need Attention" ? "ring-4 ring-white" : ""}`}
               style={{
                 background: "linear-gradient(135deg, #1e3a5f 0%, #2d4a6f 50%, #1a2f4a 100%)",
               }}
@@ -663,21 +899,19 @@ export default function EvidencePage() {
               </div>
             </div>
           </div>
-        </>
-      )}
 
-      {/* List View */}
-      {activeTab === "list" && (
-        <>
-          {/* Search, Filter, and Action Buttons Row */}
+          {/* Search and Department Filter Row */}
           <div className="flex items-center gap-3">
-            <Input
-              placeholder="Search by Name, Domain and Assignee"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-              className="flex-1 bg-white"
-            />
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input
+                placeholder="Search by Name, Domain and Assignee"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                className="pl-10 bg-white"
+              />
+            </div>
             <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
               <SelectTrigger className="w-[200px] bg-white border-primary-600 text-primary-600">
                 <SelectValue placeholder="Department" />
@@ -689,32 +923,6 @@ export default function EvidencePage() {
                 ))}
               </SelectContent>
             </Select>
-            <div className="flex-1" />
-            <PermissionGate resource="compliance.evidence" action="create">
-              <Button variant="outline" size="sm" onClick={() => setIsImportDialogOpen(true)}>
-                <FileSpreadsheet className="h-4 w-4 mr-2" />
-                Import
-              </Button>
-            </PermissionGate>
-            <PermissionGate resource="compliance.evidence" action="delete">
-              <Button variant="outline" size="sm" className="text-semantic-error hover:text-semantic-error hover:bg-red-50" onClick={() => setIsDeleteAllDialogOpen(true)}>
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete All
-              </Button>
-            </PermissionGate>
-            {isCustomerAdmin ? (
-              <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                New Evidence
-              </Button>
-            ) : (
-              <PermissionGate resource="compliance.evidence" action="create">
-                <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  New Evidence
-                </Button>
-              </PermissionGate>
-            )}
           </div>
 
           {/* Status Filter Badge */}
@@ -830,6 +1038,124 @@ export default function EvidencePage() {
         </div>
       )}
         </>
+      )}
+
+      {/* Artifacts Tab */}
+      {activeTab === "artifacts" && (
+        <div className="space-y-6">
+          {/* Add Artifact Section */}
+          <div>
+            <h3 className="text-primary-600 font-medium mb-3">Add Artifact</h3>
+            <div
+              className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+                isArtifactDragging ? "border-primary-500 bg-primary-50" : "border-slate-300 hover:border-slate-400"
+              }`}
+              onDragOver={handleArtifactDragOver}
+              onDragLeave={handleArtifactDragLeave}
+              onDrop={handleArtifactDrop}
+              onClick={() => artifactFileInputRef.current?.click()}
+            >
+              {uploadingArtifact ? (
+                <div className="flex items-center justify-center gap-2">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-600" />
+                  <span className="text-slate-600">Uploading...</span>
+                </div>
+              ) : (
+                <p className="text-slate-600">Drag and drop or select file.</p>
+              )}
+              <input
+                ref={artifactFileInputRef}
+                type="file"
+                className="hidden"
+                onChange={handleArtifactFileChange}
+              />
+            </div>
+          </div>
+
+          {/* AI Review Button */}
+          <div>
+            <Button className="bg-primary-600 text-white hover:bg-primary-700">
+              AI Review Artifacts
+            </Button>
+          </div>
+
+          {/* Artifacts List */}
+          {artifactsLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="relative h-8 w-8">
+                <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
+                <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {artifacts.map((artifact) => (
+                <div
+                  key={artifact.id}
+                  className="flex items-center justify-between p-4 bg-white rounded-lg border border-slate-200 hover:border-slate-300"
+                >
+                  <div className="flex items-center gap-4">
+                    {getFileIcon(artifact.fileType)}
+                    <div>
+                      <p className="text-primary-600 font-medium">
+                        {artifact.artifactCode} : {artifact.fileName}
+                      </p>
+                      <p className="text-sm text-slate-500">
+                        By <span className="text-primary-600">{artifact.uploadedBy?.fullName || "Unknown"}</span>,{" "}
+                        {new Date(artifact.uploadedAt).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "2-digit",
+                          year: "numeric",
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-slate-500 hover:text-primary-600"
+                      onClick={() => openLinkEvidenceDialog(artifact)}
+                      title="Link to Evidence"
+                    >
+                      <Link2 className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-slate-500 hover:text-primary-600"
+                      title="View"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-slate-500 hover:text-primary-600"
+                      title="Download"
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50"
+                      onClick={() => handleDeleteArtifact(artifact.id)}
+                      title="Delete"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              {artifacts.length === 0 && (
+                <div className="text-center py-8 text-slate-500">
+                  No artifacts uploaded yet
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       )}
 
       {/* Create Evidence Dialog - 3 Step Wizard */}
@@ -1197,6 +1523,87 @@ export default function EvidencePage() {
             </Button>
             <Button onClick={handleImportSubmit} disabled={!importFile || importing}>
               {importing ? "Importing..." : "Import"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Link Evidence Dialog */}
+      <Dialog open={linkEvidenceDialogOpen} onOpenChange={setLinkEvidenceDialogOpen}>
+        <DialogContent className="sm:max-w-[600px] p-0 gap-0 max-h-[80vh] flex flex-col">
+          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-primary-600">Select Evidence</DialogTitle>
+            </DialogHeader>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setLinkEvidenceDialogOpen(false)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <div className="p-6 space-y-4 overflow-y-auto flex-1">
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input
+                placeholder="Search by Evidence Code , Name"
+                value={evidenceSearchTerm}
+                onChange={(e) => setEvidenceSearchTerm(e.target.value)}
+                className="pl-10 border-primary-600 text-primary-600 placeholder:text-primary-400"
+              />
+            </div>
+
+            {/* Evidence List */}
+            <div className="space-y-3 max-h-[350px] overflow-y-auto">
+              {filteredEvidencesForLink.map((evidence) => {
+                const isSelected = selectedEvidenceIds.includes(evidence.id);
+                const isLinked = selectedArtifactForLink?.linkedEvidences?.some(
+                  (le) => le.evidenceId === evidence.id
+                );
+
+                return (
+                  <div
+                    key={evidence.id}
+                    onClick={() => toggleEvidenceSelection(evidence.id)}
+                    className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-colors ${
+                      isSelected
+                        ? "border-primary-600 bg-primary-50"
+                        : "border-primary-200 hover:border-primary-400"
+                    }`}
+                  >
+                    <Checkbox
+                      checked={isSelected}
+                      onCheckedChange={() => toggleEvidenceSelection(evidence.id)}
+                      className="border-primary-400"
+                    />
+                    <span className="text-primary-600 font-medium">
+                      {evidence.evidenceCode} : {evidence.name}
+                    </span>
+                    {isLinked && (
+                      <CheckCircle className="h-4 w-4 text-green-500 ml-auto" />
+                    )}
+                  </div>
+                );
+              })}
+              {filteredEvidencesForLink.length === 0 && (
+                <div className="text-center py-8 text-slate-500">
+                  No evidence found
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="px-6 py-4 border-t border-slate-100 flex justify-end">
+            <Button
+              onClick={handleLinkEvidences}
+              disabled={linkingEvidence || selectedEvidenceIds.length === 0}
+              className="bg-primary-600 text-white hover:bg-primary-700"
+            >
+              {linkingEvidence ? "Linking..." : "Link Evidences"}
             </Button>
           </div>
         </DialogContent>
