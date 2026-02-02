@@ -195,6 +195,8 @@ export default function EvidencePage() {
   const [selectedEvidenceIds, setSelectedEvidenceIds] = useState<string[]>([]);
   const [evidenceSearchTerm, setEvidenceSearchTerm] = useState("");
   const [linkingEvidence, setLinkingEvidence] = useState(false);
+  const [allEvidencesForLink, setAllEvidencesForLink] = useState<Evidence[]>([]);
+  const [loadingAllEvidences, setLoadingAllEvidences] = useState(false);
 
   // Import dialog states
   const importFileInputRef = useRef<HTMLInputElement>(null);
@@ -370,6 +372,23 @@ export default function EvidencePage() {
     }
   }, [activeTab, fetchArtifacts]);
 
+  // Fetch all evidences for link dialog (no pagination)
+  const fetchAllEvidencesForLink = useCallback(async () => {
+    try {
+      setLoadingAllEvidences(true);
+      // Fetch all evidences without pagination for linking purposes
+      const response = await fetch("/api/evidences?limit=1000");
+      if (response.ok) {
+        const data = await response.json();
+        setAllEvidencesForLink(data.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching all evidences for link:", error);
+    } finally {
+      setLoadingAllEvidences(false);
+    }
+  }, []);
+
   // Handle status card click - filter and switch to list view
   const handleStatusCardClick = (status: string | null) => {
     setStatusFilter(status);
@@ -457,6 +476,8 @@ export default function EvidencePage() {
     const linkedIds = artifact.linkedEvidences?.map(le => le.evidenceId) || [];
     setSelectedEvidenceIds(linkedIds);
     setEvidenceSearchTerm("");
+    // Fetch all evidences for the link dialog
+    fetchAllEvidencesForLink();
     setLinkEvidenceDialogOpen(true);
   };
 
@@ -494,8 +515,8 @@ export default function EvidencePage() {
     );
   };
 
-  // Filter evidences for link dialog
-  const filteredEvidencesForLink = evidences.filter((e) => {
+  // Filter evidences for link dialog - use all evidences (not paginated)
+  const filteredEvidencesForLink = allEvidencesForLink.filter((e) => {
     if (!evidenceSearchTerm) return true;
     const search = evidenceSearchTerm.toLowerCase();
     return (
@@ -1551,42 +1572,51 @@ export default function EvidencePage() {
 
             {/* Evidence List */}
             <div className="space-y-3 max-h-[350px] overflow-y-auto">
-              {filteredEvidencesForLink.map((evidence) => {
-                const isSelected = selectedEvidenceIds.includes(evidence.id);
-                const isLinked = selectedArtifactForLink?.linkedEvidences?.some(
-                  (le) => le.evidenceId === evidence.id
-                );
-
-                return (
-                  <div
-                    key={evidence.id}
-                    onClick={() => toggleEvidenceSelection(evidence.id)}
-                    className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-colors ${
-                      isSelected
-                        ? "border-primary-600 bg-primary-50"
-                        : "border-primary-200 hover:border-primary-400"
-                    }`}
-                  >
-                    <div onClick={(e) => e.stopPropagation()}>
-                      <Checkbox
-                        checked={isSelected}
-                        onCheckedChange={() => toggleEvidenceSelection(evidence.id)}
-                        className="border-primary-400"
-                      />
-                    </div>
-                    <span className="text-primary-600 font-medium flex-1">
-                      {evidence.evidenceCode} : {evidence.name}
-                    </span>
-                    {isLinked && (
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                    )}
-                  </div>
-                );
-              })}
-              {filteredEvidencesForLink.length === 0 && (
+              {loadingAllEvidences ? (
                 <div className="text-center py-8 text-slate-500">
-                  No evidence found
+                  <div className="animate-spin h-6 w-6 border-2 border-primary-600 border-t-transparent rounded-full mx-auto mb-2"></div>
+                  Loading evidences...
                 </div>
+              ) : (
+                <>
+                  {filteredEvidencesForLink.map((evidence) => {
+                    const isSelected = selectedEvidenceIds.includes(evidence.id);
+                    const isLinked = selectedArtifactForLink?.linkedEvidences?.some(
+                      (le) => le.evidenceId === evidence.id
+                    );
+
+                    return (
+                      <div
+                        key={evidence.id}
+                        onClick={() => toggleEvidenceSelection(evidence.id)}
+                        className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-colors ${
+                          isSelected
+                            ? "border-primary-600 bg-primary-50"
+                            : "border-primary-200 hover:border-primary-400"
+                        }`}
+                      >
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={() => toggleEvidenceSelection(evidence.id)}
+                            className="border-primary-400"
+                          />
+                        </div>
+                        <span className="text-primary-600 font-medium flex-1">
+                          {evidence.evidenceCode} : {evidence.name}
+                        </span>
+                        {isLinked && (
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                        )}
+                      </div>
+                    );
+                  })}
+                  {filteredEvidencesForLink.length === 0 && (
+                    <div className="text-center py-8 text-slate-500">
+                      No evidence found
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>

@@ -104,7 +104,7 @@ export const POST = withAuth(
           fileType,
           fileSize: file.size,
           filePath: `/uploads/artifacts/${fileName}`,
-          uploadedById: session.userId,
+          uploadedById: session.id,
         },
         include: {
           uploader: {
