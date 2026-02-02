@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Download, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Home } from "lucide-react";
 import Link from "next/link";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // Risk Report Types matching UAT exactly
 const reportTypes = [
@@ -45,6 +46,7 @@ interface ReportData {
 
 export default function RiskReportsPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [selectedReport, setSelectedReport] = useState<typeof reportTypes[0] | null>(null);
   const [reportData, setReportData] = useState<ReportData[]>([]);
   const [loading, setLoading] = useState(false);
@@ -191,17 +193,17 @@ export default function RiskReportsPage() {
       <nav className="flex items-center gap-1.5 text-sm">
         <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
-          <span>Risk Management</span>
+          <span>{t("Risk Management")}</span>
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-        <span className="text-primary-700 font-medium">Reports</span>
+        <span className="text-primary-700 font-medium">{t("Reports")}</span>
       </nav>
 
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">Reports</h1>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Reports")}</h1>
         <Button onClick={() => setIsManagementDialogOpen(true)}>
-          Get Management Report
+          {t("Get Management Report")}
         </Button>
       </div>
 
@@ -214,7 +216,7 @@ export default function RiskReportsPage() {
             className="w-full justify-start text-left h-auto py-3 px-4 hover:bg-slate-50 text-slate-700"
             onClick={() => handleReportClick(report)}
           >
-            {report.title}
+            {t(report.title)}
           </Button>
         ))}
       </div>
@@ -223,14 +225,14 @@ export default function RiskReportsPage() {
       <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
         <DialogContent className="sm:max-w-[900px] h-[85vh] flex flex-col p-0 gap-0">
           <DialogHeader className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
-            <DialogTitle className="text-lg font-semibold text-slate-800">{selectedReport?.title}</DialogTitle>
+            <DialogTitle className="text-lg font-semibold text-slate-800">{selectedReport ? t(selectedReport.title) : ""}</DialogTitle>
           </DialogHeader>
 
           {/* Export Button */}
           <div className="flex-shrink-0 flex justify-end px-6 py-3 border-b border-slate-100">
             <Button variant="outline" size="sm" onClick={handleExport}>
               <Download className="h-4 w-4 mr-2" />
-              Export
+              {t("Export")}
             </Button>
           </div>
 
@@ -250,7 +252,7 @@ export default function RiskReportsPage() {
                     <tr className="h-12 bg-slate-50">
                       {selectedReport?.columns.map((col) => (
                         <th key={col} className="text-left px-4 text-sm font-medium text-slate-700">
-                          {col}
+                          {t(col)}
                         </th>
                       ))}
                     </tr>
@@ -259,7 +261,7 @@ export default function RiskReportsPage() {
                     {paginatedData.length === 0 ? (
                       <tr>
                         <td colSpan={selectedReport?.columns.length || 1} className="text-center py-8 text-slate-500">
-                          No data found
+                          {t("No data found")}
                         </td>
                       </tr>
                     ) : (
@@ -283,7 +285,7 @@ export default function RiskReportsPage() {
           {totalItems > 0 && (
             <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-t border-slate-100">
               <span className="text-sm text-slate-500">
-                {startItem} to {endItem} of {totalItems}
+                {startItem} {t("to")} {endItem} {t("of")} {totalItems}
               </span>
               <div className="flex items-center gap-1">
                 <Button
@@ -332,7 +334,7 @@ export default function RiskReportsPage() {
       <Dialog open={isManagementDialogOpen} onOpenChange={setIsManagementDialogOpen}>
         <DialogContent className="sm:max-w-[700px] p-0 gap-0">
           <DialogHeader className="px-6 py-5 border-b border-slate-100">
-            <DialogTitle className="text-lg font-semibold text-slate-800">Risk Report Parameters</DialogTitle>
+            <DialogTitle className="text-lg font-semibold text-slate-800">{t("Risk Report Parameters")}</DialogTitle>
           </DialogHeader>
 
           <div className="px-6 py-6">
@@ -348,7 +350,7 @@ export default function RiskReportsPage() {
                     htmlFor={option.id}
                     className="text-sm font-medium text-slate-700 leading-none cursor-pointer"
                   >
-                    {option.label}
+                    {t(option.label)}
                   </label>
                   {/* Year filter for timeline option */}
                   {option.id === "risk-activity-timeline" && option.checked && (
@@ -358,7 +360,7 @@ export default function RiskReportsPage() {
                         value={filterYear}
                         onChange={(e) => setFilterYear(e.target.value)}
                         className="w-20 h-7 text-sm bg-white"
-                        placeholder="Year"
+                        placeholder={t("Year")}
                       />
                     </div>
                   )}
@@ -369,10 +371,10 @@ export default function RiskReportsPage() {
 
           <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100">
             <Button variant="outline" onClick={() => setIsManagementDialogOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button onClick={handleShowManagementReport}>
-              Show Report
+              {t("Show Report")}
             </Button>
           </div>
         </DialogContent>

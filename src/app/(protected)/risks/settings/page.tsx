@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Unauthorized } from "@/components/ui/unauthorized";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   Users,
   Shield,
@@ -29,82 +30,83 @@ interface SettingCard {
   href: string;
 }
 
-const settingCards: SettingCard[] = [
-  {
-    id: "category",
-    title: "Category",
-    description: "Manage vulnerability and threat categories",
-    icon: Users,
-    href: "/risks/settings/category",
-  },
-  {
-    id: "control-strength",
-    title: "Control Strength",
-    description: "Configure control strength levels and scores",
-    icon: Shield,
-    href: "/risks/settings/control-strength",
-  },
-  {
-    id: "likelihood",
-    title: "Likelihood",
-    description: "Define risk likelihood ratings and scores",
-    icon: TrendingUp,
-    href: "/risks/settings/likelihood",
-  },
-  {
-    id: "threat",
-    title: "Threat",
-    description: "Manage threat definitions and categories",
-    icon: AlertTriangle,
-    href: "/risks/settings/threat",
-  },
-  {
-    id: "vulnerability",
-    title: "Vulnerability",
-    description: "Manage vulnerability definitions",
-    icon: ShieldAlert,
-    href: "/risks/settings/vulnerability",
-  },
-  {
-    id: "risk-methodology",
-    title: "Risk Methodology",
-    description: "Configure risk scoring and ranges",
-    icon: Settings,
-    href: "/risks/settings/risk-methodology",
-  },
-  {
-    id: "risk-category",
-    title: "Risk Category",
-    description: "Define risk categories and types",
-    icon: Layers,
-    href: "/risks/settings/risk-category",
-  },
-  {
-    id: "impact",
-    title: "Impact",
-    description: "Configure impact categories and ratings",
-    icon: BarChart3,
-    href: "/risks/settings/impact",
-  },
-  {
-    id: "vulnerability-rating",
-    title: "Vulnerability Rating",
-    description: "Define vulnerability rating levels",
-    icon: Target,
-    href: "/risks/settings/vulnerability-rating",
-  },
-  {
-    id: "risk-sub-category",
-    title: "Risk Sub Category",
-    description: "Manage risk sub-categories",
-    icon: FolderTree,
-    href: "/risks/settings/risk-sub-category",
-  },
-];
-
 export default function RiskSettingsPage() {
   const router = useRouter();
   const { canView, isLoading: permissionsLoading } = usePermissions('risk.settings');
+  const { t } = useLanguage();
+
+  const settingCards: SettingCard[] = [
+    {
+      id: "category",
+      title: t("Category"),
+      description: t("Manage vulnerability and threat categories"),
+      icon: Users,
+      href: "/risks/settings/category",
+    },
+    {
+      id: "control-strength",
+      title: t("Control Strength"),
+      description: t("Configure control strength levels and scores"),
+      icon: Shield,
+      href: "/risks/settings/control-strength",
+    },
+    {
+      id: "likelihood",
+      title: t("Likelihood"),
+      description: t("Define risk likelihood ratings and scores"),
+      icon: TrendingUp,
+      href: "/risks/settings/likelihood",
+    },
+    {
+      id: "threat",
+      title: t("Threat"),
+      description: t("Manage threat definitions and categories"),
+      icon: AlertTriangle,
+      href: "/risks/settings/threat",
+    },
+    {
+      id: "vulnerability",
+      title: t("Vulnerability"),
+      description: t("Manage vulnerability definitions"),
+      icon: ShieldAlert,
+      href: "/risks/settings/vulnerability",
+    },
+    {
+      id: "risk-methodology",
+      title: t("Risk Methodology"),
+      description: t("Configure risk scoring and ranges"),
+      icon: Settings,
+      href: "/risks/settings/risk-methodology",
+    },
+    {
+      id: "risk-category",
+      title: t("Risk Category"),
+      description: t("Define risk categories and types"),
+      icon: Layers,
+      href: "/risks/settings/risk-category",
+    },
+    {
+      id: "impact",
+      title: t("Impact"),
+      description: t("Configure impact categories and ratings"),
+      icon: BarChart3,
+      href: "/risks/settings/impact",
+    },
+    {
+      id: "vulnerability-rating",
+      title: t("Vulnerability Rating"),
+      description: t("Define vulnerability rating levels"),
+      icon: Target,
+      href: "/risks/settings/vulnerability-rating",
+    },
+    {
+      id: "risk-sub-category",
+      title: t("Risk Sub Category"),
+      description: t("Manage risk sub-categories"),
+      icon: FolderTree,
+      href: "/risks/settings/risk-sub-category",
+    },
+  ];
 
   if (permissionsLoading) {
     return (
@@ -115,7 +117,7 @@ export default function RiskSettingsPage() {
   }
 
   if (!canView) {
-    return <Unauthorized description="You don't have permission to access Risk Settings." />;
+    return <Unauthorized description={t("You don't have permission to access Risk Settings.")} />;
   }
 
   return (
@@ -124,15 +126,15 @@ export default function RiskSettingsPage() {
       <nav className="flex items-center gap-1.5 text-sm">
         <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
-          <span>Risk Management</span>
+          <span>{t("Risk Management")}</span>
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-        <span className="text-primary-700 font-medium">Settings</span>
+        <span className="text-primary-700 font-medium">{t("Settings")}</span>
       </nav>
 
       {/* Page Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">Risk Settings</h1>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Risk Settings")}</h1>
       </div>
 
       {/* Settings Card Grid */}
@@ -162,7 +164,7 @@ export default function RiskSettingsPage() {
                   size="sm"
                   onClick={() => router.push(card.href)}
                 >
-                  Manage
+                  {t("Manage")}
                 </Button>
               </div>
             </div>

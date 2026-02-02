@@ -376,7 +376,6 @@ export default function RiskAssessmentConfigPage() {
 
       {/* Page Header */}
       <h1 className="text-2xl font-bold text-slate-800">Risk Assessment Configuration</h1>
-      </div>
 
       {/* Content */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

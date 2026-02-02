@@ -34,6 +34,7 @@ import { cn } from "@/lib/utils";
 import { useSession } from "next-auth/react";
 import { useUserRoles, usePermissions } from "@/hooks/usePermissions";
 import { PermissionGate } from "@/components/ui/permission-gate";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Risk {
   id: string;
@@ -57,11 +58,13 @@ interface Risk {
 function ProgressBar({
   total,
   completed,
-  label
+  label,
+  t
 }: {
   total: number;
   completed: number;
   label: string;
+  t: (key: string) => string;
 }) {
   const percentage = total > 0 ? (completed / total) * 100 : 0;
 
@@ -77,7 +80,7 @@ function ProgressBar({
         <div className="flex items-center gap-4 mt-2 text-xs text-slate-600">
           <div className="flex items-center gap-1">
             <div className="w-3 h-3 bg-slate-300"></div>
-            <span>Total</span>
+            <span>{t("Total")}</span>
           </div>
           <div className="flex items-center gap-1">
             <div className="w-3 h-3 bg-primary-500"></div>
@@ -101,6 +104,7 @@ export default function RiskResponsePage() {
   const { data: session } = useSession();
   const userRoles = useUserRoles();
   const { canEdit, canApprove } = usePermissions('risk.response');
+  const { t } = useLanguage();
   const [risks, setRisks] = useState<Risk[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -186,7 +190,7 @@ export default function RiskResponsePage() {
         body: JSON.stringify({ responseStatus: "Awaiting Approval" }),
       });
       if (response.ok) {
-        setSuccessMessage("Risk Submit for Approval Successfully !");
+        setSuccessMessage(t("Risk Submit for Approval Successfully !"));
         setSuccessDialogOpen(true);
         // Update local state
         setRisks(prev => prev.map(r =>
@@ -211,7 +215,7 @@ export default function RiskResponsePage() {
         body: JSON.stringify({ responseStatus: "Completed" }),
       });
       if (response.ok) {
-        setSuccessMessage("Risk Approved Successfully !");
+        setSuccessMessage(t("Risk Approved Successfully !"));
         setSuccessDialogOpen(true);
         // Update local state
         setRisks(prev => prev.map(r =>
@@ -254,7 +258,7 @@ export default function RiskResponsePage() {
             onClick={(e) => handleRespond(risk, e)}
             disabled={isLoading}
           >
-            {isLoading ? "..." : "Respond"}
+            {isLoading ? "..." : t("Respond")}
           </Button>
         ) : (
           <Button
@@ -263,7 +267,7 @@ export default function RiskResponsePage() {
             className="border-primary text-primary hover:bg-primary/10"
             onClick={() => openDetail(risk)}
           >
-            View
+            {t("View")}
           </Button>
         );
       case "In-Progress":
@@ -275,7 +279,7 @@ export default function RiskResponsePage() {
             className="border-primary text-primary hover:bg-primary/10"
             onClick={() => openDetail(risk)}
           >
-            Resume
+            {t("Resume")}
           </Button>
         );
       case "Sent Back":
@@ -286,7 +290,7 @@ export default function RiskResponsePage() {
             className="bg-orange-500 hover:bg-orange-600"
             onClick={() => openDetail(risk)}
           >
-            Resume
+            {t("Resume")}
           </Button>
         ) : (
           <Button
@@ -295,7 +299,7 @@ export default function RiskResponsePage() {
             className="border-primary text-primary hover:bg-primary/10"
             onClick={() => openDetail(risk)}
           >
-            View
+            {t("View")}
           </Button>
         );
       case "Awaiting Approval":
@@ -309,7 +313,7 @@ export default function RiskResponsePage() {
                 onClick={(e) => handleApprove(risk, e)}
                 disabled={isLoading}
               >
-                {isLoading ? "..." : "Approve"}
+                {isLoading ? "..." : t("Approve")}
               </Button>
             )}
             <Button
@@ -318,7 +322,7 @@ export default function RiskResponsePage() {
               className="border-primary text-primary hover:bg-primary/10"
               onClick={() => openDetail(risk)}
             >
-              View
+              {t("View")}
             </Button>
           </div>
         );
@@ -330,7 +334,7 @@ export default function RiskResponsePage() {
             className="bg-primary hover:bg-primary/90"
             onClick={() => openDetail(risk)}
           >
-            View
+            {t("View")}
           </Button>
         );
       default:
@@ -342,7 +346,7 @@ export default function RiskResponsePage() {
             onClick={(e) => handleRespond(risk, e)}
             disabled={isLoading}
           >
-            {isLoading ? "..." : "Respond"}
+            {isLoading ? "..." : t("Respond")}
           </Button>
         ) : (
           <Button
@@ -351,7 +355,7 @@ export default function RiskResponsePage() {
             className="border-primary text-primary hover:bg-primary/10"
             onClick={() => openDetail(risk)}
           >
-            View
+            {t("View")}
           </Button>
         );
     }
@@ -407,12 +411,12 @@ export default function RiskResponsePage() {
   // Get progress label based on filter selection
   const getProgressLabel = () => {
     switch (progressFilter) {
-      case "all": return "All";
-      case "Open": return "Open";
-      case "In-Progress": return "InProgress";
-      case "Completed": return "Completed";
-      case "Awaiting Approval": return "Awaiting Approval";
-      case "Sent Back": return "Sent Back";
+      case "all": return t("All");
+      case "Open": return t("Open");
+      case "In-Progress": return t("InProgress");
+      case "Completed": return t("Completed");
+      case "Awaiting Approval": return t("Awaiting Approval");
+      case "Sent Back": return t("Sent Back");
       default: return progressFilter;
     }
   };
@@ -427,15 +431,15 @@ export default function RiskResponsePage() {
         <nav className="flex items-center gap-1.5 text-sm">
           <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
-            <span>Risk Management</span>
+            <span>{t("Risk Management")}</span>
           </Link>
           <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-          <span className="text-primary-700 font-medium">Response</span>
+          <span className="text-primary-700 font-medium">{t("Response")}</span>
         </nav>
 
         {/* Page Header */}
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold text-slate-800">Risk Response Strategy</h1>
+          <h1 className="text-2xl font-bold text-slate-800">{t("Risk Response Strategy")}</h1>
         </div>
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="relative h-8 w-8">
@@ -453,15 +457,15 @@ export default function RiskResponsePage() {
       <nav className="flex items-center gap-1.5 text-sm">
         <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
-          <span>Risk Management</span>
+          <span>{t("Risk Management")}</span>
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-        <span className="text-primary-700 font-medium">Response</span>
+        <span className="text-primary-700 font-medium">{t("Response")}</span>
       </nav>
 
       {/* Page Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">Risk Response Strategy</h1>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Risk Response Strategy")}</h1>
       </div>
 
       {/* Summary Cards with Progress Bars */}
@@ -469,43 +473,44 @@ export default function RiskResponsePage() {
         {/* Risk Response Strategy Card */}
         <div className="bg-white rounded-lg border border-slate-200 p-6">
           <div className="flex items-center justify-between mb-4">
-            <span className="font-medium text-slate-700">Risk Response Strategy</span>
+            <span className="font-medium text-slate-700">{t("Risk Response Strategy")}</span>
             <Select value={strategyFilter} onValueChange={setStrategyFilter}>
               <SelectTrigger className="w-32 h-8 bg-white">
-                <SelectValue placeholder="Strategy" />
+                <SelectValue placeholder={t("Strategy")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="Transfer">Transfer</SelectItem>
-                <SelectItem value="Avoid">Avoid</SelectItem>
-                <SelectItem value="Accept">Accept</SelectItem>
-                <SelectItem value="Treat">Treat</SelectItem>
+                <SelectItem value="all">{t("All")}</SelectItem>
+                <SelectItem value="Transfer">{t("Transfer")}</SelectItem>
+                <SelectItem value="Avoid">{t("Avoid")}</SelectItem>
+                <SelectItem value="Accept">{t("Accept")}</SelectItem>
+                <SelectItem value="Treat">{t("Treat")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <ProgressBar
             total={strategyTotal}
             completed={strategyClosed}
-            label="Closed"
+            label={t("Closed")}
+            t={t}
           />
         </div>
 
         {/* Risk Response Progress Card */}
         <div className="bg-white rounded-lg border border-slate-200 p-6">
           <div className="flex items-center justify-between mb-4">
-            <span className="font-medium text-slate-700">Risk Response Progress</span>
+            <span className="font-medium text-slate-700">{t("Risk Response Progress")}</span>
             <Select value={progressFilter} onValueChange={setProgressFilter}>
               <SelectTrigger className="w-40 h-8 bg-white">
-                <SelectValue placeholder="Status" />
+                <SelectValue placeholder={t("Status")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="all">{t("All")}</SelectItem>
                 {/* DepartmentReviewer only sees Awaiting Approval, Sent Back, and Completed */}
-                {!isDepartmentReviewer && <SelectItem value="Open">Open</SelectItem>}
-                {!isDepartmentReviewer && <SelectItem value="In-Progress">In-Progress</SelectItem>}
-                <SelectItem value="Awaiting Approval">Awaiting Approval</SelectItem>
-                <SelectItem value="Sent Back">Sent Back</SelectItem>
-                <SelectItem value="Completed">Completed</SelectItem>
+                {!isDepartmentReviewer && <SelectItem value="Open">{t("Open")}</SelectItem>}
+                {!isDepartmentReviewer && <SelectItem value="In-Progress">{t("In-Progress")}</SelectItem>}
+                <SelectItem value="Awaiting Approval">{t("Awaiting Approval")}</SelectItem>
+                <SelectItem value="Sent Back">{t("Sent Back")}</SelectItem>
+                <SelectItem value="Completed">{t("Completed")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -513,6 +518,7 @@ export default function RiskResponsePage() {
             total={progressTotal}
             completed={progressCount}
             label={getProgressLabel()}
+            t={t}
           />
         </div>
       </div>
@@ -522,20 +528,20 @@ export default function RiskResponsePage() {
         <Table>
           <TableHeader>
             <TableRow className="h-12 bg-slate-50 hover:bg-slate-50">
-              <TableHead className="text-slate-700 font-medium">Risk ID</TableHead>
-              <TableHead className="text-slate-700 font-medium">Risk Name</TableHead>
-              <TableHead className="text-slate-700 font-medium">Residual Risk Rating</TableHead>
-              <TableHead className="text-slate-700 font-medium">Risk Priority</TableHead>
-              <TableHead className="text-slate-700 font-medium">Risk Due Date</TableHead>
-              <TableHead className="text-slate-700 font-medium">Response Status</TableHead>
-              <TableHead className="text-slate-700 font-medium">Action</TableHead>
+              <TableHead className="text-slate-700 font-medium">{t("Risk ID")}</TableHead>
+              <TableHead className="text-slate-700 font-medium">{t("Risk Name")}</TableHead>
+              <TableHead className="text-slate-700 font-medium">{t("Residual Risk Rating")}</TableHead>
+              <TableHead className="text-slate-700 font-medium">{t("Risk Priority")}</TableHead>
+              <TableHead className="text-slate-700 font-medium">{t("Risk Due Date")}</TableHead>
+              <TableHead className="text-slate-700 font-medium">{t("Response Status")}</TableHead>
+              <TableHead className="text-slate-700 font-medium">{t("Action")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {displayRisks.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-8 text-slate-500">
-                  No risks found
+                  {t("No risks found")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -586,14 +592,14 @@ export default function RiskResponsePage() {
       <AlertDialog open={successDialogOpen} onOpenChange={setSuccessDialogOpen}>
         <AlertDialogContent className="p-0 gap-0">
           <AlertDialogHeader className="px-6 py-5 border-b border-slate-100">
-            <AlertDialogTitle>Information</AlertDialogTitle>
+            <AlertDialogTitle>{t("Information")}</AlertDialogTitle>
             <AlertDialogDescription>
               {successMessage}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <AlertDialogAction onClick={() => setSuccessDialogOpen(false)}>
-              OK
+              {t("OK")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
