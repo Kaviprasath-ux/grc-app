@@ -44,6 +44,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   Edit,
   FileText,
   Shield,
@@ -57,6 +62,7 @@ import {
   Download,
   Calendar,
   ChevronLeft,
+  Layers,
 } from "lucide-react";
 
 interface Policy {
@@ -1028,6 +1034,45 @@ export default function GovernanceDetailPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Linked Frameworks Indicator */}
+      {(() => {
+        // Compute linked frameworks from both policyFrameworks array and single framework
+        const linkedFrameworks: Array<{ id: string; name: string }> = [];
+        if (policyFrameworks && policyFrameworks.length > 0) {
+          policyFrameworks.forEach((pf) => {
+            linkedFrameworks.push({ id: pf.framework.id, name: pf.framework.name });
+          });
+        } else if (policy.framework) {
+          linkedFrameworks.push(policy.framework);
+        }
+        const frameworkCount = linkedFrameworks.length;
+
+        if (frameworkCount === 0) return null;
+
+        return (
+          <div className="flex items-center gap-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors">
+                  <Layers className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm font-medium text-blue-700">
+                    Linked Frameworks: {frameworkCount}
+                  </span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-xs bg-slate-800 text-white p-2">
+                <div className="space-y-1">
+                  <p className="font-medium text-xs text-slate-300">Linked Frameworks:</p>
+                  {linkedFrameworks.map((fw) => (
+                    <p key={fw.id} className="text-sm">{fw.name}</p>
+                  ))}
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        );
+      })()}
 
       {/* Policy Details - Inline Editable (with permission check) */}
       <Card>

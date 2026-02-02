@@ -36,6 +36,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   ArrowLeft,
   FileText,
   Upload,
@@ -54,6 +59,7 @@ import {
   XCircle,
   Clock,
   Loader2,
+  Layers,
 } from "lucide-react";
 
 // Cycle status types
@@ -1207,6 +1213,43 @@ export default function EvidenceDetailPage() {
           </Button>
         </div>
       )}
+
+      {/* Linked Frameworks Indicator */}
+      {(() => {
+        // Compute linked frameworks from both evidence.frameworks array and single framework
+        const linkedFrameworks: Array<{ id: string; name: string }> = [];
+        if (evidence.frameworks && evidence.frameworks.length > 0) {
+          linkedFrameworks.push(...evidence.frameworks);
+        } else if (evidence.framework) {
+          linkedFrameworks.push(evidence.framework);
+        }
+        const frameworkCount = linkedFrameworks.length;
+
+        if (frameworkCount === 0) return null;
+
+        return (
+          <div className="flex items-center gap-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors">
+                  <Layers className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm font-medium text-blue-700">
+                    Linked Frameworks: {frameworkCount}
+                  </span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-xs bg-slate-800 text-white p-2">
+                <div className="space-y-1">
+                  <p className="font-medium text-xs text-slate-300">Linked Frameworks:</p>
+                  {linkedFrameworks.map((fw) => (
+                    <p key={fw.id} className="text-sm">{fw.name}</p>
+                  ))}
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        );
+      })()}
 
       {/* Main Content - Single Column Layout */}
       <div className="space-y-6">
