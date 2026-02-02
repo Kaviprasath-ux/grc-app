@@ -1,132 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getCustomerAccountId, getTenantFilter } from "@/lib/api-auth";
-
-// Types for the complex nested structure from Prisma
-interface PolicyControlWithPolicy {
-  policy: { id: string; status: string };
-}
-
-interface EvidenceControlWithEvidence {
-  evidence: { id: string; status: string };
-}
-
-interface ControlWithRelations {
-  id: string;
-  status: string;
-  policyControls?: PolicyControlWithPolicy[];
-  evidenceControls?: EvidenceControlWithEvidence[];
-}
-
-interface RequirementControlWithControl {
-  control?: ControlWithRelations;
-}
-
-interface RequirementWithControls {
-  controls?: RequirementControlWithControl[];
-}
-
-// Helper function to calculate compliance percentage from controls
-function calculateCompliancePercentage(controls: { status: string }[]): number {
-  if (!controls || controls.length === 0) {
-    return 0;
-  }
-  const compliantCount = controls.filter(c => c.status === "Compliant").length;
-  const percentage = (compliantCount / controls.length) * 100;
-  // Round to one decimal place
-  return Math.round(percentage * 10) / 10;
-}
-
-// Helper function to extract unique controls from requirements
-// This is used for compliance calculation as controls are linked via RequirementControl
-function extractControlsFromRequirements(
-  requirements: RequirementWithControls[]
-): ControlWithRelations[] {
-  const controlsMap = new Map<string, ControlWithRelations>();
-
-  if (requirements && Array.isArray(requirements)) {
-    for (const req of requirements) {
-      if (req.controls && Array.isArray(req.controls)) {
-        for (const rc of req.controls) {
-          if (rc.control && rc.control.id) {
-            // De-duplicate by control ID
-            if (!controlsMap.has(rc.control.id)) {
-              controlsMap.set(rc.control.id, rc.control);
-            }
-          }
-        }
-      }
-    }
-  }
-
-  return Array.from(controlsMap.values());
-}
-
-// Helper function to calculate Policy compliance percentage
-// Traversal: Framework → Requirements → Controls → PolicyControl → Policy
-// Compliant statuses: "Approved", "Published"
-function calculatePolicyCompliancePercentage(controls: ControlWithRelations[]): number {
-  const policiesMap = new Map<string, { status: string }>();
-
-  for (const control of controls) {
-    if (control.policyControls && Array.isArray(control.policyControls)) {
-      for (const pc of control.policyControls) {
-        if (pc.policy && pc.policy.id) {
-          // De-duplicate by policy ID
-          if (!policiesMap.has(pc.policy.id)) {
-            policiesMap.set(pc.policy.id, { status: pc.policy.status });
-          }
-        }
-      }
-    }
-  }
-
-  const policies = Array.from(policiesMap.values());
-  if (policies.length === 0) {
-    return 0;
-  }
-
-  // Count policies with compliant status (Approved or Published)
-  const compliantCount = policies.filter(
-    p => p.status === "Approved" || p.status === "Published"
-  ).length;
-  const percentage = (compliantCount / policies.length) * 100;
-  // Round to one decimal place
-  return Math.round(percentage * 10) / 10;
-}
-
-// Helper function to calculate Evidence compliance percentage
-// Traversal: Framework → Requirements → Controls → EvidenceControl → Evidence
-// Compliant statuses: "Published", "Validated"
-function calculateEvidenceCompliancePercentage(controls: ControlWithRelations[]): number {
-  const evidenceMap = new Map<string, { status: string }>();
-
-  for (const control of controls) {
-    if (control.evidenceControls && Array.isArray(control.evidenceControls)) {
-      for (const ec of control.evidenceControls) {
-        if (ec.evidence && ec.evidence.id) {
-          // De-duplicate by evidence ID
-          if (!evidenceMap.has(ec.evidence.id)) {
-            evidenceMap.set(ec.evidence.id, { status: ec.evidence.status });
-          }
-        }
-      }
-    }
-  }
-
-  const evidences = Array.from(evidenceMap.values());
-  if (evidences.length === 0) {
-    return 0;
-  }
-
-  // Count evidence with compliant status (Published or Validated)
-  const compliantCount = evidences.filter(
-    e => e.status === "Published" || e.status === "Validated"
-  ).length;
-  const percentage = (compliantCount / evidences.length) * 100;
-  // Round to one decimal place
-  return Math.round(percentage * 10) / 10;
-}
+import { calculateMultipleFrameworkCharts } from "@/services/FrameworkChartService";
 
 // GET all frameworks
 export const GET = withAuth(
@@ -147,60 +22,29 @@ export const GET = withAuth(
 
         const frameworks = await prisma.framework.findMany({
           where,
-          include: {
-            _count: {
-              select: { controls: true, evidences: true, requirements: true },
-            },
-            requirements: {
-              include: {
-                controls: {
-                  include: {
-                    control: {
-                      select: {
-                        id: true,
-                        status: true,
-                        policyControls: {
-                          include: {
-                            policy: {
-                              select: { id: true, status: true },
-                            },
-                          },
-                        },
-                        evidenceControls: {
-                          include: {
-                            evidence: {
-                              select: { id: true, status: true },
-                            },
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
           orderBy: { name: "asc" },
         });
 
-        // Calculate dynamic compliance percentages for each framework
-        // Using controls linked through requirements (matches controls page display)
-        const frameworksWithCompliance = frameworks.map(fw => {
-          const requirementControls = extractControlsFromRequirements(fw.requirements);
-          const compliancePercentage = calculateCompliancePercentage(requirementControls);
-          const policyPercentage = calculatePolicyCompliancePercentage(requirementControls);
-          const evidencePercentage = calculateEvidenceCompliancePercentage(requirementControls);
-          // Remove the requirements array from response to keep payload small
-          const { requirements, ...rest } = fw;
-          return {
-            ...rest,
-            compliancePercentage,
-            policyPercentage,
-            evidencePercentage,
-          };
-        });
+        // Use new chart calculation service for accurate percentages
+        if (frameworks.length > 0) {
+          const chartDataMap = await calculateMultipleFrameworkCharts(
+            frameworks.map((f) => f.id)
+          );
 
-        return NextResponse.json(frameworksWithCompliance);
+          const frameworksWithCharts = frameworks.map((fw) => {
+            const chartData = chartDataMap.get(fw.id);
+            return {
+              ...fw,
+              compliancePercentage: chartData?.compliancePercentage ?? 0,
+              policyPercentage: chartData?.policyPercentage ?? 0,
+              evidencePercentage: chartData?.evidencePercentage ?? 0,
+            };
+          });
+
+          return NextResponse.json(frameworksWithCharts);
+        }
+
+        return NextResponse.json(frameworks);
       }
 
       // For Customer Admin and other roles:
@@ -213,46 +57,31 @@ export const GET = withAuth(
       }
 
       // Get customer's own frameworks
-      const customerWhere: Record<string, unknown> = { customerAccountId };
-      if (type) customerWhere.type = type;
-
       const customerFrameworks = await prisma.framework.findMany({
-        where: customerWhere,
-        include: {
-          _count: {
-            select: { controls: true, evidences: true, requirements: true },
-          },
-          requirements: {
-            include: {
-              controls: {
-                include: {
-                  control: {
-                    select: {
-                      id: true,
-                      status: true,
-                      policyControls: {
-                        include: {
-                          policy: {
-                            select: { id: true, status: true },
-                          },
-                        },
-                      },
-                      evidenceControls: {
-                        include: {
-                          evidence: {
-                            select: { id: true, status: true },
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
+        where: {
+          customerAccountId,
+          ...(type ? { type } : {}),
         },
         orderBy: { name: "asc" },
       });
+
+      // Use new chart calculation service
+      let processedCustomerFrameworks = customerFrameworks;
+      if (customerFrameworks.length > 0) {
+        const chartDataMap = await calculateMultipleFrameworkCharts(
+          customerFrameworks.map((f) => f.id)
+        );
+
+        processedCustomerFrameworks = customerFrameworks.map((fw) => {
+          const chartData = chartDataMap.get(fw.id);
+          return {
+            ...fw,
+            compliancePercentage: chartData?.compliancePercentage ?? fw.compliancePercentage,
+            policyPercentage: chartData?.policyPercentage ?? fw.policyPercentage,
+            evidencePercentage: chartData?.evidencePercentage ?? fw.evidencePercentage,
+          };
+        });
+      }
 
       // Get GRC Admin accounts (master framework sources)
       const grcAdminAccounts = await prisma.customerAccount.findMany({
@@ -265,45 +94,10 @@ export const GET = withAuth(
       const grcAdminAccountIds = grcAdminAccounts.map((a) => a.id);
 
       // Get master frameworks from GRC Admin accounts
-      const masterWhere: Record<string, unknown> = {
-        customerAccountId: { in: grcAdminAccountIds },
-      };
-      if (type) masterWhere.type = type;
-
       const masterFrameworks = await prisma.framework.findMany({
-        where: masterWhere,
-        include: {
-          _count: {
-            select: { controls: true, evidences: true, requirements: true },
-          },
-          requirements: {
-            include: {
-              controls: {
-                include: {
-                  control: {
-                    select: {
-                      id: true,
-                      status: true,
-                      policyControls: {
-                        include: {
-                          policy: {
-                            select: { id: true, status: true },
-                          },
-                        },
-                      },
-                      evidenceControls: {
-                        include: {
-                          evidence: {
-                            select: { id: true, status: true },
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
+        where: {
+          customerAccountId: { in: grcAdminAccountIds },
+          ...(type ? { type } : {}),
         },
         orderBy: { name: "asc" },
       });
@@ -316,47 +110,31 @@ export const GET = withAuth(
         customerFrameworks.filter((f) => f.code).map((f) => f.code!.toLowerCase())
       );
 
-      // Process customer frameworks with dynamic compliance calculation
-      // Using controls linked through requirements (matches controls page display)
-      const processedCustomerFrameworks = customerFrameworks.map(fw => {
-        const requirementControls = extractControlsFromRequirements(fw.requirements);
-        const compliancePercentage = calculateCompliancePercentage(requirementControls);
-        const policyPercentage = calculatePolicyCompliancePercentage(requirementControls);
-        const evidencePercentage = calculateEvidenceCompliancePercentage(requirementControls);
-        const { requirements, ...rest } = fw;
-        return {
-          ...rest,
-          compliancePercentage,
-          policyPercentage,
-          evidencePercentage,
-        };
-      });
-
       // Combine: customer frameworks + master frameworks (marked as "Not Subscribed")
-      const allFrameworks = [...processedCustomerFrameworks];
+      let allFrameworks = [...processedCustomerFrameworks];
 
-      for (const master of masterFrameworks) {
-        // Check if customer already has this framework (by name or code)
-        const isSubscribed =
-          subscribedNames.has(master.name.toLowerCase()) ||
-          (master.code && subscribedCodes.has(master.code.toLowerCase()));
+      if (masterFrameworks.length > 0) {
+        const masterChartDataMap = await calculateMultipleFrameworkCharts(
+          masterFrameworks.map((f) => f.id)
+        );
 
-        if (!isSubscribed) {
-          // Calculate compliance percentages for master framework too
-          // Using controls linked through requirements (matches controls page display)
-          const requirementControls = extractControlsFromRequirements(master.requirements);
-          const compliancePercentage = calculateCompliancePercentage(requirementControls);
-          const policyPercentage = calculatePolicyCompliancePercentage(requirementControls);
-          const evidencePercentage = calculateEvidenceCompliancePercentage(requirementControls);
-          const { requirements, ...rest } = master;
-          // Add master framework as "Not Subscribed" for customer view
-          allFrameworks.push({
-            ...rest,
-            compliancePercentage,
-            policyPercentage,
-            evidencePercentage,
-            status: "Not Subscribed",
-          });
+        for (const master of masterFrameworks) {
+          // Check if customer already has this framework (by name or code)
+          const isSubscribed =
+            subscribedNames.has(master.name.toLowerCase()) ||
+            (master.code && subscribedCodes.has(master.code.toLowerCase()));
+
+          if (!isSubscribed) {
+            const chartData = masterChartDataMap.get(master.id);
+            // Add master framework as "Not Subscribed" for customer view
+            allFrameworks.push({
+              ...master,
+              compliancePercentage: chartData?.compliancePercentage ?? master.compliancePercentage,
+              policyPercentage: chartData?.policyPercentage ?? master.policyPercentage,
+              evidencePercentage: chartData?.evidencePercentage ?? master.evidencePercentage,
+              status: "Not Subscribed",
+            });
+          }
         }
       }
 

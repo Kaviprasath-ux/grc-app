@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, Trash2, Download, Upload, Search, Sparkles, FileText, Eye, BarChart3, ChevronLeft } from "lucide-react";
+import { Plus, Pencil, Trash2, Download, Upload, Search, Sparkles, FileText, Eye, BarChart3, ChevronLeft, Loader2 } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, LineChart, Line, XAxis, YAxis, CartesianGrid, Legend } from "recharts";
 import { DataGrid } from "@/components/shared";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -141,6 +141,8 @@ export default function ProcessPage() {
   const [deletingProcessId, setDeletingProcessId] = useState<string | null>(null);
   const [isAIEvaluationOpen, setIsAIEvaluationOpen] = useState(false);
   const [evaluatingProcess, setEvaluatingProcess] = useState<Process | null>(null);
+  const [isAiGenerating, setIsAiGenerating] = useState(false);
+  const [aiRisks, setAiRisks] = useState<any[]>([]);
   const [isBIAFormOpen, setIsBIAFormOpen] = useState(false);
   const [biaProcess, setBiaProcess] = useState<Process | null>(null);
   const [biaRatings, setBiaRatings] = useState<BIARating[]>([
@@ -158,6 +160,46 @@ export default function ProcessPage() {
   const [isAddProcessOpen, setIsAddProcessOpen] = useState(false);
   const [isEditProcessOpen, setIsEditProcessOpen] = useState(false);
   const [editingProcess, setEditingProcess] = useState<Process | null>(null);
+
+  const handleEvaluateAI = async (process: Process) => {
+    setEvaluatingProcess(process);
+    setIsAiGenerating(true);
+    setAiRisks([]);
+    setIsAIEvaluationOpen(true);
+
+    try {
+      const response = await fetch("/api/ai/risk-evaluation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ processId: process.id }),
+      });
+
+      const result = await response.json();
+      if (response.ok) {
+        setAiRisks(result.risks || []);
+        toast({
+          title: "AI Risks Generated",
+          description: `Successfully ${result.source === "AI" ? "generated" : "retrieved"} ${result.risks.length} risks.`,
+        });
+        // Refresh process list to reflect new risks if needed
+        fetchData();
+      } else {
+        toast({
+          title: "AI Generation Failed",
+          description: result.error || "Please try again later.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Communication with AI service failed.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAiGenerating(false);
+    }
+  };
   const [saving, setSaving] = useState(false);
 
   // KPI Modal states
@@ -610,14 +652,19 @@ export default function ProcessPage() {
     ...(!isReviewer ? [{
       id: "aiRisk",
       header: "AI Risk",
-      cell: () => (
+      cell: ({ row }: { row: { original: Process } }) => (
         <Button
           variant="outline"
           size="sm"
-          className="text-primary-600 border-primary-200 opacity-50 cursor-not-allowed"
-          disabled
+          className="text-primary-600 border-primary-200"
+          onClick={() => handleEvaluateAI(row.original)}
+          disabled={isAiGenerating && evaluatingProcess?.id === row.original.id}
         >
-          <Sparkles className="h-4 w-4 mr-1" />
+          {isAiGenerating && evaluatingProcess?.id === row.original.id ? (
+            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+          ) : (
+            <Sparkles className="h-4 w-4 mr-1" />
+          )}
           AI Risk Evaluation
         </Button>
       ),
@@ -1036,7 +1083,6 @@ export default function ProcessPage() {
       {/* AI Risk Evaluation Dialog */}
       <Dialog open={isAIEvaluationOpen} onOpenChange={setIsAIEvaluationOpen}>
         <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
-          {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-lg font-semibold text-slate-800">
@@ -1045,44 +1091,85 @@ export default function ProcessPage() {
               </DialogTitle>
             </DialogHeader>
           </div>
-          {/* Scrollable Content */}
           <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
-            <p className="text-sm text-slate-500">
-              AI-powered risk assessment for process: {evaluatingProcess?.name}
-            </p>
-            <div className="p-4 bg-primary-50 rounded-lg border border-primary-200">
-              <h4 className="font-medium text-primary-900 mb-2">Risk Assessment Summary</h4>
-              <p className="text-sm text-primary-700">
-                Based on the process characteristics and historical data, the AI has identified
-                the following risk factors:
-              </p>
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-slate-700">Process: {evaluatingProcess?.name}</p>
+              <p className="text-xs text-slate-500 line-clamp-2">{evaluatingProcess?.description}</p>
             </div>
-            <div className="space-y-2">
-              <div className="flex justify-between items-center p-2 bg-slate-50 rounded">
-                <span className="text-sm">Operational Risk</span>
-                <Badge variant="secondary">Medium</Badge>
+
+            {isAiGenerating ? (
+              <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                <Loader2 className="h-12 w-12 text-primary-600 animate-spin" />
+                <p className="text-sm text-slate-600 font-medium">AI is identifying potential risks...</p>
+                <p className="text-xs text-slate-400">This may take up to 30 seconds</p>
               </div>
-              <div className="flex justify-between items-center p-2 bg-slate-50 rounded">
-                <span className="text-sm">Compliance Risk</span>
-                <Badge variant="outline">Low</Badge>
+            ) : aiRisks.length > 0 ? (
+              <div className="space-y-6">
+                <div className="p-4 bg-primary-50 rounded-lg border border-primary-200">
+                  <h4 className="font-medium text-primary-900 mb-2">Detected Risks ({aiRisks.length})</h4>
+                  <p className="text-sm text-primary-700">
+                    The AI has identified the following risks, threats, and suggested controls.
+                    These are now persisted in your Risk Register.
+                  </p>
+                </div>
+                <div className="space-y-4">
+                  {aiRisks.map((risk, idx) => (
+                    <div key={idx} className="border border-slate-200 rounded-lg p-4 space-y-3 bg-white shadow-sm">
+                      <div className="flex justify-between items-start">
+                        <h5 className="font-semibold text-slate-900">{risk.name}</h5>
+                        <Badge className={
+                          risk.riskRating === "High" ? "bg-error-light text-error-dark" :
+                            risk.riskRating === "Medium" ? "bg-warning-light text-warning-dark" :
+                              "bg-success-light text-success-dark"
+                        }>
+                          {risk.riskRating}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-slate-600">{risk.description}</p>
+
+                      {risk.threats?.length > 0 && (
+                        <div className="space-y-1">
+                          <p className="text-xs font-bold text-slate-400 uppercase">Threats</p>
+                          <div className="flex flex-wrap gap-2">
+                            {risk.threats.map((tm: any, tIdx: number) => (
+                              <Badge key={tIdx} variant="outline" className="text-[10px] py-0">
+                                {tm.threat?.name || tm.threatId}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {risk.controlRisks?.length > 0 && (
+                        <div className="space-y-1">
+                          <p className="text-xs font-bold text-slate-400 uppercase">Suggested Controls</p>
+                          <div className="space-y-1">
+                            {risk.controlRisks.map((cr: any, cIdx: number) => (
+                              <div key={cIdx} className="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 p-1.5 rounded">
+                                <span className="font-mono text-[10px] bg-slate-200 px-1 rounded">{cr.control.functionalGrouping}</span>
+                                <span className="flex-1">{cr.control.name}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="flex justify-between items-center p-2 bg-slate-50 rounded">
-                <span className="text-sm">Security Risk</span>
-                <Badge variant="secondary">Medium</Badge>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 text-slate-400">
+                <Sparkles className="h-12 w-12 mb-4 opacity-20" />
+                <p>No risks generated yet.</p>
               </div>
-            </div>
-            <p className="text-xs text-slate-400">
-              * This is a simulated AI evaluation. In production, this would connect to an AI service
-              for real-time risk assessment.
-            </p>
+            )}
           </div>
-          {/* Fixed Footer */}
           <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsAIEvaluationOpen(false)}>
               Close
             </Button>
-            <Button>
-              Generate Full Report
+            <Button onClick={() => router.push("/risks/register")}>
+              Go to Risk Register
             </Button>
           </div>
         </DialogContent>
@@ -1180,8 +1267,8 @@ export default function ProcessPage() {
                       getProcessCriticality() === "High"
                         ? "bg-error-light text-error-dark border-error"
                         : getProcessCriticality() === "Medium"
-                        ? "bg-warning-light text-warning-dark border-warning"
-                        : "bg-success-light text-success-dark border-success"
+                          ? "bg-warning-light text-warning-dark border-warning"
+                          : "bg-success-light text-success-dark border-success"
                     }
                   >
                     {getProcessCriticality() || "N/A"}

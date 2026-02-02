@@ -354,6 +354,9 @@ model User {
   // Issue relations
   ownedIssues          Issue[]       @relation("IssueOwner")
   createdActions       IssueAction[]
+  // AI relations
+  aiOperations        AIOperation[]
+  aiJobs              AIJob[]
 }
 
 // Stakeholders
@@ -924,6 +927,7 @@ model Policy {
   updatedAt             DateTime           @updatedAt
   attachments           PolicyAttachment[]
   policyControls        PolicyControl[]
+  policyAIReviews       PolicyAIReview[]
   policyExceptions      PolicyException[]
   exceptions            Exception[]        @relation("PolicyExceptions")
   vaultDocumentLinks    GovernanceVaultDocumentLink[]
@@ -968,6 +972,7 @@ model Evidence {
   kpis                  KPI[]
   evidenceControls      EvidenceControl[]
   linkedArtifacts       EvidenceArtifact[]
+  evidenceAIReviews     EvidenceAIReview[]
 
   @@unique([customerAccountId, evidenceCode])
   @@index([customerAccountId])
@@ -1648,7 +1653,6 @@ model RiskControlMatrixEntry {
   ownerName           String?
   // Linked controls through junction table
   linkedControls      RiskControlMatrixControl[]
-  // Timestamps
   createdAt           DateTime        @default(now())
   updatedAt           DateTime        @updatedAt
 
@@ -2666,4 +2670,78 @@ model AuditLog {
   userName   String?
   changes    String? // JSON string of old/new values
   createdAt  DateTime @default(now())
+}
+
+// ==================== AI INFRASTRUCTURE ====================
+
+model AIOperation {
+  id                String           @id @default(cuid())
+  endpoint          String
+  method            String           @default("POST")
+  requestBody       String?          // Store as JSON string
+  responseBody      String?          // Store as JSON string
+  statusCode        Int?
+  latencyMs         Int?
+  error             String?
+  jobId             String?          // Link to AIJob if applicable
+  userId            String?
+  user              User?            @relation(fields: [userId], references: [id])
+  evidenceAIReviews EvidenceAIReview[]
+  policyAIReviews   PolicyAIReview[]
+  createdAt         DateTime         @default(now())
+
+  @@index([userId])
+  @@index([jobId])
+}
+
+model AIJob {
+  id                String           @id @default(cuid())
+  type              String           // e.g., "RISK_GENERATION", "SEMANTIC_MATCHING"
+  status            String           @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+  providerJobId     String?          @unique // External ID from Runpod/AI Service
+  result            String?          // JSON result or reference
+  error             String?
+  metadata          String?          // JSON metadata
+  userId            String?
+  user              User?            @relation(fields: [userId], references: [id])
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@index([userId])
+}
+
+model EvidenceAIReview {
+  id                String           @id @default(cuid())
+  evidenceId        String
+  evidence          Evidence         @relation(fields: [evidenceId], references: [id], onDelete: Cascade)
+  status            String           @default("pending") // pending, completed, failed
+  critique          String?          @db.Text
+  similarityScore   Float?
+  recommendations   String?          @db.Text // JSON string
+  aiOperationId     String?
+  aiOperation       AIOperation?     @relation(fields: [aiOperationId], references: [id])
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@index([evidenceId])
+}
+
+model PolicyAIReview {
+  id                String           @id @default(cuid())
+  policyId          String
+  policy            Policy           @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  documentId        String?          // External AI document ID
+  status            String           @default("ingested") // ingested, completed, failed
+  complianceSummary String?          @db.Text
+  riskScore         Float?
+  matchedControls   String?          @db.Text // JSON
+  gaps              String?          @db.Text // JSON
+  recommendations   String?          @db.Text // JSON
+  reviewedAt        DateTime?
+  aiOperationId     String?
+  aiOperation       AIOperation?     @relation(fields: [aiOperationId], references: [id])
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@index([policyId])
 }
