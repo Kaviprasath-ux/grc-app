@@ -37,8 +37,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft, Plus, Pencil, Trash2, Download, Upload, Check, Sparkles, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Home } from "lucide-react";
-import Link from "next/link";
+import { ArrowLeft, Plus, Pencil, Trash2, Download, Upload, Check, Sparkles, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Framework {
   id: string;
@@ -54,6 +54,7 @@ interface Framework {
 
 export default function FrameworkMasterDataPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [frameworks, setFrameworks] = useState<Framework[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -283,7 +284,7 @@ export default function FrameworkMasterDataPage() {
             <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
             <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
           </div>
-          <p className="text-sm text-slate-500 font-medium">Loading frameworks...</p>
+          <p className="text-sm text-slate-500 font-medium">{t("Loading frameworks...")}</p>
         </div>
       </div>
     );
@@ -291,29 +292,25 @@ export default function FrameworkMasterDataPage() {
 
   return (
     <div className="space-y-6">
-      {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
-        <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
-          <Home className="h-4 w-4" />
-          <span>Compliance</span>
-        </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-        <Link href="/compliance/master-data" className="text-slate-500 hover:text-primary-600 transition-colors">
-          Master Data
-        </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-        <span className="text-primary-700 font-medium">Framework</span>
-      </nav>
-
       {/* Page Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">Integrated Frameworks</h1>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-slate-400 hover:text-slate-600"
+            onClick={() => router.push("/compliance/master-data")}
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="text-2xl font-bold text-slate-800">{t("Integrated Frameworks")}</h1>
+        </div>
       </div>
 
       {/* Toolbar */}
       <div className="flex items-center justify-between gap-4">
         <Input
-          placeholder="Search frameworks..."
+          placeholder={t("Search frameworks...")}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="max-w-sm bg-white"
@@ -321,67 +318,67 @@ export default function FrameworkMasterDataPage() {
         <div className="flex items-center gap-2">
           <Select value={typeFilter} onValueChange={setTypeFilter}>
             <SelectTrigger className="w-[140px] bg-white">
-              <SelectValue placeholder="All Types" />
+              <SelectValue placeholder={t("All Types")} />
             </SelectTrigger>
             <SelectContent position="popper" sideOffset={4}>
-              <SelectItem value="all">All Types</SelectItem>
-              <SelectItem value="Framework">Framework</SelectItem>
-              <SelectItem value="Standard">Standard</SelectItem>
-              <SelectItem value="Regulation">Regulation</SelectItem>
+              <SelectItem value="all">{t("All Types")}</SelectItem>
+              <SelectItem value="Framework">{t("Framework")}</SelectItem>
+              <SelectItem value="Standard">{t("Standard")}</SelectItem>
+              <SelectItem value="Regulation">{t("Regulation")}</SelectItem>
             </SelectContent>
           </Select>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-[140px] bg-white">
-              <SelectValue placeholder="All Status" />
+              <SelectValue placeholder={t("All Status")} />
             </SelectTrigger>
             <SelectContent position="popper" sideOffset={4}>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="Subscribed">Subscribed</SelectItem>
-              <SelectItem value="Active">Active</SelectItem>
-              <SelectItem value="Inactive">Inactive</SelectItem>
+              <SelectItem value="all">{t("All Status")}</SelectItem>
+              <SelectItem value="Subscribed">{t("Subscribed")}</SelectItem>
+              <SelectItem value="Active">{t("Active")}</SelectItem>
+              <SelectItem value="Inactive">{t("Inactive")}</SelectItem>
             </SelectContent>
           </Select>
           <Button variant="outline" size="sm" onClick={handleExport}>
             <Download className="h-4 w-4 mr-2" />
-            Export
+            {t("Export")}
           </Button>
           <Dialog open={aiDialogOpen} onOpenChange={setAiDialogOpen}>
             <DialogTrigger asChild>
               <Button variant="outline" size="sm" className="bg-primary-50 hover:bg-primary-100 text-primary-700 border-primary-200">
                 <Sparkles className="h-4 w-4 mr-2" />
-                New Framework (AI)
+                {t("New Framework (AI)")}
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
               <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
-                <DialogTitle className="text-lg font-semibold text-slate-800">AI Framework Generator</DialogTitle>
+                <DialogTitle className="text-lg font-semibold text-slate-800">{t("AI Framework Generator")}</DialogTitle>
               </div>
               <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
                 <p className="text-sm text-slate-600">
-                  This feature will use AI to help generate framework requirements based on your inputs.
+                  {t("This feature will use AI to help generate framework requirements based on your inputs.")}
                 </p>
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium text-slate-700">Framework Name</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Framework Name")}</Label>
                   <Input
-                    placeholder="Enter framework name"
+                    placeholder={t("Enter framework name")}
                     className="bg-white"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium text-slate-700">Industry</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Industry")}</Label>
                   <Input
-                    placeholder="e.g., Healthcare, Finance"
+                    placeholder={t("e.g., Healthcare, Finance")}
                     className="bg-white"
                   />
                 </div>
               </div>
               <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
                 <Button variant="outline" size="sm" onClick={() => setAiDialogOpen(false)}>
-                  Cancel
+                  {t("Cancel")}
                 </Button>
                 <Button size="sm">
                   <Sparkles className="h-4 w-4 mr-2" />
-                  Generate
+                  {t("Generate")}
                 </Button>
               </div>
             </DialogContent>
@@ -393,13 +390,13 @@ export default function FrameworkMasterDataPage() {
             <DialogTrigger asChild>
               <Button size="sm">
                 <Plus className="h-4 w-4 mr-2" />
-                New Framework
+                {t("New Framework")}
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
               <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
                 <DialogTitle className="text-lg font-semibold text-slate-800">
-                  {wizardStep === 1 ? "Create Integrated Framework" : "Import Requirement"}
+                  {wizardStep === 1 ? t("Create Integrated Framework") : t("Import Requirement")}
                 </DialogTitle>
               </div>
 
@@ -419,7 +416,7 @@ export default function FrameworkMasterDataPage() {
                     <span className={`ml-2 text-sm ${
                       step === wizardStep ? "text-slate-800 font-medium" : "text-slate-500"
                     }`}>
-                      {step === 1 ? "Framework Details" : "Import Requirement"}
+                      {step === 1 ? t("Framework Details") : t("Import Requirement")}
                     </span>
                     {step < 2 && <div className="w-12 h-0.5 bg-slate-200 mx-3" />}
                   </div>
@@ -430,32 +427,32 @@ export default function FrameworkMasterDataPage() {
               {wizardStep === 1 && (
                 <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
                   <p className="text-sm text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-100">
-                    Note: Custom framework will be automatically added in grey color to differentiate between Subscribed Frameworks.
+                    {t("Note: Custom framework will be automatically added in grey color to differentiate between Subscribed Frameworks.")}
                   </p>
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium text-slate-700">Integrated Framework Name *</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Integrated Framework Name")} *</Label>
                     <Input
                       value={formData.name}
                       onChange={(e) =>
                         setFormData({ ...formData, name: e.target.value })
                       }
-                      placeholder="Enter framework name"
+                      placeholder={t("Enter framework name")}
                       className="bg-white"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium text-slate-700">Description</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
                     <Input
                       value={formData.description}
                       onChange={(e) =>
                         setFormData({ ...formData, description: e.target.value })
                       }
-                      placeholder="Enter description"
+                      placeholder={t("Enter description")}
                       className="bg-white"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium text-slate-700">Framework Type *</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Framework Type")} *</Label>
                     <Select
                       value={formData.type}
                       onValueChange={(value) =>
@@ -466,32 +463,32 @@ export default function FrameworkMasterDataPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
-                        <SelectItem value="Framework">Framework</SelectItem>
-                        <SelectItem value="Standard">Standard</SelectItem>
-                        <SelectItem value="Regulation">Regulation</SelectItem>
+                        <SelectItem value="Framework">{t("Framework")}</SelectItem>
+                        <SelectItem value="Standard">{t("Standard")}</SelectItem>
+                        <SelectItem value="Regulation">{t("Regulation")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label className="text-sm font-medium text-slate-700">Country *</Label>
+                      <Label className="text-sm font-medium text-slate-700">{t("Country")} *</Label>
                       <Input
                         value={formData.country}
                         onChange={(e) =>
                           setFormData({ ...formData, country: e.target.value })
                         }
-                        placeholder="Enter country"
+                        placeholder={t("Enter country")}
                         className="bg-white"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-sm font-medium text-slate-700">Industry *</Label>
+                      <Label className="text-sm font-medium text-slate-700">{t("Industry")} *</Label>
                       <Input
                         value={formData.industry}
                         onChange={(e) =>
                           setFormData({ ...formData, industry: e.target.value })
                         }
-                        placeholder="Enter industry"
+                        placeholder={t("Enter industry")}
                         className="bg-white"
                       />
                     </div>
@@ -503,13 +500,13 @@ export default function FrameworkMasterDataPage() {
               {wizardStep === 2 && (
                 <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium text-slate-700">File</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("File")}</Label>
                     <div className="flex gap-2">
                       <Input
                         type="text"
                         value={selectedFile?.name || ""}
                         readOnly
-                        placeholder="Choose a file..."
+                        placeholder={t("Choose a file...")}
                         className="flex-1 bg-white"
                       />
                       <input
@@ -524,7 +521,7 @@ export default function FrameworkMasterDataPage() {
                         size="sm"
                         onClick={() => fileInputRef.current?.click()}
                       >
-                        Browse...
+                        {t("Browse...")}
                       </Button>
                     </div>
                   </div>
@@ -535,7 +532,7 @@ export default function FrameworkMasterDataPage() {
                       onCheckedChange={(checked) => setUseAIControls(checked as boolean)}
                     />
                     <Label htmlFor="useAI" className="cursor-pointer text-sm text-slate-600">
-                      Do you want to get controls from our AI?
+                      {t("Do you want to get controls from our AI?")}
                     </Label>
                   </div>
                   <div className="pt-2">
@@ -545,7 +542,7 @@ export default function FrameworkMasterDataPage() {
                       onClick={handleDownloadTemplate}
                     >
                       <Download className="h-4 w-4 mr-2" />
-                      Download Template
+                      {t("Download Template")}
                     </Button>
                   </div>
                 </div>
@@ -555,7 +552,7 @@ export default function FrameworkMasterDataPage() {
               <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
                 {wizardStep === 2 && (
                   <Button variant="outline" size="sm" onClick={handlePreviousStep}>
-                    Previous
+                    {t("Previous")}
                   </Button>
                 )}
                 <Button
@@ -566,7 +563,7 @@ export default function FrameworkMasterDataPage() {
                     resetForm();
                   }}
                 >
-                  Cancel
+                  {t("Cancel")}
                 </Button>
                 {wizardStep === 1 ? (
                   <Button
@@ -574,12 +571,12 @@ export default function FrameworkMasterDataPage() {
                     onClick={handleNextStep}
                     disabled={!formData.name || !formData.country || !formData.industry}
                   >
-                    Next
+                    {t("Next")}
                   </Button>
                 ) : (
                   <Button size="sm" onClick={handleImport}>
                     <Upload className="h-4 w-4 mr-2" />
-                    Import
+                    {t("Import")}
                   </Button>
                 )}
               </div>
@@ -593,17 +590,17 @@ export default function FrameworkMasterDataPage() {
         <Table>
           <TableHeader>
             <TableRow className="border-b border-slate-100 bg-slate-50/50">
-              <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4">Framework Name</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">Type</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">Status</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[100px]">Action</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4">{t("Framework Name")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Type")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Status")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[100px]">{t("Action")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {paginatedFrameworks.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className="text-center py-12">
-                  <p className="text-slate-500">No frameworks found</p>
+                  <p className="text-slate-500">{t("No frameworks found")}</p>
                 </TableCell>
               </TableRow>
             ) : (
@@ -653,8 +650,8 @@ export default function FrameworkMasterDataPage() {
         </Table>
         <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
           <p className="text-sm text-slate-500">
-            Showing {filteredFrameworks.length === 0 ? 0 : startIndex + 1} to{" "}
-            {Math.min(startIndex + itemsPerPage, filteredFrameworks.length)} of{" "}
+            {t("Showing")} {filteredFrameworks.length === 0 ? 0 : startIndex + 1} {t("to")}{" "}
+            {Math.min(startIndex + itemsPerPage, filteredFrameworks.length)} {t("of")}{" "}
             {filteredFrameworks.length}
           </p>
           <div className="flex items-center gap-1">
@@ -677,7 +674,7 @@ export default function FrameworkMasterDataPage() {
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <span className="text-sm text-slate-600 px-2">
-              Page {currentPage} of {totalPages || 1}
+              {t("Page")} {currentPage} {t("of")} {totalPages || 1}
             </span>
             <Button
               variant="ghost"
@@ -705,11 +702,11 @@ export default function FrameworkMasterDataPage() {
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
-            <DialogTitle className="text-lg font-semibold text-slate-800">Edit Integrated Framework</DialogTitle>
+            <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Integrated Framework")}</DialogTitle>
           </div>
           <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700">Integrated Framework Name *</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Integrated Framework Name")} *</Label>
               <Input
                 value={formData.name}
                 onChange={(e) =>
@@ -719,7 +716,7 @@ export default function FrameworkMasterDataPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700">Description</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
               <Input
                 value={formData.description}
                 onChange={(e) =>
@@ -729,7 +726,7 @@ export default function FrameworkMasterDataPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700">Framework Type *</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Framework Type")} *</Label>
               <Select
                 value={formData.type}
                 onValueChange={(value) =>
@@ -740,15 +737,15 @@ export default function FrameworkMasterDataPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent position="popper" sideOffset={4}>
-                  <SelectItem value="Framework">Framework</SelectItem>
-                  <SelectItem value="Standard">Standard</SelectItem>
-                  <SelectItem value="Regulation">Regulation</SelectItem>
+                  <SelectItem value="Framework">{t("Framework")}</SelectItem>
+                  <SelectItem value="Standard">{t("Standard")}</SelectItem>
+                  <SelectItem value="Regulation">{t("Regulation")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-slate-700">Country *</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Country")} *</Label>
                 <Input
                   value={formData.country}
                   onChange={(e) =>
@@ -758,7 +755,7 @@ export default function FrameworkMasterDataPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-slate-700">Industry *</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Industry")} *</Label>
                 <Input
                   value={formData.industry}
                   onChange={(e) =>
@@ -779,10 +776,10 @@ export default function FrameworkMasterDataPage() {
                 resetForm();
               }}
             >
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button size="sm" onClick={handleEdit} disabled={!formData.name || !formData.country || !formData.industry}>
-              Save
+              {t("Save")}
             </Button>
           </div>
         </DialogContent>
@@ -792,19 +789,18 @@ export default function FrameworkMasterDataPage() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent className="p-0 gap-0">
           <AlertDialogHeader className="px-6 py-5">
-            <AlertDialogTitle className="text-lg font-semibold text-slate-800">Delete Framework</AlertDialogTitle>
+            <AlertDialogTitle className="text-lg font-semibold text-slate-800">{t("Delete Framework")}</AlertDialogTitle>
             <AlertDialogDescription className="text-sm text-slate-500 mt-1">
-              Are you sure you want to delete &quot;{selectedFramework?.name}&quot;? This
-              action cannot be undone.
+              {t("Are you sure you want to delete")} &quot;{selectedFramework?.name}&quot;? {t("This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="px-6 py-4 bg-white rounded-b-lg">
-            <AlertDialogCancel className="h-9">Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="h-9">{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-red-600 hover:bg-red-700"
             >
-              Delete
+              {t("Delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

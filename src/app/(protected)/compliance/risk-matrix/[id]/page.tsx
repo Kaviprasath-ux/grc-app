@@ -42,6 +42,7 @@ import {
   Trash2,
   Link2,
 } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Risk {
   id: string;
@@ -127,6 +128,7 @@ export default function RiskDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
+  const { t } = useLanguage();
 
   const [risk, setRisk] = useState<Risk | null>(null);
   const [loading, setLoading] = useState(true);
@@ -277,7 +279,7 @@ export default function RiskDetailPage() {
   if (!risk) {
     return (
       <div className="p-6">
-        <div className="text-center text-gray-500">Risk not found</div>
+        <div className="text-center text-gray-500">{t("Risk not found")}</div>
       </div>
     );
   }
@@ -320,16 +322,16 @@ export default function RiskDetailPage() {
           <DialogTrigger asChild>
             <Button>
               <Edit className="h-4 w-4 mr-2" />
-              Edit
+              {t("Edit")}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Edit Risk</DialogTitle>
+              <DialogTitle>{t("Edit Risk")}</DialogTitle>
             </DialogHeader>
             <div className="grid grid-cols-2 gap-4 py-4">
               <div className="col-span-2">
-                <Label>Name</Label>
+                <Label>{t("Name")}</Label>
                 <Input
                   value={editForm.name}
                   onChange={(e) =>
@@ -338,7 +340,7 @@ export default function RiskDetailPage() {
                 />
               </div>
               <div className="col-span-2">
-                <Label>Description</Label>
+                <Label>{t("Description")}</Label>
                 <Textarea
                   value={editForm.description}
                   onChange={(e) =>
@@ -348,7 +350,7 @@ export default function RiskDetailPage() {
                 />
               </div>
               <div>
-                <Label>Likelihood (1-5)</Label>
+                <Label>{t("Likelihood (1-5)")}</Label>
                 <Select
                   value={editForm.likelihood}
                   onValueChange={(value) =>
@@ -359,16 +361,16 @@ export default function RiskDetailPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1">1 - Rare</SelectItem>
-                    <SelectItem value="2">2 - Unlikely</SelectItem>
-                    <SelectItem value="3">3 - Possible</SelectItem>
-                    <SelectItem value="4">4 - Likely</SelectItem>
-                    <SelectItem value="5">5 - Almost Certain</SelectItem>
+                    <SelectItem value="1">{t("1 - Rare")}</SelectItem>
+                    <SelectItem value="2">{t("2 - Unlikely")}</SelectItem>
+                    <SelectItem value="3">{t("3 - Possible")}</SelectItem>
+                    <SelectItem value="4">{t("4 - Likely")}</SelectItem>
+                    <SelectItem value="5">{t("5 - Almost Certain")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label>Impact (1-5)</Label>
+                <Label>{t("Impact (1-5)")}</Label>
                 <Select
                   value={editForm.impact}
                   onValueChange={(value) =>
@@ -379,22 +381,22 @@ export default function RiskDetailPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1">1 - Insignificant</SelectItem>
-                    <SelectItem value="2">2 - Minor</SelectItem>
-                    <SelectItem value="3">3 - Moderate</SelectItem>
-                    <SelectItem value="4">4 - Major</SelectItem>
-                    <SelectItem value="5">5 - Catastrophic</SelectItem>
+                    <SelectItem value="1">{t("1 - Insignificant")}</SelectItem>
+                    <SelectItem value="2">{t("2 - Minor")}</SelectItem>
+                    <SelectItem value="3">{t("3 - Moderate")}</SelectItem>
+                    <SelectItem value="4">{t("4 - Major")}</SelectItem>
+                    <SelectItem value="5">{t("5 - Catastrophic")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               {/* Residual Risk Section */}
               <div className="col-span-2 border-t pt-4 mt-2">
-                <Label className="text-base font-semibold">Residual Risk Assessment</Label>
-                <p className="text-sm text-gray-500 mb-3">After applying controls/mitigations</p>
+                <Label className="text-base font-semibold">{t("Residual Risk Assessment")}</Label>
+                <p className="text-sm text-gray-500 mb-3">{t("After applying controls/mitigations")}</p>
               </div>
               <div>
-                <Label>Residual Likelihood (1-5)</Label>
+                <Label>{t("Residual Likelihood (1-5)")}</Label>
                 <Select
                   value={editForm.residualLikelihood}
                   onValueChange={(value) =>
@@ -402,19 +404,19 @@ export default function RiskDetailPage() {
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select likelihood" />
+                    <SelectValue placeholder={t("Select likelihood")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1">1 - Rare</SelectItem>
-                    <SelectItem value="2">2 - Unlikely</SelectItem>
-                    <SelectItem value="3">3 - Possible</SelectItem>
-                    <SelectItem value="4">4 - Likely</SelectItem>
-                    <SelectItem value="5">5 - Almost Certain</SelectItem>
+                    <SelectItem value="1">{t("1 - Rare")}</SelectItem>
+                    <SelectItem value="2">{t("2 - Unlikely")}</SelectItem>
+                    <SelectItem value="3">{t("3 - Possible")}</SelectItem>
+                    <SelectItem value="4">{t("4 - Likely")}</SelectItem>
+                    <SelectItem value="5">{t("5 - Almost Certain")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label>Residual Impact (1-5)</Label>
+                <Label>{t("Residual Impact (1-5)")}</Label>
                 <Select
                   value={editForm.residualImpact}
                   onValueChange={(value) =>
@@ -422,23 +424,23 @@ export default function RiskDetailPage() {
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select impact" />
+                    <SelectValue placeholder={t("Select impact")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1">1 - Insignificant</SelectItem>
-                    <SelectItem value="2">2 - Minor</SelectItem>
-                    <SelectItem value="3">3 - Moderate</SelectItem>
-                    <SelectItem value="4">4 - Major</SelectItem>
-                    <SelectItem value="5">5 - Catastrophic</SelectItem>
+                    <SelectItem value="1">{t("1 - Insignificant")}</SelectItem>
+                    <SelectItem value="2">{t("2 - Minor")}</SelectItem>
+                    <SelectItem value="3">{t("3 - Moderate")}</SelectItem>
+                    <SelectItem value="4">{t("4 - Major")}</SelectItem>
+                    <SelectItem value="5">{t("5 - Catastrophic")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="col-span-2 border-t pt-4 mt-2">
-                <Label className="text-base font-semibold">Other Details</Label>
+                <Label className="text-base font-semibold">{t("Other Details")}</Label>
               </div>
               <div>
-                <Label>Category</Label>
+                <Label>{t("Category")}</Label>
                 <Select
                   value={editForm.category}
                   onValueChange={(value) =>
@@ -446,19 +448,19 @@ export default function RiskDetailPage() {
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
+                    <SelectValue placeholder={t("Select category")} />
                   </SelectTrigger>
                   <SelectContent>
                     {categories.map((c) => (
                       <SelectItem key={c} value={c}>
-                        {c}
+                        {t(c)}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label>Status</Label>
+                <Label>{t("Status")}</Label>
                 <Select
                   value={editForm.status}
                   onValueChange={(value) =>
@@ -469,14 +471,14 @@ export default function RiskDetailPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Open">Open</SelectItem>
-                    <SelectItem value="In-Progress">In-Progress</SelectItem>
-                    <SelectItem value="Completed">Completed</SelectItem>
+                    <SelectItem value="Open">{t("Open")}</SelectItem>
+                    <SelectItem value="In-Progress">{t("In-Progress")}</SelectItem>
+                    <SelectItem value="Completed">{t("Completed")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label>Mitigation Status</Label>
+                <Label>{t("Mitigation Status")}</Label>
                 <Select
                   value={editForm.mitigationStatus}
                   onValueChange={(value) =>
@@ -484,19 +486,19 @@ export default function RiskDetailPage() {
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
+                    <SelectValue placeholder={t("Select status")} />
                   </SelectTrigger>
                   <SelectContent>
                     {mitigationStatuses.map((s) => (
                       <SelectItem key={s} value={s}>
-                        {s}
+                        {t(s)}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label>Owner</Label>
+                <Label>{t("Owner")}</Label>
                 <Input
                   value={editForm.owner}
                   onChange={(e) =>
@@ -505,7 +507,7 @@ export default function RiskDetailPage() {
                 />
               </div>
               <div>
-                <Label>Department</Label>
+                <Label>{t("Department")}</Label>
                 <Select
                   value={editForm.departmentId}
                   onValueChange={(value) =>
@@ -513,7 +515,7 @@ export default function RiskDetailPage() {
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select department" />
+                    <SelectValue placeholder={t("Select department")} />
                   </SelectTrigger>
                   <SelectContent>
                     {departments.map((d) => (
@@ -525,7 +527,7 @@ export default function RiskDetailPage() {
                 </Select>
               </div>
               <div>
-                <Label>Due Date</Label>
+                <Label>{t("Due Date")}</Label>
                 <Input
                   type="date"
                   value={editForm.dueDate}
@@ -540,9 +542,9 @@ export default function RiskDetailPage() {
                 variant="outline"
                 onClick={() => setEditDialogOpen(false)}
               >
-                Cancel
+                {t("Cancel")}
               </Button>
-              <Button onClick={handleSave}>Save Changes</Button>
+              <Button onClick={handleSave}>{t("Save Changes")}</Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -553,54 +555,54 @@ export default function RiskDetailPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5" />
-            Inherent Risk Assessment
+            {t("Inherent Risk Assessment")}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-4 gap-6">
             <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-500">Likelihood</p>
+              <p className="text-sm text-gray-500">{t("Likelihood")}</p>
               <p className="text-3xl font-bold">{risk.likelihood}</p>
               <p className="text-xs text-gray-400">
                 {risk.likelihood === 1
-                  ? "Rare"
+                  ? t("Rare")
                   : risk.likelihood === 2
-                  ? "Unlikely"
+                  ? t("Unlikely")
                   : risk.likelihood === 3
-                  ? "Possible"
+                  ? t("Possible")
                   : risk.likelihood === 4
-                  ? "Likely"
-                  : "Almost Certain"}
+                  ? t("Likely")
+                  : t("Almost Certain")}
               </p>
             </div>
             <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-500">Impact</p>
+              <p className="text-sm text-gray-500">{t("Impact")}</p>
               <p className="text-3xl font-bold">{risk.impact}</p>
               <p className="text-xs text-gray-400">
                 {risk.impact === 1
-                  ? "Insignificant"
+                  ? t("Insignificant")
                   : risk.impact === 2
-                  ? "Minor"
+                  ? t("Minor")
                   : risk.impact === 3
-                  ? "Moderate"
+                  ? t("Moderate")
                   : risk.impact === 4
-                  ? "Major"
-                  : "Catastrophic"}
+                  ? t("Major")
+                  : t("Catastrophic")}
               </p>
             </div>
             <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-500">Risk Score</p>
+              <p className="text-sm text-gray-500">{t("Risk Score")}</p>
               <p className="text-3xl font-bold">{riskScore}</p>
-              <p className="text-xs text-gray-400">L x I</p>
+              <p className="text-xs text-gray-400">{t("L x I")}</p>
             </div>
             <div
               className={`text-center p-4 rounded-lg ${
                 riskRatingColors[risk.riskRating || "Low"]
               } bg-opacity-20`}
             >
-              <p className="text-sm opacity-80">Risk Rating</p>
+              <p className="text-sm opacity-80">{t("Risk Rating")}</p>
               <Badge className={riskRatingColors[risk.riskRating || "Low"]}>
-                {risk.riskRating || "Low"}
+                {risk.riskRating || t("Low")}
               </Badge>
             </div>
           </div>
@@ -612,62 +614,62 @@ export default function RiskDetailPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5" />
-            Residual Risk Assessment
+            {t("Residual Risk Assessment")}
           </CardTitle>
         </CardHeader>
         <CardContent>
           {risk.residualLikelihood && risk.residualImpact ? (
             <div className="grid grid-cols-4 gap-6">
               <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-500">Likelihood</p>
+                <p className="text-sm text-gray-500">{t("Likelihood")}</p>
                 <p className="text-3xl font-bold">{risk.residualLikelihood}</p>
                 <p className="text-xs text-gray-400">
                   {risk.residualLikelihood === 1
-                    ? "Rare"
+                    ? t("Rare")
                     : risk.residualLikelihood === 2
-                    ? "Unlikely"
+                    ? t("Unlikely")
                     : risk.residualLikelihood === 3
-                    ? "Possible"
+                    ? t("Possible")
                     : risk.residualLikelihood === 4
-                    ? "Likely"
-                    : "Almost Certain"}
+                    ? t("Likely")
+                    : t("Almost Certain")}
                 </p>
               </div>
               <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-500">Impact</p>
+                <p className="text-sm text-gray-500">{t("Impact")}</p>
                 <p className="text-3xl font-bold">{risk.residualImpact}</p>
                 <p className="text-xs text-gray-400">
                   {risk.residualImpact === 1
-                    ? "Insignificant"
+                    ? t("Insignificant")
                     : risk.residualImpact === 2
-                    ? "Minor"
+                    ? t("Minor")
                     : risk.residualImpact === 3
-                    ? "Moderate"
+                    ? t("Moderate")
                     : risk.residualImpact === 4
-                    ? "Major"
-                    : "Catastrophic"}
+                    ? t("Major")
+                    : t("Catastrophic")}
                 </p>
               </div>
               <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-500">Risk Score</p>
+                <p className="text-sm text-gray-500">{t("Risk Score")}</p>
                 <p className="text-3xl font-bold">{residualRiskScore}</p>
-                <p className="text-xs text-gray-400">L x I</p>
+                <p className="text-xs text-gray-400">{t("L x I")}</p>
               </div>
               <div
                 className={`text-center p-4 rounded-lg ${
                   riskRatingColors[risk.residualRiskRating || "Low"]
                 } bg-opacity-20`}
               >
-                <p className="text-sm opacity-80">Risk Rating</p>
+                <p className="text-sm opacity-80">{t("Risk Rating")}</p>
                 <Badge className={riskRatingColors[risk.residualRiskRating || "Low"]}>
-                  {risk.residualRiskRating || "Low"}
+                  {risk.residualRiskRating || t("Low")}
                 </Badge>
               </div>
             </div>
           ) : (
             <div className="text-center py-8 text-gray-500">
-              <p>No residual risk assessment available</p>
-              <p className="text-sm mt-1">Edit the risk to add residual risk values</p>
+              <p>{t("No residual risk assessment available")}</p>
+              <p className="text-sm mt-1">{t("Edit the risk to add residual risk values")}</p>
             </div>
           )}
         </CardContent>
@@ -678,36 +680,36 @@ export default function RiskDetailPage() {
         {/* Basic Info */}
         <Card>
           <CardHeader>
-            <CardTitle>Risk Details</CardTitle>
+            <CardTitle>{t("Risk Details")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div>
-                <Label className="text-gray-500">Category</Label>
-                <p className="font-medium">{risk.category || "-"}</p>
+                <Label className="text-gray-500">{t("Category")}</Label>
+                <p className="font-medium">{risk.category ? t(risk.category) : "-"}</p>
               </div>
               <div>
-                <Label className="text-gray-500">Mitigation Status</Label>
-                <p className="font-medium">{risk.mitigationStatus || "-"}</p>
+                <Label className="text-gray-500">{t("Mitigation Status")}</Label>
+                <p className="font-medium">{risk.mitigationStatus ? t(risk.mitigationStatus) : "-"}</p>
               </div>
               <div className="flex items-center gap-2">
                 <User className="h-4 w-4 text-gray-400" />
                 <div>
-                  <Label className="text-gray-500">Owner</Label>
+                  <Label className="text-gray-500">{t("Owner")}</Label>
                   <p className="font-medium">{risk.owner || "-"}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 <Building2 className="h-4 w-4 text-gray-400" />
                 <div>
-                  <Label className="text-gray-500">Department</Label>
+                  <Label className="text-gray-500">{t("Department")}</Label>
                   <p className="font-medium">{risk.department?.name || "-"}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-gray-400" />
                 <div>
-                  <Label className="text-gray-500">Due Date</Label>
+                  <Label className="text-gray-500">{t("Due Date")}</Label>
                   <p className="font-medium">
                     {risk.dueDate
                       ? new Date(risk.dueDate).toLocaleDateString()
@@ -722,13 +724,13 @@ export default function RiskDetailPage() {
         {/* Description */}
         <Card>
           <CardHeader>
-            <CardTitle>Description</CardTitle>
+            <CardTitle>{t("Description")}</CardTitle>
           </CardHeader>
           <CardContent>
             {risk.description ? (
               <p className="whitespace-pre-wrap">{risk.description}</p>
             ) : (
-              <p className="text-gray-500 italic">No description provided</p>
+              <p className="text-gray-500 italic">{t("No description provided")}</p>
             )}
           </CardContent>
         </Card>
@@ -739,7 +741,7 @@ export default function RiskDetailPage() {
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5" />
-            Mitigating Controls
+            {t("Mitigating Controls")}
           </CardTitle>
           <Dialog
             open={linkControlDialogOpen}
@@ -748,21 +750,21 @@ export default function RiskDetailPage() {
             <DialogTrigger asChild>
               <Button size="sm">
                 <Plus className="h-4 w-4 mr-2" />
-                Link Control
+                {t("Link Control")}
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Link Control to Risk</DialogTitle>
+                <DialogTitle>{t("Link Control to Risk")}</DialogTitle>
               </DialogHeader>
               <div className="py-4">
-                <Label>Select Control</Label>
+                <Label>{t("Select Control")}</Label>
                 <Select
                   value={selectedControlId}
                   onValueChange={setSelectedControlId}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a control" />
+                    <SelectValue placeholder={t("Select a control")} />
                   </SelectTrigger>
                   <SelectContent>
                     {availableControls
@@ -783,9 +785,9 @@ export default function RiskDetailPage() {
                   variant="outline"
                   onClick={() => setLinkControlDialogOpen(false)}
                 >
-                  Cancel
+                  {t("Cancel")}
                 </Button>
-                <Button onClick={handleLinkControl}>Link</Button>
+                <Button onClick={handleLinkControl}>{t("Link")}</Button>
               </div>
             </DialogContent>
           </Dialog>
@@ -794,20 +796,20 @@ export default function RiskDetailPage() {
           {linkedControls.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <Link2 className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p>No controls linked to this risk</p>
+              <p>{t("No controls linked to this risk")}</p>
               <p className="text-sm mt-1">
-                Link controls to show how this risk is being mitigated
+                {t("Link controls to show how this risk is being mitigated")}
               </p>
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Control ID</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Domain</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-[80px]">Actions</TableHead>
+                  <TableHead>{t("Control ID")}</TableHead>
+                  <TableHead>{t("Name")}</TableHead>
+                  <TableHead>{t("Domain")}</TableHead>
+                  <TableHead>{t("Status")}</TableHead>
+                  <TableHead className="w-[80px]">{t("Actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -859,7 +861,7 @@ export default function RiskDetailPage() {
       {/* Risk Matrix Position */}
       <Card>
         <CardHeader>
-          <CardTitle>Position in Risk Matrix</CardTitle>
+          <CardTitle>{t("Position in Risk Matrix")}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center">
@@ -899,10 +901,10 @@ export default function RiskDetailPage() {
                 </tbody>
               </table>
               <div className="absolute -left-8 top-1/2 -translate-y-1/2 -rotate-90 text-sm text-gray-500">
-                Likelihood
+                {t("Likelihood")}
               </div>
               <div className="absolute bottom-[-24px] left-1/2 -translate-x-1/2 text-sm text-gray-500">
-                Impact
+                {t("Impact")}
               </div>
             </div>
           </div>

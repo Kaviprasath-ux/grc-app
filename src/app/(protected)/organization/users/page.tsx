@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Plus, MoreVertical, Pencil, Trash2, Search, Upload, Download, ChevronRight, Home } from "lucide-react";
-import Link from "next/link";
+import { Plus, MoreVertical, Pencil, Trash2, Search, Upload, Download } from "lucide-react";
 import { DataGrid, FilterBar } from "@/components/shared";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -10,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useSession } from "next-auth/react";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   Select,
   SelectContent,
@@ -112,6 +112,7 @@ const allUserRoles = [
 export default function UsersPage() {
   const { toast } = useToast();
   const { data: session } = useSession();
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState("account-overview");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
@@ -541,27 +542,27 @@ export default function UsersPage() {
   const userColumns: ColumnDef<User>[] = [
     {
       accessorKey: "userName",
-      header: "User Name",
+      header: t("User Name"),
       cell: ({ row }) => (
         <span className="font-medium">{row.getValue("userName")}</span>
       ),
     },
     {
       accessorKey: "fullName",
-      header: "Full Name",
+      header: t("Full Name"),
     },
     {
       accessorKey: "department.name",
-      header: "Department",
+      header: t("Department"),
       cell: ({ row }) => row.original.department?.name || "-",
     },
     {
       accessorKey: "designation",
-      header: "Designation",
+      header: t("Designation"),
     },
     {
       accessorKey: "isActive",
-      header: "Status",
+      header: t("Status"),
       cell: ({ row }) => {
         const isActive = row.getValue("isActive") as boolean;
         return (
@@ -572,14 +573,14 @@ export default function UsersPage() {
               : "border-transparent bg-slate-100 text-slate-600"
             }
           >
-            {isActive ? "Active" : "Inactive"}
+            {isActive ? t("Active") : t("Inactive")}
           </Badge>
         );
       },
     },
     {
       id: "actions",
-      header: "Actions",
+      header: t("Actions"),
       cell: ({ row }) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -597,7 +598,7 @@ export default function UsersPage() {
                 setIsEditUserOpen(true);
               }}
             >
-              Edit
+              {t("Edit")}
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => {
@@ -608,7 +609,7 @@ export default function UsersPage() {
                 setIsEditUserOpen(true);
               }}
             >
-              View Details
+              {t("View Details")}
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => {
@@ -616,19 +617,19 @@ export default function UsersPage() {
                 setIsChangePasswordOpen(true);
               }}
             >
-              Reset Password
+              {t("Reset Password")}
             </DropdownMenuItem>
             <DropdownMenuItem
               className="text-destructive"
               onClick={() => handleDeactivateUser(row.original)}
             >
-              Deactivate
+              {t("Deactivate")}
             </DropdownMenuItem>
             <DropdownMenuItem
               className="text-destructive"
               onClick={() => openDeleteDialog(row.original)}
             >
-              Delete
+              {t("Delete")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -657,28 +658,28 @@ export default function UsersPage() {
   const departmentUserColumns: ColumnDef<User>[] = [
     {
       accessorKey: "fullName",
-      header: "Full Name",
+      header: t("Full Name"),
       cell: ({ row }) => (
         <span className="font-medium">{row.getValue("fullName")}</span>
       ),
     },
     {
       accessorKey: "designation",
-      header: "Designation Name",
+      header: t("Designation Name"),
       cell: ({ row }) => row.original.designation || "-",
     },
     {
       id: "reportingManager",
-      header: "Reporting Manager",
+      header: t("Reporting Manager"),
       cell: ({ row }) => row.original.reportingManager?.fullName || "-",
     },
     {
       accessorKey: "email",
-      header: "Email ID",
+      header: t("Email ID"),
     },
     {
       id: "lastLogin",
-      header: "Last Login",
+      header: t("Last Login"),
       cell: () => "-",
     },
   ];
@@ -686,7 +687,7 @@ export default function UsersPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-slate-400">Loading...</p>
+        <p className="text-slate-400">{t("Loading...")}</p>
       </div>
     );
   }
@@ -696,19 +697,19 @@ export default function UsersPage() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Account Overview</h1>
+          <h1 className="text-2xl font-bold text-slate-800">{t("Account Overview")}</h1>
         </div>
 
         <div className="space-y-4">
           {currentDepartment && (
             <div className="text-lg font-semibold text-foreground">
-              {currentDepartment.name} - {departmentUsers.length} users
+              {currentDepartment.name} - {departmentUsers.length} {t("users")}
             </div>
           )}
           <DataGrid
             columns={departmentUserColumns}
             data={departmentUsers}
-            searchPlaceholder="Search users..."
+            searchPlaceholder={t("Search users...")}
           />
         </div>
       </div>
@@ -717,25 +718,15 @@ export default function UsersPage() {
 
   return (
     <div className="space-y-6">
-      {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
-        <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
-          <Home className="h-4 w-4" />
-          <span>Organization</span>
-        </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-        <span className="text-primary-700 font-medium">Users</span>
-      </nav>
-
       {/* Page Header */}
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">Users</h1>
+      <div>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Users")}</h1>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          <TabsTrigger value="account-overview">Account Overview</TabsTrigger>
-          <TabsTrigger value="user-management">User Management</TabsTrigger>
+          <TabsTrigger value="account-overview">{t("Account Overview")}</TabsTrigger>
+          <TabsTrigger value="user-management">{t("User Management")}</TabsTrigger>
         </TabsList>
 
         {/* Account Overview Tab */}
@@ -743,26 +734,26 @@ export default function UsersPage() {
           {/* Header with search and action buttons */}
           <div className="flex items-center justify-between gap-4">
             <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
-                placeholder="Search by Department Name"
+                placeholder={t("Search by Department Name")}
                 value={departmentSearchTerm}
                 onChange={(e) => setDepartmentSearchTerm(e.target.value)}
-                className="pl-10 bg-white"
+                className="ps-10 bg-white"
               />
             </div>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={handleExport}>
-                <Download className="h-4 w-4 mr-2" />
-                Export
+                <Download className="h-4 w-4 me-2" />
+                {t("Export")}
               </Button>
               <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)}>
-                <Upload className="h-4 w-4 mr-2" />
-                Import
+                <Upload className="h-4 w-4 me-2" />
+                {t("Import")}
               </Button>
               <Button size="sm" onClick={() => setIsAddUserOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add New
+                <Plus className="h-4 w-4 me-2" />
+                {t("Add New")}
               </Button>
             </div>
           </div>
@@ -786,12 +777,12 @@ export default function UsersPage() {
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="border-b border-slate-100 bg-slate-50/50">
-                            <th className="text-left py-4 pl-4 text-xs font-semibold text-slate-600">Full Name</th>
-                            <th className="text-left py-4 text-xs font-semibold text-slate-600">Designation Name</th>
-                            <th className="text-left py-4 text-xs font-semibold text-slate-600">Reporting Manager</th>
-                            <th className="text-left py-4 text-xs font-semibold text-slate-600">Email ID</th>
-                            <th className="text-left py-4 text-xs font-semibold text-slate-600">Last Login</th>
-                            <th className="text-center py-4 text-xs font-semibold text-slate-600">Actions</th>
+                            <th className="text-start py-4 ps-4 text-xs font-semibold text-slate-600">{t("Full Name")}</th>
+                            <th className="text-start py-4 text-xs font-semibold text-slate-600">{t("Designation Name")}</th>
+                            <th className="text-start py-4 text-xs font-semibold text-slate-600">{t("Reporting Manager")}</th>
+                            <th className="text-start py-4 text-xs font-semibold text-slate-600">{t("Email ID")}</th>
+                            <th className="text-start py-4 text-xs font-semibold text-slate-600">{t("Last Login")}</th>
+                            <th className="text-center py-4 text-xs font-semibold text-slate-600">{t("Actions")}</th>
                           </tr>
                         </thead>
                         <tbody className="bg-white">
@@ -835,14 +826,14 @@ export default function UsersPage() {
                       {/* Pagination */}
                       <div className="flex items-center justify-between p-4 border-t border-slate-100">
                         <div className="text-xs text-slate-500">
-                          Showing 1 to {dept.users.length} of {dept.users.length}
+                          {t("Showing")} 1 {t("to")} {dept.users.length} {t("of")} {dept.users.length}
                         </div>
                       </div>
                     </div>
                   ) : (
                     <div className="bg-white rounded-xl border border-slate-200 p-8">
                       <p className="text-slate-500 text-sm text-center">
-                        No users in this department
+                        {t("No users in this department")}
                       </p>
                     </div>
                   )}
@@ -857,15 +848,15 @@ export default function UsersPage() {
           <div className="flex items-center justify-between gap-4">
             <div className="flex-1">
               <FilterBar
-                searchPlaceholder="Search user..."
+                searchPlaceholder={t("Search user...")}
                 searchValue={searchTerm}
                 onSearchChange={setSearchTerm}
                 filters={[
                   {
                     id: "role",
-                    label: "Role",
+                    label: t("Role"),
                     options: [
-                      { value: "all", label: "All Roles" },
+                      { value: "all", label: t("All Roles") },
                       ...allUserRoles.map((role) => ({ value: role, label: role })),
                     ],
                     value: roleFilter,
@@ -873,9 +864,9 @@ export default function UsersPage() {
                   },
                   {
                     id: "department",
-                    label: "Department",
+                    label: t("Department"),
                     options: [
-                      { value: "all", label: "All Departments" },
+                      { value: "all", label: t("All Departments") },
                       ...departments.map((d) => ({ value: d.name, label: d.name })),
                     ],
                     value: departmentFilter,
@@ -885,8 +876,8 @@ export default function UsersPage() {
               />
             </div>
             <Button size="sm" onClick={() => setIsAddUserOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              New Account
+              <Plus className="h-4 w-4 me-2" />
+              {t("New Account")}
             </Button>
           </div>
           <DataGrid
@@ -925,59 +916,59 @@ export default function UsersPage() {
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">New Account</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("New Account")}</DialogTitle>
             </DialogHeader>
           </div>
           {/* Scrollable Content */}
           <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
             {/* Account Credentials Section */}
             <div className="space-y-4">
-              <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">Account Credentials</h4>
+              <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("Account Credentials")}</h4>
               <div className="grid grid-cols-2 gap-4">
                 {/* Username - full width */}
                 <div className="col-span-2">
-                  <Label htmlFor="userName" className="text-sm font-medium text-slate-700">Username *</Label>
+                  <Label htmlFor="userName" className="text-sm font-medium text-slate-700">{t("Username")} *</Label>
                   <Input
                     id="userName"
                     value={userForm.userName}
                     onChange={(e) => setUserForm({ ...userForm, userName: e.target.value })}
-                    placeholder="Enter username"
+                    placeholder={t("Enter username")}
                     className="mt-1.5 bg-white"
                   />
                 </div>
                 {/* Email - full width */}
                 <div className="col-span-2">
-                  <Label htmlFor="email" className="text-sm font-medium text-slate-700">Email *</Label>
+                  <Label htmlFor="email" className="text-sm font-medium text-slate-700">{t("Email")} *</Label>
                   <Input
                     id="email"
                     type="email"
                     value={userForm.email}
                     onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
-                    placeholder="Enter email"
+                    placeholder={t("Enter email")}
                     className="mt-1.5 bg-white"
                   />
                 </div>
                 {/* Password and Confirm Password - side by side */}
                 <div>
-                  <Label htmlFor="password" className="text-sm font-medium text-slate-700">Password *</Label>
+                  <Label htmlFor="password" className="text-sm font-medium text-slate-700">{t("Password")} *</Label>
                   <Input
                     id="password"
                     type="password"
                     value={userForm.password}
                     onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
-                    placeholder="Enter password"
+                    placeholder={t("Enter password")}
                     autoComplete="new-password"
                     className="mt-1.5 bg-white"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="confirmPassword" className="text-sm font-medium text-slate-700">Confirm Password *</Label>
+                  <Label htmlFor="confirmPassword" className="text-sm font-medium text-slate-700">{t("Confirm Password")} *</Label>
                   <Input
                     id="confirmPassword"
                     type="password"
                     value={userForm.confirmPassword}
                     onChange={(e) => setUserForm({ ...userForm, confirmPassword: e.target.value })}
-                    placeholder="Confirm password"
+                    placeholder={t("Confirm password")}
                     autoComplete="new-password"
                     className="mt-1.5 bg-white"
                   />
@@ -987,37 +978,37 @@ export default function UsersPage() {
 
             {/* Personal Information Section */}
             <div className="space-y-4">
-              <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">Personal Information</h4>
+              <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("Personal Information")}</h4>
               <div className="grid grid-cols-2 gap-4">
                 {/* First Name and Last Name - side by side */}
                 <div>
-                  <Label htmlFor="firstName" className="text-sm font-medium text-slate-700">First Name *</Label>
+                  <Label htmlFor="firstName" className="text-sm font-medium text-slate-700">{t("First Name")} *</Label>
                   <Input
                     id="firstName"
                     value={userForm.firstName}
                     onChange={(e) => setUserForm({ ...userForm, firstName: e.target.value })}
-                    placeholder="Enter first name"
+                    placeholder={t("Enter first name")}
                     className="mt-1.5 bg-white"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="lastName" className="text-sm font-medium text-slate-700">Last Name *</Label>
+                  <Label htmlFor="lastName" className="text-sm font-medium text-slate-700">{t("Last Name")} *</Label>
                   <Input
                     id="lastName"
                     value={userForm.lastName}
                     onChange={(e) => setUserForm({ ...userForm, lastName: e.target.value })}
-                    placeholder="Enter last name"
+                    placeholder={t("Enter last name")}
                     className="mt-1.5 bg-white"
                   />
                 </div>
                 {/* Full Name - full width */}
                 <div className="col-span-2">
-                  <Label htmlFor="fullName" className="text-sm font-medium text-slate-700">Full Name *</Label>
+                  <Label htmlFor="fullName" className="text-sm font-medium text-slate-700">{t("Full Name")} *</Label>
                   <Input
                     id="fullName"
                     value={userForm.fullName}
                     onChange={(e) => setUserForm({ ...userForm, fullName: e.target.value })}
-                    placeholder="Enter full name"
+                    placeholder={t("Enter full name")}
                     className="mt-1.5 bg-white"
                   />
                 </div>
@@ -1026,11 +1017,11 @@ export default function UsersPage() {
 
             {/* Organization & Role Section */}
             <div className="space-y-4">
-              <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">Organization & Role</h4>
+              <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("Organization & Role")}</h4>
               <div className="grid grid-cols-2 gap-4">
                 {/* Function - full width */}
                 <div className="col-span-2">
-                  <Label htmlFor="function" className="text-sm font-medium text-slate-700">Function *</Label>
+                  <Label htmlFor="function" className="text-sm font-medium text-slate-700">{t("Function")} *</Label>
                   <Select
                     value={userForm.function}
                     onValueChange={(value) => {
@@ -1039,18 +1030,18 @@ export default function UsersPage() {
                     }}
                   >
                     <SelectTrigger className="mt-1.5 w-full bg-white">
-                      <SelectValue placeholder="Select function" />
+                      <SelectValue placeholder={t("Select function")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="max-h-[200px]">
-                      <SelectItem value="Business">Business</SelectItem>
-                      <SelectItem value="Security">Security</SelectItem>
-                      <SelectItem value="Audit">Audit</SelectItem>
+                      <SelectItem value="Business">{t("Business")}</SelectItem>
+                      <SelectItem value="Security">{t("Security")}</SelectItem>
+                      <SelectItem value="Audit">{t("Audit")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 {/* Role - full width */}
                 <div className="col-span-2">
-                  <Label htmlFor="role" className="text-sm font-medium text-slate-700">Role *</Label>
+                  <Label htmlFor="role" className="text-sm font-medium text-slate-700">{t("Role")} *</Label>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -1061,7 +1052,7 @@ export default function UsersPage() {
                             disabled={!userForm.function}
                           >
                             <SelectTrigger className={`mt-1.5 w-full bg-white ${!userForm.function ? "cursor-not-allowed opacity-50" : ""}`}>
-                              <SelectValue placeholder={userForm.function ? "Select role" : "Select function first"} />
+                              <SelectValue placeholder={userForm.function ? t("Select role") : t("Select function first")} />
                             </SelectTrigger>
                             <SelectContent position="popper" sideOffset={4} className="max-h-[200px]">
                               {userForm.function && rolesByFunction[userForm.function]?.map((role) => (
@@ -1075,7 +1066,7 @@ export default function UsersPage() {
                       </TooltipTrigger>
                       {!userForm.function && (
                         <TooltipContent>
-                          <p>Please select a function first</p>
+                          <p>{t("Please select a function first")}</p>
                         </TooltipContent>
                       )}
                     </Tooltip>
@@ -1083,13 +1074,13 @@ export default function UsersPage() {
                 </div>
                 {/* Department and Designation - side by side */}
                 <div>
-                  <Label htmlFor="department" className="text-sm font-medium text-slate-700">Department</Label>
+                  <Label htmlFor="department" className="text-sm font-medium text-slate-700">{t("Department")}</Label>
                   <Select
                     value={userForm.departmentId}
                     onValueChange={(value) => setUserForm({ ...userForm, departmentId: value })}
                   >
                     <SelectTrigger className="mt-1.5 w-full bg-white">
-                      <SelectValue placeholder="Select department" />
+                      <SelectValue placeholder={t("Select department")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="max-h-[200px]">
                       {departments.map((dept) => (
@@ -1101,19 +1092,19 @@ export default function UsersPage() {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="designation" className="text-sm font-medium text-slate-700">Designation</Label>
+                  <Label htmlFor="designation" className="text-sm font-medium text-slate-700">{t("Designation")}</Label>
                   <Input
                     id="designation"
                     value={userForm.designation}
                     onChange={(e) => setUserForm({ ...userForm, designation: e.target.value })}
-                    placeholder="Enter designation"
+                    placeholder={t("Enter designation")}
                     autoComplete="off"
                     className="mt-1.5 bg-white"
                   />
                 </div>
                 {/* Reporting Manager - full width */}
                 <div className="col-span-2">
-                  <Label htmlFor="reportingManager" className="text-sm font-medium text-slate-700">Reporting Manager</Label>
+                  <Label htmlFor="reportingManager" className="text-sm font-medium text-slate-700">{t("Reporting Manager")}</Label>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -1124,7 +1115,7 @@ export default function UsersPage() {
                             disabled={!userForm.function}
                           >
                             <SelectTrigger className={`mt-1.5 w-full bg-white ${!userForm.function ? "cursor-not-allowed opacity-50" : ""}`}>
-                              <SelectValue placeholder={userForm.function ? "Select reporting manager" : "Select function first"} />
+                              <SelectValue placeholder={userForm.function ? t("Select reporting manager") : t("Select function first")} />
                             </SelectTrigger>
                             <SelectContent position="popper" sideOffset={4} className="max-h-[200px]">
                               {reportingManagers.map((manager) => (
@@ -1138,7 +1129,7 @@ export default function UsersPage() {
                       </TooltipTrigger>
                       {!userForm.function && (
                         <TooltipContent>
-                          <p>Please select a function first</p>
+                          <p>{t("Please select a function first")}</p>
                         </TooltipContent>
                       )}
                     </Tooltip>
@@ -1149,32 +1140,32 @@ export default function UsersPage() {
 
             {/* Preferences Section */}
             <div className="space-y-4">
-              <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">Preferences</h4>
+              <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("Preferences")}</h4>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="language" className="text-sm font-medium text-slate-700">Language</Label>
+                  <Label htmlFor="language" className="text-sm font-medium text-slate-700">{t("Language")}</Label>
                   <Select
                     value={userForm.language}
                     onValueChange={(value) => setUserForm({ ...userForm, language: value })}
                   >
                     <SelectTrigger className="mt-1.5 w-full bg-white">
-                      <SelectValue placeholder="Select language" />
+                      <SelectValue placeholder={t("Select language")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="max-h-[200px]">
-                      <SelectItem value="English">English</SelectItem>
-                      <SelectItem value="Arabic">Arabic</SelectItem>
-                      <SelectItem value="Hindi">Hindi</SelectItem>
+                      <SelectItem value="English">{t("English")}</SelectItem>
+                      <SelectItem value="Arabic">{t("Arabic")}</SelectItem>
+                      <SelectItem value="Hindi">{t("Hindi")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="timezone" className="text-sm font-medium text-slate-700">Time Zone</Label>
+                  <Label htmlFor="timezone" className="text-sm font-medium text-slate-700">{t("Time Zone")}</Label>
                   <Select
                     value={userForm.timezone}
                     onValueChange={(value) => setUserForm({ ...userForm, timezone: value })}
                   >
                     <SelectTrigger className="mt-1.5 w-full bg-white">
-                      <SelectValue placeholder="Select timezone" />
+                      <SelectValue placeholder={t("Select timezone")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="max-h-[300px]">
                       <SelectItem value="UTC">UTC</SelectItem>
@@ -1219,7 +1210,7 @@ export default function UsersPage() {
 
             {/* Account Status Section */}
             <div className="space-y-4">
-              <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">Account Status</h4>
+              <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2">{t("Account Status")}</h4>
               <div className="flex gap-6">
                 <div className="flex items-center space-x-2">
                   <Checkbox
@@ -1230,7 +1221,7 @@ export default function UsersPage() {
                     }
                   />
                   <Label htmlFor="active" className="font-normal">
-                    Active
+                    {t("Active")}
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -1242,7 +1233,7 @@ export default function UsersPage() {
                     }
                   />
                   <Label htmlFor="blocked" className="font-normal">
-                    Blocked
+                    {t("Blocked")}
                   </Label>
                 </div>
               </div>
@@ -1271,9 +1262,9 @@ export default function UsersPage() {
                 reportingManagerId: "",
               });
             }}>
-              Cancel
+              {t("Cancel")}
             </Button>
-            <Button onClick={handleAddUser}>Save</Button>
+            <Button onClick={handleAddUser}>{t("Save")}</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -1284,7 +1275,7 @@ export default function UsersPage() {
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Edit Account</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Account")}</DialogTitle>
             </DialogHeader>
           </div>
           {/* Scrollable Content */}
@@ -1292,13 +1283,13 @@ export default function UsersPage() {
             <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
               {/* User ID - Read Only */}
               <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label className="text-right">User ID</Label>
+                <Label className="text-end">{t("User ID")}</Label>
                 <span className="text-sm text-muted-foreground">{editingUser.id?.slice(0, 8) || "-"}</span>
               </div>
 
               {/* First Name */}
               <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label htmlFor="editFirstName" className="text-right">First name</Label>
+                <Label htmlFor="editFirstName" className="text-end">{t("First Name")}</Label>
                 <Input
                   id="editFirstName"
                   value={editingUser.firstName}
@@ -1311,7 +1302,7 @@ export default function UsersPage() {
 
               {/* Last Name */}
               <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label htmlFor="editLastName" className="text-right">Last name</Label>
+                <Label htmlFor="editLastName" className="text-end">{t("Last Name")}</Label>
                 <Input
                   id="editLastName"
                   value={editingUser.lastName}
@@ -1324,7 +1315,7 @@ export default function UsersPage() {
 
               {/* Full Name */}
               <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label htmlFor="editFullName" className="text-right">Full name</Label>
+                <Label htmlFor="editFullName" className="text-end">{t("Full Name")}</Label>
                 <Input
                   id="editFullName"
                   value={editingUser.fullName}
@@ -1337,7 +1328,7 @@ export default function UsersPage() {
 
               {/* Email */}
               <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label htmlFor="editEmail" className="text-right">Email</Label>
+                <Label htmlFor="editEmail" className="text-end">{t("Email")}</Label>
                 <Input
                   id="editEmail"
                   type="email"
@@ -1351,7 +1342,7 @@ export default function UsersPage() {
 
               {/* Is Local User */}
               <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label className="text-right">Is local user</Label>
+                <Label className="text-end">{t("Is local user")}</Label>
                 <div className="flex gap-4">
                   <div className="flex items-center space-x-2">
                     <input
@@ -1362,7 +1353,7 @@ export default function UsersPage() {
                       className="h-4 w-4"
                       readOnly
                     />
-                    <Label htmlFor="localUserYes" className="font-normal">Yes</Label>
+                    <Label htmlFor="localUserYes" className="font-normal">{t("Yes")}</Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <input
@@ -1373,14 +1364,14 @@ export default function UsersPage() {
                       className="h-4 w-4"
                       readOnly
                     />
-                    <Label htmlFor="localUserNo" className="font-normal">No</Label>
+                    <Label htmlFor="localUserNo" className="font-normal">{t("No")}</Label>
                   </div>
                 </div>
               </div>
 
               {/* Name (Username) */}
               <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label htmlFor="editUserName" className="text-right">Name</Label>
+                <Label htmlFor="editUserName" className="text-end">{t("Name")}</Label>
                 <Input
                   id="editUserName"
                   value={editingUser.userName}
@@ -1393,7 +1384,7 @@ export default function UsersPage() {
 
               {/* Function */}
               <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label htmlFor="editFunction" className="text-right">Function</Label>
+                <Label htmlFor="editFunction" className="text-end">{t("Function")}</Label>
                 <Select
                   value={editingUser.function || ""}
                   onValueChange={(value) => {
@@ -1402,19 +1393,19 @@ export default function UsersPage() {
                   }}
                 >
                   <SelectTrigger className="w-full bg-white">
-                    <SelectValue placeholder="Select function" />
+                    <SelectValue placeholder={t("Select function")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4} className="max-h-[200px]">
-                    <SelectItem value="Business">Business</SelectItem>
-                    <SelectItem value="Security">Security</SelectItem>
-                    <SelectItem value="Audit">Audit</SelectItem>
+                    <SelectItem value="Business">{t("Business")}</SelectItem>
+                    <SelectItem value="Security">{t("Security")}</SelectItem>
+                    <SelectItem value="Audit">{t("Audit")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               {/* User Role */}
               <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label htmlFor="editRole" className="text-right">User Role</Label>
+                <Label htmlFor="editRole" className="text-end">{t("User Role")}</Label>
                 <Select
                   value={editingUser.role}
                   onValueChange={(value) =>
@@ -1422,7 +1413,7 @@ export default function UsersPage() {
                   }
                 >
                   <SelectTrigger className="w-full bg-white">
-                    <SelectValue placeholder="Select..." />
+                    <SelectValue placeholder={t("Select...")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4} className="max-h-[200px]">
                     {allUserRoles.map((role) => (
@@ -1436,7 +1427,7 @@ export default function UsersPage() {
 
               {/* Department */}
               <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label htmlFor="editDepartment" className="text-right">Department</Label>
+                <Label htmlFor="editDepartment" className="text-end">{t("Department")}</Label>
                 <Select
                   value={editingUser.departmentId || ""}
                   onValueChange={(value) =>
@@ -1444,7 +1435,7 @@ export default function UsersPage() {
                   }
                 >
                   <SelectTrigger className="w-full bg-white">
-                    <SelectValue placeholder="Select department" />
+                    <SelectValue placeholder={t("Select department")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4} className="max-h-[200px]">
                     {departments.map((dept) => (
@@ -1458,7 +1449,7 @@ export default function UsersPage() {
 
               {/* Designation */}
               <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label htmlFor="editDesignation" className="text-right">Designation</Label>
+                <Label htmlFor="editDesignation" className="text-end">{t("Designation")}</Label>
                 <Select
                   value={editingUser.designation || ""}
                   onValueChange={(value) =>
@@ -1466,26 +1457,26 @@ export default function UsersPage() {
                   }
                 >
                   <SelectTrigger className="w-full bg-white">
-                    <SelectValue placeholder="Select Designation" />
+                    <SelectValue placeholder={t("Select Designation")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4} className="max-h-[200px]">
-                    <SelectItem value="Analyst">Analyst</SelectItem>
-                    <SelectItem value="Developer">Developer</SelectItem>
-                    <SelectItem value="Financial Analyst">Financial Analyst</SelectItem>
-                    <SelectItem value="HR Manager">HR Manager</SelectItem>
-                    <SelectItem value="Manager">Manager</SelectItem>
-                    <SelectItem value="Marketing Specialist">Marketing Specialist</SelectItem>
-                    <SelectItem value="Operations Executive">Operations Executive</SelectItem>
-                    <SelectItem value="Senior Manager">Senior Manager</SelectItem>
-                    <SelectItem value="Software Engineer">Software Engineer</SelectItem>
-                    <SelectItem value="Team Lead">Team Lead</SelectItem>
+                    <SelectItem value="Analyst">{t("Analyst")}</SelectItem>
+                    <SelectItem value="Developer">{t("Developer")}</SelectItem>
+                    <SelectItem value="Financial Analyst">{t("Financial Analyst")}</SelectItem>
+                    <SelectItem value="HR Manager">{t("HR Manager")}</SelectItem>
+                    <SelectItem value="Manager">{t("Manager")}</SelectItem>
+                    <SelectItem value="Marketing Specialist">{t("Marketing Specialist")}</SelectItem>
+                    <SelectItem value="Operations Executive">{t("Operations Executive")}</SelectItem>
+                    <SelectItem value="Senior Manager">{t("Senior Manager")}</SelectItem>
+                    <SelectItem value="Software Engineer">{t("Software Engineer")}</SelectItem>
+                    <SelectItem value="Team Lead">{t("Team Lead")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               {/* Reporting Manager */}
               <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label htmlFor="editReportingManager" className="text-right">Reporting Manager</Label>
+                <Label htmlFor="editReportingManager" className="text-end">{t("Reporting Manager")}</Label>
                 <Select
                   value={editingUser.reportingManagerId || ""}
                   onValueChange={(value) =>
@@ -1493,7 +1484,7 @@ export default function UsersPage() {
                   }
                 >
                   <SelectTrigger className="w-full bg-white">
-                    <SelectValue placeholder="Select reporting manager" />
+                    <SelectValue placeholder={t("Select reporting manager")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4} className="max-h-[200px]">
                     {reportingManagers.map((manager) => (
@@ -1507,7 +1498,7 @@ export default function UsersPage() {
 
               {/* Language */}
               <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label htmlFor="editLanguage" className="text-right">Language</Label>
+                <Label htmlFor="editLanguage" className="text-end">{t("Language")}</Label>
                 <Select
                   value={editingUser.language || "English"}
                   onValueChange={(value) =>
@@ -1515,19 +1506,19 @@ export default function UsersPage() {
                   }
                 >
                   <SelectTrigger className="w-full bg-white">
-                    <SelectValue placeholder="Select language" />
+                    <SelectValue placeholder={t("Select language")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4} className="max-h-[200px]">
-                    <SelectItem value="English">English</SelectItem>
-                    <SelectItem value="Arabic">Arabic</SelectItem>
-                    <SelectItem value="Hindi">Hindi</SelectItem>
+                    <SelectItem value="English">{t("English")}</SelectItem>
+                    <SelectItem value="Arabic">{t("Arabic")}</SelectItem>
+                    <SelectItem value="Hindi">{t("Hindi")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               {/* Blocked */}
               <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label className="text-right">Blocked</Label>
+                <Label className="text-end">{t("Blocked")}</Label>
                 <div className="flex gap-4">
                   <div className="flex items-center space-x-2">
                     <input
@@ -1538,7 +1529,7 @@ export default function UsersPage() {
                       onChange={() => setEditingUser({ ...editingUser, isBlocked: true })}
                       className="h-4 w-4"
                     />
-                    <Label htmlFor="blockedYes" className="font-normal">Yes</Label>
+                    <Label htmlFor="blockedYes" className="font-normal">{t("Yes")}</Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <input
@@ -1549,14 +1540,14 @@ export default function UsersPage() {
                       onChange={() => setEditingUser({ ...editingUser, isBlocked: false })}
                       className="h-4 w-4"
                     />
-                    <Label htmlFor="blockedNo" className="font-normal">No</Label>
+                    <Label htmlFor="blockedNo" className="font-normal">{t("No")}</Label>
                   </div>
                 </div>
               </div>
 
               {/* Active */}
               <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                <Label className="text-right">Active</Label>
+                <Label className="text-end">{t("Active")}</Label>
                 <div className="flex gap-4">
                   <div className="flex items-center space-x-2">
                     <input
@@ -1567,7 +1558,7 @@ export default function UsersPage() {
                       onChange={() => setEditingUser({ ...editingUser, isActive: true })}
                       className="h-4 w-4"
                     />
-                    <Label htmlFor="activeYes" className="font-normal">Yes</Label>
+                    <Label htmlFor="activeYes" className="font-normal">{t("Yes")}</Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <input
@@ -1578,7 +1569,7 @@ export default function UsersPage() {
                       onChange={() => setEditingUser({ ...editingUser, isActive: false })}
                       className="h-4 w-4"
                     />
-                    <Label htmlFor="activeNo" className="font-normal">No</Label>
+                    <Label htmlFor="activeNo" className="font-normal">{t("No")}</Label>
                   </div>
                 </div>
               </div>
@@ -1591,7 +1582,7 @@ export default function UsersPage() {
                   className="w-fit"
                   onClick={() => setIsChangePasswordOpen(true)}
                 >
-                  Change password
+                  {t("Change Password")}
                 </Button>
               </div>
             </div>
@@ -1599,9 +1590,9 @@ export default function UsersPage() {
           {/* Fixed Footer */}
           <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsEditUserOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
-            <Button onClick={handleEditUser}>Save</Button>
+            <Button onClick={handleEditUser}>{t("Save")}</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -1620,16 +1611,16 @@ export default function UsersPage() {
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Import Users</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Import Users")}</DialogTitle>
               <DialogDescription>
-                Import users from a CSV file. The file should have columns: Username, Email, Password, First Name, Last Name, Full Name, Designation, Function, Role, Department, Language, Timezone.
+                {t("Import users from a CSV file. The file should have columns: Username, Email, Password, First Name, Last Name, Full Name, Designation, Function, Role, Department, Language, Timezone.")}
               </DialogDescription>
             </DialogHeader>
           </div>
           {/* Content */}
           <div className="px-6 py-6 space-y-5">
             <div>
-              <Label className="text-sm font-medium text-slate-700">File</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("File")}</Label>
               <div className="flex gap-2 mt-1.5">
                 <Input
                   type="file"
@@ -1641,7 +1632,7 @@ export default function UsersPage() {
               </div>
               {importFile && (
                 <p className="text-sm text-slate-500 mt-1">
-                  Selected: {importFile.name}
+                  {t("Selected:")} {importFile.name}
                 </p>
               )}
             </div>
@@ -1649,8 +1640,8 @@ export default function UsersPage() {
           {/* Fixed Footer */}
           <div className="flex justify-between gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={handleDownloadTemplate}>
-              <Download className="h-4 w-4 mr-2" />
-              Download Template
+              <Download className="h-4 w-4 me-2" />
+              {t("Download Template")}
             </Button>
             <div className="flex gap-2">
               <Button
@@ -1663,13 +1654,13 @@ export default function UsersPage() {
                   }
                 }}
               >
-                Cancel
+                {t("Cancel")}
               </Button>
               <Button
                 onClick={handleImport}
                 disabled={!importFile || importing}
               >
-                {importing ? "Importing..." : "Import"}
+                {importing ? t("Importing...") : t("Import")}
               </Button>
             </div>
           </div>
@@ -1690,16 +1681,16 @@ export default function UsersPage() {
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Change Password</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Change Password")}</DialogTitle>
               <DialogDescription>
-                Enter a new password for {editingUser?.fullName || editingUser?.userName}
+                {t("Enter a new password for")} {editingUser?.fullName || editingUser?.userName}
               </DialogDescription>
             </DialogHeader>
           </div>
           {/* Content */}
           <div className="px-6 py-6 space-y-5">
             <div>
-              <Label htmlFor="newPassword" className="text-sm font-medium text-slate-700">New Password *</Label>
+              <Label htmlFor="newPassword" className="text-sm font-medium text-slate-700">{t("New Password")} *</Label>
               <Input
                 id="newPassword"
                 type="password"
@@ -1710,13 +1701,13 @@ export default function UsersPage() {
                     newPassword: e.target.value,
                   })
                 }
-                placeholder="Enter new password"
+                placeholder={t("Enter new password")}
                 autoComplete="new-password"
                 className="mt-1.5 bg-white"
               />
             </div>
             <div>
-              <Label htmlFor="confirmNewPassword" className="text-sm font-medium text-slate-700">Confirm Password *</Label>
+              <Label htmlFor="confirmNewPassword" className="text-sm font-medium text-slate-700">{t("Confirm Password")} *</Label>
               <Input
                 id="confirmNewPassword"
                 type="password"
@@ -1727,7 +1718,7 @@ export default function UsersPage() {
                     confirmPassword: e.target.value,
                   })
                 }
-                placeholder="Confirm new password"
+                placeholder={t("Confirm new password")}
                 autoComplete="new-password"
                 className="mt-1.5 bg-white"
               />
@@ -1742,10 +1733,10 @@ export default function UsersPage() {
                 setChangePasswordForm({ newPassword: "", confirmPassword: "" });
               }}
             >
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button onClick={handleChangePassword} disabled={changingPassword}>
-              {changingPassword ? "Changing..." : "Change Password"}
+              {changingPassword ? t("Changing...") : t("Change Password")}
             </Button>
           </div>
         </DialogContent>

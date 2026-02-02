@@ -40,6 +40,7 @@ import {
 import { ArrowLeft, Pencil, Trash2, Upload, Plus, Calendar } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   LineChart,
   Line,
@@ -160,6 +161,7 @@ export default function KPIDetailPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
+  const { t } = useLanguage();
   const [kpi, setKpi] = useState<KPI | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -320,22 +322,22 @@ export default function KPIDetailPage({
         setAddScoreDialogOpen(false);
         setAddScoreForm({ actualScore: "" });
         toast({
-          title: "Success",
-          description: "KPI actual score saved successfully.",
+          title: t("Success"),
+          description: t("KPI actual score saved successfully."),
         });
         fetchKPI();
       } else {
         toast({
-          title: "Error",
-          description: "Failed to save KPI actual score.",
+          title: t("Error"),
+          description: t("Failed to save KPI actual score."),
           variant: "destructive",
         });
       }
     } catch (error) {
       console.error("Error adding actual score:", error);
       toast({
-        title: "Error",
-        description: "An error occurred while saving.",
+        title: t("Error"),
+        description: t("An error occurred while saving."),
         variant: "destructive",
       });
     } finally {
@@ -403,22 +405,22 @@ export default function KPIDetailPage({
       if (response.ok) {
         setUpdateDialogOpen(false);
         toast({
-          title: "Success",
-          description: "Review updated successfully.",
+          title: t("Success"),
+          description: t("Review updated successfully."),
         });
         fetchKPI();
       } else {
         toast({
-          title: "Error",
-          description: "Failed to update review.",
+          title: t("Error"),
+          description: t("Failed to update review."),
           variant: "destructive",
         });
       }
     } catch (error) {
       console.error("Error updating review:", error);
       toast({
-        title: "Error",
-        description: "An error occurred while updating.",
+        title: t("Error"),
+        description: t("An error occurred while updating."),
         variant: "destructive",
       });
     }
@@ -499,7 +501,7 @@ export default function KPIDetailPage({
   if (!kpi) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <p className="text-slate-500">KPI not found</p>
+        <p className="text-slate-500">{t("KPI not found")}</p>
       </div>
     );
   }
@@ -516,31 +518,31 @@ export default function KPIDetailPage({
         >
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <h1 className="text-2xl font-bold text-slate-800">KPI Detail</h1>
+        <h1 className="text-2xl font-bold text-slate-800">{t("KPI Detail")}</h1>
       </div>
 
       {/* KPI Summary Cards */}
       <div className="grid grid-cols-5 gap-4">
         <div className="bg-white rounded-xl border border-slate-200 p-4">
-          <p className="text-xs font-medium text-slate-500 mb-1">KPI Code</p>
+          <p className="text-xs font-medium text-slate-500 mb-1">{t("KPI Code")}</p>
           <p className="text-sm font-semibold text-slate-800">{kpi.evidence?.evidenceCode || kpi.code}</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4">
-          <p className="text-xs font-medium text-slate-500 mb-1">Status</p>
+          <p className="text-xs font-medium text-slate-500 mb-1">{t("Status")}</p>
           <Badge className={statusColors[kpi.status] || "bg-slate-100 text-slate-600"}>
-            {kpi.status}
+            {t(kpi.status)}
           </Badge>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4">
-          <p className="text-xs font-medium text-slate-500 mb-1">Expected Score</p>
+          <p className="text-xs font-medium text-slate-500 mb-1">{t("Expected Score")}</p>
           <p className="text-sm font-semibold text-slate-800">{expectedScore ?? "-"}</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4">
-          <p className="text-xs font-medium text-slate-500 mb-1">Actual Score</p>
+          <p className="text-xs font-medium text-slate-500 mb-1">{t("Actual Score")}</p>
           <p className="text-sm font-semibold text-slate-800">{kpi.actualScore ?? "-"}</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4">
-          <p className="text-xs font-medium text-slate-500 mb-1">Department</p>
+          <p className="text-xs font-medium text-slate-500 mb-1">{t("Department")}</p>
           <p className="text-sm font-semibold text-slate-800">{kpi.department?.name || kpi.evidence?.name || "-"}</p>
         </div>
       </div>
@@ -550,10 +552,10 @@ export default function KPIDetailPage({
         {/* Chart Section */}
         <div className="bg-white rounded-xl border border-slate-200 p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-semibold text-slate-800">Performance Trend</h3>
+            <h3 className="text-base font-semibold text-slate-800">{t("Performance Trend")}</h3>
             <Select value={selectedYear} onValueChange={setSelectedYear}>
               <SelectTrigger className="w-[120px] h-9 bg-white border-slate-200">
-                <SelectValue placeholder="Year" />
+                <SelectValue placeholder={t("Year")} />
               </SelectTrigger>
               <SelectContent position="popper" sideOffset={4}>
                 {years.map((year) => (
@@ -577,9 +579,9 @@ export default function KPIDetailPage({
                   <Tooltip
                     formatter={(value, name) => [
                       value,
-                      name === "actualScore" ? "Actual Score" : "Expected Score",
+                      name === "actualScore" ? t("Actual Score") : t("Expected Score"),
                     ]}
-                    labelFormatter={(label) => `Review Date: ${label}`}
+                    labelFormatter={(label) => `${t("Review Date")}: ${label}`}
                     contentStyle={{ borderRadius: "8px", border: "1px solid #e2e8f0" }}
                   />
                   {expectedScore !== null && (
@@ -593,7 +595,7 @@ export default function KPIDetailPage({
                   <Line
                     type="linear"
                     dataKey="actualScore"
-                    name="Actual Score"
+                    name={t("Actual Score")}
                     stroke="#3b82f6"
                     strokeWidth={2}
                     dot={{ r: 5, fill: "#3b82f6", strokeWidth: 2 }}
@@ -605,8 +607,8 @@ export default function KPIDetailPage({
             ) : (
               <div className="h-full bg-slate-50 rounded-lg flex items-center justify-center border border-slate-200">
                 <div className="text-center text-slate-500">
-                  <p className="text-sm">No review data available</p>
-                  <p className="text-xs mt-1">Add actual scores to see the chart</p>
+                  <p className="text-sm">{t("No review data available")}</p>
+                  <p className="text-xs mt-1">{t("Add actual scores to see the chart")}</p>
                 </div>
               </div>
             )}
@@ -614,21 +616,21 @@ export default function KPIDetailPage({
           <div className="flex items-center gap-6 mt-3 pt-3 border-t border-slate-100">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-info rounded-full" />
-              <span className="text-xs text-slate-600">Actual Score</span>
+              <span className="text-xs text-slate-600">{t("Actual Score")}</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-6 h-0 border-t-2 border-dashed border-success" />
-              <span className="text-xs text-slate-600">Expected ({expectedScore ?? "-"})</span>
+              <span className="text-xs text-slate-600">{t("Expected")} ({expectedScore ?? "-"})</span>
             </div>
           </div>
         </div>
 
         {/* Next Review & Quick Actions */}
         <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <h3 className="text-base font-semibold text-slate-800 mb-4">Next Review</h3>
+          <h3 className="text-base font-semibold text-slate-800 mb-4">{t("Next Review")}</h3>
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div className="bg-slate-50 rounded-lg p-4 border border-slate-100">
-              <p className="text-xs font-medium text-slate-500 mb-1">Due Date</p>
+              <p className="text-xs font-medium text-slate-500 mb-1">{t("Due Date")}</p>
               <p className="text-lg font-semibold text-slate-800">
                 {nextDueReviewDate
                   ? nextDueReviewDate.toLocaleDateString("en-GB", {
@@ -636,13 +638,13 @@ export default function KPIDetailPage({
                       month: "short",
                       year: "numeric",
                     })
-                  : "Not scheduled"}
+                  : t("Not scheduled")}
               </p>
             </div>
             <div className="bg-slate-50 rounded-lg p-4 border border-slate-100">
-              <p className="text-xs font-medium text-slate-500 mb-1">Recurrence</p>
+              <p className="text-xs font-medium text-slate-500 mb-1">{t("Recurrence")}</p>
               <p className="text-lg font-semibold text-slate-800">
-                {kpi.evidence?.recurrence || "Monthly"}
+                {t(kpi.evidence?.recurrence || "Monthly")}
               </p>
             </div>
           </div>
@@ -651,54 +653,54 @@ export default function KPIDetailPage({
             disabled={!nextDueReviewDate}
             className="w-full bg-primary-600 hover:bg-primary-700"
           >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Actual Score
+            <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+            {t("Add Actual Score")}
           </Button>
         </div>
       </div>
 
       {/* KPI Details Form */}
       <div className="bg-white rounded-xl border border-slate-200 p-5">
-        <h3 className="text-base font-semibold text-slate-800 mb-4">KPI Details</h3>
+        <h3 className="text-base font-semibold text-slate-800 mb-4">{t("KPI Details")}</h3>
         <div className="grid grid-cols-3 gap-4">
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-slate-500">KPI Objective</Label>
+            <Label className="text-xs font-medium text-slate-500">{t("KPI Objective")}</Label>
             <Input
-              placeholder="Enter Objective"
+              placeholder={t("Enter Objective")}
               value={formData.objective}
               onChange={(e) => setFormData({ ...formData, objective: e.target.value })}
               className="h-9 border-slate-200"
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-slate-500">KPI Description</Label>
+            <Label className="text-xs font-medium text-slate-500">{t("KPI Description")}</Label>
             <Input
-              placeholder="Enter Description"
+              placeholder={t("Enter Description")}
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               className="h-9 border-slate-200"
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-slate-500">Data Source</Label>
+            <Label className="text-xs font-medium text-slate-500">{t("Data Source")}</Label>
             <Input
-              placeholder="Enter Data Source"
+              placeholder={t("Enter Data Source")}
               value={formData.dataSource}
               onChange={(e) => setFormData({ ...formData, dataSource: e.target.value })}
               className="h-9 border-slate-200"
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-slate-500">Calculation Formula</Label>
+            <Label className="text-xs font-medium text-slate-500">{t("Calculation Formula")}</Label>
             <Input
-              placeholder="Enter Formula"
+              placeholder={t("Enter Formula")}
               value={formData.calculationFormula}
               onChange={(e) => setFormData({ ...formData, calculationFormula: e.target.value })}
               className="h-9 border-slate-200"
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-slate-500">Expected Score</Label>
+            <Label className="text-xs font-medium text-slate-500">{t("Expected Score")}</Label>
             <Input
               type="number"
               placeholder="0"
@@ -708,7 +710,7 @@ export default function KPIDetailPage({
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-slate-500">Actual Score</Label>
+            <Label className="text-xs font-medium text-slate-500">{t("Actual Score")}</Label>
             <Input
               type="number"
               placeholder="0"
@@ -720,7 +722,7 @@ export default function KPIDetailPage({
         </div>
         <div className="mt-4 pt-4 border-t border-slate-100 flex justify-end">
           <Button onClick={handleSave} disabled={saving} className="bg-primary-600 hover:bg-primary-700">
-            {saving ? "Saving..." : "Save Changes"}
+            {saving ? t("Saving...") : t("Save Changes")}
           </Button>
         </div>
       </div>
@@ -728,19 +730,19 @@ export default function KPIDetailPage({
       {/* Review History Table */}
       <div className="bg-white rounded-xl border border-slate-200">
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-          <h3 className="text-base font-semibold text-slate-800">Review History</h3>
+          <h3 className="text-base font-semibold text-slate-800">{t("Review History")}</h3>
           <span className="text-xs text-slate-500">
-            {selectedYear && `Filtered by ${selectedYear}`}
+            {selectedYear && `${t("Filtered by")} ${selectedYear}`}
           </span>
         </div>
         <Table>
           <TableHeader>
             <TableRow className="border-b border-slate-100 bg-slate-50/50">
-              <TableHead className="text-xs font-semibold text-slate-600 py-3 pl-4">Review Date</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-3">Actual Score</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-3">Status</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-3">Document</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-3 text-right pr-4">Actions</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-3 pl-4">{t("Review Date")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-3">{t("Actual Score")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-3">{t("Status")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-3">{t("Document")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-3 text-right pr-4">{t("Actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -749,8 +751,8 @@ export default function KPIDetailPage({
                 <TableCell colSpan={5} className="text-center py-12">
                   <div className="text-slate-400">
                     <Calendar className="h-10 w-10 mx-auto mb-2" />
-                    <p className="text-sm text-slate-500">No review history found</p>
-                    <p className="text-xs text-slate-400 mt-1">Add your first actual score to start tracking</p>
+                    <p className="text-sm text-slate-500">{t("No review history found")}</p>
+                    <p className="text-xs text-slate-400 mt-1">{t("Add your first actual score to start tracking")}</p>
                   </div>
                 </TableCell>
               </TableRow>
@@ -767,7 +769,7 @@ export default function KPIDetailPage({
                   <TableCell className="py-3 text-sm text-slate-700">{review.actualScore ?? "-"}</TableCell>
                   <TableCell className="py-3 text-sm">
                     <Badge className={statusColors[review.status] || "bg-slate-100 text-slate-600"}>
-                      {review.status}
+                      {t(review.status)}
                     </Badge>
                   </TableCell>
                   <TableCell className="py-3 text-sm">
@@ -784,7 +786,7 @@ export default function KPIDetailPage({
                       <Button
                         variant="ghost"
                         size="icon"
-                        title="Edit"
+                        title={t("Edit")}
                         className="h-8 w-8 text-slate-400 hover:text-slate-600"
                         onClick={() => handleOpenUpdateDialog(review)}
                       >
@@ -793,7 +795,7 @@ export default function KPIDetailPage({
                       <Button
                         variant="ghost"
                         size="icon"
-                        title="Delete"
+                        title={t("Delete")}
                         className="h-8 w-8 text-slate-400 hover:text-error"
                         onClick={() => {
                           setReviewToDelete(review.id);
@@ -806,7 +808,7 @@ export default function KPIDetailPage({
                         <Button
                           variant="ghost"
                           size="icon"
-                          title="Add Action Plan"
+                          title={t("Add Action Plan")}
                           className="h-8 w-8 text-slate-400 hover:text-primary-600"
                           onClick={() => handleOpenActionPlanDialog(review.id)}
                         >
@@ -822,7 +824,7 @@ export default function KPIDetailPage({
         </Table>
         <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
           <span className="text-sm text-slate-500">
-            Showing {filteredReviews.length} {filteredReviews.length === 1 ? "entry" : "entries"}
+            {t("Showing")} {filteredReviews.length} {filteredReviews.length === 1 ? t("entry") : t("entries")}
           </span>
         </div>
       </div>
@@ -832,13 +834,13 @@ export default function KPIDetailPage({
         <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Update Actual Score</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Update Actual Score")}</DialogTitle>
             </DialogHeader>
           </div>
           <div className="flex-1 overflow-y-auto px-6 py-6">
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-slate-700">Actual Score</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Actual Score")}</Label>
                 <Input
                   type="number"
                   value={updateForm.actualScore}
@@ -849,11 +851,11 @@ export default function KPIDetailPage({
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-slate-700">Upload document</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Upload document")}</Label>
                 <div className="border-2 border-dashed border-slate-200 rounded-lg p-6 text-center">
                   <Upload className="h-8 w-8 mx-auto text-slate-400 mb-2" />
                   <p className="text-sm text-slate-500">
-                    Drag and drop or select file.
+                    {t("Drag and drop or select file.")}
                   </p>
                 </div>
               </div>
@@ -865,9 +867,9 @@ export default function KPIDetailPage({
               onClick={() => setUpdateDialogOpen(false)}
               className="border-slate-200"
             >
-              Cancel
+              {t("Cancel")}
             </Button>
-            <Button onClick={handleUpdateReview} className="bg-primary-600 hover:bg-primary-700">Save</Button>
+            <Button onClick={handleUpdateReview} className="bg-primary-600 hover:bg-primary-700">{t("Save")}</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -876,14 +878,14 @@ export default function KPIDetailPage({
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmation</AlertDialogTitle>
+            <AlertDialogTitle>{t("Confirmation")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this?
+              {t("Are you sure you want to delete this?")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteReview}>OK</AlertDialogAction>
+            <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteReview}>{t("OK")}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -893,17 +895,17 @@ export default function KPIDetailPage({
         <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Update Plan Action</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Update Plan Action")}</DialogTitle>
             </DialogHeader>
           </div>
           <div className="flex-1 overflow-y-auto px-6 py-6">
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">
-                  Planned Action <span className="text-error">*</span>
+                  {t("Planned Action")} <span className="text-error">*</span>
                 </Label>
                 <Input
-                  placeholder="Enter planned action"
+                  placeholder={t("Enter planned action")}
                   value={actionPlanForm.plannedAction}
                   onChange={(e) =>
                     setActionPlanForm({
@@ -915,9 +917,9 @@ export default function KPIDetailPage({
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-slate-700">Description</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
                 <Textarea
-                  placeholder="Enter description"
+                  placeholder={t("Enter description")}
                   value={actionPlanForm.description}
                   onChange={(e) =>
                     setActionPlanForm({
@@ -930,7 +932,7 @@ export default function KPIDetailPage({
               </div>
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">
-                  Percentage Completed <span className="text-error">*</span>
+                  {t("Percentage Completed")} <span className="text-error">*</span>
                 </Label>
                 <Input
                   type="number"
@@ -949,7 +951,7 @@ export default function KPIDetailPage({
               </div>
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">
-                  Start Date <span className="text-error">*</span>
+                  {t("Start Date")} <span className="text-error">*</span>
                 </Label>
                 <div className="relative">
                   <Input
@@ -968,7 +970,7 @@ export default function KPIDetailPage({
               </div>
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">
-                  Status <span className="text-error">*</span>
+                  {t("Status")} <span className="text-error">*</span>
                 </Label>
                 <Select
                   value={actionPlanForm.status}
@@ -977,12 +979,12 @@ export default function KPIDetailPage({
                   }
                 >
                   <SelectTrigger className="h-9 bg-white border-slate-200">
-                    <SelectValue placeholder="Select status" />
+                    <SelectValue placeholder={t("Select status")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
-                    <SelectItem value="Open">Open</SelectItem>
-                    <SelectItem value="In-Progress">In-Progress</SelectItem>
-                    <SelectItem value="Completed">Completed</SelectItem>
+                    <SelectItem value="Open">{t("Open")}</SelectItem>
+                    <SelectItem value="In-Progress">{t("In-Progress")}</SelectItem>
+                    <SelectItem value="Completed">{t("Completed")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -994,7 +996,7 @@ export default function KPIDetailPage({
               onClick={() => setActionPlanDialogOpen(false)}
               className="border-slate-200"
             >
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button
               onClick={handleCreateActionPlan}
@@ -1005,7 +1007,7 @@ export default function KPIDetailPage({
               }
               className="bg-primary-600 hover:bg-primary-700"
             >
-              Save
+              {t("Save")}
             </Button>
           </div>
         </DialogContent>
@@ -1016,7 +1018,7 @@ export default function KPIDetailPage({
         <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Add KPI Actual Score</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add KPI Actual Score")}</DialogTitle>
             </DialogHeader>
           </div>
           <div className="flex-1 overflow-y-auto px-6 py-6">
@@ -1025,7 +1027,7 @@ export default function KPIDetailPage({
               <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <p className="text-slate-500">Review Date</p>
+                    <p className="text-slate-500">{t("Review Date")}</p>
                     <p className="font-medium text-slate-800">
                       {nextDueReviewDate
                         ? nextDueReviewDate.toLocaleDateString("en-GB", {
@@ -1037,13 +1039,13 @@ export default function KPIDetailPage({
                     </p>
                   </div>
                   <div>
-                    <p className="text-slate-500">Expected Score</p>
+                    <p className="text-slate-500">{t("Expected Score")}</p>
                     <p className="font-medium text-slate-800">{expectedScore ?? "-"}</p>
                   </div>
                   <div>
-                    <p className="text-slate-500">Recurrence</p>
+                    <p className="text-slate-500">{t("Recurrence")}</p>
                     <p className="font-medium text-slate-800">
-                      {kpi?.evidence?.recurrence || "Monthly"}
+                      {t(kpi?.evidence?.recurrence || "Monthly")}
                     </p>
                   </div>
                 </div>
@@ -1052,11 +1054,11 @@ export default function KPIDetailPage({
               {/* Actual Score Input */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">
-                  Actual Score <span className="text-error">*</span>
+                  {t("Actual Score")} <span className="text-error">*</span>
                 </Label>
                 <Input
                   type="number"
-                  placeholder="Enter actual score"
+                  placeholder={t("Enter actual score")}
                   value={addScoreForm.actualScore}
                   onChange={(e) =>
                     setAddScoreForm({ actualScore: e.target.value })
@@ -1065,7 +1067,7 @@ export default function KPIDetailPage({
                 />
                 {addScoreForm.actualScore && expectedScore !== null && (
                   <p className="text-sm">
-                    Status:{" "}
+                    {t("Status")}:{" "}
                     <Badge
                       className={
                         parseFloat(addScoreForm.actualScore) >= expectedScore
@@ -1074,8 +1076,8 @@ export default function KPIDetailPage({
                       }
                     >
                       {parseFloat(addScoreForm.actualScore) >= expectedScore
-                        ? "Achieved"
-                        : "Missed"}
+                        ? t("Achieved")
+                        : t("Missed")}
                     </Badge>
                   </p>
                 )}
@@ -1083,11 +1085,11 @@ export default function KPIDetailPage({
 
               {/* Upload Document (optional) */}
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-slate-700">Upload Document (Optional)</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Upload Document (Optional)")}</Label>
                 <div className="border-2 border-dashed border-slate-200 rounded-lg p-6 text-center">
                   <Upload className="h-8 w-8 mx-auto text-slate-400 mb-2" />
                   <p className="text-sm text-slate-500">
-                    Drag and drop or select file.
+                    {t("Drag and drop or select file.")}
                   </p>
                 </div>
               </div>
@@ -1102,14 +1104,14 @@ export default function KPIDetailPage({
               }}
               className="border-slate-200"
             >
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button
               onClick={handleAddActualScore}
               disabled={!addScoreForm.actualScore || addingScore}
               className="bg-primary-600 hover:bg-primary-700"
             >
-              {addingScore ? "Saving..." : "Save"}
+              {addingScore ? t("Saving...") : t("Save")}
             </Button>
           </div>
         </DialogContent>

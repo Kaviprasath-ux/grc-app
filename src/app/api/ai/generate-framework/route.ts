@@ -223,7 +223,9 @@ Job ID Reference: ${jobId}
             latencyMs: Date.now() - startTime,
             userId: session.id
         });
-        console.log(`✅ Database: Operation logged [ID: ${logRecord.id}]\\n`);
+        if (logRecord) {
+            console.log(`✅ Database: Operation logged [ID: ${logRecord.id}]\\n`);
+        }
 
         return NextResponse.json(result);
     } catch (error: any) {
@@ -237,7 +239,7 @@ Job ID Reference: ${jobId}
 [${errorTime}]
 
 📊 ERROR DETAILS:
-  Framework Name    : ${frameworkName || 'NOT SET'}
+  Framework Name    : ${requestPayload.framework_name || 'NOT SET'}
   Error Message     : ${error.message || 'Unknown error'}
   HTTP Status       : ${error.status || 'N/A'}
   Response Time     : ${latency}ms
@@ -270,12 +272,12 @@ Job ID Reference: ${jobId}
     • Look for validation errors
 
 5️⃣  Validate Request Data:
-    • Framework Name provided: ${frameworkName ? 'YES' : 'NO'}
+    • Framework Name provided: ${requestPayload.framework_name ? 'YES' : 'NO'}
     • Customer ID available: ${session.customerAccountId ? 'YES' : 'NO'}
     • All fields valid JSON: Check logs above
 
 📋 REQUEST THAT FAILED:
-  Framework     : ${frameworkName}
+  Framework     : ${requestPayload.framework_name || 'NOT SET'}
   Type          : ${requestPayload.type || 'N/A'}
   Country       : ${requestPayload.country || 'N/A'}
   Industry      : ${requestPayload.industry || 'N/A'}

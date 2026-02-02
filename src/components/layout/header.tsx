@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { Bell, Menu, ChevronDown, LogOut, User, Settings, Calendar, Clock, ChevronLeft, Globe, Search } from "lucide-react";
+import { Bell, Menu, ChevronDown, LogOut, User, Settings, Calendar, Clock, ChevronLeft, Globe, Search, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -14,8 +14,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { Locale } from "@/i18n/config";
 
 interface HeaderProps {
   onMenuClick?: () => void;
@@ -23,11 +24,10 @@ interface HeaderProps {
 
 export function Header({ onMenuClick }: HeaderProps) {
   const { data: session } = useSession();
+  const { locale, setLocale, t, locales, localeNames, localeFlags } = useLanguage();
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
     setCurrentTime(new Date());
     const timer = setInterval(() => {
       setCurrentTime(new Date());
@@ -71,11 +71,11 @@ export function Header({ onMenuClick }: HeaderProps) {
         </Link>
 
         {/* Date and Time */}
-        <div className="hidden md:flex items-center gap-6 ml-2">
+        <div className="hidden md:flex items-center gap-6 ms-2">
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200">
             <Calendar className="h-4 w-4 text-primary-500" />
             <div className="flex items-center gap-1.5">
-              <span className="text-xs text-slate-500 font-medium">Date</span>
+              <span className="text-xs text-slate-500 font-medium">{t("Date")}</span>
               <span className="text-sm text-slate-700 font-semibold">
                 {currentTime ? format(currentTime, "dd MMM yyyy") : "--"}
               </span>
@@ -84,7 +84,7 @@ export function Header({ onMenuClick }: HeaderProps) {
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200">
             <Clock className="h-4 w-4 text-primary-500" />
             <div className="flex items-center gap-1.5">
-              <span className="text-xs text-slate-500 font-medium">Time</span>
+              <span className="text-xs text-slate-500 font-medium">{t("Time")}</span>
               <span className="text-sm text-slate-700 font-semibold">
                 {currentTime ? format(currentTime, "h:mm a") : "--"}
               </span>
@@ -105,204 +105,158 @@ export function Header({ onMenuClick }: HeaderProps) {
         </Button>
 
         {/* Language Selector */}
-        {mounted ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="hidden md:flex items-center gap-2 text-slate-600 hover:text-slate-800 hover:bg-slate-100 px-3"
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="hidden md:flex items-center gap-2 text-slate-600 hover:text-slate-800 hover:bg-slate-100 px-3"
+            >
+              <Globe className="h-4 w-4" />
+              <span className="text-sm font-medium">{locale.toUpperCase()}</span>
+              <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            {locales.map((loc) => (
+              <DropdownMenuItem
+                key={loc}
+                className="flex items-center justify-between gap-2 cursor-pointer"
+                onClick={() => setLocale(loc as Locale)}
               >
-                <Globe className="h-4 w-4" />
-                <span className="text-sm font-medium">EN</span>
-                <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem className="flex items-center gap-2">
-                <span className="text-sm">🇺🇸</span>
-                English (US)
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">{localeFlags[loc as Locale]}</span>
+                  <span>{localeNames[loc as Locale]}</span>
+                </div>
+                {locale === loc && <Check className="h-4 w-4 text-primary-500" />}
               </DropdownMenuItem>
-              <DropdownMenuItem className="flex items-center gap-2">
-                <span className="text-sm">🇸🇦</span>
-                العربية
-              </DropdownMenuItem>
-              <DropdownMenuItem className="flex items-center gap-2">
-                <span className="text-sm">🇮🇳</span>
-                हिन्दी
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="hidden md:flex items-center gap-2 text-slate-600 hover:text-slate-800 hover:bg-slate-100 px-3"
-          >
-            <Globe className="h-4 w-4" />
-            <span className="text-sm font-medium">EN</span>
-            <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
-          </Button>
-        )}
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         {/* Notifications */}
-        {mounted ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="relative text-slate-500 hover:text-slate-700 hover:bg-slate-100"
-              >
-                <Bell className="h-5 w-5" />
-                <span className="absolute -top-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-semibold text-white">
-                  3
-                </span>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative text-slate-500 hover:text-slate-700 hover:bg-slate-100"
+            >
+              <Bell className="h-5 w-5" />
+              <span className="absolute -top-0.5 ltr:-right-0.5 rtl:-left-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-semibold text-white">
+                3
+              </span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-80">
+            <DropdownMenuLabel className="flex items-center justify-between py-3">
+              <span className="text-base font-semibold text-slate-800">{t("Notifications")}</span>
+              <Button variant="ghost" size="sm" className="text-xs text-primary-600 hover:text-primary-700 h-auto p-0">
+                {t("Mark all read")}
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80">
-              <DropdownMenuLabel className="flex items-center justify-between py-3">
-                <span className="text-base font-semibold text-slate-800">Notifications</span>
-                <Button variant="ghost" size="sm" className="text-xs text-primary-600 hover:text-primary-700 h-auto p-0">
-                  Mark all read
-                </Button>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <div className="max-h-80 overflow-y-auto">
-                <DropdownMenuItem className="flex flex-col items-start gap-1.5 py-3 px-4 cursor-pointer">
-                  <div className="flex items-start gap-3 w-full">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600">
-                      <Clock className="h-4 w-4" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-800">Evidence request due tomorrow</p>
-                      <p className="text-xs text-slate-500 mt-0.5">Control: A.5.1.1 - Information Security Policy</p>
-                      <p className="text-xs text-slate-400 mt-1">2 hours ago</p>
-                    </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <div className="max-h-80 overflow-y-auto">
+              <DropdownMenuItem className="flex flex-col items-start gap-1.5 py-3 px-4 cursor-pointer">
+                <div className="flex items-start gap-3 w-full">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+                    <Clock className="h-4 w-4" />
                   </div>
-                </DropdownMenuItem>
-                <DropdownMenuItem className="flex flex-col items-start gap-1.5 py-3 px-4 cursor-pointer">
-                  <div className="flex items-start gap-3 w-full">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600">
-                      <User className="h-4 w-4" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-800">Risk assessment assigned</p>
-                      <p className="text-xs text-slate-500 mt-0.5">RSK-045: Data Security Risk</p>
-                      <p className="text-xs text-slate-400 mt-1">Yesterday</p>
-                    </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-slate-800">{t("Evidence request due tomorrow")}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">Control: A.5.1.1 - Information Security Policy</p>
+                    <p className="text-xs text-slate-400 mt-1">{t("2 hours ago")}</p>
                   </div>
-                </DropdownMenuItem>
-                <DropdownMenuItem className="flex flex-col items-start gap-1.5 py-3 px-4 cursor-pointer">
-                  <div className="flex items-start gap-3 w-full">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-600">
-                      <Bell className="h-4 w-4" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-800">New audit finding created</p>
-                      <p className="text-xs text-slate-500 mt-0.5">FND-012: Access Control Gap</p>
-                      <p className="text-xs text-slate-400 mt-1">2 days ago</p>
-                    </div>
+                </div>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="flex flex-col items-start gap-1.5 py-3 px-4 cursor-pointer">
+                <div className="flex items-start gap-3 w-full">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+                    <User className="h-4 w-4" />
                   </div>
-                </DropdownMenuItem>
-              </div>
-              <DropdownMenuSeparator />
-              <div className="p-2">
-                <Button variant="ghost" className="w-full text-sm text-primary-600 hover:text-primary-700 hover:bg-primary-50">
-                  View all notifications
-                </Button>
-              </div>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="relative text-slate-500 hover:text-slate-700 hover:bg-slate-100"
-          >
-            <Bell className="h-5 w-5" />
-            <span className="absolute -top-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-semibold text-white">
-              3
-            </span>
-          </Button>
-        )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-slate-800">{t("Risk assessment assigned")}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">RSK-045: Data Security Risk</p>
+                    <p className="text-xs text-slate-400 mt-1">{t("Yesterday")}</p>
+                  </div>
+                </div>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="flex flex-col items-start gap-1.5 py-3 px-4 cursor-pointer">
+                <div className="flex items-start gap-3 w-full">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-600">
+                    <Bell className="h-4 w-4" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-slate-800">{t("New audit finding created")}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">FND-012: Access Control Gap</p>
+                    <p className="text-xs text-slate-400 mt-1">{t("2 days ago")}</p>
+                  </div>
+                </div>
+              </DropdownMenuItem>
+            </div>
+            <DropdownMenuSeparator />
+            <div className="p-2">
+              <Button variant="ghost" className="w-full text-sm text-primary-600 hover:text-primary-700 hover:bg-primary-50">
+                {t("View all notifications")}
+              </Button>
+            </div>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         {/* Divider */}
         <div className="hidden lg:block h-8 w-px bg-slate-200 mx-2" />
 
         {/* User section */}
-        {mounted ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                className="flex items-center gap-3 pl-2 pr-3 py-2 h-auto hover:bg-slate-100 rounded-lg"
-              >
-                <Avatar className="h-9 w-9 border-2 border-primary-200">
-                  <AvatarFallback className="bg-gradient-to-br from-primary-500 to-primary-600 text-white text-sm font-semibold">
-                    {session?.user?.name ? getInitials(session.user.name) : "U"}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="hidden lg:flex flex-col items-start">
-                  <span className="text-sm font-semibold text-slate-800">
-                    {session?.user?.name || "User"}
-                  </span>
-                  <span className="text-xs text-slate-500">
-                    {session?.user?.roles?.[0]?.replace(/([A-Z])/g, ' $1').trim() || "User"}
-                  </span>
-                </div>
-                <ChevronDown className="hidden lg:block h-4 w-4 text-slate-400" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel className="py-3">
-                <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-semibold text-slate-800">{session?.user?.name || "User"}</p>
-                  <p className="text-xs text-slate-500">{session?.user?.email || ""}</p>
-                  {session?.user?.customerAccountName && (
-                    <p className="text-xs text-primary-600 font-medium">{session.user.customerAccountName}</p>
-                  )}
-                </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="py-2.5 cursor-pointer">
-                <User className="mr-3 h-4 w-4 text-slate-500" />
-                <span className="text-sm">Profile</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="py-2.5 cursor-pointer">
-                <Settings className="mr-3 h-4 w-4 text-slate-500" />
-                <span className="text-sm">Settings</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem asChild className="py-2.5 cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50">
-                <Link href="/login">
-                  <LogOut className="mr-3 h-4 w-4" />
-                  <span className="text-sm font-medium">Log out</span>
-                </Link>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : (
-          <Button
-            variant="ghost"
-            className="flex items-center gap-3 pl-2 pr-3 py-2 h-auto hover:bg-slate-100 rounded-lg"
-          >
-            <Avatar className="h-9 w-9 border-2 border-primary-200">
-              <AvatarFallback className="bg-gradient-to-br from-primary-500 to-primary-600 text-white text-sm font-semibold">
-                {session?.user?.name ? getInitials(session.user.name) : "U"}
-              </AvatarFallback>
-            </Avatar>
-            <div className="hidden lg:flex flex-col items-start">
-              <span className="text-sm font-semibold text-slate-800">
-                {session?.user?.name || "User"}
-              </span>
-              <span className="text-xs text-slate-500">
-                {session?.user?.roles?.[0]?.replace(/([A-Z])/g, ' $1').trim() || "User"}
-              </span>
-            </div>
-            <ChevronDown className="hidden lg:block h-4 w-4 text-slate-400" />
-          </Button>
-        )}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              className="flex items-center gap-3 ps-2 pe-3 py-2 h-auto hover:bg-slate-100 rounded-lg"
+            >
+              <Avatar className="h-9 w-9 border-2 border-primary-200">
+                <AvatarFallback className="bg-gradient-to-br from-primary-500 to-primary-600 text-white text-sm font-semibold">
+                  {session?.user?.name ? getInitials(session.user.name) : "U"}
+                </AvatarFallback>
+              </Avatar>
+              <div className="hidden lg:flex flex-col items-start">
+                <span className="text-sm font-semibold text-slate-800">
+                  {session?.user?.name || t("User")}
+                </span>
+                <span className="text-xs text-slate-500">
+                  {session?.user?.roles?.[0]?.replace(/([A-Z])/g, ' $1').trim() || t("User")}
+                </span>
+              </div>
+              <ChevronDown className="hidden lg:block h-4 w-4 text-slate-400" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel className="py-3">
+              <div className="flex flex-col space-y-1">
+                <p className="text-sm font-semibold text-slate-800">{session?.user?.name || t("User")}</p>
+                <p className="text-xs text-slate-500">{session?.user?.email || ""}</p>
+                {session?.user?.customerAccountName && (
+                  <p className="text-xs text-primary-600 font-medium">{session.user.customerAccountName}</p>
+                )}
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="py-2.5 cursor-pointer">
+              <User className="me-3 h-4 w-4 text-slate-500" />
+              <span className="text-sm">{t("Profile")}</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem className="py-2.5 cursor-pointer">
+              <Settings className="me-3 h-4 w-4 text-slate-500" />
+              <span className="text-sm">{t("Settings")}</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild className="py-2.5 cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50">
+              <Link href="/login">
+                <LogOut className="me-3 h-4 w-4" />
+                <span className="text-sm font-medium">{t("Log out")}</span>
+              </Link>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   );
@@ -315,14 +269,16 @@ interface BreadcrumbItem {
 }
 
 export function Breadcrumb({ items }: { items: BreadcrumbItem[] }) {
+  const { t, isRTL } = useLanguage();
+
   return (
     <div className="flex items-center gap-3 text-sm mb-6">
       <button
         onClick={() => window.history.back()}
         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-800 hover:bg-slate-100 transition-colors"
       >
-        <ChevronLeft className="h-4 w-4" />
-        <span className="font-medium">Back</span>
+        <ChevronLeft className={`h-4 w-4 ${isRTL ? 'rotate-180' : ''}`} />
+        <span className="font-medium">{t("Back")}</span>
       </button>
       <div className="h-5 w-px bg-slate-200" />
       {items.map((item, index) => (
