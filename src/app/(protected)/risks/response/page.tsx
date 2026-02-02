@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
 import { RiskRatingBadge } from "@/components/risks/risk-rating-badge";
 import {
   Select,
@@ -94,6 +95,8 @@ function ProgressBar({
 
 export default function RiskResponsePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const fromRiskDashboard = searchParams.get("from") === "risk-dashboard";
   const { data: session } = useSession();
   const userRoles = useUserRoles();
   const { canEdit, canApprove } = usePermissions('risk.response');
@@ -419,6 +422,17 @@ export default function RiskResponsePage() {
   if (loading) {
     return (
       <div className="space-y-6">
+        {fromRiskDashboard && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => router.push("/risks/dashboard")}
+            className="flex items-center gap-2 text-slate-600 hover:text-slate-800 -ml-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Risk Dashboard
+          </Button>
+        )}
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-bold text-slate-800">Risk Response Strategy</h1>
         </div>
@@ -434,6 +448,17 @@ export default function RiskResponsePage() {
 
   return (
     <div className="space-y-6">
+      {fromRiskDashboard && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => router.push("/risks/dashboard")}
+          className="flex items-center gap-2 text-slate-600 hover:text-slate-800 -ml-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Risk Dashboard
+        </Button>
+      )}
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-bold text-slate-800">Risk Response Strategy</h1>
       </div>

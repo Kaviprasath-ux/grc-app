@@ -161,6 +161,11 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'compliance.evidence', actions: ['*'], scope: 'all' },
     { resource: 'compliance.domain', actions: ['*'], scope: 'all' },
     { resource: 'compliance.settings', actions: ['*'], scope: 'all' },
+    // Expanded Access for GRC Admin (Stabilization)
+    { resource: 'organization.*', actions: ['*'], scope: 'all' },
+    { resource: 'asset.*', actions: ['*'], scope: 'all' },
+    { resource: 'risk.*', actions: ['*'], scope: 'all' },
+    { resource: 'audit.*', actions: ['*'], scope: 'all' },
   ],
 
   // Customer Administrator - Full access to organization and all other modules (except audit)

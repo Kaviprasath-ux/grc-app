@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { withAuth, getTenantFilter, validateTenantAccess } from "@/lib/api-auth";
 
 // Types for the complex nested structure from Prisma
 interface PolicyControlWithPolicy {
@@ -126,42 +127,91 @@ function calculateEvidenceCompliancePercentage(controls: ControlWithRelations[])
   return Math.round(percentage * 10) / 10;
 }
 
+/**
+ * Check if user can access a framework based on multi-tenant rules:
+ * - GRCAdministrator (superadmin) has GLOBAL access to all frameworks
+ * - CustomerAdministrator and other roles can only access their own frameworks
+ * - For subscription flow, customers can VIEW master frameworks (but not modify)
+ */
+async function canAccessFramework(
+  frameworkCustomerAccountId: string | null,
+  session: { customerAccountId: string | null; roles: string[] },
+  action: "view" | "edit" | "delete"
+): Promise<boolean> {
+  // If framework has no customer account, deny access (data integrity issue)
+  if (!frameworkCustomerAccountId) {
+    return false;
+  }
+
+  // GRCAdministrator (superadmin) has GLOBAL access to all frameworks
+  // This is the system-level admin who needs to manage all customer frameworks
+  if (session.roles.includes("GRCAdministrator")) {
+    return true;
+  }
+
+  // For other roles (CustomerAdministrator, etc.)
+  if (!session.customerAccountId) {
+    return false;
+  }
+
+  // Check if this is the user's own framework
+  if (frameworkCustomerAccountId === session.customerAccountId) {
+    return true;
+  }
+
+  // For VIEW only: Allow access to master frameworks from GRC Admin accounts (for subscription flow)
+  if (action === "view") {
+    const frameworkAccount = await prisma.customerAccount.findUnique({
+      where: { id: frameworkCustomerAccountId },
+      select: { code: true },
+    });
+    // Allow viewing frameworks from GRC Admin accounts (master frameworks)
+    if (frameworkAccount?.code?.startsWith("GRC_ADMIN_")) {
+      return true;
+    }
+  }
+
+  // Deny access to other customers' frameworks
+  return false;
+}
+
 // GET single framework with all related data
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const framework = await prisma.framework.findUnique({
-      where: { id },
-      include: {
-        controls: {
-          include: {
-            domain: true,
-            owner: true,
-            assignee: true,
+export const GET = withAuth(
+  async (request, context, session) => {
+    try {
+      const { id } = await context.params;
+
+      // First fetch the framework to check tenant access
+      const framework = await prisma.framework.findUnique({
+        where: { id },
+        include: {
+          controls: {
+            include: {
+              domain: true,
+              owner: true,
+              assignee: true,
+            },
           },
-        },
-        evidences: true,
-        requirements: {
-          include: {
-            category: true,
-            controls: {
-              include: {
-                control: {
-                  include: {
-                    policyControls: {
-                      include: {
-                        policy: {
-                          select: { id: true, status: true },
+          evidences: true,
+          requirements: {
+            include: {
+              category: true,
+              controls: {
+                include: {
+                  control: {
+                    include: {
+                      policyControls: {
+                        include: {
+                          policy: {
+                            select: { id: true, status: true },
+                          },
                         },
                       },
-                    },
-                    evidenceControls: {
-                      include: {
-                        evidence: {
-                          select: { id: true, status: true },
+                      evidenceControls: {
+                        include: {
+                          evidence: {
+                            select: { id: true, status: true },
+                          },
                         },
                       },
                     },
@@ -169,69 +219,83 @@ export async function GET(
                 },
               },
             },
+            orderBy: { sortOrder: "asc" },
           },
-          orderBy: { sortOrder: "asc" },
+          requirementCategories: {
+            orderBy: { sortOrder: "asc" },
+          },
         },
-        requirementCategories: {
-          orderBy: { sortOrder: "asc" },
-        },
-      },
-    });
+      });
 
-    if (!framework) {
+      if (!framework) {
+        return NextResponse.json(
+          { error: "Framework not found" },
+          { status: 404 }
+        );
+      }
+
+      // Validate tenant access
+      const hasAccess = await canAccessFramework(framework.customerAccountId, session, "view");
+      if (!hasAccess) {
+        return NextResponse.json(
+          { error: "Access denied to this framework" },
+          { status: 403 }
+        );
+      }
+
+      // Calculate dynamic compliance percentages based on controls linked through requirements
+      const requirementControls = extractControlsFromRequirements(framework.requirements as RequirementWithControls[]);
+      const compliancePercentage = calculateCompliancePercentage(requirementControls);
+      const policyPercentage = calculatePolicyCompliancePercentage(requirementControls);
+      const evidencePercentage = calculateEvidenceCompliancePercentage(requirementControls);
+
+      return NextResponse.json({
+        ...framework,
+        compliancePercentage,
+        policyPercentage,
+        evidencePercentage,
+      });
+    } catch (error) {
+      console.error("Error fetching framework:", error);
       return NextResponse.json(
-        { error: "Framework not found" },
-        { status: 404 }
+        { error: "Failed to fetch framework" },
+        { status: 500 }
       );
     }
-
-    // Calculate dynamic compliance percentages based on controls linked through requirements
-    // This matches what the controls page displays (requirement-linked controls, not direct framework controls)
-    const requirementControls = extractControlsFromRequirements(framework.requirements as RequirementWithControls[]);
-    const compliancePercentage = calculateCompliancePercentage(requirementControls);
-    const policyPercentage = calculatePolicyCompliancePercentage(requirementControls);
-    const evidencePercentage = calculateEvidenceCompliancePercentage(requirementControls);
-
-    return NextResponse.json({
-      ...framework,
-      compliancePercentage,
-      policyPercentage,
-      evidencePercentage,
-    });
-  } catch (error) {
-    console.error("Error fetching framework:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch framework" },
-      { status: 500 }
-    );
-  }
-}
+  },
+  { resource: "compliance.framework", action: "view" }
+);
 
 // PUT update framework
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const body = await request.json();
-    const {
-      name,
-      description,
-      version,
-      type,
-      status,
-      country,
-      industry,
-      logo,
-      compliancePercentage,
-      policyPercentage,
-      evidencePercentage,
-    } = body;
+export const PUT = withAuth(
+  async (request, context, session) => {
+    try {
+      const { id } = await context.params;
 
-    const framework = await prisma.framework.update({
-      where: { id },
-      data: {
+      // First fetch the framework to check tenant access
+      const existingFramework = await prisma.framework.findUnique({
+        where: { id },
+        select: { customerAccountId: true },
+      });
+
+      if (!existingFramework) {
+        return NextResponse.json(
+          { error: "Framework not found" },
+          { status: 404 }
+        );
+      }
+
+      // Validate tenant access for edit
+      const hasAccess = await canAccessFramework(existingFramework.customerAccountId, session, "edit");
+      if (!hasAccess) {
+        return NextResponse.json(
+          { error: "Access denied. You can only edit frameworks in your own account." },
+          { status: 403 }
+        );
+      }
+
+      const body = await request.json();
+      const {
         name,
         description,
         version,
@@ -243,48 +307,133 @@ export async function PUT(
         compliancePercentage,
         policyPercentage,
         evidencePercentage,
-      },
-    });
+      } = body;
 
-    return NextResponse.json(framework);
-  } catch (error: unknown) {
-    console.error("Error updating framework:", error);
-    if ((error as { code?: string }).code === "P2025") {
+      const framework = await prisma.framework.update({
+        where: { id },
+        data: {
+          name,
+          description,
+          version,
+          type,
+          status,
+          country,
+          industry,
+          logo,
+          compliancePercentage,
+          policyPercentage,
+          evidencePercentage,
+        },
+      });
+
+      return NextResponse.json(framework);
+    } catch (error: unknown) {
+      console.error("Error updating framework:", error);
+      if ((error as { code?: string }).code === "P2025") {
+        return NextResponse.json(
+          { error: "Framework not found" },
+          { status: 404 }
+        );
+      }
       return NextResponse.json(
-        { error: "Framework not found" },
-        { status: 404 }
+        { error: "Failed to update framework" },
+        { status: 500 }
       );
     }
-    return NextResponse.json(
-      { error: "Failed to update framework" },
-      { status: 500 }
-    );
-  }
-}
+  },
+  { resource: "compliance.framework", action: "edit" }
+);
 
-// DELETE framework
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    await prisma.framework.delete({
-      where: { id },
-    });
+// DELETE framework (or unsubscribe/archive for master templates)
+export const DELETE = withAuth(
+  async (request, context, session) => {
+    try {
+      const { id } = await context.params;
+      const { searchParams } = new URL(request.url);
+      const forceDelete = searchParams.get("force") === "true";
 
-    return NextResponse.json({ message: "Framework deleted successfully" });
-  } catch (error: unknown) {
-    console.error("Error deleting framework:", error);
-    if ((error as { code?: string }).code === "P2025") {
+      // First fetch the framework with subscription info
+      const existingFramework = await prisma.framework.findUnique({
+        where: { id },
+        select: {
+          customerAccountId: true,
+          name: true,
+          isMasterTemplate: true,
+          sourceFrameworkId: true,
+          _count: {
+            select: { subscribedCopies: true },
+          },
+        },
+      });
+
+      if (!existingFramework) {
+        return NextResponse.json(
+          { error: "Framework not found" },
+          { status: 404 }
+        );
+      }
+
+      // Validate tenant access for delete
+      const hasAccess = await canAccessFramework(existingFramework.customerAccountId, session, "delete");
+      if (!hasAccess) {
+        return NextResponse.json(
+          { error: "Access denied. You can only delete frameworks in your own account." },
+          { status: 403 }
+        );
+      }
+
+      // Check if this is a master template
+      if (existingFramework.isMasterTemplate) {
+        // Master templates should be archived, not deleted
+        // Check if there are active subscriptions
+        if (existingFramework._count.subscribedCopies > 0 && !forceDelete) {
+          return NextResponse.json(
+            {
+              error: `Cannot delete master framework "${existingFramework.name}" - it has ${existingFramework._count.subscribedCopies} active subscription(s). Archive it instead or use force=true.`,
+              subscribedCount: existingFramework._count.subscribedCopies,
+              suggestion: "archive",
+            },
+            { status: 409 }
+          );
+        }
+
+        // Archive the master template instead of deleting
+        await prisma.framework.update({
+          where: { id },
+          data: { status: "Archived" },
+        });
+
+        return NextResponse.json({
+          message: `Master framework "${existingFramework.name}" has been archived. It will no longer appear in the framework selection list but existing subscriptions are preserved.`,
+          action: "archived",
+        });
+      }
+
+      // For customer copies (subscriptions) - allow full deletion
+      // This is the "unsubscribe" action
+      await prisma.framework.delete({
+        where: { id },
+      });
+
+      return NextResponse.json({
+        message: existingFramework.sourceFrameworkId
+          ? `Successfully unsubscribed from framework "${existingFramework.name}"`
+          : `Framework "${existingFramework.name}" deleted successfully`,
+        action: existingFramework.sourceFrameworkId ? "unsubscribed" : "deleted",
+      });
+    } catch (error: unknown) {
+      console.error("Error deleting framework:", error);
+      if ((error as { code?: string }).code === "P2025") {
+        return NextResponse.json(
+          { error: "Framework not found" },
+          { status: 404 }
+        );
+      }
       return NextResponse.json(
-        { error: "Framework not found" },
-        { status: 404 }
+        { error: "Failed to delete framework" },
+        { status: 500 }
       );
     }
-    return NextResponse.json(
-      { error: "Failed to delete framework" },
-      { status: 500 }
-    );
-  }
-}
+  },
+  { resource: "compliance.framework", action: "delete" }
+);

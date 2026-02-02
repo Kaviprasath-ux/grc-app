@@ -276,6 +276,7 @@ export default function EvidenceDetailPage() {
 
   // Control linking
   const [selectedControlIds, setSelectedControlIds] = useState<string[]>([]);
+  const [controlSearchQuery, setControlSearchQuery] = useState("");
 
   // KPI form
   const [kpiForm, setKpiForm] = useState({
@@ -882,8 +883,21 @@ export default function EvidenceDetailPage() {
   // Get linked control IDs for filtering
   const linkedControlIds = evidence?.evidenceControls?.map((ec) => ec.control.id) || [];
 
-  // Filter out already linked controls
-  const availableControls = controls.filter((c) => !linkedControlIds.includes(c.id));
+  // Filter out already linked controls and apply search filter
+  const availableControls = controls.filter((c) => {
+    // First, exclude already linked controls
+    if (linkedControlIds.includes(c.id)) return false;
+
+    // Then apply search filter if there's a query
+    if (controlSearchQuery.trim()) {
+      const query = controlSearchQuery.toLowerCase().trim();
+      const matchesCode = c.controlCode?.toLowerCase().includes(query);
+      const matchesName = c.name?.toLowerCase().includes(query);
+      return matchesCode || matchesName;
+    }
+
+    return true;
+  });
 
   if (loading) {
     return (
@@ -1726,7 +1740,10 @@ export default function EvidenceDetailPage() {
             <Card className="mt-4">
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Controls</CardTitle>
-                <Dialog open={linkControlsOpen} onOpenChange={setLinkControlsOpen}>
+                <Dialog open={linkControlsOpen} onOpenChange={(open) => {
+                      setLinkControlsOpen(open);
+                      if (!open) setControlSearchQuery(""); // Clear search when dialog closes
+                    }}>
                   <DialogTrigger asChild>
                     <Button size="sm">Link Controls</Button>
                   </DialogTrigger>
@@ -1735,6 +1752,23 @@ export default function EvidenceDetailPage() {
                       <DialogTitle>Link Controls</DialogTitle>
                     </DialogHeader>
                     <div className="py-4 space-y-4">
+                      {/* Search input for filtering controls */}
+                      <div className="relative">
+                        <Input
+                          placeholder="Search by Control Code or Control Name..."
+                          value={controlSearchQuery}
+                          onChange={(e) => setControlSearchQuery(e.target.value)}
+                          className="w-full"
+                        />
+                        {controlSearchQuery && (
+                          <button
+                            onClick={() => setControlSearchQuery("")}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
                       <div className="border rounded-lg max-h-[400px] overflow-y-auto">
                         {availableControls.map((control) => (
                           <div
@@ -1750,16 +1784,18 @@ export default function EvidenceDetailPage() {
                               );
                             }}
                           >
-                            <Checkbox
-                              checked={selectedControlIds.includes(control.id)}
-                              onCheckedChange={() => {
-                                setSelectedControlIds((prev) =>
-                                  prev.includes(control.id)
-                                    ? prev.filter((id) => id !== control.id)
-                                    : [...prev, control.id]
-                                );
-                              }}
-                            />
+                            <div onClick={(e) => e.stopPropagation()}>
+                              <Checkbox
+                                checked={selectedControlIds.includes(control.id)}
+                                onCheckedChange={() => {
+                                  setSelectedControlIds((prev) =>
+                                    prev.includes(control.id)
+                                      ? prev.filter((id) => id !== control.id)
+                                      : [...prev, control.id]
+                                  );
+                                }}
+                              />
+                            </div>
                             <div className="flex-1">
                               <div className="flex items-center gap-2">
                                 <span className="font-medium">{control.controlCode}</span>
@@ -1776,7 +1812,9 @@ export default function EvidenceDetailPage() {
                         ))}
                         {availableControls.length === 0 && (
                           <div className="p-4 text-center text-gray-500">
-                            No available controls to link
+                            {controlSearchQuery.trim()
+                              ? "No controls found matching your search"
+                              : "No available controls to link"}
                           </div>
                         )}
                       </div>
@@ -1784,7 +1822,10 @@ export default function EvidenceDetailPage() {
                         {selectedControlIds.length} control(s) selected
                       </p>
                       <div className="flex justify-end gap-2">
-                        <Button variant="outline" onClick={() => setLinkControlsOpen(false)}>
+                        <Button variant="outline" onClick={() => {
+                            setLinkControlsOpen(false);
+                            setControlSearchQuery("");
+                          }}>
                           Cancel
                         </Button>
                         <Button onClick={handleLinkControls} disabled={selectedControlIds.length === 0}>

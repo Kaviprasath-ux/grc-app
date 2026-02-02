@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { usePermissions, useHasRole } from "@/hooks/usePermissions";
@@ -54,6 +54,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Upload,
+  ArrowLeft,
 } from "lucide-react";
 
 interface Policy {
@@ -122,6 +123,8 @@ const RECURRENCE_OPTIONS = ["Weekly", "Monthly", "Quarterly", "Yearly"];
 
 export default function GovernancePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const fromDashboard = searchParams.get("from") === "dashboard";
   const { data: session } = useSession();
   const { canView, canCreate, canEdit, canDelete, isLoading: permissionsLoading } = usePermissions('compliance.governance');
   const isCustomerAdmin = useHasRole("CustomerAdministrator");
@@ -485,7 +488,19 @@ export default function GovernancePage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">Governance</h1>
+        <div className="flex items-center gap-3">
+          {fromDashboard && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => router.push("/dashboard")}
+              className="h-8 w-8"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          )}
+          <h1 className="text-2xl font-bold text-slate-800">Governance</h1>
+        </div>
       </div>
 
       {/* Tabs */}
