@@ -62,19 +62,21 @@ export async function GET(req: NextRequest) {
         let compliancePercentage = 0;
 
         try {
-          // Count controls for THIS customer only
-          const totalControls = await prisma.control.count({
-            where: { customerAccountId: user.customerAccountId },
-          });
-          const compliantControls = await prisma.control.count({
-            where: {
-              customerAccountId: user.customerAccountId,
-              status: "Compliant",
-            },
-          });
+          // Count controls for THIS customer only (skip if no customerAccountId)
+          if (user.customerAccountId) {
+            const totalControls = await prisma.control.count({
+              where: { customerAccountId: user.customerAccountId },
+            });
+            const compliantControls = await prisma.control.count({
+              where: {
+                customerAccountId: user.customerAccountId,
+                status: "Compliant",
+              },
+            });
 
-          if (totalControls > 0) {
-            compliancePercentage = (compliantControls / totalControls) * 100;
+            if (totalControls > 0) {
+              compliancePercentage = (compliantControls / totalControls) * 100;
+            }
           }
         } catch {
           // If compliance calculation fails, use 0
