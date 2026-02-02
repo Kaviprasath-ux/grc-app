@@ -136,12 +136,19 @@ interface Department {
   name: string;
 }
 
+interface UserRole {
+  role: {
+    name: string;
+  };
+}
+
 interface User {
   id: string;
   fullName: string;
   departmentId?: string;
   designation?: string;
   department?: { id: string; name: string };
+  userRoles?: UserRole[];
 }
 
 interface Control {
@@ -325,6 +332,25 @@ export default function GovernanceDetailPage() {
     fetchPolicy();
     fetchReferenceData();
   }, [fetchPolicy, fetchReferenceData]);
+
+  // Filtered user lists for role-based assignment restrictions
+  // Assignees: Only DepartmentContributor and DepartmentReviewer from the selected department
+  const filteredAssigneeUsers = users.filter((u) => {
+    // Must be in the same department as the governance document
+    if (selectedDepartmentId && u.departmentId !== selectedDepartmentId) return false;
+    // Must have DepartmentContributor or DepartmentReviewer role
+    return u.userRoles?.some((ur) =>
+      ["DepartmentContributor", "DepartmentReviewer"].includes(ur.role?.name)
+    );
+  });
+
+  // Approvers: Only DepartmentReviewer from the selected department
+  const filteredApproverUsers = users.filter((u) => {
+    // Must be in the same department as the governance document
+    if (selectedDepartmentId && u.departmentId !== selectedDepartmentId) return false;
+    // Must have DepartmentReviewer role only
+    return u.userRoles?.some((ur) => ur.role?.name === "DepartmentReviewer");
+  });
 
   // Load stored signature from localStorage when policy is loaded and Published
   useEffect(() => {
@@ -1053,14 +1079,23 @@ export default function GovernanceDetailPage() {
                       </DialogHeader>
                       <div className="py-4">
                         <Label>Select Assignee</Label>
+                        <p className="text-xs text-slate-500 mt-1 mb-2">
+                          Only Department Contributors and Department Reviewers from the assigned department are shown.
+                        </p>
                         <Select value={selectedAssigneeId} onValueChange={setSelectedAssigneeId}>
                           <SelectTrigger className="mt-2">
                             <SelectValue placeholder="Select assignee" />
                           </SelectTrigger>
                           <SelectContent>
-                            {users.map((u) => (
-                              <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
-                            ))}
+                            {filteredAssigneeUsers.length > 0 ? (
+                              filteredAssigneeUsers.map((u) => (
+                                <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
+                              ))
+                            ) : (
+                              <div className="py-2 px-2 text-sm text-slate-500 text-center">
+                                No eligible users found in this department
+                              </div>
+                            )}
                           </SelectContent>
                         </Select>
                       </div>
@@ -1068,7 +1103,7 @@ export default function GovernanceDetailPage() {
                         <Button variant="outline" onClick={() => setAssigneeDialogOpen(false)}>
                           Cancel
                         </Button>
-                        <Button onClick={handleSaveAssignee}>Save</Button>
+                        <Button onClick={handleSaveAssignee} disabled={!selectedAssigneeId}>Save</Button>
                       </div>
                     </DialogContent>
                   </Dialog>
@@ -1094,14 +1129,23 @@ export default function GovernanceDetailPage() {
                       </DialogHeader>
                       <div className="py-4">
                         <Label>Select Approver</Label>
+                        <p className="text-xs text-slate-500 mt-1 mb-2">
+                          Only Department Reviewers from the assigned department are shown.
+                        </p>
                         <Select value={selectedApproverId} onValueChange={setSelectedApproverId}>
                           <SelectTrigger className="mt-2">
                             <SelectValue placeholder="Select approver" />
                           </SelectTrigger>
                           <SelectContent>
-                            {users.map((u) => (
-                              <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
-                            ))}
+                            {filteredApproverUsers.length > 0 ? (
+                              filteredApproverUsers.map((u) => (
+                                <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
+                              ))
+                            ) : (
+                              <div className="py-2 px-2 text-sm text-slate-500 text-center">
+                                No Department Reviewers found in this department
+                              </div>
+                            )}
                           </SelectContent>
                         </Select>
                       </div>
@@ -1109,7 +1153,7 @@ export default function GovernanceDetailPage() {
                         <Button variant="outline" onClick={() => setApproverDialogOpen(false)}>
                           Cancel
                         </Button>
-                        <Button onClick={handleSaveApprover}>Save</Button>
+                        <Button onClick={handleSaveApprover} disabled={!selectedApproverId}>Save</Button>
                       </div>
                     </DialogContent>
                   </Dialog>
