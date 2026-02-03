@@ -1120,7 +1120,7 @@ export default function ExceptionsPage() {
                     verticalAlign="bottom"
                     iconType="circle"
                     iconSize={8}
-                    formatter={(value) => <span className="text-xs text-slate-600 truncate max-w-[80px] inline-block">{value}</span>}
+                    formatter={(value) => <span className="text-xs text-slate-600">{value}</span>}
                   />
                 </PieChart>
               </ResponsiveContainer>
