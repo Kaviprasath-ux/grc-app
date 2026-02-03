@@ -40,7 +40,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, CheckCircle, MessageSquare, Send, Trash2, XCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle, MessageSquare, Send, Trash2, XCircle, Home, ChevronRight } from "lucide-react";
+import Link from "next/link";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -396,20 +397,24 @@ export default function ExceptionDetailPage({
 
   return (
     <div className="space-y-6 p-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>{t("Compliance")}</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <Link href="/compliance/exceptions" className="text-slate-500 hover:text-primary-600 transition-colors">
+          {t("Exceptions")}
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">{exception.exceptionCode}</span>
+      </nav>
+
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.push("/compliance/exceptions")}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold">{t("Exception Detail Page")}</h1>
-            <p className="text-gray-600">{exception.exceptionCode} - {exception.name}</p>
-          </div>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold">{exception.name}</h1>
           <Badge className={statusColors[exception.status] || "bg-gray-100"}>
             {exception.status}
           </Badge>

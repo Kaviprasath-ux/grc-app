@@ -197,16 +197,25 @@ export default function OrganizationSettingsPage() {
   if (activeCategory) {
     return (
       <div className="space-y-6">
-        {/* Page Header with Back Button */}
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9 text-slate-600 hover:text-slate-800"
+        {/* Breadcrumb */}
+        <nav className="flex items-center gap-1.5 text-sm">
+          <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>Organization</span>
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <button
             onClick={() => setActiveCategory(null)}
+            className="text-slate-500 hover:text-primary-600 transition-colors"
           >
-            <ChevronLeft className="h-5 w-5" />
-          </Button>
+            Settings
+          </button>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <span className="text-primary-700 font-medium">{currentCategory?.title}</span>
+        </nav>
+
+        {/* Page Header */}
+        <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-bold text-slate-800">{currentCategory?.title}</h1>
         </div>
 

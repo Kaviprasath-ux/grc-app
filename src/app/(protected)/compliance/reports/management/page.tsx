@@ -2,7 +2,8 @@
 
 import { useSearchParams, useRouter } from "next/navigation";
 import { useState, useEffect, Suspense } from "react";
-import { ArrowLeft, Download } from "lucide-react";
+import { ArrowLeft, Download, Home, ChevronRight } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -247,28 +248,28 @@ function ManagementReportContent() {
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>{t("Compliance")}</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <Link href="/compliance/reports" className="text-slate-500 hover:text-primary-600 transition-colors">
+          {t("Reports")}
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">{t("Management Report")}</span>
+      </nav>
+
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => router.back()}
-            className="flex items-center text-blue-600 hover:text-blue-800"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </button>
-          <span className="text-gray-400">|</span>
-          <span className="text-gray-600">{t("report")}</span>
-          <span className="text-gray-400">|</span>
-          <span className="font-medium">{t("managementReport")}</span>
-        </div>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Compliance Management Report")}</h1>
         <Button onClick={handleDownloadReport}>
           <Download className="h-4 w-4 mr-2" />
           {t("downloadReport")}
         </Button>
       </div>
-
-      {/* Report Title */}
-      <h1 className="text-2xl font-bold text-center">{t("complianceManagementReport")}</h1>
 
       {/* Overall Compliance Section */}
       {showOverallCompliance && (

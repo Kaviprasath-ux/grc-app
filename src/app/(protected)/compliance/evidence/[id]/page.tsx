@@ -60,7 +60,10 @@ import {
   Clock,
   Loader2,
   Layers,
+  Home,
+  ChevronRight,
 } from "lucide-react";
+import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 // Cycle status types
@@ -1129,20 +1132,24 @@ export default function EvidenceDetailPage() {
   // Regular User View - Full features
   return (
     <div className="space-y-6 p-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>{t("Compliance")}</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <Link href="/compliance/evidence" className="text-slate-500 hover:text-primary-600 transition-colors">
+          {t("Evidence")}
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">{evidence.evidenceCode}</span>
+      </nav>
+
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.push("/compliance/evidence")}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold">{t("Evidence Detail Page")}</h1>
-            <p className="text-gray-600">{evidence.evidenceCode} - {evidence.name}</p>
-          </div>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold">{evidence.name}</h1>
           <Badge className={statusColors[evidence.status] || "bg-gray-500 text-white"}>
             {t(evidence.status)}
           </Badge>
@@ -1164,6 +1171,7 @@ export default function EvidenceDetailPage() {
           </Button>
         </div>
       </div>
+      <p className="text-gray-600">{evidence.evidenceCode}</p>
 
       {/* Status Workflow Steps */}
       <div className="flex items-center justify-center gap-4 py-4 bg-gray-50 rounded-lg">

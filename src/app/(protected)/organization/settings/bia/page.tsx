@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Pencil, Trash2, Search, ChevronLeft } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, ChevronLeft, ChevronRight, Home } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { DataGrid } from "@/components/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -524,16 +525,22 @@ export default function BIASettingsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Page Header with Back Button */}
-      <div className="flex items-center gap-3">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-9 w-9 text-slate-600 hover:text-slate-800"
-          onClick={() => router.push("/organization/settings")}
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </Button>
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>Organization</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <Link href="/organization/settings" className="text-slate-500 hover:text-primary-600 transition-colors">
+          Settings
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">BIA</span>
+      </nav>
+
+      {/* Page Header */}
+      <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-bold text-slate-800">BIA Settings</h1>
       </div>
 

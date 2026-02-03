@@ -41,7 +41,10 @@ import {
   Plus,
   Trash2,
   Link2,
+  Home,
+  ChevronRight,
 } from "lucide-react";
+import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Risk {
@@ -292,30 +295,32 @@ export default function RiskDetailPage() {
 
   return (
     <div className="space-y-6 p-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>{t("Compliance")}</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <Link href="/compliance/risk-matrix" className="text-slate-500 hover:text-primary-600 transition-colors">
+          {t("Risk Control Matrix")}
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">{risk.riskId}</span>
+      </nav>
+
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.push("/compliance/risk-matrix")}
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold">{risk.riskId}</h1>
+          <Badge
+            className={riskRatingColors[risk.riskRating || "Low"]}
           >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold">{risk.riskId}</h1>
-              <Badge
-                className={riskRatingColors[risk.riskRating || "Low"]}
-              >
-                {risk.riskRating || "Low"}
-              </Badge>
-              <Badge className={statusColors[risk.status] || "bg-gray-100"}>
-                {risk.status}
-              </Badge>
-            </div>
-            <p className="text-gray-600">{risk.name}</p>
-          </div>
+            {risk.riskRating || "Low"}
+          </Badge>
+          <Badge className={statusColors[risk.status] || "bg-gray-100"}>
+            {risk.status}
+          </Badge>
         </div>
 
         <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>

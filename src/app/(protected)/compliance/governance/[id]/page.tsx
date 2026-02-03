@@ -64,7 +64,10 @@ import {
   Calendar,
   ChevronLeft,
   Layers,
+  Home,
+  ChevronRight,
 } from "lucide-react";
+import Link from "next/link";
 
 interface Policy {
   id: string;
@@ -752,18 +755,22 @@ export default function GovernanceDetailPage() {
 
   return (
     <div className="space-y-6 p-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>{t("Compliance")}</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <Link href="/compliance/governance" className="text-slate-500 hover:text-primary-600 transition-colors">
+          {t("Governance")}
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">{policy.code}</span>
+      </nav>
+
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          {/* Back Link - Text style like website */}
-          <button
-            onClick={() => router.push("/compliance/governance")}
-            className="flex items-center gap-1 text-primary hover:underline"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            <span>{t(typeLabels[policy.documentType] || "Policy")}</span>
-          </button>
-        </div>
 
         <div className="flex items-center gap-2">
           {/* Approve Button - Only CustomerAdmin who is the Approver can see */}

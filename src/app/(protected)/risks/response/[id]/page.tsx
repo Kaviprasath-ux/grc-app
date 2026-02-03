@@ -20,7 +20,8 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { ChevronDown, ArrowLeft, Plus } from "lucide-react";
+import { ChevronDown, ArrowLeft, Plus, Home, ChevronRight } from "lucide-react";
+import Link from "next/link";
 import { AddControlDialog } from "@/components/risks/add-control-dialog";
 import { ChooseControlDialog } from "@/components/risks/choose-control-dialog";
 import {
@@ -392,18 +393,24 @@ export default function RiskViewPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header with Back button */}
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>{t("Risk Management")}</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <Link href="/risks/response" className="text-slate-500 hover:text-primary-600 transition-colors">
+          {t("Response")}
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">{risk?.riskId || t("Risk View")}</span>
+      </nav>
+
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.back()}
-            className="h-8 w-8 text-slate-600 hover:text-slate-800"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <h1 className="text-xl font-semibold text-slate-800">{t("Risk View")}</h1>
+          <h1 className="text-xl font-semibold text-slate-800">{risk?.name || t("Risk View")}</h1>
           {/* Show current status badge */}
           <span className={cn(
             "px-2 py-1 rounded text-xs font-medium",

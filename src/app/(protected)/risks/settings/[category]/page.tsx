@@ -128,17 +128,17 @@ interface RiskRange {
   description: string | null;
 }
 
-const categoryTitleKeys: Record<string, string> = {
-  "category": "riskSettings.category",
-  "control-strength": "riskSettings.controlStrength",
-  "likelihood": "riskSettings.likelihood",
-  "threat": "riskSettings.threat",
-  "vulnerability": "riskSettings.vulnerability",
-  "risk-methodology": "riskSettings.riskMethodology",
-  "risk-category": "riskSettings.riskCategory",
-  "impact": "riskSettings.impact",
-  "vulnerability-rating": "riskSettings.vulnerabilityRating",
-  "risk-sub-category": "riskSettings.riskSubCategory",
+const categoryTitles: Record<string, string> = {
+  "category": "Category",
+  "control-strength": "Control Strength",
+  "likelihood": "Likelihood",
+  "threat": "Threat",
+  "vulnerability": "Vulnerability",
+  "risk-methodology": "Risk Methodology",
+  "risk-category": "Risk Category",
+  "impact": "Impact",
+  "vulnerability-rating": "Vulnerability Rating",
+  "risk-sub-category": "Risk Sub Category",
 };
 
 export default function RiskSettingsCategoryPage() {
@@ -949,7 +949,7 @@ export default function RiskSettingsCategoryPage() {
 
   // Column Definitions - Matching UAT design
   const vulnCatColumns: ColumnDef<VulnerabilityCategory>[] = [
-    { accessorKey: "name", header: t("riskSettings.vulnerabilityCategory") },
+    { accessorKey: "name", header: t("Vulnerability Category") },
     ...((canEdit || canDelete) ? [{
       id: "actions",
       header: t("common.action"),
@@ -980,7 +980,7 @@ export default function RiskSettingsCategoryPage() {
   ];
 
   const threatCatColumns: ColumnDef<ThreatCategory>[] = [
-    { accessorKey: "name", header: t("riskSettings.threatCategory") },
+    { accessorKey: "name", header: t("Threat Category") },
     ...((canEdit || canDelete) ? [{
       id: "actions",
       header: t("common.action"),
@@ -1011,7 +1011,7 @@ export default function RiskSettingsCategoryPage() {
   ];
 
   const controlStrengthColumns: ColumnDef<ControlStrength>[] = [
-    { accessorKey: "name", header: t("riskSettings.controlStrengthName") },
+    { accessorKey: "name", header: t("Name") },
     { accessorKey: "score", header: t("common.score") },
     ...((canEdit || canDelete) ? [{
       id: "actions",
@@ -1043,8 +1043,8 @@ export default function RiskSettingsCategoryPage() {
   const likelihoodColumns: ColumnDef<RiskLikelihood>[] = [
     { accessorKey: "title", header: t("common.title") },
     { accessorKey: "score", header: t("common.score") },
-    { accessorKey: "timeFrame", header: t("riskSettings.timeFrame") },
-    { accessorKey: "probability", header: t("riskSettings.probability") },
+    { accessorKey: "timeFrame", header: t("Time Frame") },
+    { accessorKey: "probability", header: t("Probability") },
     {
       id: "actions",
       header: t("common.action"),
@@ -1074,7 +1074,7 @@ export default function RiskSettingsCategoryPage() {
   ];
 
   const threatColumns: ColumnDef<RiskThreat>[] = [
-    { accessorKey: "threatId", header: t("riskSettings.threatId") },
+    { accessorKey: "threatId", header: t("Threat ID") },
     { accessorKey: "category.name", header: t("common.category"), cell: ({ row }) => row.original.category?.name || "-" },
     { accessorKey: "name", header: t("common.name") },
     { accessorKey: "description", header: t("common.description") },
@@ -1106,7 +1106,7 @@ export default function RiskSettingsCategoryPage() {
   ];
 
   const vulnerabilityColumns: ColumnDef<RiskVulnerability>[] = [
-    { accessorKey: "vulnId", header: t("riskSettings.vulnerabilityId") },
+    { accessorKey: "vulnId", header: t("Vulnerability ID") },
     { accessorKey: "category.name", header: t("common.category"), cell: ({ row }) => row.original.category?.name || "-" },
     { accessorKey: "name", header: t("common.name") },
     { accessorKey: "description", header: t("common.description") },
@@ -1293,9 +1293,9 @@ export default function RiskSettingsCategoryPage() {
         </div>
       ),
     },
-    { accessorKey: "lowRange", header: t("riskSettings.lowRange") },
-    { accessorKey: "highRange", header: t("riskSettings.highRange") },
-    { accessorKey: "timelineDays", header: t("riskSettings.timelineDays") },
+    { accessorKey: "lowRange", header: t("Low Range") },
+    { accessorKey: "highRange", header: t("High Range") },
+    { accessorKey: "timelineDays", header: t("Timeline Days") },
     {
       id: "actions",
       header: t("common.action"),
@@ -1326,7 +1326,7 @@ export default function RiskSettingsCategoryPage() {
     },
   ];
 
-  const title = t(categoryTitleKeys[category] || "riskSettings.settings");
+  const title = categoryTitles[category] || "Settings";
 
   // Show loading state while permissions or data is loading
   if (permissionsLoading || loading) {
@@ -1336,11 +1336,11 @@ export default function RiskSettingsCategoryPage() {
         <nav className="flex items-center gap-1.5 text-sm">
           <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
-            <span>{t("riskSettings.riskManagement")}</span>
+            <span>{t("Risk Management")}</span>
           </Link>
           <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
           <Link href="/risks/settings" className="text-slate-500 hover:text-primary-600 transition-colors">
-            {t("riskSettings.settings")}
+            {t("Settings")}
           </Link>
           <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
           <span className="text-primary-700 font-medium">{title}</span>
@@ -1359,7 +1359,7 @@ export default function RiskSettingsCategoryPage() {
 
   // Show unauthorized if user doesn't have view permission
   if (!canView) {
-    return <Unauthorized description={t("riskSettings.noPermission")} />;
+    return <Unauthorized description={t("You don't have permission to access Risk Settings.")} />;
   }
 
   return (
@@ -1368,11 +1368,11 @@ export default function RiskSettingsCategoryPage() {
       <nav className="flex items-center gap-1.5 text-sm">
         <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
-          <span>{t("riskSettings.riskManagement")}</span>
+          <span>{t("Risk Management")}</span>
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
         <Link href="/risks/settings" className="text-slate-500 hover:text-primary-600 transition-colors">
-          {t("riskSettings.settings")}
+          {t("Settings")}
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
         <span className="text-primary-700 font-medium">{title}</span>
@@ -1389,9 +1389,9 @@ export default function RiskSettingsCategoryPage() {
           {/* Vulnerability Category Section */}
           <div>
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">{t("riskSettings.vulnerabilityCategory")}</h3>
+              <h3 className="text-lg font-semibold">{t("Vulnerability Category")}</h3>
               <Button onClick={() => { setActiveTab("tab1"); setVulnCatForm({ name: "" }); setIsAddOpen(true); }}>
-                <Plus className="h-4 w-4 mr-2" />{t("riskSettings.addVulnerabilityCategory")}
+                <Plus className="h-4 w-4 mr-2" />{t("Add Vulnerability Category")}
               </Button>
             </div>
             <DataGrid
@@ -1404,9 +1404,9 @@ export default function RiskSettingsCategoryPage() {
           {/* Threat Category Section */}
           <div>
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">{t("riskSettings.threatCategory")}</h3>
+              <h3 className="text-lg font-semibold">{t("Threat Category")}</h3>
               <Button onClick={() => { setActiveTab("tab2"); setThreatCatForm({ name: "" }); setIsAddOpen(true); }}>
-                <Plus className="h-4 w-4 mr-2" />{t("riskSettings.addThreatCategory")}
+                <Plus className="h-4 w-4 mr-2" />{t("Add Threat Category")}
               </Button>
             </div>
             <DataGrid
@@ -1427,7 +1427,7 @@ export default function RiskSettingsCategoryPage() {
               <Input placeholder={t("common.search")} className="pl-8" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             </div>
             <Button onClick={() => { setControlStrengthForm({ name: "", score: 0 }); setIsAddOpen(true); }}>
-              <Plus className="h-4 w-4 mr-2" />{t("riskSettings.addControlStrength")}
+              <Plus className="h-4 w-4 mr-2" />{t("Add Control Strength")}
             </Button>
           </div>
           <DataGrid columns={controlStrengthColumns} data={controlStrengths.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()))} hideSearch={true} />
@@ -1443,7 +1443,7 @@ export default function RiskSettingsCategoryPage() {
               <Input placeholder={t("common.search")} className="pl-8" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             </div>
             <Button onClick={() => { setLikelihoodForm({ title: "", score: 0, timeFrame: "", probability: "" }); setIsAddOpen(true); }}>
-              <Plus className="h-4 w-4 mr-2" />{t("riskSettings.addLikelihood")}
+              <Plus className="h-4 w-4 mr-2" />{t("Add Likelihood")}
             </Button>
           </div>
           <DataGrid columns={likelihoodColumns} data={likelihoods.filter(l => l.title.toLowerCase().includes(searchTerm.toLowerCase()))} hideSearch={true} />
@@ -1459,7 +1459,7 @@ export default function RiskSettingsCategoryPage() {
               <Input placeholder={t("common.search")} className="pl-8" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             </div>
             <Button onClick={() => { setThreatForm({ name: "", description: "", categoryId: "" }); setIsAddOpen(true); }}>
-              <Plus className="h-4 w-4 mr-2" />{t("riskSettings.addThreat")}
+              <Plus className="h-4 w-4 mr-2" />{t("Add Threat")}
             </Button>
           </div>
           <DataGrid columns={threatColumns} data={threats.filter(t => t.name.toLowerCase().includes(searchTerm.toLowerCase()))} hideSearch={true} />
@@ -1475,7 +1475,7 @@ export default function RiskSettingsCategoryPage() {
               <Input placeholder={t("common.search")} className="pl-8" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             </div>
             <Button onClick={() => { setVulnerabilityForm({ name: "", description: "", categoryId: "" }); setIsAddOpen(true); }}>
-              <Plus className="h-4 w-4 mr-2" />{t("riskSettings.addVulnerability")}
+              <Plus className="h-4 w-4 mr-2" />{t("Add Vulnerability")}
             </Button>
           </div>
           <DataGrid columns={vulnerabilityColumns} data={vulnerabilities.filter(v => v.name.toLowerCase().includes(searchTerm.toLowerCase()))} hideSearch={true} />
@@ -1487,31 +1487,31 @@ export default function RiskSettingsCategoryPage() {
         <div className="space-y-6">
           {/* Score Configuration */}
           <div>
-            <h3 className="font-semibold mb-4">{t("riskSettings.riskScoreConfiguration")}</h3>
+            <h3 className="font-semibold mb-4">{t("Risk Score Configuration")}</h3>
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div className="flex items-center justify-between p-3 border rounded">
-                <span>{t("riskSettings.useLikelihood")}</span>
+                <span>{t("Use Likelihood")}</span>
                 <Switch
                   checked={riskScoreConfig?.useLikelihood ?? true}
                   onCheckedChange={(val) => handleUpdateScoreConfig("useLikelihood", val)}
                 />
               </div>
               <div className="flex items-center justify-between p-3 border rounded">
-                <span>{t("riskSettings.useImpact")}</span>
+                <span>{t("Use Impact")}</span>
                 <Switch
                   checked={riskScoreConfig?.useImpact ?? true}
                   onCheckedChange={(val) => handleUpdateScoreConfig("useImpact", val)}
                 />
               </div>
               <div className="flex items-center justify-between p-3 border rounded">
-                <span>{t("riskSettings.useAssetScore")}</span>
+                <span>{t("Use Asset Score")}</span>
                 <Switch
                   checked={riskScoreConfig?.useAssetScore ?? false}
                   onCheckedChange={(val) => handleUpdateScoreConfig("useAssetScore", val)}
                 />
               </div>
               <div className="flex items-center justify-between p-3 border rounded">
-                <span>{t("riskSettings.useVulnerabilityScore")}</span>
+                <span>{t("Use Vulnerability Score")}</span>
                 <Switch
                   checked={riskScoreConfig?.useVulnerabilityScore ?? false}
                   onCheckedChange={(val) => handleUpdateScoreConfig("useVulnerabilityScore", val)}
@@ -1519,7 +1519,7 @@ export default function RiskSettingsCategoryPage() {
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <Label>{t("riskSettings.riskTolerance")}</Label>
+              <Label>{t("Risk Tolerance")}</Label>
               <Input
                 type="number"
                 className="w-24"
@@ -1532,9 +1532,9 @@ export default function RiskSettingsCategoryPage() {
           {/* Risk Ranges */}
           <div>
             <div className="flex justify-between items-center mb-4">
-              <h3 className="font-semibold">{t("riskSettings.riskRanges")}</h3>
+              <h3 className="font-semibold">{t("Risk Ranges")}</h3>
               <Button onClick={() => { setRiskRangeForm({ title: "", color: "#000000", lowRange: 0, highRange: 0, timelineDays: 0, description: "" }); setIsAddOpen(true); }}>
-                <Plus className="h-4 w-4 mr-2" />{t("riskSettings.addRiskRange")}
+                <Plus className="h-4 w-4 mr-2" />{t("Add Risk Range")}
               </Button>
             </div>
             <DataGrid columns={riskRangeColumns} data={riskRanges} hideSearch={true} />
@@ -1551,7 +1551,7 @@ export default function RiskSettingsCategoryPage() {
               <Input placeholder={t("common.search")} className="pl-8" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             </div>
             <Button onClick={() => { setRiskCategoryForm({ name: "", status: "Active" }); setIsAddOpen(true); }}>
-              <Plus className="h-4 w-4 mr-2" />{t("riskSettings.addRiskCategory")}
+              <Plus className="h-4 w-4 mr-2" />{t("Add Risk Category")}
             </Button>
           </div>
           <DataGrid columns={riskCategoryColumns} data={riskCategories.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()))} hideSearch={true} />
@@ -1563,8 +1563,8 @@ export default function RiskSettingsCategoryPage() {
         <div>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList>
-              <TabsTrigger value="tab1">{t("riskSettings.impactCategories")}</TabsTrigger>
-              <TabsTrigger value="tab2">{t("riskSettings.impactRatings")}</TabsTrigger>
+              <TabsTrigger value="tab1">{t("Impact Categories")}</TabsTrigger>
+              <TabsTrigger value="tab2">{t("Impact Ratings")}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="tab1" className="mt-6">
@@ -1574,7 +1574,7 @@ export default function RiskSettingsCategoryPage() {
                   <Input placeholder={t("common.search")} className="pl-8" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                 </div>
                 <Button onClick={() => { setImpactCatForm({ name: "" }); setIsAddOpen(true); }}>
-                  <Plus className="h-4 w-4 mr-2" />{t("riskSettings.addImpactCategory")}
+                  <Plus className="h-4 w-4 mr-2" />{t("Add Impact Category")}
                 </Button>
               </div>
               <DataGrid columns={impactCatColumns} data={impactCategories.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()))} hideSearch={true} />
@@ -1587,7 +1587,7 @@ export default function RiskSettingsCategoryPage() {
                   <Input placeholder={t("common.search")} className="pl-8" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                 </div>
                 <Button onClick={() => { setImpactRatingForm({ name: "", score: 0, description: "" }); setIsAddOpen(true); }}>
-                  <Plus className="h-4 w-4 mr-2" />{t("riskSettings.addImpactRating")}
+                  <Plus className="h-4 w-4 mr-2" />{t("Add Impact Rating")}
                 </Button>
               </div>
               <DataGrid columns={impactRatingColumns} data={impactRatings.filter(r => r.name.toLowerCase().includes(searchTerm.toLowerCase()))} hideSearch={true} />
@@ -1605,7 +1605,7 @@ export default function RiskSettingsCategoryPage() {
               <Input placeholder={t("common.search")} className="pl-8" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             </div>
             <Button onClick={() => { setVulnRatingForm({ label: "", score: 0 }); setIsAddOpen(true); }}>
-              <Plus className="h-4 w-4 mr-2" />{t("riskSettings.addVulnerabilityRating")}
+              <Plus className="h-4 w-4 mr-2" />{t("Add Vulnerability Rating")}
             </Button>
           </div>
           <DataGrid columns={vulnRatingColumns} data={vulnerabilityRatings.filter(r => r.label.toLowerCase().includes(searchTerm.toLowerCase()))} hideSearch={true} />
@@ -1621,7 +1621,7 @@ export default function RiskSettingsCategoryPage() {
               <Input placeholder={t("common.search")} className="pl-8" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             </div>
             <Button onClick={() => { setRiskSubCatForm({ type: "" }); setIsAddOpen(true); }}>
-              <Plus className="h-4 w-4 mr-2" />{t("riskSettings.addRiskSubCategory")}
+              <Plus className="h-4 w-4 mr-2" />{t("Add Risk Sub Category")}
             </Button>
           </div>
           <DataGrid columns={riskSubCatColumns} data={riskSubCategories.filter(c => c.type.toLowerCase().includes(searchTerm.toLowerCase()))} hideSearch={true} />
@@ -1633,42 +1633,42 @@ export default function RiskSettingsCategoryPage() {
         <DialogContent className="sm:max-w-[700px] p-0 gap-0">
           <DialogHeader className="px-6 py-5 border-b border-slate-100">
             <DialogTitle className="text-lg font-semibold text-slate-800">
-              {category === "category" && activeTab === "tab1" && t("riskSettings.addVulnerabilityCategory")}
-              {category === "category" && activeTab === "tab2" && t("riskSettings.addThreatCategory")}
-              {category === "control-strength" && t("riskSettings.addControlStrength")}
-              {category === "likelihood" && t("riskSettings.addLikelihood")}
-              {category === "threat" && t("riskSettings.addThreat")}
-              {category === "vulnerability" && t("riskSettings.addVulnerability")}
-              {category === "risk-methodology" && t("riskSettings.addRiskRange")}
-              {category === "risk-category" && t("riskSettings.addRiskCategory")}
-              {category === "impact" && activeTab === "tab1" && t("riskSettings.addImpactCategory")}
-              {category === "impact" && activeTab === "tab2" && t("riskSettings.addImpactRating")}
-              {category === "vulnerability-rating" && t("riskSettings.addVulnerabilityRating")}
-              {category === "risk-sub-category" && t("riskSettings.addRiskSubCategory")}
+              {category === "category" && activeTab === "tab1" && t("Add Vulnerability Category")}
+              {category === "category" && activeTab === "tab2" && t("Add Threat Category")}
+              {category === "control-strength" && t("Add Control Strength")}
+              {category === "likelihood" && t("Add Likelihood")}
+              {category === "threat" && t("Add Threat")}
+              {category === "vulnerability" && t("Add Vulnerability")}
+              {category === "risk-methodology" && t("Add Risk Range")}
+              {category === "risk-category" && t("Add Risk Category")}
+              {category === "impact" && activeTab === "tab1" && t("Add Impact Category")}
+              {category === "impact" && activeTab === "tab2" && t("Add Impact Rating")}
+              {category === "vulnerability-rating" && t("Add Vulnerability Rating")}
+              {category === "risk-sub-category" && t("Add Risk Sub Category")}
             </DialogTitle>
           </DialogHeader>
           <div className="px-6 py-6 space-y-5">
             {category === "category" && activeTab === "tab1" && (
               <div className="space-y-1.5">
                 <Label className="text-sm font-medium text-slate-700">{t("common.label")} *</Label>
-                <Input value={vulnCatForm.name} onChange={(e) => setVulnCatForm({ name: e.target.value })} placeholder={t("riskSettings.enterVulnerabilityCategory")} className="bg-white" />
+                <Input value={vulnCatForm.name} onChange={(e) => setVulnCatForm({ name: e.target.value })} placeholder={t("Enter vulnerability category")} className="bg-white" />
               </div>
             )}
             {category === "category" && activeTab === "tab2" && (
               <div className="space-y-1.5">
                 <Label className="text-sm font-medium text-slate-700">{t("common.label")} *</Label>
-                <Input value={threatCatForm.name} onChange={(e) => setThreatCatForm({ name: e.target.value })} placeholder={t("riskSettings.enterThreatCategory")} className="bg-white" />
+                <Input value={threatCatForm.name} onChange={(e) => setThreatCatForm({ name: e.target.value })} placeholder={t("Enter threat category")} className="bg-white" />
               </div>
             )}
             {category === "control-strength" && (
               <>
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-slate-700">{t("riskSettings.controlStrengthName")} *</Label>
-                  <Input value={controlStrengthForm.name} onChange={(e) => setControlStrengthForm({ ...controlStrengthForm, name: e.target.value })} placeholder={t("riskSettings.enterControlStrengthName")} className="bg-white" />
+                  <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
+                  <Input value={controlStrengthForm.name} onChange={(e) => setControlStrengthForm({ ...controlStrengthForm, name: e.target.value })} placeholder={t("Enter name")} className="bg-white" />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">{t("common.score")} *</Label>
-                  <Input type="number" value={controlStrengthForm.score} onChange={(e) => setControlStrengthForm({ ...controlStrengthForm, score: parseInt(e.target.value) || 0 })} placeholder={t("riskSettings.enterScore")} className="bg-white" />
+                  <Input type="number" value={controlStrengthForm.score} onChange={(e) => setControlStrengthForm({ ...controlStrengthForm, score: parseInt(e.target.value) || 0 })} placeholder={t("Enter score")} className="bg-white" />
                 </div>
               </>
             )}
@@ -1683,11 +1683,11 @@ export default function RiskSettingsCategoryPage() {
                   <Input type="number" value={likelihoodForm.score} onChange={(e) => setLikelihoodForm({ ...likelihoodForm, score: parseInt(e.target.value) || 0 })} className="bg-white" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-slate-700">{t("riskSettings.timeFrame")}</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Time Frame")}</Label>
                   <Input value={likelihoodForm.timeFrame} onChange={(e) => setLikelihoodForm({ ...likelihoodForm, timeFrame: e.target.value })} className="bg-white" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-slate-700">{t("riskSettings.probability")}</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Probability")}</Label>
                   <Input value={likelihoodForm.probability} onChange={(e) => setLikelihoodForm({ ...likelihoodForm, probability: e.target.value })} className="bg-white" />
                 </div>
               </>
@@ -1754,16 +1754,16 @@ export default function RiskSettingsCategoryPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-medium text-slate-700">{t("riskSettings.lowRange")}</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Low Range")}</Label>
                     <Input type="number" value={riskRangeForm.lowRange} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, lowRange: parseInt(e.target.value) || 0 })} className="bg-white" />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-medium text-slate-700">{t("riskSettings.highRange")}</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("High Range")}</Label>
                     <Input type="number" value={riskRangeForm.highRange} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, highRange: parseInt(e.target.value) || 0 })} className="bg-white" />
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-slate-700">{t("riskSettings.timelineDays")}</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Timeline Days")}</Label>
                   <Input type="number" value={riskRangeForm.timelineDays} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, timelineDays: parseInt(e.target.value) || 0 })} className="bg-white" />
                 </div>
                 <div className="space-y-1.5">
@@ -1858,18 +1858,18 @@ export default function RiskSettingsCategoryPage() {
         <DialogContent className="sm:max-w-[700px] p-0 gap-0">
           <DialogHeader className="px-6 py-5 border-b border-slate-100">
             <DialogTitle className="text-lg font-semibold text-slate-800">
-              {category === "category" && activeTab === "tab1" && t("riskSettings.editVulnerabilityCategory")}
-              {category === "category" && activeTab === "tab2" && t("riskSettings.editThreatCategory")}
-              {category === "control-strength" && t("riskSettings.editControlStrength")}
-              {category === "likelihood" && t("riskSettings.editLikelihood")}
-              {category === "threat" && t("riskSettings.editThreat")}
-              {category === "vulnerability" && t("riskSettings.editVulnerability")}
-              {category === "risk-methodology" && t("riskSettings.editRiskRange")}
-              {category === "risk-category" && t("riskSettings.editRiskCategory")}
-              {category === "impact" && activeTab === "tab1" && t("riskSettings.editImpactCategory")}
-              {category === "impact" && activeTab === "tab2" && t("riskSettings.editImpactRating")}
-              {category === "vulnerability-rating" && t("riskSettings.editVulnerabilityRating")}
-              {category === "risk-sub-category" && t("riskSettings.editRiskSubCategory")}
+              {category === "category" && activeTab === "tab1" && t("Edit Vulnerability Category")}
+              {category === "category" && activeTab === "tab2" && t("Edit Threat Category")}
+              {category === "control-strength" && t("Edit Control Strength")}
+              {category === "likelihood" && t("Edit Likelihood")}
+              {category === "threat" && t("Edit Threat")}
+              {category === "vulnerability" && t("Edit Vulnerability")}
+              {category === "risk-methodology" && t("Edit Risk Range")}
+              {category === "risk-category" && t("Edit Risk Category")}
+              {category === "impact" && activeTab === "tab1" && t("Edit Impact Category")}
+              {category === "impact" && activeTab === "tab2" && t("Edit Impact Rating")}
+              {category === "vulnerability-rating" && t("Edit Vulnerability Rating")}
+              {category === "risk-sub-category" && t("Edit Risk Sub Category")}
             </DialogTitle>
           </DialogHeader>
           <div className="px-6 py-6 space-y-5">
@@ -1888,7 +1888,7 @@ export default function RiskSettingsCategoryPage() {
             {category === "control-strength" && (
               <>
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-slate-700">{t("riskSettings.controlStrengthName")} *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
                   <Input value={controlStrengthForm.name} onChange={(e) => setControlStrengthForm({ ...controlStrengthForm, name: e.target.value })} className="bg-white" />
                 </div>
                 <div className="space-y-1.5">
@@ -1908,11 +1908,11 @@ export default function RiskSettingsCategoryPage() {
                   <Input type="number" value={likelihoodForm.score} onChange={(e) => setLikelihoodForm({ ...likelihoodForm, score: parseInt(e.target.value) || 0 })} className="bg-white" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-slate-700">{t("riskSettings.timeFrame")}</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Time Frame")}</Label>
                   <Input value={likelihoodForm.timeFrame} onChange={(e) => setLikelihoodForm({ ...likelihoodForm, timeFrame: e.target.value })} className="bg-white" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-slate-700">{t("riskSettings.probability")}</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Probability")}</Label>
                   <Input value={likelihoodForm.probability} onChange={(e) => setLikelihoodForm({ ...likelihoodForm, probability: e.target.value })} className="bg-white" />
                 </div>
               </>
@@ -1979,16 +1979,16 @@ export default function RiskSettingsCategoryPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-medium text-slate-700">{t("riskSettings.lowRange")}</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Low Range")}</Label>
                     <Input type="number" value={riskRangeForm.lowRange} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, lowRange: parseInt(e.target.value) || 0 })} className="bg-white" />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-medium text-slate-700">{t("riskSettings.highRange")}</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("High Range")}</Label>
                     <Input type="number" value={riskRangeForm.highRange} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, highRange: parseInt(e.target.value) || 0 })} className="bg-white" />
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-slate-700">{t("riskSettings.timelineDays")}</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Timeline Days")}</Label>
                   <Input type="number" value={riskRangeForm.timelineDays} onChange={(e) => setRiskRangeForm({ ...riskRangeForm, timelineDays: parseInt(e.target.value) || 0 })} className="bg-white" />
                 </div>
                 <div className="space-y-1.5">

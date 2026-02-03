@@ -17,7 +17,8 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronRight, Link2, Unlink } from "lucide-react";
+import { ChevronDown, ChevronRight, Link2, Unlink, Home } from "lucide-react";
+import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 interface LinkedControl {
@@ -169,6 +170,16 @@ export default function RiskComplianceMatrixPage() {
 
   return (
     <div className="space-y-4 p-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>{t("Compliance")}</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">{t("Risk Control Matrix")}</span>
+      </nav>
+
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold">{t("riskComplianceMatrix.title")}</h1>
