@@ -20,9 +20,29 @@ export const GET = withAuth(
 
       const tenantFilter = getTenantFilter(session);
       const where: Record<string, unknown> = { ...tenantFilter };
+
+      // DepartmentReviewer can only see exceptions from their own department
+      const isDepartmentReviewer = session.roles.includes("DepartmentReviewer");
+      const isDepartmentContributor = session.roles.includes("DepartmentContributor");
+      const hasAdminRole = session.roles.some(role =>
+        ["GRCAdministrator", "CustomerAdministrator", "Reviewer", "Contributor"].includes(role)
+      );
+
+      // If user is DepartmentReviewer/DepartmentContributor without admin roles, filter by their department
+      if ((isDepartmentReviewer || isDepartmentContributor) && !hasAdminRole) {
+        if (session.departmentId) {
+          where.departmentId = session.departmentId;
+        } else {
+          // User has no department assigned, show no results
+          where.departmentId = "__NO_DEPARTMENT__";
+        }
+      } else if (departmentId) {
+        // For other users, allow department filter from query params
+        where.departmentId = departmentId;
+      }
+
       if (status) where.status = status;
       if (category) where.category = category;
-      if (departmentId) where.departmentId = departmentId;
       if (controlId) where.controlId = controlId;
       if (policyId) where.policyId = policyId;
       if (riskId) where.riskId = riskId;
@@ -43,6 +63,8 @@ export const GET = withAuth(
             control: true,
             policy: true,
             risk: true,
+            framework: true,
+            requirement: true,
             requester: {
               select: {
                 id: true,
@@ -108,6 +130,8 @@ export const POST = withAuth(
         controlId,
         policyId,
         riskId,
+        frameworkId,
+        requirementId,
         requesterId,
         approverId,
         status,
@@ -129,13 +153,21 @@ export const POST = withAuth(
       }
 
       // Get customer account ID for the new record
-      const customerAccountId = getCustomerAccountId(session);
+      if (!session.customerAccountId) {
+        return NextResponse.json(
+          { error: "Your user account is not assigned to a customer account. Please contact your administrator to assign you to a customer account." },
+          { status: 400 }
+        );
+      }
+      const customerAccountId = session.customerAccountId;
 
-      // Generate exception code if not provided (EC1, EC2, EC3... like UAT)
+      // Generate exception code if not provided (EC1, EC2, EC3... per customer account)
       let code = exceptionCode;
       if (!code) {
+        // Find the last exception for THIS customer account only
         const lastException = await prisma.exception.findFirst({
-          orderBy: { createdAt: "desc" },
+          where: { customerAccountId },
+          orderBy: { exceptionCode: "desc" },
           select: { exceptionCode: true },
         });
 
@@ -160,6 +192,8 @@ export const POST = withAuth(
           controlId: category === "Control" ? controlId : null,
           policyId: category === "Policy" ? policyId : null,
           riskId: category === "Risk" ? riskId : null,
+          frameworkId: category === "Compliance" ? frameworkId : null,
+          requirementId: category === "Compliance" ? requirementId : null,
           requesterId: requesterId || null,
           approverId: approverId || null,
           status: status || "Pending",
@@ -170,6 +204,8 @@ export const POST = withAuth(
           control: true,
           policy: true,
           risk: true,
+          framework: true,
+          requirement: true,
           requester: {
             select: {
               id: true,
@@ -203,8 +239,10 @@ export const POST = withAuth(
           { status: 409 }
         );
       }
+      // Return more specific error message
+      const errorMessage = error instanceof Error ? error.message : "Failed to create exception";
       return NextResponse.json(
-        { error: "Failed to create exception" },
+        { error: errorMessage },
         { status: 500 }
       );
     }
