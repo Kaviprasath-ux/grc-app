@@ -60,6 +60,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useToast } from "@/hooks/use-toast";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 
 interface Department {
   id: string;
@@ -84,7 +86,7 @@ interface User {
 
 interface Control {
   id: string;
-  controlId: string;
+  controlCode: string;
   name: string;
 }
 
@@ -96,8 +98,21 @@ interface Policy {
 
 interface Risk {
   id: string;
-  riskCode: string;
+  riskId: string;
   name: string;
+}
+
+interface Framework {
+  id: string;
+  code: string | null;
+  name: string;
+}
+
+interface Requirement {
+  id: string;
+  code: string;
+  name: string;
+  frameworkId: string;
 }
 
 interface Exception {
@@ -109,9 +124,11 @@ interface Exception {
   status: string;
   endDate: string | null;
   department?: Department | null;
-  control?: { id: string; controlId: string; name: string } | null;
+  control?: { id: string; controlCode: string; name: string } | null;
   policy?: { id: string; code: string; name: string } | null;
-  risk?: { id: string; riskCode: string; name: string } | null;
+  risk?: { id: string; riskId: string; name: string } | null;
+  framework?: { id: string; code: string | null; name: string } | null;
+  requirement?: { id: string; code: string; name: string } | null;
   requester?: User | null;
   approver?: User | null;
 }
@@ -151,6 +168,7 @@ export default function ExceptionsPage() {
   const { data: session } = useSession();
   const { canView, canCreate, canEdit, canDelete, isLoading: permissionsLoading } = usePermissions('compliance.exceptions');
   const { t } = useLanguage();
+  const { toast } = useToast();
   const [exceptions, setExceptions] = useState<Exception[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -159,6 +177,7 @@ export default function ExceptionsPage() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedException, setSelectedException] = useState<Exception | null>(null);
+  const [saving, setSaving] = useState(false);
 
   // Current user from session
   const currentUserId = session?.user?.id as string | undefined;
@@ -176,6 +195,8 @@ export default function ExceptionsPage() {
   const [controls, setControls] = useState<Control[]>([]);
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [risks, setRisks] = useState<Risk[]>([]);
+  const [frameworks, setFrameworks] = useState<Framework[]>([]);
+  const [requirements, setRequirements] = useState<Requirement[]>([]);
 
   // Create form
   const [createForm, setCreateForm] = useState({
@@ -186,6 +207,8 @@ export default function ExceptionsPage() {
     controlId: "",
     policyId: "",
     riskId: "",
+    frameworkId: "",
+    requirementId: "",
     requesterId: "",
     approverId: "",
     endDate: "",
@@ -201,6 +224,8 @@ export default function ExceptionsPage() {
     controlId: "",
     policyId: "",
     riskId: "",
+    frameworkId: "",
+    requirementId: "",
     requesterId: "",
     approverId: "",
     endDate: "",
@@ -227,13 +252,14 @@ export default function ExceptionsPage() {
 
   const fetchReferenceData = useCallback(async () => {
     try {
-      const [usersRes, deptRes, controlsRes, policiesRes, risksRes] =
+      const [usersRes, deptRes, controlsRes, policiesRes, risksRes, frameworksRes] =
         await Promise.all([
           fetch("/api/users"),
           fetch("/api/departments"),
           fetch("/api/controls"),
           fetch("/api/policies"),
           fetch("/api/risks"),
+          fetch("/api/frameworks?status=Subscribed"),
         ]);
 
       if (usersRes.ok) {
@@ -256,6 +282,10 @@ export default function ExceptionsPage() {
         const data = await risksRes.json();
         setRisks(data.data || data || []);
       }
+      if (frameworksRes.ok) {
+        const data = await frameworksRes.json();
+        setFrameworks(data.data || data || []);
+      }
     } catch (error) {
       console.error("Error fetching reference data:", error);
     }
@@ -266,7 +296,41 @@ export default function ExceptionsPage() {
     fetchReferenceData();
   }, [fetchExceptions, fetchReferenceData]);
 
+  // Fetch requirements when framework is selected
+  const fetchRequirements = useCallback(async (frameworkId: string) => {
+    if (!frameworkId) {
+      setRequirements([]);
+      return;
+    }
+    try {
+      const response = await fetch(`/api/requirements?frameworkId=${frameworkId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setRequirements(data.data || data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching requirements:", error);
+    }
+  }, []);
+
+  // Effect to fetch requirements when create form frameworkId changes
+  useEffect(() => {
+    if (createForm.frameworkId) {
+      fetchRequirements(createForm.frameworkId);
+    } else {
+      setRequirements([]);
+    }
+  }, [createForm.frameworkId, fetchRequirements]);
+
+  // Effect to fetch requirements when edit form frameworkId changes
+  useEffect(() => {
+    if (editForm.frameworkId) {
+      fetchRequirements(editForm.frameworkId);
+    }
+  }, [editForm.frameworkId, fetchRequirements]);
+
   const handleCreate = async () => {
+    setSaving(true);
     try {
       const response = await fetch("/api/exceptions", {
         method: "POST",
@@ -281,6 +345,10 @@ export default function ExceptionsPage() {
           policyId:
             createForm.category === "Policy" ? createForm.policyId : null,
           riskId: createForm.category === "Risk" ? createForm.riskId : null,
+          frameworkId:
+            createForm.category === "Compliance" ? createForm.frameworkId : null,
+          requirementId:
+            createForm.category === "Compliance" ? createForm.requirementId : null,
           requesterId: currentUserId || null, // Always use current user
           approverId: createForm.approverId || null,
           endDate: createForm.endDate || null,
@@ -289,12 +357,30 @@ export default function ExceptionsPage() {
       });
 
       if (response.ok) {
+        toast({
+          title: t("Success"),
+          description: t("Exception created successfully"),
+        });
         setCreateDialogOpen(false);
         resetCreateForm();
         fetchExceptions();
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        toast({
+          title: t("Error"),
+          description: errorData.error || t("Failed to create exception"),
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Error creating exception:", error);
+      toast({
+        title: t("Error"),
+        description: t("Failed to create exception. Please try again."),
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -307,6 +393,8 @@ export default function ExceptionsPage() {
       controlId: "",
       policyId: "",
       riskId: "",
+      frameworkId: "",
+      requirementId: "",
       requesterId: "",
       approverId: "",
       endDate: "",
@@ -334,6 +422,8 @@ export default function ExceptionsPage() {
       controlId: exception.control?.id || "",
       policyId: exception.policy?.id || "",
       riskId: exception.risk?.id || "",
+      frameworkId: exception.framework?.id || "",
+      requirementId: exception.requirement?.id || "",
       requesterId: exception.requester?.id || "",
       approverId: exception.approver?.id || "",
       endDate: exception.endDate ? exception.endDate.split("T")[0] : "",
@@ -343,6 +433,7 @@ export default function ExceptionsPage() {
 
   const handleEdit = async () => {
     if (!selectedException) return;
+    setSaving(true);
     try {
       const response = await fetch(`/api/exceptions/${selectedException.id}`, {
         method: "PUT",
@@ -356,6 +447,8 @@ export default function ExceptionsPage() {
           controlId: editForm.category === "Control" ? editForm.controlId : null,
           policyId: editForm.category === "Policy" ? editForm.policyId : null,
           riskId: editForm.category === "Risk" ? editForm.riskId : null,
+          frameworkId: editForm.category === "Compliance" ? editForm.frameworkId : null,
+          requirementId: editForm.category === "Compliance" ? editForm.requirementId : null,
           requesterId: editForm.requesterId || null,
           approverId: editForm.approverId || null,
           endDate: editForm.endDate || null,
@@ -363,12 +456,30 @@ export default function ExceptionsPage() {
       });
 
       if (response.ok) {
+        toast({
+          title: t("Success"),
+          description: t("Exception updated successfully"),
+        });
         setEditDialogOpen(false);
         setSelectedException(null);
         fetchExceptions();
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        toast({
+          title: t("Error"),
+          description: errorData.error || t("Failed to update exception"),
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Error updating exception:", error);
+      toast({
+        title: t("Error"),
+        description: t("Failed to update exception. Please try again."),
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -398,13 +509,19 @@ export default function ExceptionsPage() {
   // Get reference display based on category
   const getReference = (exception: Exception) => {
     if (exception.category === "Control" && exception.control) {
-      return exception.control.controlId;
+      return exception.control.controlCode;
     }
     if (exception.category === "Policy" && exception.policy) {
       return exception.policy.code;
     }
     if (exception.category === "Risk" && exception.risk) {
-      return exception.risk.riskCode;
+      return exception.risk.riskId;
+    }
+    if (exception.category === "Compliance" && exception.requirement) {
+      return exception.requirement.code;
+    }
+    if (exception.category === "Compliance" && exception.framework) {
+      return exception.framework.code || exception.framework.name;
     }
     return "-";
   };
@@ -528,6 +645,8 @@ export default function ExceptionsPage() {
                         controlId: "",
                         policyId: "",
                         riskId: "",
+                        frameworkId: "",
+                        requirementId: "",
                       })
                     }
                   >
@@ -561,7 +680,7 @@ export default function ExceptionsPage() {
                     <SelectContent position="popper" sideOffset={4}>
                       {controls.map((c) => (
                         <SelectItem key={c.id} value={c.id}>
-                          {c.controlId} - {c.name}
+                          {c.controlCode} – {c.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -607,12 +726,60 @@ export default function ExceptionsPage() {
                     <SelectContent position="popper" sideOffset={4}>
                       {risks.map((r) => (
                         <SelectItem key={r.id} value={r.id}>
-                          {r.riskCode} - {r.name}
+                          {r.riskId} – {r.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
+              )}
+
+              {createForm.category === "Compliance" && (
+                <>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">{t("Integrated Framework")} *</Label>
+                    <Select
+                      value={createForm.frameworkId}
+                      onValueChange={(value) =>
+                        setCreateForm({ ...createForm, frameworkId: value, requirementId: "" })
+                      }
+                    >
+                      <SelectTrigger className="mt-1.5 w-full bg-white">
+                        <SelectValue placeholder={t("Select framework")} />
+                      </SelectTrigger>
+                      <SelectContent position="popper" sideOffset={4}>
+                        {frameworks.map((f) => (
+                          <SelectItem key={f.id} value={f.id}>
+                            {f.code ? `${f.code} – ${f.name}` : f.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {createForm.frameworkId && (
+                    <div>
+                      <Label className="text-sm font-medium text-slate-700">{t("Requirement")} *</Label>
+                      <Select
+                        value={createForm.requirementId}
+                        onValueChange={(value) =>
+                          setCreateForm({ ...createForm, requirementId: value })
+                        }
+                      >
+                        <SelectTrigger className="mt-1.5 w-full bg-white">
+                          <SelectValue placeholder={t("Select requirement")} />
+                        </SelectTrigger>
+                        <SelectContent position="popper" sideOffset={4}>
+                          {requirements.map((r) => (
+                            <SelectItem key={r.id} value={r.id}>
+                              {r.code} – {r.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </>
               )}
 
               <div>
@@ -726,9 +893,9 @@ export default function ExceptionsPage() {
             </Button>
             <Button
               onClick={handleCreate}
-              disabled={!createForm.name || !createForm.category}
+              disabled={!createForm.name || !createForm.category || saving}
             >
-              {t("Save")}
+              {saving ? t("Saving...") : t("Save")}
             </Button>
           </div>
         </DialogContent>
@@ -772,131 +939,196 @@ export default function ExceptionsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Summary Charts Row */}
+      {/* Summary Charts Row with Pie Charts */}
       <div className="grid grid-cols-3 gap-6">
-        {/* Status Chart Card */}
+        {/* Status Pie Chart Card */}
         <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <div className="flex items-center gap-3 mb-4">
+          <div className="flex items-center gap-3 mb-2">
             <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
               <ClipboardList className="h-5 w-5" />
             </div>
             <h3 className="text-base font-semibold text-slate-800">{t("Status")}</h3>
+            <span className="ml-auto text-2xl font-bold text-slate-800">{statusCounts.total}</span>
           </div>
-          <div className="flex items-center justify-between">
-            <div className="space-y-2 flex-1">
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded-full bg-warning" />
-                <span className="text-sm text-slate-600">{t("Pending")}</span>
-                <span className="text-sm font-medium text-slate-800 ml-auto">
-                  {statusCounts.pending}
-                </span>
+          <div className="h-[200px]">
+            {statusCounts.total > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={[
+                      { name: t("Pending"), value: statusCounts.pending, color: "#f59e0b" },
+                      { name: t("Approved"), value: statusCounts.approved, color: "#22c55e" },
+                      { name: t("Authorised"), value: statusCounts.authorised, color: "#3b82f6" },
+                      { name: t("Overdue"), value: statusCounts.overdue, color: "#ef4444" },
+                      { name: t("Closed"), value: statusCounts.closed, color: "#64748b" },
+                    ].filter(item => item.value > 0)}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={40}
+                    outerRadius={70}
+                    paddingAngle={2}
+                    dataKey="value"
+                  >
+                    {[
+                      { name: t("Pending"), value: statusCounts.pending, color: "#f59e0b" },
+                      { name: t("Approved"), value: statusCounts.approved, color: "#22c55e" },
+                      { name: t("Authorised"), value: statusCounts.authorised, color: "#3b82f6" },
+                      { name: t("Overdue"), value: statusCounts.overdue, color: "#ef4444" },
+                      { name: t("Closed"), value: statusCounts.closed, color: "#64748b" },
+                    ].filter(item => item.value > 0).map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        const data = payload[0].payload;
+                        return (
+                          <div className="text-xs text-slate-600">
+                            {data.name}: {data.value}
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Legend
+                    layout="vertical"
+                    align="right"
+                    verticalAlign="middle"
+                    iconType="circle"
+                    iconSize={8}
+                    formatter={(value) => <span className="text-xs text-slate-600">{value}</span>}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-full text-slate-400">
+                {t("No data")}
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded-full bg-success" />
-                <span className="text-sm text-slate-600">{t("Approved")}</span>
-                <span className="text-sm font-medium text-slate-800 ml-auto">
-                  {statusCounts.approved}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded-full bg-info" />
-                <span className="text-sm text-slate-600">{t("Authorized")}</span>
-                <span className="text-sm font-medium text-slate-800 ml-auto">
-                  {statusCounts.authorised}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded-full bg-error" />
-                <span className="text-sm text-slate-600">{t("Overdue")}</span>
-                <span className="text-sm font-medium text-slate-800 ml-auto">
-                  {statusCounts.overdue}
-                </span>
-              </div>
-            </div>
-            <div className="text-center ml-8">
-              <p className="text-sm text-slate-500">{t("Total")}</p>
-              <p className="text-3xl font-bold tracking-tight text-slate-800">{statusCounts.total}</p>
-            </div>
+            )}
           </div>
         </div>
 
-        {/* Type/Category Chart Card */}
+        {/* Type/Category Pie Chart Card */}
         <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <div className="flex items-center gap-3 mb-4">
+          <div className="flex items-center gap-3 mb-2">
             <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
               <Layers className="h-5 w-5" />
             </div>
             <h3 className="text-base font-semibold text-slate-800">{t("Type")}</h3>
+            <span className="ml-auto text-2xl font-bold text-slate-800">{statusCounts.total}</span>
           </div>
-          <div className="flex items-center justify-between">
-            <div className="space-y-2 flex-1">
-              {Object.entries(categoryCounts)
-                .slice(0, 4)
-                .map(([cat, count], idx) => (
-                  <div key={cat} className="flex items-center gap-2">
-                    <div
-                      className={`w-4 h-4 rounded-full ${
-                        idx === 0
-                          ? "bg-primary-500"
-                          : idx === 1
-                            ? "bg-info"
-                            : idx === 2
-                              ? "bg-success"
-                              : "bg-risk-high"
-                      }`}
-                    />
-                    <span className="text-sm text-slate-600">{cat}</span>
-                    <span className="text-sm font-medium text-slate-800 ml-auto">
-                      {count}
-                    </span>
-                  </div>
-                ))}
-            </div>
-            <div className="text-center ml-8">
-              <p className="text-sm text-slate-500">{t("Total")}</p>
-              <p className="text-3xl font-bold tracking-tight text-slate-800">{statusCounts.total}</p>
-            </div>
+          <div className="h-[200px]">
+            {statusCounts.total > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={Object.entries(categoryCounts).map(([name, value], idx) => ({
+                      name,
+                      value,
+                      color: ["#6366f1", "#3b82f6", "#22c55e", "#f59e0b", "#ef4444"][idx % 5]
+                    }))}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={40}
+                    outerRadius={70}
+                    paddingAngle={2}
+                    dataKey="value"
+                  >
+                    {Object.entries(categoryCounts).map(([, ], idx) => (
+                      <Cell key={`cell-${idx}`} fill={["#6366f1", "#3b82f6", "#22c55e", "#f59e0b", "#ef4444"][idx % 5]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        const data = payload[0].payload;
+                        return (
+                          <div className="text-xs text-slate-600">
+                            {data.name}: {data.value}
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Legend
+                    layout="vertical"
+                    align="right"
+                    verticalAlign="middle"
+                    iconType="circle"
+                    iconSize={8}
+                    formatter={(value) => <span className="text-xs text-slate-600">{value}</span>}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-full text-slate-400">
+                {t("No data")}
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Department Chart Card */}
+        {/* Department Pie Chart Card */}
         <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <div className="flex items-center gap-3 mb-4">
+          <div className="flex items-center gap-3 mb-2">
             <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
               <Building2 className="h-5 w-5" />
             </div>
             <h3 className="text-base font-semibold text-slate-800">{t("Department")}</h3>
+            <span className="ml-auto text-2xl font-bold text-slate-800">{statusCounts.total}</span>
           </div>
-          <div className="flex items-center justify-between">
-            <div className="space-y-2 flex-1">
-              {Object.entries(departmentCounts)
-                .slice(0, 4)
-                .map(([dept, count], idx) => (
-                  <div key={dept} className="flex items-center gap-2">
-                    <div
-                      className={`w-4 h-4 rounded-full ${
-                        idx === 0
-                          ? "bg-info"
-                          : idx === 1
-                            ? "bg-success"
-                            : idx === 2
-                              ? "bg-warning"
-                              : "bg-primary-500"
-                      }`}
-                    />
-                    <span className="text-sm text-slate-600 truncate max-w-[100px]">
-                      {dept}
-                    </span>
-                    <span className="text-sm font-medium text-slate-800 ml-auto">
-                      {count}
-                    </span>
-                  </div>
-                ))}
-            </div>
-            <div className="text-center ml-8">
-              <p className="text-sm text-slate-500">{t("Total")}</p>
-              <p className="text-3xl font-bold tracking-tight text-slate-800">{statusCounts.total}</p>
-            </div>
+          <div className="h-[200px]">
+            {statusCounts.total > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={Object.entries(departmentCounts).map(([name, value], idx) => ({
+                      name,
+                      value,
+                      color: ["#3b82f6", "#22c55e", "#f59e0b", "#6366f1", "#ef4444", "#8b5cf6", "#ec4899"][idx % 7]
+                    }))}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={40}
+                    outerRadius={70}
+                    paddingAngle={2}
+                    dataKey="value"
+                  >
+                    {Object.entries(departmentCounts).map(([, ], idx) => (
+                      <Cell key={`cell-${idx}`} fill={["#3b82f6", "#22c55e", "#f59e0b", "#6366f1", "#ef4444", "#8b5cf6", "#ec4899"][idx % 7]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        const data = payload[0].payload;
+                        return (
+                          <div className="text-xs text-slate-600">
+                            {data.name}: {data.value}
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Legend
+                    layout="vertical"
+                    align="right"
+                    verticalAlign="middle"
+                    iconType="circle"
+                    iconSize={8}
+                    formatter={(value) => <span className="text-xs text-slate-600 truncate max-w-[80px] inline-block">{value}</span>}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-full text-slate-400">
+                {t("No data")}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -1114,6 +1346,11 @@ export default function ExceptionsPage() {
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Exception")}</DialogTitle>
+              {selectedException?.status === "Approved" && (
+                <p className="text-sm text-green-600 mt-1">
+                  {t("This exception has been approved and cannot be edited.")}
+                </p>
+              )}
             </DialogHeader>
           </div>
 
@@ -1137,7 +1374,8 @@ export default function ExceptionsPage() {
                       setEditForm({ ...editForm, name: e.target.value })
                     }
                     placeholder={t("Enter exception name")}
-                    className="mt-1.5 w-full bg-white"
+                    disabled={selectedException?.status === "Approved"}
+                    className={`mt-1.5 w-full ${selectedException?.status === "Approved" ? "bg-slate-50" : "bg-white"}`}
                   />
                 </div>
               </div>
@@ -1150,8 +1388,9 @@ export default function ExceptionsPage() {
                     onValueChange={(value) =>
                       setEditForm({ ...editForm, requesterId: value })
                     }
+                    disabled={selectedException?.status === "Approved"}
                   >
-                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                    <SelectTrigger className={`mt-1.5 w-full ${selectedException?.status === "Approved" ? "bg-slate-50" : "bg-white"}`}>
                       <SelectValue placeholder={t("Select requester")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
@@ -1174,10 +1413,13 @@ export default function ExceptionsPage() {
                         controlId: "",
                         policyId: "",
                         riskId: "",
+                        frameworkId: "",
+                        requirementId: "",
                       })
                     }
+                    disabled={selectedException?.status === "Approved"}
                   >
-                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                    <SelectTrigger className={`mt-1.5 w-full ${selectedException?.status === "Approved" ? "bg-slate-50" : "bg-white"}`}>
                       <SelectValue placeholder={t("Select category")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
@@ -1200,14 +1442,15 @@ export default function ExceptionsPage() {
                     onValueChange={(value) =>
                       setEditForm({ ...editForm, controlId: value })
                     }
+                    disabled={selectedException?.status === "Approved"}
                   >
-                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                    <SelectTrigger className={`mt-1.5 w-full ${selectedException?.status === "Approved" ? "bg-slate-50" : "bg-white"}`}>
                       <SelectValue placeholder={t("Select control")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
                       {controls.map((c) => (
                         <SelectItem key={c.id} value={c.id}>
-                          {c.controlId} - {c.name}
+                          {c.controlCode} – {c.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1223,8 +1466,9 @@ export default function ExceptionsPage() {
                     onValueChange={(value) =>
                       setEditForm({ ...editForm, policyId: value })
                     }
+                    disabled={selectedException?.status === "Approved"}
                   >
-                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                    <SelectTrigger className={`mt-1.5 w-full ${selectedException?.status === "Approved" ? "bg-slate-50" : "bg-white"}`}>
                       <SelectValue placeholder={t("Select policy")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
@@ -1246,19 +1490,70 @@ export default function ExceptionsPage() {
                     onValueChange={(value) =>
                       setEditForm({ ...editForm, riskId: value })
                     }
+                    disabled={selectedException?.status === "Approved"}
                   >
-                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                    <SelectTrigger className={`mt-1.5 w-full ${selectedException?.status === "Approved" ? "bg-slate-50" : "bg-white"}`}>
                       <SelectValue placeholder={t("Select risk")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
                       {risks.map((r) => (
                         <SelectItem key={r.id} value={r.id}>
-                          {r.riskCode} - {r.name}
+                          {r.riskId} – {r.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
+              )}
+
+              {editForm.category === "Compliance" && (
+                <>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">{t("Integrated Framework")} *</Label>
+                    <Select
+                      value={editForm.frameworkId}
+                      onValueChange={(value) =>
+                        setEditForm({ ...editForm, frameworkId: value, requirementId: "" })
+                      }
+                      disabled={selectedException?.status === "Approved"}
+                    >
+                      <SelectTrigger className={`mt-1.5 w-full ${selectedException?.status === "Approved" ? "bg-slate-50" : "bg-white"}`}>
+                        <SelectValue placeholder={t("Select framework")} />
+                      </SelectTrigger>
+                      <SelectContent position="popper" sideOffset={4}>
+                        {frameworks.map((f) => (
+                          <SelectItem key={f.id} value={f.id}>
+                            {f.code ? `${f.code} – ${f.name}` : f.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {editForm.frameworkId && (
+                    <div>
+                      <Label className="text-sm font-medium text-slate-700">{t("Requirement")} *</Label>
+                      <Select
+                        value={editForm.requirementId}
+                        onValueChange={(value) =>
+                          setEditForm({ ...editForm, requirementId: value })
+                        }
+                        disabled={selectedException?.status === "Approved"}
+                      >
+                        <SelectTrigger className={`mt-1.5 w-full ${selectedException?.status === "Approved" ? "bg-slate-50" : "bg-white"}`}>
+                          <SelectValue placeholder={t("Select requirement")} />
+                        </SelectTrigger>
+                        <SelectContent position="popper" sideOffset={4}>
+                          {requirements.map((r) => (
+                            <SelectItem key={r.id} value={r.id}>
+                              {r.code} – {r.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </>
               )}
 
               <div>
@@ -1273,7 +1568,8 @@ export default function ExceptionsPage() {
                   }
                   placeholder={t("Enter reason for exception")}
                   rows={3}
-                  className="mt-1.5 w-full bg-white"
+                  disabled={selectedException?.status === "Approved"}
+                  className={`mt-1.5 w-full ${selectedException?.status === "Approved" ? "bg-slate-50" : "bg-white"}`}
                 />
               </div>
 
@@ -1285,8 +1581,9 @@ export default function ExceptionsPage() {
                     onValueChange={(value) =>
                       setEditForm({ ...editForm, departmentId: value, approverId: "" })
                     }
+                    disabled={selectedException?.status === "Approved"}
                   >
-                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                    <SelectTrigger className={`mt-1.5 w-full ${selectedException?.status === "Approved" ? "bg-slate-50" : "bg-white"}`}>
                       <SelectValue placeholder={t("Select department")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
@@ -1305,9 +1602,9 @@ export default function ExceptionsPage() {
                     onValueChange={(value) =>
                       setEditForm({ ...editForm, approverId: value })
                     }
-                    disabled={!editForm.departmentId}
+                    disabled={!editForm.departmentId || selectedException?.status === "Approved"}
                   >
-                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                    <SelectTrigger className={`mt-1.5 w-full ${selectedException?.status === "Approved" ? "bg-slate-50" : "bg-white"}`}>
                       <SelectValue placeholder={editForm.departmentId ? t("Select approver") : t("Select department first")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
@@ -1342,8 +1639,9 @@ export default function ExceptionsPage() {
                     onValueChange={(value) =>
                       setEditForm({ ...editForm, status: value })
                     }
+                    disabled={selectedException?.status === "Approved"}
                   >
-                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                    <SelectTrigger className={`mt-1.5 w-full ${selectedException?.status === "Approved" ? "bg-slate-50" : "bg-white"}`}>
                       <SelectValue placeholder={t("Select status")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
@@ -1367,7 +1665,8 @@ export default function ExceptionsPage() {
                         })
                       }
                       placeholder={t("Select end date")}
-                      className="w-full bg-white"
+                      disabled={selectedException?.status === "Approved"}
+                      className={`w-full ${selectedException?.status === "Approved" ? "bg-slate-50" : "bg-white"}`}
                     />
                   </div>
                 </div>
@@ -1384,14 +1683,16 @@ export default function ExceptionsPage() {
                 setSelectedException(null);
               }}
             >
-              {t("Cancel")}
+              {selectedException?.status === "Approved" ? t("Close") : t("Cancel")}
             </Button>
-            <Button
-              onClick={handleEdit}
-              disabled={!editForm.name || !editForm.category}
-            >
-              {t("Save")}
-            </Button>
+            {selectedException?.status !== "Approved" && (
+              <Button
+                onClick={handleEdit}
+                disabled={!editForm.name || !editForm.category || saving}
+              >
+                {saving ? t("Saving...") : t("Save")}
+              </Button>
+            )}
           </div>
         </DialogContent>
       </Dialog>
