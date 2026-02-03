@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Check, Sparkles, Upload, X, Home, ChevronRight } from "lucide-react";
+import { Check, Sparkles, Upload, X, Home, ChevronRight, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -22,29 +22,54 @@ interface Department {
   name: string;
 }
 
-interface SuggestedRisk {
-  id: string;
+interface GeneratedRisk {
+  title: string;
   description: string;
-  severity: "High" | "Medium" | "Low";
-  category?: string;
+  level: string;
+  inherent_likelihood: string;
+  inherent_impact: string;
 }
+
+interface RecentSearch {
+  id: string;
+  query: string;
+  timestamp: Date;
+  result?: string;
+  generatedRisks?: GeneratedRisk[];
+  total_risks?: number;
+  department?: string;
+  specific_audit_focus?: string;
+}
+
+const STORAGE_KEY = "riskIdentificationSearches";
+const ACCEPT = ".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt";
+const MAX_FILES = 10;
 
 export default function RiskIdentificationPage() {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { t } = useLanguage();
   const [departments, setDepartments] = useState<Department[]>([]);
   const [selectedDepartment, setSelectedDepartment] = useState<string>("");
   const [auditFocus, setAuditFocus] = useState<string>("");
+  const [files, setFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
-  const [suggestedRisks, setSuggestedRisks] = useState<SuggestedRisk[]>([]);
-  const [addedRisks, setAddedRisks] = useState<Set<string>>(new Set());
-  const [addingRisk, setAddingRisk] = useState<string | null>(null);
-  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
-  const [isDragging, setIsDragging] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
 
   useEffect(() => {
     fetchDepartments();
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as Array<Omit<RecentSearch, "timestamp"> & { timestamp: string }>;
+        setRecentSearches(
+          parsed.map((s) => ({ ...s, timestamp: new Date(s.timestamp) }))
+        );
+      } catch {
+        setRecentSearches([]);
+      }
+    }
   }, []);
 
   const fetchDepartments = async () => {
@@ -61,6 +86,40 @@ export default function RiskIdentificationPage() {
     }
   };
 
+  const addFiles = useCallback((newFiles: FileList | File[]) => {
+    const list = Array.from(newFiles);
+    setFiles((prev) => {
+      const combined = [...prev];
+      for (const f of list) {
+        if (combined.length >= MAX_FILES) break;
+        if (f.size > 0 && !combined.some((x) => x === f || (x.name === f.name && x.size === f.size)))
+          combined.push(f);
+      }
+      return combined.slice(0, MAX_FILES);
+    });
+  }, []);
+
+  const removeFile = (index: number) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const target = e.target;
+    if (target.files?.length) addFiles(target.files);
+    target.value = "";
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer.files?.length) addFiles(e.dataTransfer.files);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
   const handleSuggestRisks = async () => {
     if (!selectedDepartment) {
       toast.error(t("Please select a department first"));
@@ -68,123 +127,72 @@ export default function RiskIdentificationPage() {
     }
 
     setLoading(true);
-    setSuggestedRisks([]);
-    setAddedRisks(new Set());
-
     try {
-      // Simulate AI risk suggestion (in a real app, this would call an AI API)
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const formData = new FormData();
+      formData.append("departmentId", selectedDepartment);
+      if (auditFocus.trim()) formData.append("auditFocus", auditFocus.trim());
+      files.forEach((f) => formData.append("files", f));
 
-      const deptName = departments.find(d => d.id === selectedDepartment)?.name || "Unknown";
+      const res = await fetch("/api/internal-audit/risk-identification/suggest", {
+        method: "POST",
+        body: formData,
+      });
 
-      // Generate AI-suggested risks based on department
-      const aiSuggestedRisks: SuggestedRisk[] = [
-        {
-          id: `risk-${Date.now()}-1`,
-          description: `Inadequate access controls for ${deptName} systems may lead to unauthorized data access or modification, potentially resulting in data breaches or compliance violations.`,
-          severity: "High",
-          category: "Information Security"
-        },
-        {
-          id: `risk-${Date.now()}-2`,
-          description: `Insufficient documentation of ${deptName} processes and procedures could result in operational inconsistencies, knowledge gaps during staff turnover, and audit findings.`,
-          severity: "Medium",
-          category: "Operational"
-        },
-        {
-          id: `risk-${Date.now()}-3`,
-          description: `Lack of regular compliance monitoring in ${deptName} may result in regulatory non-compliance and potential penalties or legal issues.`,
-          severity: "High",
-          category: "Compliance"
-        },
-        {
-          id: `risk-${Date.now()}-4`,
-          description: `Inadequate segregation of duties within ${deptName} could lead to fraud, errors going undetected, or conflicts of interest in critical business processes.`,
-          severity: "High",
-          category: "Control Environment"
-        },
-        {
-          id: `risk-${Date.now()}-5`,
-          description: `Absence of business continuity planning for ${deptName} operations may result in extended downtime and financial losses during disruptions.`,
-          severity: "Medium",
-          category: "Business Continuity"
-        }
-      ];
+      const data = await res.json();
 
-      // Add focus-specific risks if audit focus is provided
-      if (auditFocus) {
-        aiSuggestedRisks.push({
-          id: `risk-${Date.now()}-6`,
-          description: `Based on the audit focus "${auditFocus}": There may be control gaps or process inefficiencies that require detailed assessment and remediation.`,
-          severity: "Medium",
-          category: "Process Specific"
-        });
+      if (!res.ok) {
+        toast.error(data?.error || "Failed to generate risk suggestions");
+        return;
       }
 
-      setSuggestedRisks(aiSuggestedRisks);
-      toast.success(`${aiSuggestedRisks.length} ${t("risk suggestions generated successfully")}`);
+      const deptName = departments.find((d) => d.id === selectedDepartment)?.name ?? "Unknown";
+      const generatedRisks = (data.generated_risks ?? []) as GeneratedRisk[];
+      const total_risks = typeof data.total_risks === "number" ? data.total_risks : generatedRisks.length;
+      const query = `${deptName}${auditFocus.trim() ? ` - ${auditFocus.trim()}` : ""}`;
+
+      const newSearch: RecentSearch = {
+        id: Date.now().toString(),
+        query,
+        timestamp: new Date(),
+        result: total_risks
+          ? `${t("Generated")} ${total_risks} ${t("risk(s) for")} ${deptName}.`
+          : `${t("No risks generated for")} ${deptName}.`,
+        generatedRisks: generatedRisks.length ? generatedRisks : undefined,
+        total_risks,
+        department: data.department ?? deptName,
+        specific_audit_focus: data.specific_audit_focus || undefined,
+      };
+
+      const updated = [newSearch, ...recentSearches].slice(0, 10);
+      setRecentSearches(updated);
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(
+          updated.map((s) => ({ ...s, timestamp: s.timestamp.toISOString() }))
+        )
+      );
+
+      toast.success(
+        total_risks
+          ? `Generated ${total_risks} risk(s) successfully`
+          : "Risk assessment completed (no risks generated)"
+      );
     } catch (error) {
-      toast.error(t("Failed to generate risk suggestions"));
+      console.error("Suggest risks error:", error);
+      toast.error("Failed to generate risk suggestions");
     } finally {
       setLoading(false);
     }
   };
 
-  // File upload handlers
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const files = Array.from(e.dataTransfer.files);
-    const validFiles = files.filter(file =>
-      /\.(pdf|doc|docx|xls|xlsx)$/i.test(file.name)
-    );
-    if (validFiles.length > 0) {
-      setUploadedFiles(prev => [...prev, ...validFiles]);
-    }
-    if (validFiles.length < files.length) {
-      toast.error(t("Some files were skipped. Only PDF, DOC, DOCX, XLS, XLSX are supported."));
-    }
-  };
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      const validFiles = Array.from(files).filter(file =>
-        /\.(pdf|doc|docx|xls|xlsx)$/i.test(file.name)
-      );
-      if (validFiles.length > 0) {
-        setUploadedFiles(prev => [...prev, ...validFiles]);
-      }
-    }
-    // Reset input to allow selecting the same file again
-    e.target.value = "";
-  };
-
-  const removeFile = (index: number) => {
-    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const handleAddToRegister = async (risk: SuggestedRisk) => {
-    setAddingRisk(risk.id);
-
+  const handleAddToRegister = async (risk: GeneratedRisk, deptId: string) => {
     try {
-      // Map severity to risk level
       let riskLevel = "Low";
       let residualScore = 25;
-      if (risk.severity === "High") {
+      if (risk.level === "High") {
         riskLevel = "High";
         residualScore = 100;
-      } else if (risk.severity === "Medium") {
+      } else if (risk.level === "Medium") {
         riskLevel = "Medium";
         residualScore = 50;
       }
@@ -195,9 +203,9 @@ export default function RiskIdentificationPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          riskName: risk.description.substring(0, 100),
+          riskName: risk.title.substring(0, 100),
           riskDescription: risk.description,
-          departmentId: selectedDepartment,
+          departmentId: deptId,
           riskLevel,
           residualScore,
           status: "Open",
@@ -208,14 +216,22 @@ export default function RiskIdentificationPage() {
         throw new Error("Failed to add risk to register");
       }
 
-      setAddedRisks(prev => new Set([...prev, risk.id]));
       toast.success(t("Risk added to register successfully"));
     } catch (error) {
       console.error("Error adding risk:", error);
       toast.error(t("Failed to add risk to register"));
-    } finally {
-      setAddingRisk(null);
     }
+  };
+
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString("en-US", {
+      month: "2-digit",
+      day: "2-digit",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
   };
 
   if (pageLoading) {
@@ -296,7 +312,7 @@ export default function RiskIdentificationPage() {
               {t("Specific Audit Focus (Optional)")}
             </label>
             <Textarea
-              placeholder={t("Describe specific areas or processes to focus on...")}
+              placeholder={t("e.g. Payroll processing, Third-party management...")}
               value={auditFocus}
               onChange={(e) => setAuditFocus(e.target.value)}
               rows={4}
@@ -309,41 +325,31 @@ export default function RiskIdentificationPage() {
             <label className="text-sm font-medium text-slate-700 mb-2 block">
               {t("Supporting Documents (Optional)")}
             </label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept={ACCEPT}
+              className="hidden"
+              onChange={handleFileInputChange}
+            />
             <div
-              className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-                isDragging
-                  ? "border-primary-500 bg-primary-50"
-                  : "border-slate-200"
-              }`}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
+              className="border-2 border-dashed rounded-lg p-8 text-center transition-colors border-slate-200 hover:border-primary-300 hover:bg-primary-50/50 cursor-pointer"
+              onClick={() => fileInputRef.current?.click()}
               onDrop={handleDrop}
+              onDragOver={handleDragOver}
             >
-              <input
-                id="file-upload"
-                type="file"
-                className="hidden"
-                multiple
-                accept=".pdf,.doc,.docx,.xls,.xlsx"
-                onChange={handleFileSelect}
-              />
               <Upload className="h-10 w-10 mx-auto text-slate-300 mb-3" />
-              <p className="text-slate-500 mb-2">{t("Drag and drop files here, or")}</p>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => document.getElementById("file-upload")?.click()}
-              >
-                {t("Click to Upload")}
-              </Button>
-              <p className="text-xs text-slate-400 mt-3">{t("Supported formats: PDF, DOC, DOCX, XLS, XLSX")}</p>
+              <p className="text-slate-500 mb-2">{t("Drag and drop files here, or click to upload")}</p>
+              <p className="text-xs text-slate-400">
+                {t("PDF, DOC, DOCX, XLS, XLSX, CSV, TXT")} ({t("max")} {MAX_FILES} {t("files")})
+              </p>
             </div>
 
             {/* Uploaded Files List */}
-            {uploadedFiles.length > 0 && (
+            {files.length > 0 && (
               <div className="mt-3 space-y-2">
-                {uploadedFiles.map((file, index) => (
+                {files.map((file, index) => (
                   <div
                     key={index}
                     className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2"
@@ -378,7 +384,7 @@ export default function RiskIdentificationPage() {
             >
               {loading ? (
                 <>
-                  <div className="h-4 w-4 mr-2 rounded-full border-2 border-white border-t-transparent animate-spin"></div>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   {t("Analyzing...")}
                 </>
               ) : (
@@ -392,79 +398,83 @@ export default function RiskIdentificationPage() {
         </div>
       </div>
 
-      {/* AI Suggested Risks */}
-      {suggestedRisks.length > 0 && (
+      {/* Recent Searches / Generated Risks */}
+      {recentSearches.length > 0 && (
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          {suggestedRisks.map((risk, index) => (
-            <div
-              key={risk.id}
-              className={`flex items-center justify-between gap-4 p-4 ${
-                index !== suggestedRisks.length - 1 ? "border-b border-slate-100" : ""
-              }`}
-            >
-              {/* Risk Description */}
-              <div className="flex-1">
-                <p className="text-sm text-slate-700 leading-relaxed">
-                  {risk.description}
-                </p>
+          <div className="px-6 py-4 border-b border-slate-100">
+            <h3 className="text-sm font-medium text-slate-800">{t("Recent Searches")}</h3>
+          </div>
+          <div className="divide-y divide-slate-100">
+            {recentSearches.map((search) => (
+              <div key={search.id} className="p-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center shrink-0">
+                    <Sparkles className="h-4 w-4 text-slate-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <p className="font-medium text-slate-800">{search.query}</p>
+                      <span className="text-xs text-slate-400 shrink-0">
+                        {formatDate(search.timestamp)}
+                      </span>
+                    </div>
+                    {search.result && (
+                      <p className="text-sm text-slate-600 mt-2">{search.result}</p>
+                    )}
+                    {search.generatedRisks && search.generatedRisks.length > 0 && (
+                      <div className="mt-3 space-y-2">
+                        {search.generatedRisks.map((r, idx) => (
+                          <div
+                            key={idx}
+                            className="text-sm border-l-2 border-primary-200 pl-3 py-2 bg-primary-50/50 rounded-r"
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1">
+                                <p className="font-medium text-slate-800">{r.title}</p>
+                                {r.description && (
+                                  <p className="text-slate-600 mt-0.5 text-xs">{r.description}</p>
+                                )}
+                                <div className="flex flex-wrap gap-2 mt-1 text-xs text-slate-500">
+                                  <Badge
+                                    variant={
+                                      r.level === "High"
+                                        ? "destructive"
+                                        : r.level === "Medium"
+                                          ? "secondary"
+                                          : "outline"
+                                    }
+                                    className="text-xs"
+                                  >
+                                    {r.level}
+                                  </Badge>
+                                  {r.inherent_likelihood && (
+                                    <span>{t("Likelihood")}: {r.inherent_likelihood}</span>
+                                  )}
+                                  {r.inherent_impact && (
+                                    <span>{t("Impact")}: {r.inherent_impact}</span>
+                                  )}
+                                </div>
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="shrink-0"
+                                onClick={() => handleAddToRegister(r, selectedDepartment)}
+                              >
+                                {t("Add to Register")}
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
-
-              {/* Severity Badge */}
-              <div className="flex-shrink-0">
-                <Badge
-                  className={
-                    risk.severity === "High"
-                      ? "bg-red-500 text-white hover:bg-red-500 rounded-full px-3"
-                      : risk.severity === "Medium"
-                      ? "bg-yellow-500 text-white hover:bg-yellow-500 rounded-full px-3"
-                      : "bg-green-500 text-white hover:bg-green-500 rounded-full px-3"
-                  }
-                >
-                  {risk.severity}
-                </Badge>
-              </div>
-
-              {/* Green Tick + Add to Register Button */}
-              <div className="flex items-center gap-2 flex-shrink-0">
-                {addedRisks.has(risk.id) && (
-                  <Check className="h-5 w-5 text-green-500" />
-                )}
-                <Button
-                  size="sm"
-                  onClick={() => handleAddToRegister(risk)}
-                  disabled={addingRisk === risk.id || addedRisks.has(risk.id)}
-                >
-                  {addingRisk === risk.id ? (
-                    <div className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin"></div>
-                  ) : (
-                    t("Add to Register")
-                  )}
-                </Button>
-              </div>
-            </div>
-          ))}
-
-          {/* Summary when all risks are added */}
-          {addedRisks.size === suggestedRisks.length && suggestedRisks.length > 0 && (
-            <div className="p-4 bg-green-50 border-t border-green-200">
-              <div className="flex items-center gap-2 text-green-700">
-                <Check className="h-5 w-5" />
-                <span className="font-medium">
-                  {`${t("All")} ${suggestedRisks.length} ${t("risks have been added to the register")}`}
-                </span>
-              </div>
-              <Button
-                variant="link"
-                className="text-green-700 p-0 mt-2"
-                onClick={() => router.push("/internal-audit/risk-register")}
-              >
-                {t("View Risk Register")} &rarr;
-              </Button>
-            </div>
-          )}
+            ))}
+          </div>
         </div>
       )}
-
     </div>
   );
 }

@@ -44,10 +44,7 @@ export async function calculateFrameworkCharts(
 
   try {
     console.log(`
-╔════════════════════════════════════════════════════════════════╗
-║          📊 CHART CALCULATION SERVICE - STARTING                 ║
-╚════════════════════════════════════════════════════════════════╝
-[${new Date().toISOString()}]
+
 
 📋 CALCULATING CHARTS FOR FRAMEWORK: ${frameworkId}
 `);
@@ -72,27 +69,11 @@ export async function calculateFrameworkCharts(
       },
     };
 
-    console.log(`
-✅ CHART CALCULATIONS COMPLETE
-[${new Date().toISOString()}]
-
-📊 RESULTS:
-  • Compliance: ${compliance.percentage.toFixed(1)}% (${compliance.details.compliant}/${compliance.details.total})
-  • Policy: ${policy.percentage.toFixed(1)}% (${policy.details.published}/${policy.details.total})
-  • Evidence: ${evidence.percentage.toFixed(1)}% (${evidence.details.published}/${evidence.details.total})
-  • Processing Time: ${totalTime}ms
-`);
+    console.log(`✅ Charts calculated in ${totalTime}ms - Compliance: ${result.compliancePercentage.toFixed(1)}%, Policy: ${result.policyPercentage.toFixed(1)}%, Evidence: ${result.evidencePercentage.toFixed(1)}%`);
 
     return result;
   } catch (error) {
-    console.error(`
-❌ CHART CALCULATION FAILED
-[${new Date().toISOString()}]
-
-Error: ${error instanceof Error ? error.message : String(error)}
-Framework: ${frameworkId}
-`);
-
+    console.error(`❌ Error calculating framework charts:`, error);
     // Return safe defaults on error
     return {
       compliancePercentage: 0,

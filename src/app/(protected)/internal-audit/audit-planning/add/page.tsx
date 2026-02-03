@@ -192,7 +192,7 @@ export default function AddEngagementPage() {
       if (scoringRangesRes.ok) {
         const scoringRangesData = await scoringRangesRes.json();
         // Get unique labels from scoring ranges for audit ratings
-        const uniqueLabels = [...new Set(scoringRangesData.map((r: ScoringRange) => r.label))] as string[];
+        const uniqueLabels = [...new Set<string>(scoringRangesData.map((r: ScoringRange) => r.label))];
         setAuditRatings(uniqueLabels.map((label) => ({ id: label, label })));
       }
       if (processesRes.ok) {

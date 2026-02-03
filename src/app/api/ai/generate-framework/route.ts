@@ -61,9 +61,7 @@ async function handler(req: NextRequest, _context: any, session: AuthenticatedRe
             );
         }
 
-        // ═══════════════════════════════════════════════════════════════
-        // DUPLICATE DETECTION: Check if framework already exists
-        // ═══════════════════════════════════════════════════════════════
+
         const existingFramework = await prisma.framework.findFirst({
             where: {
                 ...(session.customerAccountId && { customerAccountId: session.customerAccountId }),
