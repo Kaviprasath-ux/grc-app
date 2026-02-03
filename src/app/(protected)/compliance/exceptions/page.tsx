@@ -993,9 +993,9 @@ export default function ExceptionsPage() {
                     }}
                   />
                   <Legend
-                    layout="vertical"
-                    align="right"
-                    verticalAlign="middle"
+                    layout="horizontal"
+                    align="center"
+                    verticalAlign="bottom"
                     iconType="circle"
                     iconSize={8}
                     formatter={(value) => <span className="text-xs text-slate-600">{value}</span>}
@@ -1054,9 +1054,9 @@ export default function ExceptionsPage() {
                     }}
                   />
                   <Legend
-                    layout="vertical"
-                    align="right"
-                    verticalAlign="middle"
+                    layout="horizontal"
+                    align="center"
+                    verticalAlign="bottom"
                     iconType="circle"
                     iconSize={8}
                     formatter={(value) => <span className="text-xs text-slate-600">{value}</span>}
@@ -1115,9 +1115,9 @@ export default function ExceptionsPage() {
                     }}
                   />
                   <Legend
-                    layout="vertical"
-                    align="right"
-                    verticalAlign="middle"
+                    layout="horizontal"
+                    align="center"
+                    verticalAlign="bottom"
                     iconType="circle"
                     iconSize={8}
                     formatter={(value) => <span className="text-xs text-slate-600 truncate max-w-[80px] inline-block">{value}</span>}
