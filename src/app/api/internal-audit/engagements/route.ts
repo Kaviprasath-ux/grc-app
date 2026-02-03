@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { withAuth, getCustomerAccountId, getTenantFilter } from '@/lib/api-auth';
+import { withAuth, getCustomerAccountId, getTenantFilter, getAuditHeadId } from '@/lib/api-auth';
 
 // GET /api/internal-audit/engagements - Get all audit engagements
-// NOTE: AuditEngagement doesn't have auditHeadId - using tenant filter only
+// Multi-tenant: Filter by customerAccountId and auditHeadId
 export const GET = withAuth(
   async (req, context, session) => {
     try {
@@ -14,7 +14,11 @@ export const GET = withAuth(
       const search = url.searchParams.get('search');
 
       const tenantFilter = getTenantFilter(session);
-      const whereClause: Record<string, unknown> = { ...tenantFilter };
+      const auditHeadId = getAuditHeadId(session);
+      const whereClause: Record<string, unknown> = {
+        ...tenantFilter,
+        ...(auditHeadId ? { auditHeadId } : {}),
+      };
       const andConditions: Record<string, unknown>[] = [];
 
       // Check if user is an Auditee (and not also an Audit Head or other audit role)
@@ -130,7 +134,7 @@ export const GET = withAuth(
 );
 
 // POST /api/internal-audit/engagements - Create a new audit engagement
-// NOTE: AuditEngagement doesn't have auditHeadId - using tenant filter only
+// Multi-tenant: Associate with customerAccountId and auditHeadId
 export const POST = withAuth(
   async (req, context, session) => {
     try {
@@ -146,6 +150,7 @@ export const POST = withAuth(
         auditType,
         auditorId,
         auditeeId,
+        processId,
         startDate,
         targetDate,
         initialObservation,
@@ -154,6 +159,7 @@ export const POST = withAuth(
       } = body;
 
       const customerAccountId = getCustomerAccountId(session);
+      const auditHeadId = getAuditHeadId(session);
 
       // Generate audit ID
       const count = await prisma.auditEngagement.count();
@@ -169,6 +175,7 @@ export const POST = withAuth(
           auditType: auditType || 'Internal Audit',
           assignedAuditorId: auditorId || null,
           auditeeId: auditeeId || null,
+          processId: processId || null,
           startDate: startDate ? new Date(startDate) : null,
           endDate: targetDate ? new Date(targetDate) : null,
           initialObservation: initialObservation || null,
@@ -176,14 +183,9 @@ export const POST = withAuth(
           plannedHours: plannedHours || 0,
           actualHours: 0,
           status: 'Planned',
-        };
-
-      if (customerAccountId) {
-        (engagementData as Record<string, unknown>).customerAccountId = customerAccountId;
-      }
-
-      const engagement = await prisma.auditEngagement.create({
-        data: engagementData as Parameters<typeof prisma.auditEngagement.create>[0]['data'],
+          ...(customerAccountId ? { customerAccountId } : {}),
+          ...(auditHeadId ? { auditHeadId } : {}),
+        },
         include: {
           department: {
             select: { id: true, name: true }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -63,22 +64,45 @@ interface Department {
   name: string;
 }
 
-// For Audit function, show these audit roles (Auditor removed)
-const AUDIT_ROLES = [
-  "AuditHead",
-  "AuditManager",
-  "Auditee",
-];
+// Role restrictions:
+// - CustomerAdmin can ONLY create AuditHead users
+// - AuditHead can ONLY create AuditManager and Auditee users
+const CUSTOMER_ADMIN_ALLOWED_ROLES = ["AuditHead"];
+const AUDIT_HEAD_ALLOWED_ROLES = ["AuditManager", "Auditee"];
 
 export default function UserManagementPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { t } = useLanguage();
+  const { data: session } = useSession();
   const [users, setUsers] = useState<User[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Determine which roles the current user can assign
+  const userRoles = session?.user?.roles || [];
+  const isGRCAdmin = userRoles.includes("GRCAdministrator");
+  const isCustomerAdmin = userRoles.includes("CustomerAdministrator");
+  const isAuditHead = userRoles.includes("AuditHead");
+
+  // Get allowed roles based on current user's role
+  const getAllowedRoles = (): string[] => {
+    if (isGRCAdmin) {
+      // GRC Admin can create all audit roles
+      return ["AuditHead", "AuditManager", "Auditee"];
+    } else if (isCustomerAdmin) {
+      // Customer Admin can ONLY create AuditHead
+      return CUSTOMER_ADMIN_ALLOWED_ROLES;
+    } else if (isAuditHead) {
+      // Audit Head can ONLY create AuditManager and Auditee
+      return AUDIT_HEAD_ALLOWED_ROLES;
+    }
+    return [];
+  };
+
+  const allowedRoles = getAllowedRoles();
 
   // Dialog states
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -593,7 +617,7 @@ export default function UserManagementPage() {
               <div>
                 <Label className="text-sm font-medium text-slate-700">{t("User Role")}</Label>
                 <div className="mt-1.5 grid grid-cols-2 gap-2 border border-slate-200 rounded-lg p-3 bg-white">
-                  {AUDIT_ROLES.map((role) => (
+                  {allowedRoles.map((role) => (
                     <div key={role} className="flex items-center space-x-2">
                       <Checkbox
                         id={role}
@@ -606,6 +630,11 @@ export default function UserManagementPage() {
                     </div>
                   ))}
                 </div>
+                {allowedRoles.length === 1 && (
+                  <p className="text-xs text-slate-500 mt-1">
+                    {isCustomerAdmin ? "As Customer Administrator, you can only create Audit Head users." : ""}
+                  </p>
+                )}
               </div>
 
               {/* Password fields (only for new users) */}

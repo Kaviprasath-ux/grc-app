@@ -1,17 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { withAuth, getTenantFilter } from "@/lib/api-auth";
+import { withAuth, getTenantFilter, getAuditHeadId } from "@/lib/api-auth";
 
 // GET a single audit type
-// Requires 'edit' action so only AuditHead can access
+// Multi-tenant: Filter by customerAccountId and auditHeadId
 export const GET = withAuth(
   async (req: NextRequest, { params }: { params: Promise<{ id: string }> }, session) => {
     try {
       const { id } = await params;
       const tenantFilter = getTenantFilter(session);
+      const auditHeadId = getAuditHeadId(session);
 
       const auditType = await prisma.auditType.findFirst({
-        where: { id, ...tenantFilter },
+        where: {
+          id,
+          ...tenantFilter,
+          ...(auditHeadId ? { auditHeadId } : {}),
+        },
         include: {
           _count: {
             select: { internalAuditRisks: true },
@@ -39,16 +44,22 @@ export const GET = withAuth(
 );
 
 // PUT update an audit type
+// Multi-tenant: Filter by customerAccountId and auditHeadId
 export const PUT = withAuth(
   async (req: NextRequest, { params }: { params: Promise<{ id: string }> }, session) => {
     try {
       const { id } = await params;
       const tenantFilter = getTenantFilter(session);
+      const auditHeadId = getAuditHeadId(session);
       const body = await req.json();
       const { name } = body;
 
       const existing = await prisma.auditType.findFirst({
-        where: { id, ...tenantFilter },
+        where: {
+          id,
+          ...tenantFilter,
+          ...(auditHeadId ? { auditHeadId } : {}),
+        },
       });
 
       if (!existing) {
@@ -61,7 +72,12 @@ export const PUT = withAuth(
       // Check for duplicate name if name is being changed
       if (name && name !== existing.name) {
         const duplicate = await prisma.auditType.findFirst({
-          where: { name, ...tenantFilter, NOT: { id } },
+          where: {
+            name,
+            ...tenantFilter,
+            ...(auditHeadId ? { auditHeadId } : {}),
+            NOT: { id },
+          },
         });
         if (duplicate) {
           return NextResponse.json(
@@ -89,14 +105,20 @@ export const PUT = withAuth(
 );
 
 // DELETE an audit type
+// Multi-tenant: Filter by customerAccountId and auditHeadId
 export const DELETE = withAuth(
   async (req: NextRequest, { params }: { params: Promise<{ id: string }> }, session) => {
     try {
       const { id } = await params;
       const tenantFilter = getTenantFilter(session);
+      const auditHeadId = getAuditHeadId(session);
 
       const existing = await prisma.auditType.findFirst({
-        where: { id, ...tenantFilter },
+        where: {
+          id,
+          ...tenantFilter,
+          ...(auditHeadId ? { auditHeadId } : {}),
+        },
         include: { _count: { select: { internalAuditRisks: true } } },
       });
 

@@ -32,6 +32,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useToast } from "@/hooks/use-toast";
 
 interface AuditCategory {
   id: string;
@@ -43,6 +44,7 @@ interface AuditCategory {
 export default function AuditCategoriesPage() {
   const router = useRouter();
   const { t } = useLanguage();
+  const { toast } = useToast();
   const [categories, setCategories] = useState<AuditCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -110,9 +112,25 @@ export default function AuditCategoriesPage() {
       if (response.ok) {
         setDialogOpen(false);
         fetchCategories();
+        toast({
+          title: "Success",
+          description: editItem ? "Category updated successfully" : "Category created successfully",
+        });
+      } else {
+        const data = await response.json();
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: data.error || "Failed to save category",
+        });
       }
     } catch (error) {
       console.error("Failed to save:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to save category",
+      });
     } finally {
       setSaving(false);
     }
@@ -133,10 +151,29 @@ export default function AuditCategoriesPage() {
 
       if (response.ok) {
         fetchCategories();
+        toast({
+          title: "Success",
+          description: "Category deleted successfully",
+        });
+        setDeleteDialogOpen(false);
+        setItemToDelete(null);
+      } else {
+        const data = await response.json();
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: data.error || "Failed to delete category",
+        });
+        setDeleteDialogOpen(false);
+        setItemToDelete(null);
       }
     } catch (error) {
       console.error("Failed to delete:", error);
-    } finally {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete category",
+      });
       setDeleteDialogOpen(false);
       setItemToDelete(null);
     }
