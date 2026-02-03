@@ -31,7 +31,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Pencil, Image, Trash2, X, Upload, RefreshCw } from "lucide-react";
+import { Plus, Pencil, Image, Trash2, X, Upload, RefreshCw, Home, ChevronRight } from "lucide-react";
+import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -943,9 +944,23 @@ export default function CustomerAccountsPage() {
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/grc" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>{t("GRC")}</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">{t("Customer Accounts")}</span>
+      </nav>
+
       {/* Page Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-bold text-slate-800">{t("GRC Customer Account")}</h1>
+      </div>
+
+      {/* Actions */}
+      <div className="flex items-center justify-end">
         <Button onClick={() => setShowOnboardDialog(true)} size="sm">
           <Plus className="h-4 w-4 mr-2" />
           {t("Onboard Customer")}

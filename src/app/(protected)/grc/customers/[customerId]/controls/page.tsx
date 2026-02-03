@@ -19,7 +19,10 @@ import {
   Server,
   CheckCircle,
   XCircle,
+  Home,
+  ChevronRight,
 } from "lucide-react";
+import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -359,23 +362,28 @@ export default function CustomerControlsPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b pb-4">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <button
-              className="text-gray-500 hover:text-gray-700"
-              onClick={handleBack}
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </button>
-            <h1 className="text-2xl font-bold text-blue-700">{t("Controls")}</h1>
-          </div>
-          <p className="text-sm text-blue-800 font-medium bg-blue-100 px-2 py-0.5 rounded inline-block">
-            {customer?.customerName || t("Loading...")}
-          </p>
-        </div>
+    <div className="space-y-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/grc" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>{t("GRC")}</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <Link href="/grc/customers" className="text-slate-500 hover:text-primary-600 transition-colors">
+          {t("Customers")}
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <Link href={`/grc/customers/${customerId}/frameworks`} className="text-slate-500 hover:text-primary-600 transition-colors">
+          {customer?.customerName || t("Customer")}
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">{t("Controls")}</span>
+      </nav>
+
+      {/* Page Header */}
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold text-slate-800">{t("Controls")}</h1>
       </div>
 
       {/* Tabs + Framework Dropdown */}

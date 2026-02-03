@@ -34,7 +34,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Edit, FileText, Shield, AlertTriangle, ClipboardCheck, Link2, Plus, X } from "lucide-react";
+import { Edit, FileText, Shield, AlertTriangle, ClipboardCheck, Link2, Plus, X, Home, ChevronRight } from "lucide-react";
+import Link from "next/link";
 
 interface Control {
   id: string;
@@ -351,29 +352,37 @@ export default function GRCAdminControlDetailPage({ params }: { params: Promise<
   }
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header with Back Link */}
+    <div className="space-y-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/grc" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>{t("GRC")}</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-slate-500">{t("Compliance")}</span>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <Link href="/roles/grc-administrator/compliance/control" className="text-slate-500 hover:text-primary-600 transition-colors">
+          {t("Controls")}
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">{control.controlCode}</span>
+      </nav>
+
+      {/* Page Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => router.push("/roles/grc-administrator/compliance/control")}
-            className="text-primary hover:underline text-sm"
-          >
-            &lt;&lt; {t("Control")}
-          </button>
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-slate-800">{control.name}</h1>
+            <Badge className={getStatusBadgeColor(control.status)}>{control.status}</Badge>
+          </div>
+          <p className="text-sm text-slate-500">{control.controlCode}</p>
         </div>
-        <Button variant="outline" onClick={() => setIsEditDialogOpen(true)}>
+        <Button variant="outline" size="sm" onClick={() => setIsEditDialogOpen(true)}>
           <Edit className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
           {t("Edit Control")}
         </Button>
       </div>
-
-      {/* Control Title */}
-      <div className="flex items-center gap-2">
-        <h1 className="text-2xl font-bold">{control.name}</h1>
-        <Badge className={getStatusBadgeColor(control.status)}>{control.status}</Badge>
-      </div>
-      <p className="text-muted-foreground">{control.controlCode}</p>
 
       {/* Control Details Card with Inline Editable Fields */}
       <Card>
