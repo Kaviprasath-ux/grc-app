@@ -165,7 +165,8 @@ export const POST = withAuth(
       const count = await prisma.auditEngagement.count();
       const auditId = String(count + 1).padStart(4, '0');
 
-      const engagementData = {
+      const engagement = await prisma.auditEngagement.create({
+        data: {
           auditId,
           engagementTitle,
           engagementObjective: engagementObjective || null,

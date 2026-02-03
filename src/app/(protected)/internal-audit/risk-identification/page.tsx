@@ -263,15 +263,9 @@ export default function RiskIdentificationPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-800">{t("Risk Identification")}</h1>
-        <Button
-          variant="outline"
-          size="sm"
-          className="bg-primary-50 hover:bg-primary-100 text-primary-700 border-primary-200"
-          onClick={() => router.push("/internal-audit/risk-register")}
-        >
-          <Sparkles className="h-4 w-4 mr-2" />
-          {t("AI Integrated")}
-        </Button>
+        <span className="text-sm text-primary-600 font-medium">
+          {t("AI-Powered Risk Assessment")}
+        </span>
       </div>
 
       {/* Main Form Card */}
