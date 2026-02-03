@@ -44,6 +44,7 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { DatePicker } from "@/components/ui/date-picker";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Process {
   id: string;
@@ -101,6 +102,7 @@ const STATUSES = ["Active", "Inactive"];
 export default function ProcessPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [processes, setProcesses] = useState<Process[]>([]);
   const [filteredProcesses, setFilteredProcesses] = useState<Process[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -350,7 +352,7 @@ export default function ProcessPage() {
 
   const handleSave = async () => {
     if (!formData.name.trim()) {
-      toast({ title: "Error", description: "Please enter a process name", variant: "destructive" });
+      toast({ title: t("Error"), description: t("Please enter a process name"), variant: "destructive" });
       return;
     }
 
@@ -381,7 +383,7 @@ export default function ProcessPage() {
       });
 
       if (response.ok) {
-        toast({ title: "Success", description: "Process saved successfully!" });
+        toast({ title: t("Success"), description: t("Process saved successfully!") });
         setDialogOpen(false);
         setCurrentStep(1);
         setUploadedFiles([]);
@@ -389,11 +391,11 @@ export default function ProcessPage() {
       } else {
         const errorData = await response.json();
         console.error("Error response:", errorData);
-        toast({ title: "Error", description: `Failed to save process: ${errorData.error || "Unknown error"}`, variant: "destructive" });
+        toast({ title: t("Error"), description: `${t("Failed to save process")}: ${errorData.error || t("Unknown error")}`, variant: "destructive" });
       }
     } catch (error) {
       console.error("Failed to save:", error);
-      toast({ title: "Error", description: "An error occurred while saving the process", variant: "destructive" });
+      toast({ title: t("Error"), description: t("An error occurred while saving the process"), variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -401,9 +403,9 @@ export default function ProcessPage() {
 
   const getStepTitle = () => {
     switch (currentStep) {
-      case 1: return "Basic Information";
-      case 2: return "Add Documents";
-      case 3: return "RACI Assignment";
+      case 1: return t("Basic Information");
+      case 2: return t("Add Documents");
+      case 3: return t("RACI Assignment");
       default: return "";
     }
   };
@@ -552,24 +554,24 @@ export default function ProcessPage() {
         <nav className="flex items-center gap-1.5 text-sm">
           <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
-            <span>Internal Audit</span>
+            <span>{t("Internal Audit")}</span>
           </Link>
           <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
           <Link href="/internal-audit/settings" className="text-slate-500 hover:text-primary-600 transition-colors">
-            Settings
+            {t("Settings")}
           </Link>
           <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-          <span className="text-primary-700 font-medium">Process</span>
+          <span className="text-primary-700 font-medium">{t("Process")}</span>
         </nav>
 
-        <h1 className="text-2xl font-bold text-slate-800">Process</h1>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Process")}</h1>
         <div className="flex items-center justify-center h-[60vh]">
           <div className="flex flex-col items-center gap-4">
             <div className="relative">
               <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
               <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
             </div>
-            <p className="text-sm text-slate-500 font-medium">Loading processes...</p>
+            <p className="text-sm text-slate-500 font-medium">{t("Loading processes...")}</p>
           </div>
         </div>
       </div>
@@ -582,18 +584,18 @@ export default function ProcessPage() {
       <nav className="flex items-center gap-1.5 text-sm">
         <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
-          <span>Internal Audit</span>
+          <span>{t("Internal Audit")}</span>
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
         <Link href="/internal-audit/settings" className="text-slate-500 hover:text-primary-600 transition-colors">
-          Settings
+          {t("Settings")}
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-        <span className="text-primary-700 font-medium">Process</span>
+        <span className="text-primary-700 font-medium">{t("Process")}</span>
       </nav>
 
       {/* Page Header */}
-      <h1 className="text-2xl font-bold text-slate-800">Process</h1>
+      <h1 className="text-2xl font-bold text-slate-800">{t("Process")}</h1>
 
       {/* Content */}
       <div className="space-y-6">
@@ -610,7 +612,7 @@ export default function ProcessPage() {
               {stats.notAssessed}
             </div>
             <div className="mt-1">
-              <span className="text-sm font-medium text-slate-500">Not Assessed</span>
+              <span className="text-sm font-medium text-slate-500">{t("Not Assessed")}</span>
             </div>
           </div>
 
@@ -624,7 +626,7 @@ export default function ProcessPage() {
               {stats.low}
             </div>
             <div className="mt-1">
-              <span className="text-sm font-medium text-slate-500">Low</span>
+              <span className="text-sm font-medium text-slate-500">{t("Low")}</span>
             </div>
           </div>
 
@@ -638,7 +640,7 @@ export default function ProcessPage() {
               {stats.medium}
             </div>
             <div className="mt-1">
-              <span className="text-sm font-medium text-slate-500">Medium</span>
+              <span className="text-sm font-medium text-slate-500">{t("Medium")}</span>
             </div>
           </div>
 
@@ -652,7 +654,7 @@ export default function ProcessPage() {
               {stats.high}
             </div>
             <div className="mt-1">
-              <span className="text-sm font-medium text-slate-500">High</span>
+              <span className="text-sm font-medium text-slate-500">{t("High")}</span>
             </div>
           </div>
         </div>
@@ -662,7 +664,7 @@ export default function ProcessPage() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input
-              placeholder="Search By Process ID, Name"
+              placeholder={t("Search By Process ID, Name")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 w-[250px] h-9 bg-white border-slate-200"
@@ -671,10 +673,10 @@ export default function ProcessPage() {
 
           <Select value={filterDepartment || "all"} onValueChange={(v) => setFilterDepartment(v === "all" ? "" : v)}>
             <SelectTrigger className="w-[160px] h-9 bg-white border-slate-200">
-              <SelectValue placeholder="Department" />
+              <SelectValue placeholder={t("Department")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Departments</SelectItem>
+              <SelectItem value="all">{t("All Departments")}</SelectItem>
               {departments.map((dept) => (
                 <SelectItem key={dept.id} value={dept.id}>
                   {dept.name}
@@ -685,10 +687,10 @@ export default function ProcessPage() {
 
           <Select value={filterOwner || "all"} onValueChange={(v) => setFilterOwner(v === "all" ? "" : v)}>
             <SelectTrigger className="w-[160px] h-9 bg-white border-slate-200">
-              <SelectValue placeholder="Process Owner" />
+              <SelectValue placeholder={t("Process Owner")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Owners</SelectItem>
+              <SelectItem value="all">{t("All Owners")}</SelectItem>
               {users.map((user) => (
                 <SelectItem key={user.id} value={user.id}>
                   {user.fullName}
@@ -699,10 +701,10 @@ export default function ProcessPage() {
 
           <Select value={filterFrequency || "all"} onValueChange={(v) => setFilterFrequency(v === "all" ? "" : v)}>
             <SelectTrigger className="w-[160px] h-9 bg-white border-slate-200">
-              <SelectValue placeholder="Process Frequency" />
+              <SelectValue placeholder={t("Process Frequency")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Frequencies</SelectItem>
+              <SelectItem value="all">{t("All Frequencies")}</SelectItem>
               {PROCESS_FREQUENCIES.map((freq) => (
                 <SelectItem key={freq} value={freq}>
                   {freq}
@@ -716,11 +718,11 @@ export default function ProcessPage() {
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={handleExport}>
               <Download className="h-4 w-4 mr-2" />
-              Export
+              {t("Export")}
             </Button>
             <Button variant="outline" size="sm" onClick={() => document.getElementById('import-file')?.click()}>
               <Upload className="h-4 w-4 mr-2" />
-              Import
+              {t("Import")}
             </Button>
             <input
               id="import-file"
@@ -731,7 +733,7 @@ export default function ProcessPage() {
             />
             <Button size="sm" onClick={openAddDialog}>
               <Plus className="h-4 w-4 mr-2" />
-              New Process
+              {t("New Process")}
             </Button>
           </div>
         </div>
@@ -741,14 +743,14 @@ export default function ProcessPage() {
           <Table>
             <TableHeader>
               <TableRow className="border-b border-slate-100 bg-slate-50/50">
-                <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4">Reference ID</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 h-12">Name</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 h-12">Department</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 h-12">Process Owner</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 h-12">Frequency</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 h-12">Implementation</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 h-12">Risk Rating</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[100px]">Action</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4">{t("Reference ID")}</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Name")}</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Department")}</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Process Owner")}</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Frequency")}</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Implementation")}</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Risk Rating")}</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[100px]">{t("Action")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -782,7 +784,7 @@ export default function ProcessPage() {
                         size="icon"
                         className="h-8 w-8 text-slate-400 hover:text-slate-600"
                         onClick={() => openEditDialog(process)}
-                        title="Edit"
+                        title={t("Edit")}
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
@@ -791,7 +793,7 @@ export default function ProcessPage() {
                         size="icon"
                         className="h-8 w-8 text-slate-400 hover:text-semantic-error"
                         onClick={() => openDeleteDialog(process)}
-                        title="Delete"
+                        title={t("Delete")}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -802,7 +804,7 @@ export default function ProcessPage() {
               {filteredProcesses.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center py-8 text-slate-500">
-                    No processes found
+                    {t("No processes found")}
                   </TableCell>
                 </TableRow>
               )}
@@ -812,7 +814,7 @@ export default function ProcessPage() {
           {/* Pagination info */}
           <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
             <span className="text-sm text-slate-500">
-              Showing {filteredProcesses.length} of {processes.length} processes
+              {t("Showing")} {filteredProcesses.length} {t("of")} {processes.length} {t("processes")}
             </span>
           </div>
         </div>
@@ -824,7 +826,7 @@ export default function ProcessPage() {
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{editItem ? "Edit Process" : "New Process"}</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{editItem ? t("Edit Process") : t("New Process")}</DialogTitle>
             </DialogHeader>
             <div className="flex items-center justify-center mt-4">
               {[1, 2, 3].map((step) => (
@@ -854,7 +856,7 @@ export default function ProcessPage() {
             <div className="grid grid-cols-2 gap-4">
               {/* Process ID (readonly) */}
               <div>
-                <Label className="text-sm font-medium text-slate-700">Process ID</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Process ID")}</Label>
                 <Input
                   value={editItem ? editItem.processCode : nextProcessId}
                   disabled
@@ -864,11 +866,11 @@ export default function ProcessPage() {
 
               {/* Process Name */}
               <div>
-                <Label className="text-sm font-medium text-slate-700">Process Name <span className="text-red-500">*</span></Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Process Name")} <span className="text-red-500">*</span></Label>
                 <Input
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Enter Process Name"
+                  placeholder={t("Enter Process Name")}
                   className="mt-1.5 w-full bg-white"
                 />
               </div>
@@ -876,11 +878,11 @@ export default function ProcessPage() {
 
             {/* Description */}
             <div>
-              <Label className="text-sm font-medium text-slate-700">Description</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
               <Textarea
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Enter Description"
+                placeholder={t("Enter Description")}
                 className="mt-1.5 w-full bg-white"
                 rows={3}
               />
@@ -889,13 +891,13 @@ export default function ProcessPage() {
             <div className="grid grid-cols-2 gap-4">
               {/* Department */}
               <div>
-                <Label className="text-sm font-medium text-slate-700">Department</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Department")}</Label>
                 <Select
                   value={formData.departmentId}
                   onValueChange={(value) => setFormData({ ...formData, departmentId: value })}
                 >
                   <SelectTrigger className="mt-1.5 w-full bg-white border-slate-200">
-                    <SelectValue placeholder="Select Department" />
+                    <SelectValue placeholder={t("Select Department")} />
                   </SelectTrigger>
                   <SelectContent>
                     {departments.map((dept) => (
@@ -909,13 +911,13 @@ export default function ProcessPage() {
 
               {/* Process Owner */}
               <div>
-                <Label className="text-sm font-medium text-slate-700">Process Owner</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Process Owner")}</Label>
                 <Select
                   value={formData.ownerId}
                   onValueChange={(value) => setFormData({ ...formData, ownerId: value })}
                 >
                   <SelectTrigger className="mt-1.5 w-full bg-white border-slate-200">
-                    <SelectValue placeholder="Select Owner" />
+                    <SelectValue placeholder={t("Select Owner")} />
                   </SelectTrigger>
                   <SelectContent>
                     {users.map((user) => (
@@ -931,13 +933,13 @@ export default function ProcessPage() {
             <div className="grid grid-cols-2 gap-4">
               {/* Process Frequency */}
               <div>
-                <Label className="text-sm font-medium text-slate-700">Process Frequency</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Process Frequency")}</Label>
                 <Select
                   value={formData.processFrequency}
                   onValueChange={(value) => setFormData({ ...formData, processFrequency: value })}
                 >
                   <SelectTrigger className="mt-1.5 w-full bg-white border-slate-200">
-                    <SelectValue placeholder="Select Process Frequency" />
+                    <SelectValue placeholder={t("Select Process Frequency")} />
                   </SelectTrigger>
                   <SelectContent>
                     {PROCESS_FREQUENCIES.map((freq) => (
@@ -951,7 +953,7 @@ export default function ProcessPage() {
 
               {/* Nature of Implementation */}
               <div>
-                <Label className="text-sm font-medium text-slate-700">Nature of Implementation</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Nature of Implementation")}</Label>
                 <Select
                   value={formData.natureOfImplementation}
                   onValueChange={(value) =>
@@ -959,7 +961,7 @@ export default function ProcessPage() {
                   }
                 >
                   <SelectTrigger className="mt-1.5 w-full bg-white border-slate-200">
-                    <SelectValue placeholder="Select Nature Of Implementation" />
+                    <SelectValue placeholder={t("Select Nature Of Implementation")} />
                   </SelectTrigger>
                   <SelectContent>
                     {NATURE_OF_IMPLEMENTATIONS.map((nature) => (
@@ -983,7 +985,7 @@ export default function ProcessPage() {
                   }
                 />
                 <Label htmlFor="assetDependency" className="cursor-pointer">
-                  Asset Dependency
+                  {t("Asset Dependency")}
                 </Label>
               </div>
 
@@ -997,7 +999,7 @@ export default function ProcessPage() {
                   }
                 />
                 <Label htmlFor="externalDependency" className="cursor-pointer">
-                  External Dependency
+                  {t("External Dependency")}
                 </Label>
               </div>
             </div>
@@ -1013,7 +1015,7 @@ export default function ProcessPage() {
                   }
                 />
                 <Label htmlFor="kpiMeasurementRequired" className="cursor-pointer">
-                  KPI Measurement Required
+                  {t("KPI Measurement Required")}
                 </Label>
               </div>
 
@@ -1027,7 +1029,7 @@ export default function ProcessPage() {
                   }
                 />
                 <Label htmlFor="piiCapture" className="cursor-pointer">
-                  PII Capture
+                  {t("PII Capture")}
                 </Label>
               </div>
             </div>
@@ -1035,7 +1037,7 @@ export default function ProcessPage() {
             <div className="grid grid-cols-2 gap-4">
               {/* Operational Complexity */}
               <div>
-                <Label>Operational Complexity</Label>
+                <Label>{t("Operational Complexity")}</Label>
                 <Select
                   value={formData.operationalComplexity}
                   onValueChange={(value) =>
@@ -1043,7 +1045,7 @@ export default function ProcessPage() {
                   }
                 >
                   <SelectTrigger className="mt-2">
-                    <SelectValue placeholder="Select Complexity" />
+                    <SelectValue placeholder={t("Select Complexity")} />
                   </SelectTrigger>
                   <SelectContent>
                     {OPERATIONAL_COMPLEXITIES.map((complexity) => (
@@ -1057,11 +1059,11 @@ export default function ProcessPage() {
 
               {/* Last Audit Date */}
               <div>
-                <Label htmlFor="lastAuditDate">Last Audit Date</Label>
+                <Label htmlFor="lastAuditDate">{t("Last Audit Date")}</Label>
                 <DatePicker
                   value={formData.lastAuditDate}
                   onChange={(date) => setFormData({ ...formData, lastAuditDate: date ? date.toISOString().split('T')[0] : "" })}
-                  placeholder="Select date"
+                  placeholder={t("Select date")}
                   className="mt-2"
                 />
               </div>
@@ -1102,10 +1104,10 @@ export default function ProcessPage() {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-700">
-                    Drag and drop files here, or click to browse
+                    {t("Drag and drop files here, or click to browse")}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
-                    Support for PDF, DOC, DOCX, XLS, XLSX (Max 10MB)
+                    {t("Support for PDF, DOC, DOCX, XLS, XLSX (Max 10MB)")}
                   </p>
                 </div>
                 <Input
@@ -1126,7 +1128,7 @@ export default function ProcessPage() {
             {/* Uploaded Files List */}
             {uploadedFiles.length > 0 && (
               <div className="mt-4 space-y-2">
-                <p className="text-sm font-medium text-gray-700">Uploaded Files ({uploadedFiles.length}):</p>
+                <p className="text-sm font-medium text-gray-700">{t("Uploaded Files")} ({uploadedFiles.length}):</p>
                 {uploadedFiles.map((file, index) => (
                   <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
                     <span className="text-sm text-gray-600 truncate">{file.name}</span>
@@ -1138,7 +1140,7 @@ export default function ProcessPage() {
                         setUploadedFiles(prev => prev.filter((_, i) => i !== index));
                       }}
                     >
-                      Remove
+                      {t("Remove")}
                     </Button>
                   </div>
                 ))}
@@ -1146,7 +1148,7 @@ export default function ProcessPage() {
             )}
 
             <div className="text-sm text-gray-500 mt-2">
-              You can upload multiple documents related to this process
+              {t("You can upload multiple documents related to this process")}
             </div>
             </>
             )}
@@ -1157,13 +1159,13 @@ export default function ProcessPage() {
             <div className="grid grid-cols-2 gap-4">
               {/* Responsible */}
               <div>
-                <Label>Responsible</Label>
+                <Label>{t("Responsible")}</Label>
                 <Select
                   value={formData.responsibleId}
                   onValueChange={(value) => setFormData({ ...formData, responsibleId: value })}
                 >
                   <SelectTrigger className="mt-2">
-                    <SelectValue placeholder="Select Responsible" />
+                    <SelectValue placeholder={t("Select Responsible")} />
                   </SelectTrigger>
                   <SelectContent>
                     {users.map((user) => (
@@ -1177,13 +1179,13 @@ export default function ProcessPage() {
 
               {/* Accountable */}
               <div>
-                <Label>Accountable</Label>
+                <Label>{t("Accountable")}</Label>
                 <Select
                   value={formData.accountableId}
                   onValueChange={(value) => setFormData({ ...formData, accountableId: value })}
                 >
                   <SelectTrigger className="mt-2">
-                    <SelectValue placeholder="Select Accountable" />
+                    <SelectValue placeholder={t("Select Accountable")} />
                   </SelectTrigger>
                   <SelectContent>
                     {users.map((user) => (
@@ -1199,13 +1201,13 @@ export default function ProcessPage() {
             <div className="grid grid-cols-2 gap-4">
               {/* Consulted */}
               <div>
-                <Label>Consulted</Label>
+                <Label>{t("Consulted")}</Label>
                 <Select
                   value={formData.consultedId}
                   onValueChange={(value) => setFormData({ ...formData, consultedId: value })}
                 >
                   <SelectTrigger className="mt-2">
-                    <SelectValue placeholder="Select Consulted" />
+                    <SelectValue placeholder={t("Select Consulted")} />
                   </SelectTrigger>
                   <SelectContent>
                     {users.map((user) => (
@@ -1219,13 +1221,13 @@ export default function ProcessPage() {
 
               {/* Informed */}
               <div>
-                <Label>Informed</Label>
+                <Label>{t("Informed")}</Label>
                 <Select
                   value={formData.informedId}
                   onValueChange={(value) => setFormData({ ...formData, informedId: value })}
                 >
                   <SelectTrigger className="mt-2">
-                    <SelectValue placeholder="Select Informed" />
+                    <SelectValue placeholder={t("Select Informed")} />
                   </SelectTrigger>
                   <SelectContent>
                     {users.map((user) => (
@@ -1245,22 +1247,22 @@ export default function ProcessPage() {
           {/* Fixed Footer */}
           <div className="flex-shrink-0 flex justify-between items-center px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={handleCloseDialog}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <div className="flex gap-2">
               {currentStep > 1 && (
                 <Button variant="outline" onClick={handlePrevious}>
-                  Previous
+                  {t("Previous")}
                 </Button>
               )}
               {currentStep < TOTAL_STEPS && (
                 <Button onClick={handleNext} disabled={currentStep === 1 && !formData.name.trim()}>
-                  Next
+                  {t("Next")}
                 </Button>
               )}
               {currentStep === TOTAL_STEPS && (
                 <Button onClick={handleSave} disabled={saving || !formData.name.trim()}>
-                  {saving ? "Saving..." : "Save"}
+                  {saving ? t("Saving...") : t("Save")}
                 </Button>
               )}
             </div>
@@ -1272,15 +1274,15 @@ export default function ProcessPage() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent className="sm:max-w-[400px] p-0 gap-0">
           <AlertDialogHeader className="px-6 py-5 border-b border-slate-100">
-            <AlertDialogTitle className="text-lg font-semibold text-slate-800">Confirm Delete</AlertDialogTitle>
+            <AlertDialogTitle className="text-lg font-semibold text-slate-800">{t("Confirm Delete")}</AlertDialogTitle>
             <AlertDialogDescription className="text-sm text-slate-500 mt-1">
-              Are you sure you want to delete this process? This action cannot be undone.
+              {t("Are you sure you want to delete this process? This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex justify-end gap-2 px-6 py-4">
-            <AlertDialogCancel className="mt-0">Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="mt-0">{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
-              Delete
+              {t("Delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -18,6 +18,7 @@ import {
   X,
   Eye,
 } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { PageHeader } from "@/components/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -109,6 +110,7 @@ interface TableColumnVisibility {
 }
 
 export default function AuditLogsPage() {
+  const { t } = useLanguage();
   // View mode state
   const [viewMode, setViewMode] = useState<"list" | "table">("list");
 
@@ -476,21 +478,21 @@ export default function AuditLogsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{t("Loading...")}</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Audit Trail log overview" />
+      <PageHeader title={t("Audit Trail log overview")} />
 
       <div className="bg-white rounded-lg border shadow-sm">
         {/* Header description */}
         <div className="p-4 border-b">
-          <h4 className="text-lg font-semibold text-gray-900">Audit Trail log overview</h4>
+          <h4 className="text-lg font-semibold text-gray-900">{t("Audit Trail log overview")}</h4>
           <p className="text-sm text-muted-foreground mt-1">
-            Use this page to view all log entries stored by the Audit Trail module.
+            {t("Use this page to view all log entries stored by the Audit Trail module.")}
           </p>
         </div>
 
@@ -502,7 +504,7 @@ export default function AuditLogsPage() {
               size="icon"
               className="h-8 w-8"
               onClick={() => setViewMode("table")}
-              title="Table View"
+              title={t("Table View")}
             >
               <LayoutGrid className="h-4 w-4" />
             </Button>
@@ -511,7 +513,7 @@ export default function AuditLogsPage() {
               size="icon"
               className="h-8 w-8"
               onClick={() => setViewMode("list")}
-              title="List View"
+              title={t("List View")}
             >
               <LayoutList className="h-4 w-4" />
             </Button>
@@ -531,7 +533,7 @@ export default function AuditLogsPage() {
                     className="gap-2"
                   >
                     <Download className="h-4 w-4" />
-                    Export to Excel
+                    {t("Export to Excel")}
                   </Button>
                 </div>
 
@@ -548,7 +550,7 @@ export default function AuditLogsPage() {
                               className="h-auto p-0 font-semibold hover:bg-transparent"
                               onClick={() => handleTableSort("entityType")}
                             >
-                              Module Name
+                              {t("Module Name")}
                               {getTableSortIcon("entityType")}
                             </Button>
                           </TableHead>
@@ -561,7 +563,7 @@ export default function AuditLogsPage() {
                               className="h-auto p-0 font-semibold hover:bg-transparent"
                               onClick={() => handleTableSort("referenceNumber")}
                             >
-                              Ref id
+                              {t("Ref id")}
                               {getTableSortIcon("referenceNumber")}
                             </Button>
                           </TableHead>
@@ -574,7 +576,7 @@ export default function AuditLogsPage() {
                               className="h-auto p-0 font-semibold hover:bg-transparent"
                               onClick={() => handleTableSort("createdAt")}
                             >
-                              Changed date (UTC)
+                              {t("Changed date (UTC)")}
                               {getTableSortIcon("createdAt")}
                             </Button>
                           </TableHead>
@@ -587,7 +589,7 @@ export default function AuditLogsPage() {
                               className="h-auto p-0 font-semibold hover:bg-transparent"
                               onClick={() => handleTableSort("attributeCount")}
                             >
-                              Nr. of changes
+                              {t("Nr. of changes")}
                               {getTableSortIcon("attributeCount")}
                             </Button>
                           </TableHead>
@@ -600,7 +602,7 @@ export default function AuditLogsPage() {
                               className="h-auto p-0 font-semibold hover:bg-transparent"
                               onClick={() => handleTableSort("userName")}
                             >
-                              Changed by
+                              {t("Changed by")}
                               {getTableSortIcon("userName")}
                             </Button>
                           </TableHead>
@@ -613,7 +615,7 @@ export default function AuditLogsPage() {
                               className="h-auto p-0 font-semibold hover:bg-transparent"
                               onClick={() => handleTableSort("type")}
                             >
-                              Type
+                              {t("Type")}
                               {getTableSortIcon("type")}
                             </Button>
                           </TableHead>
@@ -632,7 +634,7 @@ export default function AuditLogsPage() {
                                   setTableColumnVisibility((prev) => ({ ...prev, entityType: checked }))
                                 }
                               >
-                                Module Name
+                                {t("Module Name")}
                               </DropdownMenuCheckboxItem>
                               <DropdownMenuCheckboxItem
                                 checked={tableColumnVisibility.referenceNumber}
@@ -640,7 +642,7 @@ export default function AuditLogsPage() {
                                   setTableColumnVisibility((prev) => ({ ...prev, referenceNumber: checked }))
                                 }
                               >
-                                Ref id
+                                {t("Ref id")}
                               </DropdownMenuCheckboxItem>
                               <DropdownMenuCheckboxItem
                                 checked={tableColumnVisibility.createdAt}
@@ -648,7 +650,7 @@ export default function AuditLogsPage() {
                                   setTableColumnVisibility((prev) => ({ ...prev, createdAt: checked }))
                                 }
                               >
-                                Changed date (UTC)
+                                {t("Changed date (UTC)")}
                               </DropdownMenuCheckboxItem>
                               <DropdownMenuCheckboxItem
                                 checked={tableColumnVisibility.attributeCount}
@@ -656,7 +658,7 @@ export default function AuditLogsPage() {
                                   setTableColumnVisibility((prev) => ({ ...prev, attributeCount: checked }))
                                 }
                               >
-                                Nr. of changes
+                                {t("Nr. of changes")}
                               </DropdownMenuCheckboxItem>
                               <DropdownMenuCheckboxItem
                                 checked={tableColumnVisibility.userName}
@@ -664,7 +666,7 @@ export default function AuditLogsPage() {
                                   setTableColumnVisibility((prev) => ({ ...prev, userName: checked }))
                                 }
                               >
-                                Changed by
+                                {t("Changed by")}
                               </DropdownMenuCheckboxItem>
                               <DropdownMenuCheckboxItem
                                 checked={tableColumnVisibility.type}
@@ -672,7 +674,7 @@ export default function AuditLogsPage() {
                                   setTableColumnVisibility((prev) => ({ ...prev, type: checked }))
                                 }
                               >
-                                Type
+                                {t("Type")}
                               </DropdownMenuCheckboxItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -738,8 +740,8 @@ export default function AuditLogsPage() {
                   </div>
 
                   <div className="text-sm text-muted-foreground">
-                    <span className="hidden sm:inline">Currently showing </span>
-                    {tableOffset + 1} to {Math.min(tableOffset + TABLE_PAGE_SIZE, auditLogs.length)} of {auditLogs.length}
+                    <span className="hidden sm:inline">{t("Currently showing")} </span>
+                    {tableOffset + 1} {t("to")} {Math.min(tableOffset + TABLE_PAGE_SIZE, auditLogs.length)} {t("of")} {auditLogs.length}
                   </div>
 
                   <div className="flex items-center gap-1">
@@ -777,11 +779,11 @@ export default function AuditLogsPage() {
                     <div className="p-4 border-b bg-gray-50">
                       <h3 className="font-semibold text-gray-900">{selectedLog.entityType}</h3>
                       <p className="text-sm text-muted-foreground">
-                        Reference # {selectedLog.referenceNumber}
+                        {t("Reference")} # {selectedLog.referenceNumber}
                       </p>
                       <p className="text-sm text-muted-foreground mt-1">
-                        {selectedLog.attributeCount} attribute{selectedLog.attributeCount !== 1 ? "s" : ""} changed by{" "}
-                        <span className="font-medium">{selectedLog.userName || "System"}</span> on{" "}
+                        {selectedLog.attributeCount} {selectedLog.attributeCount !== 1 ? t("attributes") : t("attribute")} {t("changed by")}{" "}
+                        <span className="font-medium">{selectedLog.userName || t("System")}</span> {t("on")}{" "}
                         {formatDetailDate(selectedLog.createdAt)}
                       </p>
                     </div>
@@ -790,7 +792,7 @@ export default function AuditLogsPage() {
                     <div className="flex-1 overflow-auto">
                       {loadingDetail ? (
                         <div className="flex items-center justify-center h-64">
-                          <p className="text-muted-foreground">Loading...</p>
+                          <p className="text-muted-foreground">{t("Loading...")}</p>
                         </div>
                       ) : (
                         <Table>
@@ -804,7 +806,7 @@ export default function AuditLogsPage() {
                                     className="h-auto p-0 font-semibold hover:bg-transparent"
                                     onClick={() => handleSort("attributeName")}
                                   >
-                                    Attribute Value
+                                    {t("Attribute Value")}
                                     {getSortIcon("attributeName")}
                                   </Button>
                                 </TableHead>
@@ -817,7 +819,7 @@ export default function AuditLogsPage() {
                                     className="h-auto p-0 font-semibold hover:bg-transparent"
                                     onClick={() => handleSort("moduleName")}
                                   >
-                                    Module Name
+                                    {t("Module Name")}
                                     {getSortIcon("moduleName")}
                                   </Button>
                                 </TableHead>
@@ -830,7 +832,7 @@ export default function AuditLogsPage() {
                                     className="h-auto p-0 font-semibold hover:bg-transparent"
                                     onClick={() => handleSort("oldValue")}
                                   >
-                                    Old value
+                                    {t("Old value")}
                                     {getSortIcon("oldValue")}
                                   </Button>
                                 </TableHead>
@@ -843,7 +845,7 @@ export default function AuditLogsPage() {
                                     className="h-auto p-0 font-semibold hover:bg-transparent"
                                     onClick={() => handleSort("newValue")}
                                   >
-                                    New value
+                                    {t("New value")}
                                     {getSortIcon("newValue")}
                                   </Button>
                                 </TableHead>
@@ -863,7 +865,7 @@ export default function AuditLogsPage() {
                                         setColumnVisibility((prev) => ({ ...prev, attributeName: checked }))
                                       }
                                     >
-                                      Attribute Value
+                                      {t("Attribute Value")}
                                     </DropdownMenuCheckboxItem>
                                     <DropdownMenuCheckboxItem
                                       checked={columnVisibility.moduleName}
@@ -871,7 +873,7 @@ export default function AuditLogsPage() {
                                         setColumnVisibility((prev) => ({ ...prev, moduleName: checked }))
                                       }
                                     >
-                                      Module Name
+                                      {t("Module Name")}
                                     </DropdownMenuCheckboxItem>
                                     <DropdownMenuCheckboxItem
                                       checked={columnVisibility.oldValue}
@@ -879,7 +881,7 @@ export default function AuditLogsPage() {
                                         setColumnVisibility((prev) => ({ ...prev, oldValue: checked }))
                                       }
                                     >
-                                      Old value
+                                      {t("Old value")}
                                     </DropdownMenuCheckboxItem>
                                     <DropdownMenuCheckboxItem
                                       checked={columnVisibility.newValue}
@@ -887,7 +889,7 @@ export default function AuditLogsPage() {
                                         setColumnVisibility((prev) => ({ ...prev, newValue: checked }))
                                       }
                                     >
-                                      New value
+                                      {t("New value")}
                                     </DropdownMenuCheckboxItem>
                                   </DropdownMenuContent>
                                 </DropdownMenu>
@@ -952,12 +954,12 @@ export default function AuditLogsPage() {
                         </div>
 
                         <div className="text-sm text-muted-foreground">
-                          {selectedLog.pagination.offset + 1} to{" "}
+                          {selectedLog.pagination.offset + 1} {t("to")}{" "}
                           {Math.min(
                             selectedLog.pagination.offset + selectedLog.changes.length,
                             selectedLog.pagination.total
                           )}{" "}
-                          of {selectedLog.pagination.total}
+                          {t("of")} {selectedLog.pagination.total}
                         </div>
 
                         <div className="flex items-center gap-1">
@@ -985,7 +987,7 @@ export default function AuditLogsPage() {
                   </>
                 ) : (
                   <div className="flex-1 flex items-center justify-center text-muted-foreground">
-                    <p>Select an audit log entry to view details</p>
+                    <p>{t("Select an audit log entry to view details")}</p>
                   </div>
                 )}
               </div>
@@ -999,7 +1001,7 @@ export default function AuditLogsPage() {
                 <div className="p-3 border-b">
                   <div className="flex items-center gap-2">
                     <Input
-                      placeholder="Search"
+                      placeholder={t("Search")}
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && handleSearch()}
@@ -1010,7 +1012,7 @@ export default function AuditLogsPage() {
                       size="icon"
                       className="h-9 w-9 shrink-0"
                       onClick={handleRefresh}
-                      title="Refresh/Clear"
+                      title={t("Refresh/Clear")}
                     >
                       <RefreshCw className="h-4 w-4" />
                     </Button>
@@ -1046,7 +1048,7 @@ export default function AuditLogsPage() {
                               {log.entityType}
                             </h5>
                             <p className="text-xs text-muted-foreground mt-0.5">
-                              {log.attributeCount} attribute value{log.attributeCount !== 1 ? "s have" : " has"} changed.
+                              {log.attributeCount} {log.attributeCount !== 1 ? t("attribute values have") : t("attribute value has")} {t("changed")}.
                             </p>
                             <p className="text-xs text-muted-foreground mt-0.5">
                               {formatDate(log.createdAt)}
@@ -1068,7 +1070,7 @@ export default function AuditLogsPage() {
                         disabled={loadingMore}
                       >
                         <RefreshCw className={cn("h-4 w-4 mr-2", loadingMore && "animate-spin")} />
-                        {loadingMore ? "Loading..." : "Load more..."}
+                        {loadingMore ? t("Loading...") : t("Load more...")}
                       </Button>
                     </div>
                   )}
@@ -1083,11 +1085,11 @@ export default function AuditLogsPage() {
                     <div className="p-4 border-b bg-gray-50">
                       <h3 className="font-semibold text-gray-900">{selectedLog.entityType}</h3>
                       <p className="text-sm text-muted-foreground">
-                        Reference # {selectedLog.referenceNumber}
+                        {t("Reference")} # {selectedLog.referenceNumber}
                       </p>
                       <p className="text-sm text-muted-foreground mt-1">
-                        {selectedLog.attributeCount} attribute{selectedLog.attributeCount !== 1 ? "s" : ""} changed by{" "}
-                        <span className="font-medium">{selectedLog.userName || "System"}</span> on{" "}
+                        {selectedLog.attributeCount} {selectedLog.attributeCount !== 1 ? t("attributes") : t("attribute")} {t("changed by")}{" "}
+                        <span className="font-medium">{selectedLog.userName || t("System")}</span> {t("on")}{" "}
                         {formatDetailDate(selectedLog.createdAt)}
                       </p>
                     </div>
@@ -1096,7 +1098,7 @@ export default function AuditLogsPage() {
                     <div className="flex-1 overflow-auto">
                       {loadingDetail ? (
                         <div className="flex items-center justify-center h-64">
-                          <p className="text-muted-foreground">Loading...</p>
+                          <p className="text-muted-foreground">{t("Loading...")}</p>
                         </div>
                       ) : (
                         <Table>
@@ -1110,7 +1112,7 @@ export default function AuditLogsPage() {
                                     className="h-auto p-0 font-semibold hover:bg-transparent"
                                     onClick={() => handleSort("attributeName")}
                                   >
-                                    Attribute Value
+                                    {t("Attribute Value")}
                                     {getSortIcon("attributeName")}
                                   </Button>
                                 </TableHead>
@@ -1123,7 +1125,7 @@ export default function AuditLogsPage() {
                                     className="h-auto p-0 font-semibold hover:bg-transparent"
                                     onClick={() => handleSort("moduleName")}
                                   >
-                                    Module Name
+                                    {t("Module Name")}
                                     {getSortIcon("moduleName")}
                                   </Button>
                                 </TableHead>
@@ -1136,7 +1138,7 @@ export default function AuditLogsPage() {
                                     className="h-auto p-0 font-semibold hover:bg-transparent"
                                     onClick={() => handleSort("oldValue")}
                                   >
-                                    Old value
+                                    {t("Old value")}
                                     {getSortIcon("oldValue")}
                                   </Button>
                                 </TableHead>
@@ -1149,7 +1151,7 @@ export default function AuditLogsPage() {
                                     className="h-auto p-0 font-semibold hover:bg-transparent"
                                     onClick={() => handleSort("newValue")}
                                   >
-                                    New value
+                                    {t("New value")}
                                     {getSortIcon("newValue")}
                                   </Button>
                                 </TableHead>
@@ -1169,7 +1171,7 @@ export default function AuditLogsPage() {
                                         setColumnVisibility((prev) => ({ ...prev, attributeName: checked }))
                                       }
                                     >
-                                      Attribute Value
+                                      {t("Attribute Value")}
                                     </DropdownMenuCheckboxItem>
                                     <DropdownMenuCheckboxItem
                                       checked={columnVisibility.moduleName}
@@ -1177,7 +1179,7 @@ export default function AuditLogsPage() {
                                         setColumnVisibility((prev) => ({ ...prev, moduleName: checked }))
                                       }
                                     >
-                                      Module Name
+                                      {t("Module Name")}
                                     </DropdownMenuCheckboxItem>
                                     <DropdownMenuCheckboxItem
                                       checked={columnVisibility.oldValue}
@@ -1185,7 +1187,7 @@ export default function AuditLogsPage() {
                                         setColumnVisibility((prev) => ({ ...prev, oldValue: checked }))
                                       }
                                     >
-                                      Old value
+                                      {t("Old value")}
                                     </DropdownMenuCheckboxItem>
                                     <DropdownMenuCheckboxItem
                                       checked={columnVisibility.newValue}
@@ -1193,7 +1195,7 @@ export default function AuditLogsPage() {
                                         setColumnVisibility((prev) => ({ ...prev, newValue: checked }))
                                       }
                                     >
-                                      New value
+                                      {t("New value")}
                                     </DropdownMenuCheckboxItem>
                                   </DropdownMenuContent>
                                 </DropdownMenu>
@@ -1258,13 +1260,13 @@ export default function AuditLogsPage() {
                         </div>
 
                         <div className="text-sm text-muted-foreground">
-                          <span className="hidden sm:inline">Currently showing </span>
-                          {selectedLog.pagination.offset + 1} to{" "}
+                          <span className="hidden sm:inline">{t("Currently showing")} </span>
+                          {selectedLog.pagination.offset + 1} {t("to")}{" "}
                           {Math.min(
                             selectedLog.pagination.offset + selectedLog.changes.length,
                             selectedLog.pagination.total
                           )}{" "}
-                          of {selectedLog.pagination.total}
+                          {t("of")} {selectedLog.pagination.total}
                         </div>
 
                         <div className="flex items-center gap-1">
@@ -1292,7 +1294,7 @@ export default function AuditLogsPage() {
                   </>
                 ) : (
                   <div className="flex-1 flex items-center justify-center text-muted-foreground">
-                    <p>Select an audit log entry to view details</p>
+                    <p>{t("Select an audit log entry to view details")}</p>
                   </div>
                 )}
               </div>
@@ -1308,27 +1310,27 @@ export default function AuditLogsPage() {
       >
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>View member</DialogTitle>
+            <DialogTitle>{t("View member")}</DialogTitle>
           </DialogHeader>
           {viewMemberDialog.change && (
             <div className="space-y-4">
               <h4 className="font-semibold">{viewMemberDialog.change.attributeName}</h4>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm text-muted-foreground">Old value:</p>
+                  <p className="text-sm text-muted-foreground">{t("Old value")}:</p>
                   <p className="mt-1 p-2 bg-gray-50 rounded min-h-[40px]">
-                    {viewMemberDialog.change.oldValue || <span className="text-muted-foreground italic">empty</span>}
+                    {viewMemberDialog.change.oldValue || <span className="text-muted-foreground italic">{t("empty")}</span>}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">New value:</p>
+                  <p className="text-sm text-muted-foreground">{t("New value")}:</p>
                   <p className="mt-1 p-2 bg-gray-50 rounded min-h-[40px]">
-                    {viewMemberDialog.change.newValue || <span className="text-muted-foreground italic">empty</span>}
+                    {viewMemberDialog.change.newValue || <span className="text-muted-foreground italic">{t("empty")}</span>}
                   </p>
                 </div>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Diff:</p>
+                <p className="text-sm text-muted-foreground">{t("Diff")}:</p>
                 <div className="mt-1 p-2 bg-gray-50 rounded min-h-[40px]">
                   {viewMemberDialog.change.oldValue !== viewMemberDialog.change.newValue ? (
                     <div className="space-y-1 text-sm">
@@ -1340,13 +1342,13 @@ export default function AuditLogsPage() {
                       )}
                     </div>
                   ) : (
-                    <span className="text-muted-foreground italic">No change</span>
+                    <span className="text-muted-foreground italic">{t("No change")}</span>
                   )}
                 </div>
               </div>
               <div className="flex justify-end">
                 <Button onClick={() => setViewMemberDialog({ open: false, change: null })}>
-                  Close
+                  {t("Close")}
                 </Button>
               </div>
             </div>

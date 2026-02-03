@@ -9,6 +9,7 @@ import {
   FolderTree,
   FileText,
 } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const masterDataCategories = [
   {
@@ -63,12 +64,13 @@ const masterDataCategories = [
 
 export default function GRCAdminMasterDataPage() {
   const router = useRouter();
+  const { t } = useLanguage();
 
   return (
     <div className="space-y-6">
       {/* Page Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">Master Data</h1>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Master Data")}</h1>
       </div>
 
       {/* Category Cards */}
@@ -85,10 +87,10 @@ export default function GRCAdminMasterDataPage() {
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-slate-800">
-                  {category.name}
+                  {t(category.name)}
                 </h3>
                 <p className="text-sm text-slate-500 mt-1">
-                  {category.description}
+                  {t(category.description)}
                 </p>
               </div>
             </div>

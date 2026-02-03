@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,6 +41,7 @@ interface ControlDomain {
 
 export default function DomainMasterDataPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [domains, setDomains] = useState<ControlDomain[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -275,7 +277,7 @@ export default function DomainMasterDataPage() {
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-2xl font-bold text-slate-800">Domain</h1>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Domain")}</h1>
       </div>
 
       {/* Search and Actions - same row */}
@@ -283,7 +285,7 @@ export default function DomainMasterDataPage() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input
-            placeholder="Search domains..."
+            placeholder={t("Search domains...")}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10 w-[300px] bg-white border-slate-200"
@@ -291,50 +293,50 @@ export default function DomainMasterDataPage() {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={handleDeleteAll}>
-            <Trash2 className="h-4 w-4 mr-2" />
-            Delete All
+            <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+            {t("Delete All")}
           </Button>
           <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
-            <Upload className="h-4 w-4 mr-2" />
-            Import
+            <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+            {t("Import")}
           </Button>
           <Button variant="outline" size="sm" onClick={handleExport}>
-            <Download className="h-4 w-4 mr-2" />
-            Export
+            <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+            {t("Export")}
           </Button>
           <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
             <DialogTrigger asChild>
               <Button size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                New Domain
+                <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                {t("New Domain")}
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
               <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
-                <DialogTitle className="text-lg font-semibold text-slate-800">Create New Domain</DialogTitle>
+                <DialogTitle className="text-lg font-semibold text-slate-800">{t("Create New Domain")}</DialogTitle>
               </div>
               <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Domain Code</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Domain Code")}</Label>
                   <Input
                     value={formData.code}
                     onChange={(e) =>
                       setFormData({ ...formData, code: e.target.value })
                     }
-                    placeholder="e.g., GOV"
+                    placeholder={t("e.g., GOV")}
                     className="mt-1.5 w-full bg-white"
                   />
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-slate-700">
-                    Domain Name <span className="text-red-500">*</span>
+                    {t("Domain Name")} <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     value={formData.name}
                     onChange={(e) =>
                       setFormData({ ...formData, name: e.target.value })
                     }
-                    placeholder="e.g., Governance"
+                    placeholder={t("e.g., Governance")}
                     className="mt-1.5 w-full bg-white"
                   />
                 </div>
@@ -348,10 +350,10 @@ export default function DomainMasterDataPage() {
                     resetForm();
                   }}
                 >
-                  Cancel
+                  {t("Cancel")}
                 </Button>
                 <Button size="sm" onClick={handleCreate} disabled={!formData.name}>
-                  Create
+                  {t("Create")}
                 </Button>
               </div>
             </DialogContent>
@@ -365,16 +367,16 @@ export default function DomainMasterDataPage() {
         <Table>
           <TableHeader>
             <TableRow className="border-b border-slate-100 bg-slate-50/50">
-              <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4">Domain Code</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">Domain Name</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[100px]">Action</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4">{t("Domain Code")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Domain Name")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[100px]">{t("Action")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {paginatedDomains.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={3} className="text-center py-12">
-                  <p className="text-slate-500">No domains found</p>
+                  <p className="text-slate-500">{t("No domains found")}</p>
                 </TableCell>
               </TableRow>
             ) : (
@@ -411,8 +413,8 @@ export default function DomainMasterDataPage() {
         {/* Pagination */}
         <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
           <p className="text-sm text-slate-500">
-            Showing {filteredDomains.length === 0 ? 0 : startIndex + 1} to{" "}
-            {Math.min(startIndex + itemsPerPage, filteredDomains.length)} of{" "}
+            {t("Showing")} {filteredDomains.length === 0 ? 0 : startIndex + 1} {t("to")}{" "}
+            {Math.min(startIndex + itemsPerPage, filteredDomains.length)} {t("of")}{" "}
             {filteredDomains.length}
           </p>
           <div className="flex items-center gap-1">
@@ -435,7 +437,7 @@ export default function DomainMasterDataPage() {
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <span className="text-sm text-slate-600 px-2">
-              Page {currentPage} of {totalPages || 1}
+              {t("Page")} {currentPage} {t("of")} {totalPages || 1}
             </span>
             <Button
               variant="ghost"
@@ -463,11 +465,11 @@ export default function DomainMasterDataPage() {
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
-            <DialogTitle className="text-lg font-semibold text-slate-800">Edit Domain</DialogTitle>
+            <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Domain")}</DialogTitle>
           </div>
           <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
             <div>
-              <Label className="text-sm font-medium text-slate-700">Domain Code</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Domain Code")}</Label>
               <Input
                 value={formData.code}
                 onChange={(e) =>
@@ -478,7 +480,7 @@ export default function DomainMasterDataPage() {
             </div>
             <div>
               <Label className="text-sm font-medium text-slate-700">
-                Domain Name <span className="text-red-500">*</span>
+                {t("Domain Name")} <span className="text-red-500">*</span>
               </Label>
               <Input
                 value={formData.name}
@@ -499,10 +501,10 @@ export default function DomainMasterDataPage() {
                 resetForm();
               }}
             >
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button size="sm" onClick={handleEdit} disabled={!formData.name}>
-              Save
+              {t("Save")}
             </Button>
           </div>
         </DialogContent>
@@ -512,19 +514,18 @@ export default function DomainMasterDataPage() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent className="p-0 gap-0">
           <AlertDialogHeader className="px-6 py-5">
-            <AlertDialogTitle className="text-lg font-semibold text-slate-800">Delete Domain</AlertDialogTitle>
+            <AlertDialogTitle className="text-lg font-semibold text-slate-800">{t("Delete Domain")}</AlertDialogTitle>
             <AlertDialogDescription className="text-sm text-slate-500 mt-1">
-              Are you sure you want to delete &quot;{selectedDomain?.name}&quot;? This
-              action cannot be undone.
+              {t("Are you sure you want to delete")} &quot;{selectedDomain?.name}&quot;? {t("This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="px-6 py-4 bg-white rounded-b-lg">
-            <AlertDialogCancel className="h-9">Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="h-9">{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-red-600 hover:bg-red-700 h-9"
             >
-              Delete
+              {t("Delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -534,18 +535,18 @@ export default function DomainMasterDataPage() {
       <AlertDialog open={deleteAllDialogOpen} onOpenChange={setDeleteAllDialogOpen}>
         <AlertDialogContent className="p-0 gap-0">
           <AlertDialogHeader className="px-6 py-5">
-            <AlertDialogTitle className="text-lg font-semibold text-slate-800">Delete All Domains</AlertDialogTitle>
+            <AlertDialogTitle className="text-lg font-semibold text-slate-800">{t("Delete All Domains")}</AlertDialogTitle>
             <AlertDialogDescription className="text-sm text-slate-500 mt-1">
-              Are you sure you want to delete all domains? This action cannot be undone.
+              {t("Are you sure you want to delete all domains? This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="px-6 py-4 bg-white rounded-b-lg">
-            <AlertDialogCancel className="h-9">Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="h-9">{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDeleteAll}
               className="bg-red-600 hover:bg-red-700 h-9"
             >
-              Delete All
+              {t("Delete All")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -558,17 +559,17 @@ export default function DomainMasterDataPage() {
       }}>
         <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
-            <DialogTitle className="text-lg font-semibold text-slate-800">Import Domain</DialogTitle>
+            <DialogTitle className="text-lg font-semibold text-slate-800">{t("Import Domain")}</DialogTitle>
           </div>
           <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
             <div>
-              <Label className="text-sm font-medium text-slate-700">File</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("File")}</Label>
               <div className="flex gap-2 mt-1.5">
                 <Input
                   type="text"
                   value={selectedFile?.name || ""}
                   readOnly
-                  placeholder="Choose a file..."
+                  placeholder={t("Choose a file...")}
                   className="flex-1 bg-white min-w-0"
                 />
                 <input
@@ -584,7 +585,7 @@ export default function DomainMasterDataPage() {
                   onClick={() => fileInputRef.current?.click()}
                   className="flex-shrink-0"
                 >
-                  Browse...
+                  {t("Browse...")}
                 </Button>
               </div>
             </div>
@@ -595,8 +596,8 @@ export default function DomainMasterDataPage() {
               size="sm"
               onClick={handleDownloadTemplate}
             >
-              <Download className="h-4 w-4 mr-2" />
-              Download Template
+              <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+              {t("Download Template")}
             </Button>
             <div className="flex gap-2">
               <Button
@@ -607,7 +608,7 @@ export default function DomainMasterDataPage() {
                   setSelectedFile(null);
                 }}
               >
-                Cancel
+                {t("Cancel")}
               </Button>
               <Button
                 size="sm"
@@ -616,16 +617,16 @@ export default function DomainMasterDataPage() {
               >
                 {importing ? (
                   <>
-                    <div className="relative h-4 w-4 mr-2">
+                    <div className="relative h-4 w-4 ltr:mr-2 rtl:ml-2">
                       <div className="absolute inset-0 rounded-full border-2 border-white/30"></div>
                       <div className="absolute inset-0 rounded-full border-2 border-white border-t-transparent animate-spin"></div>
                     </div>
-                    Importing...
+                    {t("Importing...")}
                   </>
                 ) : (
                   <>
-                    <Upload className="h-4 w-4 mr-2" />
-                    Import
+                    <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                    {t("Import")}
                   </>
                 )}
               </Button>

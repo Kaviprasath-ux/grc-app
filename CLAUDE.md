@@ -133,6 +133,77 @@ const form = useForm<FormValues>({
 ### File Uploads
 Files are stored in `uploads/` directory. API routes handle multipart form data with `formData.getAll('files')`.
 
+## Internationalization (i18n) - REQUIRED FOR ALL PAGES
+
+This app supports **3 languages**: English (default), Arabic (RTL), and Latvian (LTR).
+
+### Architecture
+- **Translation source**: `scripts/init-translations.ts` - Single source of truth for all translations
+- **Language context**: `src/contexts/LanguageContext.tsx` - Provides `t()` function and RTL support
+- **Phrase-based keys**: English phrases ARE the keys (e.g., `t("Save")`, `t("Add New")`)
+
+### MANDATORY: Adding i18n to Pages
+
+**IMPORTANT: Whenever you create or modify ANY page component, you MUST add i18n support.**
+
+1. **Add the import:**
+```typescript
+import { useLanguage } from "@/contexts/LanguageContext";
+```
+
+2. **Add the hook inside the component:**
+```typescript
+const { t } = useLanguage();
+```
+
+3. **Wrap ALL hardcoded English strings with `t()`:**
+```typescript
+// Before
+<Button>Save Changes</Button>
+<h1>User Management</h1>
+<TableHead>Name</TableHead>
+
+// After
+<Button>{t("Save Changes")}</Button>
+<h1>{t("User Management")}</h1>
+<TableHead>{t("Name")}</TableHead>
+```
+
+4. **DO NOT translate:**
+   - Variable names, API endpoints, console.log messages
+   - Enum values, field names, technical identifiers
+   - URLs, file paths, database column names
+
+### RTL Support for Arabic
+Use Tailwind's `ltr:` and `rtl:` variants for directional styling:
+```typescript
+<div className="ltr:ml-4 rtl:mr-4">  // margin-left in LTR, margin-right in RTL
+<Icon className="ltr:rotate-0 rtl:rotate-180" />  // flip icons for RTL
+```
+
+### Adding New Translations
+If you use a new phrase that doesn't exist in translations:
+1. Add it to `scripts/init-translations.ts` in the `phrases` array
+2. Include Arabic and Latvian translations (use translation service or placeholder)
+3. Run `npm run build` to verify no missing translations
+
+### Example Page with i18n
+```typescript
+"use client";
+import { useLanguage } from "@/contexts/LanguageContext";
+
+export default function MyPage() {
+  const { t } = useLanguage();
+
+  return (
+    <div>
+      <h1>{t("Page Title")}</h1>
+      <Button>{t("Save")}</Button>
+    </div>
+  );
+}
+```
+
 ## Test Credentials
 
 Default seeded users (from `prisma/seed.ts`):

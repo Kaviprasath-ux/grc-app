@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Check, Upload } from "lucide-react";
+import { ChevronLeft, Check, Upload, FileText, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,7 +15,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-
+import { useSession } from "next-auth/react";
+import { useUserRoles } from "@/hooks/usePermissions";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Department {
   id: string;
@@ -33,22 +35,33 @@ const natureOfImplementations = ["Manual", "Automated", "Manual + Automated"];
 const operationalComplexities = ["Low", "Medium", "High"];
 const locations = ["Head Office", "Branch Office", "Remote", "Data Center"];
 
-const steps = [
-  { step: 1, label: "Info", description: "Basic process information" },
-  { step: 2, label: "Process Flow", description: "Process characteristics" },
-  { step: 3, label: "Process RACI", description: "Roles and responsibilities" },
+const getSteps = (t: (key: string) => string) => [
+  { step: 1, label: t("Info"), description: t("Basic process information") },
+  { step: 2, label: t("Process Flow"), description: t("Process characteristics") },
+  { step: 3, label: t("Process RACI"), description: t("Roles and responsibilities") },
 ];
 
 export default function AddProcessPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { data: session } = useSession();
+  const userRoles = useUserRoles();
+  const { t } = useLanguage();
+
+  // Check if user is DepartmentContributor - they can only add processes in their department
+  const isDepartmentContributor = userRoles.some((role) => role === "DepartmentContributor");
+  const userDepartmentId = session?.user?.departmentId;
+
   const [currentStep, setCurrentStep] = useState(1);
   const [saving, setSaving] = useState(false);
-  const [extracting, setExtracting] = useState(false);
-  const [extractedControls, setExtractedControls] = useState<any[]>([]);
 
   const [departments, setDepartments] = useState<Department[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+
+  // File upload states
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     processCode: "",
@@ -89,35 +102,75 @@ export default function AddProcessPage() {
     fetchData();
   }, []);
 
-  const handleExtractControls = async (file: File) => {
-    setExtracting(true);
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const res = await fetch("/api/ai/control-extraction", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        setExtractedControls(data.controls || []);
-        toast({ title: "Success", description: `Extracted ${data.controls?.length || 0} controls from document` });
-      } else {
-        const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to extract controls", variant: "destructive" });
-      }
-    } catch (error) {
-      console.error("Error extracting controls:", error);
-      toast({ title: "Error", description: "Failed to extract controls", variant: "destructive" });
+  // Auto-select department for DepartmentContributor
+  useEffect(() => {
+    if (isDepartmentContributor && userDepartmentId && !formData.departmentId) {
+      setFormData((prev) => ({ ...prev, departmentId: userDepartmentId }));
     }
-    setExtracting(false);
+  }, [isDepartmentContributor, userDepartmentId, formData.departmentId]);
+
+  // File upload handlers
+  const formatFileSize = (bytes: number): string => {
+    if (!bytes) return "0 B";
+    const k = 1024;
+    const sizes = ["B", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      setPendingFiles((prev) => [...prev, files[0]]);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setPendingFiles((prev) => [...prev, file]);
+    }
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const removePendingFile = (index: number) => {
+    setPendingFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const uploadFiles = async (processId: string) => {
+    for (const file of pendingFiles) {
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        await fetch(`/api/processes/${processId}/attachments`, {
+          method: "POST",
+          body: formData,
+        });
+      } catch (error) {
+        console.error("Error uploading file:", error);
+      }
+    }
   };
 
   const handleSave = async () => {
-    if (!formData.processCode.trim() || !formData.name.trim()) {
-      toast({ title: "Error", description: "Process ID and Name are required", variant: "destructive" });
+    if (!formData.name.trim()) {
+      toast({ title: t("Error"), description: t("Process Name is required"), variant: "destructive" });
       return;
     }
 
@@ -127,26 +180,50 @@ export default function AddProcessPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...formData,
+          name: formData.name,
+          description: formData.description || null,
+          processType: formData.processType,
           departmentId: formData.departmentId || null,
           ownerId: formData.ownerId || null,
-          controls: extractedControls,
+          status: formData.status,
+          processFrequency: formData.frequency || null,
+          natureOfImplementation: formData.natureOfImplementation || null,
+          assetDependency: formData.assetDependency,
+          externalDependency: formData.externalDependency,
+          location: formData.location || null,
+          kpiMeasurementRequired: formData.kpiMeasurementRequired,
+          piiCapture: formData.piiCapture,
+          operationalComplexity: formData.operationalComplexity || null,
+          lastAuditDate: formData.lastAuditDate || null,
+          responsibleId: formData.responsible || null,
+          accountableId: formData.accountable || null,
+          consultedId: formData.consulted || null,
+          informedId: formData.informed || null,
         }),
       });
 
       if (res.ok) {
-        toast({ title: "Success", description: "Process created successfully" });
+        const process = await res.json();
+
+        // Upload pending files if any
+        if (pendingFiles.length > 0) {
+          await uploadFiles(process.id);
+        }
+
+        toast({ title: t("Success"), description: t("Process created successfully") });
         router.push("/organization/process");
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to create process", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to create process"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error creating process:", error);
-      toast({ title: "Error", description: "Failed to create process", variant: "destructive" });
+      toast({ title: t("Error"), description: t("Failed to create process"), variant: "destructive" });
     }
     setSaving(false);
   };
+
+  const steps = getSteps(t);
 
   return (
     <div className="space-y-6">
@@ -157,12 +234,12 @@ export default function AddProcessPage() {
           size="sm"
           onClick={() => router.back()}
         >
-          <ChevronLeft className="h-4 w-4 mr-1" />
-          Back
+          <ChevronLeft className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+          {t("Back")}
         </Button>
         <div>
-          <h1 className="text-2xl font-bold">New Process</h1>
-          <p className="text-muted-foreground text-sm">Complete the form to create a new process</p>
+          <h1 className="text-2xl font-bold">{t("New Process")}</h1>
+          <p className="text-muted-foreground text-sm">{t("Complete the form to create a new process")}</p>
         </div>
       </div>
 
@@ -173,24 +250,25 @@ export default function AddProcessPage() {
             <div key={item.step} className="flex items-center flex-1">
               <div className="flex flex-col items-center">
                 <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium border-2 ${currentStep > item.step
-                    ? "bg-green-600 border-green-600 text-white"
-                    : currentStep === item.step
-                      ? "bg-blue-600 border-blue-600 text-white"
-                      : "bg-white border-gray-300 text-gray-500"
-                    }`}
+                  className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium border-2 ${
+                    currentStep > item.step
+                      ? "bg-success border-success text-white"
+                      : currentStep === item.step
+                      ? "bg-primary-600 border-primary-600 text-white"
+                      : "bg-white border-slate-300 text-slate-500"
+                  }`}
                 >
                   {currentStep > item.step ? <Check className="h-5 w-5" /> : item.step}
                 </div>
                 <div className="mt-2 text-center">
-                  <p className={`text-sm font-medium ${currentStep >= item.step ? "text-blue-600" : "text-gray-500"}`}>
+                  <p className={`text-sm font-medium ${currentStep >= item.step ? "text-primary-600" : "text-slate-500"}`}>
                     {item.label}
                   </p>
                   <p className="text-xs text-muted-foreground hidden md:block">{item.description}</p>
                 </div>
               </div>
               {index < steps.length - 1 && (
-                <div className={`flex-1 h-1 mx-4 ${currentStep > item.step ? "bg-green-600" : "bg-gray-200"}`} />
+                <div className={`flex-1 h-1 mx-4 ${currentStep > item.step ? "bg-success" : "bg-slate-200"}`} />
               )}
             </div>
           ))}
@@ -199,47 +277,37 @@ export default function AddProcessPage() {
         {/* Step 1: Info */}
         {currentStep === 1 && (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="processCode">Process ID *</Label>
-                <Input
-                  id="processCode"
-                  value={formData.processCode}
-                  onChange={(e) => setFormData({ ...formData, processCode: e.target.value })}
-                  placeholder="e.g., PRO001"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="name">Process Name *</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Enter process name"
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="name">{t("Process Name")} *</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder={t("Enter process name")}
+              />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">{t("Description")}</Label>
               <textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Enter description"
-                className="w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
+                placeholder={t("Enter description")}
+                className="w-full min-h-[80px] px-3 py-2 text-sm border rounded-md bg-white"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Department</Label>
+                <Label>{t("Department")}</Label>
                 <Select
                   value={formData.departmentId}
                   onValueChange={(value) => setFormData({ ...formData, departmentId: value })}
+                  disabled={isDepartmentContributor}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Department" />
+                  <SelectTrigger className="bg-white">
+                    <SelectValue placeholder={t("Select Department")} />
                   </SelectTrigger>
                   <SelectContent>
                     {departments.map((dept) => (
@@ -251,13 +319,13 @@ export default function AddProcessPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Process Owner</Label>
+                <Label>{t("Process Owner")}</Label>
                 <Select
                   value={formData.ownerId}
                   onValueChange={(value) => setFormData({ ...formData, ownerId: value })}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Owner" />
+                  <SelectTrigger className="bg-white">
+                    <SelectValue placeholder={t("Select Owner")} />
                   </SelectTrigger>
                   <SelectContent>
                     {users.map((user) => (
@@ -272,36 +340,36 @@ export default function AddProcessPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Process Frequency</Label>
+                <Label>{t("Process Frequency")}</Label>
                 <Select
                   value={formData.frequency}
                   onValueChange={(value) => setFormData({ ...formData, frequency: value })}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Frequency" />
+                  <SelectTrigger className="bg-white">
+                    <SelectValue placeholder={t("Select Frequency")} />
                   </SelectTrigger>
                   <SelectContent>
                     {processFrequencies.map((freq) => (
                       <SelectItem key={freq} value={freq}>
-                        {freq}
+                        {t(freq)}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Nature of Implementation</Label>
+                <Label>{t("Nature of Implementation")}</Label>
                 <Select
                   value={formData.natureOfImplementation}
                   onValueChange={(value) => setFormData({ ...formData, natureOfImplementation: value })}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Nature" />
+                  <SelectTrigger className="bg-white">
+                    <SelectValue placeholder={t("Select Nature")} />
                   </SelectTrigger>
                   <SelectContent>
                     {natureOfImplementations.map((nature) => (
                       <SelectItem key={nature} value={nature}>
-                        {nature}
+                        {t(nature)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -310,18 +378,18 @@ export default function AddProcessPage() {
             </div>
 
             <div className="space-y-2">
-              <Label>Process Type</Label>
+              <Label>{t("Process Type")}</Label>
               <Select
                 value={formData.processType}
                 onValueChange={(value) => setFormData({ ...formData, processType: value })}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Type" />
+                <SelectTrigger className="bg-white">
+                  <SelectValue placeholder={t("Select Type")} />
                 </SelectTrigger>
                 <SelectContent>
                   {processTypes.map((type) => (
                     <SelectItem key={type} value={type}>
-                      {type}
+                      {t(type)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -335,36 +403,36 @@ export default function AddProcessPage() {
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Location</Label>
+                <Label>{t("Location")}</Label>
                 <Select
                   value={formData.location}
                   onValueChange={(value) => setFormData({ ...formData, location: value })}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Location" />
+                  <SelectTrigger className="bg-white">
+                    <SelectValue placeholder={t("Select Location")} />
                   </SelectTrigger>
                   <SelectContent>
                     {locations.map((loc) => (
                       <SelectItem key={loc} value={loc}>
-                        {loc}
+                        {t(loc)}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Operational Complexity</Label>
+                <Label>{t("Operational Complexity")}</Label>
                 <Select
                   value={formData.operationalComplexity}
                   onValueChange={(value) => setFormData({ ...formData, operationalComplexity: value })}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Complexity" />
+                  <SelectTrigger className="bg-white">
+                    <SelectValue placeholder={t("Select Complexity")} />
                   </SelectTrigger>
                   <SelectContent>
                     {operationalComplexities.map((comp) => (
                       <SelectItem key={comp} value={comp}>
-                        {comp}
+                        {t(comp)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -372,54 +440,8 @@ export default function AddProcessPage() {
               </div>
             </div>
 
-            <div className="space-y-4">
-              <Label>Process Flow Document (AI Control Extraction)</Label>
-              <div className="flex items-center gap-4 p-4 border-2 border-dashed rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
-                <div className="flex-1">
-                  <p className="text-sm font-medium">Upload a process flow document to automatically extract controls</p>
-                  <p className="text-xs text-muted-foreground">PDF, DOCX, or Image</p>
-                </div>
-                <Input
-                  id="process-file"
-                  type="file"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) handleExtractControls(file);
-                  }}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={extracting}
-                  onClick={() => document.getElementById('process-file')?.click()}
-                >
-                  {extracting ? (
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
-                  ) : (
-                    <Upload className="h-4 w-4 mr-2" />
-                  )}
-                  {extracting ? "Extracting..." : "Upload & Extract"}
-                </Button>
-              </div>
-
-              {extractedControls.length > 0 && (
-                <div className="mt-4 p-4 bg-green-50 border border-green-100 rounded-lg">
-                  <h4 className="text-sm font-semibold text-green-800 mb-2">Extracted Controls</h4>
-                  <ul className="space-y-1">
-                    {extractedControls.map((ctrl, idx) => (
-                      <li key={idx} className="text-xs text-green-700 flex items-center gap-2">
-                        <Check className="h-3 w-3" />
-                        {ctrl.control_name || ctrl.name}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-
             <div className="space-y-2">
-              <Label htmlFor="lastAuditDate">Last Audit Date</Label>
+              <Label htmlFor="lastAuditDate">{t("Last Audit Date")}</Label>
               <Input
                 id="lastAuditDate"
                 type="date"
@@ -435,7 +457,7 @@ export default function AddProcessPage() {
                   checked={formData.assetDependency}
                   onCheckedChange={(checked) => setFormData({ ...formData, assetDependency: !!checked })}
                 />
-                <Label htmlFor="assetDependency" className="text-sm font-normal">Asset Dependency</Label>
+                <Label htmlFor="assetDependency" className="text-sm font-normal">{t("Asset Dependency")}</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <Checkbox
@@ -443,7 +465,7 @@ export default function AddProcessPage() {
                   checked={formData.externalDependency}
                   onCheckedChange={(checked) => setFormData({ ...formData, externalDependency: !!checked })}
                 />
-                <Label htmlFor="externalDependency" className="text-sm font-normal">External Dependency</Label>
+                <Label htmlFor="externalDependency" className="text-sm font-normal">{t("External Dependency")}</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <Checkbox
@@ -451,7 +473,7 @@ export default function AddProcessPage() {
                   checked={formData.kpiMeasurementRequired}
                   onCheckedChange={(checked) => setFormData({ ...formData, kpiMeasurementRequired: !!checked })}
                 />
-                <Label htmlFor="kpiMeasurementRequired" className="text-sm font-normal">KPI Measurement Required</Label>
+                <Label htmlFor="kpiMeasurementRequired" className="text-sm font-normal">{t("KPI Measurement Required")}</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <Checkbox
@@ -459,8 +481,81 @@ export default function AddProcessPage() {
                   checked={formData.piiCapture}
                   onCheckedChange={(checked) => setFormData({ ...formData, piiCapture: !!checked })}
                 />
-                <Label htmlFor="piiCapture" className="text-sm font-normal">PII Capture</Label>
+                <Label htmlFor="piiCapture" className="text-sm font-normal">{t("PII Capture")}</Label>
               </div>
+            </div>
+
+            {/* File Upload Section */}
+            <div className="space-y-4 pt-6 border-t">
+              <Label className="text-base font-medium">{t("Process Documents")}</Label>
+              <p className="text-sm text-muted-foreground">
+                {t("Add files to attach to this process. Files will be uploaded when you save.")}
+              </p>
+
+              {/* File Dropper */}
+              <div
+                className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                  isDragging ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-gray-400"
+                }`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
+                <div className="space-y-2">
+                  <Upload className="h-10 w-10 mx-auto text-gray-400" />
+                  <p className="text-sm text-gray-600">
+                    {t("Drag and drop a file here, or")}{" "}
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="text-blue-600 hover:underline font-medium"
+                    >
+                      {t("browse")}
+                    </button>
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {t("Supported formats: PDF, DOCX, XLSX, CSV, PNG, JPG, PPT")}
+                  </p>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    className="hidden"
+                    onChange={handleFileChange}
+                    accept=".pdf,.docx,.doc,.xlsx,.xls,.csv,.png,.jpg,.jpeg,.ppt,.pptx"
+                  />
+                </div>
+              </div>
+
+              {/* Pending Files List */}
+              {pendingFiles.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">{t("Files to Upload")} ({pendingFiles.length})</Label>
+                  <div className="border rounded-lg divide-y">
+                    {pendingFiles.map((file, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 hover:bg-gray-50">
+                        <div className="flex items-center gap-3">
+                          <FileText className="h-5 w-5 text-blue-600" />
+                          <div>
+                            <p className="text-sm font-medium">{file.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {formatFileSize(file.size)}
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          title={t("Remove")}
+                          onClick={() => removePendingFile(index)}
+                        >
+                          <X className="h-4 w-4 text-red-600" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -469,17 +564,17 @@ export default function AddProcessPage() {
         {currentStep === 3 && (
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground mb-4">
-              Define the RACI matrix for this process - who is Responsible, Accountable, Consulted, and Informed.
+              {t("Define the RACI matrix for this process - who is Responsible, Accountable, Consulted, and Informed.")}
             </p>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Responsible</Label>
+                <Label>{t("Responsible")}</Label>
                 <Select
                   value={formData.responsible}
                   onValueChange={(value) => setFormData({ ...formData, responsible: value })}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select user" />
+                  <SelectTrigger className="bg-white">
+                    <SelectValue placeholder={t("Select user")} />
                   </SelectTrigger>
                   <SelectContent>
                     {users.map((user) => (
@@ -489,16 +584,16 @@ export default function AddProcessPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">Person who does the work</p>
+                <p className="text-xs text-muted-foreground">{t("Person who does the work")}</p>
               </div>
               <div className="space-y-2">
-                <Label>Accountable</Label>
+                <Label>{t("Accountable")}</Label>
                 <Select
                   value={formData.accountable}
                   onValueChange={(value) => setFormData({ ...formData, accountable: value })}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select user" />
+                  <SelectTrigger className="bg-white">
+                    <SelectValue placeholder={t("Select user")} />
                   </SelectTrigger>
                   <SelectContent>
                     {users.map((user) => (
@@ -508,18 +603,18 @@ export default function AddProcessPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">Person ultimately answerable</p>
+                <p className="text-xs text-muted-foreground">{t("Person ultimately answerable")}</p>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Consulted</Label>
+                <Label>{t("Consulted")}</Label>
                 <Select
                   value={formData.consulted}
                   onValueChange={(value) => setFormData({ ...formData, consulted: value })}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select user" />
+                  <SelectTrigger className="bg-white">
+                    <SelectValue placeholder={t("Select user")} />
                   </SelectTrigger>
                   <SelectContent>
                     {users.map((user) => (
@@ -529,16 +624,16 @@ export default function AddProcessPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">Person whose input is sought</p>
+                <p className="text-xs text-muted-foreground">{t("Person whose input is sought")}</p>
               </div>
               <div className="space-y-2">
-                <Label>Informed</Label>
+                <Label>{t("Informed")}</Label>
                 <Select
                   value={formData.informed}
                   onValueChange={(value) => setFormData({ ...formData, informed: value })}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select user" />
+                  <SelectTrigger className="bg-white">
+                    <SelectValue placeholder={t("Select user")} />
                   </SelectTrigger>
                   <SelectContent>
                     {users.map((user) => (
@@ -548,7 +643,7 @@ export default function AddProcessPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">Person kept up-to-date on progress</p>
+                <p className="text-xs text-muted-foreground">{t("Person kept up-to-date on progress")}</p>
               </div>
             </div>
           </div>
@@ -559,21 +654,21 @@ export default function AddProcessPage() {
           <div>
             {currentStep > 1 && (
               <Button variant="outline" onClick={() => setCurrentStep(currentStep - 1)}>
-                Previous
+                {t("Previous")}
               </Button>
             )}
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => router.push("/organization/process")}>
-              Cancel
+              {t("Cancel")}
             </Button>
             {currentStep < 3 ? (
               <Button onClick={() => setCurrentStep(currentStep + 1)}>
-                Next
+                {t("Next")}
               </Button>
             ) : (
               <Button onClick={handleSave} disabled={saving}>
-                {saving ? "Saving..." : "Save"}
+                {saving ? t("Saving...") : t("Save")}
               </Button>
             )}
           </div>

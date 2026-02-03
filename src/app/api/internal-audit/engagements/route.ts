@@ -159,8 +159,7 @@ export const POST = withAuth(
       const count = await prisma.auditEngagement.count();
       const auditId = String(count + 1).padStart(4, '0');
 
-      const engagement = await prisma.auditEngagement.create({
-        data: {
+      const engagementData = {
           auditId,
           engagementTitle,
           engagementObjective: engagementObjective || null,
@@ -177,8 +176,14 @@ export const POST = withAuth(
           plannedHours: plannedHours || 0,
           actualHours: 0,
           status: 'Planned',
-          ...(customerAccountId ? { customerAccountId } : {}),
-        },
+        };
+
+      if (customerAccountId) {
+        (engagementData as Record<string, unknown>).customerAccountId = customerAccountId;
+      }
+
+      const engagement = await prisma.auditEngagement.create({
+        data: engagementData as Parameters<typeof prisma.auditEngagement.create>[0]['data'],
         include: {
           department: {
             select: { id: true, name: true }

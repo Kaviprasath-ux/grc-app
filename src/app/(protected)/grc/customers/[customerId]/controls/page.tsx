@@ -21,6 +21,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Control {
   id: string;
@@ -70,6 +71,7 @@ export default function CustomerControlsPage() {
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const customerId = params.customerId as string;
 
   const [controls, setControls] = useState<Control[]>([]);
@@ -260,7 +262,7 @@ export default function CustomerControlsPage() {
     if (fgData.length === 0) {
       return (
         <div className="text-center py-12 text-gray-500">
-          No control data available for chart.
+          {t("No control data available for chart.")}
         </div>
       );
     }
@@ -368,10 +370,10 @@ export default function CustomerControlsPage() {
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
-            <h1 className="text-2xl font-bold text-blue-700">Controls</h1>
+            <h1 className="text-2xl font-bold text-blue-700">{t("Controls")}</h1>
           </div>
           <p className="text-sm text-blue-800 font-medium bg-blue-100 px-2 py-0.5 rounded inline-block">
-            {customer?.customerName || "Loading..."}
+            {customer?.customerName || t("Loading...")}
           </p>
         </div>
       </div>
@@ -387,7 +389,7 @@ export default function CustomerControlsPage() {
             }`}
             onClick={() => setActiveView("dashboard")}
           >
-            Dashboard
+            {t("Dashboard")}
           </button>
           <button
             className={`px-6 py-2.5 text-sm font-semibold transition-colors ${
@@ -397,7 +399,7 @@ export default function CustomerControlsPage() {
             }`}
             onClick={() => setActiveView("all")}
           >
-            All Controls
+            {t("All Controls")}
           </button>
         </div>
 
@@ -406,10 +408,10 @@ export default function CustomerControlsPage() {
           onValueChange={setSelectedFrameworkId}
         >
           <SelectTrigger className="w-[200px] border-gray-300">
-            <SelectValue placeholder="Framework" />
+            <SelectValue placeholder={t("Framework")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Frameworks</SelectItem>
+            <SelectItem value="all">{t("All Frameworks")}</SelectItem>
             {frameworks.map((fw) => (
               <SelectItem key={fw.id} value={fw.id}>
                 {fw.name}
@@ -423,7 +425,7 @@ export default function CustomerControlsPage() {
       {activeView === "dashboard" && (
         <div className="space-y-6">
           <h2 className="text-lg font-semibold text-gray-800">
-            Functional Grouping
+            {t("Functional Grouping")}
           </h2>
           <div className="flex justify-center py-8">
             {renderDonutChart()}
@@ -438,22 +440,22 @@ export default function CustomerControlsPage() {
           <div className="grid grid-cols-4 gap-4">
             {[
               {
-                label: "Total Controls",
+                label: t("Total Controls"),
                 value: stats.total,
                 icon: <UserCheck className="h-8 w-8 text-white/80" />,
               },
               {
-                label: "Non Compliant",
+                label: t("Non Compliant"),
                 value: stats.nonCompliant,
                 icon: <Server className="h-8 w-8 text-white/80" />,
               },
               {
-                label: "Compliant",
+                label: t("Compliant"),
                 value: stats.compliant,
                 icon: <CheckCircle className="h-8 w-8 text-white/80" />,
               },
               {
-                label: "Not Applicable",
+                label: t("Not Applicable"),
                 value: stats.notApplicable,
                 icon: <XCircle className="h-8 w-8 text-white/80" />,
               },
@@ -483,7 +485,7 @@ export default function CustomerControlsPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search By Control Code , Name"
+                placeholder={t("Search By Control Code , Name")}
                 className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -492,10 +494,10 @@ export default function CustomerControlsPage() {
 
             <Select value={domainFilter} onValueChange={setDomainFilter}>
               <SelectTrigger className="w-[180px] border-gray-300">
-                <SelectValue placeholder="Domain" />
+                <SelectValue placeholder={t("Domain")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Domains</SelectItem>
+                <SelectItem value="all">{t("All Domains")}</SelectItem>
                 {domains.map((d) => (
                   <SelectItem key={d.id} value={d.id}>
                     {d.name}
@@ -506,10 +508,10 @@ export default function CustomerControlsPage() {
 
             <Select value={fgFilter} onValueChange={setFgFilter}>
               <SelectTrigger className="w-[200px] border-gray-300">
-                <SelectValue placeholder="Functional Grouping" />
+                <SelectValue placeholder={t("Functional Grouping")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Groupings</SelectItem>
+                <SelectItem value="all">{t("All Groupings")}</SelectItem>
                 {FUNCTIONAL_GROUPINGS.map((fg) => (
                   <SelectItem key={fg} value={fg}>
                     {fg}
@@ -534,7 +536,7 @@ export default function CustomerControlsPage() {
                       className="flex items-center gap-1 hover:text-white/80"
                       onClick={() => handleSort("name")}
                     >
-                      Control Name
+                      {t("Control Name")}
                       <ArrowUpDown className="h-3 w-3" />
                     </button>
                   </th>
@@ -543,7 +545,7 @@ export default function CustomerControlsPage() {
                       className="flex items-center gap-1 hover:text-white/80"
                       onClick={() => handleSort("controlCode")}
                     >
-                      Control Code
+                      {t("Control Code")}
                       <ArrowUpDown className="h-3 w-3" />
                     </button>
                   </th>
@@ -552,7 +554,7 @@ export default function CustomerControlsPage() {
                       className="flex items-center gap-1 hover:text-white/80"
                       onClick={() => handleSort("functionalGrouping")}
                     >
-                      FunctionGroup...
+                      {t("FunctionGroup...")}
                       <ArrowUpDown className="h-3 w-3" />
                     </button>
                   </th>
@@ -561,19 +563,19 @@ export default function CustomerControlsPage() {
                       className="flex items-center gap-1 hover:text-white/80"
                       onClick={() => handleSort("status")}
                     >
-                      Status
+                      {t("Status")}
                       <ArrowUpDown className="h-3 w-3" />
                     </button>
                   </th>
                   <th className="text-left p-4 text-white font-semibold">
-                    Assignee
+                    {t("Assignee")}
                   </th>
                   <th className="text-left p-4 text-white font-semibold">
                     <button
                       className="flex items-center gap-1 hover:text-white/80"
                       onClick={() => handleSort("domain")}
                     >
-                      Domain Name
+                      {t("Domain Name")}
                       <ArrowUpDown className="h-3 w-3" />
                     </button>
                   </th>
@@ -594,7 +596,7 @@ export default function CustomerControlsPage() {
                       colSpan={7}
                       className="text-center py-12 text-gray-500"
                     >
-                      No controls found.
+                      {t("No controls found.")}
                     </td>
                   </tr>
                 ) : (

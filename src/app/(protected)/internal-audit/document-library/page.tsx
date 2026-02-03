@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   Send,
   Clock,
@@ -55,6 +56,7 @@ interface DocumentsResponse {
 }
 
 export default function DocumentLibraryPage() {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState("smart-search");
   const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);
@@ -107,7 +109,7 @@ export default function DocumentLibraryPage() {
 
   const handleSmartSearch = async () => {
     if (!query.trim()) {
-      toast.error("Please enter a query");
+      toast.error(t("Please enter a query"));
       return;
     }
 
@@ -121,14 +123,13 @@ export default function DocumentLibraryPage() {
 
       if (response.ok) {
         await fetchRecentSearches();
-        toast.success("Search completed");
+        toast.success(t("Search completed"));
         setQuery("");
       } else {
-        const err = (await response.json().catch(() => ({}))) as { error?: string };
-        toast.error(err?.error ?? "Search failed");
+        toast.error(t("Search failed"));
       }
     } catch (error) {
-      toast.error("Search failed");
+      toast.error(t("Search failed"));
     } finally {
       setSearching(false);
     }
@@ -161,10 +162,10 @@ export default function DocumentLibraryPage() {
           throw new Error("Upload failed");
         }
       }
-      toast.success(`File${files.length > 1 ? "s" : ""} uploaded successfully`);
+      toast.success(files.length > 1 ? t("Files uploaded successfully") : t("File uploaded successfully"));
       fetchDocuments();
     } catch (error) {
-      toast.error("Failed to upload file");
+      toast.error(t("Failed to upload file"));
     } finally {
       setUploading(null);
     }
@@ -177,13 +178,13 @@ export default function DocumentLibraryPage() {
       });
 
       if (response.ok) {
-        toast.success("Document deleted successfully");
+        toast.success(t("Document deleted successfully"));
         fetchDocuments();
       } else {
-        toast.error("Failed to delete document");
+        toast.error(t("Failed to delete document"));
       }
     } catch (error) {
-      toast.error("Failed to delete document");
+      toast.error(t("Failed to delete document"));
     }
   };
 
@@ -265,11 +266,11 @@ export default function DocumentLibraryPage() {
         {isUploading ? (
           <div className="flex items-center justify-center gap-2">
             <Loader2 className="h-5 w-5 animate-spin text-primary-500" />
-            <span className="text-gray-500">Uploading...</span>
+            <span className="text-gray-500">{t("Uploading...")}</span>
           </div>
         ) : (
           <p className="text-gray-500">
-            Click here, or drop files here to upload.
+            {t("Click here, or drop files here to upload.")}
           </p>
         )}
       </div>
@@ -347,7 +348,7 @@ export default function DocumentLibraryPage() {
       return (
         <div className="text-center py-8 text-gray-500">
           <FileText className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-          <p>No documents uploaded yet</p>
+          <p>{t("No documents uploaded yet")}</p>
         </div>
       );
     }
@@ -396,20 +397,20 @@ export default function DocumentLibraryPage() {
       <nav className="flex items-center gap-1.5 text-sm">
         <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
-          <span>Internal Audit</span>
+          <span>{t("Internal Audit")}</span>
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-        <span className="text-primary-700 font-medium">Document Library</span>
+        <span className="text-primary-700 font-medium">{t("Document Library")}</span>
       </nav>
 
-      <h1 className="text-2xl font-bold text-slate-800">Document Library</h1>
+      <h1 className="text-2xl font-bold text-slate-800">{t("Document Library")}</h1>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList>
-          <TabsTrigger value="smart-search">Smart Search</TabsTrigger>
-          <TabsTrigger value="policies">Company&apos;s Policies and Procedures</TabsTrigger>
-          <TabsTrigger value="regulations">Standard Regulations</TabsTrigger>
-          <TabsTrigger value="reports">Previous Audit Reports</TabsTrigger>
+          <TabsTrigger value="smart-search">{t("Smart Search")}</TabsTrigger>
+          <TabsTrigger value="policies">{t("Company's Policies and Procedures")}</TabsTrigger>
+          <TabsTrigger value="regulations">{t("Standard Regulations")}</TabsTrigger>
+          <TabsTrigger value="reports">{t("Previous Audit Reports")}</TabsTrigger>
         </TabsList>
 
         {/* Smart Search Tab */}
@@ -417,11 +418,11 @@ export default function DocumentLibraryPage() {
           {/* Smart Document Query */}
           <div className="bg-white rounded-xl border border-slate-200 p-6">
             <h3 className="text-lg font-semibold text-slate-800 mb-4">
-              Smart Document Query
+              {t("Smart Document Query")}
             </h3>
             <div className="relative">
               <Textarea
-                placeholder="Enter your question here"
+                placeholder={t("Enter your question here")}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={handleKeyDown}
@@ -446,12 +447,12 @@ export default function DocumentLibraryPage() {
           <Card>
             <CardContent className="pt-6">
               <h3 className="text-lg font-semibold text-slate-800 mb-4">
-                Recent Searches
+                {t("Recent Searches")}
               </h3>
               {recentSearches.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   <Clock className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                  <p>No recent searches</p>
+                  <p>{t("No recent searches")}</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -499,7 +500,7 @@ export default function DocumentLibraryPage() {
           <Card>
             <CardContent className="pt-6">
               <h3 className="text-lg font-semibold text-slate-800 mb-4">
-                Company&apos;s Policies and Procedures
+                {t("Company's Policies and Procedures")}
               </h3>
               {renderUploadArea("Policy")}
               {renderDocumentList(documents.policies, policyPage, setPolicyPage)}
@@ -512,7 +513,7 @@ export default function DocumentLibraryPage() {
           <Card>
             <CardContent className="pt-6">
               <h3 className="text-lg font-semibold text-slate-800 mb-4">
-                Standard Regulations
+                {t("Standard Regulations")}
               </h3>
               {renderUploadArea("Regulation")}
               {renderDocumentList(
@@ -529,7 +530,7 @@ export default function DocumentLibraryPage() {
           <Card>
             <CardContent className="pt-6">
               <h3 className="text-lg font-semibold text-slate-800 mb-4">
-                Previous Audit Reports
+                {t("Previous Audit Reports")}
               </h3>
               {renderUploadArea("PreviousReport")}
               {renderDocumentList(

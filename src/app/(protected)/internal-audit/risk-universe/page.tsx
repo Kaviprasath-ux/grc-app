@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ChevronRight, Home } from "lucide-react";
 import Link from "next/link";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // Unified colors matching org-chart component
 const THEME_COLOR = "#64748b"; // slate-500 - subtle and professional
@@ -31,6 +32,7 @@ interface RiskUniverseData {
 
 export default function RiskUniversePage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [data, setData] = useState<RiskUniverseData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -78,15 +80,15 @@ export default function RiskUniversePage() {
         <nav className="flex items-center gap-1.5 text-sm">
           <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
-            <span>Internal Audit</span>
+            <span>{t("Internal Audit")}</span>
           </Link>
           <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-          <span className="text-primary-700 font-medium">Risk Universe</span>
+          <span className="text-primary-700 font-medium">{t("Risk Universe")}</span>
         </nav>
 
-        <h1 className="text-2xl font-bold text-slate-800">Risk Universe</h1>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Risk Universe")}</h1>
         <div className="flex items-center justify-center h-64">
-          <p className="text-slate-500">Loading risk universe...</p>
+          <p className="text-slate-500">{t("Loading risk universe...")}</p>
         </div>
       </div>
     );
@@ -98,14 +100,14 @@ export default function RiskUniversePage() {
       <nav className="flex items-center gap-1.5 text-sm">
         <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
-          <span>Internal Audit</span>
+          <span>{t("Internal Audit")}</span>
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-        <span className="text-primary-700 font-medium">Risk Universe</span>
+        <span className="text-primary-700 font-medium">{t("Risk Universe")}</span>
       </nav>
 
       {/* Header */}
-      <h1 className="text-2xl font-bold text-slate-800">Risk Universe</h1>
+      <h1 className="text-2xl font-bold text-slate-800">{t("Risk Universe")}</h1>
 
       {/* Tree Structure Container */}
       <div className="overflow-x-auto">
@@ -120,10 +122,10 @@ export default function RiskUniversePage() {
                 className="px-4 py-2 text-white text-center"
                 style={{ backgroundColor: THEME_COLOR }}
               >
-                <p className="text-xs font-medium">Risk Overview</p>
+                <p className="text-xs font-medium">{t("Risk Overview")}</p>
               </div>
               <div className="bg-white px-4 py-2 text-center">
-                <p className="text-sm font-semibold text-gray-700">Risk Universe</p>
+                <p className="text-sm font-semibold text-gray-700">{t("Risk Universe")}</p>
               </div>
             </div>
           </div>
@@ -182,7 +184,7 @@ export default function RiskUniversePage() {
                         className="px-3 py-2 text-white text-center"
                         style={{ backgroundColor: THEME_COLOR }}
                       >
-                        <p className="text-xs font-medium">Department</p>
+                        <p className="text-xs font-medium">{t("Department")}</p>
                       </div>
                       <div className="bg-white px-3 py-2 text-center">
                         <p className="text-sm font-semibold text-gray-700 truncate">
@@ -227,16 +229,16 @@ export default function RiskUniversePage() {
           ) : (
             <div className="flex items-center justify-center h-64 border border-dashed border-slate-200 rounded-lg mt-8">
               <div className="text-center">
-                <p className="text-slate-500">No risks in the risk register yet</p>
+                <p className="text-slate-500">{t("No risks in the risk register yet")}</p>
                 <p className="text-sm text-slate-400 mt-2">
-                  Add risks to the Risk Register to see them here
+                  {t("Add risks to the Risk Register to see them here")}
                 </p>
                 <Button
                   variant="outline"
                   className="mt-4 border-slate-200 text-slate-700 hover:bg-slate-50"
                   onClick={() => router.push("/internal-audit/risk-register")}
                 >
-                  Go to Risk Register
+                  {t("Go to Risk Register")}
                 </Button>
               </div>
             </div>

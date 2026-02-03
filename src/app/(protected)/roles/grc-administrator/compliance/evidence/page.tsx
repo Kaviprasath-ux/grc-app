@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { usePermissions, useHasRole } from "@/hooks/usePermissions";
 import { PermissionGate } from "@/components/ui/permission-gate";
 import { Unauthorized } from "@/components/ui/unauthorized";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -128,6 +129,7 @@ const recurrenceOptions = ["Yearly", "Half-yearly", "Quarterly", "Monthly"];
 export default function GRCAdminEvidencePage() {
   const router = useRouter();
   const { data: session } = useSession();
+  const { t } = useLanguage();
   const { canView, canCreate, canDelete, isLoading: permissionsLoading } = usePermissions('compliance.evidence');
   const isGRCAdmin = useHasRole("GRCAdministrator");
   const [evidences, setEvidences] = useState<Evidence[]>([]);
@@ -455,20 +457,20 @@ export default function GRCAdminEvidencePage() {
 
   // Show unauthorized if user is not GRC Admin or doesn't have view permission
   if (!isGRCAdmin || !canView) {
-    return <Unauthorized description="You don't have permission to access GRC Admin Evidence." />;
+    return <Unauthorized description={t("You don't have permission to access GRC Admin Evidence.")} />;
   }
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">Evidence</h1>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Evidence")}</h1>
       </div>
 
       {/* Search, Filter, and Action Buttons Row */}
       <div className="flex items-center gap-3">
         <Input
-          placeholder="Search by name, domain or assignee..."
+          placeholder={t("Search by name, domain or assignee...")}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSearch()}
@@ -476,10 +478,10 @@ export default function GRCAdminEvidencePage() {
         />
         <Select value={customerFilter} onValueChange={setCustomerFilter}>
           <SelectTrigger className="w-[180px] bg-white">
-            <SelectValue placeholder="All Customers" />
+            <SelectValue placeholder={t("All Customers")} />
           </SelectTrigger>
           <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
-            <SelectItem value="all">All Customers</SelectItem>
+            <SelectItem value="all">{t("All Customers")}</SelectItem>
             {customerAccounts.map((c) => (
               <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
             ))}
@@ -487,10 +489,10 @@ export default function GRCAdminEvidencePage() {
         </Select>
         <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
           <SelectTrigger className="w-[200px] bg-white">
-            <SelectValue placeholder="Integrated Framework" />
+            <SelectValue placeholder={t("Integrated Framework")} />
           </SelectTrigger>
           <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
-            <SelectItem value="all">Integrated Framework</SelectItem>
+            <SelectItem value="all">{t("Integrated Framework")}</SelectItem>
             {frameworks.map((f) => (
               <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
             ))}
@@ -499,20 +501,20 @@ export default function GRCAdminEvidencePage() {
         <div className="flex-1" />
         <PermissionGate resource="compliance.evidence" action="create">
           <Button variant="outline" size="sm" onClick={() => setIsImportDialogOpen(true)}>
-            <FileSpreadsheet className="h-4 w-4 mr-2" />
-            Import
+            <FileSpreadsheet className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+            {t("Import")}
           </Button>
         </PermissionGate>
         <PermissionGate resource="compliance.evidence" action="delete">
           <Button variant="outline" size="sm" className="text-semantic-error hover:text-semantic-error hover:bg-red-50" onClick={() => setIsDeleteAllDialogOpen(true)}>
-            <Trash2 className="h-4 w-4 mr-2" />
-            Delete All
+            <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+            {t("Delete All")}
           </Button>
         </PermissionGate>
         <PermissionGate resource="compliance.evidence" action="create">
           <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Evidence
+            <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+            {t("New Evidence")}
           </Button>
         </PermissionGate>
       </div>
@@ -530,13 +532,13 @@ export default function GRCAdminEvidencePage() {
           <Table>
             <TableHeader>
               <TableRow className="border-b border-slate-100 bg-slate-50/50">
-                <TableHead className="text-xs font-semibold text-slate-600 py-4 pl-4">Evidence Code</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-4">Evidence Name</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-4">Customer</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-4">Domain</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-4">Status</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-4">Assignee</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-4">Department Name</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 py-4 pl-4">{t("Evidence Code")}</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Evidence Name")}</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Customer")}</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Domain")}</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Status")}</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Assignee")}</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Department Name")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -566,7 +568,7 @@ export default function GRCAdminEvidencePage() {
               {evidences.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-8 text-slate-500">
-                    No evidence records found
+                    {t("No evidence records found")}
                   </TableCell>
                 </TableRow>
               )}
@@ -576,7 +578,7 @@ export default function GRCAdminEvidencePage() {
           {/* Pagination */}
           <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
             <span className="text-sm text-slate-500">
-              {total > 0 ? `${startItem} to ${endItem} of ${total}` : "No evidence"}
+              {total > 0 ? `${startItem} ${t("to")} ${endItem} ${t("of")} ${total}` : t("No evidence")}
             </span>
             <div className="flex items-center gap-1">
               <Button
@@ -629,7 +631,7 @@ export default function GRCAdminEvidencePage() {
           {/* Sticky Header */}
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">New Evidence - Step {createStep} of 3</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("New Evidence")} - {t("Step")} {createStep} {t("of")} 3</DialogTitle>
             </DialogHeader>
           </div>
 
@@ -659,10 +661,10 @@ export default function GRCAdminEvidencePage() {
             {createStep === 1 && (
               <div className="space-y-4">
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Customer Account *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Customer Account")} *</Label>
                   <Select value={createForm.customerAccountId} onValueChange={(v) => setCreateForm({ ...createForm, customerAccountId: v, departmentId: "", assigneeId: "" })}>
                     <SelectTrigger className="mt-1.5 w-full bg-white">
-                      <SelectValue placeholder="Select customer account" />
+                      <SelectValue placeholder={t("Select customer account")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
                       {customerAccounts.map((c) => (
@@ -672,29 +674,29 @@ export default function GRCAdminEvidencePage() {
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Evidence Requirement *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Evidence Requirement")} *</Label>
                   <Input
                     value={createForm.name}
                     onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
-                    placeholder="Enter evidence requirement"
+                    placeholder={t("Enter evidence requirement")}
                     className="mt-1.5 w-full"
                   />
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Recurrence *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Recurrence")} *</Label>
                   <Select value={createForm.recurrence} onValueChange={(v) => setCreateForm({ ...createForm, recurrence: v })}>
                     <SelectTrigger className="mt-1.5 w-full bg-white">
-                      <SelectValue placeholder="Select recurrence" />
+                      <SelectValue placeholder={t("Select recurrence")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
                       {recurrenceOptions.map((r) => (
-                        <SelectItem key={r} value={r}>{r}</SelectItem>
+                        <SelectItem key={r} value={r}>{t(r)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Department *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Department")} *</Label>
                   <Select
                     value={createForm.departmentId}
                     onValueChange={(v) => setCreateForm({ ...createForm, departmentId: v, assigneeId: "" })}
@@ -703,8 +705,8 @@ export default function GRCAdminEvidencePage() {
                     <SelectTrigger className="mt-1.5 w-full bg-white">
                       <SelectValue placeholder={
                         !createForm.customerAccountId
-                          ? "Select customer account first"
-                          : "Select department"
+                          ? t("Select customer account first")
+                          : t("Select department")
                       } />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
@@ -715,7 +717,7 @@ export default function GRCAdminEvidencePage() {
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Assignee *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Assignee")} *</Label>
                   <Select
                     value={createForm.assigneeId}
                     onValueChange={(v) => setCreateForm({ ...createForm, assigneeId: v })}
@@ -724,8 +726,8 @@ export default function GRCAdminEvidencePage() {
                     <SelectTrigger className="mt-1.5 w-full bg-white">
                       <SelectValue placeholder={
                         !createForm.departmentId
-                          ? "Select department first"
-                          : "Select assignee"
+                          ? t("Select department first")
+                          : t("Select assignee")
                       } />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
@@ -735,18 +737,18 @@ export default function GRCAdminEvidencePage() {
                         ))
                       ) : (
                         <div className="py-2 px-2 text-sm text-slate-500 text-center">
-                          No department reviewers found
+                          {t("No department reviewers found")}
                         </div>
                       )}
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Description</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
                   <Textarea
                     value={createForm.description}
                     onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
-                    placeholder="Enter description"
+                    placeholder={t("Enter description")}
                     rows={3}
                     className="mt-1.5"
                   />
@@ -758,15 +760,15 @@ export default function GRCAdminEvidencePage() {
             {createStep === 2 && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <Label className="text-base font-semibold text-slate-800">Select Controls to Link</Label>
-                  <Badge variant="secondary">{selectedControlIds.length} selected</Badge>
+                  <Label className="text-base font-semibold text-slate-800">{t("Select Controls to Link")}</Label>
+                  <Badge variant="secondary">{selectedControlIds.length} {t("selected")}</Badge>
                 </div>
 
                 {/* Control Filters */}
                 <div className="flex gap-4">
                   <div className="flex-1">
                     <Input
-                      placeholder="Search controls..."
+                      placeholder={t("Search controls...")}
                       value={controlFilters.search}
                       onChange={(e) => setControlFilters({ ...controlFilters, search: e.target.value })}
                       className="bg-white"
@@ -774,10 +776,10 @@ export default function GRCAdminEvidencePage() {
                   </div>
                   <Select value={controlFilters.domainId || "all"} onValueChange={(v) => setControlFilters({ ...controlFilters, domainId: v === "all" ? "" : v })}>
                     <SelectTrigger className="w-[180px] bg-white">
-                      <SelectValue placeholder="Domain" />
+                      <SelectValue placeholder={t("Domain")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
-                      <SelectItem value="all">All Domains</SelectItem>
+                      <SelectItem value="all">{t("All Domains")}</SelectItem>
                       {controlDomains.map((d) => (
                         <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                       ))}
@@ -785,16 +787,16 @@ export default function GRCAdminEvidencePage() {
                   </Select>
                   <Select value={controlFilters.functionalGrouping || "all"} onValueChange={(v) => setControlFilters({ ...controlFilters, functionalGrouping: v === "all" ? "" : v })}>
                     <SelectTrigger className="w-[180px] bg-white">
-                      <SelectValue placeholder="Functional Grouping" />
+                      <SelectValue placeholder={t("Functional Grouping")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
-                      <SelectItem value="all">All Groupings</SelectItem>
-                      <SelectItem value="Govern">Govern</SelectItem>
-                      <SelectItem value="Identify">Identify</SelectItem>
-                      <SelectItem value="Protect">Protect</SelectItem>
-                      <SelectItem value="Detect">Detect</SelectItem>
-                      <SelectItem value="Respond">Respond</SelectItem>
-                      <SelectItem value="Recover">Recover</SelectItem>
+                      <SelectItem value="all">{t("All Groupings")}</SelectItem>
+                      <SelectItem value="Govern">{t("Govern")}</SelectItem>
+                      <SelectItem value="Identify">{t("Identify")}</SelectItem>
+                      <SelectItem value="Protect">{t("Protect")}</SelectItem>
+                      <SelectItem value="Detect">{t("Detect")}</SelectItem>
+                      <SelectItem value="Respond">{t("Respond")}</SelectItem>
+                      <SelectItem value="Recover">{t("Recover")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -805,9 +807,9 @@ export default function GRCAdminEvidencePage() {
                     <TableHeader>
                       <TableRow className="border-b border-slate-100 bg-slate-50/50">
                         <TableHead className="w-[50px] py-4 pl-4"></TableHead>
-                        <TableHead className="text-xs font-semibold text-slate-600 py-4">Control Code</TableHead>
-                        <TableHead className="text-xs font-semibold text-slate-600 py-4">Control Name</TableHead>
-                        <TableHead className="text-xs font-semibold text-slate-600 py-4">Domain</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Control Code")}</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Control Name")}</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Domain")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -827,7 +829,7 @@ export default function GRCAdminEvidencePage() {
                       {filteredControls.length === 0 && (
                         <TableRow>
                           <TableCell colSpan={4} className="text-center py-8 text-slate-500">
-                            No controls found
+                            {t("No controls found")}
                           </TableCell>
                         </TableRow>
                       )}
@@ -840,48 +842,48 @@ export default function GRCAdminEvidencePage() {
             {/* Step 3: Review */}
             {createStep === 3 && (
               <div className="space-y-6">
-                <div className="text-lg font-medium text-slate-800">Review Information</div>
+                <div className="text-lg font-medium text-slate-800">{t("Review Information")}</div>
 
                 <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
                   <div>
-                    <Label className="text-slate-500 text-sm">Customer Account</Label>
+                    <Label className="text-slate-500 text-sm">{t("Customer Account")}</Label>
                     <p className="font-medium text-slate-900">
                       {customerAccounts.find((c) => c.id === createForm.customerAccountId)?.name || "-"}
                     </p>
                   </div>
                   <div>
-                    <Label className="text-slate-500 text-sm">Evidence Name</Label>
+                    <Label className="text-slate-500 text-sm">{t("Evidence Name")}</Label>
                     <p className="font-medium text-slate-900">{createForm.name}</p>
                   </div>
                   <div>
-                    <Label className="text-slate-500 text-sm">Recurrence</Label>
+                    <Label className="text-slate-500 text-sm">{t("Recurrence")}</Label>
                     <p className="font-medium text-slate-900">{createForm.recurrence}</p>
                   </div>
                   <div>
-                    <Label className="text-slate-500 text-sm">Department</Label>
+                    <Label className="text-slate-500 text-sm">{t("Department")}</Label>
                     <p className="font-medium text-slate-900">
                       {filteredDepartments.find((d) => d.id === createForm.departmentId)?.name || "-"}
                     </p>
                   </div>
                   <div>
-                    <Label className="text-slate-500 text-sm">Assignee</Label>
+                    <Label className="text-slate-500 text-sm">{t("Assignee")}</Label>
                     <p className="font-medium text-slate-900">
                       {filteredUsers.find((u) => u.id === createForm.assigneeId)?.fullName || "-"}
                     </p>
                   </div>
                   <div>
-                    <Label className="text-slate-500 text-sm">Linked Controls</Label>
-                    <p className="font-medium text-slate-900">{selectedControlIds.length} controls</p>
+                    <Label className="text-slate-500 text-sm">{t("Linked Controls")}</Label>
+                    <p className="font-medium text-slate-900">{selectedControlIds.length} {t("controls")}</p>
                   </div>
                   <div className="col-span-2">
-                    <Label className="text-slate-500 text-sm">Description</Label>
+                    <Label className="text-slate-500 text-sm">{t("Description")}</Label>
                     <p className="font-medium text-slate-900">{createForm.description || "-"}</p>
                   </div>
                 </div>
 
                 {selectedControlIds.length > 0 && (
                   <div>
-                    <Label className="text-slate-500 text-sm mb-2 block">Selected Controls:</Label>
+                    <Label className="text-slate-500 text-sm mb-2 block">{t("Selected Controls")}:</Label>
                     <div className="flex flex-wrap gap-2">
                       {selectedControlIds.map((id) => {
                         const control = controls.find((c) => c.id === id);
@@ -907,7 +909,7 @@ export default function GRCAdminEvidencePage() {
                 setCreateDialogOpen(false);
               }
             }}>
-              {createStep === 1 ? "Cancel" : "Previous"}
+              {createStep === 1 ? t("Cancel") : t("Previous")}
             </Button>
             <Button
               onClick={() => {
@@ -916,7 +918,7 @@ export default function GRCAdminEvidencePage() {
               }}
               disabled={createStep === 1 && !canProceedStep1}
             >
-              {createStep === 3 ? "Create Evidence" : "Next"}
+              {createStep === 3 ? t("Create Evidence") : t("Next")}
             </Button>
           </div>
         </DialogContent>
@@ -926,15 +928,17 @@ export default function GRCAdminEvidencePage() {
       <AlertDialog open={isDeleteAllDialogOpen} onOpenChange={setIsDeleteAllDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete All Evidence</AlertDialogTitle>
+            <AlertDialogTitle>{t("Delete All Evidence")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete all evidence records{customerFilter !== "all" ? ` for the selected customer` : ""}? This action cannot be undone.
+              {customerFilter !== "all"
+                ? t("Are you sure you want to delete all evidence records for the selected customer? This action cannot be undone.")
+                : t("Are you sure you want to delete all evidence records? This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteAll} className="bg-red-600 hover:bg-red-700">
-              Delete All
+              {t("Delete All")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -948,7 +952,7 @@ export default function GRCAdminEvidencePage() {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-lg font-semibold text-slate-800">
                 <FileSpreadsheet className="h-5 w-5 text-green-600" />
-                Import Evidence
+                {t("Import Evidence")}
               </DialogTitle>
             </DialogHeader>
           </div>
@@ -956,10 +960,10 @@ export default function GRCAdminEvidencePage() {
           {/* Content */}
           <div className="px-6 py-6 space-y-4">
             <div>
-              <Label className="text-sm font-medium text-slate-700">Customer Account *</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Customer Account")} *</Label>
               <Select value={createForm.customerAccountId} onValueChange={(v) => setCreateForm({ ...createForm, customerAccountId: v })}>
                 <SelectTrigger className="mt-1.5 w-full bg-white">
-                  <SelectValue placeholder="Select customer account" />
+                  <SelectValue placeholder={t("Select customer account")} />
                 </SelectTrigger>
                 <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
                   {customerAccounts.map((c) => (
@@ -969,7 +973,7 @@ export default function GRCAdminEvidencePage() {
               </Select>
             </div>
             <p className="text-sm text-slate-500">
-              Upload a CSV or Excel file to import evidence records.
+              {t("Upload a CSV or Excel file to import evidence records.")}
             </p>
             <div
               className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
@@ -988,7 +992,7 @@ export default function GRCAdminEvidencePage() {
                     e.stopPropagation();
                     setImportFile(null);
                   }}>
-                    Remove
+                    {t("Remove")}
                   </Button>
                 </div>
               ) : (
@@ -996,10 +1000,10 @@ export default function GRCAdminEvidencePage() {
                   <FileSpreadsheet className="h-10 w-10 mx-auto text-slate-300" />
                   <div>
                     <p className="text-sm text-slate-600">
-                      Drag and drop a file here, or click to browse
+                      {t("Drag and drop a file here, or click to browse")}
                     </p>
                     <p className="text-xs text-slate-400 mt-1">
-                      Supported formats: CSV, XLSX, XLS
+                      {t("Supported formats")}: CSV, XLSX, XLS
                     </p>
                   </div>
                   <input
@@ -1021,10 +1025,10 @@ export default function GRCAdminEvidencePage() {
               setIsImportDialogOpen(false);
               setImportFile(null);
             }}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button onClick={handleImportSubmit} disabled={!importFile || !createForm.customerAccountId || importing}>
-              {importing ? "Importing..." : "Import"}
+              {importing ? t("Importing...") : t("Import")}
             </Button>
           </div>
         </DialogContent>

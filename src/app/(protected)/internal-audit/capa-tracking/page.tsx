@@ -50,6 +50,7 @@ import Link from "next/link";
 import { useHasRole } from "@/hooks/usePermissions";
 import { DatePicker } from "@/components/ui/date-picker";
 import { useRef } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface FindingAttachment {
   id: string;
@@ -112,6 +113,7 @@ interface Pagination {
 }
 
 export default function CAPATrackingPage() {
+  const { t } = useLanguage();
   const isAuditHead = useHasRole("AuditHead");
   const isAuditManager = useHasRole("AuditManager");
   const isAuditor = useHasRole("Auditor");
@@ -223,7 +225,7 @@ export default function CAPATrackingPage() {
       }
     } catch (error) {
       console.error("Failed to fetch findings:", error);
-      toast.error("Failed to fetch CAPA tracking data");
+      toast.error(t("Failed to fetch CAPA tracking data"));
     } finally {
       setLoading(false);
     }
@@ -240,16 +242,16 @@ export default function CAPATrackingPage() {
       );
 
       if (response.ok) {
-        toast.success("Finding deleted successfully");
+        toast.success(t("Finding deleted successfully"));
         setDeleteDialogOpen(false);
         setFindingToDelete(null);
         fetchFindings();
       } else {
-        toast.error("Failed to delete finding");
+        toast.error(t("Failed to delete finding"));
       }
     } catch (error) {
       console.error("Error deleting finding:", error);
-      toast.error("Failed to delete finding");
+      toast.error(t("Failed to delete finding"));
     } finally {
       setDeleting(false);
     }
@@ -319,12 +321,12 @@ export default function CAPATrackingPage() {
         setUploadedFiles([]);
         return true;
       } else {
-        toast.error('Failed to upload files');
+        toast.error(t("Failed to upload files"));
         return false;
       }
     } catch (error) {
       console.error('Error uploading files:', error);
-      toast.error('Failed to upload files');
+      toast.error(t("Failed to upload files"));
       return false;
     } finally {
       setUploading(false);
@@ -344,13 +346,13 @@ export default function CAPATrackingPage() {
         setExistingAttachments((prev) =>
           prev.filter((att) => att.id !== attachmentId)
         );
-        toast.success('Attachment deleted');
+        toast.success(t("Attachment deleted"));
       } else {
-        toast.error('Failed to delete attachment');
+        toast.error(t("Failed to delete attachment"));
       }
     } catch (error) {
       console.error('Error deleting attachment:', error);
-      toast.error('Failed to delete attachment');
+      toast.error(t("Failed to delete attachment"));
     }
   };
 
@@ -396,30 +398,30 @@ export default function CAPATrackingPage() {
             );
 
             if (aiReviewResponse.ok) {
-              toast.success("Documents submitted for Audit Head review");
+              toast.success(t("Documents submitted for Audit Head review"));
             } else {
               // AI review failed, but save was successful
-              toast.success("CAPA submitted (AI review pending)");
+              toast.success(t("CAPA submitted (AI review pending)"));
             }
           } catch (aiError) {
             console.error("AI review error:", aiError);
-            toast.success("CAPA submitted (AI review pending)");
+            toast.success(t("CAPA submitted (AI review pending)"));
           } finally {
             setAiReviewing(false);
           }
         } else {
-          toast.success("Finding updated successfully");
+          toast.success(t("Finding updated successfully"));
         }
 
         setEditDialogOpen(false);
         setFindingToEdit(null);
         fetchFindings();
       } else {
-        toast.error("Failed to update finding");
+        toast.error(t("Failed to update finding"));
       }
     } catch (error) {
       console.error("Error updating finding:", error);
-      toast.error("Failed to update finding");
+      toast.error(t("Failed to update finding"));
     } finally {
       setSaving(false);
     }
@@ -474,16 +476,16 @@ export default function CAPATrackingPage() {
       <nav className="flex items-center gap-1.5 text-sm">
         <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
-          <span>Internal Audit</span>
+          <span>{t("Internal Audit")}</span>
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-        <span className="text-primary-700 font-medium">CAPA Tracking</span>
+        <span className="text-primary-700 font-medium">{t("CAPA Tracking")}</span>
       </nav>
 
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-slate-800">
-          Corrective & Preventive Actions (CAPA)
+          {t("Corrective & Preventive Actions (CAPA)")}
         </h1>
       </div>
 
@@ -497,10 +499,10 @@ export default function CAPATrackingPage() {
           }}
         >
           <SelectTrigger className="w-[200px] bg-white">
-            <SelectValue placeholder="All Departments" />
+            <SelectValue placeholder={t("All Departments")} />
           </SelectTrigger>
           <SelectContent className="bg-white">
-            <SelectItem value="all">All Departments</SelectItem>
+            <SelectItem value="all">{t("All Departments")}</SelectItem>
             {departments.map((dept) => (
               <SelectItem key={dept.id} value={dept.id}>
                 {dept.name}
@@ -515,16 +517,16 @@ export default function CAPATrackingPage() {
         <Table>
           <TableHeader>
             <TableRow className="border-b border-slate-100 bg-slate-50/50">
-              <TableHead className="text-xs font-semibold text-slate-600 py-4 pl-4">Findings ID</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-4">Finding</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-4">Severity</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-4">Audit Plan</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-4">Department</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-4">Responsible Person</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-4">Target Date</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-4">Status</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4 pl-4">{t("Findings ID")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Finding")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Severity")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Audit Plan")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Department")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Responsible Person")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Target Date")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Status")}</TableHead>
               {showActions && (
-                <TableHead className="text-xs font-semibold text-slate-600 py-4">Actions</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Actions")}</TableHead>
               )}
             </TableRow>
           </TableHeader>
@@ -612,7 +614,7 @@ export default function CAPATrackingPage() {
             ) : (
               <TableRow>
                 <TableCell colSpan={showActions ? 9 : 8} className="text-center py-8 text-slate-500">
-                  No findings found
+                  {t("No findings found")}
                 </TableCell>
               </TableRow>
             )}
@@ -623,7 +625,7 @@ export default function CAPATrackingPage() {
         {pagination.total > 0 && (
           <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
             <span className="text-sm text-slate-500">
-              {startIndex} to {endIndex} of {pagination.total}
+              {startIndex} {t("to")} {endIndex} {t("of")} {pagination.total}
             </span>
             <div className="flex items-center gap-1">
               <Button
@@ -673,9 +675,9 @@ export default function CAPATrackingPage() {
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Delete Finding</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Delete Finding")}</DialogTitle>
               <DialogDescription className="text-sm text-slate-500 mt-1">
-                Are you sure you want to delete finding &quot;{findingToDelete?.findingId}&quot;? This action cannot be undone.
+                {t("Are you sure you want to delete finding")} &quot;{findingToDelete?.findingId}&quot;? {t("This action cannot be undone.")}
               </DialogDescription>
             </DialogHeader>
           </div>
@@ -689,7 +691,7 @@ export default function CAPATrackingPage() {
                 setFindingToDelete(null);
               }}
             >
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button
               variant="destructive"
@@ -699,10 +701,10 @@ export default function CAPATrackingPage() {
               {deleting ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Deleting...
+                  {t("Deleting...")}
                 </>
               ) : (
-                "Delete"
+                t("Delete")
               )}
             </Button>
           </div>
@@ -715,7 +717,7 @@ export default function CAPATrackingPage() {
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">View CAPA</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("View CAPA")}</DialogTitle>
             </DialogHeader>
           </div>
 
@@ -723,87 +725,87 @@ export default function CAPATrackingPage() {
           <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
             {/* Audit Plan */}
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-              <Label className="text-slate-800 font-medium">Audit plan</Label>
+              <Label className="text-slate-800 font-medium">{t("Audit plan")}</Label>
               <Input value={findingToView?.auditPlan || ""} readOnly className="bg-gray-50" />
             </div>
 
             {/* Finding Title */}
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-              <Label className="text-slate-800 font-medium">Finding title</Label>
+              <Label className="text-slate-800 font-medium">{t("Finding title")}</Label>
               <Input value={findingToView?.finding || ""} readOnly className="bg-gray-50" />
             </div>
 
             {/* Severity */}
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-              <Label className="text-slate-800 font-medium">Severity</Label>
+              <Label className="text-slate-800 font-medium">{t("Severity")}</Label>
               <RadioGroup value={findingToView?.severity || ""} className="flex gap-6" disabled>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="Low" id="view-severity-low" disabled />
-                  <Label htmlFor="view-severity-low" className="font-normal">Low</Label>
+                  <Label htmlFor="view-severity-low" className="font-normal">{t("Low")}</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="Medium" id="view-severity-medium" disabled />
-                  <Label htmlFor="view-severity-medium" className="font-normal">Medium</Label>
+                  <Label htmlFor="view-severity-medium" className="font-normal">{t("Medium")}</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="High" id="view-severity-high" disabled />
-                  <Label htmlFor="view-severity-high" className="font-normal">High</Label>
+                  <Label htmlFor="view-severity-high" className="font-normal">{t("High")}</Label>
                 </div>
               </RadioGroup>
             </div>
 
             {/* Criteria */}
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-              <Label className="text-slate-800 font-medium">Criteria</Label>
+              <Label className="text-slate-800 font-medium">{t("Criteria")}</Label>
               <Input value={findingToView?.criteria || ""} readOnly className="bg-gray-50" />
             </div>
 
             {/* Condition */}
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-              <Label className="text-slate-800 font-medium">Condition</Label>
+              <Label className="text-slate-800 font-medium">{t("Condition")}</Label>
               <Input value={findingToView?.condition || ""} readOnly className="bg-gray-50" />
             </div>
 
             {/* Cause */}
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-              <Label className="text-slate-800 font-medium">Cause</Label>
+              <Label className="text-slate-800 font-medium">{t("Cause")}</Label>
               <Input value={findingToView?.cause || ""} readOnly className="bg-gray-50" />
             </div>
 
             {/* Effect */}
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-              <Label className="text-slate-800 font-medium">Effect</Label>
+              <Label className="text-slate-800 font-medium">{t("Effect")}</Label>
               <Input value={findingToView?.effect || ""} readOnly className="bg-gray-50" />
             </div>
 
             {/* Recommendation */}
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-              <Label className="text-slate-800 font-medium">Recommendation</Label>
+              <Label className="text-slate-800 font-medium">{t("Recommendation")}</Label>
               <Input value={findingToView?.recommendation || ""} readOnly className="bg-gray-50" />
             </div>
 
             {/* Status */}
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-              <Label className="text-slate-800 font-medium">Status</Label>
+              <Label className="text-slate-800 font-medium">{t("Status")}</Label>
               <RadioGroup value={findingToView?.status || ""} className="flex gap-6" disabled>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="Open" id="view-status-open" disabled />
-                  <Label htmlFor="view-status-open" className="font-normal">Open</Label>
+                  <Label htmlFor="view-status-open" className="font-normal">{t("Open")}</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="Closed" id="view-status-closed" disabled />
-                  <Label htmlFor="view-status-closed" className="font-normal">Closed</Label>
+                  <Label htmlFor="view-status-closed" className="font-normal">{t("Closed")}</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="Under Review" id="view-status-review" disabled />
-                  <Label htmlFor="view-status-review" className="font-normal">Under Review</Label>
+                  <Label htmlFor="view-status-review" className="font-normal">{t("Under Review")}</Label>
                 </div>
               </RadioGroup>
             </div>
 
             {/* Target Date */}
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-              <Label className="text-slate-800 font-medium">Target date</Label>
+              <Label className="text-slate-800 font-medium">{t("Target date")}</Label>
               <Input
                 value={findingToView?.targetDate ? formatDate(findingToView.targetDate) : ""}
                 readOnly
@@ -813,7 +815,7 @@ export default function CAPATrackingPage() {
 
             {/* Auditee Comment */}
             <div className="grid grid-cols-[140px_1fr] items-start gap-4">
-              <Label className="text-slate-800 font-medium pt-2">Auditee Comment</Label>
+              <Label className="text-slate-800 font-medium pt-2">{t("Auditee Comment")}</Label>
               <Textarea
                 value={findingToView?.auditeeComment || ""}
                 readOnly
@@ -827,26 +829,26 @@ export default function CAPATrackingPage() {
               <div className="border-t pt-4 mt-4">
                 <div className="flex items-center gap-2 mb-3">
                   <Bot className="h-5 w-5 text-purple-600" />
-                  <h3 className="font-semibold text-slate-800">AI Review Result</h3>
+                  <h3 className="font-semibold text-slate-800">{t("AI Review Result")}</h3>
                 </div>
                 <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                  <Label className="text-slate-800 font-medium">Status</Label>
+                  <Label className="text-slate-800 font-medium">{t("Status")}</Label>
                   <div className="flex items-center gap-2">
                     {findingToView.aiReviewStatus === "Satisfactory" ? (
                       <>
                         <CheckCircle2 className="h-5 w-5 text-green-600" />
-                        <span className="text-green-600 font-medium">Satisfactory</span>
+                        <span className="text-green-600 font-medium">{t("Satisfactory")}</span>
                       </>
                     ) : (
                       <>
                         <XCircle className="h-5 w-5 text-red-600" />
-                        <span className="text-red-600 font-medium">Unsatisfactory</span>
+                        <span className="text-red-600 font-medium">{t("Unsatisfactory")}</span>
                       </>
                     )}
                   </div>
                 </div>
                 <div className="grid grid-cols-[140px_1fr] items-start gap-4 mt-3">
-                  <Label className="text-slate-800 font-medium pt-2">Description</Label>
+                  <Label className="text-slate-800 font-medium pt-2">{t("Description")}</Label>
                   <Textarea
                     value={findingToView.aiReviewDescription || ""}
                     readOnly
@@ -867,7 +869,7 @@ export default function CAPATrackingPage() {
                 setFindingToView(null);
               }}
             >
-              Close
+              {t("Close")}
             </Button>
           </div>
         </DialogContent>
@@ -879,7 +881,7 @@ export default function CAPATrackingPage() {
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Edit CAPA</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit CAPA")}</DialogTitle>
             </DialogHeader>
           </div>
 
@@ -887,7 +889,7 @@ export default function CAPATrackingPage() {
           <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
             {/* Audit Plan */}
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-              <Label className="text-slate-800 font-medium">Audit plan</Label>
+              <Label className="text-slate-800 font-medium">{t("Audit plan")}</Label>
               <Select
                 value={editForm.engagementId}
                 onValueChange={(value) =>
@@ -896,7 +898,7 @@ export default function CAPATrackingPage() {
                 disabled={isAuditeeOnly}
               >
                 <SelectTrigger className={isAuditeeOnly ? "bg-gray-50" : ""}>
-                  <SelectValue placeholder="Select audit plan" />
+                  <SelectValue placeholder={t("Select audit plan")} />
                 </SelectTrigger>
                 <SelectContent>
                   {auditEngagements.map((engagement) => (
@@ -910,7 +912,7 @@ export default function CAPATrackingPage() {
 
             {/* Finding Title */}
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-              <Label className="text-slate-800 font-medium">Finding title</Label>
+              <Label className="text-slate-800 font-medium">{t("Finding title")}</Label>
               <Input
                 value={editForm.finding}
                 onChange={(e) =>
@@ -923,7 +925,7 @@ export default function CAPATrackingPage() {
 
             {/* Severity */}
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-              <Label className="text-slate-800 font-medium">Severity</Label>
+              <Label className="text-slate-800 font-medium">{t("Severity")}</Label>
               <RadioGroup
                 value={editForm.severity}
                 onValueChange={(value) =>
@@ -934,22 +936,22 @@ export default function CAPATrackingPage() {
               >
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="Low" id="severity-low" disabled={isAuditeeOnly} />
-                  <Label htmlFor="severity-low" className="font-normal cursor-pointer">Low</Label>
+                  <Label htmlFor="severity-low" className="font-normal cursor-pointer">{t("Low")}</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="Medium" id="severity-medium" disabled={isAuditeeOnly} />
-                  <Label htmlFor="severity-medium" className="font-normal cursor-pointer">Medium</Label>
+                  <Label htmlFor="severity-medium" className="font-normal cursor-pointer">{t("Medium")}</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="High" id="severity-high" disabled={isAuditeeOnly} />
-                  <Label htmlFor="severity-high" className="font-normal cursor-pointer">High</Label>
+                  <Label htmlFor="severity-high" className="font-normal cursor-pointer">{t("High")}</Label>
                 </div>
               </RadioGroup>
             </div>
 
             {/* Criteria */}
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-              <Label className="text-slate-800 font-medium">Criteria</Label>
+              <Label className="text-slate-800 font-medium">{t("Criteria")}</Label>
               <Input
                 value={editForm.criteria}
                 onChange={(e) =>
@@ -962,7 +964,7 @@ export default function CAPATrackingPage() {
 
             {/* Condition */}
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-              <Label className="text-slate-800 font-medium">Condition</Label>
+              <Label className="text-slate-800 font-medium">{t("Condition")}</Label>
               <Input
                 value={editForm.condition}
                 onChange={(e) =>
@@ -975,7 +977,7 @@ export default function CAPATrackingPage() {
 
             {/* Cause */}
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-              <Label className="text-slate-800 font-medium">Cause</Label>
+              <Label className="text-slate-800 font-medium">{t("Cause")}</Label>
               <Input
                 value={editForm.cause}
                 onChange={(e) =>
@@ -988,7 +990,7 @@ export default function CAPATrackingPage() {
 
             {/* Effect */}
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-              <Label className="text-slate-800 font-medium">Effect</Label>
+              <Label className="text-slate-800 font-medium">{t("Effect")}</Label>
               <Input
                 value={editForm.effect}
                 onChange={(e) =>
@@ -1001,7 +1003,7 @@ export default function CAPATrackingPage() {
 
             {/* Recommendation */}
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-              <Label className="text-slate-800 font-medium">Recommendation</Label>
+              <Label className="text-slate-800 font-medium">{t("Recommendation")}</Label>
               <Input
                 value={editForm.recommendation}
                 onChange={(e) =>
@@ -1014,7 +1016,7 @@ export default function CAPATrackingPage() {
 
             {/* Status */}
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-              <Label className="text-slate-800 font-medium">Status</Label>
+              <Label className="text-slate-800 font-medium">{t("Status")}</Label>
               <RadioGroup
                 value={editForm.status}
                 onValueChange={(value) =>
@@ -1025,35 +1027,35 @@ export default function CAPATrackingPage() {
               >
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="Open" id="status-open" disabled={isAuditeeOnly} />
-                  <Label htmlFor="status-open" className="font-normal cursor-pointer">Open</Label>
+                  <Label htmlFor="status-open" className="font-normal cursor-pointer">{t("Open")}</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="Closed" id="status-closed" disabled={isAuditeeOnly} />
-                  <Label htmlFor="status-closed" className="font-normal cursor-pointer">Closed</Label>
+                  <Label htmlFor="status-closed" className="font-normal cursor-pointer">{t("Closed")}</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="Under Review" id="status-review" disabled={isAuditeeOnly} />
-                  <Label htmlFor="status-review" className="font-normal cursor-pointer">Under Review</Label>
+                  <Label htmlFor="status-review" className="font-normal cursor-pointer">{t("Under Review")}</Label>
                 </div>
               </RadioGroup>
             </div>
 
             {/* Target Date */}
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-              <Label className="text-slate-800 font-medium">Target date</Label>
+              <Label className="text-slate-800 font-medium">{t("Target date")}</Label>
               <DatePicker
                 value={editForm.targetDate}
                 onChange={(date) =>
                   setEditForm((prev) => ({ ...prev, targetDate: date ? date.toISOString().split('T')[0] : "" }))
                 }
                 disabled={isAuditeeOnly}
-                placeholder="Select date"
+                placeholder={t("Select date")}
               />
             </div>
 
             {/* Auditee's comments - EDITABLE for auditee */}
             <div className="grid grid-cols-[140px_1fr] items-start gap-4">
-              <Label className="text-slate-800 font-medium pt-2">Auditee<br/>Comment</Label>
+              <Label className="text-slate-800 font-medium pt-2">{t("Auditee")}<br/>{t("Comment")}</Label>
               <Textarea
                 value={editForm.auditeeComment}
                 onChange={(e) =>
@@ -1066,7 +1068,7 @@ export default function CAPATrackingPage() {
             {/* Existing Attachments */}
             {existingAttachments.length > 0 && (
               <div className="grid grid-cols-[140px_1fr] items-start gap-4">
-                <Label className="text-slate-800 font-medium pt-2">Attachments</Label>
+                <Label className="text-slate-800 font-medium pt-2">{t("Attachments")}</Label>
                 <div className="space-y-2">
                   {existingAttachments.map((att) => (
                     <div key={att.id} className="flex items-center gap-2">
@@ -1077,7 +1079,7 @@ export default function CAPATrackingPage() {
                           href={att.filePath}
                           download={att.fileName}
                           className="text-gray-500 hover:text-blue-600 p-1"
-                          title="Download"
+                          title={t("Download")}
                         >
                           <Download className="h-4 w-4" />
                         </a>
@@ -1086,7 +1088,7 @@ export default function CAPATrackingPage() {
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-gray-500 hover:text-blue-600 p-1"
-                          title="View"
+                          title={t("View")}
                         >
                           <Eye className="h-4 w-4" />
                         </a>
@@ -1097,7 +1099,7 @@ export default function CAPATrackingPage() {
                             size="icon"
                             className="h-6 w-6 text-red-500 hover:text-red-700"
                             onClick={() => handleDeleteAttachment(att.id)}
-                            title="Delete"
+                            title={t("Delete")}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -1126,7 +1128,7 @@ export default function CAPATrackingPage() {
                   onChange={handleFileSelect}
                 />
                 <p className="text-gray-500">
-                  Click here, or drop files here to upload.
+                  {t("Click here, or drop files here to upload.")}
                 </p>
                 {uploadedFiles.length > 0 && (
                   <div className="mt-2 space-y-1">
@@ -1158,28 +1160,28 @@ export default function CAPATrackingPage() {
                   <Bot className="h-5 w-5 text-purple-600" />
                   <h3 className="font-semibold text-slate-800">
                     {!findingToEdit.aiReviewApproved
-                      ? "AI Review Result (Pending Approval)"
-                      : "AI Review Result"}
+                      ? t("AI Review Result (Pending Approval)")
+                      : t("AI Review Result")}
                   </h3>
                 </div>
                 <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                  <Label className="text-slate-800 font-medium">Status</Label>
+                  <Label className="text-slate-800 font-medium">{t("Status")}</Label>
                   <div className="flex items-center gap-2">
                     {findingToEdit.aiReviewStatus === "Satisfactory" ? (
                       <>
                         <CheckCircle2 className="h-5 w-5 text-green-600" />
-                        <span className="text-green-600 font-medium">Satisfactory</span>
+                        <span className="text-green-600 font-medium">{t("Satisfactory")}</span>
                       </>
                     ) : (
                       <>
                         <XCircle className="h-5 w-5 text-red-600" />
-                        <span className="text-red-600 font-medium">Unsatisfactory</span>
+                        <span className="text-red-600 font-medium">{t("Unsatisfactory")}</span>
                       </>
                     )}
                   </div>
                 </div>
                 <div className="grid grid-cols-[140px_1fr] items-start gap-4 mt-3">
-                  <Label className="text-slate-800 font-medium pt-2">Description</Label>
+                  <Label className="text-slate-800 font-medium pt-2">{t("Description")}</Label>
                   <Textarea
                     value={findingToEdit.aiReviewDescription || ""}
                     readOnly
@@ -1189,12 +1191,12 @@ export default function CAPATrackingPage() {
                 </div>
                 {!findingToEdit.aiReviewApproved && (
                   <p className="text-sm text-purple-700 mt-3">
-                    Click &quot;Save&quot; to approve this AI review and close the finding.
+                    {t("Click \"Save\" to approve this AI review and close the finding.")}
                   </p>
                 )}
                 {findingToEdit.aiReviewApproved && (
                   <p className="text-sm text-green-600 mt-3">
-                    AI review has been approved.
+                    {t("AI review has been approved.")}
                   </p>
                 )}
               </div>
@@ -1205,10 +1207,10 @@ export default function CAPATrackingPage() {
               <div className="border-t pt-4 mt-4 bg-yellow-50 rounded-lg p-4">
                 <div className="flex items-center gap-2">
                   <Bot className="h-5 w-5 text-yellow-600" />
-                  <span className="text-yellow-700 font-medium">Pending Audit Head Review</span>
+                  <span className="text-yellow-700 font-medium">{t("Pending Audit Head Review")}</span>
                 </div>
                 <p className="text-sm text-yellow-600 mt-2">
-                  Your documents have been submitted and are awaiting review by the Audit Head.
+                  {t("Your documents have been submitted and are awaiting review by the Audit Head.")}
                 </p>
               </div>
             )}
@@ -1223,7 +1225,7 @@ export default function CAPATrackingPage() {
                 setFindingToEdit(null);
               }}
             >
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button
               className="bg-primary-600 hover:bg-primary-700"
@@ -1233,10 +1235,10 @@ export default function CAPATrackingPage() {
               {saving || uploading || aiReviewing ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  {uploading ? "Uploading..." : aiReviewing ? "Analyzing..." : "Saving..."}
+                  {uploading ? t("Uploading...") : aiReviewing ? t("Analyzing...") : t("Saving...")}
                 </>
               ) : (
-                "Save"
+                t("Save")
               )}
             </Button>
           </div>

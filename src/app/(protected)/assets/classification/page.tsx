@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { ColumnDef } from "@tanstack/react-table";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface AssetCategory {
   id: string;
@@ -74,6 +75,7 @@ interface CIAClassification {
 
 export default function AssetClassificationPage() {
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [classifications, setCIAClassifications] = useState<CIAClassification[]>([]);
   const [subCategories, setSubCategories] = useState<AssetSubCategory[]>([]);
   const [groups, setGroups] = useState<AssetGroup[]>([]);
@@ -144,7 +146,7 @@ export default function AssetClassificationPage() {
 
   const handleAdd = async () => {
     if (!formData.subCategoryId || !formData.groupId) {
-      toast({ title: "Error", description: "Please select both Sub Category and Group", variant: "destructive" });
+      toast({ title: t("Error"), description: t("Please select both Sub Category and Group"), variant: "destructive" });
       return;
     }
     try {
@@ -160,7 +162,7 @@ export default function AssetClassificationPage() {
         setIsAddOpen(false);
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to create classification", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to create classification"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error adding classification:", error);
@@ -183,7 +185,7 @@ export default function AssetClassificationPage() {
         setIsEditOpen(false);
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to update classification", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to update classification"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error updating classification:", error);
@@ -202,7 +204,7 @@ export default function AssetClassificationPage() {
         setIsDeleteOpen(false);
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to delete classification", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to delete classification"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error deleting classification:", error);
@@ -364,51 +366,51 @@ export default function AssetClassificationPage() {
   const ciaColumns: ColumnDef<CIAClassification>[] = [
     {
       accessorKey: "subCategory.name",
-      header: "Sub Category",
+      header: t("Sub Category"),
       cell: ({ row }) => row.original.subCategory?.name || "-",
     },
     {
       accessorKey: "group.name",
-      header: "Asset Group",
+      header: t("Asset Group"),
       cell: ({ row }) => row.original.group?.name || "-",
     },
     {
       accessorKey: "confidentiality",
-      header: "Confidentiality",
+      header: t("Confidentiality"),
       cell: ({ row }) => row.original.confidentiality || "-",
     },
     {
       accessorKey: "integrity",
-      header: "Integrity",
+      header: t("Integrity"),
       cell: ({ row }) => row.original.integrity || "-",
     },
     {
       accessorKey: "availability",
-      header: "Availability",
+      header: t("Availability"),
       cell: ({ row }) => row.original.availability || "-",
     },
     {
       accessorKey: "assetCriticality",
-      header: "Asset Criticality",
+      header: t("Asset Criticality"),
       cell: ({ row }) => row.original.assetCriticality || "-",
     },
     {
       accessorKey: "assetCriticalityScore",
-      header: "Asset Criticality Score",
+      header: t("Asset Criticality Score"),
       cell: ({ row }) => row.original.assetCriticalityScore,
     },
     {
       id: "actions",
-      header: "Action",
+      header: t("Action"),
       cell: ({ row }) => (
         <div className="flex gap-1">
           <Button
             variant="outline"
             size="sm"
-            onClick={() => toast({ title: "Info", description: "AI Risk Evaluation - Coming Soon" })}
+            onClick={() => toast({ title: t("Info"), description: t("AI Risk Evaluation - Coming Soon") })}
           >
             <Sparkles className="h-4 w-4 mr-1" />
-            AI Risk Evaluation
+            {t("AI Risk Evaluation")}
           </Button>
           <Button
             variant="ghost"
@@ -439,7 +441,7 @@ export default function AssetClassificationPage() {
             <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
             <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
           </div>
-          <p className="text-sm text-slate-500 font-medium">Loading classifications...</p>
+          <p className="text-sm text-slate-500 font-medium">{t("Loading classifications...")}</p>
         </div>
       </div>
     );
@@ -451,15 +453,15 @@ export default function AssetClassificationPage() {
       <nav className="flex items-center gap-1.5 text-sm">
         <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
-          <span>Asset Management</span>
+          <span>{t("Asset Management")}</span>
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-        <span className="text-primary-700 font-medium">Classification</span>
+        <span className="text-primary-700 font-medium">{t("Classification")}</span>
       </nav>
 
       {/* Page Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">Asset Classification</h1>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Asset Classification")}</h1>
       </div>
 
       {/* Search and Actions - aligned on same row */}
@@ -467,7 +469,7 @@ export default function AssetClassificationPage() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input
-            placeholder="Search by Group, Sub Category, Confidentiality, Availability, Integrity, Criticality"
+            placeholder={t("Search by Group, Sub Category, Confidentiality, Availability, Integrity, Criticality")}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10 w-[500px] bg-white border-slate-200"
@@ -476,14 +478,14 @@ export default function AssetClassificationPage() {
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={handleExport}>
             <Upload className="h-4 w-4 mr-2" />
-            Export
+            {t("Export")}
           </Button>
           <Button size="sm" onClick={() => {
             resetForm();
             setIsAddOpen(true);
           }}>
             <Plus className="h-4 w-4 mr-2" />
-            New Asset Classification
+            {t("New Asset Classification")}
           </Button>
         </div>
       </div>
@@ -501,7 +503,7 @@ export default function AssetClassificationPage() {
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Add Asset Classification</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Asset Classification")}</DialogTitle>
             </DialogHeader>
           </div>
 
@@ -511,13 +513,13 @@ export default function AssetClassificationPage() {
               {/* Asset Sub Category & Asset Group */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Asset Sub Category <span className="text-semantic-error">*</span></Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Asset Sub Category")} <span className="text-semantic-error">*</span></Label>
                   <Select
                     value={formData.subCategoryId}
                     onValueChange={(value) => setFormData({ ...formData, subCategoryId: value })}
                   >
                     <SelectTrigger className="mt-1.5 w-full">
-                      <SelectValue placeholder="Select Sub Category" />
+                      <SelectValue placeholder={t("Select Sub Category")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
                       {subCategories.map((sc) => (
@@ -529,13 +531,13 @@ export default function AssetClassificationPage() {
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Asset Group <span className="text-semantic-error">*</span></Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Asset Group")} <span className="text-semantic-error">*</span></Label>
                   <Select
                     value={formData.groupId}
                     onValueChange={(value) => setFormData({ ...formData, groupId: value })}
                   >
                     <SelectTrigger className="mt-1.5 w-full">
-                      <SelectValue placeholder="Select Group" />
+                      <SelectValue placeholder={t("Select Group")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
                       {groups.map((g) => (
@@ -550,14 +552,14 @@ export default function AssetClassificationPage() {
 
               {/* Asset Sensitivity with inline add */}
               <div>
-                <Label className="text-sm font-medium text-slate-700">Asset Sensitivity</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Asset Sensitivity")}</Label>
                 <div className="flex gap-2 mt-1.5">
                   <Select
                     value={formData.sensitivityId}
                     onValueChange={(value) => setFormData({ ...formData, sensitivityId: value })}
                   >
                     <SelectTrigger className="flex-1">
-                      <SelectValue placeholder="Select Sensitivity" />
+                      <SelectValue placeholder={t("Select Sensitivity")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
                       {sensitivities.map((s) => (
@@ -581,14 +583,14 @@ export default function AssetClassificationPage() {
               {/* Confidentiality & Integrity */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Confidentiality</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Confidentiality")}</Label>
                   <div className="flex gap-2 mt-1.5">
                     <Select
                       value={formData.confidentiality}
                       onValueChange={(value) => updateCIAValue("confidentiality", value)}
                     >
                       <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="Select" />
+                        <SelectValue placeholder={t("Select")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
                         {getRatingsByType("Confidentiality").map((r) => (
@@ -612,14 +614,14 @@ export default function AssetClassificationPage() {
                   </div>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Integrity</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Integrity")}</Label>
                   <div className="flex gap-2 mt-1.5">
                     <Select
                       value={formData.integrity}
                       onValueChange={(value) => updateCIAValue("integrity", value)}
                     >
                       <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="Select" />
+                        <SelectValue placeholder={t("Select")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
                         {getRatingsByType("Integrity").map((r) => (
@@ -646,14 +648,14 @@ export default function AssetClassificationPage() {
 
               {/* Availability */}
               <div>
-                <Label className="text-sm font-medium text-slate-700">Availability</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Availability")}</Label>
                 <div className="flex gap-2 mt-1.5">
                   <Select
                     value={formData.availability}
                     onValueChange={(value) => updateCIAValue("availability", value)}
                   >
                     <SelectTrigger className="flex-1">
-                      <SelectValue placeholder="Select" />
+                      <SelectValue placeholder={t("Select")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
                       {getRatingsByType("Availability").map((r) => (
@@ -681,8 +683,8 @@ export default function AssetClassificationPage() {
 
           {/* Fixed Footer */}
           <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
-            <Button variant="outline" onClick={() => setIsAddOpen(false)}>Cancel</Button>
-            <Button onClick={handleAdd}>Save</Button>
+            <Button variant="outline" onClick={() => setIsAddOpen(false)}>{t("Cancel")}</Button>
+            <Button onClick={handleAdd}>{t("Save")}</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -693,7 +695,7 @@ export default function AssetClassificationPage() {
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Edit Asset Classification</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Asset Classification")}</DialogTitle>
             </DialogHeader>
           </div>
 
@@ -703,13 +705,13 @@ export default function AssetClassificationPage() {
               {/* Asset Sub Category & Asset Group */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Asset Sub Category <span className="text-semantic-error">*</span></Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Asset Sub Category")} <span className="text-semantic-error">*</span></Label>
                   <Select
                     value={formData.subCategoryId}
                     onValueChange={(value) => setFormData({ ...formData, subCategoryId: value })}
                   >
                     <SelectTrigger className="mt-1.5 w-full">
-                      <SelectValue placeholder="Select Sub Category" />
+                      <SelectValue placeholder={t("Select Sub Category")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
                       {subCategories.map((sc) => (
@@ -721,13 +723,13 @@ export default function AssetClassificationPage() {
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Asset Group <span className="text-semantic-error">*</span></Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Asset Group")} <span className="text-semantic-error">*</span></Label>
                   <Select
                     value={formData.groupId}
                     onValueChange={(value) => setFormData({ ...formData, groupId: value })}
                   >
                     <SelectTrigger className="mt-1.5 w-full">
-                      <SelectValue placeholder="Select Group" />
+                      <SelectValue placeholder={t("Select Group")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
                       {groups.map((g) => (
@@ -742,14 +744,14 @@ export default function AssetClassificationPage() {
 
               {/* Asset Sensitivity with inline add */}
               <div>
-                <Label className="text-sm font-medium text-slate-700">Asset Sensitivity</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Asset Sensitivity")}</Label>
                 <div className="flex gap-2 mt-1.5">
                   <Select
                     value={formData.sensitivityId}
                     onValueChange={(value) => setFormData({ ...formData, sensitivityId: value })}
                   >
                     <SelectTrigger className="flex-1">
-                      <SelectValue placeholder="Select Sensitivity" />
+                      <SelectValue placeholder={t("Select Sensitivity")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
                       {sensitivities.map((s) => (
@@ -773,14 +775,14 @@ export default function AssetClassificationPage() {
               {/* Confidentiality & Integrity */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Confidentiality</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Confidentiality")}</Label>
                   <div className="flex gap-2 mt-1.5">
                     <Select
                       value={formData.confidentiality}
                       onValueChange={(value) => updateCIAValue("confidentiality", value)}
                     >
                       <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="Select" />
+                        <SelectValue placeholder={t("Select")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
                         {getRatingsByType("Confidentiality").map((r) => (
@@ -804,14 +806,14 @@ export default function AssetClassificationPage() {
                   </div>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Integrity</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Integrity")}</Label>
                   <div className="flex gap-2 mt-1.5">
                     <Select
                       value={formData.integrity}
                       onValueChange={(value) => updateCIAValue("integrity", value)}
                     >
                       <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="Select" />
+                        <SelectValue placeholder={t("Select")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
                         {getRatingsByType("Integrity").map((r) => (
@@ -838,14 +840,14 @@ export default function AssetClassificationPage() {
 
               {/* Availability */}
               <div>
-                <Label className="text-sm font-medium text-slate-700">Availability</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Availability")}</Label>
                 <div className="flex gap-2 mt-1.5">
                   <Select
                     value={formData.availability}
                     onValueChange={(value) => updateCIAValue("availability", value)}
                   >
                     <SelectTrigger className="flex-1">
-                      <SelectValue placeholder="Select" />
+                      <SelectValue placeholder={t("Select")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
                       {getRatingsByType("Availability").map((r) => (
@@ -873,8 +875,8 @@ export default function AssetClassificationPage() {
 
           {/* Fixed Footer */}
           <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
-            <Button variant="outline" onClick={() => setIsEditOpen(false)}>Cancel</Button>
-            <Button onClick={handleEdit}>Save</Button>
+            <Button variant="outline" onClick={() => setIsEditOpen(false)}>{t("Cancel")}</Button>
+            <Button onClick={handleEdit}>{t("Save")}</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -884,15 +886,15 @@ export default function AssetClassificationPage() {
         <DialogContent className="sm:max-w-[400px] p-0 gap-0">
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Confirm Delete</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Confirm Delete")}</DialogTitle>
               <DialogDescription className="text-sm text-slate-500 mt-1">
-                Are you sure you want to delete this classification? This action cannot be undone.
+                {t("Are you sure you want to delete this classification? This action cannot be undone.")}
               </DialogDescription>
             </DialogHeader>
           </div>
           <div className="flex justify-end gap-2 px-6 py-4">
-            <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleDelete}>Delete</Button>
+            <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>{t("Cancel")}</Button>
+            <Button variant="destructive" onClick={handleDelete}>{t("Delete")}</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -902,16 +904,16 @@ export default function AssetClassificationPage() {
         <DialogContent className="sm:max-w-[400px] p-0 gap-0">
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Add Asset Sensitivity</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Asset Sensitivity")}</DialogTitle>
             </DialogHeader>
           </div>
           <div className="px-6 py-6">
             <div>
-              <Label className="text-sm font-medium text-slate-700">Name <span className="text-semantic-error">*</span></Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Name")} <span className="text-semantic-error">*</span></Label>
               <Input
                 value={newSensitivityName}
                 onChange={(e) => setNewSensitivityName(e.target.value)}
-                placeholder="Enter sensitivity name"
+                placeholder={t("Enter sensitivity name")}
                 className="mt-1.5"
               />
             </div>
@@ -920,8 +922,8 @@ export default function AssetClassificationPage() {
             <Button variant="outline" onClick={() => {
               setNewSensitivityName("");
               setIsAddSensitivityOpen(false);
-            }}>Cancel</Button>
-            <Button onClick={handleAddSensitivity}>Save</Button>
+            }}>{t("Cancel")}</Button>
+            <Button onClick={handleAddSensitivity}>{t("Save")}</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -931,26 +933,26 @@ export default function AssetClassificationPage() {
         <DialogContent className="sm:max-w-[400px] p-0 gap-0">
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Add {newCIARatingType}</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add")} {t(newCIARatingType)}</DialogTitle>
             </DialogHeader>
           </div>
           <div className="px-6 py-6 space-y-5">
             <div>
-              <Label className="text-sm font-medium text-slate-700">Label <span className="text-semantic-error">*</span></Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Label")} <span className="text-semantic-error">*</span></Label>
               <Input
                 value={newCIARatingLabel}
                 onChange={(e) => setNewCIARatingLabel(e.target.value)}
-                placeholder="e.g., high, medium, low"
+                placeholder={t("e.g., high, medium, low")}
                 className="mt-1.5"
               />
             </div>
             <div>
-              <Label className="text-sm font-medium text-slate-700">Value <span className="text-semantic-error">*</span></Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Value")} <span className="text-semantic-error">*</span></Label>
               <Input
                 type="number"
                 value={newCIARatingValue}
                 onChange={(e) => setNewCIARatingValue(parseInt(e.target.value) || 0)}
-                placeholder="Score value"
+                placeholder={t("Score value")}
                 className="mt-1.5"
               />
             </div>
@@ -960,8 +962,8 @@ export default function AssetClassificationPage() {
               setNewCIARatingLabel("");
               setNewCIARatingValue(0);
               setIsAddCIARatingOpen(false);
-            }}>Cancel</Button>
-            <Button onClick={handleAddCIARating}>Save</Button>
+            }}>{t("Cancel")}</Button>
+            <Button onClick={handleAddCIARating}>{t("Save")}</Button>
           </div>
         </DialogContent>
       </Dialog>

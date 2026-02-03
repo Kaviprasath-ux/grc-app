@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -72,6 +73,7 @@ export default function ControlsByFrameworkPage() {
   const router = useRouter();
   const params = useParams();
   const frameworkId = params.id as string;
+  const { t } = useLanguage();
 
   // All controls extracted from framework (de-duplicated)
   const [allControls, setAllControls] = useState<Control[]>([]);
@@ -238,8 +240,8 @@ export default function ControlsByFrameworkPage() {
   if (!loading && framework && framework.status !== "Subscribed") {
     return (
       <Unauthorized
-        title="Framework Not Subscribed"
-        description="You do not have access to this framework. Please subscribe to view its contents."
+        title={t("Framework Not Subscribed")}
+        description={t("You do not have access to this framework. Please subscribe to view its contents.")}
       />
     );
   }
@@ -250,23 +252,23 @@ export default function ControlsByFrameworkPage() {
       <nav className="flex items-center gap-1.5 text-sm">
         <Link href="/roles/customer-administrator/compliance" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
-          <span>Compliance</span>
+          <span>{t("Compliance")}</span>
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
         <Link href="/roles/customer-administrator/compliance/framework" className="text-slate-500 hover:text-primary-600 transition-colors">
-          Integrated Frameworks
+          {t("Integrated Frameworks")}
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-        <span className="text-primary-700 font-medium">Controls</span>
+        <span className="text-primary-700 font-medium">{t("Controls")}</span>
       </nav>
 
       {/* Page Header */}
-      <h1 className="text-2xl font-bold text-slate-800">Controls</h1>
+      <h1 className="text-2xl font-bold text-slate-800">{t("Controls")}</h1>
 
       {/* Search Row */}
       <div className="flex items-center gap-4">
         <Input
-          placeholder="Search by control code or name..."
+          placeholder={t("Search by control code or name...")}
           value={search}
           onChange={(e) => {
             setSearch(e.target.value);
@@ -288,7 +290,7 @@ export default function ControlsByFrameworkPage() {
                   onClick={() => handleSort("name")}
                 >
                   <div className="flex items-center gap-2">
-                    Control Name
+                    {t("Control Name")}
                     <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
                   </div>
                 </TableHead>
@@ -299,7 +301,7 @@ export default function ControlsByFrameworkPage() {
                   onClick={() => handleSort("controlCode")}
                 >
                   <div className="flex items-center gap-2">
-                    Control Code
+                    {t("Control Code")}
                     <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
                   </div>
                 </TableHead>
@@ -310,7 +312,7 @@ export default function ControlsByFrameworkPage() {
                   onClick={() => handleSort("functionalGrouping")}
                 >
                   <div className="flex items-center gap-2">
-                    Functional Grouping
+                    {t("Functional Grouping")}
                     <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
                   </div>
                 </TableHead>
@@ -321,13 +323,13 @@ export default function ControlsByFrameworkPage() {
                   onClick={() => handleSort("status")}
                 >
                   <div className="flex items-center gap-2">
-                    Status
+                    {t("Status")}
                     <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
                   </div>
                 </TableHead>
               )}
               {visibleColumns.assignee && (
-                <TableHead className="text-xs font-semibold text-slate-600 py-4">Assignee</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Assignee")}</TableHead>
               )}
               {visibleColumns.domain && (
                 <TableHead
@@ -335,7 +337,7 @@ export default function ControlsByFrameworkPage() {
                   onClick={() => handleSort("domain")}
                 >
                   <div className="flex items-center gap-2">
-                    Domain Name
+                    {t("Domain Name")}
                     <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
                   </div>
                 </TableHead>
@@ -352,37 +354,37 @@ export default function ControlsByFrameworkPage() {
                       checked={visibleColumns.controlName}
                       onCheckedChange={(checked) => setVisibleColumns({ ...visibleColumns, controlName: checked })}
                     >
-                      Control Name
+                      {t("Control Name")}
                     </DropdownMenuCheckboxItem>
                     <DropdownMenuCheckboxItem
                       checked={visibleColumns.controlCode}
                       onCheckedChange={(checked) => setVisibleColumns({ ...visibleColumns, controlCode: checked })}
                     >
-                      Control Code
+                      {t("Control Code")}
                     </DropdownMenuCheckboxItem>
                     <DropdownMenuCheckboxItem
                       checked={visibleColumns.functionalGrouping}
                       onCheckedChange={(checked) => setVisibleColumns({ ...visibleColumns, functionalGrouping: checked })}
                     >
-                      FunctionalGrouping
+                      {t("Functional Grouping")}
                     </DropdownMenuCheckboxItem>
                     <DropdownMenuCheckboxItem
                       checked={visibleColumns.status}
                       onCheckedChange={(checked) => setVisibleColumns({ ...visibleColumns, status: checked })}
                     >
-                      Status
+                      {t("Status")}
                     </DropdownMenuCheckboxItem>
                     <DropdownMenuCheckboxItem
                       checked={visibleColumns.assignee}
                       onCheckedChange={(checked) => setVisibleColumns({ ...visibleColumns, assignee: checked })}
                     >
-                      Assignee
+                      {t("Assignee")}
                     </DropdownMenuCheckboxItem>
                     <DropdownMenuCheckboxItem
                       checked={visibleColumns.domain}
                       onCheckedChange={(checked) => setVisibleColumns({ ...visibleColumns, domain: checked })}
                     >
-                      Domain Name
+                      {t("Domain Name")}
                     </DropdownMenuCheckboxItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -404,7 +406,7 @@ export default function ControlsByFrameworkPage() {
             ) : paginatedControls.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-8 text-slate-500">
-                  No controls found for this framework.
+                  {t("No controls found for this framework.")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -443,8 +445,8 @@ export default function ControlsByFrameworkPage() {
         <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
           <span className="text-sm text-slate-500">
             {total > 0
-              ? `${startIndex + 1} to ${endIndex} of ${total}`
-              : "No controls"}
+              ? `${startIndex + 1} ${t("to")} ${endIndex} ${t("of")} ${total}`
+              : t("No controls")}
           </span>
           <div className="flex items-center gap-1">
             <Button

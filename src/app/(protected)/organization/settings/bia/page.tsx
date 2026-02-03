@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { ColumnDef } from "@tanstack/react-table";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface BIACategory {
   id: string;
@@ -77,6 +78,7 @@ interface BCPLabel {
 export default function BIASettingsPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState("category");
   const [loading, setLoading] = useState(true);
 
@@ -137,7 +139,7 @@ export default function BIASettingsPage() {
       if (bcpRes.ok) setBcpLabels(await bcpRes.json());
     } catch (error) {
       console.error("Error fetching BIA data:", error);
-      toast({ title: "Error", description: "Failed to load BIA settings", variant: "destructive" });
+      toast({ title: t("Error"), description: t("Failed to load BIA settings"), variant: "destructive" });
     }
     setLoading(false);
   };
@@ -157,18 +159,18 @@ export default function BIASettingsPage() {
       });
 
       if (res.ok) {
-        toast({ title: "Success", description: `Category ${isEditing ? "updated" : "created"} successfully` });
+        toast({ title: t("Success"), description: isEditing ? t("Category updated successfully") : t("Category created successfully") });
         fetchAllData();
         setIsCategoryDialogOpen(false);
         setEditingCategory(null);
         setNewCategory({ name: "", description: "" });
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to save category", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to save category"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error saving category:", error);
-      toast({ title: "Error", description: "Failed to save category", variant: "destructive" });
+      toast({ title: t("Error"), description: t("Failed to save category"), variant: "destructive" });
     }
   };
 
@@ -187,18 +189,18 @@ export default function BIASettingsPage() {
       });
 
       if (res.ok) {
-        toast({ title: "Success", description: `Rating ${isEditing ? "updated" : "created"} successfully` });
+        toast({ title: t("Success"), description: isEditing ? t("Rating updated successfully") : t("Rating created successfully") });
         fetchAllData();
         setIsRatingDialogOpen(false);
         setEditingRating(null);
         setNewRating({ label: "", score: 0, description: "" });
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to save rating", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to save rating"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error saving rating:", error);
-      toast({ title: "Error", description: "Failed to save rating", variant: "destructive" });
+      toast({ title: t("Error"), description: t("Failed to save rating"), variant: "destructive" });
     }
   };
 
@@ -219,18 +221,18 @@ export default function BIASettingsPage() {
       });
 
       if (res.ok) {
-        toast({ title: "Success", description: `Scoring range ${isEditing ? "updated" : "created"} successfully` });
+        toast({ title: t("Success"), description: isEditing ? t("Scoring range updated successfully") : t("Scoring range created successfully") });
         fetchAllData();
         setIsRangeDialogOpen(false);
         setEditingRange(null);
         setNewRange({ label: "", lowValue: 0, highValue: 0 });
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to save scoring range", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to save scoring range"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error saving scoring range:", error);
-      toast({ title: "Error", description: "Failed to save scoring range", variant: "destructive" });
+      toast({ title: t("Error"), description: t("Failed to save scoring range"), variant: "destructive" });
     }
   };
 
@@ -249,18 +251,18 @@ export default function BIASettingsPage() {
       });
 
       if (res.ok) {
-        toast({ title: "Success", description: `BCP label ${isEditing ? "updated" : "created"} successfully` });
+        toast({ title: t("Success"), description: isEditing ? t("BCP label updated successfully") : t("BCP label created successfully") });
         fetchAllData();
         setIsBcpDialogOpen(false);
         setEditingBcp(null);
         setNewBcp({ name: "", type: "RTO", hours: 0, description: "" });
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to save BCP label", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to save BCP label"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error saving BCP label:", error);
-      toast({ title: "Error", description: "Failed to save BCP label", variant: "destructive" });
+      toast({ title: t("Error"), description: t("Failed to save BCP label"), variant: "destructive" });
     }
   };
 
@@ -280,15 +282,15 @@ export default function BIASettingsPage() {
       const res = await fetch(endpoints[type], { method: "DELETE" });
 
       if (res.ok) {
-        toast({ title: "Success", description: "Item deleted successfully" });
+        toast({ title: t("Success"), description: t("Item deleted successfully") });
         fetchAllData();
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to delete item", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to delete item"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error deleting item:", error);
-      toast({ title: "Error", description: "Failed to delete item", variant: "destructive" });
+      toast({ title: t("Error"), description: t("Failed to delete item"), variant: "destructive" });
     }
     setDeleteTarget(null);
   };
@@ -302,7 +304,7 @@ export default function BIASettingsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ calculationType: value }),
       });
-      toast({ title: "Success", description: "Calculation type updated" });
+      toast({ title: t("Success"), description: t("Calculation type updated") });
     } catch (error) {
       console.error("Error updating calculation type:", error);
     }
@@ -312,12 +314,12 @@ export default function BIASettingsPage() {
   const categoryColumns: ColumnDef<BIACategory>[] = [
     {
       accessorKey: "name",
-      header: "Name",
+      header: t("Name"),
       cell: ({ row }) => <span className="font-medium text-slate-800">{row.getValue("name")}</span>,
     },
     {
       id: "actions",
-      header: "Actions",
+      header: t("Actions"),
       cell: ({ row }) => (
         <div className="flex gap-1">
           <Button
@@ -347,24 +349,24 @@ export default function BIASettingsPage() {
   const ratingColumns: ColumnDef<BIARating>[] = [
     {
       accessorKey: "label",
-      header: "Rating",
+      header: t("Rating"),
       cell: ({ row }) => <span className="font-medium text-slate-800">{row.getValue("label")}</span>,
     },
     {
       accessorKey: "score",
-      header: "Score",
+      header: t("Score"),
       cell: ({ row }) => <span className="text-slate-600">{row.getValue("score")}</span>,
     },
     {
       accessorKey: "description",
-      header: "Description",
+      header: t("Description"),
       cell: ({ row }) => (
         <span className="text-slate-600">{row.getValue("description") || "-"}</span>
       ),
     },
     {
       id: "actions",
-      header: "Actions",
+      header: t("Actions"),
       cell: ({ row }) => (
         <div className="flex gap-1">
           <Button
@@ -394,22 +396,22 @@ export default function BIASettingsPage() {
   const scoringRangeColumns: ColumnDef<BIAScoringRange>[] = [
     {
       accessorKey: "label",
-      header: "Rating",
+      header: t("Rating"),
       cell: ({ row }) => <span className="font-medium text-slate-800">{row.getValue("label")}</span>,
     },
     {
       accessorKey: "highValue",
-      header: "High Range",
+      header: t("High Range"),
       cell: ({ row }) => <span className="text-slate-600">{row.original.highValue ?? "-"}</span>,
     },
     {
       accessorKey: "lowValue",
-      header: "Low Range",
+      header: t("Low Range"),
       cell: ({ row }) => <span className="text-slate-600">{row.getValue("lowValue")}</span>,
     },
     {
       id: "actions",
-      header: "Actions",
+      header: t("Actions"),
       cell: ({ row }) => (
         <div className="flex gap-1">
           <Button
@@ -439,17 +441,17 @@ export default function BIASettingsPage() {
   const bcpColumns: ColumnDef<BCPLabel>[] = [
     {
       accessorKey: "name",
-      header: "Name",
+      header: t("Name"),
       cell: ({ row }) => <span className="font-medium text-slate-800">{row.getValue("name")}</span>,
     },
     {
       accessorKey: "type",
-      header: "Type",
+      header: t("Type"),
       cell: ({ row }) => <span className="text-slate-600">{row.getValue("type")}</span>,
     },
     {
       accessorKey: "isActive",
-      header: "Status",
+      header: t("Status"),
       cell: ({ row }) => (
         <Badge
           className={
@@ -458,13 +460,13 @@ export default function BIASettingsPage() {
               : "border-transparent bg-error-light text-error"
           }
         >
-          {row.original.isActive ? "Active" : "Inactive"}
+          {row.original.isActive ? t("Active") : t("Inactive")}
         </Badge>
       ),
     },
     {
       id: "actions",
-      header: "Actions",
+      header: t("Actions"),
       cell: ({ row }) => (
         <div className="flex gap-1">
           <Button
@@ -517,7 +519,7 @@ export default function BIASettingsPage() {
             <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
             <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
           </div>
-          <p className="text-sm text-slate-500 font-medium">Loading BIA settings...</p>
+          <p className="text-sm text-slate-500 font-medium">{t("Loading BIA settings...")}</p>
         </div>
       </div>
     );
@@ -529,26 +531,26 @@ export default function BIASettingsPage() {
       <nav className="flex items-center gap-1.5 text-sm">
         <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
-          <span>Organization</span>
+          <span>{t("Organization")}</span>
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
         <Link href="/organization/settings" className="text-slate-500 hover:text-primary-600 transition-colors">
-          Settings
+          {t("Settings")}
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-        <span className="text-primary-700 font-medium">BIA</span>
+        <span className="text-primary-700 font-medium">{t("BIA")}</span>
       </nav>
 
       {/* Page Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">BIA Settings</h1>
+        <h1 className="text-2xl font-bold text-slate-800">{t("BIA Settings")}</h1>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          <TabsTrigger value="category">Category</TabsTrigger>
-          <TabsTrigger value="methodology">BIA Methodology</TabsTrigger>
-          <TabsTrigger value="bcp">BCP Labels</TabsTrigger>
+          <TabsTrigger value="category">{t("Category")}</TabsTrigger>
+          <TabsTrigger value="methodology">{t("BIA Methodology")}</TabsTrigger>
+          <TabsTrigger value="bcp">{t("BCP Labels")}</TabsTrigger>
         </TabsList>
 
         {/* Category Tab */}
@@ -556,12 +558,12 @@ export default function BIASettingsPage() {
           {/* Toolbar */}
           <div className="flex items-center justify-between gap-4">
             <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
-                placeholder="Search categories..."
+                placeholder={t("Search categories...")}
                 value={categorySearch}
                 onChange={(e) => setCategorySearch(e.target.value)}
-                className="pl-10 bg-white border-slate-200"
+                className="ltr:pl-10 rtl:pr-10 bg-white border-slate-200"
               />
             </div>
             <Button
@@ -572,8 +574,8 @@ export default function BIASettingsPage() {
                 setIsCategoryDialogOpen(true);
               }}
             >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Category
+              <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+              {t("Add Category")}
             </Button>
           </div>
           <DataGrid columns={categoryColumns} data={filteredCategories} hideSearch={true} />
@@ -583,16 +585,16 @@ export default function BIASettingsPage() {
         <TabsContent value="methodology" className="mt-6 space-y-8">
           {/* BIA Rating Section */}
           <div className="space-y-4">
-            <h3 className="text-base font-semibold text-slate-800">BIA Rating</h3>
+            <h3 className="text-base font-semibold text-slate-800">{t("BIA Rating")}</h3>
             {/* Toolbar */}
             <div className="flex items-center justify-between gap-4">
               <div className="relative flex-1 max-w-sm">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input
-                  placeholder="Search ratings..."
+                  placeholder={t("Search ratings...")}
                   value={ratingSearch}
                   onChange={(e) => setRatingSearch(e.target.value)}
-                  className="pl-10 bg-white border-slate-200"
+                  className="ltr:pl-10 rtl:pr-10 bg-white border-slate-200"
                 />
               </div>
               <Button
@@ -603,8 +605,8 @@ export default function BIASettingsPage() {
                   setIsRatingDialogOpen(true);
                 }}
               >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Rating
+                <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                {t("Add Rating")}
               </Button>
             </div>
             <DataGrid columns={ratingColumns} data={filteredRatings} hideSearch={true} />
@@ -612,17 +614,17 @@ export default function BIASettingsPage() {
 
           {/* BIA Calculation Section */}
           <div className="border-t border-slate-200 pt-8 space-y-4">
-            <h3 className="text-base font-semibold text-slate-800">BIA Calculation</h3>
+            <h3 className="text-base font-semibold text-slate-800">{t("BIA Calculation")}</h3>
             <div className="flex items-center gap-4">
-              <Label className="text-sm font-medium text-slate-700">Calculation Type</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Calculation Type")}</Label>
               <Select value={calculationType} onValueChange={handleCalculationTypeChange}>
                 <SelectTrigger className="w-[200px] bg-white">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-white" position="popper" sideOffset={4}>
-                  <SelectItem value="High of all">High of all</SelectItem>
-                  <SelectItem value="Addition of all">Addition of all</SelectItem>
-                  <SelectItem value="Product of all">Product of all</SelectItem>
+                  <SelectItem value="High of all">{t("High of all")}</SelectItem>
+                  <SelectItem value="Addition of all">{t("Addition of all")}</SelectItem>
+                  <SelectItem value="Product of all">{t("Product of all")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -630,16 +632,16 @@ export default function BIASettingsPage() {
             {/* Scoring Calculation Grid - Only show for Addition/Product */}
             {calculationType !== "High of all" && (
               <div className="space-y-4 pt-4">
-                <h4 className="text-sm font-medium text-slate-700">Scoring Calculation</h4>
+                <h4 className="text-sm font-medium text-slate-700">{t("Scoring Calculation")}</h4>
                 {/* Toolbar */}
                 <div className="flex items-center justify-between gap-4">
                   <div className="relative flex-1 max-w-sm">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                     <Input
-                      placeholder="Search ranges..."
+                      placeholder={t("Search ranges...")}
                       value={rangeSearch}
                       onChange={(e) => setRangeSearch(e.target.value)}
-                      className="pl-10 bg-white border-slate-200"
+                      className="ltr:pl-10 rtl:pr-10 bg-white border-slate-200"
                     />
                   </div>
                   <Button
@@ -650,8 +652,8 @@ export default function BIASettingsPage() {
                       setIsRangeDialogOpen(true);
                     }}
                   >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Range
+                    <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                    {t("Add Range")}
                   </Button>
                 </div>
                 <DataGrid columns={scoringRangeColumns} data={filteredScoringRanges} hideSearch={true} />
@@ -665,12 +667,12 @@ export default function BIASettingsPage() {
           {/* Toolbar */}
           <div className="flex items-center justify-between gap-4">
             <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
-                placeholder="Search BCP labels..."
+                placeholder={t("Search BCP labels...")}
                 value={bcpSearch}
                 onChange={(e) => setBcpSearch(e.target.value)}
-                className="pl-10 bg-white border-slate-200"
+                className="ltr:pl-10 rtl:pr-10 bg-white border-slate-200"
               />
             </div>
             <Button
@@ -681,8 +683,8 @@ export default function BIASettingsPage() {
                 setIsBcpDialogOpen(true);
               }}
             >
-              <Plus className="h-4 w-4 mr-2" />
-              Add BCP Label
+              <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+              {t("Add BCP Label")}
             </Button>
           </div>
           <DataGrid columns={bcpColumns} data={filteredBcpLabels} hideSearch={true} />
@@ -696,7 +698,7 @@ export default function BIASettingsPage() {
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">
-                {editingCategory ? "Edit Category" : "Add Category"}
+                {editingCategory ? t("Edit Category") : t("Add Category")}
               </DialogTitle>
             </DialogHeader>
           </div>
@@ -706,7 +708,7 @@ export default function BIASettingsPage() {
             <div className="space-y-5">
               <div>
                 <Label className="text-sm font-medium text-slate-700">
-                  Name <span className="text-error">*</span>
+                  {t("Name")} <span className="text-error">*</span>
                 </Label>
                 <Input
                   value={editingCategory?.name || newCategory.name}
@@ -715,12 +717,12 @@ export default function BIASettingsPage() {
                       ? setEditingCategory({ ...editingCategory, name: e.target.value })
                       : setNewCategory({ ...newCategory, name: e.target.value })
                   }
-                  placeholder="Enter category name"
+                  placeholder={t("Enter category name")}
                   className="mt-1.5 bg-white"
                 />
               </div>
               <div>
-                <Label className="text-sm font-medium text-slate-700">Description</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
                 <Input
                   value={editingCategory?.description || newCategory.description}
                   onChange={(e) =>
@@ -728,7 +730,7 @@ export default function BIASettingsPage() {
                       ? setEditingCategory({ ...editingCategory, description: e.target.value })
                       : setNewCategory({ ...newCategory, description: e.target.value })
                   }
-                  placeholder="Enter description"
+                  placeholder={t("Enter description")}
                   className="mt-1.5 bg-white"
                 />
               </div>
@@ -738,9 +740,9 @@ export default function BIASettingsPage() {
           {/* Fixed Footer */}
           <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsCategoryDialogOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
-            <Button onClick={handleSaveCategory}>Save</Button>
+            <Button onClick={handleSaveCategory}>{t("Save")}</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -752,7 +754,7 @@ export default function BIASettingsPage() {
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">
-                {editingRating ? "Edit Rating" : "Add Rating"}
+                {editingRating ? t("Edit Rating") : t("Add Rating")}
               </DialogTitle>
             </DialogHeader>
           </div>
@@ -762,7 +764,7 @@ export default function BIASettingsPage() {
             <div className="space-y-5">
               <div>
                 <Label className="text-sm font-medium text-slate-700">
-                  Rating <span className="text-error">*</span>
+                  {t("Rating")} <span className="text-error">*</span>
                 </Label>
                 <Input
                   value={editingRating?.label || newRating.label}
@@ -771,13 +773,13 @@ export default function BIASettingsPage() {
                       ? setEditingRating({ ...editingRating, label: e.target.value })
                       : setNewRating({ ...newRating, label: e.target.value })
                   }
-                  placeholder="e.g., High, Medium, Low"
+                  placeholder={t("e.g., High, Medium, Low")}
                   className="mt-1.5 bg-white"
                 />
               </div>
               <div>
                 <Label className="text-sm font-medium text-slate-700">
-                  Score <span className="text-error">*</span>
+                  {t("Score")} <span className="text-error">*</span>
                 </Label>
                 <Input
                   type="number"
@@ -787,12 +789,12 @@ export default function BIASettingsPage() {
                       ? setEditingRating({ ...editingRating, score: parseInt(e.target.value) || 0 })
                       : setNewRating({ ...newRating, score: parseInt(e.target.value) || 0 })
                   }
-                  placeholder="e.g., 100"
+                  placeholder={t("e.g., 100")}
                   className="mt-1.5 bg-white"
                 />
               </div>
               <div>
-                <Label className="text-sm font-medium text-slate-700">Description</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
                 <Input
                   value={editingRating?.description || newRating.description}
                   onChange={(e) =>
@@ -800,7 +802,7 @@ export default function BIASettingsPage() {
                       ? setEditingRating({ ...editingRating, description: e.target.value })
                       : setNewRating({ ...newRating, description: e.target.value })
                   }
-                  placeholder="Enter description"
+                  placeholder={t("Enter description")}
                   className="mt-1.5 bg-white"
                 />
               </div>
@@ -810,9 +812,9 @@ export default function BIASettingsPage() {
           {/* Fixed Footer */}
           <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsRatingDialogOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
-            <Button onClick={handleSaveRating}>Save</Button>
+            <Button onClick={handleSaveRating}>{t("Save")}</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -824,7 +826,7 @@ export default function BIASettingsPage() {
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">
-                {editingRange ? "Edit Scoring Range" : "Add Scoring Range"}
+                {editingRange ? t("Edit Scoring Range") : t("Add Scoring Range")}
               </DialogTitle>
             </DialogHeader>
           </div>
@@ -834,7 +836,7 @@ export default function BIASettingsPage() {
             <div className="space-y-5">
               <div>
                 <Label className="text-sm font-medium text-slate-700">
-                  Rating <span className="text-error">*</span>
+                  {t("Rating")} <span className="text-error">*</span>
                 </Label>
                 <Input
                   value={editingRange?.label || newRange.label}
@@ -843,12 +845,12 @@ export default function BIASettingsPage() {
                       ? setEditingRange({ ...editingRange, label: e.target.value })
                       : setNewRange({ ...newRange, label: e.target.value })
                   }
-                  placeholder="e.g., Critical, High, Medium, Low"
+                  placeholder={t("e.g., Critical, High, Medium, Low")}
                   className="mt-1.5 bg-white"
                 />
               </div>
               <div>
-                <Label className="text-sm font-medium text-slate-700">High Range</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("High Range")}</Label>
                 <Input
                   type="number"
                   value={editingRange?.highValue ?? newRange.highValue}
@@ -857,13 +859,13 @@ export default function BIASettingsPage() {
                       ? setEditingRange({ ...editingRange, highValue: parseInt(e.target.value) || 0 })
                       : setNewRange({ ...newRange, highValue: parseInt(e.target.value) || 0 })
                   }
-                  placeholder="e.g., 500"
+                  placeholder={t("e.g., 500")}
                   className="mt-1.5 bg-white"
                 />
               </div>
               <div>
                 <Label className="text-sm font-medium text-slate-700">
-                  Low Range <span className="text-error">*</span>
+                  {t("Low Range")} <span className="text-error">*</span>
                 </Label>
                 <Input
                   type="number"
@@ -873,7 +875,7 @@ export default function BIASettingsPage() {
                       ? setEditingRange({ ...editingRange, lowValue: parseInt(e.target.value) || 0 })
                       : setNewRange({ ...newRange, lowValue: parseInt(e.target.value) || 0 })
                   }
-                  placeholder="e.g., 250"
+                  placeholder={t("e.g., 250")}
                   className="mt-1.5 bg-white"
                 />
               </div>
@@ -883,9 +885,9 @@ export default function BIASettingsPage() {
           {/* Fixed Footer */}
           <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsRangeDialogOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
-            <Button onClick={handleSaveRange}>Save</Button>
+            <Button onClick={handleSaveRange}>{t("Save")}</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -897,7 +899,7 @@ export default function BIASettingsPage() {
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">
-                {editingBcp ? "Edit BCP Label" : "Add BCP Label"}
+                {editingBcp ? t("Edit BCP Label") : t("Add BCP Label")}
               </DialogTitle>
             </DialogHeader>
           </div>
@@ -907,7 +909,7 @@ export default function BIASettingsPage() {
             <div className="space-y-5">
               <div>
                 <Label className="text-sm font-medium text-slate-700">
-                  Name <span className="text-error">*</span>
+                  {t("Name")} <span className="text-error">*</span>
                 </Label>
                 <Input
                   value={editingBcp?.name || newBcp.name}
@@ -916,13 +918,13 @@ export default function BIASettingsPage() {
                       ? setEditingBcp({ ...editingBcp, name: e.target.value })
                       : setNewBcp({ ...newBcp, name: e.target.value })
                   }
-                  placeholder="e.g., Critical, High, RTO"
+                  placeholder={t("e.g., Critical, High, RTO")}
                   className="mt-1.5 bg-white"
                 />
               </div>
               <div>
                 <Label className="text-sm font-medium text-slate-700">
-                  Type <span className="text-error">*</span>
+                  {t("Type")} <span className="text-error">*</span>
                 </Label>
                 <Select
                   value={editingBcp?.type || newBcp.type}
@@ -933,17 +935,17 @@ export default function BIASettingsPage() {
                   }
                 >
                   <SelectTrigger className="mt-1.5 bg-white">
-                    <SelectValue placeholder="Select type" />
+                    <SelectValue placeholder={t("Select type")} />
                   </SelectTrigger>
                   <SelectContent className="bg-white" position="popper" sideOffset={4}>
                     <SelectItem value="RTO">RTO</SelectItem>
                     <SelectItem value="RPO">RPO</SelectItem>
-                    <SelectItem value="Criticality">Criticality</SelectItem>
+                    <SelectItem value="Criticality">{t("Criticality")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label className="text-sm font-medium text-slate-700">Hours</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Hours")}</Label>
                 <Input
                   type="number"
                   value={editingBcp?.hours ?? newBcp.hours}
@@ -952,12 +954,12 @@ export default function BIASettingsPage() {
                       ? setEditingBcp({ ...editingBcp, hours: parseInt(e.target.value) || 0 })
                       : setNewBcp({ ...newBcp, hours: parseInt(e.target.value) || 0 })
                   }
-                  placeholder="e.g., 4"
+                  placeholder={t("e.g., 4")}
                   className="mt-1.5 bg-white"
                 />
               </div>
               <div>
-                <Label className="text-sm font-medium text-slate-700">Description</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
                 <Input
                   value={editingBcp?.description || newBcp.description}
                   onChange={(e) =>
@@ -965,7 +967,7 @@ export default function BIASettingsPage() {
                       ? setEditingBcp({ ...editingBcp, description: e.target.value })
                       : setNewBcp({ ...newBcp, description: e.target.value })
                   }
-                  placeholder="Enter description"
+                  placeholder={t("Enter description")}
                   className="mt-1.5 bg-white"
                 />
               </div>
@@ -975,9 +977,9 @@ export default function BIASettingsPage() {
           {/* Fixed Footer */}
           <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsBcpDialogOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
-            <Button onClick={handleSaveBcp}>Save</Button>
+            <Button onClick={handleSaveBcp}>{t("Save")}</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -986,14 +988,14 @@ export default function BIASettingsPage() {
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Item</AlertDialogTitle>
+            <AlertDialogTitle>{t("Delete Item")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this item? This action cannot be undone.
+              {t("Are you sure you want to delete this item? This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+            <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>{t("Delete")}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

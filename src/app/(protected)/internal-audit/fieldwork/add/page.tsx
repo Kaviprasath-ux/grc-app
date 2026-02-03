@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -58,6 +59,7 @@ interface UploadedFile {
 
 export default function AddEvidenceRequestPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -125,7 +127,7 @@ export default function AddEvidenceRequestPage() {
       }
     } catch (error) {
       console.error("Failed to fetch reference data:", error);
-      toast.error("Failed to load reference data");
+      toast.error(t("Failed to load reference data"));
     } finally {
       setLoading(false);
     }
@@ -183,15 +185,15 @@ export default function AddEvidenceRequestPage() {
 
     // Validation
     if (!formData.engagementId) {
-      toast.error("Please select an Audit Engagement");
+      toast.error(t("Please select an Audit Engagement"));
       return;
     }
     if (!formData.title.trim()) {
-      toast.error("Evidence Title is required");
+      toast.error(t("Evidence Title is required"));
       return;
     }
     if (!formData.dueDate) {
-      toast.error("Due Date is required");
+      toast.error(t("Due Date is required"));
       return;
     }
 
@@ -216,15 +218,15 @@ export default function AddEvidenceRequestPage() {
       });
 
       if (response.ok) {
-        toast.success("Evidence Request created successfully");
+        toast.success(t("Evidence Request created successfully"));
         router.push("/internal-audit/fieldwork");
       } else {
         const error = await response.json();
-        toast.error(error.error || "Failed to create evidence request");
+        toast.error(error.error || t("Failed to create evidence request"));
       }
     } catch (error) {
       console.error("Failed to create evidence request:", error);
-      toast.error("Failed to create evidence request");
+      toast.error(t("Failed to create evidence request"));
     } finally {
       setSaving(false);
     }
@@ -236,10 +238,10 @@ export default function AddEvidenceRequestPage() {
         <div className="flex items-center gap-4 mb-6">
           <Button variant="ghost" size="sm" onClick={() => router.back()}>
             <ArrowLeft className="h-4 w-4 mr-1" />
-            Back
+            {t("Back")}
           </Button>
-          <div className="text-sm text-muted-foreground">Fieldwork</div>
-          <h1 className="text-xl font-semibold text-blue-900">New Evidence Request</h1>
+          <div className="text-sm text-muted-foreground">{t("Fieldwork")}</div>
+          <h1 className="text-xl font-semibold text-blue-900">{t("New Evidence Request")}</h1>
         </div>
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
@@ -254,24 +256,24 @@ export default function AddEvidenceRequestPage() {
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" onClick={() => router.back()}>
           <ArrowLeft className="h-4 w-4 mr-1" />
-          Back
+          {t("Back")}
         </Button>
-        <div className="text-sm text-muted-foreground">Fieldwork</div>
-        <h1 className="text-xl font-semibold text-blue-900">New Evidence Request</h1>
+        <div className="text-sm text-muted-foreground">{t("Fieldwork")}</div>
+        <h1 className="text-xl font-semibold text-blue-900">{t("New Evidence Request")}</h1>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl">
         {/* Audit Engagement */}
         <div className="space-y-2">
           <Label className="text-blue-800">
-            Audit Engagement <span className="text-red-500">*</span>
+            {t("Audit Engagement")} <span className="text-red-500">*</span>
           </Label>
           <Select
             value={formData.engagementId}
             onValueChange={(value) => setFormData({ ...formData, engagementId: value })}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Select Audit Engagement" />
+              <SelectValue placeholder={t("Select Audit Engagement")} />
             </SelectTrigger>
             <SelectContent>
               {engagements.map((engagement) => (
@@ -283,7 +285,7 @@ export default function AddEvidenceRequestPage() {
           </Select>
           {selectedEngagement && (
             <div className="text-sm text-gray-500 mt-1">
-              Department: {selectedEngagement.department?.name || "N/A"}
+              {t("Department")}: {selectedEngagement.department?.name || t("N/A")}
             </div>
           )}
         </div>
@@ -291,103 +293,103 @@ export default function AddEvidenceRequestPage() {
         {/* Evidence Title */}
         <div className="space-y-2">
           <Label className="text-blue-800">
-            Evidence Title <span className="text-red-500">*</span>
+            {t("Evidence Title")} <span className="text-red-500">*</span>
           </Label>
           <Input
             value={formData.title}
             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-            placeholder="Enter evidence title"
+            placeholder={t("Enter evidence title")}
           />
         </div>
 
         {/* Description */}
         <div className="space-y-2">
-          <Label className="text-blue-800">Description</Label>
+          <Label className="text-blue-800">{t("Description")}</Label>
           <Textarea
             value={formData.description}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            placeholder="Describe the evidence required..."
+            placeholder={t("Describe the evidence required...")}
             rows={4}
           />
         </div>
 
         {/* Request Type */}
         <div className="space-y-2">
-          <Label className="text-blue-800">Request Type</Label>
+          <Label className="text-blue-800">{t("Request Type")}</Label>
           <Select
             value={formData.requestType}
             onValueChange={(value) => setFormData({ ...formData, requestType: value })}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Select Request Type" />
+              <SelectValue placeholder={t("Select Request Type")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Document">Document</SelectItem>
-              <SelectItem value="Screenshot">Screenshot</SelectItem>
-              <SelectItem value="System Export">System Export</SelectItem>
-              <SelectItem value="Report">Report</SelectItem>
-              <SelectItem value="Log File">Log File</SelectItem>
-              <SelectItem value="Policy Document">Policy Document</SelectItem>
-              <SelectItem value="Procedure Document">Procedure Document</SelectItem>
-              <SelectItem value="Interview Notes">Interview Notes</SelectItem>
-              <SelectItem value="Other">Other</SelectItem>
+              <SelectItem value="Document">{t("Document")}</SelectItem>
+              <SelectItem value="Screenshot">{t("Screenshot")}</SelectItem>
+              <SelectItem value="System Export">{t("System Export")}</SelectItem>
+              <SelectItem value="Report">{t("Report")}</SelectItem>
+              <SelectItem value="Log File">{t("Log File")}</SelectItem>
+              <SelectItem value="Policy Document">{t("Policy Document")}</SelectItem>
+              <SelectItem value="Procedure Document">{t("Procedure Document")}</SelectItem>
+              <SelectItem value="Interview Notes">{t("Interview Notes")}</SelectItem>
+              <SelectItem value="Other">{t("Other")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         {/* Sample Size */}
         <div className="space-y-2">
-          <Label className="text-blue-800">Sample Size</Label>
+          <Label className="text-blue-800">{t("Sample Size")}</Label>
           <Input
             value={formData.sampleSize}
             onChange={(e) => setFormData({ ...formData, sampleSize: e.target.value })}
-            placeholder="e.g., 25 samples, Full population, Random 10%"
+            placeholder={t("e.g., 25 samples, Full population, Random 10%")}
           />
         </div>
 
         {/* Control Reference */}
         <div className="space-y-2">
-          <Label className="text-blue-800">Control Reference</Label>
+          <Label className="text-blue-800">{t("Control Reference")}</Label>
           <Input
             value={formData.controlReference}
             onChange={(e) => setFormData({ ...formData, controlReference: e.target.value })}
-            placeholder="e.g., CTRL-001, SOX-102"
+            placeholder={t("e.g., CTRL-001, SOX-102")}
           />
         </div>
 
         {/* Priority and Status Row */}
         <div className="grid grid-cols-2 gap-6">
           <div className="space-y-2">
-            <Label className="text-blue-800">Priority</Label>
+            <Label className="text-blue-800">{t("Priority")}</Label>
             <Select
               value={formData.priority}
               onValueChange={(value) => setFormData({ ...formData, priority: value })}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select Priority" />
+                <SelectValue placeholder={t("Select Priority")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Low">Low</SelectItem>
-                <SelectItem value="Medium">Medium</SelectItem>
-                <SelectItem value="High">High</SelectItem>
-                <SelectItem value="Critical">Critical</SelectItem>
+                <SelectItem value="Low">{t("Low")}</SelectItem>
+                <SelectItem value="Medium">{t("Medium")}</SelectItem>
+                <SelectItem value="High">{t("High")}</SelectItem>
+                <SelectItem value="Critical">{t("Critical")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
-            <Label className="text-blue-800">Status</Label>
+            <Label className="text-blue-800">{t("Status")}</Label>
             <Select
               value={formData.status}
               onValueChange={(value) => setFormData({ ...formData, status: value })}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select Status" />
+                <SelectValue placeholder={t("Select Status")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Pending">Pending</SelectItem>
-                <SelectItem value="In Progress">In Progress</SelectItem>
-                <SelectItem value="Submitted">Submitted</SelectItem>
-                <SelectItem value="Reviewed">Reviewed</SelectItem>
+                <SelectItem value="Pending">{t("Pending")}</SelectItem>
+                <SelectItem value="In Progress">{t("In Progress")}</SelectItem>
+                <SelectItem value="Submitted">{t("Submitted")}</SelectItem>
+                <SelectItem value="Reviewed">{t("Reviewed")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -395,13 +397,13 @@ export default function AddEvidenceRequestPage() {
 
         {/* Auditee Assignment */}
         <div className="space-y-2">
-          <Label className="text-blue-800">Assign to Auditee</Label>
+          <Label className="text-blue-800">{t("Assign to Auditee")}</Label>
           <Select
             value={formData.auditeeId}
             onValueChange={(value) => setFormData({ ...formData, auditeeId: value })}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Select Auditee" />
+              <SelectValue placeholder={t("Select Auditee")} />
             </SelectTrigger>
             <SelectContent>
               {users.map((user) => (
@@ -416,37 +418,37 @@ export default function AddEvidenceRequestPage() {
         {/* Due Date */}
         <div className="space-y-2">
           <Label className="text-blue-800">
-            Due Date <span className="text-red-500">*</span>
+            {t("Due Date")} <span className="text-red-500">*</span>
           </Label>
           <DatePicker
             value={formData.dueDate}
             onChange={(date) => setFormData({ ...formData, dueDate: date ? date.toISOString().split('T')[0] : "" })}
-            placeholder="Select due date"
+            placeholder={t("Select due date")}
           />
         </div>
 
         {/* Testing Procedure Details - Collapsible */}
         <Collapsible open={detailsOpen} onOpenChange={setDetailsOpen}>
           <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-blue-50 rounded-lg hover:bg-blue-100">
-            <span className="text-blue-800 font-medium">Testing Procedure Details</span>
+            <span className="text-blue-800 font-medium">{t("Testing Procedure Details")}</span>
             {detailsOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
           </CollapsibleTrigger>
           <CollapsibleContent className="p-4 border border-t-0 rounded-b-lg space-y-4">
             <div className="space-y-2">
-              <Label className="text-blue-800">Testing Procedure</Label>
+              <Label className="text-blue-800">{t("Testing Procedure")}</Label>
               <Textarea
                 value={formData.testingProcedure}
                 onChange={(e) => setFormData({ ...formData, testingProcedure: e.target.value })}
-                placeholder="Describe the testing procedure to be performed..."
+                placeholder={t("Describe the testing procedure to be performed...")}
                 rows={4}
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-blue-800">Expected Evidence</Label>
+              <Label className="text-blue-800">{t("Expected Evidence")}</Label>
               <Textarea
                 value={formData.expectedEvidence}
                 onChange={(e) => setFormData({ ...formData, expectedEvidence: e.target.value })}
-                placeholder="Describe what evidence is expected from the auditee..."
+                placeholder={t("Describe what evidence is expected from the auditee...")}
                 rows={4}
               />
             </div>
@@ -456,16 +458,16 @@ export default function AddEvidenceRequestPage() {
         {/* Auditor Notes - Collapsible */}
         <Collapsible open={notesOpen} onOpenChange={setNotesOpen}>
           <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-blue-50 rounded-lg hover:bg-blue-100">
-            <span className="text-blue-800 font-medium">Auditor Notes</span>
+            <span className="text-blue-800 font-medium">{t("Auditor Notes")}</span>
             {notesOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
           </CollapsibleTrigger>
           <CollapsibleContent className="p-4 border border-t-0 rounded-b-lg">
             <div className="space-y-2">
-              <Label className="text-blue-800">Internal Notes (Not visible to Auditee)</Label>
+              <Label className="text-blue-800">{t("Internal Notes (Not visible to Auditee)")}</Label>
               <Textarea
                 value={formData.auditorNotes}
                 onChange={(e) => setFormData({ ...formData, auditorNotes: e.target.value })}
-                placeholder="Add internal notes for the audit team..."
+                placeholder={t("Add internal notes for the audit team...")}
                 rows={4}
               />
             </div>
@@ -474,7 +476,7 @@ export default function AddEvidenceRequestPage() {
 
         {/* File Upload */}
         <div className="space-y-2">
-          <Label className="text-blue-800">Attach Reference Documents</Label>
+          <Label className="text-blue-800">{t("Attach Reference Documents")}</Label>
           <div
             className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
               isDragOver ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-gray-400"
@@ -485,8 +487,8 @@ export default function AddEvidenceRequestPage() {
             onClick={() => fileInputRef.current?.click()}
           >
             <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-            <p className="text-gray-600">Drag and drop files here, or click to browse</p>
-            <p className="text-sm text-gray-400 mt-1">Supported formats: PDF, DOC, DOCX, XLS, XLSX, PNG, JPG</p>
+            <p className="text-gray-600">{t("Drag and drop files here, or click to browse")}</p>
+            <p className="text-sm text-gray-400 mt-1">{t("Supported formats: PDF, DOC, DOCX, XLS, XLSX, PNG, JPG")}</p>
             <input
               ref={fileInputRef}
               type="file"
@@ -529,7 +531,7 @@ export default function AddEvidenceRequestPage() {
             variant="outline"
             onClick={() => router.push("/internal-audit/fieldwork")}
           >
-            Cancel
+            {t("Cancel")}
           </Button>
           <Button
             type="submit"
@@ -539,10 +541,10 @@ export default function AddEvidenceRequestPage() {
             {saving ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Saving...
+                {t("Saving...")}
               </>
             ) : (
-              "Create Evidence Request"
+              t("Create Evidence Request")
             )}
           </Button>
         </div>

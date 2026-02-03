@@ -273,7 +273,7 @@ export default function RiskControlMatrixPage() {
         const result = await response.json();
         toast({
           title: t("Import completed"),
-          description: t("Imported {imported} risks to the matrix. {skipped} already existed.", { imported: result.imported, skipped: result.skipped }),
+          description: `${t("Imported")} ${result.imported} ${t("risks to the matrix.")} ${result.skipped} ${t("already existed.")}`,
         });
         // Refresh the list
         setPage(1);
@@ -361,7 +361,7 @@ export default function RiskControlMatrixPage() {
                 <AlertDialogHeader className="px-6 py-5 border-b border-slate-100">
                   <AlertDialogTitle>{t("Delete All Matrix Entries?")}</AlertDialogTitle>
                   <AlertDialogDescription>
-                    {t("This will remove all {count} entry(ies) from the Risk Control Matrix.", { count: entries.length })}
+                    {`${t("This will remove all")} ${entries.length} ${t("entry(ies) from the Risk Control Matrix.")}`}
                     <strong className="block mt-2 text-green-600">{t("The underlying Risk records will NOT be deleted.")}</strong>
                   </AlertDialogDescription>
                 </AlertDialogHeader>
@@ -439,7 +439,7 @@ export default function RiskControlMatrixPage() {
                         <AlertDialogHeader className="px-6 py-5 border-b border-slate-100">
                           <AlertDialogTitle>{t("Delete Matrix Entry?")}</AlertDialogTitle>
                           <AlertDialogDescription>
-                            {t("This will remove entry {code} ({name}) from the Risk Control Matrix.", { code: entry.riskCode, name: entry.name })}
+                            {`${t("This will remove entry")} ${entry.riskCode} (${entry.name}) ${t("from the Risk Control Matrix.")}`}
                             <strong className="block mt-2 text-green-600">{t("The underlying Risk record will NOT be deleted.")}</strong>
                           </AlertDialogDescription>
                         </AlertDialogHeader>
@@ -574,7 +574,7 @@ export default function RiskControlMatrixPage() {
                                             <AlertDialogHeader className="px-6 py-5 border-b border-slate-100">
                                               <AlertDialogTitle>{t("Unlink Control?")}</AlertDialogTitle>
                                               <AlertDialogDescription>
-                                                {t("This will remove the link between control {code} and this matrix entry.", { code: lc.control.controlCode })}
+                                                {`${t("This will remove the link between control")} ${lc.control.controlCode} ${t("and this matrix entry.")}`}
                                                 <strong className="block mt-2 text-green-600">{t("The control itself will NOT be deleted.")}</strong>
                                               </AlertDialogDescription>
                                             </AlertDialogHeader>

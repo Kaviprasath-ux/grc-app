@@ -54,6 +54,8 @@ const translations: [string, string, string][] = [
   ['Published', 'منشور', 'Publicēts'],
   ['No data available', 'لا توجد بيانات', 'Nav pieejamu datu'],
   ['No results found', 'لا توجد نتائج', 'Rezultāti nav atrasti'],
+  ['No results', 'لا توجد نتائج', 'Nav rezultātu'],
+  ['No results.', 'لا توجد نتائج.', 'Nav rezultātu.'],
   ['Select an option', 'اختر خياراً', 'Izvēlieties opciju'],
   ['Required', 'مطلوب', 'Obligāts'],
   ['Optional', 'اختياري', 'Neobligāts'],
@@ -423,6 +425,20 @@ const translations: [string, string, string][] = [
   ['Import users from a CSV file. The file should have columns: Username, Email, Password, First Name, Last Name, Full Name, Designation, Function, Role, Department, Language, Timezone.', 'استيراد المستخدمين من ملف CSV. يجب أن يحتوي الملف على أعمدة: اسم المستخدم، البريد الإلكتروني، كلمة المرور، الاسم الأول، اسم العائلة، الاسم الكامل، المسمى الوظيفي، الوظيفة، الدور، القسم، اللغة، المنطقة الزمنية.', 'Importējiet lietotājus no CSV faila. Failam jābūt ar kolonnām: Lietotājvārds, E-pasts, Parole, Vārds, Uzvārds, Pilns vārds, Amats, Funkcija, Loma, Nodaļa, Valoda, Laika zona.'],
 
   // ==========================================
+  // ORGANIZATION - ORG CHART
+  // ==========================================
+  ['View Mode', 'وضع العرض', 'Skata režīms'],
+  ['Role-wise Chart', 'مخطط حسب الدور', 'Lomu diagramma'],
+  ['Department-wise Chart', 'مخطط حسب القسم', 'Nodaļu diagramma'],
+  ['Loading organization chart...', 'جاري تحميل الهيكل التنظيمي...', 'Ielādē organizācijas shēmu...'],
+  ['No users found. Add users and assign reporting managers to build the organization chart.', 'لم يتم العثور على مستخدمين. أضف مستخدمين وعيّن مدراء للتقارير لبناء الهيكل التنظيمي.', 'Nav atrasts neviens lietotājs. Pievienojiet lietotājus un piešķiriet vadītājus, lai izveidotu organizācijas shēmu.'],
+  ['No users found in', 'لم يتم العثور على مستخدمين في', 'Nav atrasts neviens lietotājs'],
+  ['selected department', 'القسم المحدد', 'izvēlētajā nodaļā'],
+  ['Assign users to this department to see the hierarchy.', 'عيّن مستخدمين لهذا القسم لرؤية التسلسل الهرمي.', 'Piešķiriet lietotājus šai nodaļai, lai redzētu hierarhiju.'],
+  ['Select a department to view its hierarchy.', 'حدد قسماً لعرض تسلسله الهرمي.', 'Izvēlieties nodaļu, lai skatītu tās hierarhiju.'],
+  ['No organization hierarchy defined. Assign reporting managers to users to build the chart.', 'لم يتم تحديد تسلسل هرمي للمنظمة. عيّن مدراء للتقارير للمستخدمين لبناء المخطط.', 'Nav definēta organizācijas hierarhija. Piešķiriet vadītājus lietotājiem, lai izveidotu shēmu.'],
+
+  // ==========================================
   // ORGANIZATION - PROCESSES
   // ==========================================
   ['Processes', 'العمليات', 'Procesi'],
@@ -536,6 +552,35 @@ const translations: [string, string, string][] = [
   ['Risk Rating', 'تصنيف المخاطر', 'Riska novērtējums'],
   ['Risk Type', 'نوع المخاطر', 'Riska tips'],
   ['You don\'t have permission to access Risk Register.', 'ليس لديك صلاحية للوصول إلى سجل المخاطر.', 'Jums nav atļaujas piekļūt risku reģistram.'],
+  ['RiskRegister', 'سجل المخاطر', 'Risku reģistrs'],
+  ['Register', 'السجل', 'Reģistrs'],
+  ['Total Risks', 'إجمالي المخاطر', 'Kopējie riski'],
+  ['Open Risks', 'المخاطر المفتوحة', 'Atvērtie riski'],
+  ['Closed Risks', 'المخاطر المغلقة', 'Slēgtie riski'],
+  ['Search risks...', 'البحث في المخاطر...', 'Meklēt riskus...'],
+  ['All Ratings', 'جميع التصنيفات', 'Visi vērtējumi'],
+  ['Activity Log', 'سجل النشاط', 'Aktivitāšu žurnāls'],
+  ['New Risk', 'مخاطر جديدة', 'Jauns risks'],
+  ['Risk', 'المخاطر', 'Risks'],
+  ['Activity', 'النشاط', 'Aktivitāte'],
+  ['Actor', 'الفاعل', 'Dalībnieks'],
+  ['activities', 'الأنشطة', 'aktivitātes'],
+  ['No activity log entries found', 'لم يتم العثور على إدخالات في سجل النشاط', 'Nav atrasti aktivitāšu žurnāla ieraksti'],
+  ['Import Risks', 'استيراد المخاطر', 'Importēt riskus'],
+  ['Upload a CSV file to import risks', 'ارفع ملف CSV لاستيراد المخاطر', 'Augšupielādējiet CSV failu, lai importētu riskus'],
+  ['Required columns:', 'الأعمدة المطلوبة:', 'Obligātās kolonnas:'],
+  ['Risk name, Risk description, Risk category, Risk type', 'اسم المخاطر، وصف المخاطر، فئة المخاطر، نوع المخاطر', 'Riska nosaukums, Riska apraksts, Riska kategorija, Riska tips'],
+  ['Click to select a file or drag and drop', 'انقر لاختيار ملف أو اسحب وأفلت', 'Noklikšķiniet, lai izvēlētos failu, vai velciet un nometiet'],
+  ['Select File', 'اختيار ملف', 'Izvēlēties failu'],
+  ['Confirmation', 'تأكيد', 'Apstiprinājums'],
+  ['Are you sure you want to delete this risk?', 'هل أنت متأكد أنك تريد حذف هذه المخاطر؟', 'Vai tiešām vēlaties dzēst šo risku?'],
+  ['Catastrophic', 'كارثي', 'Katastrofāls'],
+  ['Very high', 'عالي جداً', 'Ļoti augsts'],
+  ['Very Low', 'منخفض جداً', 'Ļoti zems'],
+  ['Low Risk', 'مخاطر منخفضة', 'Zems risks'],
+  ['Medium Risk', 'مخاطر متوسطة', 'Vidējs risks'],
+  ['High Risk', 'مخاطر عالية', 'Augsts risks'],
+  ['Critical Risk', 'مخاطر حرجة', 'Kritisks risks'],
 
   // ==========================================
   // INTERNAL AUDIT
@@ -578,6 +623,7 @@ const translations: [string, string, string][] = [
   // ==========================================
   // DASHBOARD
   // ==========================================
+  ['Loading dashboard...', 'جاري تحميل لوحة التحكم...', 'Ielādē vadības paneli...'],
   ['Risks', 'المخاطر', 'Riski'],
   ['Exceptions', 'الاستثناءات', 'Izņēmumi'],
   ['Risk Assessment Overview', 'نظرة عامة على تقييم المخاطر', 'Risku novērtējuma pārskats'],

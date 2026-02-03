@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useHasRole } from "@/hooks/usePermissions";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface CompletedEngagement {
   id: string;
@@ -54,6 +55,7 @@ interface Pagination {
 
 export default function ReportsPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const isAuditHead = useHasRole("AuditHead");
   const isAuditManager = useHasRole("AuditManager");
   const isAuditor = useHasRole("Auditor");
@@ -95,7 +97,7 @@ export default function ReportsPage() {
       }
     } catch (error) {
       console.error("Failed to fetch completed engagements:", error);
-      toast.error("Failed to fetch completed engagements");
+      toast.error(t("Failed to fetch completed engagements"));
     } finally {
       setLoading(false);
     }
@@ -130,17 +132,17 @@ export default function ReportsPage() {
 
       if (response.ok) {
         const data = await response.json();
-        toast.success("Report generated successfully");
+        toast.success(t("Report generated successfully"));
         setGenerateDialogOpen(false);
         // Navigate to the report view page
         router.push(`/internal-audit/report/${selectedEngagement.id}`);
       } else {
         const error = await response.json();
-        toast.error(error.error || "Failed to generate report");
+        toast.error(error.error || t("Failed to generate report"));
       }
     } catch (error) {
       console.error("Error generating report:", error);
-      toast.error("Failed to generate report");
+      toast.error(t("Failed to generate report"));
     } finally {
       setGenerating(false);
     }
@@ -155,15 +157,15 @@ export default function ReportsPage() {
       <nav className="flex items-center gap-1.5 text-sm">
         <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
-          <span>Internal Audit</span>
+          <span>{t("Internal Audit")}</span>
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-        <span className="text-primary-700 font-medium">Reports</span>
+        <span className="text-primary-700 font-medium">{t("Reports")}</span>
       </nav>
 
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-slate-800">Reports</h1>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Reports")}</h1>
       </div>
 
       {/* Table */}
@@ -171,12 +173,12 @@ export default function ReportsPage() {
         <Table>
           <TableHeader>
             <TableRow className="border-b border-slate-100 bg-slate-50/50">
-              <TableHead className="text-xs font-semibold text-slate-600 py-4 pl-4">Engagement</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-4">Department</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-4">Audit Type</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-4">Assigned Auditor</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-4">Status</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-4">Action</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4 pl-4">{t("Engagement")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Department")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Audit Type")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Assigned Auditor")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Status")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Action")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -210,10 +212,10 @@ export default function ReportsPage() {
                           className="bg-primary-600 hover:bg-primary-700 text-white"
                           onClick={() => router.push(`/internal-audit/report/${engagement.id}`)}
                         >
-                          View Report
+                          {t("View Report")}
                         </Button>
                       ) : (
-                        <span className="text-slate-400 text-sm">No report</span>
+                        <span className="text-slate-400 text-sm">{t("No report")}</span>
                       )
                     ) : (
                       <Button
@@ -221,7 +223,7 @@ export default function ReportsPage() {
                         className="bg-primary-600 hover:bg-primary-700 text-white"
                         onClick={() => handleGenerateReport(engagement)}
                       >
-                        {engagement.hasReport ? "View Report" : "Generate Draft Report"}
+                        {engagement.hasReport ? t("View Report") : t("Generate Draft Report")}
                       </Button>
                     )}
                   </TableCell>
@@ -230,7 +232,7 @@ export default function ReportsPage() {
             ) : (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-8 text-slate-500">
-                  No completed engagements found
+                  {t("No completed engagements found")}
                 </TableCell>
               </TableRow>
             )}
@@ -241,7 +243,7 @@ export default function ReportsPage() {
         {pagination.total > 0 && (
           <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
             <span className="text-sm text-slate-500">
-              {startIndex} to {endIndex} of {pagination.total}
+              {startIndex} {t("to")} {endIndex} {t("of")} {pagination.total}
             </span>
             <div className="flex items-center gap-1">
               <Button
@@ -292,16 +294,16 @@ export default function ReportsPage() {
             {/* Fixed Header */}
             <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
               <DialogHeader>
-                <DialogTitle className="text-lg font-semibold text-slate-800">Generate Audit Report</DialogTitle>
+                <DialogTitle className="text-lg font-semibold text-slate-800">{t("Generate Audit Report")}</DialogTitle>
                 <DialogDescription className="text-sm text-slate-500 mt-1">
-                  Select the overall audit result for "{selectedEngagement?.engagementTitle}"
+                  {t("Select the overall audit result for")} "{selectedEngagement?.engagementTitle}"
                 </DialogDescription>
               </DialogHeader>
             </div>
 
             {/* Content */}
             <div className="px-6 py-6">
-              <Label className="text-sm font-medium text-slate-700 mb-3 block">Overall Audit Result</Label>
+              <Label className="text-sm font-medium text-slate-700 mb-3 block">{t("Overall Audit Result")}</Label>
               <RadioGroup
                 value={overallResult}
                 onValueChange={setOverallResult}
@@ -310,13 +312,13 @@ export default function ReportsPage() {
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="Pass" id="result-pass" />
                   <Label htmlFor="result-pass" className="font-normal cursor-pointer text-green-600">
-                    Pass
+                    {t("Pass")}
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="Fail" id="result-fail" />
                   <Label htmlFor="result-fail" className="font-normal cursor-pointer text-red-600">
-                    Fail
+                    {t("Fail")}
                   </Label>
                 </div>
               </RadioGroup>
@@ -328,7 +330,7 @@ export default function ReportsPage() {
                 variant="outline"
                 onClick={() => setGenerateDialogOpen(false)}
               >
-                Cancel
+                {t("Cancel")}
               </Button>
               <Button
                 className="bg-primary-600 hover:bg-primary-700"
@@ -338,10 +340,10 @@ export default function ReportsPage() {
                 {generating ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Generating...
+                    {t("Generating...")}
                   </>
                 ) : (
-                  "Generate Report"
+                  t("Generate Report")
                 )}
               </Button>
             </div>

@@ -42,6 +42,7 @@ import {
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface User {
   id: string;
@@ -72,6 +73,7 @@ const AUDIT_ROLES = [
 export default function UserManagementPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [users, setUsers] = useState<User[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
@@ -204,7 +206,7 @@ export default function UserManagementPage() {
   const handleChangePassword = async () => {
     if (!editItem) return;
     if (!passwordForm.newPassword || passwordForm.newPassword !== passwordForm.confirmPassword) {
-      toast({ title: "Error", description: "Passwords do not match!", variant: "destructive" });
+      toast({ title: t("Error"), description: t("Passwords do not match!"), variant: "destructive" });
       return;
     }
 
@@ -219,13 +221,13 @@ export default function UserManagementPage() {
 
       if (response.ok) {
         setChangePasswordDialogOpen(false);
-        toast({ title: "Success", description: "Password changed successfully!" });
+        toast({ title: t("Success"), description: t("Password changed successfully!") });
       } else {
-        toast({ title: "Error", description: "Failed to change password", variant: "destructive" });
+        toast({ title: t("Error"), description: t("Failed to change password"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Failed to change password:", error);
-      toast({ title: "Error", description: "Failed to change password", variant: "destructive" });
+      toast({ title: t("Error"), description: t("Failed to change password"), variant: "destructive" });
     } finally {
       setChangingPassword(false);
     }
@@ -243,7 +245,7 @@ export default function UserManagementPage() {
   const handleSave = async () => {
     if (!formData.firstName.trim() || !formData.email.trim()) return;
     if (!editItem && formData.password !== formData.confirmPassword) {
-      toast({ title: "Error", description: "Passwords do not match", variant: "destructive" });
+      toast({ title: t("Error"), description: t("Passwords do not match"), variant: "destructive" });
       return;
     }
 
@@ -280,18 +282,18 @@ export default function UserManagementPage() {
       if (response.ok) {
         setDialogOpen(false);
         fetchData();
-        toast({ title: "Success", description: "User saved successfully!" });
+        toast({ title: t("Success"), description: t("User saved successfully!") });
       } else {
         const errorData = await response.json().catch(() => ({}));
         toast({
-          title: "Error",
-          description: errorData.error || "Failed to save user",
+          title: t("Error"),
+          description: errorData.error || t("Failed to save user"),
           variant: "destructive"
         });
       }
     } catch (error) {
       console.error("Failed to save:", error);
-      toast({ title: "Error", description: "Failed to save user", variant: "destructive" });
+      toast({ title: t("Error"), description: t("Failed to save user"), variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -313,13 +315,13 @@ export default function UserManagementPage() {
 
       if (response.ok) {
         fetchData();
-        toast({ title: "Success", description: "User deleted successfully!" });
+        toast({ title: t("Success"), description: t("User deleted successfully!") });
       } else {
-        toast({ title: "Error", description: "Failed to delete user", variant: "destructive" });
+        toast({ title: t("Error"), description: t("Failed to delete user"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Failed to delete:", error);
-      toast({ title: "Error", description: "Failed to delete user", variant: "destructive" });
+      toast({ title: t("Error"), description: t("Failed to delete user"), variant: "destructive" });
     } finally {
       setDeleteDialogOpen(false);
       setItemToDelete(null);
@@ -342,24 +344,24 @@ export default function UserManagementPage() {
         <nav className="flex items-center gap-1.5 text-sm">
           <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
-            <span>Internal Audit</span>
+            <span>{t("Internal Audit")}</span>
           </Link>
           <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
           <Link href="/internal-audit/settings" className="text-slate-500 hover:text-primary-600 transition-colors">
-            Settings
+            {t("Settings")}
           </Link>
           <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-          <span className="text-primary-700 font-medium">User Management</span>
+          <span className="text-primary-700 font-medium">{t("User Management")}</span>
         </nav>
 
-        <h1 className="text-2xl font-bold text-slate-800">User Management</h1>
+        <h1 className="text-2xl font-bold text-slate-800">{t("User Management")}</h1>
         <div className="flex items-center justify-center h-[60vh]">
           <div className="flex flex-col items-center gap-4">
             <div className="relative">
               <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
               <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
             </div>
-            <p className="text-sm text-slate-500 font-medium">Loading users...</p>
+            <p className="text-sm text-slate-500 font-medium">{t("Loading users...")}</p>
           </div>
         </div>
       </div>
@@ -372,25 +374,25 @@ export default function UserManagementPage() {
       <nav className="flex items-center gap-1.5 text-sm">
         <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
-          <span>Internal Audit</span>
+          <span>{t("Internal Audit")}</span>
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
         <Link href="/internal-audit/settings" className="text-slate-500 hover:text-primary-600 transition-colors">
-          Settings
+          {t("Settings")}
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-        <span className="text-primary-700 font-medium">User Management</span>
+        <span className="text-primary-700 font-medium">{t("User Management")}</span>
       </nav>
 
       {/* Page Header */}
-      <h1 className="text-2xl font-bold text-slate-800">User Management</h1>
+      <h1 className="text-2xl font-bold text-slate-800">{t("User Management")}</h1>
 
       {/* Search and Add Button Row */}
       <div className="flex items-center gap-3">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input
-            placeholder="Search users..."
+            placeholder={t("Search users...")}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10 w-[300px] h-9 bg-white border-slate-200"
@@ -399,7 +401,7 @@ export default function UserManagementPage() {
         <div className="flex-1" />
         <Button size="sm" onClick={openAddDialog}>
           <Plus className="h-4 w-4 mr-2" />
-          New User
+          {t("New User")}
         </Button>
       </div>
 
@@ -408,17 +410,17 @@ export default function UserManagementPage() {
         <Table>
           <TableHeader>
             <TableRow className="border-b border-slate-100 bg-slate-50/50">
-              <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4">Full Name</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">Email</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">User Role</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[100px]">Action</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4">{t("Full Name")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Email")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("User Role")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[100px]">{t("Action")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredUsers.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className="text-center py-8 text-slate-500">
-                  No users found
+                  {t("No users found")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -442,7 +444,7 @@ export default function UserManagementPage() {
                         size="icon"
                         className="h-8 w-8 text-slate-400 hover:text-slate-600"
                         onClick={() => openEditDialog(user)}
-                        title="Edit"
+                        title={t("Edit")}
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
@@ -451,7 +453,7 @@ export default function UserManagementPage() {
                         size="icon"
                         className="h-8 w-8 text-slate-400 hover:text-semantic-error"
                         onClick={() => openDeleteDialog(user)}
-                        title="Delete"
+                        title={t("Delete")}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -466,7 +468,7 @@ export default function UserManagementPage() {
         {/* Pagination info */}
         <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
           <span className="text-sm text-slate-500">
-            Showing {filteredUsers.length} of {users.length} users
+            {t("Showing")} {filteredUsers.length} {t("of")} {users.length} {t("users")}
           </span>
         </div>
       </div>
@@ -477,7 +479,7 @@ export default function UserManagementPage() {
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">{editItem ? "Edit User" : "New Account"}</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{editItem ? t("Edit User") : t("New Account")}</DialogTitle>
             </DialogHeader>
           </div>
 
@@ -487,7 +489,7 @@ export default function UserManagementPage() {
               {/* Row 1: User ID & Username */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">User ID</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("User ID")}</Label>
                   <Input
                     value={editItem ? editItem.userName : nextUserId}
                     disabled
@@ -495,11 +497,11 @@ export default function UserManagementPage() {
                   />
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Username <span className="text-red-500">*</span></Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Username")} <span className="text-red-500">*</span></Label>
                   <Input
                     value={formData.userName}
                     onChange={(e) => setFormData({ ...formData, userName: e.target.value })}
-                    placeholder="Enter username"
+                    placeholder={t("Enter username")}
                     className="mt-1.5 w-full bg-white"
                   />
                 </div>
@@ -508,20 +510,20 @@ export default function UserManagementPage() {
               {/* Row 2: First Name & Last Name */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">First Name <span className="text-red-500">*</span></Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("First Name")} <span className="text-red-500">*</span></Label>
                   <Input
                     value={formData.firstName}
                     onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                    placeholder="Enter first name"
+                    placeholder={t("Enter first name")}
                     className="mt-1.5 w-full bg-white"
                   />
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Last Name</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Last Name")}</Label>
                   <Input
                     value={formData.lastName}
                     onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                    placeholder="Enter last name"
+                    placeholder={t("Enter last name")}
                     className="mt-1.5 w-full bg-white"
                   />
                 </div>
@@ -530,21 +532,21 @@ export default function UserManagementPage() {
               {/* Row 3: Full Name & Email */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Full Name</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Full Name")}</Label>
                   <Input
                     value={formData.fullName}
                     onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                    placeholder="Enter full name"
+                    placeholder={t("Enter full name")}
                     className="mt-1.5 w-full bg-white"
                   />
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Email <span className="text-red-500">*</span></Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Email")} <span className="text-red-500">*</span></Label>
                   <Input
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="Enter email"
+                    placeholder={t("Enter email")}
                     className="mt-1.5 w-full bg-white"
                   />
                 </div>
@@ -553,29 +555,29 @@ export default function UserManagementPage() {
               {/* Row 4: Designation & Function */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Designation</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Designation")}</Label>
                   <Input
                     value={formData.designation}
                     onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
-                    placeholder="Enter designation (optional)"
+                    placeholder={t("Enter designation (optional)")}
                     className="mt-1.5 w-full bg-white"
                   />
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Function</Label>
-                  <Input value="Audit" disabled className="mt-1.5 w-full bg-slate-50" />
+                  <Label className="text-sm font-medium text-slate-700">{t("Function")}</Label>
+                  <Input value={t("Audit")} disabled className="mt-1.5 w-full bg-slate-50" />
                 </div>
               </div>
 
               {/* Row 5: Department */}
               <div>
-                <Label className="text-sm font-medium text-slate-700">Department</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Department")}</Label>
                 <Select
                   value={formData.departmentId}
                   onValueChange={(value) => setFormData({ ...formData, departmentId: value })}
                 >
                   <SelectTrigger className="mt-1.5 w-full bg-white border-slate-200">
-                    <SelectValue placeholder="Select Department" />
+                    <SelectValue placeholder={t("Select Department")} />
                   </SelectTrigger>
                   <SelectContent>
                     {departments.map((dept) => (
@@ -589,7 +591,7 @@ export default function UserManagementPage() {
 
               {/* User Role (multi-select with checkboxes) */}
               <div>
-                <Label className="text-sm font-medium text-slate-700">User Role</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("User Role")}</Label>
                 <div className="mt-1.5 grid grid-cols-2 gap-2 border border-slate-200 rounded-lg p-3 bg-white">
                   {AUDIT_ROLES.map((role) => (
                     <div key={role} className="flex items-center space-x-2">
@@ -610,22 +612,22 @@ export default function UserManagementPage() {
               {!editItem && (
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Password <span className="text-red-500">*</span></Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Password")} <span className="text-red-500">*</span></Label>
                     <Input
                       type="password"
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      placeholder="Enter password"
+                      placeholder={t("Enter password")}
                       className="mt-1.5 w-full bg-white"
                     />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Confirm Password <span className="text-red-500">*</span></Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Confirm Password")} <span className="text-red-500">*</span></Label>
                     <Input
                       type="password"
                       value={formData.confirmPassword}
                       onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                      placeholder="Confirm password"
+                      placeholder={t("Confirm password")}
                       className="mt-1.5 w-full bg-white"
                     />
                   </div>
@@ -643,16 +645,16 @@ export default function UserManagementPage() {
                   onClick={openChangePasswordDialog}
                   type="button"
                 >
-                  Change Password
+                  {t("Change Password")}
                 </Button>
               )}
             </div>
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                Cancel
+                {t("Cancel")}
               </Button>
               <Button onClick={handleSave} disabled={saving || !formData.firstName.trim() || !formData.email.trim()}>
-                {saving ? "Saving..." : "Save"}
+                {saving ? t("Saving...") : t("Save")}
               </Button>
             </div>
           </div>
@@ -665,30 +667,30 @@ export default function UserManagementPage() {
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Change Password</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Change Password")}</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Content */}
           <div className="px-6 py-6 space-y-5">
             <div>
-              <Label className="text-sm font-medium text-slate-700">New Password <span className="text-red-500">*</span></Label>
+              <Label className="text-sm font-medium text-slate-700">{t("New Password")} <span className="text-red-500">*</span></Label>
               <Input
                 type="password"
                 value={passwordForm.newPassword}
                 onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
-                placeholder="Enter new password"
+                placeholder={t("Enter new password")}
                 className="mt-1.5 w-full bg-white"
                 autoFocus
               />
             </div>
             <div>
-              <Label className="text-sm font-medium text-slate-700">Confirm New Password <span className="text-red-500">*</span></Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Confirm New Password")} <span className="text-red-500">*</span></Label>
               <Input
                 type="password"
                 value={passwordForm.confirmPassword}
                 onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
-                placeholder="Confirm new password"
+                placeholder={t("Confirm new password")}
                 className="mt-1.5 w-full bg-white"
               />
             </div>
@@ -697,13 +699,13 @@ export default function UserManagementPage() {
           {/* Fixed Footer */}
           <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setChangePasswordDialogOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button
               onClick={handleChangePassword}
               disabled={changingPassword || !passwordForm.newPassword || passwordForm.newPassword !== passwordForm.confirmPassword}
             >
-              {changingPassword ? "Changing..." : "Change Password"}
+              {changingPassword ? t("Changing...") : t("Change Password")}
             </Button>
           </div>
         </DialogContent>
@@ -713,15 +715,15 @@ export default function UserManagementPage() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent className="sm:max-w-[400px] p-0 gap-0">
           <AlertDialogHeader className="px-6 py-5 border-b border-slate-100">
-            <AlertDialogTitle className="text-lg font-semibold text-slate-800">Confirm Delete</AlertDialogTitle>
+            <AlertDialogTitle className="text-lg font-semibold text-slate-800">{t("Confirm Delete")}</AlertDialogTitle>
             <AlertDialogDescription className="text-sm text-slate-500 mt-1">
-              Are you sure you want to delete &quot;{itemToDelete?.fullName}&quot;? This action cannot be undone.
+              {t("Are you sure you want to delete")} &quot;{itemToDelete?.fullName}&quot;? {t("This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex justify-end gap-2 px-6 py-4">
-            <AlertDialogCancel className="mt-0">Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="mt-0">{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
-              Delete
+              {t("Delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

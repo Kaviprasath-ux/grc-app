@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface InternalAuditRisk {
   id: string;
@@ -41,6 +42,7 @@ interface InternalAuditRisk {
 export default function ViewRiskPage() {
   const router = useRouter();
   const params = useParams();
+  const { t } = useLanguage();
   const [risk, setRisk] = useState<InternalAuditRisk | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -104,8 +106,8 @@ export default function ViewRiskPage() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <p className="text-sm text-muted-foreground">Internal Audit</p>
-            <h1 className="text-2xl font-semibold">Risk Details</h1>
+            <p className="text-sm text-muted-foreground">{t("Internal Audit")}</p>
+            <h1 className="text-2xl font-semibold">{t("Risk Details")}</h1>
           </div>
         </div>
         <div className="flex items-center justify-center h-64">
@@ -128,13 +130,13 @@ export default function ViewRiskPage() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <p className="text-sm text-muted-foreground">Internal Audit</p>
-            <h1 className="text-2xl font-semibold">Risk Details - {risk.riskId}</h1>
+            <p className="text-sm text-muted-foreground">{t("Internal Audit")}</p>
+            <h1 className="text-2xl font-semibold">{t("Risk Details")} - {risk.riskId}</h1>
           </div>
         </div>
         <Button onClick={() => router.push(`/internal-audit/risk-register/${risk.id}/edit`)}>
           <Pencil className="h-4 w-4 mr-2" />
-          Edit
+          {t("Edit")}
         </Button>
       </div>
 
@@ -142,65 +144,65 @@ export default function ViewRiskPage() {
       <div className="bg-card rounded-lg border p-6 space-y-6">
         {/* Basic Information */}
         <div className="space-y-4">
-          <h3 className="text-lg font-medium border-b pb-2">Basic Information</h3>
+          <h3 className="text-lg font-medium border-b pb-2">{t("Basic Information")}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
-              <p className="text-sm text-muted-foreground">Risk ID</p>
+              <p className="text-sm text-muted-foreground">{t("Risk ID")}</p>
               <p className="font-medium">{risk.riskId}</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Risk Name</p>
+              <p className="text-sm text-muted-foreground">{t("Risk Name")}</p>
               <p className="font-medium">{risk.riskName}</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Department</p>
+              <p className="text-sm text-muted-foreground">{t("Department")}</p>
               <p className="font-medium">{risk.department?.name || "-"}</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Category</p>
+              <p className="text-sm text-muted-foreground">{t("Category")}</p>
               <p className="font-medium">{risk.category?.name || "-"}</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Audit Type</p>
+              <p className="text-sm text-muted-foreground">{t("Audit Type")}</p>
               <p className="font-medium">{risk.auditType?.name || "-"}</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Creation Date</p>
+              <p className="text-sm text-muted-foreground">{t("Creation Date")}</p>
               <p className="font-medium">{formatDate(risk.creationDate)}</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Section/Process</p>
+              <p className="text-sm text-muted-foreground">{t("Section/Process")}</p>
               <p className="font-medium">{risk.sectionProcess || "-"}</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Sub Process</p>
+              <p className="text-sm text-muted-foreground">{t("Sub Process")}</p>
               <p className="font-medium">{risk.subProcess || "-"}</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Activity</p>
+              <p className="text-sm text-muted-foreground">{t("Activity")}</p>
               <p className="font-medium">{risk.activity || "-"}</p>
             </div>
           </div>
           <div>
-            <p className="text-sm text-muted-foreground">Risk Description</p>
+            <p className="text-sm text-muted-foreground">{t("Risk Description")}</p>
             <p className="font-medium">{risk.riskDescription || "-"}</p>
           </div>
         </div>
 
         {/* Inherent Risk Assessment */}
         <div className="space-y-4">
-          <h3 className="text-lg font-medium border-b pb-2">Inherent Risk Assessment</h3>
+          <h3 className="text-lg font-medium border-b pb-2">{t("Inherent Risk Assessment")}</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <p className="text-sm text-muted-foreground">Likelihood</p>
+              <p className="text-sm text-muted-foreground">{t("Likelihood")}</p>
               <p className="font-medium">{risk.inherentLikelihood ?? "-"}</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Impact</p>
+              <p className="text-sm text-muted-foreground">{t("Impact")}</p>
               <p className="font-medium">{risk.inherentImpact ?? "-"}</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Inherent Score</p>
+              <p className="text-sm text-muted-foreground">{t("Inherent Score")}</p>
               <p className="font-medium">{risk.inherentScore ?? "-"}</p>
             </div>
           </div>
@@ -208,14 +210,14 @@ export default function ViewRiskPage() {
 
         {/* Control Information */}
         <div className="space-y-4">
-          <h3 className="text-lg font-medium border-b pb-2">Control Information</h3>
+          <h3 className="text-lg font-medium border-b pb-2">{t("Control Information")}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <p className="text-sm text-muted-foreground">Control Description</p>
+              <p className="text-sm text-muted-foreground">{t("Control Description")}</p>
               <p className="font-medium">{risk.controlDescription || "-"}</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Control Effectiveness</p>
+              <p className="text-sm text-muted-foreground">{t("Control Effectiveness")}</p>
               <p className="font-medium">{risk.controlEffectiveness || "-"}</p>
             </div>
           </div>
@@ -223,22 +225,22 @@ export default function ViewRiskPage() {
 
         {/* Residual Risk Assessment */}
         <div className="space-y-4">
-          <h3 className="text-lg font-medium border-b pb-2">Residual Risk Assessment</h3>
+          <h3 className="text-lg font-medium border-b pb-2">{t("Residual Risk Assessment")}</h3>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-              <p className="text-sm text-muted-foreground">Likelihood</p>
+              <p className="text-sm text-muted-foreground">{t("Likelihood")}</p>
               <p className="font-medium">{risk.residualLikelihood ?? "-"}</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Impact</p>
+              <p className="text-sm text-muted-foreground">{t("Impact")}</p>
               <p className="font-medium">{risk.residualImpact ?? "-"}</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Residual Score</p>
+              <p className="text-sm text-muted-foreground">{t("Residual Score")}</p>
               <p className="font-medium">{risk.residualScore ?? "-"}</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Risk Level</p>
+              <p className="text-sm text-muted-foreground">{t("Risk Level")}</p>
               <div className="mt-1">{getRiskLevelBadge(risk.riskLevel)}</div>
             </div>
           </div>
@@ -246,14 +248,14 @@ export default function ViewRiskPage() {
 
         {/* Status & Comments */}
         <div className="space-y-4">
-          <h3 className="text-lg font-medium border-b pb-2">Status & Comments</h3>
+          <h3 className="text-lg font-medium border-b pb-2">{t("Status & Comments")}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <p className="text-sm text-muted-foreground">Status</p>
+              <p className="text-sm text-muted-foreground">{t("Status")}</p>
               <div className="mt-1">{getStatusBadge(risk.status)}</div>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Audit Comment</p>
+              <p className="text-sm text-muted-foreground">{t("Audit Comment")}</p>
               <p className="font-medium">{risk.auditComment || "-"}</p>
             </div>
           </div>
@@ -263,10 +265,10 @@ export default function ViewRiskPage() {
         <div className="space-y-4 pt-4 border-t">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
             <div>
-              <p>Created: {formatDate(risk.createdAt)}</p>
+              <p>{t("Created")}: {formatDate(risk.createdAt)}</p>
             </div>
             <div>
-              <p>Last Updated: {formatDate(risk.updatedAt)}</p>
+              <p>{t("Last Updated")}: {formatDate(risk.updatedAt)}</p>
             </div>
           </div>
         </div>

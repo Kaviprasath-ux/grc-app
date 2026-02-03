@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Unauthorized } from "@/components/ui/unauthorized";
 import {
   Table,
@@ -60,6 +61,7 @@ interface Engagement {
 export default function FieldworkPage() {
   const router = useRouter();
   const { data: session } = useSession();
+  const { t } = useLanguage();
   const { canView, isLoading: permissionsLoading } = usePermissions('audit.fieldwork');
   const [engagements, setEngagements] = useState<Engagement[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -133,7 +135,7 @@ export default function FieldworkPage() {
       }
     } catch (error) {
       console.error("Failed to fetch engagements:", error);
-      toast.error("Failed to fetch fieldwork data");
+      toast.error(t("Failed to fetch fieldwork data"));
     } finally {
       setLoading(false);
     }
@@ -155,7 +157,7 @@ export default function FieldworkPage() {
     if (engagement.assignedAuditors && engagement.assignedAuditors.length > 0) {
       return engagement.assignedAuditors.join(", ");
     }
-    return "No items found";
+    return t("No items found");
   };
 
   const handleSort = (field: string) => {
@@ -244,14 +246,14 @@ export default function FieldworkPage() {
   if (permissionsLoading || loading) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-slate-800">Fieldwork</h1>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Fieldwork")}</h1>
         <div className="flex items-center justify-center h-[60vh]">
           <div className="flex flex-col items-center gap-4">
             <div className="relative">
               <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
               <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
             </div>
-            <p className="text-sm text-slate-500 font-medium">Loading...</p>
+            <p className="text-sm text-slate-500 font-medium">{t("Loading...")}</p>
           </div>
         </div>
       </div>
@@ -260,7 +262,7 @@ export default function FieldworkPage() {
 
   // Show unauthorized if user doesn't have view permission
   if (!canView) {
-    return <Unauthorized description="You don't have permission to access Fieldwork." />;
+    return <Unauthorized description={t("You don't have permission to access Fieldwork.")} />;
   }
 
   return (
@@ -269,37 +271,37 @@ export default function FieldworkPage() {
       <nav className="flex items-center gap-1.5 text-sm">
         <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
-          <span>Internal Audit</span>
+          <span>{t("Internal Audit")}</span>
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-        <span className="text-primary-700 font-medium">Fieldwork</span>
+        <span className="text-primary-700 font-medium">{t("Fieldwork")}</span>
       </nav>
 
       {/* Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">Fieldwork</h1>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Fieldwork")}</h1>
       </div>
 
       {/* Filters */}
       <div className="flex items-center justify-end gap-3">
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[140px] bg-white">
-            <SelectValue placeholder="All Status" />
+            <SelectValue placeholder={t("All Status")} />
           </SelectTrigger>
           <SelectContent className="bg-white">
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="Planned">Planned</SelectItem>
-            <SelectItem value="In Progress">In Progress</SelectItem>
-            <SelectItem value="Completed">Completed</SelectItem>
+            <SelectItem value="all">{t("All Status")}</SelectItem>
+            <SelectItem value="Planned">{t("Planned")}</SelectItem>
+            <SelectItem value="In Progress">{t("In Progress")}</SelectItem>
+            <SelectItem value="Completed">{t("Completed")}</SelectItem>
           </SelectContent>
         </Select>
 
         <Select value={auditorFilter} onValueChange={setAuditorFilter}>
           <SelectTrigger className="w-[160px] bg-white">
-            <SelectValue placeholder="All Auditors" />
+            <SelectValue placeholder={t("All Auditors")} />
           </SelectTrigger>
           <SelectContent className="bg-white">
-            <SelectItem value="all">All Auditors</SelectItem>
+            <SelectItem value="all">{t("All Auditors")}</SelectItem>
             {auditors.map((auditor) => (
               <SelectItem key={auditor.id} value={auditor.id}>
                 {auditor.firstName} {auditor.lastName}
@@ -310,10 +312,10 @@ export default function FieldworkPage() {
 
         <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
           <SelectTrigger className="w-[180px] bg-white">
-            <SelectValue placeholder="All Departments" />
+            <SelectValue placeholder={t("All Departments")} />
           </SelectTrigger>
           <SelectContent className="bg-white">
-            <SelectItem value="all">All Departments</SelectItem>
+            <SelectItem value="all">{t("All Departments")}</SelectItem>
             {departments.map((dept) => (
               <SelectItem key={dept.id} value={dept.id}>
                 {dept.name}
@@ -328,13 +330,13 @@ export default function FieldworkPage() {
         <Table>
           <TableHeader>
             <TableRow className="border-b border-slate-100 bg-slate-50/50">
-              <SortableHeader field="auditId">Audit ID</SortableHeader>
-              <SortableHeader field="name">Name</SortableHeader>
-              <SortableHeader field="auditor">Auditor</SortableHeader>
-              <SortableHeader field="startDate">Start Date</SortableHeader>
-              <SortableHeader field="targetDate">Target Date</SortableHeader>
-              <SortableHeader field="status">Status</SortableHeader>
-              <TableHead className="text-xs font-semibold text-slate-600 py-4">Action</TableHead>
+              <SortableHeader field="auditId">{t("Audit ID")}</SortableHeader>
+              <SortableHeader field="name">{t("Name")}</SortableHeader>
+              <SortableHeader field="auditor">{t("Auditor")}</SortableHeader>
+              <SortableHeader field="startDate">{t("Start Date")}</SortableHeader>
+              <SortableHeader field="targetDate">{t("Target Date")}</SortableHeader>
+              <SortableHeader field="status">{t("Status")}</SortableHeader>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Action")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -356,7 +358,7 @@ export default function FieldworkPage() {
                       className="bg-primary-600 hover:bg-primary-700 text-white"
                       onClick={() => router.push(`/internal-audit/fieldwork/${engagement.id}`)}
                     >
-                      Add/View Details
+                      {t("Add/View Details")}
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -364,7 +366,7 @@ export default function FieldworkPage() {
             ) : (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-8 text-slate-500">
-                  No fieldwork items found
+                  {t("No fieldwork items found")}
                 </TableCell>
               </TableRow>
             )}
@@ -375,7 +377,7 @@ export default function FieldworkPage() {
         {sortedEngagements.length > 0 && (
           <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
             <span className="text-sm text-slate-500">
-              {startIndex + 1} to {Math.min(endIndex, sortedEngagements.length)} of {sortedEngagements.length}
+              {startIndex + 1} {t("to")} {Math.min(endIndex, sortedEngagements.length)} {t("of")} {sortedEngagements.length}
             </span>
             <div className="flex items-center gap-1">
               <Button

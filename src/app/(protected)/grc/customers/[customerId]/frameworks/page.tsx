@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -150,6 +151,7 @@ export default function CustomerFrameworkOverviewPage() {
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const customerId = params.customerId as string;
 
   const [customer, setCustomer] = useState<Customer | null>(null);
@@ -315,7 +317,7 @@ export default function CustomerFrameworkOverviewPage() {
       if (response.ok) {
         const result = await response.json();
         toast({
-          title: "Success",
+          title: t("Success"),
           description: result.message,
         });
         fetchFrameworks();
@@ -323,16 +325,16 @@ export default function CustomerFrameworkOverviewPage() {
       } else {
         const error = await response.json();
         toast({
-          title: "Error",
-          description: error.error || "Failed to process framework",
+          title: t("Error"),
+          description: error.error || t("Failed to process framework"),
           variant: "destructive",
         });
       }
     } catch (error) {
       console.error("Error subscribing framework:", error);
       toast({
-        title: "Error",
-        description: "Failed to process framework",
+        title: t("Error"),
+        description: t("Failed to process framework"),
         variant: "destructive",
       });
     } finally {
@@ -398,16 +400,16 @@ export default function CustomerFrameworkOverviewPage() {
       } else {
         const error = await response.json();
         toast({
-          title: "Error",
-          description: error.error || "Failed to create framework",
+          title: t("Error"),
+          description: error.error || t("Failed to create framework"),
           variant: "destructive",
         });
       }
     } catch (error) {
       console.error("Error creating framework:", error);
       toast({
-        title: "Error",
-        description: "Failed to create framework",
+        title: t("Error"),
+        description: t("Failed to create framework"),
         variant: "destructive",
       });
     }
@@ -447,16 +449,16 @@ export default function CustomerFrameworkOverviewPage() {
         body: JSON.stringify({ name: editItemName }),
       });
       if (response.ok) {
-        toast({ title: "Success", description: `${editItem.type.slice(0, -1)} updated successfully` });
+        toast({ title: t("Success"), description: t("Item updated successfully") });
         fetchMasterData(editItem.type);
         setIsEditItemDialogOpen(false);
       } else {
         const error = await response.json();
-        toast({ title: "Error", description: error.error || "Failed to update", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to update"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error updating item:", error);
-      toast({ title: "Error", description: "Failed to update", variant: "destructive" });
+      toast({ title: t("Error"), description: t("Failed to update"), variant: "destructive" });
     }
   };
 
@@ -472,16 +474,16 @@ export default function CustomerFrameworkOverviewPage() {
         method: "DELETE",
       });
       if (response.ok) {
-        toast({ title: "Success", description: `${deleteItem.type.slice(0, -1)} deleted successfully` });
+        toast({ title: t("Success"), description: t("Item deleted successfully") });
         fetchMasterData(deleteItem.type);
         setIsDeleteItemDialogOpen(false);
       } else {
         const error = await response.json();
-        toast({ title: "Error", description: error.error || "Failed to delete", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to delete"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error deleting item:", error);
-      toast({ title: "Error", description: "Failed to delete", variant: "destructive" });
+      toast({ title: t("Error"), description: t("Failed to delete"), variant: "destructive" });
     }
   };
 
@@ -515,7 +517,7 @@ export default function CustomerFrameworkOverviewPage() {
     if (fgData.length === 0) {
       return (
         <div className="text-center py-12 text-gray-500">
-          No control data available for chart.
+          {t("No control data available for chart.")}
         </div>
       );
     }
@@ -713,13 +715,13 @@ export default function CustomerFrameworkOverviewPage() {
         setImportSuccess(null);
       } else {
         toast({
-          title: "Invalid File",
-          description: "Please upload an Excel file (.xlsx)",
+          title: t("Invalid File"),
+          description: t("Please upload an Excel file (.xlsx)"),
           variant: "destructive",
         });
       }
     }
-  }, [toast]);
+  }, [toast, t]);
 
   const handleImportFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -731,8 +733,8 @@ export default function CustomerFrameworkOverviewPage() {
         setImportSuccess(null);
       } else {
         toast({
-          title: "Invalid File",
-          description: "Please upload an Excel file (.xlsx)",
+          title: t("Invalid File"),
+          description: t("Please upload an Excel file (.xlsx)"),
           variant: "destructive",
         });
       }
@@ -760,14 +762,14 @@ export default function CustomerFrameworkOverviewPage() {
       XLSX.writeFile(workbook, "framework_requirements_template.xlsx");
 
       toast({
-        title: "Template Downloaded",
-        description: "Sample template has been downloaded successfully",
+        title: t("Template Downloaded"),
+        description: t("Sample template has been downloaded successfully"),
       });
     } catch (error) {
       console.error("Error generating template:", error);
       toast({
-        title: "Error",
-        description: "Failed to download template",
+        title: t("Error"),
+        description: t("Failed to download template"),
         variant: "destructive",
       });
     }
@@ -796,7 +798,7 @@ export default function CustomerFrameworkOverviewPage() {
         setImportSuccess(result.message);
         fetchFrameworks();
         toast({
-          title: "Import Successful",
+          title: t("Import Successful"),
           description: result.message,
         });
         // Auto-close the dialog after successful import
@@ -806,16 +808,16 @@ export default function CustomerFrameworkOverviewPage() {
           setImportErrors(result.details);
         }
         toast({
-          title: "Import Failed",
-          description: result.error || "Failed to import requirements",
+          title: t("Import Failed"),
+          description: result.error || t("Failed to import requirements"),
           variant: "destructive",
         });
       }
     } catch (error) {
       console.error("Error importing file:", error);
       toast({
-        title: "Error",
-        description: "Failed to import requirements",
+        title: t("Error"),
+        description: t("Failed to import requirements"),
         variant: "destructive",
       });
     } finally {
@@ -851,12 +853,12 @@ export default function CustomerFrameworkOverviewPage() {
               onClick={handleBack}
             >
               <ChevronLeft className="h-5 w-5 mr-1" />
-              Back
+              {t("Back")}
             </Button>
             <div>
-              <h1 className="text-2xl font-semibold text-blue-700">Frameworks</h1>
+              <h1 className="text-2xl font-semibold text-blue-700">{t("Frameworks")}</h1>
               <p className="text-sm text-blue-600 bg-blue-100 px-2 py-1 mt-1 inline-block">
-                {customer?.customerName || "Loading..."}
+                {customer?.customerName || t("Loading...")}
               </p>
             </div>
           </div>
@@ -867,14 +869,14 @@ export default function CustomerFrameworkOverviewPage() {
               className="border-blue-600 text-blue-600 hover:bg-blue-50"
             >
               <Library className="h-4 w-4 mr-2" />
-              Framework Select
+              {t("Framework Select")}
             </Button>
             <Button
               onClick={openCreateDialog}
               className="bg-green-600 hover:bg-green-700 text-white"
             >
               <Plus className="h-4 w-4 mr-2" />
-              New Integrated Framework
+              {t("New Integrated Framework")}
             </Button>
             <Select value={creationMode} onValueChange={setCreationMode}>
               <SelectTrigger className="w-[120px]">
@@ -921,7 +923,7 @@ export default function CustomerFrameworkOverviewPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {frameworks.length === 0 ? (
                 <div className="col-span-full text-center py-12 text-gray-500">
-                  No frameworks found.
+                  {t("No frameworks found.")}
                 </div>
               ) : (
                 frameworks.map((framework) => (
@@ -966,7 +968,7 @@ export default function CustomerFrameworkOverviewPage() {
                           <span className="text-lg font-bold text-gray-800">
                             {framework.compliancePercentage.toFixed(1)}%
                           </span>
-                          <span className="text-xs text-gray-500">Compliant</span>
+                          <span className="text-xs text-gray-500">{t("Compliant")}</span>
                         </div>
                       </div>
                     </div>
@@ -983,7 +985,7 @@ export default function CustomerFrameworkOverviewPage() {
                         </div>
                         <div className="text-right min-w-[80px]">
                           <span className="text-sm font-medium">{framework.policyPercentage.toFixed(1)}%</span>
-                          <span className="text-xs text-gray-500 ml-1">Policy</span>
+                          <span className="text-xs text-gray-500 ml-1">{t("Policy")}</span>
                         </div>
                       </div>
 
@@ -997,7 +999,7 @@ export default function CustomerFrameworkOverviewPage() {
                         </div>
                         <div className="text-right min-w-[80px]">
                           <span className="text-sm font-medium">{framework.evidencePercentage.toFixed(1)}%</span>
-                          <span className="text-xs text-gray-500 ml-1">Evidence</span>
+                          <span className="text-xs text-gray-500 ml-1">{t("Evidence")}</span>
                         </div>
                       </div>
                     </div>
@@ -1011,9 +1013,9 @@ export default function CustomerFrameworkOverviewPage() {
             <div className="space-y-6">
               {/* Header */}
               <div className="border-b pb-4">
-                <h1 className="text-2xl font-bold text-blue-700">Controls</h1>
+                <h1 className="text-2xl font-bold text-blue-700">{t("Controls")}</h1>
                 <p className="text-sm text-blue-800 font-medium bg-blue-100 px-2 py-0.5 rounded inline-block mt-1">
-                  {customer?.customerName || "Loading..."}
+                  {customer?.customerName || t("Loading...")}
                 </p>
               </div>
 
@@ -1028,7 +1030,7 @@ export default function CustomerFrameworkOverviewPage() {
                     }`}
                     onClick={() => setControlSubTab("dashboard")}
                   >
-                    Dashboard
+                    {t("Dashboard")}
                   </button>
                   <button
                     className={`px-6 py-2.5 text-sm font-semibold transition-colors ${
@@ -1038,7 +1040,7 @@ export default function CustomerFrameworkOverviewPage() {
                     }`}
                     onClick={() => setControlSubTab("all")}
                   >
-                    All Controls
+                    {t("All Controls")}
                   </button>
                 </div>
 
@@ -1050,10 +1052,10 @@ export default function CustomerFrameworkOverviewPage() {
                   }}
                 >
                   <SelectTrigger className="w-[200px] border-gray-300">
-                    <SelectValue placeholder="Framework" />
+                    <SelectValue placeholder={t("Framework")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Frameworks</SelectItem>
+                    <SelectItem value="all">{t("All Frameworks")}</SelectItem>
                     {frameworks.map((fw) => (
                       <SelectItem key={fw.id} value={fw.id}>
                         {fw.name}
@@ -1067,7 +1069,7 @@ export default function CustomerFrameworkOverviewPage() {
               {controlSubTab === "dashboard" && (
                 <div className="space-y-6">
                   <h2 className="text-lg font-semibold text-gray-800">
-                    Functional Grouping
+                    {t("Functional Grouping")}
                   </h2>
                   {masterDataLoading ? (
                     <div className="flex items-center justify-center h-64">
@@ -1088,22 +1090,22 @@ export default function CustomerFrameworkOverviewPage() {
                   <div className="grid grid-cols-4 gap-4">
                     {[
                       {
-                        label: "Total Controls",
+                        label: t("Total Controls"),
                         value: controlStats.total,
                         icon: <UserCheck className="h-8 w-8 text-white/80" />,
                       },
                       {
-                        label: "Non Compliant",
+                        label: t("Non Compliant"),
                         value: controlStats.nonCompliant,
                         icon: <Server className="h-8 w-8 text-white/80" />,
                       },
                       {
-                        label: "Compliant",
+                        label: t("Compliant"),
                         value: controlStats.compliant,
                         icon: <CheckCircle className="h-8 w-8 text-white/80" />,
                       },
                       {
-                        label: "Not Applicable",
+                        label: t("Not Applicable"),
                         value: controlStats.notApplicable,
                         icon: <XCircle className="h-8 w-8 text-white/80" />,
                       },
@@ -1133,7 +1135,7 @@ export default function CustomerFrameworkOverviewPage() {
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                       <input
                         type="text"
-                        placeholder="Search By Control Code , Name"
+                        placeholder={t("Search By Control Code, Name")}
                         className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         value={controlSearchQuery}
                         onChange={(e) => setControlSearchQuery(e.target.value)}
@@ -1142,10 +1144,10 @@ export default function CustomerFrameworkOverviewPage() {
 
                     <Select value={controlDomainFilter} onValueChange={setControlDomainFilter}>
                       <SelectTrigger className="w-[180px] border-gray-300">
-                        <SelectValue placeholder="Domain" />
+                        <SelectValue placeholder={t("Domain")} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">All Domains</SelectItem>
+                        <SelectItem value="all">{t("All Domains")}</SelectItem>
                         {controlDomains.map((d) => (
                           <SelectItem key={d.id} value={d.id}>
                             {d.name}
@@ -1156,10 +1158,10 @@ export default function CustomerFrameworkOverviewPage() {
 
                     <Select value={controlFgFilter} onValueChange={setControlFgFilter}>
                       <SelectTrigger className="w-[200px] border-gray-300">
-                        <SelectValue placeholder="Functional Grouping" />
+                        <SelectValue placeholder={t("Functional Grouping")} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">All Groupings</SelectItem>
+                        <SelectItem value="all">{t("All Groupings")}</SelectItem>
                         {FUNCTIONAL_GROUPINGS.map((fg) => (
                           <SelectItem key={fg} value={fg}>
                             {fg}
@@ -1189,7 +1191,7 @@ export default function CustomerFrameworkOverviewPage() {
                                 className="flex items-center gap-1 hover:text-white/80"
                                 onClick={() => handleControlSort("name")}
                               >
-                                Control Name
+                                {t("Control Name")}
                                 <ArrowUpDown className="h-3 w-3" />
                               </button>
                             </th>
@@ -1198,7 +1200,7 @@ export default function CustomerFrameworkOverviewPage() {
                                 className="flex items-center gap-1 hover:text-white/80"
                                 onClick={() => handleControlSort("controlCode")}
                               >
-                                Control Code
+                                {t("Control Code")}
                                 <ArrowUpDown className="h-3 w-3" />
                               </button>
                             </th>
@@ -1207,7 +1209,7 @@ export default function CustomerFrameworkOverviewPage() {
                                 className="flex items-center gap-1 hover:text-white/80"
                                 onClick={() => handleControlSort("functionalGrouping")}
                               >
-                                FunctionGroup...
+                                {t("Functional Grouping")}
                                 <ArrowUpDown className="h-3 w-3" />
                               </button>
                             </th>
@@ -1216,19 +1218,19 @@ export default function CustomerFrameworkOverviewPage() {
                                 className="flex items-center gap-1 hover:text-white/80"
                                 onClick={() => handleControlSort("status")}
                               >
-                                Status
+                                {t("Status")}
                                 <ArrowUpDown className="h-3 w-3" />
                               </button>
                             </th>
                             <th className="text-left p-4 text-white font-semibold">
-                              Assignee
+                              {t("Assignee")}
                             </th>
                             <th className="text-left p-4 text-white font-semibold">
                               <button
                                 className="flex items-center gap-1 hover:text-white/80"
                                 onClick={() => handleControlSort("domain")}
                               >
-                                Domain Name
+                                {t("Domain Name")}
                                 <ArrowUpDown className="h-3 w-3" />
                               </button>
                             </th>
@@ -1249,7 +1251,7 @@ export default function CustomerFrameworkOverviewPage() {
                                 colSpan={7}
                                 className="text-center py-12 text-gray-500"
                               >
-                                No controls found.
+                                {t("No controls found.")}
                               </td>
                             </tr>
                           ) : (
@@ -1390,7 +1392,7 @@ export default function CustomerFrameworkOverviewPage() {
                 <>
                   {/* Header */}
                   <div className="flex items-center gap-3 mb-1">
-                    <h2 className="text-xl font-bold text-blue-800">Policies</h2>
+                    <h2 className="text-xl font-bold text-blue-800">{t("Policies")}</h2>
                     {customer && (
                       <span className="px-3 py-1 bg-blue-50 text-blue-700 text-sm rounded-full font-medium border border-blue-200">{customer.customerName}</span>
                     )}
@@ -1409,7 +1411,7 @@ export default function CustomerFrameworkOverviewPage() {
                             : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                         }`}
                       >
-                        {tab === "Standard" ? "Standards" : tab === "Procedure" ? "Procedures" : tab}
+                        {tab === "Dashboard" ? t("Dashboard") : tab === "Policy" ? t("Policy") : tab === "Standard" ? t("Standards") : t("Procedures")}
                       </button>
                     ))}
                   </div>
@@ -1420,7 +1422,7 @@ export default function CustomerFrameworkOverviewPage() {
                       <div key={label} className="rounded-xl p-4 flex flex-col items-center justify-center gap-2" style={{ background: "linear-gradient(135deg, #1e2a4a 0%, #2a4080 100%)" }}>
                         {icon}
                         <span className="text-2xl font-bold text-white">{statusCounts[label] || 0}</span>
-                        <span className="text-xs text-white/80 text-center">{label}</span>
+                        <span className="text-xs text-white/80 text-center">{t(label)}</span>
                       </div>
                     ))}
                   </div>
@@ -1434,7 +1436,7 @@ export default function CustomerFrameworkOverviewPage() {
                           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                           <input
                             type="text"
-                            placeholder="Search by name or code..."
+                            placeholder={t("Search by name or code...")}
                             value={policySearchQuery}
                             onChange={(e) => setPolicySearchQuery(e.target.value)}
                             className="w-full pl-9 pr-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -1445,25 +1447,25 @@ export default function CustomerFrameworkOverviewPage() {
                           onChange={(e) => setPolicyStatusFilter(e.target.value)}
                           className="px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
-                          <option value="all">All Status</option>
-                          {POLICY_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                          <option value="all">{t("All Status")}</option>
+                          {POLICY_STATUSES.map(s => <option key={s} value={s}>{t(s)}</option>)}
                         </select>
                       </div>
 
                       {/* Table */}
                       {listPolicies.length === 0 ? (
-                        <div className="text-center py-12 text-gray-500">No {policySubTab.toLowerCase()}s found.</div>
+                        <div className="text-center py-12 text-gray-500">{t("No items found.")}</div>
                       ) : (
                         <div className="overflow-x-auto mt-2 rounded-lg border">
                           <table className="w-full text-sm border-collapse">
                             <thead>
                               <tr style={{ background: "linear-gradient(135deg, #1e2a4a 0%, #2a4080 100%)" }}>
                                 {[
-                                  { key: "name", label: "Name" },
-                                  { key: "status", label: "Status" },
-                                  { key: "assignee", label: "Assignee" },
-                                  { key: "approver", label: "Approver" },
-                                  { key: "department", label: "Department Name" },
+                                  { key: "name", label: t("Name") },
+                                  { key: "status", label: t("Status") },
+                                  { key: "assignee", label: t("Assignee") },
+                                  { key: "approver", label: t("Approver") },
+                                  { key: "department", label: t("Department Name") },
                                 ].map(col => (
                                   <th
                                     key={col.key}
@@ -1602,7 +1604,7 @@ export default function CustomerFrameworkOverviewPage() {
                             : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                         }`}
                       >
-                        {tab === "AllEvidence" ? "All Evidence" : tab}
+                        {tab === "AllEvidence" ? t("All Evidence") : t("Dashboard")}
                       </button>
                     ))}
                   </div>
@@ -1614,7 +1616,7 @@ export default function CustomerFrameworkOverviewPage() {
                         <div key={label} className="rounded-xl p-4 flex flex-col items-center justify-center gap-2" style={{ background: "linear-gradient(135deg, #1e2a4a 0%, #2a4080 100%)" }}>
                           {icon}
                           <span className="text-2xl font-bold text-white">{evStatusCounts[label] || 0}</span>
-                          <span className="text-xs text-white/80 text-center">{label}</span>
+                          <span className="text-xs text-white/80 text-center">{t(label)}</span>
                         </div>
                       ))}
                     </div>
@@ -1630,7 +1632,7 @@ export default function CustomerFrameworkOverviewPage() {
                           onChange={(e) => setEvidenceFrameworkFilter(e.target.value)}
                           className="px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
-                          <option value="all">Framework</option>
+                          <option value="all">{t("Framework")}</option>
                           {evFrameworks.map(f => <option key={f} value={f}>{f}</option>)}
                         </select>
                       </div>
@@ -1641,7 +1643,7 @@ export default function CustomerFrameworkOverviewPage() {
                           <div key={label} className="rounded-xl p-4 flex flex-col items-center justify-center gap-2" style={{ background: "linear-gradient(135deg, #1e2a4a 0%, #2a4080 100%)" }}>
                             {icon}
                             <span className="text-2xl font-bold text-white">{evStatusCounts[label] || 0}</span>
-                            <span className="text-xs text-white/80 text-center">{label}</span>
+                            <span className="text-xs text-white/80 text-center">{t(label)}</span>
                           </div>
                         ))}
                       </div>
@@ -1652,7 +1654,7 @@ export default function CustomerFrameworkOverviewPage() {
                           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                           <input
                             type="text"
-                            placeholder="Search by name"
+                            placeholder={t("Search by name")}
                             value={evidenceSearchQuery}
                             onChange={(e) => setEvidenceSearchQuery(e.target.value)}
                             className="w-full pl-9 pr-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -1663,25 +1665,25 @@ export default function CustomerFrameworkOverviewPage() {
                           onChange={(e) => setEvidenceDeptFilter(e.target.value)}
                           className="px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
-                          <option value="all">Department</option>
+                          <option value="all">{t("Department")}</option>
                           {evDepartments.map(d => <option key={d} value={d}>{d}</option>)}
                         </select>
                       </div>
 
                       {/* Table */}
                       {listEvidences.length === 0 ? (
-                        <div className="text-center py-12 text-gray-500">No evidences found.</div>
+                        <div className="text-center py-12 text-gray-500">{t("No evidences found.")}</div>
                       ) : (
                         <div className="overflow-x-auto mt-2 rounded-lg border">
                           <table className="w-full text-sm border-collapse">
                             <thead>
                               <tr style={{ background: "linear-gradient(135deg, #1e2a4a 0%, #2a4080 100%)" }}>
                                 {[
-                                  { key: "evidenceCode", label: "EvidenceCode" },
-                                  { key: "name", label: "Evidence Name" },
-                                  { key: "status", label: "Status" },
-                                  { key: "assignee", label: "Assignee" },
-                                  { key: "department", label: "Department Name" },
+                                  { key: "evidenceCode", label: t("Evidence Code") },
+                                  { key: "name", label: t("Evidence Name") },
+                                  { key: "status", label: t("Status") },
+                                  { key: "assignee", label: t("Assignee") },
+                                  { key: "department", label: t("Department Name") },
                                 ].map(col => (
                                   <th
                                     key={col.key}
@@ -1734,15 +1736,15 @@ export default function CustomerFrameworkOverviewPage() {
           {activeTab === "Master data" && masterDataView === null && (
             <div>
               <div className="flex items-center gap-3 mb-6">
-                <h2 className="text-2xl font-bold text-blue-700">Master Data</h2>
+                <h2 className="text-2xl font-bold text-blue-700">{t("Master Data")}</h2>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 {[
-                  { key: "framework", label: "Framework", icon: Layers },
-                  { key: "controls", label: "Controls", icon: Shield },
-                  { key: "policies", label: "Policies", icon: FileCheck },
-                  { key: "evidences", label: "Evidences", icon: ClipboardList },
-                  { key: "domains", label: "Domain", icon: LayoutGrid },
+                  { key: "framework", label: t("Framework"), icon: Layers },
+                  { key: "controls", label: t("Controls"), icon: Shield },
+                  { key: "policies", label: t("Policies"), icon: FileCheck },
+                  { key: "evidences", label: t("Evidences"), icon: ClipboardList },
+                  { key: "domains", label: t("Domain"), icon: LayoutGrid },
                 ].map((tile) => (
                   <div
                     key={tile.key}
@@ -1771,9 +1773,9 @@ export default function CustomerFrameworkOverviewPage() {
                   onClick={() => setMasterDataView(null)}
                 >
                   <ChevronLeft className="h-5 w-5" />
-                  Back
+                  {t("Back")}
                 </button>
-                <h2 className="text-2xl font-bold text-blue-700 capitalize">{masterDataView}</h2>
+                <h2 className="text-2xl font-bold text-blue-700 capitalize">{t(masterDataView)}</h2>
               </div>
 
               {masterDataLoading ? (
@@ -1782,19 +1784,19 @@ export default function CustomerFrameworkOverviewPage() {
                 </div>
               ) : masterDataView === "controls" ? (
                 controls.length === 0 ? (
-                  <div className="text-center py-12 text-gray-500">No controls found for this customer.</div>
+                  <div className="text-center py-12 text-gray-500">{t("No controls found for this customer.")}</div>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm border-collapse">
                       <thead>
                         <tr className="bg-gray-50 border-b">
-                          <th className="text-left p-3 font-medium text-gray-700">Control Code</th>
-                          <th className="text-left p-3 font-medium text-gray-700">Name</th>
-                          <th className="text-left p-3 font-medium text-gray-700">Domain</th>
-                          <th className="text-left p-3 font-medium text-gray-700">Framework</th>
-                          <th className="text-left p-3 font-medium text-gray-700">Grouping</th>
-                          <th className="text-left p-3 font-medium text-gray-700">Status</th>
-                          <th className="text-center p-3 font-medium text-gray-700">Action</th>
+                          <th className="text-left p-3 font-medium text-gray-700">{t("Control Code")}</th>
+                          <th className="text-left p-3 font-medium text-gray-700">{t("Name")}</th>
+                          <th className="text-left p-3 font-medium text-gray-700">{t("Domain")}</th>
+                          <th className="text-left p-3 font-medium text-gray-700">{t("Framework")}</th>
+                          <th className="text-left p-3 font-medium text-gray-700">{t("Grouping")}</th>
+                          <th className="text-left p-3 font-medium text-gray-700">{t("Status")}</th>
+                          <th className="text-center p-3 font-medium text-gray-700">{t("Action")}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1831,19 +1833,19 @@ export default function CustomerFrameworkOverviewPage() {
                 )
               ) : masterDataView === "policies" ? (
                 policies.length === 0 ? (
-                  <div className="text-center py-12 text-gray-500">No policies found for this customer.</div>
+                  <div className="text-center py-12 text-gray-500">{t("No policies found for this customer.")}</div>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm border-collapse">
                       <thead>
                         <tr className="bg-gray-50 border-b">
-                          <th className="text-left p-3 font-medium text-gray-700">Code</th>
-                          <th className="text-left p-3 font-medium text-gray-700">Name</th>
-                          <th className="text-left p-3 font-medium text-gray-700">Type</th>
-                          <th className="text-left p-3 font-medium text-gray-700">Version</th>
-                          <th className="text-left p-3 font-medium text-gray-700">Department</th>
-                          <th className="text-left p-3 font-medium text-gray-700">Status</th>
-                          <th className="text-center p-3 font-medium text-gray-700">Action</th>
+                          <th className="text-left p-3 font-medium text-gray-700">{t("Code")}</th>
+                          <th className="text-left p-3 font-medium text-gray-700">{t("Name")}</th>
+                          <th className="text-left p-3 font-medium text-gray-700">{t("Type")}</th>
+                          <th className="text-left p-3 font-medium text-gray-700">{t("Version")}</th>
+                          <th className="text-left p-3 font-medium text-gray-700">{t("Department")}</th>
+                          <th className="text-left p-3 font-medium text-gray-700">{t("Status")}</th>
+                          <th className="text-center p-3 font-medium text-gray-700">{t("Action")}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1880,18 +1882,18 @@ export default function CustomerFrameworkOverviewPage() {
                 )
               ) : masterDataView === "evidences" ? (
                 evidences.length === 0 ? (
-                  <div className="text-center py-12 text-gray-500">No evidences found for this customer.</div>
+                  <div className="text-center py-12 text-gray-500">{t("No evidences found for this customer.")}</div>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm border-collapse">
                       <thead>
                         <tr className="bg-gray-50 border-b">
-                          <th className="text-left p-3 font-medium text-gray-700">Evidence Code</th>
-                          <th className="text-left p-3 font-medium text-gray-700">Name</th>
-                          <th className="text-left p-3 font-medium text-gray-700">Description</th>
-                          <th className="text-left p-3 font-medium text-gray-700">Framework</th>
-                          <th className="text-left p-3 font-medium text-gray-700">Status</th>
-                          <th className="text-center p-3 font-medium text-gray-700">Action</th>
+                          <th className="text-left p-3 font-medium text-gray-700">{t("Evidence Code")}</th>
+                          <th className="text-left p-3 font-medium text-gray-700">{t("Name")}</th>
+                          <th className="text-left p-3 font-medium text-gray-700">{t("Description")}</th>
+                          <th className="text-left p-3 font-medium text-gray-700">{t("Framework")}</th>
+                          <th className="text-left p-3 font-medium text-gray-700">{t("Status")}</th>
+                          <th className="text-center p-3 font-medium text-gray-700">{t("Action")}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1927,15 +1929,15 @@ export default function CustomerFrameworkOverviewPage() {
                 )
               ) : masterDataView === "domains" ? (
                 domains.length === 0 ? (
-                  <div className="text-center py-12 text-gray-500">No domains found.</div>
+                  <div className="text-center py-12 text-gray-500">{t("No domains found.")}</div>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm border-collapse">
                       <thead>
                         <tr className="bg-gray-50 border-b">
-                          <th className="text-left p-3 font-medium text-gray-700">Domain Name</th>
-                          <th className="text-left p-3 font-medium text-gray-700">Controls Count</th>
-                          <th className="text-center p-3 font-medium text-gray-700">Action</th>
+                          <th className="text-left p-3 font-medium text-gray-700">{t("Domain Name")}</th>
+                          <th className="text-left p-3 font-medium text-gray-700">{t("Controls Count")}</th>
+                          <th className="text-center p-3 font-medium text-gray-700">{t("Action")}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1969,28 +1971,28 @@ export default function CustomerFrameworkOverviewPage() {
       <Dialog open={isEditItemDialogOpen} onOpenChange={setIsEditItemDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-blue-700 capitalize">Edit {editItem?.type.slice(0, -1)}</DialogTitle>
+            <DialogTitle className="text-blue-700 capitalize">{t("Edit")} {editItem?.type.slice(0, -1)}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label htmlFor="edit-item-name">Name</Label>
+              <Label htmlFor="edit-item-name">{t("Name")}</Label>
               <Input
                 id="edit-item-name"
                 value={editItemName}
                 onChange={(e) => setEditItemName(e.target.value)}
-                placeholder="Enter name"
+                placeholder={t("Enter name")}
               />
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsEditItemDialogOpen(false)}>
-                Cancel
+                {t("Cancel")}
               </Button>
               <Button
                 onClick={handleSaveEditItem}
                 disabled={!editItemName.trim()}
                 className="bg-blue-600 hover:bg-blue-700"
               >
-                Save
+                {t("Save")}
               </Button>
             </DialogFooter>
           </div>
@@ -2001,21 +2003,21 @@ export default function CustomerFrameworkOverviewPage() {
       <Dialog open={isDeleteItemDialogOpen} onOpenChange={setIsDeleteItemDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-red-600 capitalize">Delete {deleteItem?.type.slice(0, -1)}</DialogTitle>
+            <DialogTitle className="text-red-600 capitalize">{t("Delete")} {deleteItem?.type.slice(0, -1)}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <p className="text-sm text-gray-600">
-              Are you sure you want to delete <strong>{deleteItem?.name}</strong>? This action cannot be undone.
+              {t("Are you sure you want to delete")} <strong>{deleteItem?.name}</strong>? {t("This action cannot be undone.")}
             </p>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsDeleteItemDialogOpen(false)}>
-                Cancel
+                {t("Cancel")}
               </Button>
               <Button
                 onClick={handleConfirmDeleteItem}
                 className="bg-red-600 hover:bg-red-700 text-white"
               >
-                Delete
+                {t("Delete")}
               </Button>
             </DialogFooter>
           </div>
@@ -2027,7 +2029,7 @@ export default function CustomerFrameworkOverviewPage() {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-blue-700 text-xl">
-              Framework Select
+              {t("Framework Select")}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
@@ -2035,7 +2037,7 @@ export default function CustomerFrameworkOverviewPage() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-blue-400" />
               <Input
-                placeholder="Search By Framework Name"
+                placeholder={t("Search By Framework Name")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 border-2 border-dashed border-blue-400 focus:border-blue-600"
@@ -2051,8 +2053,8 @@ export default function CustomerFrameworkOverviewPage() {
               ) : filteredAvailableFrameworks.length === 0 ? (
                 <div className="text-center py-12 text-gray-500">
                   {searchQuery
-                    ? "No frameworks match your search."
-                    : "No available frameworks to subscribe."}
+                    ? t("No frameworks match your search.")
+                    : t("No available frameworks to subscribe.")}
                 </div>
               ) : (
                 filteredAvailableFrameworks.map((framework) => (
@@ -2078,7 +2080,7 @@ export default function CustomerFrameworkOverviewPage() {
                         {subscribingId === framework.id ? (
                           <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-1" />
                         ) : null}
-                        Subscribe
+                        {t("Subscribe")}
                       </Button>
                       <Button
                         size="sm"
@@ -2086,7 +2088,7 @@ export default function CustomerFrameworkOverviewPage() {
                         disabled={subscribingId === framework.id}
                         onClick={() => handleSubscribeFramework(framework.id, "suggest")}
                       >
-                        Add to Suggestion
+                        {t("Add to Suggestion")}
                       </Button>
                     </div>
                   </div>
@@ -2099,7 +2101,7 @@ export default function CustomerFrameworkOverviewPage() {
                 className="bg-blue-600 hover:bg-blue-700 text-white"
                 onClick={() => setIsSelectDialogOpen(false)}
               >
-                Done
+                {t("Done")}
               </Button>
             </DialogFooter>
           </div>
@@ -2110,62 +2112,61 @@ export default function CustomerFrameworkOverviewPage() {
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Create Integrated Framework</DialogTitle>
+            <DialogTitle>{t("Create Integrated Framework")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <p className="text-sm text-gray-500">
-              Note: Custom framework will be automatically added in grey color to
-              differentiate between Subscribed Frameworks.
+              {t("Note: Custom framework will be automatically added in grey color to differentiate between Subscribed Frameworks.")}
             </p>
 
             <div className="space-y-2">
-              <Label htmlFor="code">Code</Label>
+              <Label htmlFor="code">{t("Code")}</Label>
               <Input
                 id="code"
                 value={formData.code}
                 onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                placeholder="Enter code"
+                placeholder={t("Enter code")}
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="name" className="flex items-center gap-1">
-                Integrated Framework Name <span className="text-red-500">*</span>
+                {t("Integrated Framework Name")} <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Enter framework name"
+                placeholder={t("Enter framework name")}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">{t("Description")}</Label>
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Enter description"
+                placeholder={t("Enter description")}
                 rows={3}
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="type" className="flex items-center gap-1">
-                Framework Type <span className="text-red-500">*</span>
+                {t("Framework Type")} <span className="text-red-500">*</span>
               </Label>
               <Select
                 value={formData.type}
                 onValueChange={(value) => setFormData({ ...formData, type: value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
+                  <SelectValue placeholder={t("Select type")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Framework">Framework</SelectItem>
-                  <SelectItem value="Standard">Standard</SelectItem>
-                  <SelectItem value="Regulation">Regulation</SelectItem>
+                  <SelectItem value="Framework">{t("Framework")}</SelectItem>
+                  <SelectItem value="Standard">{t("Standard")}</SelectItem>
+                  <SelectItem value="Regulation">{t("Regulation")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -2173,35 +2174,35 @@ export default function CustomerFrameworkOverviewPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="country" className="flex items-center gap-1">
-                  Country <span className="text-red-500">*</span>
+                  {t("Country")} <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="country"
                   value={formData.country}
                   onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                  placeholder="Enter country"
+                  placeholder={t("Enter country")}
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="industry" className="flex items-center gap-1">
-                  Industry <span className="text-red-500">*</span>
+                  {t("Industry")} <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="industry"
                   value={formData.industry}
                   onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
-                  placeholder="Enter industry"
+                  placeholder={t("Enter industry")}
                 />
               </div>
             </div>
 
             {creationMode === "AI" && (
               <div className="space-y-2">
-                <Label>Upload Support Document</Label>
+                <Label>{t("Upload Support Document")}</Label>
                 <div className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors border-gray-300 hover:border-gray-400">
                   <div className="flex flex-col items-center gap-2 text-gray-500">
                     <Upload className="h-8 w-8" />
-                    <span className="text-sm">Click here, or drop files here to upload.</span>
+                    <span className="text-sm">{t("Click here, or drop files here to upload.")}</span>
                   </div>
                 </div>
               </div>
@@ -2209,14 +2210,14 @@ export default function CustomerFrameworkOverviewPage() {
 
             <DialogFooter className="pt-4 border-t">
               <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                Cancel
+                {t("Cancel")}
               </Button>
               <Button
                 onClick={handleCreate}
                 disabled={!formData.name || !formData.type || !formData.country || !formData.industry}
                 className="bg-blue-600 hover:bg-blue-700"
               >
-                Create & Import
+                {t("Create & Import")}
               </Button>
             </DialogFooter>
           </div>
@@ -2229,13 +2230,12 @@ export default function CustomerFrameworkOverviewPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileSpreadsheet className="h-5 w-5 text-green-600" />
-              Import Framework Requirements
+              {t("Import Framework Requirements")}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-6 py-4">
             <p className="text-sm text-muted-foreground">
-              Upload an Excel file (.xlsx) containing your framework requirements.
-              You can download the sample template to see the required format.
+              {t("Upload an Excel file (.xlsx) containing your framework requirements. You can download the sample template to see the required format.")}
             </p>
 
             {/* Download Template Button */}
@@ -2246,16 +2246,16 @@ export default function CustomerFrameworkOverviewPage() {
                 className="flex items-center gap-2"
               >
                 <Download className="h-4 w-4" />
-                Download Sample Template
+                {t("Download Sample Template")}
               </Button>
               <span className="text-sm text-muted-foreground">
-                Use this template to ensure correct column headers
+                {t("Use this template to ensure correct column headers")}
               </span>
             </div>
 
             {/* File Upload Area */}
             <div className="space-y-2">
-              <Label>Upload Document</Label>
+              <Label>{t("Upload Document")}</Label>
               <div
                 className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
                   isDraggingImport
@@ -2306,9 +2306,9 @@ export default function CustomerFrameworkOverviewPage() {
                     <Upload className="h-12 w-12" />
                     <div>
                       <span className="text-sm font-medium">
-                        Click to upload or drag and drop
+                        {t("Click to upload or drag and drop")}
                       </span>
-                      <p className="text-xs mt-1">Excel files only (.xlsx)</p>
+                      <p className="text-xs mt-1">{t("Excel files only (.xlsx)")}</p>
                     </div>
                   </div>
                 )}
@@ -2323,7 +2323,7 @@ export default function CustomerFrameworkOverviewPage() {
                   <p className="text-sm font-medium text-green-800">{importSuccess}</p>
                   {importErrors.length > 0 && (
                     <p className="text-xs text-green-600 mt-1">
-                      Some warnings occurred during import. See details below.
+                      {t("Some warnings occurred during import. See details below.")}
                     </p>
                   )}
                 </div>
@@ -2336,7 +2336,7 @@ export default function CustomerFrameworkOverviewPage() {
                 <div className="flex items-center gap-2 text-red-600">
                   <AlertCircle className="h-4 w-4" />
                   <span className="text-sm font-medium">
-                    {importSuccess ? "Warnings" : "Validation Errors"}
+                    {importSuccess ? t("Warnings") : t("Validation Errors")}
                   </span>
                 </div>
                 <div className="max-h-40 overflow-y-auto border border-red-200 rounded-lg bg-red-50">
@@ -2356,7 +2356,7 @@ export default function CustomerFrameworkOverviewPage() {
 
             {/* Required Columns Info */}
             <div className="bg-gray-50 rounded-lg p-4">
-              <p className="text-sm font-medium text-gray-700 mb-2">Required Column Headers:</p>
+              <p className="text-sm font-medium text-gray-700 mb-2">{t("Required Column Headers:")}</p>
               <div className="flex flex-wrap gap-2">
                 {TEMPLATE_COLUMNS.map((col) => (
                   <span
@@ -2371,7 +2371,7 @@ export default function CustomerFrameworkOverviewPage() {
 
             <DialogFooter className="pt-4 border-t">
               <Button variant="outline" onClick={handleCloseImportDialog}>
-                {importSuccess ? "Close" : "Skip"}
+                {importSuccess ? t("Close") : t("Skip")}
               </Button>
               <Button
                 onClick={handleImport}
@@ -2381,12 +2381,12 @@ export default function CustomerFrameworkOverviewPage() {
                 {isImporting ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
-                    Importing...
+                    {t("Importing...")}
                   </>
                 ) : (
                   <>
                     <Upload className="h-4 w-4 mr-2" />
-                    Import
+                    {t("Import")}
                   </>
                 )}
               </Button>

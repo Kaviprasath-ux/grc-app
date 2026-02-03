@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -41,6 +42,7 @@ interface NatureOfControl {
 
 export default function NatureOfControlsPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [items, setItems] = useState<NatureOfControl[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -160,24 +162,24 @@ export default function NatureOfControlsPage() {
         <nav className="flex items-center gap-1.5 text-sm">
           <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
-            <span>Internal Audit</span>
+            <span>{t("Internal Audit")}</span>
           </Link>
           <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
           <Link href="/internal-audit/settings" className="text-slate-500 hover:text-primary-600 transition-colors">
-            Settings
+            {t("Settings")}
           </Link>
           <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-          <span className="text-primary-700 font-medium">Nature of Controls</span>
+          <span className="text-primary-700 font-medium">{t("Nature of Controls")}</span>
         </nav>
 
-        <h1 className="text-2xl font-bold text-slate-800">Nature of Controls</h1>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Nature of Controls")}</h1>
         <div className="flex items-center justify-center h-[60vh]">
           <div className="flex flex-col items-center gap-4">
             <div className="relative">
               <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
               <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
             </div>
-            <p className="text-sm text-slate-500 font-medium">Loading nature of controls...</p>
+            <p className="text-sm text-slate-500 font-medium">{t("Loading nature of controls...")}</p>
           </div>
         </div>
       </div>
@@ -190,25 +192,25 @@ export default function NatureOfControlsPage() {
       <nav className="flex items-center gap-1.5 text-sm">
         <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
-          <span>Internal Audit</span>
+          <span>{t("Internal Audit")}</span>
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
         <Link href="/internal-audit/settings" className="text-slate-500 hover:text-primary-600 transition-colors">
-          Settings
+          {t("Settings")}
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-        <span className="text-primary-700 font-medium">Nature of Controls</span>
+        <span className="text-primary-700 font-medium">{t("Nature of Controls")}</span>
       </nav>
 
       {/* Page Header */}
-      <h1 className="text-2xl font-bold text-slate-800">Nature of Controls</h1>
+      <h1 className="text-2xl font-bold text-slate-800">{t("Nature of Controls")}</h1>
 
       {/* Search and Add Button Row */}
       <div className="flex items-center gap-3">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input
-            placeholder="Search nature of controls..."
+            placeholder={t("Search nature of controls...")}
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
@@ -220,7 +222,7 @@ export default function NatureOfControlsPage() {
         <div className="flex-1" />
         <Button size="sm" onClick={openAddDialog}>
           <Plus className="h-4 w-4 mr-2" />
-          New Nature of Control
+          {t("New Nature of Control")}
         </Button>
       </div>
 
@@ -229,15 +231,15 @@ export default function NatureOfControlsPage() {
         <Table>
           <TableHeader>
             <TableRow className="border-b border-slate-100 bg-slate-50/50">
-              <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4">Label</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[100px]">Action</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4">{t("Label")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[100px]">{t("Action")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {paginatedItems.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={2} className="text-center py-8 text-slate-500">
-                  No nature of controls found
+                  {t("No nature of controls found")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -251,7 +253,7 @@ export default function NatureOfControlsPage() {
                         size="icon"
                         className="h-8 w-8 text-slate-400 hover:text-slate-600"
                         onClick={() => openEditDialog(item)}
-                        title="Edit"
+                        title={t("Edit")}
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
@@ -260,7 +262,7 @@ export default function NatureOfControlsPage() {
                         size="icon"
                         className="h-8 w-8 text-slate-400 hover:text-semantic-error"
                         onClick={() => openDeleteDialog(item)}
-                        title="Delete"
+                        title={t("Delete")}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -275,7 +277,7 @@ export default function NatureOfControlsPage() {
         {/* Pagination */}
         <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
           <span className="text-sm text-slate-500">
-            {totalItems > 0 ? `${startItem} to ${endItem} of ${totalItems}` : "No nature of controls"}
+            {totalItems > 0 ? `${startItem} ${t("to")} ${endItem} ${t("of")} ${totalItems}` : t("No nature of controls")}
           </span>
           <div className="flex items-center gap-1">
             <Button
@@ -297,7 +299,7 @@ export default function NatureOfControlsPage() {
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <span className="text-sm text-slate-600 px-2">
-              Page {currentPage} of {totalPages || 1}
+              {t("Page")} {currentPage} {t("of")} {totalPages || 1}
             </span>
             <Button
               variant="ghost"
@@ -328,7 +330,7 @@ export default function NatureOfControlsPage() {
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">
-                {editItem ? "Edit Nature of Control" : "Add Nature of Control"}
+                {editItem ? t("Edit Nature of Control") : t("Add Nature of Control")}
               </DialogTitle>
             </DialogHeader>
           </div>
@@ -336,11 +338,11 @@ export default function NatureOfControlsPage() {
           {/* Content */}
           <div className="px-6 py-6">
             <div>
-              <Label className="text-sm font-medium text-slate-700">Label <span className="text-red-500">*</span></Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Label")} <span className="text-red-500">*</span></Label>
               <Input
                 value={formData.label}
                 onChange={(e) => setFormData({ label: e.target.value })}
-                placeholder="Enter label"
+                placeholder={t("Enter label")}
                 className="mt-1.5 w-full bg-white"
                 autoFocus
               />
@@ -350,10 +352,10 @@ export default function NatureOfControlsPage() {
           {/* Fixed Footer */}
           <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button onClick={handleSave} disabled={saving || !formData.label.trim()}>
-              {saving ? "Saving..." : "Save"}
+              {saving ? t("Saving...") : t("Save")}
             </Button>
           </div>
         </DialogContent>
@@ -363,15 +365,15 @@ export default function NatureOfControlsPage() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent className="sm:max-w-[400px] p-0 gap-0">
           <AlertDialogHeader className="px-6 py-5 border-b border-slate-100">
-            <AlertDialogTitle className="text-lg font-semibold text-slate-800">Confirm Delete</AlertDialogTitle>
+            <AlertDialogTitle className="text-lg font-semibold text-slate-800">{t("Confirm Delete")}</AlertDialogTitle>
             <AlertDialogDescription className="text-sm text-slate-500 mt-1">
-              Are you sure you want to delete &quot;{itemToDelete?.label}&quot;? This action cannot be undone.
+              {t("Are you sure you want to delete")} &quot;{itemToDelete?.label}&quot;? {t("This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex justify-end gap-2 px-6 py-4">
-            <AlertDialogCancel className="mt-0">Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="mt-0">{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
-              Delete
+              {t("Delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

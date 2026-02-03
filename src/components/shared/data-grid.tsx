@@ -13,6 +13,7 @@ import {
   VisibilityState,
 } from "@tanstack/react-table";
 import { useState } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown, Settings2 } from "lucide-react";
 import {
   Table,
@@ -57,6 +58,7 @@ export function DataGrid<TData, TValue>({
   showColumnSelector = false,
   hideSearch = false,
 }: DataGridProps<TData, TValue>) {
+  const { t } = useLanguage();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
@@ -202,7 +204,7 @@ export function DataGrid<TData, TValue>({
                   colSpan={columns.length}
                   className="h-24 text-center text-slate-500"
                 >
-                  No results.
+                  {t("No results.")}
                 </TableCell>
               </TableRow>
             )}
@@ -213,7 +215,7 @@ export function DataGrid<TData, TValue>({
       {/* Pagination */}
       <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
         <span className="text-sm text-slate-500">
-          {totalRows > 0 ? `${startRow} to ${endRow} of ${totalRows}` : "No results"}
+          {totalRows > 0 ? `${startRow} ${t("to")} ${endRow} ${t("of")} ${totalRows}` : t("No results")}
         </span>
         <div className="flex items-center gap-1">
           <Button

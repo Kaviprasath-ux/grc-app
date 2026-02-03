@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { usePermissions, useHasRole } from "@/hooks/usePermissions";
 import { PermissionGate } from "@/components/ui/permission-gate";
@@ -110,6 +111,7 @@ const RECURRENCE_OPTIONS = ["Weekly", "Monthly", "Quarterly", "Yearly"];
 export default function GRCAdminGovernancePage() {
   const router = useRouter();
   const { data: session } = useSession();
+  const { t } = useLanguage();
   const { canView, canCreate, canEdit, canDelete, isLoading: permissionsLoading } = usePermissions('compliance.governance');
   const isGRCAdmin = useHasRole("GRCAdministrator");
   const [policies, setPolicies] = useState<Policy[]>([]);
@@ -435,22 +437,22 @@ export default function GRCAdminGovernancePage() {
 
   // Show unauthorized if user cannot view
   if (!canView) {
-    return <Unauthorized description="You don't have permission to access Governance." />;
+    return <Unauthorized description={t("You don't have permission to access Governance.")} />;
   }
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">Governance</h1>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Governance")}</h1>
       </div>
 
       {/* Tabs */}
       <Tabs value={activeDocType} onValueChange={handleTabChange}>
         <TabsList>
-          <TabsTrigger value="Policy">Policy</TabsTrigger>
-          <TabsTrigger value="Standard">Standards</TabsTrigger>
-          <TabsTrigger value="Procedure">Procedures</TabsTrigger>
+          <TabsTrigger value="Policy">{t("Policy")}</TabsTrigger>
+          <TabsTrigger value="Standard">{t("Standards")}</TabsTrigger>
+          <TabsTrigger value="Procedure">{t("Procedures")}</TabsTrigger>
         </TabsList>
 
         {/* Tab Content - Same structure for all tabs */}
@@ -459,7 +461,7 @@ export default function GRCAdminGovernancePage() {
             {/* Search, Filter, and Action Buttons Row */}
             <div className="flex items-center gap-3">
               <Input
-                placeholder={`Search by ${docType.toLowerCase()} name or code...`}
+                placeholder={t("Search by name or code...")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
@@ -467,10 +469,10 @@ export default function GRCAdminGovernancePage() {
               />
               <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
                 <SelectTrigger className="w-[200px] bg-white">
-                  <SelectValue placeholder="Integrated Framework" />
+                  <SelectValue placeholder={t("Integrated Framework")} />
                 </SelectTrigger>
                 <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
-                  <SelectItem value="all">Integrated Framework</SelectItem>
+                  <SelectItem value="all">{t("Integrated Framework")}</SelectItem>
                   {frameworks.map((f) => (
                     <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
                   ))}
@@ -479,14 +481,14 @@ export default function GRCAdminGovernancePage() {
               <div className="flex-1" />
               <PermissionGate resource="compliance.governance" action="delete">
                 <Button variant="outline" size="sm" className="text-semantic-error hover:text-semantic-error hover:bg-red-50" onClick={() => setIsDeleteAllDialogOpen(true)}>
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete All
+                  <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                  {t("Delete All")}
                 </Button>
               </PermissionGate>
               <PermissionGate resource="compliance.governance" action="create">
                 <Button variant="outline" size="sm" onClick={() => setIsImportDialogOpen(true)}>
-                  <Upload className="h-4 w-4 mr-2" />
-                  Import
+                  <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                  {t("Import")}
                 </Button>
               </PermissionGate>
               {isGRCAdmin ? (
@@ -494,8 +496,8 @@ export default function GRCAdminGovernancePage() {
                   setNewPolicy({ ...newPolicy, documentType: activeDocType });
                   setIsCreateDialogOpen(true);
                 }}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  New Governance
+                  <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                  {t("New Governance")}
                 </Button>
               ) : (
                 <PermissionGate resource="compliance.governance" action="create">
@@ -503,8 +505,8 @@ export default function GRCAdminGovernancePage() {
                     setNewPolicy({ ...newPolicy, documentType: activeDocType });
                     setIsCreateDialogOpen(true);
                   }}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    New Governance
+                    <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                    {t("New Governance")}
                   </Button>
                 </PermissionGate>
               )}
@@ -524,13 +526,13 @@ export default function GRCAdminGovernancePage() {
                   <Table>
                     <TableHeader>
                       <TableRow className="border-b border-slate-100 bg-slate-50/50">
-                        <TableHead className="text-xs font-semibold text-slate-600 py-4 pl-4">Code</TableHead>
-                        <TableHead className="text-xs font-semibold text-slate-600 py-4">Name</TableHead>
-                        <TableHead className="text-xs font-semibold text-slate-600 py-4">Status</TableHead>
-                        <TableHead className="text-xs font-semibold text-slate-600 py-4">Assignee</TableHead>
-                        <TableHead className="text-xs font-semibold text-slate-600 py-4">Approver</TableHead>
-                        <TableHead className="text-xs font-semibold text-slate-600 py-4">Department Name</TableHead>
-                        <TableHead className="text-xs font-semibold text-slate-600 py-4">Action</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 py-4 pl-4">{t("Code")}</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Name")}</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Status")}</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Assignee")}</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Approver")}</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Department Name")}</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Action")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -586,7 +588,7 @@ export default function GRCAdminGovernancePage() {
                       {policies.length === 0 && (
                         <TableRow>
                           <TableCell colSpan={7} className="h-24 text-center text-slate-500">
-                            No {docType.toLowerCase()}s found
+                            {t("No items found")}
                           </TableCell>
                         </TableRow>
                       )}
@@ -596,7 +598,7 @@ export default function GRCAdminGovernancePage() {
                   {/* Pagination */}
                   <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
                     <span className="text-sm text-slate-500">
-                      {total > 0 ? `${startItem} to ${endItem} of ${total}` : `No ${docType.toLowerCase()}s`}
+                      {total > 0 ? `${startItem} ${t("to")} ${endItem} ${t("of")} ${total}` : t("No items found")}
                     </span>
                     <div className="flex items-center gap-1">
                       <Button
@@ -653,7 +655,7 @@ export default function GRCAdminGovernancePage() {
           {/* Sticky Header */}
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">New Governance - Step {createStep} of 3</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("New Governance")} - {t("Step")} {createStep} {t("of")} 3</DialogTitle>
             </DialogHeader>
           </div>
 
@@ -683,19 +685,19 @@ export default function GRCAdminGovernancePage() {
             {createStep === 1 && (
               <div className="space-y-4">
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Governance Name *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Governance Name")} *</Label>
                   <Input
                     value={newPolicy.name}
                     onChange={(e) => setNewPolicy({ ...newPolicy, name: e.target.value })}
-                    placeholder="Enter governance name"
+                    placeholder={t("Enter governance name")}
                     className="mt-1.5 w-full"
                   />
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Department *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Department")} *</Label>
                   <Select value={newPolicy.departmentId} onValueChange={(v) => setNewPolicy({ ...newPolicy, departmentId: v, assigneeId: "" })}>
                     <SelectTrigger className="mt-1.5 w-full bg-white">
-                      <SelectValue placeholder="Select department" />
+                      <SelectValue placeholder={t("Select department")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
                       {departments.map((d) => (
@@ -705,33 +707,33 @@ export default function GRCAdminGovernancePage() {
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Document Type *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Document Type")} *</Label>
                   <Select value={newPolicy.documentType} onValueChange={(v) => setNewPolicy({ ...newPolicy, documentType: v })}>
                     <SelectTrigger className="mt-1.5 w-full bg-white">
-                      <SelectValue placeholder="Select document type" />
+                      <SelectValue placeholder={t("Select document type")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
-                      {DOCUMENT_TYPES.map((t) => (
-                        <SelectItem key={t} value={t}>{t}</SelectItem>
+                      {DOCUMENT_TYPES.map((docType) => (
+                        <SelectItem key={docType} value={docType}>{t(docType)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Recurrence *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Recurrence")} *</Label>
                   <Select value={newPolicy.recurrence} onValueChange={(v) => setNewPolicy({ ...newPolicy, recurrence: v })}>
                     <SelectTrigger className="mt-1.5 w-full bg-white">
-                      <SelectValue placeholder="Select recurrence" />
+                      <SelectValue placeholder={t("Select recurrence")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
                       {RECURRENCE_OPTIONS.map((r) => (
-                        <SelectItem key={r} value={r}>{r}</SelectItem>
+                        <SelectItem key={r} value={r}>{t(r)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Assignee *</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Assignee")} *</Label>
                   <Select
                     value={newPolicy.assigneeId}
                     onValueChange={(v) => setNewPolicy({ ...newPolicy, assigneeId: v })}
@@ -740,8 +742,8 @@ export default function GRCAdminGovernancePage() {
                     <SelectTrigger className="mt-1.5 w-full bg-white">
                       <SelectValue placeholder={
                         !newPolicy.departmentId
-                          ? "Select department first"
-                          : "Select assignee"
+                          ? t("Select department first")
+                          : t("Select assignee")
                       } />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
@@ -751,7 +753,7 @@ export default function GRCAdminGovernancePage() {
                         ))
                       ) : (
                         <div className="py-2 px-2 text-sm text-slate-500 text-center">
-                          No users found
+                          {t("No users found")}
                         </div>
                       )}
                     </SelectContent>
@@ -764,15 +766,15 @@ export default function GRCAdminGovernancePage() {
             {createStep === 2 && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <Label className="text-base font-semibold text-slate-800">Select Controls to Link</Label>
-                  <Badge variant="secondary">{selectedControlIds.length} selected</Badge>
+                  <Label className="text-base font-semibold text-slate-800">{t("Select Controls to Link")}</Label>
+                  <Badge variant="secondary">{selectedControlIds.length} {t("selected")}</Badge>
                 </div>
 
                 {/* Control Filters */}
                 <div className="flex gap-4">
                   <div className="flex-1">
                     <Input
-                      placeholder="Search controls..."
+                      placeholder={t("Search controls...")}
                       value={controlSearch}
                       onChange={(e) => setControlSearch(e.target.value)}
                       className="bg-white"
@@ -780,10 +782,10 @@ export default function GRCAdminGovernancePage() {
                   </div>
                   <Select value={controlDomainFilter} onValueChange={setControlDomainFilter}>
                     <SelectTrigger className="w-[180px] bg-white">
-                      <SelectValue placeholder="Domain" />
+                      <SelectValue placeholder={t("Domain")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
-                      <SelectItem value="all">All Domains</SelectItem>
+                      <SelectItem value="all">{t("All Domains")}</SelectItem>
                       {domains.map((d) => (
                         <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                       ))}
@@ -791,13 +793,13 @@ export default function GRCAdminGovernancePage() {
                   </Select>
                   <Select value={controlStatusFilter} onValueChange={setControlStatusFilter}>
                     <SelectTrigger className="w-[180px] bg-white">
-                      <SelectValue placeholder="Status" />
+                      <SelectValue placeholder={t("Status")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
-                      <SelectItem value="all">All Statuses</SelectItem>
-                      <SelectItem value="Compliant">Compliant</SelectItem>
-                      <SelectItem value="Non Compliant">Non Compliant</SelectItem>
-                      <SelectItem value="Not Applicable">Not Applicable</SelectItem>
+                      <SelectItem value="all">{t("All Statuses")}</SelectItem>
+                      <SelectItem value="Compliant">{t("Compliant")}</SelectItem>
+                      <SelectItem value="Non Compliant">{t("Non Compliant")}</SelectItem>
+                      <SelectItem value="Not Applicable">{t("Not Applicable")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -808,10 +810,10 @@ export default function GRCAdminGovernancePage() {
                     <TableHeader>
                       <TableRow className="border-b border-slate-100 bg-slate-50/50">
                         <TableHead className="w-[50px] py-4 pl-4"></TableHead>
-                        <TableHead className="text-xs font-semibold text-slate-600 py-4">Control Code</TableHead>
-                        <TableHead className="text-xs font-semibold text-slate-600 py-4">Control Name</TableHead>
-                        <TableHead className="text-xs font-semibold text-slate-600 py-4">Domain</TableHead>
-                        <TableHead className="text-xs font-semibold text-slate-600 py-4">Status</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Control Code")}</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Control Name")}</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Domain")}</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Status")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -842,7 +844,7 @@ export default function GRCAdminGovernancePage() {
                       {filteredControls.length === 0 && (
                         <TableRow>
                           <TableCell colSpan={5} className="h-24 text-center text-slate-500">
-                            No controls found
+                            {t("No controls found")}
                           </TableCell>
                         </TableRow>
                       )}
@@ -855,42 +857,42 @@ export default function GRCAdminGovernancePage() {
             {/* Step 3: Review */}
             {createStep === 3 && (
               <div className="space-y-6">
-                <div className="text-lg font-medium text-slate-800">Review Information</div>
+                <div className="text-lg font-medium text-slate-800">{t("Review Information")}</div>
 
                 <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
                   <div>
-                    <Label className="text-slate-500 text-sm">Governance Name</Label>
+                    <Label className="text-slate-500 text-sm">{t("Governance Name")}</Label>
                     <p className="font-medium text-slate-900">{newPolicy.name}</p>
                   </div>
                   <div>
-                    <Label className="text-slate-500 text-sm">Document Type</Label>
-                    <p className="font-medium text-slate-900">{newPolicy.documentType}</p>
+                    <Label className="text-slate-500 text-sm">{t("Document Type")}</Label>
+                    <p className="font-medium text-slate-900">{t(newPolicy.documentType)}</p>
                   </div>
                   <div>
-                    <Label className="text-slate-500 text-sm">Recurrence</Label>
-                    <p className="font-medium text-slate-900">{newPolicy.recurrence}</p>
+                    <Label className="text-slate-500 text-sm">{t("Recurrence")}</Label>
+                    <p className="font-medium text-slate-900">{t(newPolicy.recurrence)}</p>
                   </div>
                   <div>
-                    <Label className="text-slate-500 text-sm">Department</Label>
+                    <Label className="text-slate-500 text-sm">{t("Department")}</Label>
                     <p className="font-medium text-slate-900">
                       {departments.find((d) => d.id === newPolicy.departmentId)?.name || "-"}
                     </p>
                   </div>
                   <div>
-                    <Label className="text-slate-500 text-sm">Assignee</Label>
+                    <Label className="text-slate-500 text-sm">{t("Assignee")}</Label>
                     <p className="font-medium text-slate-900">
                       {users.find((u) => u.id === newPolicy.assigneeId)?.fullName || "-"}
                     </p>
                   </div>
                   <div>
-                    <Label className="text-slate-500 text-sm">Linked Controls</Label>
-                    <p className="font-medium text-slate-900">{selectedControlIds.length} controls</p>
+                    <Label className="text-slate-500 text-sm">{t("Linked Controls")}</Label>
+                    <p className="font-medium text-slate-900">{selectedControlIds.length} {t("controls")}</p>
                   </div>
                 </div>
 
                 {selectedControlIds.length > 0 && (
                   <div>
-                    <Label className="text-slate-500 text-sm mb-2 block">Selected Controls:</Label>
+                    <Label className="text-slate-500 text-sm mb-2 block">{t("Selected Controls")}:</Label>
                     <div className="flex flex-wrap gap-2">
                       {selectedControlIds.map((id) => {
                         const control = controls.find((c) => c.id === id);
@@ -916,7 +918,7 @@ export default function GRCAdminGovernancePage() {
                 setIsCreateDialogOpen(false);
               }
             }}>
-              {createStep === 1 ? "Cancel" : "Previous"}
+              {createStep === 1 ? t("Cancel") : t("Previous")}
             </Button>
             <Button
               onClick={() => {
@@ -925,7 +927,7 @@ export default function GRCAdminGovernancePage() {
               }}
               disabled={createStep === 1 && !canProceedStep1}
             >
-              {createStep === 3 ? `Create ${newPolicy.documentType}` : "Next"}
+              {createStep === 3 ? `${t("Create")} ${t(newPolicy.documentType)}` : t("Next")}
             </Button>
           </div>
         </DialogContent>
@@ -935,15 +937,15 @@ export default function GRCAdminGovernancePage() {
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete {policyToDelete?.documentType || "Policy"}</AlertDialogTitle>
+            <AlertDialogTitle>{t("Delete")} {t(policyToDelete?.documentType || "Policy")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete &quot;{policyToDelete?.name}&quot;? This action cannot be undone.
+              {t("Are you sure you want to delete")} &quot;{policyToDelete?.name}&quot;? {t("This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setPolicyToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setPolicyToDelete(null)}>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeletePolicy} className="bg-red-600 hover:bg-red-700">
-              Delete
+              {t("Delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -953,15 +955,15 @@ export default function GRCAdminGovernancePage() {
       <AlertDialog open={isDeleteAllDialogOpen} onOpenChange={setIsDeleteAllDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete All {activeDocType}s</AlertDialogTitle>
+            <AlertDialogTitle>{t("Delete All")} {t(activeDocType)}s</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete all {activeDocType.toLowerCase()}s? This action cannot be undone.
+              {t("Are you sure you want to delete all items?")} {t("This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteAll} className="bg-red-600 hover:bg-red-700">
-              Delete All
+              {t("Delete All")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -975,7 +977,7 @@ export default function GRCAdminGovernancePage() {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-lg font-semibold text-slate-800">
                 <FileSpreadsheet className="h-5 w-5 text-green-600" />
-                Import {activeDocType}s
+                {t("Import")} {t(activeDocType)}s
               </DialogTitle>
             </DialogHeader>
           </div>
@@ -983,7 +985,7 @@ export default function GRCAdminGovernancePage() {
           {/* Content */}
           <div className="px-6 py-6">
             <p className="text-sm text-slate-500 mb-4">
-              Upload a CSV or Excel file to import {activeDocType.toLowerCase()}s.
+              {t("Upload a CSV or Excel file to import items.")}
             </p>
             <div
               className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
@@ -1002,7 +1004,7 @@ export default function GRCAdminGovernancePage() {
                     e.stopPropagation();
                     setImportFile(null);
                   }}>
-                    Remove
+                    {t("Remove")}
                   </Button>
                 </div>
               ) : (
@@ -1010,10 +1012,10 @@ export default function GRCAdminGovernancePage() {
                   <FileSpreadsheet className="h-10 w-10 mx-auto text-slate-300" />
                   <div>
                     <p className="text-sm text-slate-600">
-                      Drag and drop a file here, or click to browse
+                      {t("Drag and drop a file here, or click to browse")}
                     </p>
                     <p className="text-xs text-slate-400 mt-1">
-                      Supported formats: CSV, XLSX, XLS
+                      {t("Supported formats")}: CSV, XLSX, XLS
                     </p>
                   </div>
                   <input
@@ -1039,10 +1041,10 @@ export default function GRCAdminGovernancePage() {
               setIsImportDialogOpen(false);
               setImportFile(null);
             }}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button onClick={handleImport} disabled={!importFile}>
-              Import
+              {t("Import")}
             </Button>
           </div>
         </DialogContent>
@@ -1059,7 +1061,7 @@ export default function GRCAdminGovernancePage() {
           {/* Sticky Header */}
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Edit {editingPolicy?.documentType || "Governance"}</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit")} {t(editingPolicy?.documentType || "Governance")}</DialogTitle>
             </DialogHeader>
           </div>
 
@@ -1067,19 +1069,19 @@ export default function GRCAdminGovernancePage() {
           <div className="overflow-y-auto flex-1 px-6 py-5">
             <div className="space-y-4">
               <div>
-                <Label className="text-sm font-medium text-slate-700">Governance Name *</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Governance Name")} *</Label>
                 <Input
                   value={editData.name}
                   onChange={(e) => setEditData({ ...editData, name: e.target.value })}
-                  placeholder="Enter governance name"
+                  placeholder={t("Enter governance name")}
                   className="mt-1.5 w-full"
                 />
               </div>
               <div>
-                <Label className="text-sm font-medium text-slate-700">Department *</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Department")} *</Label>
                 <Select value={editData.departmentId} onValueChange={(v) => setEditData({ ...editData, departmentId: v, assigneeId: "" })}>
                   <SelectTrigger className="mt-1.5 w-full bg-white">
-                    <SelectValue placeholder="Select department" />
+                    <SelectValue placeholder={t("Select department")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
                     {departments.map((d) => (
@@ -1089,33 +1091,33 @@ export default function GRCAdminGovernancePage() {
                 </Select>
               </div>
               <div>
-                <Label className="text-sm font-medium text-slate-700">Document Type *</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Document Type")} *</Label>
                 <Select value={editData.documentType} onValueChange={(v) => setEditData({ ...editData, documentType: v })}>
                   <SelectTrigger className="mt-1.5 w-full bg-white">
-                    <SelectValue placeholder="Select document type" />
+                    <SelectValue placeholder={t("Select document type")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
-                    {DOCUMENT_TYPES.map((t) => (
-                      <SelectItem key={t} value={t}>{t}</SelectItem>
+                    {DOCUMENT_TYPES.map((docType) => (
+                      <SelectItem key={docType} value={docType}>{t(docType)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label className="text-sm font-medium text-slate-700">Recurrence *</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Recurrence")} *</Label>
                 <Select value={editData.recurrence} onValueChange={(v) => setEditData({ ...editData, recurrence: v })}>
                   <SelectTrigger className="mt-1.5 w-full bg-white">
-                    <SelectValue placeholder="Select recurrence" />
+                    <SelectValue placeholder={t("Select recurrence")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
                     {RECURRENCE_OPTIONS.map((r) => (
-                      <SelectItem key={r} value={r}>{r}</SelectItem>
+                      <SelectItem key={r} value={r}>{t(r)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label className="text-sm font-medium text-slate-700">Assignee *</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Assignee")} *</Label>
                 <Select
                   value={editData.assigneeId}
                   onValueChange={(v) => setEditData({ ...editData, assigneeId: v })}
@@ -1124,8 +1126,8 @@ export default function GRCAdminGovernancePage() {
                   <SelectTrigger className="mt-1.5 w-full bg-white">
                     <SelectValue placeholder={
                       !editData.departmentId
-                        ? "Select department first"
-                        : "Select assignee"
+                        ? t("Select department first")
+                        : t("Select assignee")
                     } />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
@@ -1135,7 +1137,7 @@ export default function GRCAdminGovernancePage() {
                       ))
                     ) : (
                       <div className="py-2 px-2 text-sm text-slate-500 text-center">
-                        No users found
+                        {t("No users found")}
                       </div>
                     )}
                   </SelectContent>
@@ -1150,13 +1152,13 @@ export default function GRCAdminGovernancePage() {
               setIsEditDialogOpen(false);
               setEditingPolicy(null);
             }}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button
               onClick={handleUpdatePolicy}
               disabled={!editData.name || !editData.departmentId || !editData.documentType || !editData.recurrence}
             >
-              Save Changes
+              {t("Save Changes")}
             </Button>
           </div>
         </DialogContent>
