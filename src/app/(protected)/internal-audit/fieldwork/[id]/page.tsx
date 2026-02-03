@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -32,7 +31,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -41,6 +39,7 @@ import {
   ArrowLeft,
   ChevronDown,
   ChevronUp,
+  ChevronRight,
   FileText,
   Download,
   Eye,
@@ -56,11 +55,13 @@ import {
   Paperclip,
   Check,
   AlertCircle,
+  Home,
 } from "lucide-react";
 import { useHasRole } from "@/hooks/usePermissions";
 import { useSession } from "next-auth/react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { DatePicker } from "@/components/ui/date-picker";
+import Link from "next/link";
 
 interface Department {
   id: string;
@@ -220,6 +221,8 @@ export default function FieldworkDetailsPage() {
   const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [addFindingDialogOpen, setAddFindingDialogOpen] = useState(false);
+  const [addFullFindingDialogOpen, setAddFullFindingDialogOpen] = useState(false);
+  const [savingFullFinding, setSavingFullFinding] = useState(false);
   const [addingTask, setAddingTask] = useState(false);
   const [savingTask, setSavingTask] = useState<string | null>(null);
   const [uploadingTaskDocument, setUploadingTaskDocument] = useState<string | null>(null);
@@ -328,6 +331,19 @@ export default function FieldworkDetailsPage() {
     recommendation: "",
   });
 
+  // Full finding form state (for full form dialog)
+  const [fullFinding, setFullFinding] = useState({
+    findingTitle: "",
+    severity: "",
+    criteria: "",
+    condition: "",
+    cause: "",
+    effect: "",
+    recommendation: "",
+    responsiblePersonId: "",
+    status: "",
+    targetClosureDate: "",
+  });
 
   const [newEvidence, setNewEvidence] = useState({
     title: "",
@@ -758,6 +774,60 @@ export default function FieldworkDetailsPage() {
       }
     } catch (error) {
       toast.error(t("Failed to add finding"));
+    }
+  };
+
+  // Handle adding a full finding (with all fields)
+  const handleAddFullFinding = async () => {
+    if (!fullFinding.findingTitle.trim()) {
+      toast.error(t("Finding title is required"));
+      return;
+    }
+
+    setSavingFullFinding(true);
+    try {
+      const response = await fetch(`/api/internal-audit/fieldwork/${engagementId}/findings`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: fullFinding.findingTitle,
+          severity: fullFinding.severity || "Medium",
+          criteria: fullFinding.criteria || null,
+          condition: fullFinding.condition || null,
+          cause: fullFinding.cause || null,
+          effect: fullFinding.effect || null,
+          recommendation: fullFinding.recommendation || null,
+          responsiblePersonId: fullFinding.responsiblePersonId || null,
+          status: fullFinding.status || "Open",
+          targetDate: fullFinding.targetClosureDate || null,
+        }),
+      });
+
+      if (response.ok) {
+        toast.success(t("Finding added successfully"));
+        setAddFullFindingDialogOpen(false);
+        setFullFinding({
+          findingTitle: "",
+          severity: "",
+          criteria: "",
+          condition: "",
+          cause: "",
+          effect: "",
+          recommendation: "",
+          responsiblePersonId: "",
+          status: "",
+          targetClosureDate: "",
+        });
+        fetchFindings();
+      } else {
+        const error = await response.json();
+        toast.error(error.error || t("Failed to add finding"));
+      }
+    } catch (error) {
+      console.error("Error adding finding:", error);
+      toast.error(t("Failed to add finding"));
+    } finally {
+      setSavingFullFinding(false);
     }
   };
 
@@ -1444,44 +1514,46 @@ export default function FieldworkDetailsPage() {
     headerAction?: React.ReactNode;
   }) => (
     <Collapsible open={isOpen} onOpenChange={onToggle}>
-      <Card className="overflow-hidden">
-        <div className="flex items-center justify-between p-4 bg-blue-50">
-          <CollapsibleTrigger className="flex-1 flex items-center justify-between hover:bg-blue-100 transition-colors -m-4 p-4 mr-0">
-            <span className="text-[#1e3a5f] font-semibold">{title}</span>
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-slate-100">
+          <CollapsibleTrigger className="flex-1 flex items-center justify-between rounded -mx-2 -my-1 px-2 py-1">
+            <span className="text-slate-800 font-semibold text-sm">{title}</span>
             <div className="flex items-center gap-2">
               {isOpen ? (
-                <ChevronUp className="h-5 w-5 text-[#1e3a5f]" />
+                <ChevronUp className="h-4 w-4 text-slate-500" />
               ) : (
-                <ChevronDown className="h-5 w-5 text-[#1e3a5f]" />
+                <ChevronDown className="h-4 w-4 text-slate-500" />
               )}
             </div>
           </CollapsibleTrigger>
           {headerAction && (
-            <div className="ml-2 z-10">
+            <div className="ltr:ml-2 rtl:mr-2 z-10">
               {headerAction}
             </div>
           )}
         </div>
         <CollapsibleContent>
-          <div className="p-4 border-t">{children}</div>
+          <div className="p-4">{children}</div>
         </CollapsibleContent>
-      </Card>
+      </div>
     </Collapsible>
   );
 
   if (loading) {
     return (
-      <div className="p-6">
-        <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" size="sm" onClick={() => router.back()}>
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            {t("Back")}
-          </Button>
-          <span className="text-gray-500">{t("Internal Audit")}</span>
-          <span className="text-[#1e3a5f] font-semibold">{t("Field Work")}</span>
-        </div>
+      <div className="space-y-6">
+        <nav className="flex items-center gap-1.5 text-sm">
+          <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>{t("Internal Audit")}</span>
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <Link href="/internal-audit/fieldwork" className="text-slate-500 hover:text-primary-600 transition-colors">
+            {t("Fieldwork")}
+          </Link>
+        </nav>
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+          <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
         </div>
       </div>
     );
@@ -1489,42 +1561,55 @@ export default function FieldworkDetailsPage() {
 
   if (!engagement) {
     return (
-      <div className="p-6">
-        <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" size="sm" onClick={() => router.back()}>
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            {t("Back")}
-          </Button>
-          <span className="text-gray-500">{t("Internal Audit")}</span>
-          <span className="text-[#1e3a5f] font-semibold">{t("Field Work")}</span>
+      <div className="space-y-6">
+        <nav className="flex items-center gap-1.5 text-sm">
+          <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>{t("Internal Audit")}</span>
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <Link href="/internal-audit/fieldwork" className="text-slate-500 hover:text-primary-600 transition-colors">
+            {t("Fieldwork")}
+          </Link>
+        </nav>
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-bold text-slate-800">{t("Fieldwork")}</h1>
         </div>
-        <div className="text-center py-8 text-gray-500">{t("Engagement not found")}</div>
+        <div className="bg-white rounded-xl border border-slate-200 p-8 text-center text-slate-500">
+          {t("Engagement not found")}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-4">
-      {/* Completed Status Banner */}
-      {isCompleted && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-2">
-          <Check className="h-5 w-5 text-green-600" />
-          <span className="text-green-800 font-medium">
-            {t("This engagement has been completed and is now in read-only mode.")}
-          </span>
-        </div>
-      )}
+    <div className="space-y-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>{t("Internal Audit")}</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <Link href="/internal-audit/fieldwork" className="text-slate-500 hover:text-primary-600 transition-colors">
+          {t("Fieldwork")}
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">{engagement.auditId}</span>
+      </nav>
 
-      {/* Breadcrumb Header */}
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="sm" onClick={() => router.push("/internal-audit/fieldwork")}>
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          {t("Back")}
-        </Button>
-        <span className="text-gray-500">|</span>
-        <span className="text-gray-500">{t("Internal Audit")}</span>
-        <span className="text-gray-500">|</span>
-        <span className="text-[#1e3a5f] font-semibold">{t("Field Work")}</span>
+      {/* Page Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-bold text-slate-800">{engagement.engagementTitle}</h1>
+          <p className="text-sm text-slate-500">{engagement.auditId}</p>
+        </div>
+        {isCompleted && (
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-md text-sm text-emerald-700">
+            <Check className="h-4 w-4" />
+            <span>{t("Completed")}</span>
+          </div>
+        )}
       </div>
 
       {/* Engagement Details Section */}
@@ -1551,7 +1636,7 @@ export default function FieldworkDetailsPage() {
             {engagement.status !== "Completed" && !isAuditeeOnly && (
               <Button
                 size="sm"
-                className="bg-[#1e3a5f] hover:bg-[#2d4a6f] text-white"
+                className="bg-primary-600 hover:bg-primary-700 text-white"
                 onClick={(e) => {
                   e.stopPropagation();
                   handleMarkAsCompleted();
@@ -1560,7 +1645,7 @@ export default function FieldworkDetailsPage() {
               >
                 {markingComplete ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
                     {t("Marking...")}
                   </>
                 ) : (
@@ -1573,29 +1658,29 @@ export default function FieldworkDetailsPage() {
       >
         <div className="grid grid-cols-3 gap-6 p-4 bg-white rounded-lg border">
           <div>
-            <Label className="text-[#1e3a5f] font-medium">{t("Engagement ID")}</Label>
+            <Label className="text-slate-700 font-medium">{t("Engagement ID")}</Label>
             <p className="mt-1">{engagement.auditId}</p>
           </div>
           <div>
-            <Label className="text-[#1e3a5f] font-medium">{t("Title")}</Label>
+            <Label className="text-slate-700 font-medium">{t("Title")}</Label>
             <p className="mt-1">{engagement.engagementTitle}</p>
           </div>
           <div>
-            <Label className="text-[#1e3a5f] font-medium">{t("Auditor")}</Label>
+            <Label className="text-slate-700 font-medium">{t("Auditor")}</Label>
             <p className="mt-1">{getAuditorName()}</p>
           </div>
           <div>
-            <Label className="text-[#1e3a5f] font-medium">{t("Timeline")}</Label>
+            <Label className="text-slate-700 font-medium">{t("Timeline")}</Label>
             <p className="mt-1">
               {formatDate(engagement.startDate)} {t("to")} {formatDate(engagement.endDate)}
             </p>
           </div>
           <div>
-            <Label className="text-[#1e3a5f] font-medium">{t("Status")}</Label>
+            <Label className="text-slate-700 font-medium">{t("Status")}</Label>
             <p className="mt-1">{engagement.status}</p>
           </div>
           <div>
-            <Label className="text-[#1e3a5f] font-medium">{t("Department")}</Label>
+            <Label className="text-slate-700 font-medium">{t("Department")}</Label>
             <p className="mt-1">{engagement.department?.name || "-"}</p>
           </div>
         </div>
@@ -1613,13 +1698,12 @@ export default function FieldworkDetailsPage() {
             <div className="flex justify-end">
               <Button
                 size="sm"
-                className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
                 onClick={() => {
                   setUploadCategory("workpapers");
                   setUploadDialogOpen(true);
                 }}
               >
-                <Upload className="h-4 w-4 mr-2" />
+                <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                 {t("Upload Workpaper")}
               </Button>
             </div>
@@ -1636,7 +1720,7 @@ export default function FieldworkDetailsPage() {
                     href={`/api${wp.filePath}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[#1e3a5f] hover:underline font-medium flex-grow"
+                    className="text-slate-700 hover:underline font-medium flex-grow"
                   >
                     {wp.fileName}
                   </a>
@@ -1647,7 +1731,7 @@ export default function FieldworkDetailsPage() {
                       title={t("View")}
                       onClick={() => window.open(`/api${wp.filePath}`, "_blank")}
                     >
-                      <Eye className="h-5 w-5 text-gray-600" />
+                      <Eye className="h-5 w-5 text-slate-600" />
                     </Button>
                     <Button
                       variant="ghost"
@@ -1660,7 +1744,7 @@ export default function FieldworkDetailsPage() {
                         link.click();
                       }}
                     >
-                      <Download className="h-5 w-5 text-gray-600" />
+                      <Download className="h-5 w-5 text-slate-600" />
                     </Button>
                     {isAuditHead && (
                       <Button
@@ -1680,7 +1764,7 @@ export default function FieldworkDetailsPage() {
               ))}
             </div>
           ) : (
-            <div className="text-center py-8 text-gray-500">{t("No workpapers uploaded yet")}</div>
+            <div className="text-center py-8 text-slate-500">{t("No workpapers uploaded yet")}</div>
           )}
         </div>
       </CollapsibleSection>
@@ -1698,18 +1782,17 @@ export default function FieldworkDetailsPage() {
             <div className="flex justify-end">
               <Button
                 size="sm"
-                className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
                 onClick={handleGenerateAIWorkpapers}
                 disabled={generatingWorkpapers || isCompleted}
               >
                 {generatingWorkpapers ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
                     {t("Generating...")}
                   </>
                 ) : (
                   <>
-                    <FileText className="h-4 w-4 mr-2" />
+                    <FileText className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                     {t("Generate Workpaper with AI")}
                   </>
                 )}
@@ -1717,28 +1800,28 @@ export default function FieldworkDetailsPage() {
             </div>
           )}
           {aiWorkpapers.length > 0 ? (
-            <div className="border rounded-lg overflow-hidden">
+            <div className="bg-white border rounded-lg overflow-hidden">
               <Table>
               <TableHeader>
-                <TableRow className="bg-gray-50 border-b">
-                  <TableHead className="text-[#1e3a5f] font-semibold w-[200px]">{t("Task")}</TableHead>
-                  <TableHead className="text-[#1e3a5f] font-semibold w-[180px]">{t("Evidences")}</TableHead>
-                  <TableHead className="text-[#1e3a5f] font-semibold w-[250px]">{t("Steps")}</TableHead>
-                  <TableHead className="text-[#1e3a5f] font-semibold w-[120px]">{t("Question Checklist")}</TableHead>
-                  <TableHead className="text-[#1e3a5f] font-semibold w-[100px]">{t("Comments")}</TableHead>
+                <TableRow className="bg-slate-50 border-b">
+                  <TableHead className="text-slate-700 font-semibold w-[200px]">{t("Task")}</TableHead>
+                  <TableHead className="text-slate-700 font-semibold w-[180px]">{t("Evidences")}</TableHead>
+                  <TableHead className="text-slate-700 font-semibold w-[250px]">{t("Steps")}</TableHead>
+                  <TableHead className="text-slate-700 font-semibold w-[120px]">{t("Question Checklist")}</TableHead>
+                  <TableHead className="text-slate-700 font-semibold w-[100px]">{t("Comments")}</TableHead>
                   {isAuditHead && (
-                    <TableHead className="text-[#1e3a5f] font-semibold w-[100px]">{t("Action")}</TableHead>
+                    <TableHead className="text-slate-700 font-semibold w-[100px]">{t("Action")}</TableHead>
                   )}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {aiWorkpapers.map((wp) => (
-                  <TableRow key={wp.id} className="border-b hover:bg-gray-50">
+                  <TableRow key={wp.id} className="border-b hover:bg-slate-50">
                     <TableCell className="align-top py-4">
                       <div className="space-y-3">
-                        <p className="text-gray-800">{wp.task}</p>
+                        <p className="text-slate-800">{wp.task}</p>
                         <div>
-                          <span className="text-[#1e3a5f] font-medium block mb-1">{t("Executed")}</span>
+                          <span className="text-slate-700 font-medium block mb-1">{t("Executed")}</span>
                           <Checkbox
                             checked={wp.executed}
                             onCheckedChange={() => handleToggleExecuted(wp.id, wp.executed)}
@@ -1747,10 +1830,10 @@ export default function FieldworkDetailsPage() {
                       </div>
                     </TableCell>
                     <TableCell className="align-top py-4">
-                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{wp.evidences}</p>
+                      <p className="text-sm text-slate-700 whitespace-pre-wrap">{wp.evidences}</p>
                     </TableCell>
                     <TableCell className="align-top py-4">
-                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{wp.steps}</p>
+                      <p className="text-sm text-slate-700 whitespace-pre-wrap">{wp.steps}</p>
                     </TableCell>
                     <TableCell className="align-top py-4 text-center">
                       {wp.questionChecklist || "-"}
@@ -1767,7 +1850,7 @@ export default function FieldworkDetailsPage() {
                             title={t("Edit")}
                             onClick={() => handleOpenEditAIWorkpaper(wp)}
                           >
-                            <Pencil className="h-4 w-4 text-blue-600" />
+                            <Pencil className="h-4 w-4 text-primary-600" />
                           </Button>
                           <Button
                             variant="ghost"
@@ -1789,7 +1872,7 @@ export default function FieldworkDetailsPage() {
               </Table>
             </div>
           ) : (
-            <div className="text-center py-8 text-gray-500">{t("No AI-generated workpapers available")}</div>
+            <div className="text-center py-8 text-slate-500">{t("No AI-generated workpapers available")}</div>
           )}
         </div>
       </CollapsibleSection>
@@ -1806,65 +1889,85 @@ export default function FieldworkDetailsPage() {
           <div className="flex justify-end">
             <Button
               size="sm"
-              className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
               onClick={handleAddTask}
               disabled={addingTask || isCompleted}
             >
               {addingTask ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
               ) : (
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               )}
               {t("Add Task")}
             </Button>
           </div>
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-[#1e3a5f] hover:bg-[#1e3a5f]">
-                <TableHead className="text-white w-[80px]">{t("Ref No")}</TableHead>
-                <TableHead className="text-white">{t("Task")}</TableHead>
-                <TableHead className="text-white w-[200px]">{t("Document")}</TableHead>
-                <TableHead className="text-white w-[100px] text-center">{t("Executed")}</TableHead>
-                <TableHead className="text-white">{t("Comments")}</TableHead>
-                {isAuditHead && <TableHead className="text-white w-[100px]">{t("Action")}</TableHead>}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {taskList.length > 0 ? (
-                taskList.map((task) => (
-                  <TableRow key={task.id} className="hover:bg-gray-50">
-                    <TableCell>
-                      <Input
-                        value={task.refNo}
-                        readOnly
-                        className="w-16 bg-gray-50 text-center"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        value={task.task}
-                        onChange={(e) => handleUpdateTask(task.id, "task", e.target.value)}
-                        onBlur={(e) => handleUpdateTask(task.id, "task", e.target.value)}
-                        placeholder={t("Enter task description")}
-                        className="border-gray-300"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      {task.document ? (
-                        <div className="flex items-center gap-2">
-                          <a
-                            href={`/api${task.document}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:underline text-sm truncate max-w-[120px]"
-                            title={task.documentName || t("Document")}
-                          >
-                            {task.documentName || t("View")}
-                          </a>
+          <div className="bg-white border rounded-lg overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-b border-slate-100 bg-slate-50/50">
+                  <TableHead className="text-xs font-semibold text-slate-600 w-[80px]">{t("Ref No")}</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600">{t("Task")}</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600 w-[200px]">{t("Document")}</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600 w-[100px] text-center">{t("Executed")}</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600">{t("Comments")}</TableHead>
+                  {isAuditHead && <TableHead className="text-xs font-semibold text-slate-600 w-[100px]">{t("Action")}</TableHead>}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {taskList.length > 0 ? (
+                  taskList.map((task) => (
+                    <TableRow key={task.id} className="hover:bg-slate-50">
+                      <TableCell>
+                        <Input
+                          value={task.refNo}
+                          readOnly
+                          className="w-16 bg-slate-50 text-center"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          value={task.task}
+                          onChange={(e) => handleUpdateTask(task.id, "task", e.target.value)}
+                          onBlur={(e) => handleUpdateTask(task.id, "task", e.target.value)}
+                          placeholder={t("Enter task description")}
+                          className="border-slate-300"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        {task.document ? (
+                          <div className="flex items-center gap-2">
+                            <a
+                              href={`/api${task.document}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary-600 hover:underline text-sm truncate max-w-[120px]"
+                              title={task.documentName || t("Document")}
+                            >
+                              {task.documentName || t("View")}
+                            </a>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6"
+                              onClick={() => {
+                                const input = document.createElement("input");
+                                input.type = "file";
+                                input.accept = ".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg";
+                                input.onchange = (e) => {
+                                  const file = (e.target as HTMLInputElement).files?.[0];
+                                  if (file) handleUploadTaskDocument(task.id, file);
+                                };
+                                input.click();
+                              }}
+                            >
+                              <Upload className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        ) : (
                           <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6"
+                            variant="outline"
+                            size="sm"
+                            className="text-xs"
+                            disabled={uploadingTaskDocument === task.id || isCompleted}
                             onClick={() => {
                               const input = document.createElement("input");
                               input.type = "file";
@@ -1876,93 +1979,74 @@ export default function FieldworkDetailsPage() {
                               input.click();
                             }}
                           >
-                            <Upload className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      ) : (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-xs"
-                          disabled={uploadingTaskDocument === task.id || isCompleted}
-                          onClick={() => {
-                            const input = document.createElement("input");
-                            input.type = "file";
-                            input.accept = ".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg";
-                            input.onchange = (e) => {
-                              const file = (e.target as HTMLInputElement).files?.[0];
-                              if (file) handleUploadTaskDocument(task.id, file);
-                            };
-                            input.click();
-                          }}
-                        >
-                          {uploadingTaskDocument === task.id ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                          ) : (
-                            <>
-                              <Upload className="h-3 w-3 mr-1" />
-                              {t("Upload")}
-                            </>
-                          )}
-                        </Button>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Checkbox
-                        checked={task.executed}
-                        onCheckedChange={(checked) =>
-                          handleUpdateTask(task.id, "executed", checked === true)
-                        }
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        value={task.comments}
-                        onChange={(e) => handleUpdateTask(task.id, "comments", e.target.value)}
-                        onBlur={(e) => handleUpdateTask(task.id, "comments", e.target.value)}
-                        placeholder={t("Enter comments")}
-                        className="border-gray-300"
-                      />
-                    </TableCell>
-                    {isAuditHead && (
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleSaveTask(task)}
-                            disabled={savingTask === task.id || isCompleted}
-                            title={t("Save task")}
-                          >
-                            {savingTask === task.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin text-green-600" />
+                            {uploadingTaskDocument === task.id ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
                             ) : (
-                              <Save className="h-4 w-4 text-green-600" />
+                              <>
+                                <Upload className="h-3 w-3 mr-1" />
+                                {t("Upload")}
+                              </>
                             )}
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDeleteTask(task.id)}
-                            title={t("Delete task")}
-                            disabled={isCompleted}
-                          >
-                            <Trash2 className="h-4 w-4 text-red-600" />
-                          </Button>
-                        </div>
+                        )}
                       </TableCell>
-                    )}
+                      <TableCell className="text-center">
+                        <Checkbox
+                          checked={task.executed}
+                          onCheckedChange={(checked) =>
+                            handleUpdateTask(task.id, "executed", checked === true)
+                          }
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          value={task.comments}
+                          onChange={(e) => handleUpdateTask(task.id, "comments", e.target.value)}
+                          onBlur={(e) => handleUpdateTask(task.id, "comments", e.target.value)}
+                          placeholder={t("Enter comments")}
+                          className="border-slate-300"
+                        />
+                      </TableCell>
+                      {isAuditHead && (
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleSaveTask(task)}
+                              disabled={savingTask === task.id || isCompleted}
+                              title={t("Save task")}
+                            >
+                              {savingTask === task.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin text-green-600" />
+                              ) : (
+                                <Save className="h-4 w-4 text-green-600" />
+                              )}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDeleteTask(task.id)}
+                              title={t("Delete task")}
+                              disabled={isCompleted}
+                            >
+                              <Trash2 className="h-4 w-4 text-red-600" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={isAuditHead ? 6 : 5} className="text-center py-8 text-slate-500">
+                      {t("No tasks found. Click \"Add Task\" to create one.")}
+                    </TableCell>
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={isAuditHead ? 6 : 5} className="text-center py-8 text-gray-500">
-                    {t("No tasks found. Click \"Add Task\" to create one.")}
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </div>
       </CollapsibleSection>
       )}
@@ -1981,18 +2065,18 @@ export default function FieldworkDetailsPage() {
                 {isAuditHead && selectedEvidenceIds.length > 0 && (
                   <Button
                     size="sm"
-                    className="bg-green-600 hover:bg-green-700"
+                    className="bg-emerald-600 hover:bg-emerald-700"
                     onClick={handleAIReview}
                     disabled={generatingAIReview || isCompleted}
                   >
                     {generatingAIReview ? (
                       <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
                         {t("Generating...")}
                       </>
                     ) : (
                       <>
-                        <MessageSquare className="h-4 w-4 mr-2" />
+                        <MessageSquare className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                         {t("AI Review")} ({selectedEvidenceIds.length})
                       </>
                     )}
@@ -2002,11 +2086,10 @@ export default function FieldworkDetailsPage() {
               {isAuditHead && (
                 <Button
                   size="sm"
-                  className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
                   onClick={() => setAddEvidenceDialogOpen(true)}
                   disabled={isCompleted}
                 >
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                   {t("Add Evidence Request")}
                 </Button>
               )}
@@ -2018,29 +2101,29 @@ export default function FieldworkDetailsPage() {
             filteredEvidenceRequests.length > 0 ? (
               <div className="space-y-4">
                 {filteredEvidenceRequests.map((er) => (
-                  <div key={er.id} className="bg-[#f8fafc] rounded-lg border border-gray-200 p-4">
+                  <div key={er.id} className="bg-slate-50 rounded-lg border border-slate-200 p-4">
                     <div className="flex items-start gap-4">
                       {/* Checkbox */}
                       <div className="pt-1">
                         <Checkbox
                           checked={selectedEvidenceIds.includes(er.id)}
                           onCheckedChange={(checked) => handleSelectEvidence(er.id, checked === true)}
-                          className="border-[#1e3a5f] data-[state=checked]:bg-[#1e3a5f] data-[state=checked]:text-white"
+                          className="border-primary-600 data-[state=checked]:bg-primary-600 data-[state=checked]:text-white"
                         />
                       </div>
 
                       {/* Left side - Title & Description */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="text-[#1e3a5f] font-semibold">
+                          <span className="text-slate-700 font-semibold">
                             {t("Title")} : {er.title}
                           </span>
-                          <span className="text-gray-400">|</span>
-                          <span className="text-[#1e3a5f] font-semibold">
+                          <span className="text-slate-400">|</span>
+                          <span className="text-slate-700 font-semibold">
                             {t("Sample Size")} : {er.numberOfSamples || "-"}
                           </span>
                         </div>
-                        <p className="text-gray-500 text-sm">
+                        <p className="text-slate-500 text-sm">
                           {t("Description")}: {er.description || "-"}
                         </p>
                         {/* Uploaded files info */}
@@ -2055,13 +2138,13 @@ export default function FieldworkDetailsPage() {
                       {/* Middle - AI Review Section */}
                       <div className="flex-shrink-0 w-[280px]">
                         <div className="flex items-center gap-2 mb-1">
-                          <MessageSquare className="h-4 w-4 text-gray-500" />
-                          <span className="text-sm font-medium text-gray-700">{t("AI Review")}</span>
+                          <MessageSquare className="h-4 w-4 text-slate-500" />
+                          <span className="text-sm font-medium text-slate-700">{t("AI Review")}</span>
                         </div>
                         <div className="flex items-center gap-1 mb-1">
                           {er.aiReviewStatus === 'Satisfactory' ? (
                             <>
-                              <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center">
+                              <div className="w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center">
                                 <span className="text-white text-xs">✓</span>
                               </div>
                               <span className="text-sm text-green-600 font-medium">{t("Satisfactory")}</span>
@@ -2104,7 +2187,7 @@ export default function FieldworkDetailsPage() {
                           onClick={() => handleOpenViewEvidence(er, false)}
                           className="h-8 w-8"
                         >
-                          <Eye className="h-5 w-5 text-[#1e3a5f]" />
+                          <Eye className="h-5 w-5 text-slate-700" />
                         </Button>
                         <Button
                           variant="ghost"
@@ -2113,7 +2196,7 @@ export default function FieldworkDetailsPage() {
                           onClick={() => handleOpenAttachmentDialog(er)}
                           className="h-8 w-8"
                         >
-                          <Paperclip className="h-5 w-5 text-[#1e3a5f]" />
+                          <Paperclip className="h-5 w-5 text-slate-700" />
                         </Button>
                       </div>
                     </div>
@@ -2121,7 +2204,7 @@ export default function FieldworkDetailsPage() {
                     {er.status === 'Pending' && (
                       <div className="flex justify-end mt-4">
                         <Button
-                          className="bg-[#1e3a5f] hover:bg-[#2d4a6f] text-white"
+                          className="bg-primary-600 hover:bg-primary-700 text-white"
                           onClick={() => {
                             setAuditeeClariEvidence(er);
                             setRespondDialogOpen(true);
@@ -2135,36 +2218,37 @@ export default function FieldworkDetailsPage() {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8 text-gray-500">{t("No evidence requests found")}</div>
+              <div className="text-center py-8 text-slate-500">{t("No evidence requests found")}</div>
             )
           ) : (
             /* Table-based UI for Audit Team */
             filteredEvidenceRequests.length > 0 ? (
-              <Table>
+              <div className="bg-white border rounded-lg overflow-hidden">
+                <Table>
                 <TableHeader>
-                  <TableRow className="bg-[#1e3a5f] hover:bg-[#1e3a5f]">
+                  <TableRow className="border-b border-slate-100 bg-slate-50/50">
                     {isAuditHead && (
-                      <TableHead className="text-white w-[50px]">
+                      <TableHead className="text-xs font-semibold text-slate-600 w-[50px]">
                         <Checkbox
                           checked={selectedEvidenceIds.length === filteredEvidenceRequests.length && filteredEvidenceRequests.length > 0}
                           onCheckedChange={(checked) => handleSelectAllEvidence(checked === true)}
-                          className="border-white data-[state=checked]:bg-white data-[state=checked]:text-[#1e3a5f]"
+                          className="border-white data-[state=checked]:bg-white data-[state=checked]:text-slate-700"
                         />
                       </TableHead>
                     )}
-                    <TableHead className="text-white">{t("Title")}</TableHead>
-                    <TableHead className="text-white">{t("Description")}</TableHead>
-                    <TableHead className="text-white">{t("Auditee")}</TableHead>
-                    <TableHead className="text-white">{t("Samples")}</TableHead>
-                    <TableHead className="text-white">{t("Due Date")}</TableHead>
-                    <TableHead className="text-white">{t("Status")}</TableHead>
-                    <TableHead className="text-white">{t("AI Review")}</TableHead>
-                    <TableHead className="text-white">{t("Action")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600">{t("Title")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600">{t("Description")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600">{t("Auditee")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600">{t("Samples")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600">{t("Due Date")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600">{t("Status")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600">{t("AI Review")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600">{t("Action")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredEvidenceRequests.map((er) => (
-                    <TableRow key={er.id} className="hover:bg-gray-50">
+                    <TableRow key={er.id} className="hover:bg-slate-50">
                       {isAuditHead && (
                         <TableCell>
                           <Checkbox
@@ -2180,10 +2264,10 @@ export default function FieldworkDetailsPage() {
                       <TableCell>{formatDate(er.dueDate)}</TableCell>
                       <TableCell>
                         <span className={`px-2 py-1 rounded text-xs font-medium ${
-                          er.status === 'Reviewed' ? 'bg-green-100 text-green-800' :
+                          er.status === 'Reviewed' ? 'bg-emerald-100 text-emerald-800' :
                           er.status === 'Submitted' ? 'bg-blue-100 text-blue-800' :
                           er.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-gray-100 text-gray-800'
+                          'bg-slate-100 text-slate-800'
                         }`}>
                           {er.status}
                         </span>
@@ -2193,7 +2277,7 @@ export default function FieldworkDetailsPage() {
                           <div className="flex items-center gap-1">
                             {er.aiReviewStatus === 'Satisfactory' ? (
                               <>
-                                <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center">
+                                <div className="w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center">
                                   <span className="text-white text-xs">✓</span>
                                 </div>
                                 <span className="text-sm text-green-600 font-medium">{t("Satisfactory")}</span>
@@ -2208,7 +2292,7 @@ export default function FieldworkDetailsPage() {
                             )}
                           </div>
                         ) : (
-                          <span className="text-sm text-gray-400">-</span>
+                          <span className="text-sm text-slate-400">-</span>
                         )}
                       </TableCell>
                       <TableCell>
@@ -2219,7 +2303,7 @@ export default function FieldworkDetailsPage() {
                             title={t("View")}
                             onClick={() => handleOpenViewEvidence(er, false)}
                           >
-                            <Eye className="h-4 w-4 text-gray-600" />
+                            <Eye className="h-4 w-4 text-slate-600" />
                           </Button>
                           {/* Auditees can upload attachments to their own evidence requests */}
                           {(isAuditHead || (isAuditee && er.auditeeId === currentUserId)) && (
@@ -2241,7 +2325,7 @@ export default function FieldworkDetailsPage() {
                                 title={t("Edit")}
                                 onClick={() => handleOpenViewEvidence(er, true)}
                               >
-                                <Pencil className="h-4 w-4 text-blue-600" />
+                                <Pencil className="h-4 w-4 text-primary-600" />
                               </Button>
                               <Button
                                 variant="ghost"
@@ -2261,9 +2345,10 @@ export default function FieldworkDetailsPage() {
                     </TableRow>
                   ))}
                 </TableBody>
-              </Table>
+                </Table>
+              </div>
             ) : (
-              <div className="text-center py-8 text-gray-500">{t("No evidence requests found")}</div>
+              <div className="text-center py-8 text-slate-500">{t("No evidence requests found")}</div>
             )
           )}
         </div>
@@ -2280,84 +2365,85 @@ export default function FieldworkDetailsPage() {
           <div className="flex justify-end">
             <Button
               size="sm"
-              className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
               onClick={() => {
                 setUploadedFiles([]);
                 setNewDocument({ title: "", documentType: "", description: "" });
                 setNewDocumentDialogOpen(true);
               }}
             >
-              <Upload className="h-4 w-4 mr-2" />
+              <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("Upload Document")}
             </Button>
           </div>
           {otherDocuments.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-[#1e3a5f] hover:bg-[#1e3a5f]">
-                  <TableHead className="text-white">{t("Title")}</TableHead>
-                  <TableHead className="text-white">{t("Document Type")}</TableHead>
-                  <TableHead className="text-white">{t("Description")}</TableHead>
-                  <TableHead className="text-white">{t("File")}</TableHead>
-                  <TableHead className="text-white">{t("Uploaded")}</TableHead>
-                  <TableHead className="text-white">{t("Action")}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {otherDocuments.map((doc) => (
-                  <TableRow key={doc.id} className="hover:bg-gray-50">
-                    <TableCell className="font-medium">{doc.title || doc.fileName}</TableCell>
-                    <TableCell>{doc.documentType || "-"}</TableCell>
-                    <TableCell className="max-w-[200px] truncate">{doc.description || "-"}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-blue-600" />
-                        <span className="text-sm">{doc.fileName}</span>
-                        <span className="text-xs text-gray-400">({formatFileSize(doc.fileSize)})</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>{formatDate(doc.uploadedAt)}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          title={t("View")}
-                          onClick={() => handleOpenViewDocument(doc, false)}
-                        >
-                          <Eye className="h-4 w-4 text-gray-600" />
-                        </Button>
-                        {isAuditHead && (
-                          <>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              title={t("Edit")}
-                              onClick={() => handleOpenViewDocument(doc, true)}
-                            >
-                              <Pencil className="h-4 w-4 text-blue-600" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              title={t("Delete")}
-                              onClick={() => {
-                                setDocumentToDelete(doc);
-                                setDeleteDocumentDialogOpen(true);
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4 text-red-600" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </TableCell>
+            <div className="bg-white border rounded-lg overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b border-slate-100 bg-slate-50/50">
+                    <TableHead className="text-xs font-semibold text-slate-600">{t("Title")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600">{t("Document Type")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600">{t("Description")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600">{t("File")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600">{t("Uploaded")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600">{t("Action")}</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {otherDocuments.map((doc) => (
+                    <TableRow key={doc.id} className="hover:bg-slate-50">
+                      <TableCell className="font-medium">{doc.title || doc.fileName}</TableCell>
+                      <TableCell>{doc.documentType || "-"}</TableCell>
+                      <TableCell className="max-w-[200px] truncate">{doc.description || "-"}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-primary-600" />
+                          <span className="text-sm">{doc.fileName}</span>
+                          <span className="text-xs text-slate-400">({formatFileSize(doc.fileSize)})</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>{formatDate(doc.uploadedAt)}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title={t("View")}
+                            onClick={() => handleOpenViewDocument(doc, false)}
+                          >
+                            <Eye className="h-4 w-4 text-slate-600" />
+                          </Button>
+                          {isAuditHead && (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title={t("Edit")}
+                                onClick={() => handleOpenViewDocument(doc, true)}
+                              >
+                                <Pencil className="h-4 w-4 text-primary-600" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title={t("Delete")}
+                                onClick={() => {
+                                  setDocumentToDelete(doc);
+                                  setDeleteDocumentDialogOpen(true);
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4 text-red-600" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           ) : (
-            <div className="text-center py-8 text-gray-500">{t("No other documents uploaded yet")}</div>
+            <div className="text-center py-8 text-slate-500">{t("No other documents uploaded yet")}</div>
           )}
         </div>
       </CollapsibleSection>
@@ -2370,146 +2456,146 @@ export default function FieldworkDetailsPage() {
         onToggle={() => setFindingsOpen(!findingsOpen)}
       >
         <div className="space-y-4">
-          {/* Hide Add Finding buttons for auditees - they can only view findings */}
+          {/* Hide Add Finding button for auditees - they can only view findings */}
           {!isAuditeeOnly && (
-          <div className="flex justify-end gap-2">
-            {!isAuditHead && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setAddFindingDialogOpen(true)}
-                disabled={isCompleted}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                {t("Quick Add")}
-              </Button>
-            )}
+          <div className="flex justify-end">
             <Button
               size="sm"
-              className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
-              onClick={() => router.push(`/internal-audit/fieldwork/${engagementId}/add-finding`)}
+              onClick={() => setAddFullFindingDialogOpen(true)}
+              disabled={isCompleted}
             >
-              <Plus className="h-4 w-4 mr-2" />
-              {t("Add Finding (Full Form)")}
+              <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+              {t("Add Finding")}
             </Button>
           </div>
           )}
           {findings.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-[#1e3a5f] hover:bg-[#1e3a5f]">
-                  <TableHead className="text-white">{t("Finding ID")}</TableHead>
-                  <TableHead className="text-white">{t("Title")}</TableHead>
-                  <TableHead className="text-white">{t("Severity")}</TableHead>
-                  <TableHead className="text-white">{t("Responsible Person")}</TableHead>
-                  <TableHead className="text-white">{t("Target Date")}</TableHead>
-                  <TableHead className="text-white">{t("Status")}</TableHead>
-                  <TableHead className="text-white">{t("Action")}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {findings.map((finding) => (
-                  <TableRow key={finding.id} className="hover:bg-gray-50">
-                    <TableCell className="font-medium">{finding.findingId || '-'}</TableCell>
-                    <TableCell className="max-w-[200px] truncate">{finding.title}</TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        finding.severity === 'Critical' ? 'bg-red-100 text-red-800' :
-                        finding.severity === 'High' ? 'bg-orange-100 text-orange-800' :
-                        finding.severity === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-green-100 text-green-800'
-                      }`}>
-                        {finding.severity}
-                      </span>
-                    </TableCell>
-                    <TableCell>{finding.responsiblePerson || '-'}</TableCell>
-                    <TableCell>{formatDate(finding.targetDate || null)}</TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        finding.status === 'Closed' ? 'bg-green-100 text-green-800' :
-                        finding.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
-                        finding.status === 'Overdue' ? 'bg-red-100 text-red-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {finding.status}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => router.push(`/internal-audit/fieldwork/${engagementId}/findings/${finding.id}`)}
-                          title={t("View")}
-                        >
-                          <Eye className="h-4 w-4 text-gray-600" />
-                        </Button>
-                        {isAuditHead && (
-                          <>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => router.push(`/internal-audit/fieldwork/${engagementId}/findings/${finding.id}?edit=true`)}
-                              title={t("Edit")}
-                            >
-                              <Pencil className="h-4 w-4 text-blue-600" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
-                                setFindingToDelete(finding);
-                                setDeleteFindingDialogOpen(true);
-                              }}
-                              title={t("Delete")}
-                            >
-                              <Trash2 className="h-4 w-4 text-red-600" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </TableCell>
+            <div className="bg-white border rounded-lg overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b border-slate-100 bg-slate-50/50">
+                    <TableHead className="text-xs font-semibold text-slate-600">{t("Finding ID")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600">{t("Title")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600">{t("Severity")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600">{t("Responsible Person")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600">{t("Target Date")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600">{t("Status")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600">{t("Action")}</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {findings.map((finding) => (
+                    <TableRow key={finding.id} className="hover:bg-slate-50">
+                      <TableCell className="font-medium">{finding.findingId || '-'}</TableCell>
+                      <TableCell className="max-w-[200px] truncate">{finding.title}</TableCell>
+                      <TableCell>
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                          finding.severity === 'Critical' ? 'bg-red-100 text-red-800' :
+                          finding.severity === 'High' ? 'bg-orange-100 text-orange-800' :
+                          finding.severity === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-emerald-100 text-emerald-800'
+                        }`}>
+                          {finding.severity}
+                        </span>
+                      </TableCell>
+                      <TableCell>{finding.responsiblePerson || '-'}</TableCell>
+                      <TableCell>{formatDate(finding.targetDate || null)}</TableCell>
+                      <TableCell>
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                          finding.status === 'Closed' ? 'bg-emerald-100 text-emerald-800' :
+                          finding.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
+                          finding.status === 'Overdue' ? 'bg-red-100 text-red-800' :
+                          'bg-slate-100 text-slate-800'
+                        }`}>
+                          {finding.status}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => router.push(`/internal-audit/fieldwork/${engagementId}/findings/${finding.id}`)}
+                            title={t("View")}
+                          >
+                            <Eye className="h-4 w-4 text-slate-600" />
+                          </Button>
+                          {isAuditHead && (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => router.push(`/internal-audit/fieldwork/${engagementId}/findings/${finding.id}?edit=true`)}
+                                title={t("Edit")}
+                              >
+                                <Pencil className="h-4 w-4 text-primary-600" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  setFindingToDelete(finding);
+                                  setDeleteFindingDialogOpen(true);
+                                }}
+                                title={t("Delete")}
+                              >
+                                <Trash2 className="h-4 w-4 text-red-600" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           ) : (
-            <div className="text-center py-8 text-gray-500">{t("No findings recorded yet")}</div>
+            <div className="text-center py-8 text-slate-500">{t("No findings recorded yet")}</div>
           )}
         </div>
       </CollapsibleSection>
 
       {/* Comments Dialog */}
       <Dialog open={commentsDialogOpen} onOpenChange={setCommentsDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{t("Engagement Comments")}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <Textarea placeholder={t("Add a comment...")} rows={4} />
-            <div className="text-sm text-gray-500">{t("No comments yet")}</div>
+        <DialogContent className="sm:max-w-[700px] flex flex-col p-0 gap-0 max-h-[90vh]">
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Engagement Comments")}</DialogTitle>
+            </DialogHeader>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCommentsDialogOpen(false)}>
+          {/* Scrollable Content */}
+          <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
+            <Textarea placeholder={t("Add a comment...")} rows={4} />
+            <div className="text-sm text-slate-500">{t("No comments yet")}</div>
+          </div>
+          {/* Fixed Footer */}
+          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
+            <Button variant="outline" size="sm" onClick={() => setCommentsDialogOpen(false)}>
               {t("Close")}
             </Button>
-            <Button className="bg-[#1e3a5f] hover:bg-[#2d4a6f]">{t("Add Comment")}</Button>
-          </DialogFooter>
+            <Button size="sm">{t("Add Comment")}</Button>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Upload Dialog */}
       <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>
-              {t("Upload")} {uploadCategory === "workpapers" ? t("Workpaper") : t("Document")}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
+        <DialogContent className="sm:max-w-[700px] flex flex-col p-0 gap-0 max-h-[90vh]">
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">
+                {t("Upload")} {uploadCategory === "workpapers" ? t("Workpaper") : t("Document")}
+              </DialogTitle>
+            </DialogHeader>
+          </div>
+          {/* Scrollable Content */}
+          <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
             <div
               className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-                isDragOver ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-gray-400"
+                isDragOver ? "border-primary-500 bg-primary-50" : "border-slate-300 hover:border-slate-400"
               }`}
               onDragOver={(e) => {
                 e.preventDefault();
@@ -2519,9 +2605,9 @@ export default function FieldworkDetailsPage() {
               onDrop={handleFileDrop}
               onClick={() => fileInputRef.current?.click()}
             >
-              <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-              <p className="text-gray-600">{t("Drag and drop files here, or click to browse")}</p>
-              <p className="text-sm text-gray-400 mt-1">
+              <Upload className="h-8 w-8 text-slate-400 mx-auto mb-2" />
+              <p className="text-slate-600">{t("Drag and drop files here, or click to browse")}</p>
+              <p className="text-sm text-slate-400 mt-1">
                 {t("Supported formats")}: PDF, DOC, DOCX, XLS, XLSX, PNG, JPG
               </p>
               <input
@@ -2538,13 +2624,13 @@ export default function FieldworkDetailsPage() {
                 {uploadedFiles.map((file) => (
                   <div
                     key={file.id}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border"
+                    className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border"
                   >
                     <div className="flex items-center gap-3">
-                      <FileText className="h-5 w-5 text-blue-500" />
+                      <FileText className="h-5 w-5 text-primary-500" />
                       <div>
                         <span className="text-sm font-medium">{file.name}</span>
-                        <span className="text-xs text-gray-400 ml-2">
+                        <span className="text-xs text-slate-400 ml-2">
                           ({formatFileSize(file.size)})
                         </span>
                       </div>
@@ -2562,45 +2648,50 @@ export default function FieldworkDetailsPage() {
               </div>
             )}
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setUploadDialogOpen(false)}>
+          {/* Fixed Footer */}
+          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
+            <Button variant="outline" size="sm" onClick={() => setUploadDialogOpen(false)}>
               {t("Cancel")}
             </Button>
             <Button
-              className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
+              size="sm"
               onClick={handleUploadFiles}
               disabled={uploading || uploadedFiles.length === 0 || isCompleted}
             >
               {uploading ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
                   {t("Uploading...")}
                 </>
               ) : (
                 t("Upload")
               )}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Add Finding Dialog */}
       <Dialog open={addFindingDialogOpen} onOpenChange={setAddFindingDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{t("Add Finding")}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>{t("Title")} *</Label>
+        <DialogContent className="sm:max-w-[700px] flex flex-col p-0 gap-0 max-h-[90vh]">
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Finding")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          {/* Scrollable Content */}
+          <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-end text-slate-500">{t("Title")} <span className="text-red-500">*</span></Label>
               <Input
                 value={newFinding.title}
                 onChange={(e) => setNewFinding({ ...newFinding, title: e.target.value })}
                 placeholder={t("Enter finding title")}
               />
             </div>
-            <div className="space-y-2">
-              <Label>{t("Description")}</Label>
+            <div className="grid grid-cols-[140px_1fr] items-start gap-4">
+              <Label className="text-end text-slate-500 pt-2">{t("Description")}</Label>
               <Textarea
                 value={newFinding.description}
                 onChange={(e) => setNewFinding({ ...newFinding, description: e.target.value })}
@@ -2608,8 +2699,8 @@ export default function FieldworkDetailsPage() {
                 rows={3}
               />
             </div>
-            <div className="space-y-2">
-              <Label>{t("Severity")}</Label>
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-end text-slate-500">{t("Severity")}</Label>
               <Select
                 value={newFinding.severity}
                 onValueChange={(value) => setNewFinding({ ...newFinding, severity: value })}
@@ -2625,8 +2716,8 @@ export default function FieldworkDetailsPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label>{t("Recommendation")}</Label>
+            <div className="grid grid-cols-[140px_1fr] items-start gap-4">
+              <Label className="text-end text-slate-500 pt-2">{t("Recommendation")}</Label>
               <Textarea
                 value={newFinding.recommendation}
                 onChange={(e) => setNewFinding({ ...newFinding, recommendation: e.target.value })}
@@ -2635,34 +2726,213 @@ export default function FieldworkDetailsPage() {
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setAddFindingDialogOpen(false)}>
+          {/* Fixed Footer */}
+          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
+            <Button variant="outline" size="sm" onClick={() => setAddFindingDialogOpen(false)}>
               {t("Cancel")}
             </Button>
-            <Button className="bg-[#1e3a5f] hover:bg-[#2d4a6f]" onClick={handleAddFinding}>
+            <Button size="sm" onClick={handleAddFinding}>
               {t("Add Finding")}
             </Button>
-          </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Full Finding Dialog */}
+      <Dialog open={addFullFindingDialogOpen} onOpenChange={setAddFullFindingDialogOpen}>
+        <DialogContent className="sm:max-w-[700px] flex flex-col p-0 gap-0 max-h-[90vh]">
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Finding")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          {/* Scrollable Content */}
+          <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
+            {/* Finding Title */}
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-end text-slate-500">{t("Finding Title")} <span className="text-red-500">*</span></Label>
+              <Input
+                value={fullFinding.findingTitle}
+                onChange={(e) => setFullFinding({ ...fullFinding, findingTitle: e.target.value })}
+                placeholder={t("Enter finding title")}
+                className="bg-white"
+              />
+            </div>
+
+            {/* Severity */}
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-end text-slate-500">{t("Severity")}</Label>
+              <Select
+                value={fullFinding.severity}
+                onValueChange={(value) => setFullFinding({ ...fullFinding, severity: value })}
+              >
+                <SelectTrigger className="bg-white">
+                  <SelectValue placeholder={t("Select severity")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Low">{t("Low")}</SelectItem>
+                  <SelectItem value="Medium">{t("Medium")}</SelectItem>
+                  <SelectItem value="High">{t("High")}</SelectItem>
+                  <SelectItem value="Critical">{t("Critical")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Criteria */}
+            <div className="grid grid-cols-[140px_1fr] items-start gap-4">
+              <Label className="text-end text-slate-500 pt-2">{t("Criteria (What should be)")}</Label>
+              <Textarea
+                value={fullFinding.criteria}
+                onChange={(e) => setFullFinding({ ...fullFinding, criteria: e.target.value })}
+                placeholder={t("Enter criteria")}
+                rows={3}
+                className="bg-white"
+              />
+            </div>
+
+            {/* Condition */}
+            <div className="grid grid-cols-[140px_1fr] items-start gap-4">
+              <Label className="text-end text-slate-500 pt-2">{t("Condition (What is)")}</Label>
+              <Textarea
+                value={fullFinding.condition}
+                onChange={(e) => setFullFinding({ ...fullFinding, condition: e.target.value })}
+                placeholder={t("Enter condition")}
+                rows={3}
+                className="bg-white"
+              />
+            </div>
+
+            {/* Cause */}
+            <div className="grid grid-cols-[140px_1fr] items-start gap-4">
+              <Label className="text-end text-slate-500 pt-2">{t("Cause (Why it happened)")}</Label>
+              <Textarea
+                value={fullFinding.cause}
+                onChange={(e) => setFullFinding({ ...fullFinding, cause: e.target.value })}
+                placeholder={t("Enter cause")}
+                rows={3}
+                className="bg-white"
+              />
+            </div>
+
+            {/* Effect */}
+            <div className="grid grid-cols-[140px_1fr] items-start gap-4">
+              <Label className="text-end text-slate-500 pt-2">{t("Effect (The consequence)")}</Label>
+              <Textarea
+                value={fullFinding.effect}
+                onChange={(e) => setFullFinding({ ...fullFinding, effect: e.target.value })}
+                placeholder={t("Enter effect")}
+                rows={3}
+                className="bg-white"
+              />
+            </div>
+
+            {/* Recommendation */}
+            <div className="grid grid-cols-[140px_1fr] items-start gap-4">
+              <Label className="text-end text-slate-500 pt-2">{t("Recommendation")}</Label>
+              <Textarea
+                value={fullFinding.recommendation}
+                onChange={(e) => setFullFinding({ ...fullFinding, recommendation: e.target.value })}
+                placeholder={t("Enter recommendation")}
+                rows={3}
+                className="bg-white"
+              />
+            </div>
+
+            {/* CAPA Section Header */}
+            <div className="pt-2 border-t border-slate-100">
+              <h3 className="text-sm font-semibold text-slate-800">{t("Corrective & Preventive Actions (CAPA)")}</h3>
+            </div>
+
+            {/* Responsible Person */}
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-end text-slate-500">{t("Responsible Person")}</Label>
+              <Select
+                value={fullFinding.responsiblePersonId}
+                onValueChange={(value) => setFullFinding({ ...fullFinding, responsiblePersonId: value })}
+              >
+                <SelectTrigger className="bg-white">
+                  <SelectValue placeholder={t("Select person")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {auditees.map((user) => (
+                    <SelectItem key={user.id} value={user.id}>
+                      {user.fullName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Status */}
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-end text-slate-500">{t("Status")}</Label>
+              <Select
+                value={fullFinding.status}
+                onValueChange={(value) => setFullFinding({ ...fullFinding, status: value })}
+              >
+                <SelectTrigger className="bg-white">
+                  <SelectValue placeholder={t("Select status")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Open">{t("Open")}</SelectItem>
+                  <SelectItem value="In Progress">{t("In Progress")}</SelectItem>
+                  <SelectItem value="Closed">{t("Closed")}</SelectItem>
+                  <SelectItem value="Overdue">{t("Overdue")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Target Closure Date */}
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-end text-slate-500">{t("Target Closure Date")}</Label>
+              <DatePicker
+                value={fullFinding.targetClosureDate}
+                onChange={(date) => setFullFinding({ ...fullFinding, targetClosureDate: date ? date.toISOString().split('T')[0] : "" })}
+                placeholder={t("Select date")}
+              />
+            </div>
+          </div>
+          {/* Fixed Footer */}
+          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
+            <Button variant="outline" size="sm" onClick={() => setAddFullFindingDialogOpen(false)}>
+              {t("Cancel")}
+            </Button>
+            <Button size="sm" onClick={handleAddFullFinding} disabled={savingFullFinding}>
+              {savingFullFinding ? (
+                <>
+                  <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
+                  {t("Saving...")}
+                </>
+              ) : (
+                t("Save")
+              )}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Add Evidence Request Dialog */}
       <Dialog open={addEvidenceDialogOpen} onOpenChange={setAddEvidenceDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{t("Add Evidence Request")}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>{t("Title")} *</Label>
+        <DialogContent className="sm:max-w-[700px] flex flex-col p-0 gap-0 max-h-[90vh]">
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Evidence Request")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          {/* Scrollable Content */}
+          <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-end text-slate-500">{t("Title")} <span className="text-red-500">*</span></Label>
               <Input
                 value={newEvidence.title}
                 onChange={(e) => setNewEvidence({ ...newEvidence, title: e.target.value })}
                 placeholder={t("Enter evidence request title")}
               />
             </div>
-            <div className="space-y-2">
-              <Label>{t("Description")}</Label>
+            <div className="grid grid-cols-[140px_1fr] items-start gap-4">
+              <Label className="text-end text-slate-500 pt-2">{t("Description")}</Label>
               <Textarea
                 value={newEvidence.description}
                 onChange={(e) => setNewEvidence({ ...newEvidence, description: e.target.value })}
@@ -2670,8 +2940,8 @@ export default function FieldworkDetailsPage() {
                 rows={3}
               />
             </div>
-            <div className="space-y-2">
-              <Label>{t("Auditee")} *</Label>
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-end text-slate-500">{t("Auditee")} <span className="text-red-500">*</span></Label>
               <Select
                 value={newEvidence.auditeeId}
                 onValueChange={(value) => {
@@ -2695,8 +2965,8 @@ export default function FieldworkDetailsPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label>{t("Number of Samples")}</Label>
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-end text-slate-500">{t("Number of Samples")}</Label>
               <Input
                 type="number"
                 min="1"
@@ -2705,8 +2975,8 @@ export default function FieldworkDetailsPage() {
                 placeholder={t("Enter number of samples required")}
               />
             </div>
-            <div className="space-y-2">
-              <Label>{t("Due Date")}</Label>
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-end text-slate-500">{t("Due Date")}</Label>
               <DatePicker
                 value={newEvidence.dueDate}
                 onChange={(date) => setNewEvidence({ ...newEvidence, dueDate: date ? date.toISOString().split('T')[0] : "" })}
@@ -2714,29 +2984,33 @@ export default function FieldworkDetailsPage() {
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setAddEvidenceDialogOpen(false)}>
+          {/* Fixed Footer */}
+          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
+            <Button variant="outline" size="sm" onClick={() => setAddEvidenceDialogOpen(false)}>
               {t("Cancel")}
             </Button>
-            <Button className="bg-[#1e3a5f] hover:bg-[#2d4a6f]" onClick={handleAddEvidence}>
+            <Button size="sm" onClick={handleAddEvidence}>
               {t("Add Evidence Request")}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Delete Finding Confirmation Dialog */}
       <Dialog open={deleteFindingDialogOpen} onOpenChange={setDeleteFindingDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{t("Delete Finding")}</DialogTitle>
-            <DialogDescription>
-              {t("Are you sure you want to delete the finding")} "{findingToDelete?.title}"? {t("This action cannot be undone.")}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
+        <DialogContent className="sm:max-w-[400px] p-0 gap-0">
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Delete Finding")}</DialogTitle>
+              <DialogDescription className="text-slate-600">
+                {t("Are you sure you want to delete the finding")} &quot;{findingToDelete?.title}&quot;? {t("This action cannot be undone.")}
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="px-6 py-4 flex justify-end gap-2">
             <Button
               variant="outline"
+              size="sm"
               onClick={() => {
                 setDeleteFindingDialogOpen(false);
                 setFindingToDelete(null);
@@ -2746,39 +3020,44 @@ export default function FieldworkDetailsPage() {
             </Button>
             <Button
               variant="destructive"
+              size="sm"
               onClick={handleDeleteFinding}
               disabled={deletingFinding || isCompleted}
             >
               {deletingFinding ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
                   {t("Deleting...")}
                 </>
               ) : (
                 t("Delete")
               )}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* New Document Upload Dialog */}
       <Dialog open={newDocumentDialogOpen} onOpenChange={setNewDocumentDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{t("New Document")}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">{t("Title")}</Label>
+        <DialogContent className="sm:max-w-[700px] flex flex-col p-0 gap-0 max-h-[90vh]">
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("New Document")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          {/* Scrollable Content */}
+          <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-end text-slate-500">{t("Title")}</Label>
               <Input
                 value={newDocument.title}
                 onChange={(e) => setNewDocument({ ...newDocument, title: e.target.value })}
                 placeholder={t("Enter document title")}
               />
             </div>
-            <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">{t("Document Type")}</Label>
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-end text-slate-500">{t("Document Type")}</Label>
               <Select
                 value={newDocument.documentType}
                 onValueChange={(value) => setNewDocument({ ...newDocument, documentType: value })}
@@ -2797,8 +3076,8 @@ export default function FieldworkDetailsPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">{t("Description")}</Label>
+            <div className="grid grid-cols-[140px_1fr] items-start gap-4">
+              <Label className="text-end text-slate-500 pt-2">{t("Description")}</Label>
               <Textarea
                 value={newDocument.description}
                 onChange={(e) => setNewDocument({ ...newDocument, description: e.target.value })}
@@ -2806,58 +3085,62 @@ export default function FieldworkDetailsPage() {
                 rows={4}
               />
             </div>
-            <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">{t("Attach File")}</Label>
-              <div
-                className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
-                  isDragOver ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-gray-400"
-                }`}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setIsDragOver(true);
-                }}
-                onDragLeave={() => setIsDragOver(false)}
-                onDrop={handleFileDrop}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <p className="text-gray-600">{t("Click here, or drop files here to upload.")}</p>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  className="hidden"
-                  accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
-                  onChange={handleFileSelect}
-                />
-              </div>
-              {uploadedFiles.length > 0 && (
-                <div className="space-y-2 mt-2">
-                  {uploadedFiles.map((file) => (
-                    <div
-                      key={file.id}
-                      className="flex items-center justify-between p-2 bg-gray-50 rounded border"
-                    >
-                      <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-blue-500" />
-                        <span className="text-sm">{file.name}</span>
-                        <span className="text-xs text-gray-400">({formatFileSize(file.size)})</span>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeFile(file.id)}
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50 h-6 w-6 p-0"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
+            <div className="grid grid-cols-[140px_1fr] items-start gap-4">
+              <Label className="text-end text-slate-500 pt-2">{t("Attach File")}</Label>
+              <div>
+                <div
+                  className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
+                    isDragOver ? "border-primary-500 bg-primary-50" : "border-slate-300 hover:border-slate-400"
+                  }`}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setIsDragOver(true);
+                  }}
+                  onDragLeave={() => setIsDragOver(false)}
+                  onDrop={handleFileDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <p className="text-slate-600">{t("Click here, or drop files here to upload.")}</p>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    className="hidden"
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
+                    onChange={handleFileSelect}
+                  />
                 </div>
-              )}
+                {uploadedFiles.length > 0 && (
+                  <div className="space-y-2 mt-2">
+                    {uploadedFiles.map((file) => (
+                      <div
+                        key={file.id}
+                        className="flex items-center justify-between p-2 bg-slate-50 rounded border"
+                      >
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-primary-500" />
+                          <span className="text-sm">{file.name}</span>
+                          <span className="text-xs text-slate-400">({formatFileSize(file.size)})</span>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeFile(file.id)}
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50 h-6 w-6 p-0"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-          <DialogFooter>
+          {/* Fixed Footer */}
+          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
             <Button
               variant="outline"
+              size="sm"
               onClick={() => {
                 setNewDocumentDialogOpen(false);
                 setUploadedFiles([]);
@@ -2867,35 +3150,38 @@ export default function FieldworkDetailsPage() {
               {t("Cancel")}
             </Button>
             <Button
-              className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
+              size="sm"
               onClick={handleUploadDocument}
               disabled={uploading || isCompleted}
             >
               {uploading ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
                   {t("Saving...")}
                 </>
               ) : (
                 t("Save")
               )}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Delete Document Confirmation Dialog */}
       <Dialog open={deleteDocumentDialogOpen} onOpenChange={setDeleteDocumentDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{t("Delete Document")}</DialogTitle>
-            <DialogDescription>
-              {t("Are you sure you want to delete")} "{documentToDelete?.title || documentToDelete?.fileName}"? {t("This action cannot be undone.")}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
+        <DialogContent className="sm:max-w-[400px] p-0 gap-0">
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Delete Document")}</DialogTitle>
+              <DialogDescription className="text-slate-600">
+                {t("Are you sure you want to delete")} &quot;{documentToDelete?.title || documentToDelete?.fileName}&quot;? {t("This action cannot be undone.")}
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="px-6 py-4 flex justify-end gap-2">
             <Button
               variant="outline"
+              size="sm"
               onClick={() => {
                 setDeleteDocumentDialogOpen(false);
                 setDocumentToDelete(null);
@@ -2905,34 +3191,38 @@ export default function FieldworkDetailsPage() {
             </Button>
             <Button
               variant="destructive"
+              size="sm"
               onClick={handleDeleteDocument}
               disabled={deletingDocument || isCompleted}
             >
               {deletingDocument ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
                   {t("Deleting...")}
                 </>
               ) : (
                 t("Delete")
               )}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Delete Workpaper Confirmation Dialog */}
       <Dialog open={deleteWorkpaperDialogOpen} onOpenChange={setDeleteWorkpaperDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{t("Delete Workpaper")}</DialogTitle>
-            <DialogDescription>
-              {t("Are you sure you want to delete")} "{workpaperToDelete?.fileName}"? {t("This action cannot be undone.")}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
+        <DialogContent className="sm:max-w-[400px] p-0 gap-0">
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Delete Workpaper")}</DialogTitle>
+              <DialogDescription className="text-slate-600">
+                {t("Are you sure you want to delete")} &quot;{workpaperToDelete?.fileName}&quot;? {t("This action cannot be undone.")}
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="px-6 py-4 flex justify-end gap-2">
             <Button
               variant="outline"
+              size="sm"
               onClick={() => {
                 setDeleteWorkpaperDialogOpen(false);
                 setWorkpaperToDelete(null);
@@ -2942,39 +3232,44 @@ export default function FieldworkDetailsPage() {
             </Button>
             <Button
               variant="destructive"
+              size="sm"
               onClick={handleDeleteWorkpaper}
               disabled={deletingWorkpaper || isCompleted}
             >
               {deletingWorkpaper ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
                   {t("Deleting...")}
                 </>
               ) : (
                 t("Delete")
               )}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Edit AI Workpaper Dialog */}
       <Dialog open={editAIWorkpaperDialogOpen} onOpenChange={setEditAIWorkpaperDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{t("Edit AI Workpaper")}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">{t("Task")} *</Label>
+        <DialogContent className="sm:max-w-[700px] flex flex-col p-0 gap-0 max-h-[90vh]">
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit AI Workpaper")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          {/* Scrollable Content */}
+          <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-end text-slate-500">{t("Task")} <span className="text-red-500">*</span></Label>
               <Input
                 value={editAIWorkpaper.task}
                 onChange={(e) => setEditAIWorkpaper({ ...editAIWorkpaper, task: e.target.value })}
                 placeholder={t("Enter task description")}
               />
             </div>
-            <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">{t("Evidences")}</Label>
+            <div className="grid grid-cols-[140px_1fr] items-start gap-4">
+              <Label className="text-end text-slate-500 pt-2">{t("Evidences")}</Label>
               <Textarea
                 value={editAIWorkpaper.evidences}
                 onChange={(e) => setEditAIWorkpaper({ ...editAIWorkpaper, evidences: e.target.value })}
@@ -2982,8 +3277,8 @@ export default function FieldworkDetailsPage() {
                 rows={4}
               />
             </div>
-            <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">{t("Steps")}</Label>
+            <div className="grid grid-cols-[140px_1fr] items-start gap-4">
+              <Label className="text-end text-slate-500 pt-2">{t("Steps")}</Label>
               <Textarea
                 value={editAIWorkpaper.steps}
                 onChange={(e) => setEditAIWorkpaper({ ...editAIWorkpaper, steps: e.target.value })}
@@ -2991,16 +3286,16 @@ export default function FieldworkDetailsPage() {
                 rows={4}
               />
             </div>
-            <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">{t("Question Checklist")}</Label>
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-end text-slate-500">{t("Question Checklist")}</Label>
               <Input
                 value={editAIWorkpaper.questionChecklist}
                 onChange={(e) => setEditAIWorkpaper({ ...editAIWorkpaper, questionChecklist: e.target.value })}
                 placeholder={t("Enter question checklist")}
               />
             </div>
-            <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">{t("Comments")}</Label>
+            <div className="grid grid-cols-[140px_1fr] items-start gap-4">
+              <Label className="text-end text-slate-500 pt-2">{t("Comments")}</Label>
               <Textarea
                 value={editAIWorkpaper.comments}
                 onChange={(e) => setEditAIWorkpaper({ ...editAIWorkpaper, comments: e.target.value })}
@@ -3009,9 +3304,11 @@ export default function FieldworkDetailsPage() {
               />
             </div>
           </div>
-          <DialogFooter>
+          {/* Fixed Footer */}
+          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
             <Button
               variant="outline"
+              size="sm"
               onClick={() => {
                 setEditAIWorkpaperDialogOpen(false);
                 setSelectedAIWorkpaper(null);
@@ -3020,35 +3317,38 @@ export default function FieldworkDetailsPage() {
               {t("Cancel")}
             </Button>
             <Button
-              className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
+              size="sm"
               onClick={handleUpdateAIWorkpaper}
               disabled={savingAIWorkpaper || isCompleted}
             >
               {savingAIWorkpaper ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
                   {t("Saving...")}
                 </>
               ) : (
                 t("Save Changes")
               )}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Delete AI Workpaper Confirmation Dialog */}
       <Dialog open={deleteAIWorkpaperDialogOpen} onOpenChange={setDeleteAIWorkpaperDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{t("Delete AI Workpaper")}</DialogTitle>
-            <DialogDescription>
-              {t("Are you sure you want to delete this AI workpaper?")} {t("This action cannot be undone.")}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
+        <DialogContent className="sm:max-w-[400px] p-0 gap-0">
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Delete AI Workpaper")}</DialogTitle>
+              <DialogDescription className="text-slate-600">
+                {t("Are you sure you want to delete this AI workpaper?")} {t("This action cannot be undone.")}
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="px-6 py-4 flex justify-end gap-2">
             <Button
               variant="outline"
+              size="sm"
               onClick={() => {
                 setDeleteAIWorkpaperDialogOpen(false);
                 setSelectedAIWorkpaper(null);
@@ -3058,33 +3358,36 @@ export default function FieldworkDetailsPage() {
             </Button>
             <Button
               variant="destructive"
+              size="sm"
               onClick={handleDeleteAIWorkpaper}
               disabled={deletingAIWorkpaper || isCompleted}
             >
               {deletingAIWorkpaper ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
                   {t("Deleting...")}
                 </>
               ) : (
                 t("Delete")
               )}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Generated Workpaper with AI Dialog */}
       <Dialog open={generateAIDialogOpen} onOpenChange={setGenerateAIDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
-          <DialogHeader>
-            <DialogTitle className="text-[#1e3a5f]">{t("Generated Workpaper with AI")}</DialogTitle>
-          </DialogHeader>
-          <div className="flex-1 overflow-y-auto pr-2">
+        <DialogContent className="sm:max-w-[800px] p-0 gap-0 max-h-[90vh] flex flex-col">
+          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Generated Workpaper with AI")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="px-6 py-5 overflow-y-auto flex-1">
             {generatingWorkpapers ? (
               <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-[#1e3a5f]" />
-                <span className="ml-3 text-gray-600">{t("Generating workpapers...")}</span>
+                <Loader2 className="h-8 w-8 animate-spin text-slate-700" />
+                <span className="ltr:ml-3 rtl:mr-3 text-slate-600">{t("Generating workpapers...")}</span>
               </div>
             ) : generatedWorkpapers.length > 0 ? (
               <div className="space-y-6">
@@ -3093,8 +3396,8 @@ export default function FieldworkDetailsPage() {
                     key={wp.id}
                     className={`border rounded-lg p-4 ${
                       selectedGeneratedIds.includes(wp.id)
-                        ? "border-[#1e3a5f] bg-blue-50"
-                        : "border-gray-200"
+                        ? "border-primary-600 bg-primary-50"
+                        : "border-slate-200"
                     }`}
                   >
                     <div className="flex items-start gap-3">
@@ -3104,18 +3407,18 @@ export default function FieldworkDetailsPage() {
                         className="mt-1"
                       />
                       <div className="flex-1 space-y-4">
-                        <h4 className="font-semibold text-gray-900">{wp.task}</h4>
+                        <h4 className="font-semibold text-slate-900">{wp.task}</h4>
 
                         <div>
-                          <h5 className="font-medium text-gray-700 mb-2">{t("Steps")}</h5>
-                          <p className="text-sm text-gray-600 whitespace-pre-wrap pl-4">
+                          <h5 className="font-medium text-slate-700 mb-2">{t("Steps")}</h5>
+                          <p className="text-sm text-slate-600 whitespace-pre-wrap ltr:pl-4 rtl:pr-4">
                             {wp.steps}
                           </p>
                         </div>
 
                         <div>
-                          <h5 className="font-medium text-gray-700 mb-2">{t("Evidences")}</h5>
-                          <p className="text-sm text-gray-600 whitespace-pre-wrap pl-4">
+                          <h5 className="font-medium text-slate-700 mb-2">{t("Evidences")}</h5>
+                          <p className="text-sm text-slate-600 whitespace-pre-wrap ltr:pl-4 rtl:pr-4">
                             {wp.evidences}
                           </p>
                         </div>
@@ -3125,14 +3428,15 @@ export default function FieldworkDetailsPage() {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-12 text-gray-500">
+              <div className="text-center py-12 text-slate-500">
                 {t("No workpapers generated. Click generate to create AI workpapers.")}
               </div>
             )}
           </div>
-          <DialogFooter className="mt-4 pt-4 border-t">
+          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
             <Button
               variant="outline"
+              size="sm"
               onClick={() => {
                 setGenerateAIDialogOpen(false);
                 setGeneratedWorkpapers([]);
@@ -3142,32 +3446,36 @@ export default function FieldworkDetailsPage() {
               {t("Cancel")}
             </Button>
             <Button
-              className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
+              size="sm"
               onClick={handleAddSelectedWorkpapers}
               disabled={addingGeneratedWorkpapers || selectedGeneratedIds.length === 0 || isCompleted}
             >
               {addingGeneratedWorkpapers ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
                   {t("Adding...")}
                 </>
               ) : (
                 `${t("Add Selected")} (${selectedGeneratedIds.length})`
               )}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* View/Edit Document Dialog */}
       <Dialog open={viewEditDocumentDialogOpen} onOpenChange={setViewEditDocumentDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{isEditingDocument ? t("Edit Document") : t("Document Details")}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
+        <DialogContent className="sm:max-w-[700px] flex flex-col p-0 gap-0 max-h-[90vh]">
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{isEditingDocument ? t("Edit Document") : t("Document Details")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          {/* Scrollable Content */}
+          <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
             <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">{t("Title")}</Label>
+              <Label className="text-slate-700 font-medium">{t("Title")}</Label>
               {isEditingDocument ? (
                 <Input
                   value={editDocument.title}
@@ -3175,13 +3483,13 @@ export default function FieldworkDetailsPage() {
                   placeholder={t("Enter document title")}
                 />
               ) : (
-                <div className="p-3 bg-gray-50 rounded-md border">
+                <div className="p-3 bg-slate-50 rounded-md border">
                   {selectedDocument?.title || selectedDocument?.fileName || "-"}
                 </div>
               )}
             </div>
             <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">{t("Document Type")}</Label>
+              <Label className="text-slate-700 font-medium">{t("Document Type")}</Label>
               {isEditingDocument ? (
                 <Select
                   value={editDocument.documentType}
@@ -3201,13 +3509,13 @@ export default function FieldworkDetailsPage() {
                   </SelectContent>
                 </Select>
               ) : (
-                <div className="p-3 bg-gray-50 rounded-md border">
+                <div className="p-3 bg-slate-50 rounded-md border">
                   {selectedDocument?.documentType || "-"}
                 </div>
               )}
             </div>
             <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">{t("Description")}</Label>
+              <Label className="text-slate-700 font-medium">{t("Description")}</Label>
               {isEditingDocument ? (
                 <Textarea
                   value={editDocument.description}
@@ -3216,19 +3524,19 @@ export default function FieldworkDetailsPage() {
                   rows={4}
                 />
               ) : (
-                <div className="p-3 bg-gray-50 rounded-md border min-h-[100px]">
+                <div className="p-3 bg-slate-50 rounded-md border min-h-[100px]">
                   {selectedDocument?.description || "-"}
                 </div>
               )}
             </div>
             <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">{t("Attached File")}</Label>
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md border">
+              <Label className="text-slate-700 font-medium">{t("Attached File")}</Label>
+              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-md border">
                 <div className="flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-blue-600" />
+                  <FileText className="h-5 w-5 text-primary-600" />
                   <div>
                     <p className="text-sm font-medium">{selectedDocument?.fileName}</p>
-                    <p className="text-xs text-gray-500">{formatFileSize(selectedDocument?.fileSize || 0)}</p>
+                    <p className="text-xs text-slate-500">{formatFileSize(selectedDocument?.fileSize || 0)}</p>
                   </div>
                 </div>
                 <Button
@@ -3243,13 +3551,14 @@ export default function FieldworkDetailsPage() {
                     }
                   }}
                 >
-                  <Download className="h-4 w-4 mr-2" />
+                  <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                   {t("Download")}
                 </Button>
               </div>
             </div>
           </div>
-          <DialogFooter>
+          {/* Fixed Footer */}
+          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
             <Button
               variant="outline"
               onClick={() => {
@@ -3262,13 +3571,13 @@ export default function FieldworkDetailsPage() {
             </Button>
             {isEditingDocument && (
               <Button
-                className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
+                size="sm"
                 onClick={handleUpdateDocument}
                 disabled={savingDocument || isCompleted}
               >
                 {savingDocument ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
                     {t("Saving...")}
                   </>
                 ) : (
@@ -3276,20 +3585,24 @@ export default function FieldworkDetailsPage() {
                 )}
               </Button>
             )}
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* View/Edit Evidence Request Dialog */}
       <Dialog open={viewEditEvidenceDialogOpen} onOpenChange={setViewEditEvidenceDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{isEditingEvidence ? t("Edit Evidence Request") : t("View Evidence Request")}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
+        <DialogContent className="sm:max-w-[700px] flex flex-col p-0 gap-0 max-h-[90vh]">
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{isEditingEvidence ? t("Edit Evidence Request") : t("View Evidence Request")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          {/* Scrollable Content */}
+          <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
             {/* Request Title */}
             <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">{t("Request Title")} <span className="text-red-500">*</span></Label>
+              <Label className="text-slate-700 font-medium">{t("Request Title")} <span className="text-red-500">*</span></Label>
               {isEditingEvidence ? (
                 <Input
                   value={editEvidence.title}
@@ -3297,14 +3610,14 @@ export default function FieldworkDetailsPage() {
                   placeholder={t("Enter title")}
                 />
               ) : (
-                <div className="p-3 bg-gray-50 rounded-md border">
+                <div className="p-3 bg-slate-50 rounded-md border">
                   {selectedEvidence?.title || "-"}
                 </div>
               )}
             </div>
             {/* Auditee */}
             <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">{t("Auditee")}</Label>
+              <Label className="text-slate-700 font-medium">{t("Auditee")}</Label>
               {isEditingEvidence ? (
                 <Select
                   value={editEvidence.auditeeId}
@@ -3320,7 +3633,7 @@ export default function FieldworkDetailsPage() {
                   <SelectTrigger>
                     <SelectValue placeholder={t("Select auditee")}>
                       {editEvidence.auditee && (
-                        <span className="inline-flex items-center gap-1 bg-gray-100 px-2 py-1 rounded text-sm">
+                        <span className="inline-flex items-center gap-1 bg-slate-100 px-2 py-1 rounded text-sm">
                           {editEvidence.auditee}
                           <X className="h-3 w-3 cursor-pointer" onClick={(e) => {
                             e.stopPropagation();
@@ -3339,14 +3652,14 @@ export default function FieldworkDetailsPage() {
                   </SelectContent>
                 </Select>
               ) : (
-                <div className="p-3 bg-gray-50 rounded-md border">
+                <div className="p-3 bg-slate-50 rounded-md border">
                   {selectedEvidence?.auditee || "-"}
                 </div>
               )}
             </div>
             {/* Number of Samples */}
             <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">{t("Number of Samples")}</Label>
+              <Label className="text-slate-700 font-medium">{t("Number of Samples")}</Label>
               {isEditingEvidence ? (
                 <Input
                   type="number"
@@ -3356,14 +3669,14 @@ export default function FieldworkDetailsPage() {
                   placeholder={t("Enter number of samples")}
                 />
               ) : (
-                <div className="p-3 bg-gray-50 rounded-md border">
+                <div className="p-3 bg-slate-50 rounded-md border">
                   {selectedEvidence?.numberOfSamples || "-"}
                 </div>
               )}
             </div>
             {/* Description */}
             <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">{t("Description")}</Label>
+              <Label className="text-slate-700 font-medium">{t("Description")}</Label>
               {isEditingEvidence ? (
                 <Textarea
                   value={editEvidence.description}
@@ -3372,7 +3685,7 @@ export default function FieldworkDetailsPage() {
                   rows={4}
                 />
               ) : (
-                <div className="p-3 bg-gray-50 rounded-md border min-h-[80px]">
+                <div className="p-3 bg-slate-50 rounded-md border min-h-[80px]">
                   {selectedEvidence?.description || "-"}
                 </div>
               )}
@@ -3385,36 +3698,36 @@ export default function FieldworkDetailsPage() {
                     <div className="flex items-center gap-3">
                       {att.fileType?.includes('image') ? (
                         <div className="w-10 h-10 bg-blue-100 rounded flex items-center justify-center">
-                          <FileText className="h-5 w-5 text-blue-600" />
+                          <FileText className="h-5 w-5 text-primary-600" />
                         </div>
                       ) : att.fileName?.endsWith('.docx') || att.fileName?.endsWith('.doc') ? (
                         <div className="w-10 h-10 bg-blue-100 rounded flex items-center justify-center">
                           <FileSpreadsheet className="h-5 w-5 text-blue-800" />
                         </div>
                       ) : (
-                        <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center">
-                          <FileText className="h-5 w-5 text-gray-600" />
+                        <div className="w-10 h-10 bg-slate-100 rounded flex items-center justify-center">
+                          <FileText className="h-5 w-5 text-slate-600" />
                         </div>
                       )}
-                      <span className="text-sm text-blue-600">{att.fileName}</span>
+                      <span className="text-sm text-primary-600">{att.fileName}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <a
                         href={`/api${att.filePath}`}
                         download
-                        className="p-1 hover:bg-gray-100 rounded"
+                        className="p-1 hover:bg-slate-100 rounded"
                         title={t("Download")}
                       >
-                        <Download className="h-4 w-4 text-gray-600" />
+                        <Download className="h-4 w-4 text-slate-600" />
                       </a>
                       <a
                         href={`/api${att.filePath}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="p-1 hover:bg-gray-100 rounded"
+                        className="p-1 hover:bg-slate-100 rounded"
                         title={t("View")}
                       >
-                        <Eye className="h-4 w-4 text-gray-600" />
+                        <Eye className="h-4 w-4 text-slate-600" />
                       </a>
                       <button
                         className="p-1 hover:bg-red-50 rounded"
@@ -3435,16 +3748,16 @@ export default function FieldworkDetailsPage() {
             {!isEditingEvidence && (
               <>
                 <div className="space-y-2">
-                  <Label className="text-[#1e3a5f] font-medium">{t("Due Date")}</Label>
-                  <div className="p-3 bg-gray-50 rounded-md border">
+                  <Label className="text-slate-700 font-medium">{t("Due Date")}</Label>
+                  <div className="p-3 bg-slate-50 rounded-md border">
                     {selectedEvidence?.dueDate ? formatDate(selectedEvidence.dueDate) : "-"}
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[#1e3a5f] font-medium">{t("Status")}</Label>
-                  <div className="p-3 bg-gray-50 rounded-md border">
+                  <Label className="text-slate-700 font-medium">{t("Status")}</Label>
+                  <div className="p-3 bg-slate-50 rounded-md border">
                     <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      selectedEvidence?.status === 'Reviewed' ? 'bg-green-100 text-green-800' :
+                      selectedEvidence?.status === 'Reviewed' ? 'bg-emerald-100 text-emerald-800' :
                       selectedEvidence?.status === 'Submitted' ? 'bg-blue-100 text-blue-800' :
                       'bg-yellow-100 text-yellow-800'
                     }`}>
@@ -3455,16 +3768,16 @@ export default function FieldworkDetailsPage() {
               {/* AI Review Section */}
               {selectedEvidence?.aiReviewStatus && (
                 <div className="space-y-2">
-                  <Label className="text-[#1e3a5f] font-medium">{t("AI Review Result")}</Label>
+                  <Label className="text-slate-700 font-medium">{t("AI Review Result")}</Label>
                   <div className={`p-3 rounded-md border ${
                     selectedEvidence.aiReviewStatus === 'Satisfactory'
-                      ? 'bg-green-50 border-green-200'
+                      ? 'bg-emerald-50 border-emerald-200'
                       : 'bg-red-50 border-red-200'
                   }`}>
                     <div className="flex items-center gap-2 mb-2">
                       {selectedEvidence.aiReviewStatus === 'Satisfactory' ? (
                         <>
-                          <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+                          <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center">
                             <span className="text-white text-xs">✓</span>
                           </div>
                           <span className="font-medium text-green-700">{t("Satisfactory")}</span>
@@ -3495,20 +3808,20 @@ export default function FieldworkDetailsPage() {
             {/* Attachments section - only show in view mode */}
             {!isEditingEvidence && selectedEvidence?.attachments && selectedEvidence.attachments.length > 0 && (
               <div className="space-y-2">
-                <Label className="text-[#1e3a5f] font-medium">{t("Uploaded Attachments")}</Label>
-                <div className="p-3 bg-gray-50 rounded-md border space-y-2">
+                <Label className="text-slate-700 font-medium">{t("Uploaded Attachments")}</Label>
+                <div className="p-3 bg-slate-50 rounded-md border space-y-2">
                   {selectedEvidence.attachments.map((att) => (
                     <div key={att.id} className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-blue-600" />
+                        <FileText className="h-4 w-4 text-primary-600" />
                         <span className="text-sm">{att.fileName}</span>
-                        <span className="text-xs text-gray-400">({formatFileSize(att.fileSize)})</span>
+                        <span className="text-xs text-slate-400">({formatFileSize(att.fileSize)})</span>
                       </div>
                       <a
                         href={`/api${att.filePath}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline text-sm flex items-center gap-1"
+                        className="text-primary-600 hover:underline text-sm flex items-center gap-1"
                       >
                         <Download className="h-3 w-3" />
                         {t("Download")}
@@ -3520,8 +3833,8 @@ export default function FieldworkDetailsPage() {
             )}
             {!isEditingEvidence && (!selectedEvidence?.attachments || selectedEvidence.attachments.length === 0) && (
               <div className="space-y-2">
-                <Label className="text-[#1e3a5f] font-medium">{t("Uploaded Attachments")}</Label>
-                <div className="p-3 bg-gray-50 rounded-md border text-gray-500 text-sm">
+                <Label className="text-slate-700 font-medium">{t("Uploaded Attachments")}</Label>
+                <div className="p-3 bg-slate-50 rounded-md border text-slate-500 text-sm">
                   {t("No attachments uploaded yet")}
                 </div>
               </div>
@@ -3530,19 +3843,20 @@ export default function FieldworkDetailsPage() {
             {!isEditingEvidence && isAuditeeOnly && selectedEvidence?.clarificationComment && (
               <div className="flex justify-end mt-4">
                 <Button
-                  className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
+                  size="sm"
                   onClick={() => {
                     setAuditeeClariEvidence(selectedEvidence);
                     setAuditeeClariDialogOpen(true);
                   }}
                 >
-                  <MessageSquare className="h-4 w-4 mr-2" />
+                  <MessageSquare className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                   {t("Comments")}
                 </Button>
               </div>
             )}
           </div>
-          <DialogFooter className="flex justify-between sm:justify-between">
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex justify-between items-center px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => {
@@ -3566,11 +3880,11 @@ export default function FieldworkDetailsPage() {
                       }
                     }}
                   >
-                    <AlertCircle className="h-4 w-4 mr-2" />
+                    <AlertCircle className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                     {t("Need Clarification")}
                   </Button>
                   <Button
-                    className="bg-green-600 hover:bg-green-700"
+                    className="bg-emerald-600 hover:bg-emerald-700"
                     onClick={() => {
                       if (selectedEvidence) {
                         handleApproveEvidence(selectedEvidence.id);
@@ -3579,20 +3893,20 @@ export default function FieldworkDetailsPage() {
                       }
                     }}
                   >
-                    <Check className="h-4 w-4 mr-2" />
+                    <Check className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                     {t("Approve")}
                   </Button>
                 </>
               )}
               {isEditingEvidence && (
                 <Button
-                  className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
+                  size="sm"
                   onClick={handleUpdateEvidence}
                   disabled={savingEvidence || isCompleted}
                 >
                   {savingEvidence ? (
                     <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
                       {t("Saving...")}
                     </>
                   ) : (
@@ -3601,19 +3915,21 @@ export default function FieldworkDetailsPage() {
                 </Button>
               )}
             </div>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Need Clarification Dialog */}
       <Dialog open={clarificationDialogOpen} onOpenChange={setClarificationDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-[#1e3a5f]">{t("Need Clarification")}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
+        <DialogContent className="sm:max-w-[450px] p-0 gap-0 max-h-[90vh] flex flex-col">
+          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Need Clarification")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
             <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">
+              <Label className="text-slate-700 font-medium">
                 {t("Select the document that requires clarification")}
               </Label>
               <Select
@@ -3633,7 +3949,7 @@ export default function FieldworkDetailsPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">{t("Comment")}</Label>
+              <Label className="text-slate-700 font-medium">{t("Comment")}</Label>
               <Textarea
                 value={clarificationComment}
                 onChange={(e) => setClarificationComment(e.target.value)}
@@ -3642,45 +3958,54 @@ export default function FieldworkDetailsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">{t("Previous Comments")}</Label>
-              <div className="p-3 bg-gray-50 rounded-md border text-gray-500 text-sm text-center">
+              <Label className="text-slate-700 font-medium">{t("Previous Comments")}</Label>
+              <div className="p-3 bg-slate-50 rounded-md border border-slate-200 text-slate-500 text-sm text-center">
                 {t("No items found")}
               </div>
             </div>
           </div>
-          <DialogFooter>
+          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
             <Button
-              className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
+              variant="outline"
+              size="sm"
+              onClick={() => setClarificationDialogOpen(false)}
+            >
+              {t("Cancel")}
+            </Button>
+            <Button
+              size="sm"
               onClick={handleSendClarification}
               disabled={sendingClarification || !clarificationDocument || isCompleted}
             >
               {sendingClarification ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
                   {t("Sending...")}
                 </>
               ) : (
                 t("Send")
               )}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Auditee Clarification View Popup */}
       <Dialog open={auditeeClariDialogOpen} onOpenChange={setAuditeeClariDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-[#1e3a5f]">{t("Need Clarification")}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
+        <DialogContent className="sm:max-w-[450px] p-0 gap-0 max-h-[90vh] flex flex-col">
+          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Need Clarification")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
             <div className="flex items-start justify-between">
               <div className="space-y-1">
-                <p className="text-sm font-medium text-gray-700">{t("Document that requires clarification")}</p>
-                <p className="text-sm text-gray-900">{auditeeClariEvidence?.clarificationDocumentName || "-"}</p>
+                <p className="text-sm font-medium text-slate-700">{t("Document that requires clarification")}</p>
+                <p className="text-sm text-slate-900">{auditeeClariEvidence?.clarificationDocumentName || "-"}</p>
               </div>
               <Button
-                className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
+                size="sm"
                 onClick={() => {
                   setRespondComment("");
                   setRespondFiles([]);
@@ -3690,30 +4015,41 @@ export default function FieldworkDetailsPage() {
                 {t("Respond")}
               </Button>
             </div>
-            <div className="border-t pt-3">
-              <p className="text-sm text-gray-900">{auditeeClariEvidence?.clarificationComment || "-"}</p>
-              <p className="text-sm text-gray-500 mt-1">
+            <div className="border-t border-slate-100 pt-3">
+              <p className="text-sm text-slate-900">{auditeeClariEvidence?.clarificationComment || "-"}</p>
+              <p className="text-sm text-slate-500 mt-1">
                 ~ {auditeeClariEvidence?.clarificationByUserName || "Unknown"}
               </p>
-              <p className="text-xs text-gray-400 mt-1">
+              <p className="text-xs text-slate-400 mt-1">
                 {auditeeClariEvidence?.clarificationSentAt
                   ? new Date(auditeeClariEvidence.clarificationSentAt).toLocaleString()
                   : "-"}
               </p>
             </div>
           </div>
+          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setAuditeeClariDialogOpen(false)}
+            >
+              {t("Close")}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Auditee Respond Dialog */}
       <Dialog open={respondDialogOpen} onOpenChange={setRespondDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-[#1e3a5f]">{t("Respond")}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
+        <DialogContent className="sm:max-w-[450px] p-0 gap-0 max-h-[90vh] flex flex-col">
+          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Respond")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
             <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">{t("Comment")}</Label>
+              <Label className="text-slate-700 font-medium">{t("Comment")}</Label>
               <Textarea
                 value={respondComment}
                 onChange={(e) => setRespondComment(e.target.value)}
@@ -3722,9 +4058,9 @@ export default function FieldworkDetailsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">{t("Attach File")}</Label>
+              <Label className="text-slate-700 font-medium">{t("Attach File")}</Label>
               <div
-                className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-gray-400 transition-colors"
+                className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center cursor-pointer hover:border-slate-400 transition-colors"
                 onClick={() => {
                   const input = document.createElement("input");
                   input.type = "file";
@@ -3750,46 +4086,56 @@ export default function FieldworkDetailsPage() {
                   }
                 }}
               >
-                <p className="text-gray-500">{t("Drag and drop or select file.")}</p>
+                <p className="text-slate-500">{t("Drag and drop or select file.")}</p>
                 {respondFiles.length > 0 && (
-                  <div className="mt-2 text-sm text-green-600">
+                  <div className="mt-2 text-sm text-emerald-600">
                     {respondFiles.map((f) => f.name).join(", ")}
                   </div>
                 )}
               </div>
             </div>
           </div>
-          <DialogFooter>
+          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
             <Button
-              className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
+              variant="outline"
+              size="sm"
+              onClick={() => setRespondDialogOpen(false)}
+            >
+              {t("Cancel")}
+            </Button>
+            <Button
+              size="sm"
               onClick={handleSendResponse}
               disabled={sendingResponse || isCompleted}
             >
               {sendingResponse ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
                   {t("Sending...")}
                 </>
               ) : (
                 t("Send Response")
               )}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Delete Evidence Request Confirmation Dialog */}
       <Dialog open={deleteEvidenceDialogOpen} onOpenChange={setDeleteEvidenceDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{t("Delete Evidence Request")}</DialogTitle>
-            <DialogDescription>
-              {t("Are you sure you want to delete")} "{evidenceToDelete?.title}"? {t("This action cannot be undone.")}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
+        <DialogContent className="sm:max-w-[400px] p-0 gap-0">
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Delete Evidence Request")}</DialogTitle>
+              <DialogDescription className="text-slate-600">
+                {t("Are you sure you want to delete")} &quot;{evidenceToDelete?.title}&quot;? {t("This action cannot be undone.")}
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="px-6 py-4 flex justify-end gap-2">
             <Button
               variant="outline"
+              size="sm"
               onClick={() => {
                 setDeleteEvidenceDialogOpen(false);
                 setEvidenceToDelete(null);
@@ -3799,50 +4145,54 @@ export default function FieldworkDetailsPage() {
             </Button>
             <Button
               variant="destructive"
+              size="sm"
               onClick={handleDeleteEvidence}
               disabled={deletingEvidence || isCompleted}
             >
               {deletingEvidence ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
                   {t("Deleting...")}
                 </>
               ) : (
                 t("Delete")
               )}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* AI Review Result Dialog */}
       <Dialog open={aiReviewDialogOpen} onOpenChange={setAiReviewDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <MessageSquare className="h-5 w-5 text-green-600" />
-              {t("AI Review Results")}
-            </DialogTitle>
-            <DialogDescription>
-              {t("AI-generated review of")} {selectedEvidenceIds.length} {t("evidence request(s)")}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="mt-4">
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
+          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-lg font-semibold text-slate-800">
+                <MessageSquare className="h-5 w-5 text-green-600" />
+                {t("AI Review Results")}
+              </DialogTitle>
+              <DialogDescription className="text-slate-600">
+                {t("AI-generated review of")} {selectedEvidenceIds.length} {t("evidence request(s)")}
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="px-6 py-5 overflow-y-auto flex-1">
             {aiReviewResult ? (
               <div className="prose prose-sm max-w-none">
-                <div className="bg-gray-50 rounded-lg p-4 whitespace-pre-wrap text-sm">
+                <div className="bg-slate-50 rounded-lg p-4 whitespace-pre-wrap text-sm">
                   {aiReviewResult}
                 </div>
               </div>
             ) : (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-slate-500">
                 {t("No review generated yet")}
               </div>
             )}
           </div>
-          <DialogFooter>
+          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
             <Button
               variant="outline"
+              size="sm"
               onClick={() => {
                 setAiReviewDialogOpen(false);
                 setAiReviewResult("");
@@ -3850,25 +4200,27 @@ export default function FieldworkDetailsPage() {
             >
               {t("Close")}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Add Attachment Dialog */}
       <Dialog open={attachmentDialogOpen} onOpenChange={setAttachmentDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{t("Add Attachment")}</DialogTitle>
-            <DialogDescription>
-              {t("Upload attachment for")}: {evidenceForAttachment?.title}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
+        <DialogContent className="sm:max-w-[500px] p-0 gap-0 max-h-[90vh] flex flex-col">
+          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Attachment")}</DialogTitle>
+              <DialogDescription className="text-slate-600">
+                {t("Upload attachment for")}: {evidenceForAttachment?.title}
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
             <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">{t("Attach File")}</Label>
+              <Label className="text-slate-700 font-medium">{t("Attach File")}</Label>
               <div
                 className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
-                  isDragOver ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-gray-400"
+                  isDragOver ? "border-primary-500 bg-primary-50" : "border-slate-300 hover:border-slate-400"
                 }`}
                 onDragOver={(e) => {
                   e.preventDefault();
@@ -3878,7 +4230,7 @@ export default function FieldworkDetailsPage() {
                 onDrop={handleFileDrop}
                 onClick={() => attachmentFileInputRef.current?.click()}
               >
-                <p className="text-gray-600">{t("Click here, or drop files here to upload.")}</p>
+                <p className="text-slate-600">{t("Click here, or drop files here to upload.")}</p>
                 <input
                   ref={attachmentFileInputRef}
                   type="file"
@@ -3892,12 +4244,12 @@ export default function FieldworkDetailsPage() {
                   {uploadedFiles.map((file) => (
                     <div
                       key={file.id}
-                      className="flex items-center justify-between p-2 bg-gray-50 rounded border"
+                      className="flex items-center justify-between p-2 bg-slate-50 rounded border border-slate-200"
                     >
                       <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-blue-500" />
-                        <span className="text-sm">{file.name}</span>
-                        <span className="text-xs text-gray-400">({formatFileSize(file.size)})</span>
+                        <FileText className="h-4 w-4 text-primary-500" />
+                        <span className="text-sm text-slate-700">{file.name}</span>
+                        <span className="text-xs text-slate-400">({formatFileSize(file.size)})</span>
                       </div>
                       <Button
                         variant="ghost"
@@ -3913,9 +4265,10 @@ export default function FieldworkDetailsPage() {
               )}
             </div>
           </div>
-          <DialogFooter>
+          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
             <Button
               variant="outline"
+              size="sm"
               onClick={() => {
                 setAttachmentDialogOpen(false);
                 setEvidenceForAttachment(null);
@@ -3925,20 +4278,20 @@ export default function FieldworkDetailsPage() {
               {t("Cancel")}
             </Button>
             <Button
-              className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
+              size="sm"
               onClick={handleUploadAttachment}
               disabled={uploadingAttachment || isCompleted}
             >
               {uploadingAttachment ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
                   {t("Uploading...")}
                 </>
               ) : (
                 t("Upload")
               )}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
