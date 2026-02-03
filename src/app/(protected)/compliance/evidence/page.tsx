@@ -942,6 +942,7 @@ export default function EvidencePage() {
             {/* Step 1: Basic Information */}
             {createStep === 1 && (
               <div className="space-y-4">
+                
                 <div>
                   <Label className="text-sm font-medium text-slate-700">{t("Evidence Requirement")} *</Label>
                   <Input
