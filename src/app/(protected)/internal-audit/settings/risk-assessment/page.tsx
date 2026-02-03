@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -79,6 +80,7 @@ const CALCULATION_TYPES = [
 
 export default function RiskAssessmentConfigPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
 
   // Data states
@@ -209,7 +211,7 @@ export default function RiskAssessmentConfigPage() {
       const lowValue = Number(formData.lowValue) || 0;
       const highValue = Number(formData.highValue) || 0;
       if (highValue <= lowValue) {
-        setValidationError("Highest value must be greater than lowest value");
+        setValidationError(t("Highest value must be greater than lowest value"));
         return;
       }
     }
@@ -319,10 +321,10 @@ export default function RiskAssessmentConfigPage() {
 
   const getDialogTitle = () => {
     switch (dialogType) {
-      case "factor": return editItem ? "Edit Factor" : "Add Factor";
-      case "probability": return editItem ? "Edit Probability" : "Add Probability";
-      case "impact": return editItem ? "Edit Impact" : "Add Impact";
-      case "scoringRange": return editItem ? "Edit Risk Score Range" : "Add Scoring Range";
+      case "factor": return editItem ? t("Edit Factor") : t("Add Factor");
+      case "probability": return editItem ? t("Edit Probability") : t("Add Probability");
+      case "impact": return editItem ? t("Edit Impact") : t("Add Impact");
+      case "scoringRange": return editItem ? t("Edit Risk Score Range") : t("Add Scoring Range");
       default: return "";
     }
   };
@@ -334,24 +336,24 @@ export default function RiskAssessmentConfigPage() {
         <nav className="flex items-center gap-1.5 text-sm">
           <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
-            <span>Internal Audit</span>
+            <span>{t("Internal Audit")}</span>
           </Link>
           <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
           <Link href="/internal-audit/settings" className="text-slate-500 hover:text-primary-600 transition-colors">
-            Settings
+            {t("Settings")}
           </Link>
           <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-          <span className="text-primary-700 font-medium">Risk Assessment</span>
+          <span className="text-primary-700 font-medium">{t("Risk Assessment")}</span>
         </nav>
 
-        <h1 className="text-2xl font-bold text-slate-800">Risk Assessment Configuration</h1>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Risk Assessment Configuration")}</h1>
         <div className="flex items-center justify-center h-[60vh]">
           <div className="flex flex-col items-center gap-4">
             <div className="relative">
               <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
               <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
             </div>
-            <p className="text-sm text-slate-500 font-medium">Loading configuration...</p>
+            <p className="text-sm text-slate-500 font-medium">{t("Loading configuration...")}</p>
           </div>
         </div>
       </div>
@@ -364,35 +366,35 @@ export default function RiskAssessmentConfigPage() {
       <nav className="flex items-center gap-1.5 text-sm">
         <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
-          <span>Internal Audit</span>
+          <span>{t("Internal Audit")}</span>
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
         <Link href="/internal-audit/settings" className="text-slate-500 hover:text-primary-600 transition-colors">
-          Settings
+          {t("Settings")}
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-        <span className="text-primary-700 font-medium">Risk Assessment</span>
+        <span className="text-primary-700 font-medium">{t("Risk Assessment")}</span>
       </nav>
 
       {/* Page Header */}
-      <h1 className="text-2xl font-bold text-slate-800">Risk Assessment Configuration</h1>
+      <h1 className="text-2xl font-bold text-slate-800">{t("Risk Assessment Configuration")}</h1>
 
       {/* Content */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Factors Section */}
         <div className="bg-white rounded-xl border border-slate-200">
           <div className="flex items-center justify-between p-4 border-b border-slate-100">
-            <h3 className="text-base font-semibold text-slate-800">Factors</h3>
+            <h3 className="text-base font-semibold text-slate-800">{t("Factors")}</h3>
             <Button size="sm" onClick={() => openAddDialog("factor")}>
               <Plus className="h-4 w-4 mr-2" />
-              New Factor
+              {t("New Factor")}
             </Button>
           </div>
           <Table>
             <TableHeader>
               <TableRow className="border-b border-slate-100 bg-slate-50/50">
-                <TableHead className="text-xs font-semibold text-slate-600 h-10 pl-4">Label</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 h-10 pr-4 w-[80px]">Action</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 h-10 pl-4">{t("Label")}</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 h-10 pr-4 w-[80px]">{t("Action")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -414,7 +416,7 @@ export default function RiskAssessmentConfigPage() {
               {factors.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={2} className="text-center py-6 text-slate-500">
-                    No factors found
+                    {t("No factors found")}
                   </TableCell>
                 </TableRow>
               )}
@@ -425,18 +427,18 @@ export default function RiskAssessmentConfigPage() {
         {/* Probability Section */}
         <div className="bg-white rounded-xl border border-slate-200">
           <div className="flex items-center justify-between p-4 border-b border-slate-100">
-            <h3 className="text-base font-semibold text-slate-800">Probability</h3>
+            <h3 className="text-base font-semibold text-slate-800">{t("Probability")}</h3>
             <Button size="sm" onClick={() => openAddDialog("probability")}>
               <Plus className="h-4 w-4 mr-2" />
-              New Probability
+              {t("New Probability")}
             </Button>
           </div>
           <Table>
             <TableHeader>
               <TableRow className="border-b border-slate-100 bg-slate-50/50">
-                <TableHead className="text-xs font-semibold text-slate-600 h-10 pl-4">Label</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 h-10">Value</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 h-10 pr-4 w-[80px]">Action</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 h-10 pl-4">{t("Label")}</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 h-10">{t("Value")}</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 h-10 pr-4 w-[80px]">{t("Action")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -459,7 +461,7 @@ export default function RiskAssessmentConfigPage() {
               {probabilities.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={3} className="text-center py-6 text-slate-500">
-                    No probabilities found
+                    {t("No probabilities found")}
                   </TableCell>
                 </TableRow>
               )}
@@ -470,18 +472,18 @@ export default function RiskAssessmentConfigPage() {
         {/* Impact Section */}
         <div className="bg-white rounded-xl border border-slate-200">
           <div className="flex items-center justify-between p-4 border-b border-slate-100">
-            <h3 className="text-base font-semibold text-slate-800">Impact</h3>
+            <h3 className="text-base font-semibold text-slate-800">{t("Impact")}</h3>
             <Button size="sm" onClick={() => openAddDialog("impact")}>
               <Plus className="h-4 w-4 mr-2" />
-              New Impact
+              {t("New Impact")}
             </Button>
           </div>
           <Table>
             <TableHeader>
               <TableRow className="border-b border-slate-100 bg-slate-50/50">
-                <TableHead className="text-xs font-semibold text-slate-600 h-10 pl-4">Label</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 h-10">Value</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 h-10 pr-4 w-[80px]">Action</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 h-10 pl-4">{t("Label")}</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 h-10">{t("Value")}</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 h-10 pr-4 w-[80px]">{t("Action")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -504,7 +506,7 @@ export default function RiskAssessmentConfigPage() {
               {impacts.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={3} className="text-center py-6 text-slate-500">
-                    No impacts found
+                    {t("No impacts found")}
                   </TableCell>
                 </TableRow>
               )}
@@ -515,12 +517,12 @@ export default function RiskAssessmentConfigPage() {
         {/* Scoring Configuration Section */}
         <div className="bg-white rounded-xl border border-slate-200">
           <div className="p-4 border-b border-slate-100">
-            <h3 className="text-base font-semibold text-slate-800">Scoring Configuration</h3>
+            <h3 className="text-base font-semibold text-slate-800">{t("Scoring Configuration")}</h3>
           </div>
           <div className="p-4 space-y-6">
             {/* Probability-Impact Scoring Calculation */}
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700">Probability-Impact Calculation</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Probability-Impact Calculation")}</Label>
               <Select
                 value={scoringConfig?.probabilityImpactCalcType || "Product of all"}
                 onValueChange={(value) => handleConfigChange("probabilityImpactCalcType", value)}
@@ -531,7 +533,7 @@ export default function RiskAssessmentConfigPage() {
                 <SelectContent>
                   {CALCULATION_TYPES.map((type) => (
                     <SelectItem key={type.value} value={type.value}>
-                      {type.label}
+                      {t(type.label)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -540,7 +542,7 @@ export default function RiskAssessmentConfigPage() {
 
             {/* Risk Rating Scoring Calculation */}
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700">Risk Rating Calculation</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Risk Rating Calculation")}</Label>
               <Select
                 value={scoringConfig?.riskRatingCalcType || "Product of all"}
                 onValueChange={(value) => handleConfigChange("riskRatingCalcType", value)}
@@ -551,7 +553,7 @@ export default function RiskAssessmentConfigPage() {
                 <SelectContent>
                   {CALCULATION_TYPES.map((type) => (
                     <SelectItem key={type.value} value={type.value}>
-                      {type.label}
+                      {t(type.label)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -561,22 +563,22 @@ export default function RiskAssessmentConfigPage() {
             {/* Scoring Range */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium text-slate-700">Scoring Range</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Scoring Range")}</Label>
                 <Button size="sm" onClick={() => openAddDialog("scoringRange")}>
                   <Plus className="h-4 w-4 mr-2" />
-                  New Range
+                  {t("New Range")}
                 </Button>
               </div>
               <div className="border border-slate-200 rounded-lg overflow-hidden">
                 <Table>
                   <TableHeader>
                     <TableRow className="border-b border-slate-100 bg-slate-50/50">
-                      <TableHead className="text-xs font-semibold text-slate-600 h-10 pl-4">Label</TableHead>
-                      <TableHead className="text-xs font-semibold text-slate-600 h-10">Low</TableHead>
+                      <TableHead className="text-xs font-semibold text-slate-600 h-10 pl-4">{t("Label")}</TableHead>
+                      <TableHead className="text-xs font-semibold text-slate-600 h-10">{t("Low")}</TableHead>
                       {scoringConfig?.riskRatingCalcType !== "High of all" && (
-                        <TableHead className="text-xs font-semibold text-slate-600 h-10">High</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-600 h-10">{t("High")}</TableHead>
                       )}
-                      <TableHead className="text-xs font-semibold text-slate-600 h-10 pr-4 w-[80px]">Action</TableHead>
+                      <TableHead className="text-xs font-semibold text-slate-600 h-10 pr-4 w-[80px]">{t("Action")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -604,7 +606,7 @@ export default function RiskAssessmentConfigPage() {
                     {scoringRanges.filter((item) => item.calculationType === scoringConfig?.riskRatingCalcType).length === 0 && (
                       <TableRow>
                         <TableCell colSpan={scoringConfig?.riskRatingCalcType === "High of all" ? 3 : 4} className="text-center py-6 text-slate-500">
-                          No scoring ranges found
+                          {t("No scoring ranges found")}
                         </TableCell>
                       </TableRow>
                     )}
@@ -630,11 +632,11 @@ export default function RiskAssessmentConfigPage() {
           <div className="px-6 py-6 space-y-5">
             {dialogType === "factor" && (
               <div>
-                <Label className="text-sm font-medium text-slate-700">Label <span className="text-red-500">*</span></Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Label")} <span className="text-red-500">*</span></Label>
                 <Input
                   value={formData.label || ""}
                   onChange={(e) => setFormData({ ...formData, label: e.target.value })}
-                  placeholder="Enter factor label"
+                  placeholder={t("Enter factor label")}
                   className="mt-1.5 w-full bg-white"
                   autoFocus
                 />
@@ -643,22 +645,22 @@ export default function RiskAssessmentConfigPage() {
             {(dialogType === "probability" || dialogType === "impact") && (
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Label <span className="text-red-500">*</span></Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Label")} <span className="text-red-500">*</span></Label>
                   <Input
                     value={formData.label || ""}
                     onChange={(e) => setFormData({ ...formData, label: e.target.value })}
-                    placeholder="Enter label"
+                    placeholder={t("Enter label")}
                     className="mt-1.5 w-full bg-white"
                     autoFocus
                   />
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Value <span className="text-red-500">*</span></Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Value")} <span className="text-red-500">*</span></Label>
                   <Input
                     type="number"
                     value={formData.value || 0}
                     onChange={(e) => setFormData({ ...formData, value: e.target.value })}
-                    placeholder="Enter value"
+                    placeholder={t("Enter value")}
                     className="mt-1.5 w-full bg-white"
                   />
                 </div>
@@ -667,18 +669,18 @@ export default function RiskAssessmentConfigPage() {
             {dialogType === "scoringRange" && (
               <>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Label <span className="text-red-500">*</span></Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Label")} <span className="text-red-500">*</span></Label>
                   <Input
                     value={formData.label || ""}
                     onChange={(e) => setFormData({ ...formData, label: e.target.value })}
-                    placeholder="Enter scoring range label"
+                    placeholder={t("Enter scoring range label")}
                     className="mt-1.5 w-full bg-white"
                     autoFocus
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Lowest Value <span className="text-red-500">*</span></Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Lowest Value")} <span className="text-red-500">*</span></Label>
                     <Input
                       type="number"
                       value={formData.lowValue || 0}
@@ -686,12 +688,12 @@ export default function RiskAssessmentConfigPage() {
                         setFormData({ ...formData, lowValue: e.target.value });
                         setValidationError(null);
                       }}
-                      placeholder="Enter lowest value"
+                      placeholder={t("Enter lowest value")}
                       className="mt-1.5 w-full bg-white"
                     />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Highest Value <span className="text-red-500">*</span></Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Highest Value")} <span className="text-red-500">*</span></Label>
                     <Input
                       type="number"
                       value={formData.highValue || 0}
@@ -699,7 +701,7 @@ export default function RiskAssessmentConfigPage() {
                         setFormData({ ...formData, highValue: e.target.value });
                         setValidationError(null);
                       }}
-                      placeholder="Enter highest value"
+                      placeholder={t("Enter highest value")}
                       className="mt-1.5 w-full bg-white"
                     />
                   </div>
@@ -714,10 +716,10 @@ export default function RiskAssessmentConfigPage() {
           {/* Fixed Footer */}
           <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button onClick={handleSave} disabled={saving || !formData.label?.trim()}>
-              {saving ? "Saving..." : "Save"}
+              {saving ? t("Saving...") : t("Save")}
             </Button>
           </div>
         </DialogContent>
@@ -727,15 +729,15 @@ export default function RiskAssessmentConfigPage() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent className="sm:max-w-[400px] p-0 gap-0">
           <AlertDialogHeader className="px-6 py-5 border-b border-slate-100">
-            <AlertDialogTitle className="text-lg font-semibold text-slate-800">Confirm Delete</AlertDialogTitle>
+            <AlertDialogTitle className="text-lg font-semibold text-slate-800">{t("Confirm Delete")}</AlertDialogTitle>
             <AlertDialogDescription className="text-sm text-slate-500 mt-1">
-              Are you sure you want to delete this item? This action cannot be undone.
+              {t("Are you sure you want to delete this item? This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex justify-end gap-2 px-6 py-4">
-            <AlertDialogCancel className="mt-0">Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="mt-0">{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
-              Delete
+              {t("Delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

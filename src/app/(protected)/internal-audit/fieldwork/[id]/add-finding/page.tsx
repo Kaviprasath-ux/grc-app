@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -49,6 +50,7 @@ export default function AddFindingPage() {
   const router = useRouter();
   const params = useParams();
   const engagementId = params.id as string;
+  const { t } = useLanguage();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -157,7 +159,7 @@ export default function AddFindingPage() {
 
   const handleSubmit = async () => {
     if (!formData.findingTitle.trim()) {
-      toast.error("Finding title is required");
+      toast.error(t("Finding title is required"));
       return;
     }
 
@@ -200,15 +202,15 @@ export default function AddFindingPage() {
           });
         }
 
-        toast.success("Finding added successfully");
+        toast.success(t("Finding added successfully"));
         router.push(`/internal-audit/fieldwork/${engagementId}`);
       } else {
         const error = await response.json();
-        toast.error(error.error || "Failed to add finding");
+        toast.error(error.error || t("Failed to add finding"));
       }
     } catch (error) {
       console.error("Error adding finding:", error);
-      toast.error("Failed to add finding");
+      toast.error(t("Failed to add finding"));
     } finally {
       setSaving(false);
     }
@@ -220,12 +222,12 @@ export default function AddFindingPage() {
         <div className="flex items-center gap-2 mb-6">
           <Button variant="ghost" size="sm" onClick={() => router.back()}>
             <ArrowLeft className="h-4 w-4 mr-1" />
-            Back
+            {t("Back")}
           </Button>
           <span className="text-gray-400">|</span>
-          <span className="text-gray-500">Audit Plan</span>
+          <span className="text-gray-500">{t("Audit Plan")}</span>
           <span className="text-gray-400">|</span>
-          <span className="text-[#1e3a5f] font-semibold">Add New Findings</span>
+          <span className="text-[#1e3a5f] font-semibold">{t("Add New Findings")}</span>
         </div>
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
@@ -244,12 +246,12 @@ export default function AddFindingPage() {
           onClick={() => router.push(`/internal-audit/fieldwork/${engagementId}`)}
         >
           <ArrowLeft className="h-4 w-4 mr-1" />
-          Back
+          {t("Back")}
         </Button>
         <span className="text-gray-400">|</span>
-        <span className="text-gray-500">Audit Plan</span>
+        <span className="text-gray-500">{t("Audit Plan")}</span>
         <span className="text-gray-400">|</span>
-        <span className="text-[#1e3a5f] font-semibold">Add New Findings</span>
+        <span className="text-[#1e3a5f] font-semibold">{t("Add New Findings")}</span>
       </div>
 
       {/* Form */}
@@ -257,7 +259,7 @@ export default function AddFindingPage() {
         <div className="space-y-6">
           {/* Finding Title */}
           <div className="space-y-2">
-            <Label className="text-[#1e3a5f] font-medium">Finding Title</Label>
+            <Label className="text-[#1e3a5f] font-medium">{t("Finding Title")}</Label>
             <Input
               value={formData.findingTitle}
               onChange={(e) => handleInputChange("findingTitle", e.target.value)}
@@ -268,7 +270,7 @@ export default function AddFindingPage() {
 
           {/* Severity */}
           <div className="space-y-2">
-            <Label className="text-[#1e3a5f] font-medium">Severity</Label>
+            <Label className="text-[#1e3a5f] font-medium">{t("Severity")}</Label>
             <Select
               value={formData.severity}
               onValueChange={(value) => handleInputChange("severity", value)}
@@ -277,18 +279,18 @@ export default function AddFindingPage() {
                 <SelectValue placeholder="" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">Select severity</SelectItem>
-                <SelectItem value="Low">Low</SelectItem>
-                <SelectItem value="Medium">Medium</SelectItem>
-                <SelectItem value="High">High</SelectItem>
-                <SelectItem value="Critical">Critical</SelectItem>
+                <SelectItem value="none">{t("Select severity")}</SelectItem>
+                <SelectItem value="Low">{t("Low")}</SelectItem>
+                <SelectItem value="Medium">{t("Medium")}</SelectItem>
+                <SelectItem value="High">{t("High")}</SelectItem>
+                <SelectItem value="Critical">{t("Critical")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {/* Criteria (What should be) */}
           <div className="space-y-2">
-            <Label className="text-[#1e3a5f] font-medium">Criteria (What should be)</Label>
+            <Label className="text-[#1e3a5f] font-medium">{t("Criteria (What should be)")}</Label>
             <Textarea
               value={formData.criteria}
               onChange={(e) => handleInputChange("criteria", e.target.value)}
@@ -300,7 +302,7 @@ export default function AddFindingPage() {
 
           {/* Condition (What is) */}
           <div className="space-y-2">
-            <Label className="text-[#1e3a5f] font-medium">Condition (What is)</Label>
+            <Label className="text-[#1e3a5f] font-medium">{t("Condition (What is)")}</Label>
             <Textarea
               value={formData.condition}
               onChange={(e) => handleInputChange("condition", e.target.value)}
@@ -312,7 +314,7 @@ export default function AddFindingPage() {
 
           {/* Cause (Why it happened) */}
           <div className="space-y-2">
-            <Label className="text-[#1e3a5f] font-medium">Cause (Why it happened)</Label>
+            <Label className="text-[#1e3a5f] font-medium">{t("Cause (Why it happened)")}</Label>
             <Textarea
               value={formData.cause}
               onChange={(e) => handleInputChange("cause", e.target.value)}
@@ -324,7 +326,7 @@ export default function AddFindingPage() {
 
           {/* Effect (The consequence) */}
           <div className="space-y-2">
-            <Label className="text-[#1e3a5f] font-medium">Effect (The consequence)</Label>
+            <Label className="text-[#1e3a5f] font-medium">{t("Effect (The consequence)")}</Label>
             <Textarea
               value={formData.effect}
               onChange={(e) => handleInputChange("effect", e.target.value)}
@@ -336,7 +338,7 @@ export default function AddFindingPage() {
 
           {/* Recommendation */}
           <div className="space-y-2">
-            <Label className="text-[#1e3a5f] font-medium">Recommendation</Label>
+            <Label className="text-[#1e3a5f] font-medium">{t("Recommendation")}</Label>
             <Textarea
               value={formData.recommendation}
               onChange={(e) => handleInputChange("recommendation", e.target.value)}
@@ -348,7 +350,7 @@ export default function AddFindingPage() {
 
           {/* Upload Attachment */}
           <div className="space-y-2">
-            <Label className="text-[#1e3a5f] font-medium">Upload Attachment</Label>
+            <Label className="text-[#1e3a5f] font-medium">{t("Upload Attachment")}</Label>
             <div
               className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
                 isDragOver ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-gray-400"
@@ -361,7 +363,7 @@ export default function AddFindingPage() {
               onDrop={handleFileDrop}
               onClick={() => fileInputRef.current?.click()}
             >
-              <p className="text-gray-500">Drag and drop or select file.</p>
+              <p className="text-gray-500">{t("Drag and drop or select file.")}</p>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -408,12 +410,12 @@ export default function AddFindingPage() {
           {/* Corrective & Preventive Actions (CAPA) Section */}
           <div className="pt-4">
             <h2 className="text-lg font-semibold text-[#1e3a5f] mb-4">
-              Corrective & Preventive Actions (CAPA)
+              {t("Corrective & Preventive Actions (CAPA)")}
             </h2>
 
             {/* Responsible Person */}
             <div className="space-y-2 mb-4">
-              <Label className="text-[#1e3a5f] font-medium">Responsible Person</Label>
+              <Label className="text-[#1e3a5f] font-medium">{t("Responsible Person")}</Label>
               <Select
                 value={formData.responsiblePersonId}
                 onValueChange={(value) => handleInputChange("responsiblePersonId", value)}
@@ -422,7 +424,7 @@ export default function AddFindingPage() {
                   <SelectValue placeholder="" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Select person</SelectItem>
+                  <SelectItem value="none">{t("Select person")}</SelectItem>
                   {users.map((user) => (
                     <SelectItem key={user.id} value={user.id}>
                       {user.fullName || `${user.firstName} ${user.lastName}`}
@@ -434,7 +436,7 @@ export default function AddFindingPage() {
 
             {/* Status */}
             <div className="space-y-2 mb-4">
-              <Label className="text-[#1e3a5f] font-medium">Status</Label>
+              <Label className="text-[#1e3a5f] font-medium">{t("Status")}</Label>
               <Select
                 value={formData.status}
                 onValueChange={(value) => handleInputChange("status", value)}
@@ -443,22 +445,22 @@ export default function AddFindingPage() {
                   <SelectValue placeholder="" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Select status</SelectItem>
-                  <SelectItem value="Open">Open</SelectItem>
-                  <SelectItem value="In Progress">In Progress</SelectItem>
-                  <SelectItem value="Closed">Closed</SelectItem>
-                  <SelectItem value="Overdue">Overdue</SelectItem>
+                  <SelectItem value="none">{t("Select status")}</SelectItem>
+                  <SelectItem value="Open">{t("Open")}</SelectItem>
+                  <SelectItem value="In Progress">{t("In Progress")}</SelectItem>
+                  <SelectItem value="Closed">{t("Closed")}</SelectItem>
+                  <SelectItem value="Overdue">{t("Overdue")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             {/* Target Closure Date */}
             <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">Target Closure Date</Label>
+              <Label className="text-[#1e3a5f] font-medium">{t("Target Closure Date")}</Label>
               <DatePicker
                 value={formData.targetClosureDate}
                 onChange={(date) => handleInputChange("targetClosureDate", date ? date.toISOString().split('T')[0] : "")}
-                placeholder="Select date"
+                placeholder={t("Select date")}
               />
             </div>
           </div>
@@ -470,7 +472,7 @@ export default function AddFindingPage() {
               onClick={() => router.push(`/internal-audit/fieldwork/${engagementId}`)}
               className="border-[#1e3a5f] text-[#1e3a5f] hover:bg-gray-50"
             >
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button
               onClick={handleSubmit}
@@ -480,10 +482,10 @@ export default function AddFindingPage() {
               {saving ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Saving...
+                  {t("Saving...")}
                 </>
               ) : (
-                "Save"
+                t("Save")
               )}
             </Button>
           </div>

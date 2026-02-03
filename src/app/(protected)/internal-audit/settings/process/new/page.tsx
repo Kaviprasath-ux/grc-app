@@ -24,6 +24,7 @@ import {
 import { ArrowLeft, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DatePicker } from "@/components/ui/date-picker";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Department {
   id: string;
@@ -68,6 +69,7 @@ const RECURRENCE_OPTIONS = ["Daily", "Weekly", "Monthly", "Quarterly", "Annually
 export default function NewProcessPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [departments, setDepartments] = useState<Department[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [processFrequencies, setProcessFrequencies] = useState<ProcessFrequency[]>([]);
@@ -195,7 +197,7 @@ export default function NewProcessPage() {
 
   const handleSave = async () => {
     if (!formData.name.trim()) {
-      toast({ title: "Error", description: "Please enter a process name", variant: "destructive" });
+      toast({ title: t("Error"), description: t("Please enter a process name"), variant: "destructive" });
       return;
     }
 
@@ -220,15 +222,15 @@ export default function NewProcessPage() {
       });
 
       if (response.ok) {
-        toast({ title: "Success", description: "Process created successfully!" });
+        toast({ title: t("Success"), description: t("Process created successfully!") });
         router.push("/internal-audit/settings/process");
       } else {
         const errorData = await response.json();
-        toast({ title: "Error", description: `Failed to save process: ${errorData.error || "Unknown error"}`, variant: "destructive" });
+        toast({ title: t("Error"), description: `${t("Failed to save process")}: ${errorData.error || t("Unknown error")}`, variant: "destructive" });
       }
     } catch (error) {
       console.error("Failed to save:", error);
-      toast({ title: "Error", description: "An error occurred while saving the process", variant: "destructive" });
+      toast({ title: t("Error"), description: t("An error occurred while saving the process"), variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -236,7 +238,7 @@ export default function NewProcessPage() {
 
   const handleAddFrequency = async () => {
     if (!newFrequency.trim()) {
-      toast({ title: "Error", description: "Please enter a frequency name", variant: "destructive" });
+      toast({ title: t("Error"), description: t("Please enter a frequency name"), variant: "destructive" });
       return;
     }
 
@@ -254,14 +256,14 @@ export default function NewProcessPage() {
         setFormData(prev => ({ ...prev, processFrequency: created.name }));
         setShowFrequencyDialog(false);
         setNewFrequency("");
-        toast({ title: "Success", description: "Process frequency added successfully!" });
+        toast({ title: t("Success"), description: t("Process frequency added successfully!") });
       } else {
         const errorData = await response.json();
-        toast({ title: "Error", description: errorData.error || "Failed to add process frequency", variant: "destructive" });
+        toast({ title: t("Error"), description: errorData.error || t("Failed to add process frequency"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Failed to add frequency:", error);
-      toast({ title: "Error", description: "An error occurred", variant: "destructive" });
+      toast({ title: t("Error"), description: t("An error occurred"), variant: "destructive" });
     } finally {
       setDialogSaving(false);
     }
@@ -269,7 +271,7 @@ export default function NewProcessPage() {
 
   const handleAddNature = async () => {
     if (!newNature.trim()) {
-      toast({ title: "Error", description: "Please enter a nature of implementation", variant: "destructive" });
+      toast({ title: t("Error"), description: t("Please enter a nature of implementation"), variant: "destructive" });
       return;
     }
 
@@ -287,14 +289,14 @@ export default function NewProcessPage() {
         setFormData(prev => ({ ...prev, natureOfImplementation: created.name }));
         setShowNatureDialog(false);
         setNewNature("");
-        toast({ title: "Success", description: "Nature of implementation added successfully!" });
+        toast({ title: t("Success"), description: t("Nature of implementation added successfully!") });
       } else {
         const errorData = await response.json();
-        toast({ title: "Error", description: errorData.error || "Failed to add nature of implementation", variant: "destructive" });
+        toast({ title: t("Error"), description: errorData.error || t("Failed to add nature of implementation"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Failed to add nature:", error);
-      toast({ title: "Error", description: "An error occurred", variant: "destructive" });
+      toast({ title: t("Error"), description: t("An error occurred"), variant: "destructive" });
     } finally {
       setDialogSaving(false);
     }
@@ -302,7 +304,7 @@ export default function NewProcessPage() {
 
   const handleAddLocation = async () => {
     if (!newLocation.trim()) {
-      toast({ title: "Error", description: "Please enter a location name", variant: "destructive" });
+      toast({ title: t("Error"), description: t("Please enter a location name"), variant: "destructive" });
       return;
     }
 
@@ -320,14 +322,14 @@ export default function NewProcessPage() {
         setFormData(prev => ({ ...prev, location: created.name }));
         setShowLocationDialog(false);
         setNewLocation("");
-        toast({ title: "Success", description: "Location added successfully!" });
+        toast({ title: t("Success"), description: t("Location added successfully!") });
       } else {
         const errorData = await response.json();
-        toast({ title: "Error", description: errorData.error || "Failed to add location", variant: "destructive" });
+        toast({ title: t("Error"), description: errorData.error || t("Failed to add location"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Failed to add location:", error);
-      toast({ title: "Error", description: "An error occurred", variant: "destructive" });
+      toast({ title: t("Error"), description: t("An error occurred"), variant: "destructive" });
     } finally {
       setDialogSaving(false);
     }
@@ -335,9 +337,9 @@ export default function NewProcessPage() {
 
   const getStepTitle = () => {
     switch (currentStep) {
-      case 1: return "Basic Information";
-      case 2: return "Add Documents";
-      case 3: return "RACI Assignment";
+      case 1: return t("Basic Information");
+      case 2: return t("Add Documents");
+      case 3: return t("RACI Assignment");
       default: return "";
     }
   };
@@ -362,8 +364,8 @@ export default function NewProcessPage() {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold">New Process</h1>
-          <p className="text-gray-600">Create a new audit process</p>
+          <h1 className="text-2xl font-bold">{t("New Process")}</h1>
+          <p className="text-gray-600">{t("Create a new audit process")}</p>
         </div>
       </div>
 
@@ -396,28 +398,28 @@ export default function NewProcessPage() {
             <div className="space-y-6 max-w-4xl mx-auto">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Process ID</Label>
+                  <Label>{t("Process ID")}</Label>
                   <Input value={nextProcessId} disabled className="mt-2 bg-muted" />
                 </div>
                 <div>
-                  <Label htmlFor="name">Process Name *</Label>
+                  <Label htmlFor="name">{t("Process Name")} *</Label>
                   <Input
                     id="name"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Enter Process Name"
+                    placeholder={t("Enter Process Name")}
                     className="mt-2"
                   />
                 </div>
               </div>
 
               <div>
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description">{t("Description")}</Label>
                 <Textarea
                   id="description"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Enter Description"
+                  placeholder={t("Enter Description")}
                   className="mt-2"
                   rows={3}
                 />
@@ -425,13 +427,13 @@ export default function NewProcessPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Department</Label>
+                  <Label>{t("Department")}</Label>
                   <Select
                     value={formData.departmentId}
                     onValueChange={(value) => setFormData({ ...formData, departmentId: value })}
                   >
                     <SelectTrigger className="mt-2">
-                      <SelectValue placeholder="Select Department" />
+                      <SelectValue placeholder={t("Select Department")} />
                     </SelectTrigger>
                     <SelectContent>
                       {departments.map((dept) => (
@@ -443,13 +445,13 @@ export default function NewProcessPage() {
                   </Select>
                 </div>
                 <div>
-                  <Label>Process Owner</Label>
+                  <Label>{t("Process Owner")}</Label>
                   <Select
                     value={formData.ownerId}
                     onValueChange={(value) => setFormData({ ...formData, ownerId: value })}
                   >
                     <SelectTrigger className="mt-2">
-                      <SelectValue placeholder="Select Owner" />
+                      <SelectValue placeholder={t("Select Owner")} />
                     </SelectTrigger>
                     <SelectContent>
                       {users.map((user) => (
@@ -464,7 +466,7 @@ export default function NewProcessPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Process Frequency</Label>
+                  <Label>{t("Process Frequency")}</Label>
                   <div className="flex gap-2 mt-2">
                     <Select
                       value={formData.processFrequency}
@@ -486,14 +488,14 @@ export default function NewProcessPage() {
                       variant="outline"
                       size="icon"
                       onClick={() => setShowFrequencyDialog(true)}
-                      title="Add Process Frequency"
+                      title={t("Add Process Frequency")}
                     >
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
                 <div>
-                  <Label>Nature of Implementation</Label>
+                  <Label>{t("Nature of Implementation")}</Label>
                   <div className="flex gap-2 mt-2">
                     <Select
                       value={formData.natureOfImplementation}
@@ -515,7 +517,7 @@ export default function NewProcessPage() {
                       variant="outline"
                       size="icon"
                       onClick={() => setShowNatureDialog(true)}
-                      title="Add Nature of Implementation"
+                      title={t("Add Nature of Implementation")}
                     >
                       <Plus className="h-4 w-4" />
                     </Button>
@@ -524,7 +526,7 @@ export default function NewProcessPage() {
               </div>
 
               <div>
-                <Label>Location</Label>
+                <Label>{t("Location")}</Label>
                 <div className="flex gap-2 mt-2">
                   <Select
                     value={formData.location}
@@ -546,7 +548,7 @@ export default function NewProcessPage() {
                     variant="outline"
                     size="icon"
                     onClick={() => setShowLocationDialog(true)}
-                    title="Add Location"
+                    title={t("Add Location")}
                   >
                     <Plus className="h-4 w-4" />
                   </Button>
@@ -564,18 +566,18 @@ export default function NewProcessPage() {
                       }
                     />
                     <Label htmlFor="assetDependency" className="cursor-pointer">
-                      Asset Dependency
+                      {t("Asset Dependency")}
                     </Label>
                   </div>
                   {formData.assetDependency && (
                     <div className="ml-6">
-                      <Label>Select Asset</Label>
+                      <Label>{t("Select Asset")}</Label>
                       <Select
                         value={formData.assetId}
                         onValueChange={(value) => setFormData({ ...formData, assetId: value })}
                       >
                         <SelectTrigger className="mt-1">
-                          <SelectValue placeholder="Select Asset" />
+                          <SelectValue placeholder={t("Select Asset")} />
                         </SelectTrigger>
                         <SelectContent>
                           {assets.map((asset) => (
@@ -598,18 +600,18 @@ export default function NewProcessPage() {
                       }
                     />
                     <Label htmlFor="externalDependency" className="cursor-pointer">
-                      External Dependency
+                      {t("External Dependency")}
                     </Label>
                   </div>
                   {formData.externalDependency && (
                     <div className="ml-6">
-                      <Label>Stakeholder</Label>
+                      <Label>{t("Stakeholder")}</Label>
                       <Select
                         value={formData.externalParty}
                         onValueChange={(value) => setFormData({ ...formData, externalParty: value })}
                       >
                         <SelectTrigger className="mt-1">
-                          <SelectValue placeholder="Select Stakeholder" />
+                          <SelectValue placeholder={t("Select Stakeholder")} />
                         </SelectTrigger>
                         <SelectContent>
                           {stakeholders.map((stakeholder) => (
@@ -634,7 +636,7 @@ export default function NewProcessPage() {
                     }
                   />
                   <Label htmlFor="kpiMeasurementRequired" className="cursor-pointer">
-                    KPI Measurement Required
+                    {t("KPI Measurement Required")}
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -646,7 +648,7 @@ export default function NewProcessPage() {
                     }
                   />
                   <Label htmlFor="piiCapture" className="cursor-pointer">
-                    PII Capture
+                    {t("PII Capture")}
                   </Label>
                 </div>
               </div>
@@ -655,13 +657,13 @@ export default function NewProcessPage() {
               {(formData.kpiMeasurementRequired || formData.piiCapture) && (
                 <div className="grid grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg border">
                   <div>
-                    <Label>Recurrence</Label>
+                    <Label>{t("Recurrence")}</Label>
                     <Select
                       value={formData.recurrence}
                       onValueChange={(value) => setFormData({ ...formData, recurrence: value })}
                     >
                       <SelectTrigger className="mt-2">
-                        <SelectValue placeholder="Select Recurrence" />
+                        <SelectValue placeholder={t("Select Recurrence")} />
                       </SelectTrigger>
                       <SelectContent>
                         {RECURRENCE_OPTIONS.map((option) => (
@@ -673,11 +675,11 @@ export default function NewProcessPage() {
                     </Select>
                   </div>
                   <div>
-                    <Label htmlFor="reviewDate">Review Date</Label>
+                    <Label htmlFor="reviewDate">{t("Review Date")}</Label>
                     <DatePicker
                       value={formData.reviewDate}
                       onChange={(date) => setFormData({ ...formData, reviewDate: date ? date.toISOString().split('T')[0] : "" })}
-                      placeholder="Select date"
+                      placeholder={t("Select date")}
                       className="mt-2"
                     />
                   </div>
@@ -686,13 +688,13 @@ export default function NewProcessPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Operational Complexity</Label>
+                  <Label>{t("Operational Complexity")}</Label>
                   <Select
                     value={formData.operationalComplexity}
                     onValueChange={(value) => setFormData({ ...formData, operationalComplexity: value })}
                   >
                     <SelectTrigger className="mt-2">
-                      <SelectValue placeholder="Select Complexity" />
+                      <SelectValue placeholder={t("Select Complexity")} />
                     </SelectTrigger>
                     <SelectContent>
                       {OPERATIONAL_COMPLEXITIES.map((complexity) => (
@@ -704,11 +706,11 @@ export default function NewProcessPage() {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="lastAuditDate">Last Audit Date</Label>
+                  <Label htmlFor="lastAuditDate">{t("Last Audit Date")}</Label>
                   <DatePicker
                     value={formData.lastAuditDate}
                     onChange={(date) => setFormData({ ...formData, lastAuditDate: date ? date.toISOString().split('T')[0] : "" })}
-                    placeholder="Select date"
+                    placeholder={t("Select date")}
                     className="mt-2"
                   />
                 </div>
@@ -749,10 +751,10 @@ export default function NewProcessPage() {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-700">
-                      Drag and drop files here, or click to browse
+                      {t("Drag and drop files here, or click to browse")}
                     </p>
                     <p className="text-xs text-gray-500 mt-1">
-                      Support for PDF, DOC, DOCX, XLS, XLSX (Max 10MB)
+                      {t("Support for PDF, DOC, DOCX, XLS, XLSX (Max 10MB)")}
                     </p>
                   </div>
                   <Input
@@ -772,7 +774,7 @@ export default function NewProcessPage() {
 
               {uploadedFiles.length > 0 && (
                 <div className="mt-4 space-y-2">
-                  <p className="text-sm font-medium text-gray-700">Uploaded Files ({uploadedFiles.length}):</p>
+                  <p className="text-sm font-medium text-gray-700">{t("Uploaded Files")} ({uploadedFiles.length}):</p>
                   {uploadedFiles.map((file, index) => (
                     <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
                       <span className="text-sm text-gray-600 truncate">{file.name}</span>
@@ -784,7 +786,7 @@ export default function NewProcessPage() {
                           setUploadedFiles(prev => prev.filter((_, i) => i !== index));
                         }}
                       >
-                        Remove
+                        {t("Remove")}
                       </Button>
                     </div>
                   ))}
@@ -792,7 +794,7 @@ export default function NewProcessPage() {
               )}
 
               <div className="text-sm text-gray-500 mt-2">
-                You can upload multiple documents related to this process
+                {t("You can upload multiple documents related to this process")}
               </div>
             </div>
           )}
@@ -809,13 +811,13 @@ export default function NewProcessPage() {
                   <>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label>Responsible</Label>
+                        <Label>{t("Responsible")}</Label>
                         <Select
                           value={formData.responsibleId}
                           onValueChange={(value) => setFormData({ ...formData, responsibleId: value })}
                         >
                           <SelectTrigger className="mt-2">
-                            <SelectValue placeholder="Select Responsible" />
+                            <SelectValue placeholder={t("Select Responsible")} />
                           </SelectTrigger>
                           <SelectContent>
                             {raciUsers.map((user) => (
@@ -827,13 +829,13 @@ export default function NewProcessPage() {
                         </Select>
                       </div>
                       <div>
-                        <Label>Accountable</Label>
+                        <Label>{t("Accountable")}</Label>
                         <Select
                           value={formData.accountableId}
                           onValueChange={(value) => setFormData({ ...formData, accountableId: value })}
                         >
                           <SelectTrigger className="mt-2">
-                            <SelectValue placeholder="Select Accountable" />
+                            <SelectValue placeholder={t("Select Accountable")} />
                           </SelectTrigger>
                           <SelectContent>
                             {raciUsers.map((user) => (
@@ -848,13 +850,13 @@ export default function NewProcessPage() {
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label>Consulted</Label>
+                        <Label>{t("Consulted")}</Label>
                         <Select
                           value={formData.consultedId}
                           onValueChange={(value) => setFormData({ ...formData, consultedId: value })}
                         >
                           <SelectTrigger className="mt-2">
-                            <SelectValue placeholder="Select Consulted" />
+                            <SelectValue placeholder={t("Select Consulted")} />
                           </SelectTrigger>
                           <SelectContent>
                             {raciUsers.map((user) => (
@@ -866,13 +868,13 @@ export default function NewProcessPage() {
                         </Select>
                       </div>
                       <div>
-                        <Label>Informed</Label>
+                        <Label>{t("Informed")}</Label>
                         <Select
                           value={formData.informedId}
                           onValueChange={(value) => setFormData({ ...formData, informedId: value })}
                         >
                           <SelectTrigger className="mt-2">
-                            <SelectValue placeholder="Select Informed" />
+                            <SelectValue placeholder={t("Select Informed")} />
                           </SelectTrigger>
                           <SelectContent>
                             {raciUsers.map((user) => (
@@ -893,22 +895,22 @@ export default function NewProcessPage() {
           {/* Navigation Buttons */}
           <div className="flex justify-between mt-8 max-w-4xl mx-auto">
             <Button variant="outline" onClick={() => router.push("/internal-audit/settings/process")}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <div className="flex gap-2">
               {currentStep > 1 && (
                 <Button variant="outline" onClick={handlePrevious}>
-                  Previous
+                  {t("Previous")}
                 </Button>
               )}
               {currentStep < TOTAL_STEPS && (
                 <Button onClick={handleNext} disabled={currentStep === 1 && !formData.name.trim()}>
-                  Next
+                  {t("Next")}
                 </Button>
               )}
               {currentStep === TOTAL_STEPS && (
                 <Button onClick={handleSave} disabled={saving || !formData.name.trim()}>
-                  {saving ? "Saving..." : "Save"}
+                  {saving ? t("Saving...") : t("Save")}
                 </Button>
               )}
             </div>
@@ -920,26 +922,26 @@ export default function NewProcessPage() {
       <Dialog open={showFrequencyDialog} onOpenChange={setShowFrequencyDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Process Frequency</DialogTitle>
+            <DialogTitle>{t("Add Process Frequency")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
-              <Label htmlFor="frequencyName">Name *</Label>
+              <Label htmlFor="frequencyName">{t("Name")} *</Label>
               <Input
                 id="frequencyName"
                 value={newFrequency}
                 onChange={(e) => setNewFrequency(e.target.value)}
-                placeholder="e.g., Daily, Weekly, Monthly, Quarterly"
+                placeholder={t("e.g., Daily, Weekly, Monthly, Quarterly")}
                 className="mt-2"
               />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowFrequencyDialog(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button onClick={handleAddFrequency} disabled={dialogSaving}>
-              {dialogSaving ? "Adding..." : "Add"}
+              {dialogSaving ? t("Adding...") : t("Add")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -949,26 +951,26 @@ export default function NewProcessPage() {
       <Dialog open={showNatureDialog} onOpenChange={setShowNatureDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Nature of Implementation</DialogTitle>
+            <DialogTitle>{t("Add Nature of Implementation")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
-              <Label htmlFor="nature">Name *</Label>
+              <Label htmlFor="nature">{t("Name")} *</Label>
               <Input
                 id="nature"
                 value={newNature}
                 onChange={(e) => setNewNature(e.target.value)}
-                placeholder="e.g., Manual, Automated, Manual + Automated"
+                placeholder={t("e.g., Manual, Automated, Manual + Automated")}
                 className="mt-2"
               />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowNatureDialog(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button onClick={handleAddNature} disabled={dialogSaving}>
-              {dialogSaving ? "Adding..." : "Add"}
+              {dialogSaving ? t("Adding...") : t("Add")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -978,26 +980,26 @@ export default function NewProcessPage() {
       <Dialog open={showLocationDialog} onOpenChange={setShowLocationDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Location</DialogTitle>
+            <DialogTitle>{t("Add Location")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
-              <Label htmlFor="locationName">Location Name *</Label>
+              <Label htmlFor="locationName">{t("Location Name")} *</Label>
               <Input
                 id="locationName"
                 value={newLocation}
                 onChange={(e) => setNewLocation(e.target.value)}
-                placeholder="e.g., Head Office, Branch A, Remote"
+                placeholder={t("e.g., Head Office, Branch A, Remote")}
                 className="mt-2"
               />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowLocationDialog(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button onClick={handleAddLocation} disabled={dialogSaving}>
-              {dialogSaving ? "Adding..." : "Add"}
+              {dialogSaving ? t("Adding...") : t("Add")}
             </Button>
           </DialogFooter>
         </DialogContent>

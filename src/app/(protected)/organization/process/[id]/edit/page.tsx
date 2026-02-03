@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Department {
   id: string;
@@ -66,16 +67,17 @@ const natureOfImplementations = ["Manual", "Automated", "Manual + Automated"];
 const operationalComplexities = ["Low", "Medium", "High"];
 const locations = ["Head Office", "Branch Office", "Remote", "Data Center"];
 
-const steps = [
-  { step: 1, label: "Info", description: "Basic process information" },
-  { step: 2, label: "Process Flow", description: "Process characteristics" },
-  { step: 3, label: "Process RACI", description: "Roles and responsibilities" },
+const getSteps = (t: (key: string) => string) => [
+  { step: 1, label: t("Info"), description: t("Basic process information") },
+  { step: 2, label: t("Process Flow"), description: t("Process characteristics") },
+  { step: 3, label: t("Process RACI"), description: t("Roles and responsibilities") },
 ];
 
 export default function EditProcessPage() {
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const processId = params.id as string;
 
   const [currentStep, setCurrentStep] = useState(1);
@@ -158,11 +160,11 @@ export default function EditProcessPage() {
         setAttachments(process.attachments || []);
       } else {
         console.error("Failed to fetch process:", await processRes.text());
-        toast({ title: "Error", description: "Failed to load process data", variant: "destructive" });
+        toast({ title: t("Error"), description: t("Failed to load process data"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error fetching data:", error);
-      toast({ title: "Error", description: "Failed to load data", variant: "destructive" });
+      toast({ title: t("Error"), description: t("Failed to load data"), variant: "destructive" });
     }
     setLoading(false);
   }, [processId, toast]);
@@ -224,14 +226,14 @@ export default function EditProcessPage() {
       if (res.ok) {
         const attachment = await res.json();
         setAttachments((prev) => [attachment, ...prev]);
-        toast({ title: "Success", description: "File uploaded successfully" });
+        toast({ title: t("Success"), description: t("File uploaded successfully") });
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to upload file", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to upload file"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error uploading file:", error);
-      toast({ title: "Error", description: "Failed to upload file", variant: "destructive" });
+      toast({ title: t("Error"), description: t("Failed to upload file"), variant: "destructive" });
     }
     setUploadingFile(false);
   };
@@ -245,21 +247,21 @@ export default function EditProcessPage() {
 
       if (res.ok) {
         setAttachments((prev) => prev.filter((a) => a.id !== attachmentId));
-        toast({ title: "Success", description: "Attachment deleted successfully" });
+        toast({ title: t("Success"), description: t("Attachment deleted successfully") });
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to delete attachment", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to delete attachment"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error deleting attachment:", error);
-      toast({ title: "Error", description: "Failed to delete attachment", variant: "destructive" });
+      toast({ title: t("Error"), description: t("Failed to delete attachment"), variant: "destructive" });
     }
     setDeletingAttachmentId(null);
   };
 
   const handleSave = async () => {
     if (!formData.name.trim()) {
-      toast({ title: "Error", description: "Process Name is required", variant: "destructive" });
+      toast({ title: t("Error"), description: t("Process Name is required"), variant: "destructive" });
       return;
     }
 
@@ -292,23 +294,25 @@ export default function EditProcessPage() {
       });
 
       if (res.ok) {
-        toast({ title: "Success", description: "Process updated successfully" });
+        toast({ title: t("Success"), description: t("Process updated successfully") });
         router.push("/organization/process");
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to update process", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to update process"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error updating process:", error);
-      toast({ title: "Error", description: "Failed to update process", variant: "destructive" });
+      toast({ title: t("Error"), description: t("Failed to update process"), variant: "destructive" });
     }
     setSaving(false);
   };
 
+  const steps = getSteps(t);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{t("Loading...")}</p>
       </div>
     );
   }
@@ -322,11 +326,11 @@ export default function EditProcessPage() {
           size="sm"
           onClick={() => router.back()}
         >
-          <ChevronLeft className="h-4 w-4 mr-1" />
-          Back
+          <ChevronLeft className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+          {t("Back")}
         </Button>
         <div>
-          <h1 className="text-2xl font-bold">Edit Process</h1>
+          <h1 className="text-2xl font-bold">{t("Edit Process")}</h1>
           <p className="text-muted-foreground text-sm">{formData.processCode} - {formData.name}</p>
         </div>
       </div>
@@ -367,7 +371,7 @@ export default function EditProcessPage() {
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="processCode">Process ID</Label>
+                <Label htmlFor="processCode">{t("Process ID")}</Label>
                 <Input
                   id="processCode"
                   value={formData.processCode}
@@ -376,36 +380,36 @@ export default function EditProcessPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="name">Process Name *</Label>
+                <Label htmlFor="name">{t("Process Name")} *</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Enter process name"
+                  placeholder={t("Enter process name")}
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">{t("Description")}</Label>
               <textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Enter description"
+                placeholder={t("Enter description")}
                 className="w-full min-h-[80px] px-3 py-2 text-sm border rounded-md bg-white"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Department</Label>
+                <Label>{t("Department")}</Label>
                 <Select
                   value={formData.departmentId}
                   onValueChange={(value) => setFormData({ ...formData, departmentId: value })}
                 >
                   <SelectTrigger className="bg-white">
-                    <SelectValue placeholder="Select Department" />
+                    <SelectValue placeholder={t("Select Department")} />
                   </SelectTrigger>
                   <SelectContent>
                     {departments.map((dept) => (
@@ -417,13 +421,13 @@ export default function EditProcessPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Process Owner</Label>
+                <Label>{t("Process Owner")}</Label>
                 <Select
                   value={formData.ownerId}
                   onValueChange={(value) => setFormData({ ...formData, ownerId: value })}
                 >
                   <SelectTrigger className="bg-white">
-                    <SelectValue placeholder="Select Owner" />
+                    <SelectValue placeholder={t("Select Owner")} />
                   </SelectTrigger>
                   <SelectContent>
                     {users.map((user) => (
@@ -438,36 +442,36 @@ export default function EditProcessPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Process Frequency</Label>
+                <Label>{t("Process Frequency")}</Label>
                 <Select
                   value={formData.frequency}
                   onValueChange={(value) => setFormData({ ...formData, frequency: value })}
                 >
                   <SelectTrigger className="bg-white">
-                    <SelectValue placeholder="Select Frequency" />
+                    <SelectValue placeholder={t("Select Frequency")} />
                   </SelectTrigger>
                   <SelectContent>
                     {processFrequencies.map((freq) => (
                       <SelectItem key={freq} value={freq}>
-                        {freq}
+                        {t(freq)}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Nature of Implementation</Label>
+                <Label>{t("Nature of Implementation")}</Label>
                 <Select
                   value={formData.natureOfImplementation}
                   onValueChange={(value) => setFormData({ ...formData, natureOfImplementation: value })}
                 >
                   <SelectTrigger className="bg-white">
-                    <SelectValue placeholder="Select Nature" />
+                    <SelectValue placeholder={t("Select Nature")} />
                   </SelectTrigger>
                   <SelectContent>
                     {natureOfImplementations.map((nature) => (
                       <SelectItem key={nature} value={nature}>
-                        {nature}
+                        {t(nature)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -476,18 +480,18 @@ export default function EditProcessPage() {
             </div>
 
             <div className="space-y-2">
-              <Label>Process Type</Label>
+              <Label>{t("Process Type")}</Label>
               <Select
                 value={formData.processType}
                 onValueChange={(value) => setFormData({ ...formData, processType: value })}
               >
                 <SelectTrigger className="bg-white">
-                  <SelectValue placeholder="Select Type" />
+                  <SelectValue placeholder={t("Select Type")} />
                 </SelectTrigger>
                 <SelectContent>
                   {processTypes.map((type) => (
                     <SelectItem key={type} value={type}>
-                      {type}
+                      {t(type)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -501,36 +505,36 @@ export default function EditProcessPage() {
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Location</Label>
+                <Label>{t("Location")}</Label>
                 <Select
                   value={formData.location}
                   onValueChange={(value) => setFormData({ ...formData, location: value })}
                 >
                   <SelectTrigger className="bg-white">
-                    <SelectValue placeholder="Select Location" />
+                    <SelectValue placeholder={t("Select Location")} />
                   </SelectTrigger>
                   <SelectContent>
                     {locations.map((loc) => (
                       <SelectItem key={loc} value={loc}>
-                        {loc}
+                        {t(loc)}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Operational Complexity</Label>
+                <Label>{t("Operational Complexity")}</Label>
                 <Select
                   value={formData.operationalComplexity}
                   onValueChange={(value) => setFormData({ ...formData, operationalComplexity: value })}
                 >
                   <SelectTrigger className="bg-white">
-                    <SelectValue placeholder="Select Complexity" />
+                    <SelectValue placeholder={t("Select Complexity")} />
                   </SelectTrigger>
                   <SelectContent>
                     {operationalComplexities.map((comp) => (
                       <SelectItem key={comp} value={comp}>
-                        {comp}
+                        {t(comp)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -539,7 +543,7 @@ export default function EditProcessPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="lastAuditDate">Last Audit Date</Label>
+              <Label htmlFor="lastAuditDate">{t("Last Audit Date")}</Label>
               <Input
                 id="lastAuditDate"
                 type="date"
@@ -555,7 +559,7 @@ export default function EditProcessPage() {
                   checked={formData.assetDependency}
                   onCheckedChange={(checked) => setFormData({ ...formData, assetDependency: !!checked })}
                 />
-                <Label htmlFor="assetDependency" className="text-sm font-normal">Asset Dependency</Label>
+                <Label htmlFor="assetDependency" className="text-sm font-normal">{t("Asset Dependency")}</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <Checkbox
@@ -563,7 +567,7 @@ export default function EditProcessPage() {
                   checked={formData.externalDependency}
                   onCheckedChange={(checked) => setFormData({ ...formData, externalDependency: !!checked })}
                 />
-                <Label htmlFor="externalDependency" className="text-sm font-normal">External Dependency</Label>
+                <Label htmlFor="externalDependency" className="text-sm font-normal">{t("External Dependency")}</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <Checkbox
@@ -571,7 +575,7 @@ export default function EditProcessPage() {
                   checked={formData.kpiMeasurementRequired}
                   onCheckedChange={(checked) => setFormData({ ...formData, kpiMeasurementRequired: !!checked })}
                 />
-                <Label htmlFor="kpiMeasurementRequired" className="text-sm font-normal">KPI Measurement Required</Label>
+                <Label htmlFor="kpiMeasurementRequired" className="text-sm font-normal">{t("KPI Measurement Required")}</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <Checkbox
@@ -579,13 +583,13 @@ export default function EditProcessPage() {
                   checked={formData.piiCapture}
                   onCheckedChange={(checked) => setFormData({ ...formData, piiCapture: !!checked })}
                 />
-                <Label htmlFor="piiCapture" className="text-sm font-normal">PII Capture</Label>
+                <Label htmlFor="piiCapture" className="text-sm font-normal">{t("PII Capture")}</Label>
               </div>
             </div>
 
             {/* File Upload Section */}
             <div className="space-y-4 pt-6 border-t">
-              <Label className="text-base font-medium">Process Documents</Label>
+              <Label className="text-base font-medium">{t("Process Documents")}</Label>
 
               {/* File Dropper */}
               <div
@@ -599,23 +603,23 @@ export default function EditProcessPage() {
                 {uploadingFile ? (
                   <div className="space-y-2">
                     <div className="animate-spin h-8 w-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto" />
-                    <p className="text-sm text-muted-foreground">Uploading...</p>
+                    <p className="text-sm text-muted-foreground">{t("Uploading...")}</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
                     <Upload className="h-10 w-10 mx-auto text-gray-400" />
                     <p className="text-sm text-gray-600">
-                      Drag and drop a file here, or{" "}
+                      {t("Drag and drop a file here, or")}{" "}
                       <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
                         className="text-blue-600 hover:underline font-medium"
                       >
-                        browse
+                        {t("browse")}
                       </button>
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Supported formats: PDF, DOCX, XLSX, CSV, PNG, JPG, PPT
+                      {t("Supported formats: PDF, DOCX, XLSX, CSV, PNG, JPG, PPT")}
                     </p>
                     <input
                       ref={fileInputRef}
@@ -631,7 +635,7 @@ export default function EditProcessPage() {
               {/* Uploaded Files List */}
               {attachments.length > 0 && (
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium">Uploaded Files</Label>
+                  <Label className="text-sm font-medium">{t("Uploaded Files")}</Label>
                   <div className="border rounded-lg divide-y">
                     {attachments.map((attachment) => (
                       <div key={attachment.id} className="flex items-center justify-between p-3 hover:bg-gray-50">
@@ -640,7 +644,7 @@ export default function EditProcessPage() {
                           <div>
                             <p className="text-sm font-medium">{attachment.fileName}</p>
                             <p className="text-xs text-muted-foreground">
-                              {formatFileSize(attachment.fileSize)} • Uploaded {new Date(attachment.uploadedAt).toLocaleDateString()}
+                              {formatFileSize(attachment.fileSize)} - {t("Uploaded")} {new Date(attachment.uploadedAt).toLocaleDateString()}
                             </p>
                           </div>
                         </div>
@@ -649,7 +653,7 @@ export default function EditProcessPage() {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
-                            title="View"
+                            title={t("View")}
                             onClick={() => window.open(attachment.filePath, "_blank")}
                           >
                             <Eye className="h-4 w-4 text-gray-600" />
@@ -658,7 +662,7 @@ export default function EditProcessPage() {
                             href={attachment.filePath}
                             download={attachment.fileName}
                             className="inline-flex items-center justify-center h-8 w-8 rounded-md hover:bg-gray-100"
-                            title="Download"
+                            title={t("Download")}
                           >
                             <Download className="h-4 w-4 text-gray-600" />
                           </a>
@@ -666,7 +670,7 @@ export default function EditProcessPage() {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
-                            title="Delete"
+                            title={t("Delete")}
                             disabled={deletingAttachmentId === attachment.id}
                             onClick={() => handleDeleteAttachment(attachment.id)}
                           >
@@ -690,17 +694,17 @@ export default function EditProcessPage() {
         {currentStep === 3 && (
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground mb-4">
-              Define the RACI matrix for this process - who is Responsible, Accountable, Consulted, and Informed.
+              {t("Define the RACI matrix for this process - who is Responsible, Accountable, Consulted, and Informed.")}
             </p>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Responsible</Label>
+                <Label>{t("Responsible")}</Label>
                 <Select
                   value={formData.responsible}
                   onValueChange={(value) => setFormData({ ...formData, responsible: value })}
                 >
                   <SelectTrigger className="bg-white">
-                    <SelectValue placeholder="Select user" />
+                    <SelectValue placeholder={t("Select user")} />
                   </SelectTrigger>
                   <SelectContent>
                     {users.map((user) => (
@@ -710,16 +714,16 @@ export default function EditProcessPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">Person who does the work</p>
+                <p className="text-xs text-muted-foreground">{t("Person who does the work")}</p>
               </div>
               <div className="space-y-2">
-                <Label>Accountable</Label>
+                <Label>{t("Accountable")}</Label>
                 <Select
                   value={formData.accountable}
                   onValueChange={(value) => setFormData({ ...formData, accountable: value })}
                 >
                   <SelectTrigger className="bg-white">
-                    <SelectValue placeholder="Select user" />
+                    <SelectValue placeholder={t("Select user")} />
                   </SelectTrigger>
                   <SelectContent>
                     {users.map((user) => (
@@ -729,18 +733,18 @@ export default function EditProcessPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">Person ultimately answerable</p>
+                <p className="text-xs text-muted-foreground">{t("Person ultimately answerable")}</p>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Consulted</Label>
+                <Label>{t("Consulted")}</Label>
                 <Select
                   value={formData.consulted}
                   onValueChange={(value) => setFormData({ ...formData, consulted: value })}
                 >
                   <SelectTrigger className="bg-white">
-                    <SelectValue placeholder="Select user" />
+                    <SelectValue placeholder={t("Select user")} />
                   </SelectTrigger>
                   <SelectContent>
                     {users.map((user) => (
@@ -750,16 +754,16 @@ export default function EditProcessPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">Person whose input is sought</p>
+                <p className="text-xs text-muted-foreground">{t("Person whose input is sought")}</p>
               </div>
               <div className="space-y-2">
-                <Label>Informed</Label>
+                <Label>{t("Informed")}</Label>
                 <Select
                   value={formData.informed}
                   onValueChange={(value) => setFormData({ ...formData, informed: value })}
                 >
                   <SelectTrigger className="bg-white">
-                    <SelectValue placeholder="Select user" />
+                    <SelectValue placeholder={t("Select user")} />
                   </SelectTrigger>
                   <SelectContent>
                     {users.map((user) => (
@@ -769,7 +773,7 @@ export default function EditProcessPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">Person kept up-to-date on progress</p>
+                <p className="text-xs text-muted-foreground">{t("Person kept up-to-date on progress")}</p>
               </div>
             </div>
           </div>
@@ -780,21 +784,21 @@ export default function EditProcessPage() {
           <div>
             {currentStep > 1 && (
               <Button variant="outline" onClick={() => setCurrentStep(currentStep - 1)}>
-                Previous
+                {t("Previous")}
               </Button>
             )}
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => router.push("/organization/process")}>
-              Cancel
+              {t("Cancel")}
             </Button>
             {currentStep < 3 ? (
               <Button onClick={() => setCurrentStep(currentStep + 1)}>
-                Next
+                {t("Next")}
               </Button>
             ) : (
               <Button onClick={handleSave} disabled={saving}>
-                {saving ? "Saving..." : "Save Changes"}
+                {saving ? t("Saving...") : t("Save Changes")}
               </Button>
             )}
           </div>

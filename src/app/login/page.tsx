@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { Eye, EyeOff } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 export default function LoginPage() {
+  const { t } = useLanguage();
   const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -44,14 +46,14 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
-        setError("Invalid username or password");
+        setError(t("Invalid username or password"));
       } else {
         // Redirect to root, which handles role-based landing page
         router.push("/");
         router.refresh();
       }
     } catch {
-      setError("An error occurred. Please try again.");
+      setError(t("An error occurred. Please try again."));
     } finally {
       setIsLoading(false);
     }
@@ -66,8 +68,8 @@ export default function LoginPage() {
               <span className="text-2xl font-bold text-white">G</span>
             </div>
           </div>
-          <h1 className="text-2xl font-semibold text-foreground">Welcome Back !</h1>
-          <p className="text-sm text-muted-foreground">Log into your account</p>
+          <h1 className="text-2xl font-semibold text-foreground">{t("Welcome Back !")}</h1>
+          <p className="text-sm text-muted-foreground">{t("Log into your account")}</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -78,11 +80,11 @@ export default function LoginPage() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="username">{t("Username")}</Label>
               <Input
                 id="username"
                 type="text"
-                placeholder="Enter your username"
+                placeholder={t("Enter your username")}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
@@ -90,7 +92,7 @@ export default function LoginPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Passcode</Label>
+              <Label htmlFor="password">{t("Passcode")}</Label>
               <div className="relative">
                 <Input
                   id="password"
@@ -123,14 +125,14 @@ export default function LoginPage() {
                   onCheckedChange={(checked) => setRememberMe(checked as boolean)}
                 />
                 <Label htmlFor="remember" className="text-sm font-normal">
-                  Remember me
+                  {t("Remember me")}
                 </Label>
               </div>
               <button
                 type="button"
                 className="text-sm text-primary hover:underline"
               >
-                Forgot passcode?
+                {t("Forgot passcode?")}
               </button>
             </div>
 
@@ -139,12 +141,12 @@ export default function LoginPage() {
               className="w-full"
               disabled={isLoading}
             >
-              {isLoading ? "Logging in..." : "Login"}
+              {isLoading ? t("Logging in...") : t("Login")}
             </Button>
           </form>
 
           <div className="mt-6 text-center text-xs text-muted-foreground">
-            <p>Demo credentials: username: <strong>bts</strong>, password: <strong>1</strong></p>
+            <p>{t("Demo credentials: username:")} <strong>bts</strong>, {t("password:")} <strong>1</strong></p>
           </div>
         </CardContent>
       </Card>

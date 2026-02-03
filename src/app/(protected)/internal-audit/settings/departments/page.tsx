@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -56,6 +57,7 @@ interface User {
 
 export default function DepartmentsPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [items, setItems] = useState<Department[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -199,24 +201,24 @@ export default function DepartmentsPage() {
         <nav className="flex items-center gap-1.5 text-sm">
           <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
-            <span>Internal Audit</span>
+            <span>{t("Internal Audit")}</span>
           </Link>
           <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
           <Link href="/internal-audit/settings" className="text-slate-500 hover:text-primary-600 transition-colors">
-            Settings
+            {t("Settings")}
           </Link>
           <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-          <span className="text-primary-700 font-medium">Department</span>
+          <span className="text-primary-700 font-medium">{t("Department")}</span>
         </nav>
 
-        <h1 className="text-2xl font-bold text-slate-800">Department</h1>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Department")}</h1>
         <div className="flex items-center justify-center h-[60vh]">
           <div className="flex flex-col items-center gap-4">
             <div className="relative">
               <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
               <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
             </div>
-            <p className="text-sm text-slate-500 font-medium">Loading departments...</p>
+            <p className="text-sm text-slate-500 font-medium">{t("Loading departments...")}</p>
           </div>
         </div>
       </div>
@@ -229,25 +231,25 @@ export default function DepartmentsPage() {
       <nav className="flex items-center gap-1.5 text-sm">
         <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
-          <span>Internal Audit</span>
+          <span>{t("Internal Audit")}</span>
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
         <Link href="/internal-audit/settings" className="text-slate-500 hover:text-primary-600 transition-colors">
-          Settings
+          {t("Settings")}
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-        <span className="text-primary-700 font-medium">Department</span>
+        <span className="text-primary-700 font-medium">{t("Department")}</span>
       </nav>
 
       {/* Page Header */}
-      <h1 className="text-2xl font-bold text-slate-800">Department</h1>
+      <h1 className="text-2xl font-bold text-slate-800">{t("Department")}</h1>
 
       {/* Search and Add Button Row */}
       <div className="flex items-center gap-3">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input
-            placeholder="Search departments..."
+            placeholder={t("Search departments...")}
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
@@ -259,7 +261,7 @@ export default function DepartmentsPage() {
         <div className="flex-1" />
         <Button size="sm" onClick={openAddDialog}>
           <Plus className="h-4 w-4 mr-2" />
-          New Department
+          {t("New Department")}
         </Button>
       </div>
 
@@ -268,15 +270,15 @@ export default function DepartmentsPage() {
         <Table>
           <TableHeader>
             <TableRow className="border-b border-slate-100 bg-slate-50/50">
-              <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4">Department Name</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[100px]">Action</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4">{t("Department Name")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[100px]">{t("Action")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {paginatedItems.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={2} className="text-center py-8 text-slate-500">
-                  No departments found
+                  {t("No departments found")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -290,7 +292,7 @@ export default function DepartmentsPage() {
                         size="icon"
                         className="h-8 w-8 text-slate-400 hover:text-slate-600"
                         onClick={() => openEditDialog(item)}
-                        title="Edit"
+                        title={t("Edit")}
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
@@ -299,7 +301,7 @@ export default function DepartmentsPage() {
                         size="icon"
                         className="h-8 w-8 text-slate-400 hover:text-semantic-error"
                         onClick={() => openDeleteDialog(item)}
-                        title="Delete"
+                        title={t("Delete")}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -314,7 +316,7 @@ export default function DepartmentsPage() {
         {/* Pagination */}
         <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
           <span className="text-sm text-slate-500">
-            {totalItems > 0 ? `${startItem} to ${endItem} of ${totalItems}` : "No departments"}
+            {totalItems > 0 ? `${startItem} ${t("to")} ${endItem} ${t("of")} ${totalItems}` : t("No departments")}
           </span>
           <div className="flex items-center gap-1">
             <Button
@@ -336,7 +338,7 @@ export default function DepartmentsPage() {
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <span className="text-sm text-slate-600 px-2">
-              Page {currentPage} of {totalPages || 1}
+              {t("Page")} {currentPage} {t("of")} {totalPages || 1}
             </span>
             <Button
               variant="ghost"
@@ -367,7 +369,7 @@ export default function DepartmentsPage() {
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">
-                {editItem ? "Edit Department" : "Add Department"}
+                {editItem ? t("Edit Department") : t("Add Department")}
               </DialogTitle>
             </DialogHeader>
           </div>
@@ -376,26 +378,26 @@ export default function DepartmentsPage() {
           <div className="px-6 py-6 space-y-5">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label className="text-sm font-medium text-slate-700">Department Name <span className="text-red-500">*</span></Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Department Name")} <span className="text-red-500">*</span></Label>
                 <Input
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Enter department name"
+                  placeholder={t("Enter department name")}
                   className="mt-1.5 w-full bg-white"
                   autoFocus
                 />
               </div>
               <div>
-                <Label className="text-sm font-medium text-slate-700">Department Head</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Department Head")}</Label>
                 <Select
                   value={formData.headId || "none"}
                   onValueChange={(value) => setFormData({ ...formData, headId: value === "none" ? "" : value })}
                 >
                   <SelectTrigger className="mt-1.5 w-full bg-white border-slate-200">
-                    <SelectValue placeholder="Select department head (optional)" />
+                    <SelectValue placeholder={t("Select department head (optional)")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="none">{t("None")}</SelectItem>
                     {users.map((user) => (
                       <SelectItem key={user.id} value={user.id}>
                         {user.fullName}
@@ -406,11 +408,11 @@ export default function DepartmentsPage() {
               </div>
             </div>
             <div>
-              <Label className="text-sm font-medium text-slate-700">Description</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
               <Textarea
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Enter department description (optional)"
+                placeholder={t("Enter department description (optional)")}
                 className="mt-1.5 w-full bg-white"
                 rows={3}
               />
@@ -420,10 +422,10 @@ export default function DepartmentsPage() {
           {/* Fixed Footer */}
           <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button onClick={handleSave} disabled={saving || !formData.name.trim()}>
-              {saving ? "Saving..." : "Save"}
+              {saving ? t("Saving...") : t("Save")}
             </Button>
           </div>
         </DialogContent>
@@ -433,15 +435,15 @@ export default function DepartmentsPage() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent className="sm:max-w-[400px] p-0 gap-0">
           <AlertDialogHeader className="px-6 py-5 border-b border-slate-100">
-            <AlertDialogTitle className="text-lg font-semibold text-slate-800">Confirm Delete</AlertDialogTitle>
+            <AlertDialogTitle className="text-lg font-semibold text-slate-800">{t("Confirm Delete")}</AlertDialogTitle>
             <AlertDialogDescription className="text-sm text-slate-500 mt-1">
-              Are you sure you want to delete &quot;{itemToDelete?.name}&quot;? This action cannot be undone.
+              {t("Are you sure you want to delete")} &quot;{itemToDelete?.name}&quot;? {t("This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex justify-end gap-2 px-6 py-4">
-            <AlertDialogCancel className="mt-0">Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="mt-0">{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
-              Delete
+              {t("Delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

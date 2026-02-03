@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { Unauthorized } from "@/components/ui/unauthorized";
 import Link from "next/link";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Policy {
   id: string;
@@ -85,6 +86,7 @@ export default function PoliciesByFrameworkPage() {
   const router = useRouter();
   const params = useParams();
   const frameworkId = params.id as string;
+  const { t } = useLanguage();
 
   // All policies extracted from framework controls (de-duplicated)
   const [allPolicies, setAllPolicies] = useState<Policy[]>([]);
@@ -254,8 +256,8 @@ export default function PoliciesByFrameworkPage() {
   if (!loading && framework && framework.status !== "Subscribed") {
     return (
       <Unauthorized
-        title="Framework Not Subscribed"
-        description="You do not have access to this framework. Please subscribe to view its contents."
+        title={t("Framework Not Subscribed")}
+        description={t("You do not have access to this framework. Please subscribe to view its contents.")}
       />
     );
   }
@@ -266,25 +268,25 @@ export default function PoliciesByFrameworkPage() {
       <nav className="flex items-center gap-1.5 text-sm">
         <Link href="/roles/customer-administrator/compliance" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
-          <span>Compliance</span>
+          <span>{t("Compliance")}</span>
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
         <Link href="/roles/customer-administrator/compliance/framework" className="text-slate-500 hover:text-primary-600 transition-colors">
-          Integrated Frameworks
+          {t("Integrated Frameworks")}
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-        <span className="text-primary-700 font-medium">Governance</span>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300 ltr:rotate-0 rtl:rotate-180" />
+        <span className="text-primary-700 font-medium">{t("Governance")}</span>
       </nav>
 
       {/* Header */}
-      <h1 className="text-2xl font-bold text-slate-800">Governance</h1>
+      <h1 className="text-2xl font-bold text-slate-800">{t("Governance")}</h1>
 
       {/* Tabs */}
       <Tabs value={activeDocType} onValueChange={handleTabChange}>
         <TabsList>
-          <TabsTrigger value="Policy">Policy</TabsTrigger>
-          <TabsTrigger value="Standard">Standards</TabsTrigger>
-          <TabsTrigger value="Procedure">Procedures</TabsTrigger>
+          <TabsTrigger value="Policy">{t("Policy")}</TabsTrigger>
+          <TabsTrigger value="Standard">{t("Standards")}</TabsTrigger>
+          <TabsTrigger value="Procedure">{t("Procedures")}</TabsTrigger>
         </TabsList>
 
         {/* Tab Content - Same structure for all tabs */}
@@ -293,7 +295,7 @@ export default function PoliciesByFrameworkPage() {
             {/* Search Row */}
             <div className="flex items-center gap-4">
               <Input
-                placeholder={`Search by ${docType.toLowerCase()} name or code...`}
+                placeholder={t("Search by name or code...")}
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value);
@@ -317,12 +319,12 @@ export default function PoliciesByFrameworkPage() {
                 <Table>
                   <TableHeader>
                     <TableRow className="border-b border-slate-100 bg-slate-50/50">
-                      <TableHead className="text-xs font-semibold text-slate-600 py-4 pl-4">Code</TableHead>
-                      <TableHead className="text-xs font-semibold text-slate-600 py-4">Name</TableHead>
-                      <TableHead className="text-xs font-semibold text-slate-600 py-4">Status</TableHead>
-                      <TableHead className="text-xs font-semibold text-slate-600 py-4">Assignee</TableHead>
-                      <TableHead className="text-xs font-semibold text-slate-600 py-4">Approver</TableHead>
-                      <TableHead className="text-xs font-semibold text-slate-600 py-4">Department</TableHead>
+                      <TableHead className="text-xs font-semibold text-slate-600 py-4 pl-4">{t("Code")}</TableHead>
+                      <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Name")}</TableHead>
+                      <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Status")}</TableHead>
+                      <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Assignee")}</TableHead>
+                      <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Approver")}</TableHead>
+                      <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Department")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -347,7 +349,7 @@ export default function PoliciesByFrameworkPage() {
                     {paginatedPolicies.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={6} className="text-center py-8 text-slate-500">
-                          No {docType.toLowerCase()}s found for this framework
+                          {t("No items found for this framework")}
                         </TableCell>
                       </TableRow>
                     )}
@@ -357,7 +359,7 @@ export default function PoliciesByFrameworkPage() {
                 {/* Pagination */}
                 <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
                   <span className="text-sm text-slate-500">
-                    {total > 0 ? `${startItem} to ${endItem} of ${total}` : `No ${docType.toLowerCase()}s`}
+                    {total > 0 ? `${startItem} ${t("to")} ${endItem} ${t("of")} ${total}` : t("No items")}
                   </span>
                   <div className="flex items-center gap-1">
                     <Button

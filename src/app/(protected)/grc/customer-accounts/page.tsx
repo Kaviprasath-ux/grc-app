@@ -33,6 +33,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Pencil, Image, Trash2, X, Upload, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface CustomerAccount {
   id: string;
@@ -174,6 +175,7 @@ export default function CustomerAccountsPage() {
   const { data: session } = useSession();
   const router = useRouter();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [customers, setCustomers] = useState<CustomerAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [showOnboardDialog, setShowOnboardDialog] = useState(false);
@@ -314,8 +316,8 @@ export default function CustomerAccountsPage() {
         setLogoUploadStatus("idle");
       } else {
         toast({
-          title: "Invalid file type",
-          description: "Please upload an image file (PNG, JPG, etc.)",
+          title: t("Invalid file type"),
+          description: t("Please upload an image file (PNG, JPG, etc.)"),
           variant: "destructive",
         });
       }
@@ -330,8 +332,8 @@ export default function CustomerAccountsPage() {
         setLogoUploadStatus("idle");
       } else {
         toast({
-          title: "Invalid file type",
-          description: "Please upload an image file (PNG, JPG, etc.)",
+          title: t("Invalid file type"),
+          description: t("Please upload an image file (PNG, JPG, etc.)"),
           variant: "destructive",
         });
       }
@@ -353,24 +355,24 @@ export default function CustomerAccountsPage() {
   const handleOnboardCustomer = async () => {
     if (!formData.customerName || !formData.email || !formData.userName) {
       toast({
-        title: "Validation Error",
-        description: "Please fill in all required fields",
+        title: t("Validation Error"),
+        description: t("Please fill in all required fields"),
         variant: "destructive",
       });
       return;
     }
     if (!formData.newPassword) {
       toast({
-        title: "Validation Error",
-        description: "Password is required",
+        title: t("Validation Error"),
+        description: t("Password is required"),
         variant: "destructive",
       });
       return;
     }
     if (formData.newPassword !== formData.confirmPassword) {
       toast({
-        title: "Validation Error",
-        description: "Passwords do not match",
+        title: t("Validation Error"),
+        description: t("Passwords do not match"),
         variant: "destructive",
       });
       return;
@@ -410,8 +412,8 @@ export default function CustomerAccountsPage() {
         }
 
         toast({
-          title: "Success",
-          description: "Customer onboarded successfully",
+          title: t("Success"),
+          description: t("Customer onboarded successfully"),
         });
         setShowOnboardDialog(false);
         resetForm();
@@ -419,15 +421,15 @@ export default function CustomerAccountsPage() {
       } else {
         const error = await response.json();
         toast({
-          title: "Error",
-          description: error.error || "Failed to onboard customer",
+          title: t("Error"),
+          description: error.error || t("Failed to onboard customer"),
           variant: "destructive",
         });
       }
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to onboard customer",
+        title: t("Error"),
+        description: t("Failed to onboard customer"),
         variant: "destructive",
       });
     } finally {
@@ -440,8 +442,8 @@ export default function CustomerAccountsPage() {
 
     if (!formData.customerName || !formData.email || !formData.userName) {
       toast({
-        title: "Validation Error",
-        description: "Please fill in all required fields",
+        title: t("Validation Error"),
+        description: t("Please fill in all required fields"),
         variant: "destructive",
       });
       return;
@@ -470,8 +472,8 @@ export default function CustomerAccountsPage() {
         }
 
         toast({
-          title: "Success",
-          description: "Customer updated successfully",
+          title: t("Success"),
+          description: t("Customer updated successfully"),
         });
         setShowEditDialog(false);
         resetForm();
@@ -480,15 +482,15 @@ export default function CustomerAccountsPage() {
       } else {
         const error = await response.json();
         toast({
-          title: "Error",
-          description: error.error || "Failed to update customer",
+          title: t("Error"),
+          description: error.error || t("Failed to update customer"),
           variant: "destructive",
         });
       }
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to update customer",
+        title: t("Error"),
+        description: t("Failed to update customer"),
         variant: "destructive",
       });
     } finally {
@@ -501,16 +503,16 @@ export default function CustomerAccountsPage() {
 
     if (!changePasswordData.newPassword) {
       toast({
-        title: "Validation Error",
-        description: "New password is required",
+        title: t("Validation Error"),
+        description: t("New password is required"),
         variant: "destructive",
       });
       return;
     }
     if (changePasswordData.newPassword !== changePasswordData.confirmPassword) {
       toast({
-        title: "Validation Error",
-        description: "Passwords do not match",
+        title: t("Validation Error"),
+        description: t("Passwords do not match"),
         variant: "destructive",
       });
       return;
@@ -531,23 +533,23 @@ export default function CustomerAccountsPage() {
 
       if (response.ok) {
         toast({
-          title: "Success",
-          description: "Password changed successfully",
+          title: t("Success"),
+          description: t("Password changed successfully"),
         });
         setShowChangePasswordDialog(false);
         resetChangePasswordData();
       } else {
         const error = await response.json();
         toast({
-          title: "Error",
-          description: error.error || "Failed to change password",
+          title: t("Error"),
+          description: error.error || t("Failed to change password"),
           variant: "destructive",
         });
       }
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to change password",
+        title: t("Error"),
+        description: t("Failed to change password"),
         variant: "destructive",
       });
     } finally {
@@ -566,8 +568,8 @@ export default function CustomerAccountsPage() {
 
       if (response.ok) {
         toast({
-          title: "Success",
-          description: "Customer deleted successfully",
+          title: t("Success"),
+          description: t("Customer deleted successfully"),
         });
         setShowDeleteDialog(false);
         setSelectedCustomer(null);
@@ -575,15 +577,15 @@ export default function CustomerAccountsPage() {
       } else {
         const error = await response.json();
         toast({
-          title: "Error",
-          description: error.error || "Failed to delete customer",
+          title: t("Error"),
+          description: error.error || t("Failed to delete customer"),
           variant: "destructive",
         });
       }
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to delete customer",
+        title: t("Error"),
+        description: t("Failed to delete customer"),
         variant: "destructive",
       });
     } finally {
@@ -594,8 +596,8 @@ export default function CustomerAccountsPage() {
   const handleAddSubscription = async () => {
     if (!newSubscriptionData.startDate || !newSubscriptionData.expiryDate) {
       toast({
-        title: "Validation Error",
-        description: "Start date and expiry date are required",
+        title: t("Validation Error"),
+        description: t("Start date and expiry date are required"),
         variant: "destructive",
       });
       return;
@@ -618,8 +620,8 @@ export default function CustomerAccountsPage() {
       setPendingSubscriptionPlans([...pendingSubscriptionPlans, newPlan]);
       setSubscriptionPlans([...subscriptionPlans, newPlan]);
       toast({
-        title: "Success",
-        description: "Subscription plan added successfully",
+        title: t("Success"),
+        description: t("Subscription plan added successfully"),
       });
       setShowNewSubscriptionDialog(false);
       resetNewSubscriptionData();
@@ -630,8 +632,8 @@ export default function CustomerAccountsPage() {
     const customerId = selectedCustomer?.id;
     if (!customerId) {
       toast({
-        title: "Error",
-        description: "No customer selected",
+        title: t("Error"),
+        description: t("No customer selected"),
         variant: "destructive",
       });
       return;
@@ -656,23 +658,23 @@ export default function CustomerAccountsPage() {
         // Add the new plan to the list
         setSubscriptionPlans([...subscriptionPlans, data.plan]);
         toast({
-          title: "Success",
-          description: "Subscription plan added successfully",
+          title: t("Success"),
+          description: t("Subscription plan added successfully"),
         });
         setShowNewSubscriptionDialog(false);
         resetNewSubscriptionData();
       } else {
         const error = await response.json();
         toast({
-          title: "Error",
-          description: error.error || "Failed to add subscription plan",
+          title: t("Error"),
+          description: error.error || t("Failed to add subscription plan"),
           variant: "destructive",
         });
       }
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to add subscription plan",
+        title: t("Error"),
+        description: t("Failed to add subscription plan"),
         variant: "destructive",
       });
     } finally {
@@ -695,8 +697,8 @@ export default function CustomerAccountsPage() {
       } else {
         const error = await response.json();
         toast({
-          title: "Warning",
-          description: error.error || "Failed to upload logo",
+          title: t("Warning"),
+          description: error.error || t("Failed to upload logo"),
           variant: "destructive",
         });
         return false;
@@ -713,8 +715,8 @@ export default function CustomerAccountsPage() {
       setPendingSubscriptionPlans(pendingSubscriptionPlans.filter(p => p.id !== planId));
       setSubscriptionPlans(subscriptionPlans.filter(p => p.id !== planId));
       toast({
-        title: "Success",
-        description: "Subscription plan removed",
+        title: t("Success"),
+        description: t("Subscription plan removed"),
       });
       return;
     }
@@ -731,21 +733,21 @@ export default function CustomerAccountsPage() {
       if (response.ok) {
         setSubscriptionPlans(subscriptionPlans.filter(p => p.id !== planId));
         toast({
-          title: "Success",
-          description: "Subscription plan deleted successfully",
+          title: t("Success"),
+          description: t("Subscription plan deleted successfully"),
         });
       } else {
         const error = await response.json();
         toast({
-          title: "Error",
-          description: error.error || "Failed to delete subscription plan",
+          title: t("Error"),
+          description: error.error || t("Failed to delete subscription plan"),
           variant: "destructive",
         });
       }
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to delete subscription plan",
+        title: t("Error"),
+        description: t("Failed to delete subscription plan"),
         variant: "destructive",
       });
     }
@@ -756,8 +758,8 @@ export default function CustomerAccountsPage() {
 
     if (!editSubscriptionData.startDate || !editSubscriptionData.expiryDate) {
       toast({
-        title: "Validation Error",
-        description: "Start date and expiry date are required",
+        title: t("Validation Error"),
+        description: t("Start date and expiry date are required"),
         variant: "destructive",
       });
       return;
@@ -784,8 +786,8 @@ export default function CustomerAccountsPage() {
         p.id === editSubscriptionData.id ? updatedPlan : p
       ));
       toast({
-        title: "Success",
-        description: "Subscription plan updated successfully",
+        title: t("Success"),
+        description: t("Subscription plan updated successfully"),
       });
       setShowEditSubscriptionDialog(false);
       setSelectedPlan(null);
@@ -796,8 +798,8 @@ export default function CustomerAccountsPage() {
     const customerId = selectedCustomer?.id;
     if (!customerId) {
       toast({
-        title: "Error",
-        description: "No customer selected",
+        title: t("Error"),
+        description: t("No customer selected"),
         variant: "destructive",
       });
       return;
@@ -827,23 +829,23 @@ export default function CustomerAccountsPage() {
           p.id === editSubscriptionData.id ? data.plan : p
         ));
         toast({
-          title: "Success",
-          description: "Subscription plan updated successfully",
+          title: t("Success"),
+          description: t("Subscription plan updated successfully"),
         });
         setShowEditSubscriptionDialog(false);
         setSelectedPlan(null);
       } else {
         const error = await response.json();
         toast({
-          title: "Error",
-          description: error.error || "Failed to update subscription plan",
+          title: t("Error"),
+          description: error.error || t("Failed to update subscription plan"),
           variant: "destructive",
         });
       }
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to update subscription plan",
+        title: t("Error"),
+        description: t("Failed to update subscription plan"),
         variant: "destructive",
       });
     } finally {
@@ -934,7 +936,7 @@ export default function CustomerAccountsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-slate-400">Loading...</p>
+        <p className="text-slate-400">{t("Loading...")}</p>
       </div>
     );
   }
@@ -943,10 +945,10 @@ export default function CustomerAccountsPage() {
     <div className="space-y-6">
       {/* Page Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">GRC Customer Account</h1>
+        <h1 className="text-2xl font-bold text-slate-800">{t("GRC Customer Account")}</h1>
         <Button onClick={() => setShowOnboardDialog(true)} size="sm">
           <Plus className="h-4 w-4 mr-2" />
-          Onboard Customer
+          {t("Onboard Customer")}
         </Button>
       </div>
 
@@ -955,22 +957,22 @@ export default function CustomerAccountsPage() {
         <Table>
           <TableHeader>
             <TableRow className="bg-slate-50 hover:bg-slate-50">
-              <TableHead className="font-semibold text-slate-700">Customer Code</TableHead>
-              <TableHead className="font-semibold text-slate-700">Customer Name</TableHead>
-              <TableHead className="font-semibold text-slate-700">Email</TableHead>
-              <TableHead className="font-semibold text-slate-700">Is Local User</TableHead>
-              <TableHead className="font-semibold text-slate-700">Name</TableHead>
-              <TableHead className="font-semibold text-slate-700">Last Login</TableHead>
-              <TableHead className="font-semibold text-slate-700">Blocked</TableHead>
-              <TableHead className="font-semibold text-slate-700">Active</TableHead>
-              <TableHead className="font-semibold text-slate-700">Action</TableHead>
+              <TableHead className="font-semibold text-slate-700">{t("Customer Code")}</TableHead>
+              <TableHead className="font-semibold text-slate-700">{t("Customer Name")}</TableHead>
+              <TableHead className="font-semibold text-slate-700">{t("Email")}</TableHead>
+              <TableHead className="font-semibold text-slate-700">{t("Is Local User")}</TableHead>
+              <TableHead className="font-semibold text-slate-700">{t("Name")}</TableHead>
+              <TableHead className="font-semibold text-slate-700">{t("Last Login")}</TableHead>
+              <TableHead className="font-semibold text-slate-700">{t("Blocked")}</TableHead>
+              <TableHead className="font-semibold text-slate-700">{t("Active")}</TableHead>
+              <TableHead className="font-semibold text-slate-700">{t("Action")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {customers.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={9} className="text-center py-8 text-slate-400">
-                  No customer accounts found
+                  {t("No customer accounts found")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -979,16 +981,16 @@ export default function CustomerAccountsPage() {
                   <TableCell className="font-medium">{customer.customerCode}</TableCell>
                   <TableCell>{customer.customerName}</TableCell>
                   <TableCell>{customer.email}</TableCell>
-                  <TableCell>{customer.isLocalUser ? "Yes" : "No"}</TableCell>
+                  <TableCell>{customer.isLocalUser ? t("Yes") : t("No")}</TableCell>
                   <TableCell>{customer.name}</TableCell>
                   <TableCell>{customer.lastLogin || "-"}</TableCell>
-                  <TableCell>{customer.blocked ? "Yes" : "No"}</TableCell>
+                  <TableCell>{customer.blocked ? t("Yes") : t("No")}</TableCell>
                   <TableCell>
                     <span className={customer.active
                       ? "px-2 py-1 rounded text-xs font-medium bg-success-light text-success-dark"
                       : "px-2 py-1 rounded text-xs font-medium bg-slate-100 text-slate-600"
                     }>
-                      {customer.active ? "Yes" : "No"}
+                      {customer.active ? t("Yes") : t("No")}
                     </span>
                   </TableCell>
                   <TableCell>
@@ -998,7 +1000,7 @@ export default function CustomerAccountsPage() {
                         size="icon"
                         className="h-8 w-8 text-slate-400 hover:text-slate-600"
                         onClick={() => openEditDialog(customer)}
-                        title="Edit"
+                        title={t("Edit")}
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
@@ -1007,7 +1009,7 @@ export default function CustomerAccountsPage() {
                         size="icon"
                         className="h-8 w-8 text-slate-400 hover:text-slate-600"
                         onClick={() => openLogoDialog(customer)}
-                        title="View Logo"
+                        title={t("View Logo")}
                       >
                         <Image className="h-4 w-4" />
                       </Button>
@@ -1016,7 +1018,7 @@ export default function CustomerAccountsPage() {
                         size="icon"
                         className="h-8 w-8 text-slate-400 hover:text-semantic-error"
                         onClick={() => openDeleteDialog(customer)}
-                        title="Delete"
+                        title={t("Delete")}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -1035,7 +1037,7 @@ export default function CustomerAccountsPage() {
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">New Account</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("New Account")}</DialogTitle>
             </DialogHeader>
           </div>
 
@@ -1044,52 +1046,52 @@ export default function CustomerAccountsPage() {
             <div className="space-y-5">
               {/* Account Information Section */}
               <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">Account Information</h3>
+                <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Account Information")}</h3>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-medium text-slate-700">Customer Code</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Customer Code")}</Label>
                     <Input value={nextCustomerCode} disabled className="bg-slate-50" />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-medium text-slate-700">User Role</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("User Role")}</Label>
                     <Input className="bg-slate-50" value="CustomerAdministrator" disabled />
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="customerName" className="text-sm font-medium text-slate-700">Customer Name <span className="text-error">*</span></Label>
+                  <Label htmlFor="customerName" className="text-sm font-medium text-slate-700">{t("Customer Name")} <span className="text-error">*</span></Label>
                   <Input
                     id="customerName"
                     value={formData.customerName}
                     onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
-                    placeholder="Enter customer name"
+                    placeholder={t("Enter customer name")}
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="userName" className="text-sm font-medium text-slate-700">Username <span className="text-error">*</span></Label>
+                  <Label htmlFor="userName" className="text-sm font-medium text-slate-700">{t("Username")} <span className="text-error">*</span></Label>
                   <Input
                     id="userName"
                     value={formData.userName}
                     onChange={(e) => setFormData({ ...formData, userName: e.target.value })}
-                    placeholder="Enter username"
+                    placeholder={t("Enter username")}
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="email" className="text-sm font-medium text-slate-700">Email <span className="text-error">*</span></Label>
+                  <Label htmlFor="email" className="text-sm font-medium text-slate-700">{t("Email")} <span className="text-error">*</span></Label>
                   <Input
                     id="email"
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="Enter email address"
+                    placeholder={t("Enter email address")}
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-slate-700">Upload Logo</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Upload Logo")}</Label>
 
                   {/* Drag and Drop Zone */}
                   <div
@@ -1108,9 +1110,9 @@ export default function CustomerAccountsPage() {
                           <Upload className="h-5 w-5 text-slate-400" />
                         </div>
                         <p className="text-sm text-slate-600">
-                          Drag and Drop or{" "}
+                          {t("Drag and Drop or")}{" "}
                           <label className="text-primary cursor-pointer hover:underline">
-                            Click to upload
+                            {t("Click to upload")}
                             <input
                               type="file"
                               accept="image/*"
@@ -1120,7 +1122,7 @@ export default function CustomerAccountsPage() {
                           </label>
                         </p>
                         <p className="text-xs text-slate-400 mt-1">
-                          Supported formats: PNG, JPG. Max Size: 5MB
+                          {t("Supported formats: PNG, JPG. Max Size: 5MB")}
                         </p>
                       </div>
                     ) : (
@@ -1153,14 +1155,14 @@ export default function CustomerAccountsPage() {
 
               {/* Settings Section */}
               <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">Settings</h3>
+                <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Settings")}</h3>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Language</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Language")}</Label>
                     <Select value={formData.language || ""} onValueChange={(v) => setFormData({ ...formData, language: v })}>
                       <SelectTrigger className="w-full mt-1.5 bg-white">
-                        <SelectValue placeholder="Select" />
+                        <SelectValue placeholder={t("Select")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
                         {LANGUAGES.map((lang) => (
@@ -1170,10 +1172,10 @@ export default function CustomerAccountsPage() {
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Time Zone</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Time Zone")}</Label>
                     <Select value={formData.timeZone || ""} onValueChange={(v) => setFormData({ ...formData, timeZone: v })}>
                       <SelectTrigger className="w-full mt-1.5 bg-white">
-                        <SelectValue placeholder="Select" />
+                        <SelectValue placeholder={t("Select")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
                         {TIME_ZONES.map((tz) => (
@@ -1186,18 +1188,18 @@ export default function CustomerAccountsPage() {
 
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-medium text-slate-700">Is Local User</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Is Local User")}</Label>
                     <div className="flex gap-4 h-9 items-center">
                       <label className="flex items-center gap-2 text-sm">
-                        <input type="radio" name="isLocalUserNew" value="yes" defaultChecked className="accent-primary" /> Yes
+                        <input type="radio" name="isLocalUserNew" value="yes" defaultChecked className="accent-primary" /> {t("Yes")}
                       </label>
                       <label className="flex items-center gap-2 text-sm">
-                        <input type="radio" name="isLocalUserNew" value="no" className="accent-primary" /> No
+                        <input type="radio" name="isLocalUserNew" value="no" className="accent-primary" /> {t("No")}
                       </label>
                     </div>
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-medium text-slate-700">Blocked</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Blocked")}</Label>
                     <div className="flex gap-4 h-9 items-center">
                       <label className="flex items-center gap-2 text-sm">
                         <input
@@ -1206,7 +1208,7 @@ export default function CustomerAccountsPage() {
                           checked={!formData.blocked}
                           onChange={() => setFormData({ ...formData, blocked: false })}
                           className="accent-primary"
-                        /> No
+                        /> {t("No")}
                       </label>
                       <label className="flex items-center gap-2 text-sm">
                         <input
@@ -1215,12 +1217,12 @@ export default function CustomerAccountsPage() {
                           checked={formData.blocked}
                           onChange={() => setFormData({ ...formData, blocked: true })}
                           className="accent-primary"
-                        /> Yes
+                        /> {t("Yes")}
                       </label>
                     </div>
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-medium text-slate-700">Active</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Active")}</Label>
                     <div className="flex gap-4 h-9 items-center">
                       <label className="flex items-center gap-2 text-sm">
                         <input
@@ -1229,7 +1231,7 @@ export default function CustomerAccountsPage() {
                           checked={formData.active}
                           onChange={() => setFormData({ ...formData, active: true })}
                           className="accent-primary"
-                        /> Yes
+                        /> {t("Yes")}
                       </label>
                       <label className="flex items-center gap-2 text-sm">
                         <input
@@ -1238,7 +1240,7 @@ export default function CustomerAccountsPage() {
                           checked={!formData.active}
                           onChange={() => setFormData({ ...formData, active: false })}
                           className="accent-primary"
-                        /> No
+                        /> {t("No")}
                       </label>
                     </div>
                   </div>
@@ -1247,27 +1249,27 @@ export default function CustomerAccountsPage() {
 
               {/* Password Section */}
               <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">Password</h3>
+                <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Password")}</h3>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="newPassword" className="text-sm font-medium text-slate-700">New Password <span className="text-error">*</span></Label>
+                  <Label htmlFor="newPassword" className="text-sm font-medium text-slate-700">{t("New Password")} <span className="text-error">*</span></Label>
                   <Input
                     id="newPassword"
                     type="password"
                     value={formData.newPassword}
                     onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
-                    placeholder="Enter password"
+                    placeholder={t("Enter password")}
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="confirmPassword" className="text-sm font-medium text-slate-700">Confirm Password <span className="text-error">*</span></Label>
+                  <Label htmlFor="confirmPassword" className="text-sm font-medium text-slate-700">{t("Confirm Password")} <span className="text-error">*</span></Label>
                   <Input
                     id="confirmPassword"
                     type="password"
                     value={formData.confirmPassword}
                     onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                    placeholder="Confirm password"
+                    placeholder={t("Confirm password")}
                   />
                 </div>
               </div>
@@ -1281,14 +1283,14 @@ export default function CustomerAccountsPage() {
               size="sm"
               onClick={() => openSubscriptionPlanDialog(undefined, true)}
             >
-              Subscription Plan {pendingSubscriptionPlans.length > 0 && `(${pendingSubscriptionPlans.length})`}
+              {t("Subscription Plan")} {pendingSubscriptionPlans.length > 0 && `(${pendingSubscriptionPlans.length})`}
             </Button>
             <div className="flex gap-2">
               <Button onClick={handleOnboardCustomer} disabled={submitting} size="sm">
-                {submitting ? "Saving..." : "Save"}
+                {submitting ? t("Saving...") : t("Save")}
               </Button>
               <Button variant="outline" size="sm" onClick={() => { setShowOnboardDialog(false); resetForm(); }}>
-                Cancel
+                {t("Cancel")}
               </Button>
             </div>
           </div>
@@ -1301,7 +1303,7 @@ export default function CustomerAccountsPage() {
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Edit Account</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Account")}</DialogTitle>
             </DialogHeader>
           </div>
 
@@ -1310,52 +1312,52 @@ export default function CustomerAccountsPage() {
             <div className="space-y-5">
               {/* Account Information Section */}
               <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">Account Information</h3>
+                <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Account Information")}</h3>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-medium text-slate-700">Customer Code</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Customer Code")}</Label>
                     <Input value={selectedCustomer?.customerCode || ""} disabled className="bg-slate-50" />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-medium text-slate-700">User Role</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("User Role")}</Label>
                     <Input className="bg-slate-50" value="CustomerAdministrator" disabled />
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="editCustomerName" className="text-sm font-medium text-slate-700">Customer Name <span className="text-error">*</span></Label>
+                  <Label htmlFor="editCustomerName" className="text-sm font-medium text-slate-700">{t("Customer Name")} <span className="text-error">*</span></Label>
                   <Input
                     id="editCustomerName"
                     value={formData.customerName}
                     onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
-                    placeholder="Enter customer name"
+                    placeholder={t("Enter customer name")}
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="editUserName" className="text-sm font-medium text-slate-700">Username <span className="text-error">*</span></Label>
+                  <Label htmlFor="editUserName" className="text-sm font-medium text-slate-700">{t("Username")} <span className="text-error">*</span></Label>
                   <Input
                     id="editUserName"
                     value={formData.userName}
                     onChange={(e) => setFormData({ ...formData, userName: e.target.value })}
-                    placeholder="Enter username"
+                    placeholder={t("Enter username")}
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="editEmail" className="text-sm font-medium text-slate-700">Email <span className="text-error">*</span></Label>
+                  <Label htmlFor="editEmail" className="text-sm font-medium text-slate-700">{t("Email")} <span className="text-error">*</span></Label>
                   <Input
                     id="editEmail"
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="Enter email address"
+                    placeholder={t("Enter email address")}
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-slate-700">Upload Logo</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Upload Logo")}</Label>
 
                   {/* Drag and Drop Zone */}
                   <div
@@ -1374,9 +1376,9 @@ export default function CustomerAccountsPage() {
                           <Upload className="h-5 w-5 text-slate-400" />
                         </div>
                         <p className="text-sm text-slate-600">
-                          Drag and Drop or{" "}
+                          {t("Drag and Drop or")}{" "}
                           <label className="text-primary cursor-pointer hover:underline">
-                            Click to upload
+                            {t("Click to upload")}
                             <input
                               type="file"
                               accept="image/*"
@@ -1386,7 +1388,7 @@ export default function CustomerAccountsPage() {
                           </label>
                         </p>
                         <p className="text-xs text-slate-400 mt-1">
-                          Supported formats: PNG, JPG. Max Size: 5MB
+                          {t("Supported formats: PNG, JPG. Max Size: 5MB")}
                         </p>
                       </div>
                     ) : (
@@ -1419,14 +1421,14 @@ export default function CustomerAccountsPage() {
 
               {/* Settings Section */}
               <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">Settings</h3>
+                <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Settings")}</h3>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Language</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Language")}</Label>
                     <Select value={formData.language || ""} onValueChange={(v) => setFormData({ ...formData, language: v })}>
                       <SelectTrigger className="w-full mt-1.5 bg-white">
-                        <SelectValue placeholder="Select" />
+                        <SelectValue placeholder={t("Select")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
                         {LANGUAGES.map((lang) => (
@@ -1436,10 +1438,10 @@ export default function CustomerAccountsPage() {
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Time Zone</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Time Zone")}</Label>
                     <Select value={formData.timeZone || ""} onValueChange={(v) => setFormData({ ...formData, timeZone: v })}>
                       <SelectTrigger className="w-full mt-1.5 bg-white">
-                        <SelectValue placeholder="Select" />
+                        <SelectValue placeholder={t("Select")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
                         {TIME_ZONES.map((tz) => (
@@ -1452,18 +1454,18 @@ export default function CustomerAccountsPage() {
 
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-medium text-slate-700">Is Local User</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Is Local User")}</Label>
                     <div className="flex gap-4 h-9 items-center">
                       <label className="flex items-center gap-2 text-sm">
-                        <input type="radio" name="isLocalUserEdit" value="yes" defaultChecked className="accent-primary" /> Yes
+                        <input type="radio" name="isLocalUserEdit" value="yes" defaultChecked className="accent-primary" /> {t("Yes")}
                       </label>
                       <label className="flex items-center gap-2 text-sm">
-                        <input type="radio" name="isLocalUserEdit" value="no" className="accent-primary" /> No
+                        <input type="radio" name="isLocalUserEdit" value="no" className="accent-primary" /> {t("No")}
                       </label>
                     </div>
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-medium text-slate-700">Blocked</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Blocked")}</Label>
                     <div className="flex gap-4 h-9 items-center">
                       <label className="flex items-center gap-2 text-sm">
                         <input
@@ -1472,7 +1474,7 @@ export default function CustomerAccountsPage() {
                           checked={!formData.blocked}
                           onChange={() => setFormData({ ...formData, blocked: false })}
                           className="accent-primary"
-                        /> No
+                        /> {t("No")}
                       </label>
                       <label className="flex items-center gap-2 text-sm">
                         <input
@@ -1481,12 +1483,12 @@ export default function CustomerAccountsPage() {
                           checked={formData.blocked}
                           onChange={() => setFormData({ ...formData, blocked: true })}
                           className="accent-primary"
-                        /> Yes
+                        /> {t("Yes")}
                       </label>
                     </div>
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-medium text-slate-700">Active</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Active")}</Label>
                     <div className="flex gap-4 h-9 items-center">
                       <label className="flex items-center gap-2 text-sm">
                         <input
@@ -1495,7 +1497,7 @@ export default function CustomerAccountsPage() {
                           checked={formData.active}
                           onChange={() => setFormData({ ...formData, active: true })}
                           className="accent-primary"
-                        /> Yes
+                        /> {t("Yes")}
                       </label>
                       <label className="flex items-center gap-2 text-sm">
                         <input
@@ -1504,7 +1506,7 @@ export default function CustomerAccountsPage() {
                           checked={!formData.active}
                           onChange={() => setFormData({ ...formData, active: false })}
                           className="accent-primary"
-                        /> No
+                        /> {t("No")}
                       </label>
                     </div>
                   </div>
@@ -1516,7 +1518,7 @@ export default function CustomerAccountsPage() {
                     className="text-primary p-0 h-auto text-sm"
                     onClick={openChangePasswordDialog}
                   >
-                    Change password
+                    {t("Change password")}
                   </Button>
                 </div>
               </div>
@@ -1530,14 +1532,14 @@ export default function CustomerAccountsPage() {
               size="sm"
               onClick={() => openSubscriptionPlanDialog(selectedCustomer || undefined)}
             >
-              Subscription Plan
+              {t("Subscription Plan")}
             </Button>
             <div className="flex gap-2">
               <Button onClick={handleEditCustomer} disabled={submitting} size="sm">
-                {submitting ? "Saving..." : "Save"}
+                {submitting ? t("Saving...") : t("Save")}
               </Button>
               <Button variant="outline" size="sm" onClick={() => { setShowEditDialog(false); resetForm(); setSelectedCustomer(null); }}>
-                Cancel
+                {t("Cancel")}
               </Button>
             </div>
           </div>
@@ -1550,30 +1552,30 @@ export default function CustomerAccountsPage() {
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Change Password</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Change Password")}</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Content */}
           <div className="px-6 py-5 space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="newPasswordChange" className="text-sm font-medium text-slate-700">New password</Label>
+              <Label htmlFor="newPasswordChange" className="text-sm font-medium text-slate-700">{t("New password")}</Label>
               <Input
                 id="newPasswordChange"
                 type="password"
                 value={changePasswordData.newPassword}
                 onChange={(e) => setChangePasswordData({ ...changePasswordData, newPassword: e.target.value })}
-                placeholder="Enter new password"
+                placeholder={t("Enter new password")}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="confirmPasswordChange" className="text-sm font-medium text-slate-700">Confirm password</Label>
+              <Label htmlFor="confirmPasswordChange" className="text-sm font-medium text-slate-700">{t("Confirm password")}</Label>
               <Input
                 id="confirmPasswordChange"
                 type="password"
                 value={changePasswordData.confirmPassword}
                 onChange={(e) => setChangePasswordData({ ...changePasswordData, confirmPassword: e.target.value })}
-                placeholder="Confirm new password"
+                placeholder={t("Confirm new password")}
               />
             </div>
           </div>
@@ -1581,10 +1583,10 @@ export default function CustomerAccountsPage() {
           {/* Fixed Footer */}
           <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
             <Button onClick={handleChangePassword} disabled={submitting} size="sm">
-              {submitting ? "Changing..." : "Change"}
+              {submitting ? t("Changing...") : t("Change")}
             </Button>
             <Button variant="outline" size="sm" onClick={() => { setShowChangePasswordDialog(false); resetChangePasswordData(); }}>
-              Cancel
+              {t("Cancel")}
             </Button>
           </div>
         </DialogContent>
@@ -1596,7 +1598,7 @@ export default function CustomerAccountsPage() {
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Subscription Plans</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Subscription Plans")}</DialogTitle>
             </DialogHeader>
           </div>
 
@@ -1605,18 +1607,18 @@ export default function CustomerAccountsPage() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-slate-50 hover:bg-slate-50">
-                  <TableHead className="font-semibold text-slate-700">Frameworks Available</TableHead>
-                  <TableHead className="font-semibold text-slate-700">Accounts Available</TableHead>
-                  <TableHead className="font-semibold text-slate-700">Expiry date</TableHead>
-                  <TableHead className="font-semibold text-slate-700">Status</TableHead>
-                  <TableHead className="font-semibold text-slate-700">Action</TableHead>
+                  <TableHead className="font-semibold text-slate-700">{t("Frameworks Available")}</TableHead>
+                  <TableHead className="font-semibold text-slate-700">{t("Accounts Available")}</TableHead>
+                  <TableHead className="font-semibold text-slate-700">{t("Expiry date")}</TableHead>
+                  <TableHead className="font-semibold text-slate-700">{t("Status")}</TableHead>
+                  <TableHead className="font-semibold text-slate-700">{t("Action")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {subscriptionPlans.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center py-8 text-slate-400">
-                      No subscription plans found
+                      {t("No subscription plans found")}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -1639,7 +1641,7 @@ export default function CustomerAccountsPage() {
                             size="icon"
                             className="h-8 w-8 text-slate-400 hover:text-slate-600"
                             onClick={() => openEditSubscriptionDialog(plan)}
-                            title="Edit"
+                            title={t("Edit")}
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
@@ -1648,7 +1650,7 @@ export default function CustomerAccountsPage() {
                             size="icon"
                             className="h-8 w-8 text-slate-400 hover:text-semantic-error"
                             onClick={() => handleDeleteSubscription(plan.id)}
-                            title="Delete"
+                            title={t("Delete")}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -1667,10 +1669,10 @@ export default function CustomerAccountsPage() {
               onClick={() => setShowNewSubscriptionDialog(true)}
               size="sm"
             >
-              New Subscription Plan
+              {t("New Subscription Plan")}
             </Button>
             <Button variant="outline" size="sm" onClick={() => setShowSubscriptionPlanDialog(false)}>
-              Close
+              {t("Close")}
             </Button>
           </div>
         </DialogContent>
@@ -1682,14 +1684,14 @@ export default function CustomerAccountsPage() {
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">New Subscription</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("New Subscription")}</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Content */}
           <div className="px-6 py-5 space-y-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="startDate" className="text-right text-sm font-medium text-slate-700">Start date</Label>
+              <Label htmlFor="startDate" className="text-right text-sm font-medium text-slate-700">{t("Start date")}</Label>
               <Input
                 id="startDate"
                 type="date"
@@ -1699,7 +1701,7 @@ export default function CustomerAccountsPage() {
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="expiryDate" className="text-right text-sm font-medium text-slate-700">Expiry date</Label>
+              <Label htmlFor="expiryDate" className="text-right text-sm font-medium text-slate-700">{t("Expiry date")}</Label>
               <Input
                 id="expiryDate"
                 type="date"
@@ -1709,7 +1711,7 @@ export default function CustomerAccountsPage() {
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="maxFrameworks" className="text-right text-sm font-medium text-slate-700">Max frameworks</Label>
+              <Label htmlFor="maxFrameworks" className="text-right text-sm font-medium text-slate-700">{t("Max frameworks")}</Label>
               <Input
                 id="maxFrameworks"
                 type="number"
@@ -1720,7 +1722,7 @@ export default function CustomerAccountsPage() {
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="maxAccounts" className="text-right text-sm font-medium text-slate-700">Max accounts</Label>
+              <Label htmlFor="maxAccounts" className="text-right text-sm font-medium text-slate-700">{t("Max accounts")}</Label>
               <Input
                 id="maxAccounts"
                 type="number"
@@ -1731,7 +1733,7 @@ export default function CustomerAccountsPage() {
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right text-sm font-medium text-slate-700">Status</Label>
+              <Label className="text-right text-sm font-medium text-slate-700">{t("Status")}</Label>
               <div className="col-span-3 flex gap-4">
                 <label className="flex items-center gap-2 text-sm">
                   <input
@@ -1740,7 +1742,7 @@ export default function CustomerAccountsPage() {
                     checked={newSubscriptionData.status === "Active"}
                     onChange={() => setNewSubscriptionData({ ...newSubscriptionData, status: "Active" })}
                     className="accent-primary"
-                  /> Active
+                  /> {t("Active")}
                 </label>
                 <label className="flex items-center gap-2 text-sm">
                   <input
@@ -1749,7 +1751,7 @@ export default function CustomerAccountsPage() {
                     checked={newSubscriptionData.status === "Inactive"}
                     onChange={() => setNewSubscriptionData({ ...newSubscriptionData, status: "Inactive" })}
                     className="accent-primary"
-                  /> Inactive
+                  /> {t("Inactive")}
                 </label>
               </div>
             </div>
@@ -1758,10 +1760,10 @@ export default function CustomerAccountsPage() {
           {/* Fixed Footer */}
           <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
             <Button onClick={handleAddSubscription} size="sm">
-              Save
+              {t("Save")}
             </Button>
             <Button variant="outline" size="sm" onClick={() => { setShowNewSubscriptionDialog(false); resetNewSubscriptionData(); }}>
-              Cancel
+              {t("Cancel")}
             </Button>
           </div>
         </DialogContent>
@@ -1773,14 +1775,14 @@ export default function CustomerAccountsPage() {
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Edit Subscription</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Subscription")}</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Content */}
           <div className="px-6 py-5 space-y-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="editStartDate" className="text-right text-sm font-medium text-slate-700">Start date</Label>
+              <Label htmlFor="editStartDate" className="text-right text-sm font-medium text-slate-700">{t("Start date")}</Label>
               <Input
                 id="editStartDate"
                 type="date"
@@ -1790,7 +1792,7 @@ export default function CustomerAccountsPage() {
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="editExpiryDate" className="text-right text-sm font-medium text-slate-700">Expiry date</Label>
+              <Label htmlFor="editExpiryDate" className="text-right text-sm font-medium text-slate-700">{t("Expiry date")}</Label>
               <Input
                 id="editExpiryDate"
                 type="date"
@@ -1800,7 +1802,7 @@ export default function CustomerAccountsPage() {
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="editMaxFrameworks" className="text-right text-sm font-medium text-slate-700">Max frameworks</Label>
+              <Label htmlFor="editMaxFrameworks" className="text-right text-sm font-medium text-slate-700">{t("Max frameworks")}</Label>
               <Input
                 id="editMaxFrameworks"
                 type="number"
@@ -1811,7 +1813,7 @@ export default function CustomerAccountsPage() {
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="editMaxAccounts" className="text-right text-sm font-medium text-slate-700">Max accounts</Label>
+              <Label htmlFor="editMaxAccounts" className="text-right text-sm font-medium text-slate-700">{t("Max accounts")}</Label>
               <Input
                 id="editMaxAccounts"
                 type="number"
@@ -1822,7 +1824,7 @@ export default function CustomerAccountsPage() {
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right text-sm font-medium text-slate-700">Status</Label>
+              <Label className="text-right text-sm font-medium text-slate-700">{t("Status")}</Label>
               <div className="col-span-3 flex gap-4">
                 <label className="flex items-center gap-2 text-sm">
                   <input
@@ -1831,7 +1833,7 @@ export default function CustomerAccountsPage() {
                     checked={editSubscriptionData.status === "Active"}
                     onChange={() => setEditSubscriptionData({ ...editSubscriptionData, status: "Active" })}
                     className="accent-primary"
-                  /> Active
+                  /> {t("Active")}
                 </label>
                 <label className="flex items-center gap-2 text-sm">
                   <input
@@ -1840,7 +1842,7 @@ export default function CustomerAccountsPage() {
                     checked={editSubscriptionData.status === "Inactive"}
                     onChange={() => setEditSubscriptionData({ ...editSubscriptionData, status: "Inactive" })}
                     className="accent-primary"
-                  /> Inactive
+                  /> {t("Inactive")}
                 </label>
               </div>
             </div>
@@ -1849,10 +1851,10 @@ export default function CustomerAccountsPage() {
           {/* Fixed Footer */}
           <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
             <Button onClick={handleEditSubscription} disabled={submitting} size="sm">
-              {submitting ? "Saving..." : "Save"}
+              {submitting ? t("Saving...") : t("Save")}
             </Button>
             <Button variant="outline" size="sm" onClick={() => { setShowEditSubscriptionDialog(false); setSelectedPlan(null); }}>
-              Cancel
+              {t("Cancel")}
             </Button>
           </div>
         </DialogContent>
@@ -1864,13 +1866,13 @@ export default function CustomerAccountsPage() {
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Confirmation</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Confirmation")}</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Content */}
           <div className="px-6 py-5">
-            <p className="text-slate-600">Are you sure you want to delete this?</p>
+            <p className="text-slate-600">{t("Are you sure you want to delete this?")}</p>
           </div>
 
           {/* Fixed Footer */}
@@ -1880,10 +1882,10 @@ export default function CustomerAccountsPage() {
               disabled={submitting}
               size="sm"
             >
-              {submitting ? "Deleting..." : "Yes"}
+              {submitting ? t("Deleting...") : t("Yes")}
             </Button>
             <Button variant="outline" size="sm" onClick={() => { setShowDeleteDialog(false); setSelectedCustomer(null); }}>
-              No
+              {t("No")}
             </Button>
           </div>
         </DialogContent>
@@ -1895,7 +1897,7 @@ export default function CustomerAccountsPage() {
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Customer Logo</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Customer Logo")}</DialogTitle>
             </DialogHeader>
           </div>
 
@@ -1910,7 +1912,7 @@ export default function CustomerAccountsPage() {
             ) : (
               <div className="text-slate-400 text-center py-8">
                 <Image className="h-16 w-16 mx-auto text-slate-300 mb-2" />
-                <p>No logo uploaded</p>
+                <p>{t("No logo uploaded")}</p>
               </div>
             )}
           </div>
@@ -1918,7 +1920,7 @@ export default function CustomerAccountsPage() {
           {/* Fixed Footer */}
           <div className="px-6 py-4 border-t border-slate-100">
             <Button variant="outline" size="sm" onClick={() => { setShowLogoDialog(false); setSelectedCustomer(null); }}>
-              Close
+              {t("Close")}
             </Button>
           </div>
         </DialogContent>

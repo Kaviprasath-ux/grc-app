@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { usePermissions, useHasRole } from "@/hooks/usePermissions";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { PermissionGate } from "@/components/ui/permission-gate";
 import { Unauthorized } from "@/components/ui/unauthorized";
 import {
@@ -112,6 +113,7 @@ export default function GRCAdminControlListPage() {
   const router = useRouter();
   const { data: session } = useSession();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const { canView, canCreate, canDelete, isLoading: permissionsLoading } = usePermissions('compliance.controls');
   const isGRCAdmin = useHasRole("GRCAdministrator");
   const [controls, setControls] = useState<Control[]>([]);
@@ -299,17 +301,17 @@ export default function GRCAdminControlListPage() {
 
       if (response.ok) {
         const result = await response.json();
-        toast({ title: "Success", description: `Successfully imported ${result.imported} control(s)` });
+        toast({ title: t("Success"), description: t("Successfully imported") + ` ${result.imported} ` + t("control(s)") });
         setIsImportDialogOpen(false);
         setImportFile(null);
         fetchControls();
       } else {
         const error = await response.json();
-        toast({ title: "Error", description: `Import failed: ${error.message || "Unknown error"}`, variant: "destructive" });
+        toast({ title: t("Error"), description: t("Import failed") + `: ${error.message || t("Unknown error")}`, variant: "destructive" });
       }
     } catch (error) {
       console.error("Error importing controls:", error);
-      toast({ title: "Error", description: "Failed to import controls", variant: "destructive" });
+      toast({ title: t("Error"), description: t("Failed to import controls"), variant: "destructive" });
     } finally {
       setImporting(false);
       if (importFileInputRef.current) {
@@ -319,7 +321,7 @@ export default function GRCAdminControlListPage() {
   };
 
   const handleDownloadTemplate = () => {
-    const headers = ["Control Code", "Control Name", "Description", "Control Question", "Functional Grouping", "Domain", "Department", "Owner", "Assignee", "Status"];
+    const headers = [t("Control Code"), t("Control Name"), t("Description"), t("Control Question"), t("Functional Grouping"), t("Domain"), t("Department"), t("Owner"), t("Assignee"), t("Status")];
     const csvContent = headers.join(",") + "\n";
     const blob = new Blob([csvContent], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
@@ -341,11 +343,11 @@ export default function GRCAdminControlListPage() {
         setIsDeleteAllDialogOpen(false);
         fetchControls();
       } else {
-        toast({ title: "Error", description: "Failed to delete controls", variant: "destructive" });
+        toast({ title: t("Error"), description: t("Failed to delete controls"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error deleting controls:", error);
-      toast({ title: "Error", description: "Failed to delete controls", variant: "destructive" });
+      toast({ title: t("Error"), description: t("Failed to delete controls"), variant: "destructive" });
     } finally {
       setDeleting(false);
     }
@@ -359,7 +361,7 @@ export default function GRCAdminControlListPage() {
         body: JSON.stringify(newControl),
       });
       if (response.ok) {
-        toast({ title: "Success", description: "Control created successfully" });
+        toast({ title: t("Success"), description: t("Control created successfully") });
         setIsCreateDialogOpen(false);
         setCreateStep(1);
         setNewControl({
@@ -376,16 +378,16 @@ export default function GRCAdminControlListPage() {
       } else {
         const errorData = await response.json();
         toast({
-          title: "Error",
-          description: errorData.error || "Failed to create control",
+          title: t("Error"),
+          description: errorData.error || t("Failed to create control"),
           variant: "destructive"
         });
       }
     } catch (error) {
       console.error("Error creating control:", error);
       toast({
-        title: "Error",
-        description: "Failed to create control",
+        title: t("Error"),
+        description: t("Failed to create control"),
         variant: "destructive"
       });
     }
@@ -411,21 +413,21 @@ export default function GRCAdminControlListPage() {
 
   // Show unauthorized if user doesn't have view permission
   if (!canView) {
-    return <Unauthorized description="You don't have permission to access Controls." />;
+    return <Unauthorized description={t("You don't have permission to access Controls.")} />;
   }
 
   return (
     <div className="space-y-6">
       {/* Page Header */}
       <div>
-        <h1 className="text-2xl font-bold text-slate-800">Controls</h1>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Controls")}</h1>
       </div>
 
       {/* Toolbar */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <Input
-            placeholder="Search by control code or name..."
+            placeholder={t("Search by control code or name...")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
@@ -433,10 +435,10 @@ export default function GRCAdminControlListPage() {
           />
           <Select value={integratedFrameworkFilter} onValueChange={setIntegratedFrameworkFilter}>
             <SelectTrigger className="w-[200px] bg-white">
-              <SelectValue placeholder="Integrated Framework" />
+              <SelectValue placeholder={t("Integrated Framework")} />
             </SelectTrigger>
             <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
-              <SelectItem value="all">All Frameworks</SelectItem>
+              <SelectItem value="all">{t("All Frameworks")}</SelectItem>
               {frameworks.map((f) => (
                 <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
               ))}
@@ -451,27 +453,27 @@ export default function GRCAdminControlListPage() {
               variant="outline"
               className="text-semantic-error hover:text-semantic-error hover:bg-red-50"
             >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Delete All
+              <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+              {t("Delete All")}
             </Button>
           </PermissionGate>
           <PermissionGate resource="compliance.controls" action="create">
             <Button size="sm" onClick={handleImport} variant="outline">
-              <Upload className="h-4 w-4 mr-2" />
-              Import
+              <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+              {t("Import")}
             </Button>
           </PermissionGate>
           {/* GRC Admin always has create permission */}
           {isGRCAdmin ? (
             <Button size="sm" onClick={() => setIsCreateDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              New Control
+              <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+              {t("New Control")}
             </Button>
           ) : (
             <PermissionGate resource="compliance.controls" action="create">
               <Button size="sm" onClick={() => setIsCreateDialogOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                New Control
+                <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                {t("New Control")}
               </Button>
             </PermissionGate>
           )}
@@ -489,7 +491,7 @@ export default function GRCAdminControlListPage() {
                   onClick={() => handleSort("name")}
                 >
                   <div className="flex items-center gap-2">
-                    Control Name
+                    {t("Control Name")}
                     <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
                   </div>
                 </TableHead>
@@ -500,7 +502,7 @@ export default function GRCAdminControlListPage() {
                   onClick={() => handleSort("controlCode")}
                 >
                   <div className="flex items-center gap-2">
-                    Control Code
+                    {t("Control Code")}
                     <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
                   </div>
                 </TableHead>
@@ -511,7 +513,7 @@ export default function GRCAdminControlListPage() {
                   onClick={() => handleSort("functionalGrouping")}
                 >
                   <div className="flex items-center gap-2">
-                    Functional Grouping
+                    {t("Functional Grouping")}
                     <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
                   </div>
                 </TableHead>
@@ -522,13 +524,13 @@ export default function GRCAdminControlListPage() {
                   onClick={() => handleSort("status")}
                 >
                   <div className="flex items-center gap-2">
-                    Status
+                    {t("Status")}
                     <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
                   </div>
                 </TableHead>
               )}
               {visibleColumns.assignee && (
-                <TableHead className="text-xs font-semibold text-slate-600 py-4">Assignee</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Assignee")}</TableHead>
               )}
               {visibleColumns.domain && (
                 <TableHead
@@ -536,7 +538,7 @@ export default function GRCAdminControlListPage() {
                   onClick={() => handleSort("domain")}
                 >
                   <div className="flex items-center gap-2">
-                    Domain Name
+                    {t("Domain Name")}
                     <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
                   </div>
                 </TableHead>
@@ -555,7 +557,7 @@ export default function GRCAdminControlListPage() {
                       onSelect={(e) => e.preventDefault()}
                       className="text-sm"
                     >
-                      Control Name
+                      {t("Control Name")}
                     </DropdownMenuCheckboxItem>
                     <DropdownMenuCheckboxItem
                       checked={visibleColumns.controlCode}
@@ -563,7 +565,7 @@ export default function GRCAdminControlListPage() {
                       onSelect={(e) => e.preventDefault()}
                       className="text-sm"
                     >
-                      Control Code
+                      {t("Control Code")}
                     </DropdownMenuCheckboxItem>
                     <DropdownMenuCheckboxItem
                       checked={visibleColumns.functionalGrouping}
@@ -571,7 +573,7 @@ export default function GRCAdminControlListPage() {
                       onSelect={(e) => e.preventDefault()}
                       className="text-sm"
                     >
-                      Functional Grouping
+                      {t("Functional Grouping")}
                     </DropdownMenuCheckboxItem>
                     <DropdownMenuCheckboxItem
                       checked={visibleColumns.status}
@@ -579,7 +581,7 @@ export default function GRCAdminControlListPage() {
                       onSelect={(e) => e.preventDefault()}
                       className="text-sm"
                     >
-                      Status
+                      {t("Status")}
                     </DropdownMenuCheckboxItem>
                     <DropdownMenuCheckboxItem
                       checked={visibleColumns.assignee}
@@ -587,7 +589,7 @@ export default function GRCAdminControlListPage() {
                       onSelect={(e) => e.preventDefault()}
                       className="text-sm"
                     >
-                      Assignee
+                      {t("Assignee")}
                     </DropdownMenuCheckboxItem>
                     <DropdownMenuCheckboxItem
                       checked={visibleColumns.domain}
@@ -595,7 +597,7 @@ export default function GRCAdminControlListPage() {
                       onSelect={(e) => e.preventDefault()}
                       className="text-sm"
                     >
-                      Domain Name
+                      {t("Domain Name")}
                     </DropdownMenuCheckboxItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -617,7 +619,7 @@ export default function GRCAdminControlListPage() {
             ) : sortedControls.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="h-24 text-center text-slate-500">
-                  No controls found.
+                  {t("No controls found.")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -656,8 +658,8 @@ export default function GRCAdminControlListPage() {
         <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
           <span className="text-sm text-slate-500">
             {total > 0
-              ? `${startIndex + 1} to ${endIndex} of ${total}`
-              : "No controls"}
+              ? `${startIndex + 1} ${t("to")} ${endIndex} ${t("of")} ${total}`
+              : t("No controls")}
           </span>
           <div className="flex items-center gap-1">
             <Button
@@ -706,7 +708,7 @@ export default function GRCAdminControlListPage() {
           {/* Sticky Header */}
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">New Control - Step {createStep} of 3</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("New Control")} - {t("Step")} {createStep} {t("of")} 3</DialogTitle>
             </DialogHeader>
           </div>
 
@@ -737,10 +739,10 @@ export default function GRCAdminControlListPage() {
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label className="text-sm font-medium text-slate-700">Control Domain</Label>
+                      <Label className="text-sm font-medium text-slate-700">{t("Control Domain")}</Label>
                       <Select value={newControl.domainId} onValueChange={(v) => setNewControl({ ...newControl, domainId: v })}>
                         <SelectTrigger className="mt-1.5 bg-white w-full">
-                          <SelectValue placeholder="Select domain" />
+                          <SelectValue placeholder={t("Select domain")} />
                         </SelectTrigger>
                         <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
                           {domains.map((d) => (
@@ -750,10 +752,10 @@ export default function GRCAdminControlListPage() {
                       </Select>
                     </div>
                     <div>
-                      <Label className="text-sm font-medium text-slate-700">Function Grouping</Label>
+                      <Label className="text-sm font-medium text-slate-700">{t("Function Grouping")}</Label>
                       <Select value={newControl.functionalGrouping} onValueChange={(v) => setNewControl({ ...newControl, functionalGrouping: v })}>
                         <SelectTrigger className="mt-1.5 bg-white w-full">
-                          <SelectValue placeholder="Select grouping" />
+                          <SelectValue placeholder={t("Select grouping")} />
                         </SelectTrigger>
                         <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
                           {FUNCTIONAL_GROUPINGS.map((g) => (
@@ -764,29 +766,29 @@ export default function GRCAdminControlListPage() {
                     </div>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Control Name</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Control Name")}</Label>
                     <Input
                       value={newControl.name}
                       onChange={(e) => setNewControl({ ...newControl, name: e.target.value })}
-                      placeholder="Enter control name"
+                      placeholder={t("Enter control name")}
                       className="mt-1.5 bg-white"
                     />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Description</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
                     <Input
                       value={newControl.description}
                       onChange={(e) => setNewControl({ ...newControl, description: e.target.value })}
-                      placeholder="Enter description"
+                      placeholder={t("Enter description")}
                       className="mt-1.5 bg-white"
                     />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Control Question</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Control Question")}</Label>
                     <Input
                       value={newControl.controlQuestion}
                       onChange={(e) => setNewControl({ ...newControl, controlQuestion: e.target.value })}
-                      placeholder="Enter control question"
+                      placeholder={t("Enter control question")}
                       className="mt-1.5 bg-white"
                     />
                   </div>
@@ -798,10 +800,10 @@ export default function GRCAdminControlListPage() {
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label className="text-sm font-medium text-slate-700">Department</Label>
+                      <Label className="text-sm font-medium text-slate-700">{t("Department")}</Label>
                       <Select value={newControl.departmentId} onValueChange={(v) => setNewControl({ ...newControl, departmentId: v, assigneeId: "" })}>
                         <SelectTrigger className="mt-1.5 bg-white w-full">
-                          <SelectValue placeholder="Select department" />
+                          <SelectValue placeholder={t("Select department")} />
                         </SelectTrigger>
                         <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
                           {departments.map((d) => (
@@ -811,10 +813,10 @@ export default function GRCAdminControlListPage() {
                       </Select>
                     </div>
                     <div>
-                      <Label className="text-sm font-medium text-slate-700">Owner</Label>
+                      <Label className="text-sm font-medium text-slate-700">{t("Owner")}</Label>
                       <Select value={newControl.ownerId} onValueChange={(v) => setNewControl({ ...newControl, ownerId: v })}>
                         <SelectTrigger className="mt-1.5 bg-white w-full">
-                          <SelectValue placeholder="Select owner" />
+                          <SelectValue placeholder={t("Select owner")} />
                         </SelectTrigger>
                         <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
                           {users.map((u) => (
@@ -825,10 +827,10 @@ export default function GRCAdminControlListPage() {
                     </div>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Assignee</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Assignee")}</Label>
                     <Select value={newControl.assigneeId} onValueChange={(v) => setNewControl({ ...newControl, assigneeId: v })}>
                       <SelectTrigger className="mt-1.5 bg-white w-full">
-                        <SelectValue placeholder="Select assignee" />
+                        <SelectValue placeholder={t("Select assignee")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
                         {getFilteredUsers().map((u) => (
@@ -843,38 +845,38 @@ export default function GRCAdminControlListPage() {
               {/* Step 3: Review */}
               {createStep === 3 && (
                 <div className="space-y-4">
-                  <h4 className="font-semibold">Review informations</h4>
+                  <h4 className="font-semibold">{t("Review informations")}</h4>
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <span className="text-slate-400">Domain:</span>
+                      <span className="text-slate-400">{t("Domain")}:</span>
                       <p className="font-medium">{domains.find(d => d.id === newControl.domainId)?.name || "-"}</p>
                     </div>
                     <div>
-                      <span className="text-slate-400">Control Name:</span>
+                      <span className="text-slate-400">{t("Control Name")}:</span>
                       <p className="font-medium">{newControl.name || "-"}</p>
                     </div>
                     <div className="col-span-2">
-                      <span className="text-slate-400">Description:</span>
+                      <span className="text-slate-400">{t("Description")}:</span>
                       <p className="font-medium">{newControl.description || "-"}</p>
                     </div>
                     <div className="col-span-2">
-                      <span className="text-slate-400">Control Question:</span>
+                      <span className="text-slate-400">{t("Control Question")}:</span>
                       <p className="font-medium">{newControl.controlQuestion || "-"}</p>
                     </div>
                     <div>
-                      <span className="text-slate-400">Function Grouping:</span>
+                      <span className="text-slate-400">{t("Function Grouping")}:</span>
                       <p className="font-medium">{newControl.functionalGrouping || "-"}</p>
                     </div>
                     <div>
-                      <span className="text-slate-400">Department:</span>
+                      <span className="text-slate-400">{t("Department")}:</span>
                       <p className="font-medium">{departments.find(d => d.id === newControl.departmentId)?.name || "-"}</p>
                     </div>
                     <div>
-                      <span className="text-slate-400">Owner:</span>
+                      <span className="text-slate-400">{t("Owner")}:</span>
                       <p className="font-medium">{users.find(u => u.id === newControl.ownerId)?.fullName || "-"}</p>
                     </div>
                     <div>
-                      <span className="text-slate-400">Assignee:</span>
+                      <span className="text-slate-400">{t("Assignee")}:</span>
                       <p className="font-medium">{users.find(u => u.id === newControl.assigneeId)?.fullName || "-"}</p>
                     </div>
                   </div>
@@ -889,13 +891,13 @@ export default function GRCAdminControlListPage() {
               if (createStep > 1) setCreateStep(createStep - 1);
               else setIsCreateDialogOpen(false);
             }}>
-              {createStep === 1 ? "Cancel" : "Previous"}
+              {createStep === 1 ? t("Cancel") : t("Previous")}
             </Button>
             <Button onClick={() => {
               if (createStep < 3) setCreateStep(createStep + 1);
               else handleCreateControl();
             }}>
-              {createStep === 3 ? "Create" : "Next"}
+              {createStep === 3 ? t("Create") : t("Next")}
             </Button>
           </div>
         </DialogContent>
@@ -915,23 +917,23 @@ export default function GRCAdminControlListPage() {
           {/* Sticky Header */}
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Import Controls</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Import Controls")}</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Scrollable Content */}
           <div className="overflow-y-auto flex-1 px-6 py-5 space-y-4">
             <p className="text-sm text-slate-500">
-              Upload a CSV file to import controls. You can download a template to see the required format.
+              {t("Upload a CSV file to import controls. You can download a template to see the required format.")}
             </p>
 
             <div>
-              <Label className="text-sm font-medium text-slate-700">File *</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("File")} *</Label>
               <div className="flex items-center gap-3 mt-1.5">
                 <Input
                   readOnly
                   value={importFile?.name || ""}
-                  placeholder="Choose a file..."
+                  placeholder={t("Choose a file...")}
                   className="flex-1 bg-white min-w-0"
                 />
                 <Button
@@ -939,7 +941,7 @@ export default function GRCAdminControlListPage() {
                   onClick={() => importFileInputRef.current?.click()}
                   className="flex-shrink-0"
                 >
-                  Browse...
+                  {t("Browse...")}
                 </Button>
                 <input
                   ref={importFileInputRef}
@@ -950,7 +952,7 @@ export default function GRCAdminControlListPage() {
                 />
               </div>
               <p className="text-xs text-slate-500 mt-1.5">
-                Supported formats: CSV, XLSX, XLS
+                {t("Supported formats")}: CSV, XLSX, XLS
               </p>
             </div>
           </div>
@@ -958,22 +960,22 @@ export default function GRCAdminControlListPage() {
           {/* Sticky Footer */}
           <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex-shrink-0">
             <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
-              <Download className="h-4 w-4 mr-2" />
-              Download Template
+              <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+              {t("Download Template")}
             </Button>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={() => {
                 setIsImportDialogOpen(false);
                 setImportFile(null);
               }}>
-                Cancel
+                {t("Cancel")}
               </Button>
               <Button
                 size="sm"
                 onClick={handleImportSubmit}
                 disabled={!importFile || importing}
               >
-                {importing ? "Importing..." : "Import"}
+                {importing ? t("Importing...") : t("Import")}
               </Button>
             </div>
           </div>
@@ -984,19 +986,19 @@ export default function GRCAdminControlListPage() {
       <AlertDialog open={isDeleteAllDialogOpen} onOpenChange={setIsDeleteAllDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete All Controls</AlertDialogTitle>
+            <AlertDialogTitle>{t("Delete All Controls")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete all controls? This action cannot be undone.
+              {t("Are you sure you want to delete all controls? This action cannot be undone.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteAll}
               disabled={deleting}
               className="bg-red-600 hover:bg-red-700"
             >
-              {deleting ? "Deleting..." : "Delete"}
+              {deleting ? t("Deleting...") : t("Delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

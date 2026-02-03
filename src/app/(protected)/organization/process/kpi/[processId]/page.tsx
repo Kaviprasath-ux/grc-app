@@ -24,6 +24,7 @@ import {
 import { DataGrid } from "@/components/shared";
 import { ColumnDef } from "@tanstack/react-table";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   LineChart,
   Line,
@@ -67,6 +68,7 @@ export default function KPIDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const processId = params.processId as string;
 
   const [process, setProcess] = useState<Process | null>(null);
@@ -149,21 +151,21 @@ export default function KPIDetailsPage() {
 
       if (res.ok) {
         toast({
-          title: "Saved",
-          description: "KPI configuration has been saved",
+          title: t("Saved"),
+          description: t("KPI configuration has been saved"),
         });
       } else {
         toast({
-          title: "Error",
-          description: "Failed to save KPI configuration",
+          title: t("Error"),
+          description: t("Failed to save KPI configuration"),
           variant: "destructive",
         });
       }
     } catch (error) {
       console.error("Error saving KPI:", error);
       toast({
-        title: "Error",
-        description: "Failed to save KPI configuration",
+        title: t("Error"),
+        description: t("Failed to save KPI configuration"),
         variant: "destructive",
       });
     }
@@ -179,8 +181,8 @@ export default function KPIDetailsPage() {
       if (res.ok) {
         setKpiRecords(kpiRecords.filter((r) => r.id !== recordId));
         toast({
-          title: "Deleted",
-          description: "KPI record has been deleted",
+          title: t("Deleted"),
+          description: t("KPI record has been deleted"),
         });
       }
     } catch (error) {
@@ -192,7 +194,7 @@ export default function KPIDetailsPage() {
   const recordColumns: ColumnDef<KPIRecord>[] = [
     {
       accessorKey: "reviewDate",
-      header: "Review Date",
+      header: t("Review Date"),
       cell: ({ row }) => {
         const date = new Date(row.getValue("reviewDate"));
         return date.toLocaleDateString("en-GB");
@@ -200,12 +202,12 @@ export default function KPIDetailsPage() {
     },
     {
       accessorKey: "achievedValue",
-      header: "Achieved Value",
+      header: t("Achieved Value"),
       cell: ({ row }) => row.getValue("achievedValue"),
     },
     {
       accessorKey: "status",
-      header: "Status",
+      header: t("Status"),
       cell: ({ row }) => {
         const status = row.getValue("status") as string;
         return (
@@ -218,19 +220,19 @@ export default function KPIDetailsPage() {
                 : "secondary"
             }
           >
-            {status}
+            {t(status)}
           </Badge>
         );
       },
     },
     {
       accessorKey: "document",
-      header: "Document",
+      header: t("Document"),
       cell: ({ row }) => {
         const doc = row.original.document;
         return doc ? (
           <a href={doc} target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline">
-            View
+            {t("View")}
           </a>
         ) : (
           "-"
@@ -239,7 +241,7 @@ export default function KPIDetailsPage() {
     },
     {
       id: "actions",
-      header: "Action",
+      header: t("Action"),
       cell: ({ row }) => (
         <div className="flex gap-1">
           <Button
@@ -269,7 +271,7 @@ export default function KPIDetailsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{t("Loading...")}</p>
       </div>
     );
   }
@@ -286,7 +288,7 @@ export default function KPIDetailsPage() {
         >
           <ChevronLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-2xl font-bold text-slate-800">KPI Details - {process?.name}</h1>
+        <h1 className="text-2xl font-bold text-slate-800">{t("KPI Details")} - {process?.name}</h1>
       </div>
 
       {/* Main Content Card */}
@@ -294,9 +296,9 @@ export default function KPIDetailsPage() {
         <CardContent className="pt-6">
           {/* KPI Header with Year Selector */}
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-slate-800">KPI</h3>
+            <h3 className="text-lg font-semibold text-slate-800">{t("KPI")}</h3>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Year</span>
+              <span className="text-sm text-muted-foreground">{t("Year")}</span>
               <Select value={selectedYear} onValueChange={setSelectedYear}>
                 <SelectTrigger className="w-[100px] bg-white">
                   <SelectValue />
@@ -334,7 +336,7 @@ export default function KPIDetailsPage() {
                   stroke="#3b82f6"
                   strokeWidth={2}
                   dot={{ fill: "#3b82f6", r: 4 }}
-                  name="Achieved Value"
+                  name={t("Achieved Value")}
                   connectNulls={false}
                 />
                 <Line
@@ -342,7 +344,7 @@ export default function KPIDetailsPage() {
                   dataKey="expectedValue"
                   stroke="#f59e0b"
                   strokeWidth={2}
-                  name="Expected Value"
+                  name={t("Expected Value")}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -352,11 +354,11 @@ export default function KPIDetailsPage() {
           <div className="flex justify-end gap-6 mb-6">
             <div className="flex items-center gap-2">
               <div className="w-4 h-1 bg-blue-500" />
-              <span className="text-sm">Achieved Value</span>
+              <span className="text-sm">{t("Achieved Value")}</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-1 bg-amber-500" />
-              <span className="text-sm">Expected Value</span>
+              <span className="text-sm">{t("Expected Value")}</span>
             </div>
           </div>
         </CardContent>
@@ -369,9 +371,9 @@ export default function KPIDetailsPage() {
             {/* Left Column */}
             <div className="space-y-4">
               <div>
-                <h5 className="text-sm font-medium mb-2">KPI Objective</h5>
+                <h5 className="text-sm font-medium mb-2">{t("KPI Objective")}</h5>
                 <Input
-                  placeholder="Enter Objective"
+                  placeholder={t("Enter Objective")}
                   value={kpiConfig.objective}
                   onChange={(e) =>
                     setKpiConfig({ ...kpiConfig, objective: e.target.value })
@@ -379,9 +381,9 @@ export default function KPIDetailsPage() {
                 />
               </div>
               <div>
-                <h5 className="text-sm font-medium mb-2">KPI Data Source</h5>
+                <h5 className="text-sm font-medium mb-2">{t("KPI Data Source")}</h5>
                 <Input
-                  placeholder="Enter Data Source"
+                  placeholder={t("Enter Data Source")}
                   value={kpiConfig.dataSource}
                   onChange={(e) =>
                     setKpiConfig({ ...kpiConfig, dataSource: e.target.value })
@@ -389,7 +391,7 @@ export default function KPIDetailsPage() {
                 />
               </div>
               <div>
-                <h5 className="text-sm font-medium mb-2">Expected Value</h5>
+                <h5 className="text-sm font-medium mb-2">{t("Expected Value")}</h5>
                 <Input
                   type="number"
                   value={kpiConfig.expectedValue}
@@ -406,9 +408,9 @@ export default function KPIDetailsPage() {
             {/* Right Column */}
             <div className="space-y-4">
               <div>
-                <h5 className="text-sm font-medium mb-2">KPI Description</h5>
+                <h5 className="text-sm font-medium mb-2">{t("KPI Description")}</h5>
                 <Input
-                  placeholder="Enter Description"
+                  placeholder={t("Enter Description")}
                   value={kpiConfig.description}
                   onChange={(e) =>
                     setKpiConfig({ ...kpiConfig, description: e.target.value })
@@ -416,9 +418,9 @@ export default function KPIDetailsPage() {
                 />
               </div>
               <div>
-                <h5 className="text-sm font-medium mb-2">KPI Measurement Formula</h5>
+                <h5 className="text-sm font-medium mb-2">{t("KPI Measurement Formula")}</h5>
                 <Input
-                  placeholder="Enter the KPI Calculation Formula"
+                  placeholder={t("Enter the KPI Calculation Formula")}
                   value={kpiConfig.formula}
                   onChange={(e) =>
                     setKpiConfig({ ...kpiConfig, formula: e.target.value })
@@ -426,7 +428,7 @@ export default function KPIDetailsPage() {
                 />
               </div>
               <div>
-                <h5 className="text-sm font-medium mb-2">Targeted Achieved Value</h5>
+                <h5 className="text-sm font-medium mb-2">{t("Targeted Achieved Value")}</h5>
                 <div className="flex gap-2">
                   <Input
                     type="number"
@@ -439,7 +441,7 @@ export default function KPIDetailsPage() {
                     }
                   />
                   <Button variant="outline" size="sm">
-                    Edit Assignee
+                    {t("Edit Assignee")}
                   </Button>
                 </div>
               </div>
@@ -448,7 +450,7 @@ export default function KPIDetailsPage() {
 
           <div className="flex justify-end mt-6">
             <Button onClick={handleSave} disabled={saving}>
-              {saving ? "Saving..." : "Save"}
+              {saving ? t("Saving...") : t("Save")}
             </Button>
           </div>
         </CardContent>
@@ -461,11 +463,11 @@ export default function KPIDetailsPage() {
             <DataGrid
               columns={recordColumns}
               data={kpiRecords}
-              searchPlaceholder="Search records..."
+              searchPlaceholder={t("Search records...")}
             />
           ) : (
             <div className="flex flex-col items-center justify-center py-12 text-center">
-              <p className="text-muted-foreground">No KPI records yet</p>
+              <p className="text-muted-foreground">{t("No KPI records yet")}</p>
             </div>
           )}
         </CardContent>
@@ -475,11 +477,11 @@ export default function KPIDetailsPage() {
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit KPI Record</DialogTitle>
+            <DialogTitle>{t("Edit KPI Record")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
-              <label className="text-sm font-medium">Achieved Value</label>
+              <label className="text-sm font-medium">{t("Achieved Value")}</label>
               <Input
                 type="number"
                 value={editingRecord?.achievedValue || 0}
@@ -493,7 +495,7 @@ export default function KPIDetailsPage() {
               />
             </div>
             <div>
-              <label className="text-sm font-medium">Status</label>
+              <label className="text-sm font-medium">{t("Status")}</label>
               <Select
                 value={editingRecord?.status || ""}
                 onValueChange={(value) =>
@@ -506,17 +508,17 @@ export default function KPIDetailsPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Achieved">Achieved</SelectItem>
-                  <SelectItem value="Missed">Missed</SelectItem>
-                  <SelectItem value="Scheduled">Scheduled</SelectItem>
-                  <SelectItem value="Overdue">Overdue</SelectItem>
+                  <SelectItem value="Achieved">{t("Achieved")}</SelectItem>
+                  <SelectItem value="Missed">{t("Missed")}</SelectItem>
+                  <SelectItem value="Scheduled">{t("Scheduled")}</SelectItem>
+                  <SelectItem value="Overdue">{t("Overdue")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button
               onClick={() => {
@@ -531,7 +533,7 @@ export default function KPIDetailsPage() {
                 setIsEditDialogOpen(false);
               }}
             >
-              Save
+              {t("Save")}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -52,6 +52,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { DatePicker } from "@/components/ui/date-picker";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Department {
   id: string;
@@ -88,6 +89,7 @@ interface Engagement {
 export default function AuditPlanningPage() {
   const router = useRouter();
   const { data: session } = useSession();
+  const { t } = useLanguage();
   const [engagements, setEngagements] = useState<Engagement[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [availableYears, setAvailableYears] = useState<number[]>([]);
@@ -251,31 +253,31 @@ export default function AuditPlanningPage() {
 
   const handleSaveEngagement = async () => {
     if (!engagementForm.engagementTitle.trim()) {
-      toast.error("Engagement Title is required");
+      toast.error(t("Engagement Title is required"));
       return;
     }
     if (!engagementForm.engagementObjective.trim()) {
-      toast.error("Engagement Objective is required");
+      toast.error(t("Engagement Objective is required"));
       return;
     }
     if (!engagementForm.engagementScope.trim()) {
-      toast.error("Engagement Scope is required");
+      toast.error(t("Engagement Scope is required"));
       return;
     }
     if (!engagementForm.departmentId) {
-      toast.error("Department is required");
+      toast.error(t("Department is required"));
       return;
     }
     if (!engagementForm.auditorId) {
-      toast.error("Auditor is required");
+      toast.error(t("Auditor is required"));
       return;
     }
     if (!engagementForm.startDate) {
-      toast.error("Start Date is required");
+      toast.error(t("Start Date is required"));
       return;
     }
     if (!engagementForm.targetDate) {
-      toast.error("Target Date is required");
+      toast.error(t("Target Date is required"));
       return;
     }
 
@@ -288,16 +290,16 @@ export default function AuditPlanningPage() {
       });
 
       if (response.ok) {
-        toast.success("Engagement created successfully");
+        toast.success(t("Engagement created successfully"));
         setAddDialogOpen(false);
         fetchEngagements();
       } else {
         const error = await response.json();
-        toast.error(error.error || "Failed to create engagement");
+        toast.error(error.error || t("Failed to create engagement"));
       }
     } catch (error) {
       console.error("Failed to create engagement:", error);
-      toast.error("Failed to create engagement");
+      toast.error(t("Failed to create engagement"));
     } finally {
       setSaving(false);
     }
@@ -317,14 +319,14 @@ export default function AuditPlanningPage() {
       });
 
       if (response.ok) {
-        toast.success("Engagement deleted successfully");
+        toast.success(t("Engagement deleted successfully"));
         fetchEngagements();
       } else {
-        toast.error("Failed to delete engagement");
+        toast.error(t("Failed to delete engagement"));
       }
     } catch (error) {
       console.error("Failed to delete:", error);
-      toast.error("Failed to delete engagement");
+      toast.error(t("Failed to delete engagement"));
     } finally {
       setDeleteDialogOpen(false);
       setItemToDelete(null);
@@ -359,9 +361,9 @@ export default function AuditPlanningPage() {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
-      toast.success("Export completed");
+      toast.success(t("Export completed"));
     } catch (error) {
-      toast.error("Failed to export");
+      toast.error(t("Failed to export"));
     }
   };
 
@@ -375,24 +377,24 @@ export default function AuditPlanningPage() {
 
   const handleShowReport = () => {
     if (!reportFilterType) {
-      toast.error("Please select a filter type");
+      toast.error(t("Please select a filter type"));
       return;
     }
     if (reportFilterType === "Year" && !reportYear) {
-      toast.error("Please select a year");
+      toast.error(t("Please select a year"));
       return;
     }
     if (reportFilterType === "DateRange") {
       if (!reportStartDate) {
-        toast.error("Please select a start date");
+        toast.error(t("Please select a start date"));
         return;
       }
       if (!reportEndDate) {
-        toast.error("Please select an end date");
+        toast.error(t("Please select an end date"));
         return;
       }
       if (new Date(reportStartDate) > new Date(reportEndDate)) {
-        toast.error("Start date cannot be after end date");
+        toast.error(t("Start date cannot be after end date"));
         return;
       }
     }
@@ -410,14 +412,14 @@ export default function AuditPlanningPage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-slate-800">Annual Audit Plan</h1>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Annual Audit Plan")}</h1>
         <div className="flex items-center justify-center h-[60vh]">
           <div className="flex flex-col items-center gap-4">
             <div className="relative">
               <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
               <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
             </div>
-            <p className="text-sm text-slate-500 font-medium">Loading...</p>
+            <p className="text-sm text-slate-500 font-medium">{t("Loading...")}</p>
           </div>
         </div>
       </div>
@@ -430,15 +432,15 @@ export default function AuditPlanningPage() {
       <nav className="flex items-center gap-1.5 text-sm">
         <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
-          <span>Internal Audit</span>
+          <span>{t("Internal Audit")}</span>
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-        <span className="text-primary-700 font-medium">Audit Planning</span>
+        <span className="text-primary-700 font-medium">{t("Audit Planning")}</span>
       </nav>
 
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-slate-800">Annual Audit Plan</h1>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Annual Audit Plan")}</h1>
       </div>
 
       {/* Search, Filters, and Actions Row */}
@@ -446,7 +448,7 @@ export default function AuditPlanningPage() {
         <div className="relative w-[280px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input
-            placeholder="Search By Audit ID, Name"
+            placeholder={t("Search By Audit ID, Name")}
             value={searchFilter}
             onChange={(e) => setSearchFilter(e.target.value)}
             className="pl-10 h-9 bg-white border-slate-200"
@@ -454,10 +456,10 @@ export default function AuditPlanningPage() {
         </div>
         <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
           <SelectTrigger className="w-[160px] h-9 bg-white">
-            <SelectValue placeholder="Department" />
+            <SelectValue placeholder={t("Department")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Departments</SelectItem>
+            <SelectItem value="all">{t("All Departments")}</SelectItem>
             {departments.map((dept) => (
               <SelectItem key={dept.id} value={dept.id}>
                 {dept.name}
@@ -467,21 +469,21 @@ export default function AuditPlanningPage() {
         </Select>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[140px] h-9 bg-white">
-            <SelectValue placeholder="Status" />
+            <SelectValue placeholder={t("Status")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="Planned">Planned</SelectItem>
-            <SelectItem value="In Progress">In Progress</SelectItem>
-            <SelectItem value="Completed">Completed</SelectItem>
+            <SelectItem value="all">{t("All Status")}</SelectItem>
+            <SelectItem value="Planned">{t("Planned")}</SelectItem>
+            <SelectItem value="In Progress">{t("In Progress")}</SelectItem>
+            <SelectItem value="Completed">{t("Completed")}</SelectItem>
           </SelectContent>
         </Select>
         <Select value={yearFilter} onValueChange={setYearFilter}>
           <SelectTrigger className="w-[110px] h-9 bg-white">
-            <SelectValue placeholder="Year" />
+            <SelectValue placeholder={t("Year")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Years</SelectItem>
+            <SelectItem value="all">{t("All Years")}</SelectItem>
             {availableYears.map((year) => (
               <SelectItem key={year} value={year.toString()}>
                 {year}
@@ -492,16 +494,16 @@ export default function AuditPlanningPage() {
         <div className="flex-1" />
         <Button variant="outline" size="sm" onClick={handleExport}>
           <Download className="h-4 w-4 mr-2" />
-          Export
+          {t("Export")}
         </Button>
         <Button variant="outline" size="sm" className="border-primary-600 text-primary-600 hover:bg-primary-50" onClick={openReportDialog}>
           <FileText className="h-4 w-4 mr-2" />
-          Generate Annual Plan Report
+          {t("Generate Annual Plan Report")}
         </Button>
         {isAuditHead && (
           <Button size="sm" className="bg-primary-600 hover:bg-primary-700" onClick={openAddDialog}>
             <Plus className="h-4 w-4 mr-2" />
-            Add Engagement
+            {t("Add Engagement")}
           </Button>
         )}
       </div>
@@ -511,13 +513,13 @@ export default function AuditPlanningPage() {
         <Table>
           <TableHeader>
             <TableRow className="border-b border-slate-100 bg-slate-50/50">
-              <TableHead className="text-xs font-semibold text-slate-600 py-4 pl-4">Audit ID</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-4">Engagement Name</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-4">Department</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-4">Audit Type</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-4">Assigned Auditors</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-4">Status</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 py-4 pr-4">Action</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4 pl-4">{t("Audit ID")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Engagement Name")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Department")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Audit Type")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Assigned Auditors")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Status")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4 pr-4">{t("Action")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -541,7 +543,7 @@ export default function AuditPlanningPage() {
                         size="icon"
                         className="h-8 w-8 text-slate-400 hover:text-slate-600"
                         onClick={() => router.push(`/internal-audit/audit-planning/${engagement.id}/edit`)}
-                        title="Edit"
+                        title={t("Edit")}
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
@@ -550,7 +552,7 @@ export default function AuditPlanningPage() {
                         size="icon"
                         className="h-8 w-8 text-slate-400 hover:text-semantic-error"
                         onClick={() => openDeleteDialog(engagement)}
-                        title="Delete"
+                        title={t("Delete")}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -561,7 +563,7 @@ export default function AuditPlanningPage() {
             ) : (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-8 text-slate-500">
-                  No audit engagements found
+                  {t("No audit engagements found")}
                 </TableCell>
               </TableRow>
             )}
@@ -573,14 +575,14 @@ export default function AuditPlanningPage() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmation</AlertDialogTitle>
+            <AlertDialogTitle>{t("Confirmation")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this engagement?
+              {t("Are you sure you want to delete this engagement?")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogAction onClick={handleDelete}>OK</AlertDialogAction>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>{t("OK")}</AlertDialogAction>
+            <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -592,7 +594,7 @@ export default function AuditPlanningPage() {
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">
-                Generate Annual Plan Report
+                {t("Generate Annual Plan Report")}
               </DialogTitle>
             </DialogHeader>
           </div>
@@ -601,15 +603,15 @@ export default function AuditPlanningPage() {
           <div className="px-6 py-6 space-y-4">
             <div className="space-y-2">
               <Label className="text-sm font-medium text-slate-700">
-                Filter Type <span className="text-red-500">*</span>
+                {t("Filter Type")} <span className="text-red-500">*</span>
               </Label>
               <Select value={reportFilterType} onValueChange={setReportFilterType}>
                 <SelectTrigger className="w-full bg-white">
-                  <SelectValue placeholder="Select filter type" />
+                  <SelectValue placeholder={t("Select filter type")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Year">Year</SelectItem>
-                  <SelectItem value="DateRange">Date Range</SelectItem>
+                  <SelectItem value="Year">{t("Year")}</SelectItem>
+                  <SelectItem value="DateRange">{t("Date Range")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -617,11 +619,11 @@ export default function AuditPlanningPage() {
             {reportFilterType === "Year" && (
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">
-                  Year <span className="text-red-500">*</span>
+                  {t("Year")} <span className="text-red-500">*</span>
                 </Label>
                 <Select value={reportYear} onValueChange={setReportYear}>
                   <SelectTrigger className="w-full bg-white">
-                    <SelectValue placeholder="Select year" />
+                    <SelectValue placeholder={t("Select year")} />
                   </SelectTrigger>
                   <SelectContent>
                     {availableYears.map((year) => (
@@ -638,23 +640,23 @@ export default function AuditPlanningPage() {
               <>
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-slate-700">
-                    Start Date <span className="text-red-500">*</span>
+                    {t("Start Date")} <span className="text-red-500">*</span>
                   </Label>
                   <DatePicker
                     value={reportStartDate}
                     onChange={(date) => setReportStartDate(date ? date.toISOString().split('T')[0] : "")}
-                    placeholder="Select start date"
+                    placeholder={t("Select start date")}
                     className="w-full h-10 bg-white"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-slate-700">
-                    End Date <span className="text-red-500">*</span>
+                    {t("End Date")} <span className="text-red-500">*</span>
                   </Label>
                   <DatePicker
                     value={reportEndDate}
                     onChange={(date) => setReportEndDate(date ? date.toISOString().split('T')[0] : "")}
-                    placeholder="Select end date"
+                    placeholder={t("Select end date")}
                     className="w-full h-10 bg-white"
                   />
                 </div>
@@ -665,10 +667,10 @@ export default function AuditPlanningPage() {
           {/* Fixed Footer */}
           <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setReportDialogOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button onClick={handleShowReport} className="bg-primary-600 hover:bg-primary-700">
-              Show Report
+              {t("Show Report")}
             </Button>
           </div>
         </DialogContent>
@@ -681,7 +683,7 @@ export default function AuditPlanningPage() {
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">
-                Add Engagement
+                {t("Add Engagement")}
               </DialogTitle>
             </DialogHeader>
           </div>
@@ -697,12 +699,12 @@ export default function AuditPlanningPage() {
                 {/* Engagement Title */}
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-slate-700">
-                    Engagement Title <span className="text-red-500">*</span>
+                    {t("Engagement Title")} <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     value={engagementForm.engagementTitle}
                     onChange={(e) => setEngagementForm({ ...engagementForm, engagementTitle: e.target.value })}
-                    placeholder="Enter engagement title"
+                    placeholder={t("Enter engagement title")}
                     className="w-full bg-white"
                   />
                 </div>
@@ -710,12 +712,12 @@ export default function AuditPlanningPage() {
                 {/* Engagement Objective */}
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-slate-700">
-                    Engagement Objective <span className="text-red-500">*</span>
+                    {t("Engagement Objective")} <span className="text-red-500">*</span>
                   </Label>
                   <Textarea
                     value={engagementForm.engagementObjective}
                     onChange={(e) => setEngagementForm({ ...engagementForm, engagementObjective: e.target.value })}
-                    placeholder="Enter engagement objective"
+                    placeholder={t("Enter engagement objective")}
                     rows={3}
                     className="w-full bg-white resize-none"
                   />
@@ -724,12 +726,12 @@ export default function AuditPlanningPage() {
                 {/* Engagement Scope */}
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-slate-700">
-                    Engagement Scope <span className="text-red-500">*</span>
+                    {t("Engagement Scope")} <span className="text-red-500">*</span>
                   </Label>
                   <Textarea
                     value={engagementForm.engagementScope}
                     onChange={(e) => setEngagementForm({ ...engagementForm, engagementScope: e.target.value })}
-                    placeholder="Enter engagement scope"
+                    placeholder={t("Enter engagement scope")}
                     rows={3}
                     className="w-full bg-white resize-none"
                   />
@@ -738,14 +740,14 @@ export default function AuditPlanningPage() {
                 {/* Department */}
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-slate-700">
-                    Department <span className="text-red-500">*</span>
+                    {t("Department")} <span className="text-red-500">*</span>
                   </Label>
                   <Select
                     value={engagementForm.departmentId}
                     onValueChange={handleEngagementDepartmentChange}
                   >
                     <SelectTrigger className="w-full bg-white">
-                      <SelectValue placeholder="Select department" />
+                      <SelectValue placeholder={t("Select department")} />
                     </SelectTrigger>
                     <SelectContent>
                       {departments.map((dept) => (
@@ -760,14 +762,14 @@ export default function AuditPlanningPage() {
                 {/* Link Open Risks */}
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-slate-700">
-                    Link Open Risks
+                    {t("Link Open Risks")}
                   </Label>
                   <Select
                     value={engagementForm.linkedRiskIds[0] || ""}
                     onValueChange={(value) => setEngagementForm({ ...engagementForm, linkedRiskIds: value ? [value] : [] })}
                   >
                     <SelectTrigger className="w-full bg-white">
-                      <SelectValue placeholder="Select risk" />
+                      <SelectValue placeholder={t("Select risk")} />
                     </SelectTrigger>
                     <SelectContent>
                       {risks.length > 0 ? (
@@ -778,7 +780,7 @@ export default function AuditPlanningPage() {
                         ))
                       ) : (
                         <SelectItem value="none" disabled>
-                          {engagementForm.departmentId ? "No open risks found" : "Select a department first"}
+                          {engagementForm.departmentId ? t("No open risks found") : t("Select a department first")}
                         </SelectItem>
                       )}
                     </SelectContent>
@@ -788,37 +790,37 @@ export default function AuditPlanningPage() {
                 {/* Two columns for Audit Rating and Audit Type */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium text-slate-700">Audit Rating</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Audit Rating")}</Label>
                     <Select
                       value={engagementForm.auditRating}
                       onValueChange={(value) => setEngagementForm({ ...engagementForm, auditRating: value })}
                     >
                       <SelectTrigger className="w-full bg-white">
-                        <SelectValue placeholder="Select rating" />
+                        <SelectValue placeholder={t("Select rating")} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Satisfactory">Satisfactory</SelectItem>
-                        <SelectItem value="Needs Improvement">Needs Improvement</SelectItem>
-                        <SelectItem value="Unsatisfactory">Unsatisfactory</SelectItem>
+                        <SelectItem value="Satisfactory">{t("Satisfactory")}</SelectItem>
+                        <SelectItem value="Needs Improvement">{t("Needs Improvement")}</SelectItem>
+                        <SelectItem value="Unsatisfactory">{t("Unsatisfactory")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium text-slate-700">Audit Type</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Audit Type")}</Label>
                     <Select
                       value={engagementForm.auditType}
                       onValueChange={(value) => setEngagementForm({ ...engagementForm, auditType: value })}
                     >
                       <SelectTrigger className="w-full bg-white">
-                        <SelectValue placeholder="Select type" />
+                        <SelectValue placeholder={t("Select type")} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Internal Audit">Internal Audit</SelectItem>
-                        <SelectItem value="Compliance Audit">Compliance Audit</SelectItem>
-                        <SelectItem value="Financial Audit">Financial Audit</SelectItem>
-                        <SelectItem value="Operational Audit">Operational Audit</SelectItem>
-                        <SelectItem value="IT Audit">IT Audit</SelectItem>
-                        <SelectItem value="Assurance">Assurance</SelectItem>
+                        <SelectItem value="Internal Audit">{t("Internal Audit")}</SelectItem>
+                        <SelectItem value="Compliance Audit">{t("Compliance Audit")}</SelectItem>
+                        <SelectItem value="Financial Audit">{t("Financial Audit")}</SelectItem>
+                        <SelectItem value="Operational Audit">{t("Operational Audit")}</SelectItem>
+                        <SelectItem value="IT Audit">{t("IT Audit")}</SelectItem>
+                        <SelectItem value="Assurance">{t("Assurance")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -828,14 +830,14 @@ export default function AuditPlanningPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-slate-700">
-                      Auditor <span className="text-red-500">*</span>
+                      {t("Auditor")} <span className="text-red-500">*</span>
                     </Label>
                     <Select
                       value={engagementForm.auditorId}
                       onValueChange={(value) => setEngagementForm({ ...engagementForm, auditorId: value })}
                     >
                       <SelectTrigger className="w-full bg-white">
-                        <SelectValue placeholder="Select auditor" />
+                        <SelectValue placeholder={t("Select auditor")} />
                       </SelectTrigger>
                       <SelectContent>
                         {auditors.length > 0 ? (
@@ -846,20 +848,20 @@ export default function AuditPlanningPage() {
                           ))
                         ) : (
                           <SelectItem value="none" disabled>
-                            No auditors available
+                            {t("No auditors available")}
                           </SelectItem>
                         )}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium text-slate-700">Auditee</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Auditee")}</Label>
                     <Select
                       value={engagementForm.auditeeId}
                       onValueChange={(value) => setEngagementForm({ ...engagementForm, auditeeId: value })}
                     >
                       <SelectTrigger className="w-full bg-white">
-                        <SelectValue placeholder="Select auditee" />
+                        <SelectValue placeholder={t("Select auditee")} />
                       </SelectTrigger>
                       <SelectContent>
                         {auditees.length > 0 ? (
@@ -870,7 +872,7 @@ export default function AuditPlanningPage() {
                           ))
                         ) : (
                           <SelectItem value="none" disabled>
-                            No auditees available
+                            {t("No auditees available")}
                           </SelectItem>
                         )}
                       </SelectContent>
@@ -882,23 +884,23 @@ export default function AuditPlanningPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-slate-700">
-                      Start Date <span className="text-red-500">*</span>
+                      {t("Start Date")} <span className="text-red-500">*</span>
                     </Label>
                     <DatePicker
                       value={engagementForm.startDate}
                       onChange={(date) => setEngagementForm({ ...engagementForm, startDate: date ? date.toISOString().split('T')[0] : "" })}
-                      placeholder="Select start date"
+                      placeholder={t("Select start date")}
                       className="w-full h-10 bg-white"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-slate-700">
-                      Target Date <span className="text-red-500">*</span>
+                      {t("Target Date")} <span className="text-red-500">*</span>
                     </Label>
                     <DatePicker
                       value={engagementForm.targetDate}
                       onChange={(date) => setEngagementForm({ ...engagementForm, targetDate: date ? date.toISOString().split('T')[0] : "" })}
-                      placeholder="Select target date"
+                      placeholder={t("Select target date")}
                       className="w-full h-10 bg-white"
                     />
                   </div>
@@ -910,14 +912,14 @@ export default function AuditPlanningPage() {
           {/* Fixed Footer */}
           <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setAddDialogOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button
               onClick={handleSaveEngagement}
               disabled={saving || addDialogLoading}
               className="bg-primary-600 hover:bg-primary-700"
             >
-              {saving ? "Saving..." : "Save"}
+              {saving ? t("Saving...") : t("Save")}
             </Button>
           </div>
         </DialogContent>

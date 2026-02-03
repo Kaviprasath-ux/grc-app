@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -112,6 +113,7 @@ interface NewEvidenceFormData {
 
 export default function EvidencesMasterDataPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const { toast } = useToast();
   const [evidences, setEvidences] = useState<Evidence[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -301,10 +303,10 @@ export default function EvidencesMasterDataPage() {
   // New Evidence - Step 1 Validation
   const validateStep1 = () => {
     const errors: Record<string, string> = {};
-    if (!newFormData.name) errors.name = "Please enter the evidence name";
-    if (!newFormData.recurrence) errors.recurrence = "Please select the recurrence";
-    if (!newFormData.departmentId) errors.departmentId = "Please select the Department";
-    if (!newFormData.assigneeId) errors.assigneeId = "Please select the assignee";
+    if (!newFormData.name) errors.name = t("Please enter the evidence name");
+    if (!newFormData.recurrence) errors.recurrence = t("Please select the recurrence");
+    if (!newFormData.departmentId) errors.departmentId = t("Please select the Department");
+    if (!newFormData.assigneeId) errors.assigneeId = t("Please select the assignee");
     setNewFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -342,8 +344,8 @@ export default function EvidencesMasterDataPage() {
 
       if (response.ok) {
         toast({
-          title: "Success",
-          description: "Evidence created successfully",
+          title: t("Success"),
+          description: t("Evidence created successfully"),
         });
         setIsNewDialogOpen(false);
         resetNewForm();
@@ -351,16 +353,16 @@ export default function EvidencesMasterDataPage() {
       } else {
         const error = await response.json();
         toast({
-          title: "Error",
-          description: error.message || "Failed to create evidence",
+          title: t("Error"),
+          description: error.message || t("Failed to create evidence"),
           variant: "destructive",
         });
       }
     } catch (error) {
       console.error("Error creating evidence:", error);
       toast({
-        title: "Error",
-        description: "Failed to create evidence",
+        title: t("Error"),
+        description: t("Failed to create evidence"),
         variant: "destructive",
       });
     }
@@ -404,8 +406,8 @@ export default function EvidencesMasterDataPage() {
 
       if (response.ok) {
         toast({
-          title: "Success",
-          description: "Evidence updated successfully",
+          title: t("Success"),
+          description: t("Evidence updated successfully"),
         });
         setIsEditDialogOpen(false);
         setEditingEvidence(null);
@@ -414,16 +416,16 @@ export default function EvidencesMasterDataPage() {
       } else {
         const error = await response.json();
         toast({
-          title: "Error",
-          description: error.message || "Failed to update evidence",
+          title: t("Error"),
+          description: error.message || t("Failed to update evidence"),
           variant: "destructive",
         });
       }
     } catch (error) {
       console.error("Error updating evidence:", error);
       toast({
-        title: "Error",
-        description: "Failed to update evidence",
+        title: t("Error"),
+        description: t("Failed to update evidence"),
         variant: "destructive",
       });
     }
@@ -444,22 +446,22 @@ export default function EvidencesMasterDataPage() {
 
       if (response.ok) {
         toast({
-          title: "Success",
-          description: "Evidence deleted successfully",
+          title: t("Success"),
+          description: t("Evidence deleted successfully"),
         });
         fetchEvidences();
       } else {
         toast({
-          title: "Error",
-          description: "Failed to delete evidence",
+          title: t("Error"),
+          description: t("Failed to delete evidence"),
           variant: "destructive",
         });
       }
     } catch (error) {
       console.error("Error deleting evidence:", error);
       toast({
-        title: "Error",
-        description: "Failed to delete evidence",
+        title: t("Error"),
+        description: t("Failed to delete evidence"),
         variant: "destructive",
       });
     } finally {
@@ -477,15 +479,15 @@ export default function EvidencesMasterDataPage() {
       await Promise.all(deletePromises);
 
       toast({
-        title: "Success",
-        description: "All evidences deleted successfully",
+        title: t("Success"),
+        description: t("All evidences deleted successfully"),
       });
       fetchEvidences();
     } catch (error) {
       console.error("Error deleting all evidences:", error);
       toast({
-        title: "Error",
-        description: "Failed to delete all evidences",
+        title: t("Error"),
+        description: t("Failed to delete all evidences"),
         variant: "destructive",
       });
     } finally {
@@ -496,8 +498,8 @@ export default function EvidencesMasterDataPage() {
   const handleImportSubmit = async () => {
     if (!importFile) {
       toast({
-        title: "Error",
-        description: "Please select a file to import",
+        title: t("Error"),
+        description: t("Please select a file to import"),
         variant: "destructive",
       });
       return;
@@ -533,8 +535,8 @@ export default function EvidencesMasterDataPage() {
         }
 
         toast({
-          title: "Success",
-          description: "Evidences imported successfully",
+          title: t("Success"),
+          description: t("Evidences imported successfully"),
         });
         fetchEvidences();
         setImportDialogOpen(false);
@@ -543,8 +545,8 @@ export default function EvidencesMasterDataPage() {
       } catch (error) {
         console.error("Error importing evidences:", error);
         toast({
-          title: "Error",
-          description: "Failed to import evidences",
+          title: t("Error"),
+          description: t("Failed to import evidences"),
           variant: "destructive",
         });
       }
@@ -597,7 +599,7 @@ export default function EvidencesMasterDataPage() {
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-2xl font-bold text-slate-800">Evidences</h1>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Evidences")}</h1>
       </div>
 
       {/* Search and Actions - same row */}
@@ -605,7 +607,7 @@ export default function EvidencesMasterDataPage() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input
-            placeholder="Search evidences..."
+            placeholder={t("Search evidences...")}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10 w-[300px] bg-white border-slate-200"
@@ -618,20 +620,20 @@ export default function EvidencesMasterDataPage() {
             onClick={() => setDeleteAllDialogOpen(true)}
             disabled={evidences.length === 0}
           >
-            <Trash2 className="h-4 w-4 mr-2" />
-            Delete All
+            <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+            {t("Delete All")}
           </Button>
           <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
-            <Upload className="h-4 w-4 mr-2" />
-            Import
+            <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+            {t("Import")}
           </Button>
           <Button variant="outline" size="sm" onClick={handleExport}>
-            <Download className="h-4 w-4 mr-2" />
-            Export
+            <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+            {t("Export")}
           </Button>
           <Button size="sm" onClick={() => setIsNewDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Evidence
+            <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+            {t("New Evidence")}
           </Button>
         </div>
       </div>
@@ -641,17 +643,17 @@ export default function EvidencesMasterDataPage() {
         <Table>
           <TableHeader>
             <TableRow className="border-b border-slate-100 bg-slate-50/50">
-              <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4">Evidence Code</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">Title</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">Evidence Requirement</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[100px]">Action</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4">{t("Evidence Code")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Title")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("Evidence Requirement")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[100px]">{t("Action")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {paginatedEvidences.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className="text-center py-12">
-                  <p className="text-slate-500">No evidences found</p>
+                  <p className="text-slate-500">{t("No evidences found")}</p>
                 </TableCell>
               </TableRow>
             ) : (
@@ -689,8 +691,8 @@ export default function EvidencesMasterDataPage() {
         {/* Pagination */}
         <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
           <p className="text-sm text-slate-500">
-            Showing {filteredEvidences.length === 0 ? 0 : startIndex + 1} to{" "}
-            {Math.min(startIndex + itemsPerPage, filteredEvidences.length)} of{" "}
+            {t("Showing")} {filteredEvidences.length === 0 ? 0 : startIndex + 1} {t("to")}{" "}
+            {Math.min(startIndex + itemsPerPage, filteredEvidences.length)} {t("of")}{" "}
             {filteredEvidences.length}
           </p>
           <div className="flex items-center gap-1">
@@ -713,7 +715,7 @@ export default function EvidencesMasterDataPage() {
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <span className="text-sm text-slate-600 px-2">
-              Page {currentPage} of {totalPages || 1}
+              {t("Page")} {currentPage} {t("of")} {totalPages || 1}
             </span>
             <Button
               variant="ghost"
@@ -745,7 +747,7 @@ export default function EvidencesMasterDataPage() {
         <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogTitle className="text-lg font-semibold text-slate-800">
-              {newStep === 1 ? "Evidence Details" : newStep === 2 ? "Controls" : "Review Information"}
+              {newStep === 1 ? t("Evidence Details") : newStep === 2 ? t("Controls") : t("Review Information")}
             </DialogTitle>
           </div>
 
@@ -762,10 +764,10 @@ export default function EvidencesMasterDataPage() {
                 }`}>
                   {step < newStep ? <Check className="h-4 w-4" /> : step}
                 </div>
-                <span className={`ml-2 text-sm ${
+                <span className={`ltr:ml-2 rtl:mr-2 text-sm ${
                   step === newStep ? "text-slate-800 font-medium" : "text-slate-500"
                 }`}>
-                  {step === 1 ? "Evidence Details" : step === 2 ? "Controls" : "Review"}
+                  {step === 1 ? t("Evidence Details") : step === 2 ? t("Controls") : t("Review")}
                 </span>
                 {step < 3 && <div className="w-12 h-0.5 bg-slate-200 mx-3" />}
               </div>
@@ -778,7 +780,7 @@ export default function EvidencesMasterDataPage() {
               <div className="space-y-4">
                 <div>
                   <Label className="text-sm font-medium text-slate-700">
-                    Evidence Requirement <span className="text-red-500">*</span>
+                    {t("Evidence Requirement")} <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     value={newFormData.name}
@@ -798,7 +800,7 @@ export default function EvidencesMasterDataPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-slate-700">
-                      Recurrence <span className="text-red-500">*</span>
+                      {t("Recurrence")} <span className="text-red-500">*</span>
                     </Label>
                     <Select
                       value={newFormData.recurrence}
@@ -810,13 +812,13 @@ export default function EvidencesMasterDataPage() {
                       }}
                     >
                       <SelectTrigger className={`mt-1.5 w-full bg-white ${newFormErrors.recurrence ? "border-red-500" : ""}`}>
-                        <SelectValue placeholder="Select recurrence" />
+                        <SelectValue placeholder={t("Select recurrence")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
-                        <SelectItem value="Yearly">Yearly</SelectItem>
-                        <SelectItem value="Half-yearly">Half-yearly</SelectItem>
-                        <SelectItem value="Quarterly">Quarterly</SelectItem>
-                        <SelectItem value="Monthly">Monthly</SelectItem>
+                        <SelectItem value="Yearly">{t("Yearly")}</SelectItem>
+                        <SelectItem value="Half-yearly">{t("Half-yearly")}</SelectItem>
+                        <SelectItem value="Quarterly">{t("Quarterly")}</SelectItem>
+                        <SelectItem value="Monthly">{t("Monthly")}</SelectItem>
                       </SelectContent>
                     </Select>
                     {newFormErrors.recurrence && (
@@ -826,7 +828,7 @@ export default function EvidencesMasterDataPage() {
 
                   <div>
                     <Label className="text-sm font-medium text-slate-700">
-                      Department <span className="text-red-500">*</span>
+                      {t("Department")} <span className="text-red-500">*</span>
                     </Label>
                     <Select
                       value={newFormData.departmentId}
@@ -838,7 +840,7 @@ export default function EvidencesMasterDataPage() {
                       }}
                     >
                       <SelectTrigger className={`mt-1.5 w-full bg-white ${newFormErrors.departmentId ? "border-red-500" : ""}`}>
-                        <SelectValue placeholder="Select department" />
+                        <SelectValue placeholder={t("Select department")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
                         {departments.map((dept) => (
@@ -856,7 +858,7 @@ export default function EvidencesMasterDataPage() {
 
                 <div>
                   <Label className="text-sm font-medium text-slate-700">
-                    Assignee <span className="text-red-500">*</span>
+                    {t("Assignee")} <span className="text-red-500">*</span>
                   </Label>
                   <Select
                     value={newFormData.assigneeId}
@@ -868,7 +870,7 @@ export default function EvidencesMasterDataPage() {
                     }}
                   >
                     <SelectTrigger className={`mt-1.5 w-full bg-white ${newFormErrors.assigneeId ? "border-red-500" : ""}`}>
-                      <SelectValue placeholder="Select assignee" />
+                      <SelectValue placeholder={t("Select assignee")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
                       {filteredUsers.map((user) => (
@@ -884,7 +886,7 @@ export default function EvidencesMasterDataPage() {
                 </div>
 
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Description</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
                   <Textarea
                     value={newFormData.description}
                     onChange={(e) =>
@@ -904,10 +906,10 @@ export default function EvidencesMasterDataPage() {
                 <div className="grid grid-cols-3 gap-4">
                   <Select value={domainFilter || "_all"} onValueChange={(v) => setDomainFilter(v === "_all" ? "" : v)}>
                     <SelectTrigger className="w-full bg-white">
-                      <SelectValue placeholder="Domain" />
+                      <SelectValue placeholder={t("Domain")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
-                      <SelectItem value="_all">All Domains</SelectItem>
+                      <SelectItem value="_all">{t("All Domains")}</SelectItem>
                       {controlDomains.map((domain) => (
                         <SelectItem key={domain.id} value={domain.id}>
                           {domain.name}
@@ -918,10 +920,10 @@ export default function EvidencesMasterDataPage() {
 
                   <Select value={frameworkFilter || "_all"} onValueChange={(v) => setFrameworkFilter(v === "_all" ? "" : v)}>
                     <SelectTrigger className="w-full bg-white">
-                      <SelectValue placeholder="Framework" />
+                      <SelectValue placeholder={t("Framework")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
-                      <SelectItem value="_all">All Frameworks</SelectItem>
+                      <SelectItem value="_all">{t("All Frameworks")}</SelectItem>
                       {frameworks.map((framework) => (
                         <SelectItem key={framework.id} value={framework.id}>
                           {framework.name}
@@ -932,10 +934,10 @@ export default function EvidencesMasterDataPage() {
 
                   <Select value={functionalGroupingFilter || "_all"} onValueChange={(v) => setFunctionalGroupingFilter(v === "_all" ? "" : v)}>
                     <SelectTrigger className="w-full bg-white">
-                      <SelectValue placeholder="Functional Grouping" />
+                      <SelectValue placeholder={t("Functional Grouping")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
-                      <SelectItem value="_all">All Groupings</SelectItem>
+                      <SelectItem value="_all">{t("All Groupings")}</SelectItem>
                       {functionalGroupings.map((grouping) => (
                         <SelectItem key={grouping} value={grouping!}>
                           {grouping}
@@ -947,19 +949,19 @@ export default function EvidencesMasterDataPage() {
 
                 {/* Search Box */}
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <Input
-                    placeholder="Search By Control Code, Name"
+                    placeholder={t("Search By Control Code, Name")}
                     value={controlSearch}
                     onChange={(e) => setControlSearch(e.target.value)}
-                    className="pl-10 bg-white"
+                    className="ltr:pl-10 rtl:pr-10 bg-white"
                   />
                 </div>
 
                 {/* Controls List */}
                 <div className="border border-slate-200 rounded-lg max-h-80 overflow-y-auto">
                   {filteredControls.length === 0 ? (
-                    <div className="p-4 text-center text-slate-500">No controls found</div>
+                    <div className="p-4 text-center text-slate-500">{t("No controls found")}</div>
                   ) : (
                     filteredControls.map((control) => (
                       <div
@@ -992,7 +994,7 @@ export default function EvidencesMasterDataPage() {
                                 {control.controlCode} : {control.name}
                               </span>
                               <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
-                                Organization Wide
+                                {t("Organization Wide")}
                               </span>
                             </div>
                             {control.description && (
@@ -1005,7 +1007,7 @@ export default function EvidencesMasterDataPage() {
                   )}
                 </div>
                 <p className="text-sm text-slate-500">
-                  {newFormData.controlIds.length} control(s) selected
+                  {newFormData.controlIds.length} {t("control(s) selected")}
                 </p>
               </div>
             )}
@@ -1015,39 +1017,39 @@ export default function EvidencesMasterDataPage() {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-6">
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Evidence Name</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Evidence Name")}</Label>
                     <p className="mt-1 text-slate-800">{newFormData.name}</p>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Control Domain</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Control Domain")}</Label>
                     <p className="mt-1 text-slate-800">{selectedDomains.join(", ") || "-"}</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-6">
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Recurrence</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Recurrence")}</Label>
                     <p className="mt-1 text-slate-800">{newFormData.recurrence}</p>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Entities</Label>
-                    <p className="mt-1 text-slate-800">{newFormData.controlIds.length > 0 ? "Organization Wide" : "-"}</p>
+                    <Label className="text-sm font-medium text-slate-700">{t("Entities")}</Label>
+                    <p className="mt-1 text-slate-800">{newFormData.controlIds.length > 0 ? t("Organization Wide") : "-"}</p>
                   </div>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Department</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Department")}</Label>
                   <p className="mt-1 text-slate-800">
                     {departments.find((d) => d.id === newFormData.departmentId)?.name || "-"}
                   </p>
                 </div>
                 {newFormData.description && (
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Description</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
                     <p className="mt-1 text-slate-800">{newFormData.description}</p>
                   </div>
                 )}
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Selected Controls</Label>
-                  <p className="mt-1 text-slate-800">{newFormData.controlIds.length} control(s) selected</p>
+                  <Label className="text-sm font-medium text-slate-700">{t("Selected Controls")}</Label>
+                  <p className="mt-1 text-slate-800">{newFormData.controlIds.length} {t("control(s) selected")}</p>
                 </div>
               </div>
             )}
@@ -1056,16 +1058,16 @@ export default function EvidencesMasterDataPage() {
           <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             {newStep > 1 && (
               <Button variant="outline" size="sm" onClick={handleNewBack}>
-                Previous
+                {t("Previous")}
               </Button>
             )}
             <Button variant="outline" size="sm" onClick={() => setIsNewDialogOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             {newStep < 3 ? (
-              <Button size="sm" onClick={handleNewNext}>Next</Button>
+              <Button size="sm" onClick={handleNewNext}>{t("Next")}</Button>
             ) : (
-              <Button size="sm" onClick={handleNewSubmit}>Create Evidence</Button>
+              <Button size="sm" onClick={handleNewSubmit}>{t("Create Evidence")}</Button>
             )}
           </div>
         </DialogContent>
@@ -1081,19 +1083,19 @@ export default function EvidencesMasterDataPage() {
       }}>
         <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
-            <DialogTitle className="text-lg font-semibold text-slate-800">Edit Evidence</DialogTitle>
+            <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Evidence")}</DialogTitle>
           </div>
 
           {editingEvidence && (
             <div className="flex-1 overflow-y-auto px-6 py-6 space-y-5">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Evidence code</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Evidence code")}</Label>
                   <Input value={editingEvidence.evidenceCode} disabled className="mt-1.5 bg-slate-50" />
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-slate-700">
-                    Name <span className="text-red-500">*</span>
+                    {t("Name")} <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     value={editingEvidence.name}
@@ -1106,7 +1108,7 @@ export default function EvidencesMasterDataPage() {
               </div>
 
               <div>
-                <Label className="text-sm font-medium text-slate-700">Evidence requirement</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Evidence requirement")}</Label>
                 <Input
                   value={editingEvidence.description || ""}
                   onChange={(e) =>
@@ -1118,7 +1120,7 @@ export default function EvidencesMasterDataPage() {
 
               <div>
                 <Label className="text-sm font-medium text-slate-700">
-                  Recurrence <span className="text-red-500">*</span>
+                  {t("Recurrence")} <span className="text-red-500">*</span>
                 </Label>
                 <RadioGroup
                   value={editingEvidence.recurrence || ""}
@@ -1130,14 +1132,14 @@ export default function EvidencesMasterDataPage() {
                   {["Yearly", "Half-yearly", "Quarterly", "Monthly"].map((option) => (
                     <div key={option} className="flex items-center space-x-2">
                       <RadioGroupItem value={option} id={`edit-${option.toLowerCase()}`} />
-                      <Label htmlFor={`edit-${option.toLowerCase()}`} className="text-slate-600">{option}</Label>
+                      <Label htmlFor={`edit-${option.toLowerCase()}`} className="text-slate-600">{t(option)}</Label>
                     </div>
                   ))}
                 </RadioGroup>
               </div>
 
               <div>
-                <Label className="text-sm font-medium text-slate-700">Entities</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Entities")}</Label>
                 <RadioGroup
                   value={editingEvidence.entities || "Organization Wide"}
                   onValueChange={(value) =>
@@ -1147,13 +1149,13 @@ export default function EvidencesMasterDataPage() {
                 >
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="Organization Wide" id="edit-org-wide" />
-                    <Label htmlFor="edit-org-wide" className="text-slate-600">Organization Wide</Label>
+                    <Label htmlFor="edit-org-wide" className="text-slate-600">{t("Organization Wide")}</Label>
                   </div>
                 </RadioGroup>
               </div>
 
               <div>
-                <Label className="text-sm font-medium text-slate-700">Status</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Status")}</Label>
                 <RadioGroup
                   value={editingEvidence.status}
                   onValueChange={(value) =>
@@ -1164,14 +1166,14 @@ export default function EvidencesMasterDataPage() {
                   {["Not Uploaded", "Draft", "Need Attention", "Published", "Validated (For Filters)", "Validated"].map((status) => (
                     <div key={status} className="flex items-center space-x-2">
                       <RadioGroupItem value={status} id={`edit-status-${status.toLowerCase().replace(/\s+/g, "-")}`} />
-                      <Label htmlFor={`edit-status-${status.toLowerCase().replace(/\s+/g, "-")}`} className="text-slate-600">{status}</Label>
+                      <Label htmlFor={`edit-status-${status.toLowerCase().replace(/\s+/g, "-")}`} className="text-slate-600">{t(status)}</Label>
                     </div>
                   ))}
                 </RadioGroup>
               </div>
 
               <div>
-                <Label className="text-sm font-medium text-slate-700">Review date</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Review date")}</Label>
                 <Input
                   type="date"
                   value={editingEvidence.reviewDate?.split("T")[0] || ""}
@@ -1184,7 +1186,7 @@ export default function EvidencesMasterDataPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Is control linked</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Is control linked")}</Label>
                   <RadioGroup
                     value={editingEvidence.isControlLinked ? "Yes" : "No"}
                     onValueChange={(value) =>
@@ -1197,17 +1199,17 @@ export default function EvidencesMasterDataPage() {
                   >
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="Yes" id="edit-control-yes" />
-                      <Label htmlFor="edit-control-yes" className="text-slate-600">Yes</Label>
+                      <Label htmlFor="edit-control-yes" className="text-slate-600">{t("Yes")}</Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="No" id="edit-control-no" />
-                      <Label htmlFor="edit-control-no" className="text-slate-600">No</Label>
+                      <Label htmlFor="edit-control-no" className="text-slate-600">{t("No")}</Label>
                     </div>
                   </RadioGroup>
                 </div>
 
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Is policy linked</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Is policy linked")}</Label>
                   <RadioGroup
                     value={editingEvidence.isPolicyLinked ? "Yes" : "No"}
                     onValueChange={(value) =>
@@ -1220,18 +1222,18 @@ export default function EvidencesMasterDataPage() {
                   >
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="Yes" id="edit-policy-yes" />
-                      <Label htmlFor="edit-policy-yes" className="text-slate-600">Yes</Label>
+                      <Label htmlFor="edit-policy-yes" className="text-slate-600">{t("Yes")}</Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="No" id="edit-policy-no" />
-                      <Label htmlFor="edit-policy-no" className="text-slate-600">No</Label>
+                      <Label htmlFor="edit-policy-no" className="text-slate-600">{t("No")}</Label>
                     </div>
                   </RadioGroup>
                 </div>
               </div>
 
               <div>
-                <Label className="text-sm font-medium text-slate-700">Artifact description</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Artifact description")}</Label>
                 <Input
                   value={editingEvidence.artifactDescription || ""}
                   onChange={(e) =>
@@ -1245,7 +1247,7 @@ export default function EvidencesMasterDataPage() {
               </div>
 
               <div>
-                <Label className="text-sm font-medium text-slate-700">Is KPI</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Is KPI")}</Label>
                 <RadioGroup
                   value={editingEvidence.isKPI ? "Yes" : "No"}
                   onValueChange={(value) =>
@@ -1255,11 +1257,11 @@ export default function EvidencesMasterDataPage() {
                 >
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="Yes" id="edit-kpi-yes" />
-                    <Label htmlFor="edit-kpi-yes" className="text-slate-600">Yes</Label>
+                    <Label htmlFor="edit-kpi-yes" className="text-slate-600">{t("Yes")}</Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="No" id="edit-kpi-no" />
-                    <Label htmlFor="edit-kpi-no" className="text-slate-600">No</Label>
+                    <Label htmlFor="edit-kpi-no" className="text-slate-600">{t("No")}</Label>
                   </div>
                 </RadioGroup>
               </div>
@@ -1267,7 +1269,7 @@ export default function EvidencesMasterDataPage() {
               {editingEvidence.isKPI && (
                 <>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">KPI description</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("KPI description")}</Label>
                     <Input
                       value={editingEvidence.kpiDescription || ""}
                       onChange={(e) =>
@@ -1281,7 +1283,7 @@ export default function EvidencesMasterDataPage() {
                   </div>
 
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">KPI expected score</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("KPI expected score")}</Label>
                     <Input
                       type="number"
                       value={editingEvidence.kpiExpectedScore || ""}
@@ -1296,7 +1298,7 @@ export default function EvidencesMasterDataPage() {
                   </div>
 
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">KPI objective</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("KPI objective")}</Label>
                     <Input
                       value={editingEvidence.kpiObjective || ""}
                       onChange={(e) =>
@@ -1310,7 +1312,7 @@ export default function EvidencesMasterDataPage() {
                   </div>
 
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">KPI data source</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("KPI data source")}</Label>
                     <Input
                       value={editingEvidence.kpiDataSource || ""}
                       onChange={(e) =>
@@ -1324,7 +1326,7 @@ export default function EvidencesMasterDataPage() {
                   </div>
 
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">KPI calculation formula</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("KPI calculation formula")}</Label>
                     <Input
                       value={editingEvidence.kpiCalculationFormula || ""}
                       onChange={(e) =>
@@ -1340,7 +1342,7 @@ export default function EvidencesMasterDataPage() {
               )}
 
               <div>
-                <Label className="text-sm font-medium text-slate-700">Is added</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Is added")}</Label>
                 <RadioGroup
                   value={editingEvidence.isAdded ? "Yes" : "No"}
                   onValueChange={(value) =>
@@ -1350,17 +1352,17 @@ export default function EvidencesMasterDataPage() {
                 >
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="Yes" id="edit-added-yes" />
-                    <Label htmlFor="edit-added-yes" className="text-slate-600">Yes</Label>
+                    <Label htmlFor="edit-added-yes" className="text-slate-600">{t("Yes")}</Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="No" id="edit-added-no" />
-                    <Label htmlFor="edit-added-no" className="text-slate-600">No</Label>
+                    <Label htmlFor="edit-added-no" className="text-slate-600">{t("No")}</Label>
                   </div>
                 </RadioGroup>
               </div>
 
               <div>
-                <Label className="text-sm font-medium text-slate-700">AI status</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("AI status")}</Label>
                 <RadioGroup
                   value={editingEvidence.aiStatus || ""}
                   onValueChange={(value) =>
@@ -1371,14 +1373,14 @@ export default function EvidencesMasterDataPage() {
                   {["Compliant", "Non Compliant", "Partially Compliant"].map((status) => (
                     <div key={status} className="flex items-center space-x-2">
                       <RadioGroupItem value={status} id={`edit-ai-${status.toLowerCase().replace(/\s+/g, "-")}`} />
-                      <Label htmlFor={`edit-ai-${status.toLowerCase().replace(/\s+/g, "-")}`} className="text-slate-600">{status}</Label>
+                      <Label htmlFor={`edit-ai-${status.toLowerCase().replace(/\s+/g, "-")}`} className="text-slate-600">{t(status)}</Label>
                     </div>
                   ))}
                 </RadioGroup>
               </div>
 
               <div>
-                <Label className="text-sm font-medium text-slate-700">AI response Justification</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("AI response Justification")}</Label>
                 <Input
                   value={editingEvidence.aiJustification || ""}
                   onChange={(e) =>
@@ -1392,13 +1394,13 @@ export default function EvidencesMasterDataPage() {
               </div>
 
               <div>
-                <Label className="text-sm font-medium text-slate-700">Control</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Control")}</Label>
                 <Select value={editControlId || "_none"} onValueChange={(v) => setEditControlId(v === "_none" ? "" : v)}>
                   <SelectTrigger className="mt-1.5 w-full bg-white">
-                    <SelectValue placeholder="Select control" />
+                    <SelectValue placeholder={t("Select control")} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
-                    <SelectItem value="_none">No control</SelectItem>
+                    <SelectItem value="_none">{t("No control")}</SelectItem>
                     {controls.map((control) => (
                       <SelectItem key={control.id} value={control.id}>
                         {control.name}
@@ -1412,9 +1414,9 @@ export default function EvidencesMasterDataPage() {
 
           <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" size="sm" onClick={() => setIsEditDialogOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
-            <Button size="sm" onClick={handleEditSave}>Save</Button>
+            <Button size="sm" onClick={handleEditSave}>{t("Save")}</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -1423,15 +1425,15 @@ export default function EvidencesMasterDataPage() {
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent className="sm:max-w-[500px] p-0 gap-0">
           <div className="px-6 py-5">
-            <DialogTitle className="text-lg font-semibold text-slate-800">Confirmation</DialogTitle>
-            <DialogDescription className="text-sm text-slate-500 mt-1">Are you sure you want to delete this?</DialogDescription>
+            <DialogTitle className="text-lg font-semibold text-slate-800">{t("Confirmation")}</DialogTitle>
+            <DialogDescription className="text-sm text-slate-500 mt-1">{t("Are you sure you want to delete this?")}</DialogDescription>
           </div>
           <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" size="sm" onClick={() => setDeleteDialogOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button size="sm" variant="destructive" onClick={confirmDelete}>
-              Delete
+              {t("Delete")}
             </Button>
           </div>
         </DialogContent>
@@ -1441,17 +1443,17 @@ export default function EvidencesMasterDataPage() {
       <Dialog open={deleteAllDialogOpen} onOpenChange={setDeleteAllDialogOpen}>
         <DialogContent className="sm:max-w-[500px] p-0 gap-0">
           <div className="px-6 py-5">
-            <DialogTitle className="text-lg font-semibold text-slate-800">Confirmation</DialogTitle>
+            <DialogTitle className="text-lg font-semibold text-slate-800">{t("Confirmation")}</DialogTitle>
             <DialogDescription className="text-sm text-slate-500 mt-1">
-              Are you sure you want to delete all {evidences.length} evidences?
+              {t("Are you sure you want to delete all")} {evidences.length} {t("evidences?")}
             </DialogDescription>
           </div>
           <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" size="sm" onClick={() => setDeleteAllDialogOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button size="sm" variant="destructive" onClick={handleDeleteAll}>
-              Delete All
+              {t("Delete All")}
             </Button>
           </div>
         </DialogContent>
@@ -1467,20 +1469,20 @@ export default function EvidencesMasterDataPage() {
       }}>
         <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
-            <DialogTitle className="text-lg font-semibold text-slate-800">Import Evidences</DialogTitle>
+            <DialogTitle className="text-lg font-semibold text-slate-800">{t("Import Evidences")}</DialogTitle>
           </div>
           <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
             <div>
-              <Label className="text-sm font-medium text-slate-700">Name</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Name")}</Label>
               <Input
                 value={importName}
                 onChange={(e) => setImportName(e.target.value)}
-                placeholder="Enter name"
+                placeholder={t("Enter name")}
                 className="mt-1.5 w-full bg-white"
               />
             </div>
             <div>
-              <Label className="text-sm font-medium text-slate-700">File</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("File")}</Label>
               <Input
                 type="file"
                 accept=".csv,.xlsx,.xls"
@@ -1491,16 +1493,16 @@ export default function EvidencesMasterDataPage() {
           </div>
           <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
-              <Download className="h-4 w-4 mr-2" />
-              Download Template
+              <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+              {t("Download Template")}
             </Button>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(false)}>
-                Cancel
+                {t("Cancel")}
               </Button>
               <Button size="sm" onClick={handleImportSubmit}>
-                <Upload className="h-4 w-4 mr-2" />
-                Import
+                <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                {t("Import")}
               </Button>
             </div>
           </div>

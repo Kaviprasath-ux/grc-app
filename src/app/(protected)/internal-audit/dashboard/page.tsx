@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Unauthorized } from "@/components/ui/unauthorized";
 import { StatsCard } from "@/components/shared";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   Dialog,
   DialogContent,
@@ -176,6 +177,7 @@ export default function InternalAuditDashboard() {
   const router = useRouter();
   const { data: session } = useSession();
   const { canView, isLoading: permissionsLoading } = usePermissions('audit.dashboard');
+  const { t } = useLanguage();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [capaPage, setCapaPage] = useState(0);
@@ -334,7 +336,7 @@ export default function InternalAuditDashboard() {
             <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
             <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
           </div>
-          <p className="text-sm text-slate-500 font-medium">Loading dashboard...</p>
+          <p className="text-sm text-slate-500 font-medium">{t("Loading dashboard...")}</p>
         </div>
       </div>
     );
@@ -342,7 +344,7 @@ export default function InternalAuditDashboard() {
 
   // Show unauthorized if user doesn't have view permission
   if (!canView) {
-    return <Unauthorized description="You don't have permission to access the Internal Audit Dashboard." />;
+    return <Unauthorized description={t("You don't have permission to access the Internal Audit Dashboard.")} />;
   }
 
   // Render drill-down dialog content
@@ -361,7 +363,7 @@ export default function InternalAuditDashboard() {
     if (!drillDownData || !drillDownData.data) {
       return (
         <div className="text-center py-12 text-slate-500">
-          No data available
+          {t("No data available")}
         </div>
       );
     }
@@ -373,13 +375,13 @@ export default function InternalAuditDashboard() {
             <Table>
               <TableHeader className="bg-slate-50/50">
                 <TableRow>
-                  <TableHead className="text-xs font-semibold text-slate-600">Risk ID</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600">Description</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600">Department</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600">Category</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600">Severity</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600">Status</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600">Action</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600">{t("Risk ID")}</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600">{t("Description")}</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600">{t("Department")}</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600">{t("Category")}</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600">{t("Severity")}</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600">{t("Status")}</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600">{t("Action")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -408,7 +410,7 @@ export default function InternalAuditDashboard() {
               </TableBody>
             </Table>
             <div className="mt-4 text-sm text-slate-500 text-center">
-              Showing {drillDownData.data.length} of {drillDownData.total} records
+              {t("Showing")} {drillDownData.data.length} {t("of")} {drillDownData.total} {t("records")}
             </div>
           </div>
         );
@@ -419,13 +421,13 @@ export default function InternalAuditDashboard() {
             <Table>
               <TableHeader className="bg-slate-50/50">
                 <TableRow>
-                  <TableHead className="text-xs font-semibold text-slate-600">Audit ID</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600">Title</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600">Department</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600">Type</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600">Auditor</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600">Status</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600">Action</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600">{t("Audit ID")}</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600">{t("Title")}</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600">{t("Department")}</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600">{t("Type")}</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600">{t("Auditor")}</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600">{t("Status")}</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600">{t("Action")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -454,7 +456,7 @@ export default function InternalAuditDashboard() {
               </TableBody>
             </Table>
             <div className="mt-4 text-sm text-slate-500 text-center">
-              Showing {drillDownData.data.length} of {drillDownData.total} records
+              {t("Showing")} {drillDownData.data.length} {t("of")} {drillDownData.total} {t("records")}
             </div>
           </div>
         );
@@ -465,14 +467,14 @@ export default function InternalAuditDashboard() {
             <Table>
               <TableHeader className="bg-slate-50/50">
                 <TableRow>
-                  <TableHead className="text-xs font-semibold text-slate-600">CAPA ID</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600">Title</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600">Finding</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600">Severity</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600">Responsible</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600">Target Date</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600">Status</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600">Action</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600">{t("CAPA ID")}</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600">{t("Title")}</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600">{t("Finding")}</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600">{t("Severity")}</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600">{t("Responsible")}</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600">{t("Target Date")}</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600">{t("Status")}</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600">{t("Action")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -508,7 +510,7 @@ export default function InternalAuditDashboard() {
               </TableBody>
             </Table>
             <div className="mt-4 text-sm text-slate-500 text-center">
-              Showing {drillDownData.data.length} of {drillDownData.total} records
+              {t("Showing")} {drillDownData.data.length} {t("of")} {drillDownData.total} {t("records")}
             </div>
           </div>
         );
@@ -529,7 +531,7 @@ export default function InternalAuditDashboard() {
           findingsCount?: number;
           evidenceRequestsCount?: number;
         };
-        if (!auditDetail) return <div className="text-center py-12 text-slate-500">No data available</div>;
+        if (!auditDetail) return <div className="text-center py-12 text-slate-500">{t("No data available")}</div>;
 
         return (
           <div className="max-h-[60vh] overflow-auto space-y-6">
@@ -538,29 +540,29 @@ export default function InternalAuditDashboard() {
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <FileText className="h-4 w-4 text-slate-500" />
-                  <span className="text-sm text-slate-500">Audit ID:</span>
+                  <span className="text-sm text-slate-500">{t("Audit ID")}:</span>
                   <span className="font-medium">{auditDetail.auditId || 'N/A'}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <ClipboardList className="h-4 w-4 text-slate-500" />
-                  <span className="text-sm text-slate-500">Department:</span>
+                  <span className="text-sm text-slate-500">{t("Department")}:</span>
                   <span className="font-medium">{auditDetail.department || 'N/A'}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Shield className="h-4 w-4 text-slate-500" />
-                  <span className="text-sm text-slate-500">Type:</span>
+                  <span className="text-sm text-slate-500">{t("Type")}:</span>
                   <span className="font-medium">{auditDetail.auditType || 'N/A'}</span>
                 </div>
               </div>
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <Activity className="h-4 w-4 text-slate-500" />
-                  <span className="text-sm text-slate-500">Status:</span>
+                  <span className="text-sm text-slate-500">{t("Status")}:</span>
                   <StatusBadge status={auditDetail.status || ''} />
                 </div>
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-slate-500" />
-                  <span className="text-sm text-slate-500">Duration:</span>
+                  <span className="text-sm text-slate-500">{t("Duration")}:</span>
                   <span className="font-medium">
                     {auditDetail.startDate
                       ? new Date(auditDetail.startDate).toLocaleDateString()
@@ -571,9 +573,9 @@ export default function InternalAuditDashboard() {
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle className="h-4 w-4 text-slate-500" />
-                  <span className="text-sm text-slate-500">Auditor:</span>
+                  <span className="text-sm text-slate-500">{t("Auditor")}:</span>
                   <span className="font-medium">
-                    {auditDetail.auditor?.name || 'Unassigned'}
+                    {auditDetail.auditor?.name || t("Unassigned")}
                   </span>
                 </div>
               </div>
@@ -583,11 +585,11 @@ export default function InternalAuditDashboard() {
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-white rounded-xl border border-slate-200 p-4">
                 <div className="text-2xl font-bold text-slate-800">{auditDetail.findingsCount || 0}</div>
-                <div className="text-sm text-slate-500">Findings</div>
+                <div className="text-sm text-slate-500">{t("Findings")}</div>
               </div>
               <div className="bg-white rounded-xl border border-slate-200 p-4">
                 <div className="text-2xl font-bold text-slate-800">{auditDetail.evidenceRequestsCount || 0}</div>
-                <div className="text-sm text-slate-500">Evidence Requests</div>
+                <div className="text-sm text-slate-500">{t("Evidence Requests")}</div>
               </div>
             </div>
 
@@ -596,13 +598,13 @@ export default function InternalAuditDashboard() {
               <div className="space-y-3">
                 {auditDetail.objectives && (
                   <div>
-                    <h4 className="text-sm font-medium text-slate-700 mb-1">Objectives</h4>
+                    <h4 className="text-sm font-medium text-slate-700 mb-1">{t("Objectives")}</h4>
                     <p className="text-sm text-slate-600">{auditDetail.objectives}</p>
                   </div>
                 )}
                 {auditDetail.scope && (
                   <div>
-                    <h4 className="text-sm font-medium text-slate-700 mb-1">Scope</h4>
+                    <h4 className="text-sm font-medium text-slate-700 mb-1">{t("Scope")}</h4>
                     <p className="text-sm text-slate-600">{auditDetail.scope}</p>
                   </div>
                 )}
@@ -612,7 +614,7 @@ export default function InternalAuditDashboard() {
             {/* View Full Details Button */}
             <div className="flex justify-end">
               <Button onClick={() => navigateToDetail('audit', auditDetail.id || '')}>
-                View Full Details
+                {t("View Full Details")}
                 <ExternalLink className="h-4 w-4 ml-2" />
               </Button>
             </div>
@@ -632,44 +634,44 @@ export default function InternalAuditDashboard() {
         <nav className="flex items-center gap-1.5 text-sm">
           <div className="flex items-center gap-1.5 text-slate-500">
             <Home className="h-4 w-4" />
-            <span>Internal Audit</span>
+            <span>{t("Internal Audit")}</span>
           </div>
           <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-          <span className="text-primary-700 font-medium">My Tasks</span>
+          <span className="text-primary-700 font-medium">{t("My Tasks")}</span>
         </nav>
 
         {/* Page Header */}
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">My Audit Tasks</h1>
-          <p className="text-sm text-slate-500 mt-1">Track your evidence requests and corrective actions</p>
+          <h1 className="text-2xl font-bold text-slate-800">{t("My Audit Tasks")}</h1>
+          <p className="text-sm text-slate-500 mt-1">{t("Track your evidence requests and corrective actions")}</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatsCard
-            label="Evidence Requests"
+            label={t("Evidence Requests")}
             value={data?.stats.evidenceRequests.total || 0}
             href="/internal-audit/fieldwork"
             icon={Activity}
-            description={`${data?.stats.evidenceRequests.pending || 0} Pending`}
+            description={`${data?.stats.evidenceRequests.pending || 0} ${t("Pending")}`}
           />
           <StatsCard
-            label="Corrective Actions"
+            label={t("Corrective Actions")}
             value={data?.stats.capa.total || 0}
             href="/internal-audit/capa-tracking"
             icon={CheckCircle}
-            description={`${data?.stats.capa.open || 0} Open`}
+            description={`${data?.stats.capa.open || 0} ${t("Open")}`}
           />
           <StatsCard
-            label="Pending Actions"
+            label={t("Pending Actions")}
             value={(data?.stats.evidenceRequests.pending || 0) + (data?.stats.capa.open || 0)}
             icon={Clock}
-            description="Items requiring attention"
+            description={t("Items requiring attention")}
           />
           <StatsCard
-            label="Overdue Items"
+            label={t("Overdue Items")}
             value={(data?.stats.evidenceRequests.overdue || 0) + (data?.stats.capa.overdue || 0)}
             icon={AlertTriangle}
-            description="Requires immediate attention"
+            description={t("Requires immediate attention")}
           />
         </div>
       </div>
@@ -683,15 +685,15 @@ export default function InternalAuditDashboard() {
       <nav className="flex items-center gap-1.5 text-sm">
         <div className="flex items-center gap-1.5 text-slate-500">
           <Home className="h-4 w-4" />
-          <span>Internal Audit</span>
+          <span>{t("Internal Audit")}</span>
         </div>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-        <span className="text-primary-700 font-medium">Dashboard</span>
+        <span className="text-primary-700 font-medium">{t("Dashboard")}</span>
       </nav>
 
       {/* Page Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">Audit Dashboard</h1>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Audit Dashboard")}</h1>
       </div>
 
       {/* Drill-down Dialog */}
@@ -702,7 +704,7 @@ export default function InternalAuditDashboard() {
               {drillDown.title}
             </DialogTitle>
             <DialogDescription className="text-sm text-slate-500">
-              Click on any row to view more details
+              {t("Click on any row to view more details")}
             </DialogDescription>
           </DialogHeader>
           <div className="px-6 py-5">
@@ -713,30 +715,30 @@ export default function InternalAuditDashboard() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div onClick={() => handleRiskCardClick('all', 'All Risks')} className="cursor-pointer [&>div]:hover:border-slate-300 [&>div]:transition-colors">
+        <div onClick={() => handleRiskCardClick('all', t('All Risks'))} className="cursor-pointer [&>div]:hover:border-slate-300 [&>div]:transition-colors">
           <StatsCard
-            label="Total Risks"
+            label={t("Total Risks")}
             value={data?.riskStats.total || 0}
             icon={Shield}
           />
         </div>
-        <div onClick={() => handleRiskCardClick('extreme', 'Extreme Severity Risks')} className="cursor-pointer [&>div]:hover:border-slate-300 [&>div]:transition-colors">
+        <div onClick={() => handleRiskCardClick('extreme', t('Extreme Severity Risks'))} className="cursor-pointer [&>div]:hover:border-slate-300 [&>div]:transition-colors">
           <StatsCard
-            label="Extreme Severity"
+            label={t("Extreme Severity")}
             value={data?.riskStats.extreme || 0}
             icon={AlertTriangle}
           />
         </div>
-        <div onClick={() => handleAuditCardClick('ongoing', 'Ongoing Audits')} className="cursor-pointer [&>div]:hover:border-slate-300 [&>div]:transition-colors">
+        <div onClick={() => handleAuditCardClick('ongoing', t('Ongoing Audits'))} className="cursor-pointer [&>div]:hover:border-slate-300 [&>div]:transition-colors">
           <StatsCard
-            label="Ongoing Audits"
+            label={t("Ongoing Audits")}
             value={data?.auditStats.ongoing || 0}
             icon={Activity}
           />
         </div>
-        <div onClick={() => handleAuditCardClick('completed', 'Completed Audits')} className="cursor-pointer [&>div]:hover:border-slate-300 [&>div]:transition-colors">
+        <div onClick={() => handleAuditCardClick('completed', t('Completed Audits'))} className="cursor-pointer [&>div]:hover:border-slate-300 [&>div]:transition-colors">
           <StatsCard
-            label="Completed Audits"
+            label={t("Completed Audits")}
             value={data?.auditStats.completed || 0}
             icon={CheckCircle}
           />
@@ -748,8 +750,8 @@ export default function InternalAuditDashboard() {
         {/* Risk by Rating Chart */}
         <div className="bg-white rounded-xl border border-slate-200">
           <div className="px-6 py-4 border-b border-slate-100">
-            <h3 className="text-base font-semibold text-slate-800">Risk by Rating</h3>
-            <p className="text-xs text-slate-400 mt-1">Click on a bar to view risks of that severity</p>
+            <h3 className="text-base font-semibold text-slate-800">{t("Risk by Rating")}</h3>
+            <p className="text-xs text-slate-400 mt-1">{t("Click on a bar to view risks of that severity")}</p>
           </div>
           <div className="p-6 space-y-4">
             {riskChartData.map((item) => {
@@ -759,7 +761,7 @@ export default function InternalAuditDashboard() {
                 <div
                   key={item.name}
                   className="cursor-pointer group"
-                  onClick={() => handleRiskCardClick(item.name.toLowerCase(), `${item.name} Severity Risks`)}
+                  onClick={() => handleRiskCardClick(item.name.toLowerCase(), `${item.name} ${t("Severity Risks")}`)}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
@@ -785,7 +787,7 @@ export default function InternalAuditDashboard() {
             })}
             {data?.riskStats.total === 0 && (
               <div className="text-center py-8 text-slate-400">
-                <p className="text-sm">No risk data available</p>
+                <p className="text-sm">{t("No risk data available")}</p>
               </div>
             )}
           </div>
@@ -795,8 +797,8 @@ export default function InternalAuditDashboard() {
         <div className="bg-white rounded-xl border border-slate-200">
           <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
             <div>
-              <h3 className="text-base font-semibold text-slate-800">CAPA Status Overview</h3>
-              <p className="text-xs text-slate-400 mt-1">Click on a status badge to view details</p>
+              <h3 className="text-base font-semibold text-slate-800">{t("CAPA Status Overview")}</h3>
+              <p className="text-xs text-slate-400 mt-1">{t("Click on a status badge to view details")}</p>
             </div>
             <div className="flex items-center gap-2 text-sm text-slate-500">
               <Button
@@ -823,7 +825,7 @@ export default function InternalAuditDashboard() {
           <div className="p-6">
             {paginatedCapaData.length === 0 ? (
               <div className="text-center py-8 text-slate-500">
-                <p>No CAPA data available</p>
+                <p>{t("No CAPA data available")}</p>
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-4">
@@ -832,7 +834,7 @@ export default function InternalAuditDashboard() {
                     <h4 className="text-sm font-semibold text-slate-700 text-center mb-3">{dept.name}</h4>
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-slate-600">Open</span>
+                        <span className="text-sm text-slate-600">{t("Open")}</span>
                         <div className="flex gap-1">
                           {dept.open.high > 0 && (
                             <Badge
@@ -864,7 +866,7 @@ export default function InternalAuditDashboard() {
                         </div>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-slate-600">Closed</span>
+                        <span className="text-sm text-slate-600">{t("Closed")}</span>
                         <div className="flex gap-1">
                           {dept.closed.high > 0 && (
                             <Badge
@@ -908,17 +910,17 @@ export default function InternalAuditDashboard() {
       <div className="bg-white rounded-xl border border-slate-200">
         <div className="px-6 py-4 border-b border-slate-100">
           <h3 className="text-base font-semibold text-slate-800">
-            Annual Audit Plan - {data?.currentYear || new Date().getFullYear()}
+            {t("Annual Audit Plan")} - {data?.currentYear || new Date().getFullYear()}
           </h3>
-          <p className="text-xs text-slate-400 mt-1">Click on an audit row to view details</p>
+          <p className="text-xs text-slate-400 mt-1">{t("Click on an audit row to view details")}</p>
         </div>
         <div className="p-6">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader className="bg-slate-50/50">
                 <TableRow>
-                  <TableHead className="min-w-[200px] text-xs font-semibold text-slate-600">Audit Name</TableHead>
-                  <TableHead className="min-w-[150px] text-xs font-semibold text-slate-600">Auditor</TableHead>
+                  <TableHead className="min-w-[200px] text-xs font-semibold text-slate-600">{t("Audit Name")}</TableHead>
+                  <TableHead className="min-w-[150px] text-xs font-semibold text-slate-600">{t("Auditor")}</TableHead>
                   {MONTHS.map((month) => (
                     <TableHead key={month} className="text-center min-w-[60px] text-xs font-semibold text-slate-600">{month}</TableHead>
                   ))}
@@ -945,7 +947,7 @@ export default function InternalAuditDashboard() {
                           <TableCell key={month} className="p-1">
                             {isStart ? (
                               <Badge className="bg-orange-500 text-white text-xs whitespace-nowrap">
-                                {audit.durationDays} Days
+                                {audit.durationDays} {t("Days")}
                               </Badge>
                             ) : isInRange ? (
                               <div className="h-6 bg-orange-200 rounded-sm"></div>
@@ -958,7 +960,7 @@ export default function InternalAuditDashboard() {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={14} className="text-center py-8 text-slate-500">
-                      No audit plans for this year
+                      {t("No audit plans for this year")}
                     </TableCell>
                   </TableRow>
                 )}
@@ -972,16 +974,16 @@ export default function InternalAuditDashboard() {
       <div className="bg-white rounded-xl border border-slate-200">
         <div className="px-6 py-4 border-b border-slate-100">
           <h3 className="text-base font-semibold text-slate-800">
-            Auditor Schedule - {data?.currentYear || new Date().getFullYear()}
+            {t("Auditor Schedule")} - {data?.currentYear || new Date().getFullYear()}
           </h3>
-          <p className="text-xs text-slate-400 mt-1">Monthly allocation by auditor</p>
+          <p className="text-xs text-slate-400 mt-1">{t("Monthly allocation by auditor")}</p>
         </div>
         <div className="p-6">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader className="bg-slate-50/50">
                 <TableRow>
-                  <TableHead className="min-w-[200px] text-xs font-semibold text-slate-600">Auditor Name</TableHead>
+                  <TableHead className="min-w-[200px] text-xs font-semibold text-slate-600">{t("Auditor Name")}</TableHead>
                   {MONTHS.map((month) => (
                     <TableHead key={month} className="text-center min-w-[60px] text-xs font-semibold text-slate-600">{month}</TableHead>
                   ))}
@@ -1006,7 +1008,7 @@ export default function InternalAuditDashboard() {
                                 onClick={() => handleAuditPlanClick(assignment.auditId, assignment.engagementTitle)}
                                 title={assignment.engagementTitle}
                               >
-                                {assignment.durationDays} Days
+                                {assignment.durationDays} {t("Days")}
                               </Badge>
                             ) : assignment ? (
                               <div
@@ -1023,7 +1025,7 @@ export default function InternalAuditDashboard() {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={13} className="text-center py-8 text-slate-500">
-                      No auditor schedules for this year
+                      {t("No auditor schedules for this year")}
                     </TableCell>
                   </TableRow>
                 )}

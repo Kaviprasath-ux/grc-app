@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Asset {
   id: string;
@@ -38,51 +39,52 @@ interface ReportConfig {
   getColumn1Value: (asset: Asset) => string;
 }
 
-const reportConfigs: ReportConfig[] = [
-  {
-    id: "category",
-    title: "Asset By Category",
-    column1Header: "Category",
-    getColumn1Value: (asset) => asset.category?.name || "",
-  },
-  {
-    id: "subcategory",
-    title: "Asset By Sub-Category",
-    column1Header: "Asset Sub Category",
-    getColumn1Value: (asset) => asset.subCategory?.name || "",
-  },
-  {
-    id: "group",
-    title: "Asset By Group",
-    column1Header: "Asset Group",
-    getColumn1Value: (asset) => asset.group?.name || "",
-  },
-  {
-    id: "location",
-    title: "Asset By Location",
-    column1Header: "Location",
-    getColumn1Value: (asset) => asset.location || "",
-  },
-  {
-    id: "criticality",
-    title: "Asset By Criticality",
-    column1Header: "Asset Criticality",
-    getColumn1Value: (asset) => asset.ciaClassification?.criticality || "",
-  },
-  {
-    id: "sensitivity",
-    title: "Asset By Sensitivity",
-    column1Header: "Asset Sensitivity",
-    getColumn1Value: (asset) => asset.sensitivity?.name || "",
-  },
-];
-
 export default function AssetReportsPage() {
+  const { t } = useLanguage();
   const [assets, setAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(false);
   const [activeReport, setActiveReport] = useState<ReportType | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 20;
+
+  const reportConfigs: ReportConfig[] = [
+    {
+      id: "category",
+      title: t("Asset By Category"),
+      column1Header: t("Category"),
+      getColumn1Value: (asset) => asset.category?.name || "",
+    },
+    {
+      id: "subcategory",
+      title: t("Asset By Sub-Category"),
+      column1Header: t("Asset Sub Category"),
+      getColumn1Value: (asset) => asset.subCategory?.name || "",
+    },
+    {
+      id: "group",
+      title: t("Asset By Group"),
+      column1Header: t("Asset Group"),
+      getColumn1Value: (asset) => asset.group?.name || "",
+    },
+    {
+      id: "location",
+      title: t("Asset By Location"),
+      column1Header: t("Location"),
+      getColumn1Value: (asset) => asset.location || "",
+    },
+    {
+      id: "criticality",
+      title: t("Asset By Criticality"),
+      column1Header: t("Asset Criticality"),
+      getColumn1Value: (asset) => asset.ciaClassification?.criticality || "",
+    },
+    {
+      id: "sensitivity",
+      title: t("Asset By Sensitivity"),
+      column1Header: t("Asset Sensitivity"),
+      getColumn1Value: (asset) => asset.sensitivity?.name || "",
+    },
+  ];
 
   const fetchAssets = async () => {
     setLoading(true);
@@ -129,7 +131,7 @@ export default function AssetReportsPage() {
   const handleExport = () => {
     if (!activeConfig) return;
 
-    const headers = [activeConfig.column1Header, "Asset Name"];
+    const headers = [activeConfig.column1Header, t("Asset Name")];
     const csvRows = [headers.join(",")];
 
     paginatedData.forEach((asset) => {
@@ -156,15 +158,15 @@ export default function AssetReportsPage() {
       <nav className="flex items-center gap-1.5 text-sm">
         <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
-          <span>Asset Management</span>
+          <span>{t("Asset Management")}</span>
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-        <span className="text-primary-700 font-medium">Reports</span>
+        <span className="text-primary-700 font-medium">{t("Reports")}</span>
       </nav>
 
       {/* Page Header */}
       <div>
-        <h1 className="text-2xl font-bold text-slate-800">Asset Reports</h1>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Asset Reports")}</h1>
       </div>
 
       {/* Report List - Matching Organization Reports style */}
@@ -191,7 +193,7 @@ export default function AssetReportsPage() {
                 <DialogTitle className="text-lg font-semibold text-slate-800">{activeConfig?.title}</DialogTitle>
                 <Button variant="outline" size="sm" onClick={handleExport}>
                   <Download className="h-4 w-4 mr-2" />
-                  Export
+                  {t("Export")}
                 </Button>
               </div>
             </DialogHeader>
@@ -208,7 +210,7 @@ export default function AssetReportsPage() {
                       <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
                       <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
                     </div>
-                    <p className="text-sm text-slate-500 font-medium">Loading report...</p>
+                    <p className="text-sm text-slate-500 font-medium">{t("Loading report...")}</p>
                   </div>
                 </div>
               ) : (
@@ -219,7 +221,7 @@ export default function AssetReportsPage() {
                         {activeConfig?.column1Header}
                       </th>
                       <th className="text-left pr-4 py-4 text-xs font-semibold text-slate-600">
-                        Asset Name
+                        {t("Asset Name")}
                       </th>
                     </tr>
                   </thead>
@@ -227,7 +229,7 @@ export default function AssetReportsPage() {
                     {paginatedData.length === 0 ? (
                       <tr>
                         <td colSpan={2} className="text-center py-8 text-slate-500">
-                          No data found
+                          {t("No data found")}
                         </td>
                       </tr>
                     ) : (
@@ -250,7 +252,7 @@ export default function AssetReportsPage() {
           {totalItems > 0 && (
             <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
               <span className="text-sm text-slate-500">
-                {startItem} to {endItem} of {totalItems}
+                {startItem} {t("to")} {endItem} {t("of")} {totalItems}
               </span>
               <div className="flex items-center gap-1">
                 <Button
@@ -272,7 +274,7 @@ export default function AssetReportsPage() {
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
                 <span className="text-sm text-slate-600 px-2">
-                  Page {currentPage} of {totalPages || 1}
+                  {t("Page")} {currentPage} {t("of")} {totalPages || 1}
                 </span>
                 <Button
                   variant="ghost"

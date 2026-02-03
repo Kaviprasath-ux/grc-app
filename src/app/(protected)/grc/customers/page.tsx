@@ -28,6 +28,7 @@ import { Label } from "@/components/ui/label";
 import { Pencil, Image, Trash2, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Customer {
   id: string;
@@ -63,6 +64,7 @@ const TIME_ZONES = [
 export default function CustomersPage() {
   const { toast } = useToast();
   const router = useRouter();
+  const { t } = useLanguage();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -142,8 +144,8 @@ export default function CustomersPage() {
         setFormData({ ...formData, logoFile: file });
       } else {
         toast({
-          title: "Invalid file type",
-          description: "Please upload an image file (PNG, JPG, etc.)",
+          title: t("Invalid file type"),
+          description: t("Please upload an image file (PNG, JPG, etc.)"),
           variant: "destructive",
         });
       }
@@ -157,8 +159,8 @@ export default function CustomersPage() {
         setFormData({ ...formData, logoFile: file });
       } else {
         toast({
-          title: "Invalid file type",
-          description: "Please upload an image file (PNG, JPG, etc.)",
+          title: t("Invalid file type"),
+          description: t("Please upload an image file (PNG, JPG, etc.)"),
           variant: "destructive",
         });
       }
@@ -180,16 +182,16 @@ export default function CustomersPage() {
 
     if (!formData.customerName || !formData.email || !formData.userName) {
       toast({
-        title: "Validation Error",
-        description: "Please fill in all required fields",
+        title: t("Validation Error"),
+        description: t("Please fill in all required fields"),
         variant: "destructive",
       });
       return;
     }
     if (formData.newPassword && formData.newPassword !== formData.confirmPassword) {
       toast({
-        title: "Validation Error",
-        description: "Passwords do not match",
+        title: t("Validation Error"),
+        description: t("Passwords do not match"),
         variant: "destructive",
       });
       return;
@@ -214,8 +216,8 @@ export default function CustomersPage() {
 
       if (response.ok) {
         toast({
-          title: "Success",
-          description: "Customer updated successfully",
+          title: t("Success"),
+          description: t("Customer updated successfully"),
         });
         setShowEditDialog(false);
         resetForm();
@@ -224,15 +226,15 @@ export default function CustomersPage() {
       } else {
         const error = await response.json();
         toast({
-          title: "Error",
-          description: error.error || "Failed to update customer",
+          title: t("Error"),
+          description: error.error || t("Failed to update customer"),
           variant: "destructive",
         });
       }
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to update customer",
+        title: t("Error"),
+        description: t("Failed to update customer"),
         variant: "destructive",
       });
     } finally {
@@ -251,8 +253,8 @@ export default function CustomersPage() {
 
       if (response.ok) {
         toast({
-          title: "Success",
-          description: "Customer deleted successfully",
+          title: t("Success"),
+          description: t("Customer deleted successfully"),
         });
         setShowDeleteDialog(false);
         setSelectedCustomer(null);
@@ -260,15 +262,15 @@ export default function CustomersPage() {
       } else {
         const error = await response.json();
         toast({
-          title: "Error",
-          description: error.error || "Failed to delete customer",
+          title: t("Error"),
+          description: error.error || t("Failed to delete customer"),
           variant: "destructive",
         });
       }
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to delete customer",
+        title: t("Error"),
+        description: t("Failed to delete customer"),
         variant: "destructive",
       });
     } finally {
@@ -310,7 +312,7 @@ export default function CustomersPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-slate-400">Loading...</p>
+        <p className="text-slate-400">{t("Loading...")}</p>
       </div>
     );
   }
@@ -319,7 +321,7 @@ export default function CustomersPage() {
     <div className="space-y-6">
       {/* Page Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">GRC Customer Account</h1>
+        <h1 className="text-2xl font-bold text-slate-800">{t("GRC Customer Account")}</h1>
       </div>
 
       {/* Table */}
@@ -327,19 +329,19 @@ export default function CustomersPage() {
         <Table>
           <TableHeader>
             <TableRow className="bg-slate-50 hover:bg-slate-50">
-              <TableHead className="font-semibold text-slate-700">Customer Code</TableHead>
-              <TableHead className="font-semibold text-slate-700">Customer Name</TableHead>
-              <TableHead className="font-semibold text-slate-700">Email</TableHead>
-              <TableHead className="font-semibold text-slate-700">UserName</TableHead>
-              <TableHead className="font-semibold text-slate-700">Compliance Percentage</TableHead>
-              <TableHead className="font-semibold text-slate-700">Action</TableHead>
+              <TableHead className="font-semibold text-slate-700">{t("Customer Code")}</TableHead>
+              <TableHead className="font-semibold text-slate-700">{t("Customer Name")}</TableHead>
+              <TableHead className="font-semibold text-slate-700">{t("Email")}</TableHead>
+              <TableHead className="font-semibold text-slate-700">{t("UserName")}</TableHead>
+              <TableHead className="font-semibold text-slate-700">{t("Compliance Percentage")}</TableHead>
+              <TableHead className="font-semibold text-slate-700">{t("Action")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {customers.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-8 text-slate-400">
-                  No customers found
+                  {t("No customers found")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -371,7 +373,7 @@ export default function CustomersPage() {
                         size="icon"
                         className="h-8 w-8 text-slate-400 hover:text-slate-600"
                         onClick={() => openEditDialog(customer)}
-                        title="Edit"
+                        title={t("Edit")}
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
@@ -380,7 +382,7 @@ export default function CustomersPage() {
                         size="icon"
                         className="h-8 w-8 text-slate-400 hover:text-slate-600"
                         onClick={() => openLogoDialog(customer)}
-                        title="View Logo"
+                        title={t("View Logo")}
                       >
                         <Image className="h-4 w-4" />
                       </Button>
@@ -389,7 +391,7 @@ export default function CustomersPage() {
                         size="icon"
                         className="h-8 w-8 text-slate-400 hover:text-semantic-error"
                         onClick={() => openDeleteDialog(customer)}
-                        title="Delete"
+                        title={t("Delete")}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -408,7 +410,7 @@ export default function CustomersPage() {
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Edit Account</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Account")}</DialogTitle>
             </DialogHeader>
           </div>
 
@@ -417,52 +419,52 @@ export default function CustomersPage() {
             <div className="space-y-5">
               {/* Account Information Section */}
               <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">Account Information</h3>
+                <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Account Information")}</h3>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-medium text-slate-700">Customer Code</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Customer Code")}</Label>
                     <Input value={selectedCustomer?.customerCode || ""} disabled className="bg-slate-50" />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-medium text-slate-700">User Role</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("User Role")}</Label>
                     <Input className="bg-slate-50" value="CustomerAdministrator" disabled />
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="editCustomerName" className="text-sm font-medium text-slate-700">Customer Name <span className="text-error">*</span></Label>
+                  <Label htmlFor="editCustomerName" className="text-sm font-medium text-slate-700">{t("Customer Name")} <span className="text-error">*</span></Label>
                   <Input
                     id="editCustomerName"
                     value={formData.customerName}
                     onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
-                    placeholder="Enter customer name"
+                    placeholder={t("Enter customer name")}
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="editUserName" className="text-sm font-medium text-slate-700">Username <span className="text-error">*</span></Label>
+                  <Label htmlFor="editUserName" className="text-sm font-medium text-slate-700">{t("Username")} <span className="text-error">*</span></Label>
                   <Input
                     id="editUserName"
                     value={formData.userName}
                     onChange={(e) => setFormData({ ...formData, userName: e.target.value })}
-                    placeholder="Enter username"
+                    placeholder={t("Enter username")}
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="editEmail" className="text-sm font-medium text-slate-700">Email <span className="text-error">*</span></Label>
+                  <Label htmlFor="editEmail" className="text-sm font-medium text-slate-700">{t("Email")} <span className="text-error">*</span></Label>
                   <Input
                     id="editEmail"
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="Enter email address"
+                    placeholder={t("Enter email address")}
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-slate-700">Upload Logo</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Upload Logo")}</Label>
 
                   {/* Drag and Drop Zone */}
                   <div
@@ -481,9 +483,9 @@ export default function CustomersPage() {
                           <Upload className="h-5 w-5 text-slate-400" />
                         </div>
                         <p className="text-sm text-slate-600">
-                          Drag and Drop or{" "}
+                          {t("Drag and Drop or")}{" "}
                           <label className="text-primary cursor-pointer hover:underline">
-                            Click to upload
+                            {t("Click to upload")}
                             <input
                               type="file"
                               accept="image/*"
@@ -493,7 +495,7 @@ export default function CustomersPage() {
                           </label>
                         </p>
                         <p className="text-xs text-slate-400 mt-1">
-                          Supported formats: PNG, JPG. Max Size: 5MB
+                          {t("Supported formats: PNG, JPG. Max Size: 5MB")}
                         </p>
                       </div>
                     ) : (
@@ -526,14 +528,14 @@ export default function CustomersPage() {
 
               {/* Settings Section */}
               <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">Settings</h3>
+                <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">{t("Settings")}</h3>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Language</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Language")}</Label>
                     <Select value={formData.language || ""} onValueChange={(v) => setFormData({ ...formData, language: v })}>
                       <SelectTrigger className="w-full mt-1.5 bg-white">
-                        <SelectValue placeholder="Select" />
+                        <SelectValue placeholder={t("Select")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
                         {LANGUAGES.map((lang) => (
@@ -543,10 +545,10 @@ export default function CustomersPage() {
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Time Zone</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Time Zone")}</Label>
                     <Select value={formData.timeZone || ""} onValueChange={(v) => setFormData({ ...formData, timeZone: v })}>
                       <SelectTrigger className="w-full mt-1.5 bg-white">
-                        <SelectValue placeholder="Select" />
+                        <SelectValue placeholder={t("Select")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
                         {TIME_ZONES.map((tz) => (
@@ -559,18 +561,18 @@ export default function CustomersPage() {
 
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-medium text-slate-700">Is Local User</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Is Local User")}</Label>
                     <div className="flex gap-4 h-9 items-center">
                       <label className="flex items-center gap-2 text-sm">
-                        <input type="radio" name="isLocalUserCustomer" value="yes" defaultChecked className="accent-primary" /> Yes
+                        <input type="radio" name="isLocalUserCustomer" value="yes" defaultChecked className="accent-primary" /> {t("Yes")}
                       </label>
                       <label className="flex items-center gap-2 text-sm">
-                        <input type="radio" name="isLocalUserCustomer" value="no" className="accent-primary" /> No
+                        <input type="radio" name="isLocalUserCustomer" value="no" className="accent-primary" /> {t("No")}
                       </label>
                     </div>
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-medium text-slate-700">Blocked</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Blocked")}</Label>
                     <div className="flex gap-4 h-9 items-center">
                       <label className="flex items-center gap-2 text-sm">
                         <input
@@ -579,7 +581,7 @@ export default function CustomersPage() {
                           checked={!formData.blocked}
                           onChange={() => setFormData({ ...formData, blocked: false })}
                           className="accent-primary"
-                        /> No
+                        /> {t("No")}
                       </label>
                       <label className="flex items-center gap-2 text-sm">
                         <input
@@ -588,12 +590,12 @@ export default function CustomersPage() {
                           checked={formData.blocked}
                           onChange={() => setFormData({ ...formData, blocked: true })}
                           className="accent-primary"
-                        /> Yes
+                        /> {t("Yes")}
                       </label>
                     </div>
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-medium text-slate-700">Active</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Active")}</Label>
                     <div className="flex gap-4 h-9 items-center">
                       <label className="flex items-center gap-2 text-sm">
                         <input
@@ -602,7 +604,7 @@ export default function CustomersPage() {
                           checked={formData.active}
                           onChange={() => setFormData({ ...formData, active: true })}
                           className="accent-primary"
-                        /> Yes
+                        /> {t("Yes")}
                       </label>
                       <label className="flex items-center gap-2 text-sm">
                         <input
@@ -611,7 +613,7 @@ export default function CustomersPage() {
                           checked={!formData.active}
                           onChange={() => setFormData({ ...formData, active: false })}
                           className="accent-primary"
-                        /> No
+                        /> {t("No")}
                       </label>
                     </div>
                   </div>
@@ -622,7 +624,7 @@ export default function CustomersPage() {
                     variant="link"
                     className="text-primary p-0 h-auto text-sm"
                   >
-                    Change password
+                    {t("Change password")}
                   </Button>
                 </div>
               </div>
@@ -635,14 +637,14 @@ export default function CustomersPage() {
               variant="outline"
               size="sm"
             >
-              Subscription Plan
+              {t("Subscription Plan")}
             </Button>
             <div className="flex gap-2">
               <Button onClick={handleEditCustomer} disabled={submitting} size="sm">
-                {submitting ? "Saving..." : "Save"}
+                {submitting ? t("Saving...") : t("Save")}
               </Button>
               <Button variant="outline" size="sm" onClick={() => { setShowEditDialog(false); resetForm(); setSelectedCustomer(null); }}>
-                Cancel
+                {t("Cancel")}
               </Button>
             </div>
           </div>
@@ -655,13 +657,13 @@ export default function CustomersPage() {
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Confirmation</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Confirmation")}</DialogTitle>
             </DialogHeader>
           </div>
 
           {/* Content */}
           <div className="px-6 py-5">
-            <p className="text-slate-600">Are you sure you want to delete this?</p>
+            <p className="text-slate-600">{t("Are you sure you want to delete this?")}</p>
           </div>
 
           {/* Fixed Footer */}
@@ -671,10 +673,10 @@ export default function CustomersPage() {
               disabled={submitting}
               size="sm"
             >
-              {submitting ? "Deleting..." : "Yes"}
+              {submitting ? t("Deleting...") : t("Yes")}
             </Button>
             <Button variant="outline" size="sm" onClick={() => { setShowDeleteDialog(false); setSelectedCustomer(null); }}>
-              No
+              {t("No")}
             </Button>
           </div>
         </DialogContent>
@@ -686,7 +688,7 @@ export default function CustomersPage() {
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Customer Logo</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Customer Logo")}</DialogTitle>
             </DialogHeader>
           </div>
 
@@ -701,7 +703,7 @@ export default function CustomersPage() {
             ) : (
               <div className="text-slate-400 text-center py-8">
                 <Image className="h-16 w-16 mx-auto text-slate-300 mb-2" />
-                <p>No logo uploaded</p>
+                <p>{t("No logo uploaded")}</p>
               </div>
             )}
           </div>
@@ -709,7 +711,7 @@ export default function CustomersPage() {
           {/* Fixed Footer */}
           <div className="px-6 py-4 border-t border-slate-100">
             <Button variant="outline" size="sm" onClick={() => { setShowLogoDialog(false); setSelectedCustomer(null); }}>
-              Close
+              {t("Close")}
             </Button>
           </div>
         </DialogContent>

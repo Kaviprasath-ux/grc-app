@@ -14,6 +14,7 @@ import { usePermissions, useUserRoles } from "@/hooks/usePermissions";
 import { PermissionGate } from "@/components/ui/permission-gate";
 import { Unauthorized } from "@/components/ui/unauthorized";
 import { useSession } from "next-auth/react";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   Select,
   SelectContent,
@@ -155,6 +156,7 @@ const formatDate = (dateString: string | null) => {
 };
 
 export default function MyAssetInventoryPage() {
+  const { t } = useLanguage();
   const { toast } = useToast();
   const { data: session } = useSession();
   const userRoles = useUserRoles();
@@ -332,10 +334,10 @@ export default function MyAssetInventoryPage() {
         setAssets([...assets, asset]);
         resetForm();
         setIsAddAssetOpen(false);
-        toast({ title: "Success", description: "Asset created successfully" });
+        toast({ title: t("Success"), description: t("Asset created successfully") });
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to create asset", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to create asset"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error adding asset:", error);
@@ -359,10 +361,10 @@ export default function MyAssetInventoryPage() {
         setAssets(assets.map((a) => (a.id === updated.id ? updated : a)));
         setIsEditAssetOpen(false);
         setEditingAsset(null);
-        toast({ title: "Success", description: "Asset updated successfully" });
+        toast({ title: t("Success"), description: t("Asset updated successfully") });
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to update asset", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to update asset"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error updating asset:", error);
@@ -375,7 +377,7 @@ export default function MyAssetInventoryPage() {
       const res = await fetch(`/api/assets/my-assets/${deletingAssetId}`, { method: "DELETE" });
       if (res.ok) {
         setAssets(assets.filter((a) => a.id !== deletingAssetId));
-        toast({ title: "Success", description: "Asset deleted successfully" });
+        toast({ title: t("Success"), description: t("Asset deleted successfully") });
       }
     } catch (error) {
       console.error("Error deleting asset:", error);
@@ -424,7 +426,7 @@ export default function MyAssetInventoryPage() {
         setIsAddCategoryOpen(false);
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to create category", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to create category"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error adding category:", error);
@@ -453,7 +455,7 @@ export default function MyAssetInventoryPage() {
         setIsAddSubCategoryOpen(false);
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to create sub-category", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to create sub-category"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error adding sub category:", error);
@@ -477,7 +479,7 @@ export default function MyAssetInventoryPage() {
         setIsAddGroupOpen(false);
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to create group", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to create group"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error adding group:", error);
@@ -501,7 +503,7 @@ export default function MyAssetInventoryPage() {
         setIsAddLifecycleOpen(false);
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to create lifecycle status", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to create lifecycle status"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error adding lifecycle status:", error);
@@ -554,7 +556,7 @@ export default function MyAssetInventoryPage() {
       const lines = text.split("\n").filter(line => line.trim());
 
       if (lines.length < 2) {
-        toast({ title: "Error", description: "Invalid CSV file: No data rows found", variant: "destructive" });
+        toast({ title: t("Error"), description: t("Invalid CSV file: No data rows found"), variant: "destructive" });
         return;
       }
 
@@ -610,7 +612,7 @@ export default function MyAssetInventoryPage() {
 
       // Refresh data
       fetchData();
-      toast({ title: "Success", description: `Import completed: ${imported} assets imported, ${errors} errors` });
+      toast({ title: t("Success"), description: `${t("Import completed")}: ${imported} ${t("assets imported")}, ${errors} ${t("errors")}` });
     };
 
     reader.readAsText(file);
@@ -633,12 +635,12 @@ export default function MyAssetInventoryPage() {
   const assetColumns: ColumnDef<Asset>[] = [
     {
       accessorKey: "assetId",
-      header: "Asset ID",
+      header: t("Asset ID"),
       cell: ({ row }) => <span className="font-mono text-sm">{row.getValue("assetId")}</span>,
     },
     {
       accessorKey: "name",
-      header: "Asset Name",
+      header: t("Asset Name"),
       cell: ({ row }) => (
         <div className="flex items-center gap-2">
           {getAssetTypeIcon(row.original.assetType)}
@@ -648,27 +650,27 @@ export default function MyAssetInventoryPage() {
     },
     {
       accessorKey: "owner.fullName",
-      header: "Asset Owner",
+      header: t("Asset Owner"),
       cell: ({ row }) => row.original.owner?.fullName || "-",
     },
     {
       accessorKey: "category.name",
-      header: "Asset Category",
+      header: t("Asset Category"),
       cell: ({ row }) => row.original.category?.name || "-",
     },
     {
       accessorKey: "subCategory.name",
-      header: "Asset Sub Category",
+      header: t("Asset Sub Category"),
       cell: ({ row }) => row.original.subCategory?.name || "-",
     },
     {
       accessorKey: "group.name",
-      header: "Group",
+      header: t("Group"),
       cell: ({ row }) => row.original.group?.name || "-",
     },
     {
       id: "actions",
-      header: "Action",
+      header: t("Action"),
       cell: ({ row }) => (
         <div className="flex gap-2">
           {canEdit && (
@@ -718,7 +720,7 @@ export default function MyAssetInventoryPage() {
             <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
             <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
           </div>
-          <p className="text-sm text-slate-500 font-medium">Loading assets...</p>
+          <p className="text-sm text-slate-500 font-medium">{t("Loading assets...")}</p>
         </div>
       </div>
     );
@@ -726,7 +728,7 @@ export default function MyAssetInventoryPage() {
 
   // Show unauthorized if user doesn't have view permission
   if (!canView) {
-    return <Unauthorized description="You don't have permission to access My Asset Inventory." />;
+    return <Unauthorized description={t("You don't have permission to access My Asset Inventory.")} />;
   }
 
   return (
@@ -735,35 +737,35 @@ export default function MyAssetInventoryPage() {
       <nav className="flex items-center gap-1.5 text-sm">
         <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
-          <span>Asset Management</span>
+          <span>{t("Asset Management")}</span>
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-        <span className="text-primary-700 font-medium">My Inventory</span>
+        <span className="text-primary-700 font-medium">{t("My Inventory")}</span>
       </nav>
 
       {/* Page Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">My Asset Inventory</h1>
+        <h1 className="text-2xl font-bold text-slate-800">{t("My Asset Inventory")}</h1>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <p className="text-sm font-medium text-slate-500 mb-1">Total Assets</p>
+          <p className="text-sm font-medium text-slate-500 mb-1">{t("Total Assets")}</p>
           <p className="text-3xl font-bold text-slate-800">{stats.total}</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <p className="text-sm font-medium text-slate-500 mb-1">Active Assets</p>
+          <p className="text-sm font-medium text-slate-500 mb-1">{t("Active Assets")}</p>
           <p className="text-3xl font-bold text-green-600">{stats.active}</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <p className="text-sm font-medium text-slate-500 mb-1">Critical Assets</p>
+          <p className="text-sm font-medium text-slate-500 mb-1">{t("Critical Assets")}</p>
           <p className="text-3xl font-bold text-red-600">{stats.critical}</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-5">
           <p className="text-sm font-medium text-slate-500 mb-1 flex items-center gap-1">
             <Calendar className="h-4 w-4" />
-            Needs Review
+            {t("Needs Review")}
           </p>
           <p className="text-3xl font-bold text-orange-600">{stats.needsReview}</p>
         </div>
@@ -775,7 +777,7 @@ export default function MyAssetInventoryPage() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input
-              placeholder="Search assets..."
+              placeholder={t("Search assets...")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 w-[250px] border-slate-200"
@@ -783,10 +785,10 @@ export default function MyAssetInventoryPage() {
           </div>
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
             <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="Category" />
+              <SelectValue placeholder={t("Category")} />
             </SelectTrigger>
             <SelectContent position="popper" sideOffset={4}>
-              <SelectItem value="all">Category</SelectItem>
+              <SelectItem value="all">{t("Category")}</SelectItem>
               {categories.map((cat) => (
                 <SelectItem key={cat.id} value={cat.id}>
                   {cat.name}
@@ -796,10 +798,10 @@ export default function MyAssetInventoryPage() {
           </Select>
           <Select value={lifecycleFilter} onValueChange={setLifecycleFilter}>
             <SelectTrigger className="w-[160px]">
-              <SelectValue placeholder="All Status" />
+              <SelectValue placeholder={t("All Status")} />
             </SelectTrigger>
             <SelectContent position="popper" sideOffset={4}>
-              <SelectItem value="all">Status</SelectItem>
+              <SelectItem value="all">{t("Status")}</SelectItem>
               {lifecycleStatuses.map((ls) => (
                 <SelectItem key={ls.id} value={ls.id}>
                   {ls.name}
@@ -820,14 +822,14 @@ export default function MyAssetInventoryPage() {
               <Button variant="outline" size="sm" asChild>
                 <span>
                   <Upload className="h-4 w-4 mr-2" />
-                  Import
+                  {t("Import")}
                 </span>
               </Button>
             </label>
           </PermissionGate>
           <Button variant="outline" size="sm" onClick={handleExport}>
             <Download className="h-4 w-4 mr-2" />
-            Export
+            {t("Export")}
           </Button>
           <PermissionGate resource="asset.my-inventory" action="create">
             <Button size="sm" onClick={() => {
@@ -840,7 +842,7 @@ export default function MyAssetInventoryPage() {
               setIsAddAssetOpen(true);
             }}>
               <Plus className="h-4 w-4 mr-2" />
-              Add Asset
+              {t("Add Asset")}
             </Button>
           </PermissionGate>
         </div>
@@ -855,7 +857,7 @@ export default function MyAssetInventoryPage() {
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Add New Asset</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add New Asset")}</DialogTitle>
             </DialogHeader>
           </div>
 
@@ -864,11 +866,11 @@ export default function MyAssetInventoryPage() {
             <div className="space-y-5">
               {/* Asset Name - Full Width */}
               <div>
-                <Label className="text-sm font-medium text-slate-700">Asset Name <span className="text-semantic-error">*</span></Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Asset Name")} <span className="text-semantic-error">*</span></Label>
                 <Input
                   value={newAsset.name}
                   onChange={(e) => setNewAsset({ ...newAsset, name: e.target.value })}
-                  placeholder="Enter Asset Name"
+                  placeholder={t("Enter Asset Name")}
                   className="mt-1.5"
                 />
               </div>
@@ -876,7 +878,7 @@ export default function MyAssetInventoryPage() {
               {/* Asset ID & Department */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Asset ID</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Asset ID")}</Label>
                   <Input
                     value={newAsset.assetId}
                     disabled
@@ -884,14 +886,14 @@ export default function MyAssetInventoryPage() {
                   />
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Department</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Department")}</Label>
                   <Select
                     value={newAsset.departmentId}
                     onValueChange={(value) => setNewAsset({ ...newAsset, departmentId: value, ownerId: currentUserId || "" })}
                     disabled={!!userDepartmentId}
                   >
                     <SelectTrigger className={`mt-1.5 ${userDepartmentId ? "bg-slate-50" : ""}`}>
-                      <SelectValue placeholder="Select Department" />
+                      <SelectValue placeholder={t("Select Department")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
                       {departments.map((dept) => (
@@ -906,9 +908,9 @@ export default function MyAssetInventoryPage() {
 
               {/* Asset Owner - Full Width */}
               <div>
-                <Label className="text-sm font-medium text-slate-700">Asset Owner</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Asset Owner")}</Label>
                 <Input
-                  value={session?.user?.name || session?.user?.email || "Current User"}
+                  value={session?.user?.name || session?.user?.email || t("Current User")}
                   disabled
                   className="mt-1.5 bg-slate-50"
                 />
@@ -917,14 +919,14 @@ export default function MyAssetInventoryPage() {
               {/* Category & Sub Category */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Asset Category</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Asset Category")}</Label>
                   <div className="flex gap-2 mt-1.5">
                     <Select
                       value={newAsset.categoryId}
                       onValueChange={(value) => setNewAsset({ ...newAsset, categoryId: value, subCategoryId: "" })}
                     >
                       <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="Select Category" />
+                        <SelectValue placeholder={t("Select Category")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
                         {categories.map((cat) => (
@@ -940,7 +942,7 @@ export default function MyAssetInventoryPage() {
                   </div>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Asset Sub Category</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Asset Sub Category")}</Label>
                   <div className="flex gap-2 mt-1.5">
                     <Select
                       value={newAsset.subCategoryId}
@@ -948,7 +950,7 @@ export default function MyAssetInventoryPage() {
                       disabled={!newAsset.categoryId}
                     >
                       <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="Select Sub Category" />
+                        <SelectValue placeholder={t("Select Sub Category")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
                         {filteredSubCategories.map((sc) => (
@@ -968,14 +970,14 @@ export default function MyAssetInventoryPage() {
               {/* Group & Custodian */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Asset Group</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Asset Group")}</Label>
                   <div className="flex gap-2 mt-1.5">
                     <Select
                       value={newAsset.groupId}
                       onValueChange={(value) => setNewAsset({ ...newAsset, groupId: value })}
                     >
                       <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="Select Group" />
+                        <SelectValue placeholder={t("Select Group")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
                         {groups.map((g) => (
@@ -991,13 +993,13 @@ export default function MyAssetInventoryPage() {
                   </div>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Asset Custodian</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Asset Custodian")}</Label>
                   <Select
                     value={newAsset.custodianId}
                     onValueChange={(value) => setNewAsset({ ...newAsset, custodianId: value })}
                   >
                     <SelectTrigger className="mt-1.5">
-                      <SelectValue placeholder="Select Custodian" />
+                      <SelectValue placeholder={t("Select Custodian")} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4}>
                       {users.map((user) => (
@@ -1013,14 +1015,14 @@ export default function MyAssetInventoryPage() {
               {/* Lifecycle Status & Location */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Lifecycle Status</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Lifecycle Status")}</Label>
                   <div className="flex gap-2 mt-1.5">
                     <Select
                       value={newAsset.lifecycleStatusId}
                       onValueChange={(value) => setNewAsset({ ...newAsset, lifecycleStatusId: value })}
                     >
                       <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="Select Status" />
+                        <SelectValue placeholder={t("Select Status")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
                         {lifecycleStatuses.map((ls) => (
@@ -1036,11 +1038,11 @@ export default function MyAssetInventoryPage() {
                   </div>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Asset Location</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Asset Location")}</Label>
                   <Input
                     value={newAsset.location}
                     onChange={(e) => setNewAsset({ ...newAsset, location: e.target.value })}
-                    placeholder="Enter Location"
+                    placeholder={t("Enter Location")}
                     className="mt-1.5"
                   />
                 </div>
@@ -1049,11 +1051,11 @@ export default function MyAssetInventoryPage() {
               {/* Criticality & Sensitivity */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Asset Criticality</Label>
-                  <Input value="N/A" disabled className="mt-1.5 bg-slate-50" />
+                  <Label className="text-sm font-medium text-slate-700">{t("Asset Criticality")}</Label>
+                  <Input value={t("N/A")} disabled className="mt-1.5 bg-slate-50" />
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Asset Sensitivity</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Asset Sensitivity")}</Label>
                   <Input value="" disabled className="mt-1.5 bg-slate-50" />
                 </div>
               </div>
@@ -1061,22 +1063,22 @@ export default function MyAssetInventoryPage() {
               {/* Dates */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Acquisition Date</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Acquisition Date")}</Label>
                   <div className="mt-1.5">
                     <DatePicker
                       value={newAsset.acquisitionDate}
                       onChange={(date) => setNewAsset({ ...newAsset, acquisitionDate: date ? format(date, "yyyy-MM-dd") : "" })}
-                      placeholder="Select Acquisition Date"
+                      placeholder={t("Select Acquisition Date")}
                     />
                   </div>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Next Review Date</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Next Review Date")}</Label>
                   <div className="mt-1.5">
                     <DatePicker
                       value={newAsset.nextReviewDate}
                       onChange={(date) => setNewAsset({ ...newAsset, nextReviewDate: date ? format(date, "yyyy-MM-dd") : "" })}
-                      placeholder="Select Review Date"
+                      placeholder={t("Select Review Date")}
                     />
                   </div>
                 </div>
@@ -1086,8 +1088,8 @@ export default function MyAssetInventoryPage() {
 
           {/* Fixed Footer */}
           <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
-            <Button variant="outline" onClick={() => { resetForm(); setIsAddAssetOpen(false); }}>Cancel</Button>
-            <Button onClick={handleAddAsset}>Save</Button>
+            <Button variant="outline" onClick={() => { resetForm(); setIsAddAssetOpen(false); }}>{t("Cancel")}</Button>
+            <Button onClick={handleAddAsset}>{t("Save")}</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -1098,7 +1100,7 @@ export default function MyAssetInventoryPage() {
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Edit Asset</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Asset")}</DialogTitle>
             </DialogHeader>
           </div>
 
@@ -1108,7 +1110,7 @@ export default function MyAssetInventoryPage() {
               <div className="space-y-5">
                 {/* Asset Name - Full Width */}
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Asset Name <span className="text-semantic-error">*</span></Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Asset Name")} <span className="text-semantic-error">*</span></Label>
                   <Input
                     value={editingAsset.name}
                     onChange={(e) => setEditingAsset({ ...editingAsset, name: e.target.value })}
@@ -1119,18 +1121,18 @@ export default function MyAssetInventoryPage() {
                 {/* Asset ID & Department */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Asset ID</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Asset ID")}</Label>
                     <Input value={editingAsset.assetId} disabled className="mt-1.5 bg-slate-50" />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Department</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Department")}</Label>
                     <Select
                       value={editingAsset.departmentId || ""}
                       onValueChange={(value) => setEditingAsset({ ...editingAsset, departmentId: value, ownerId: null })}
                       disabled={!!userDepartmentId}
                     >
                       <SelectTrigger className={`mt-1.5 ${userDepartmentId ? "bg-slate-50" : ""}`}>
-                        <SelectValue placeholder="Select Department" />
+                        <SelectValue placeholder={t("Select Department")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
                         {departments.map((dept) => (
@@ -1145,9 +1147,9 @@ export default function MyAssetInventoryPage() {
 
                 {/* Asset Owner - Full Width */}
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">Asset Owner</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("Asset Owner")}</Label>
                   <Input
-                    value={editingAsset.owner?.fullName || session?.user?.name || session?.user?.email || "Current User"}
+                    value={editingAsset.owner?.fullName || session?.user?.name || session?.user?.email || t("Current User")}
                     disabled
                     className="mt-1.5 bg-slate-50"
                   />
@@ -1156,14 +1158,14 @@ export default function MyAssetInventoryPage() {
                 {/* Category & Sub Category */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Asset Category</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Asset Category")}</Label>
                     <div className="flex gap-2 mt-1.5">
                       <Select
                         value={editingAsset.categoryId || ""}
                         onValueChange={(value) => setEditingAsset({ ...editingAsset, categoryId: value, subCategoryId: null })}
                       >
                         <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Select Category" />
+                          <SelectValue placeholder={t("Select Category")} />
                         </SelectTrigger>
                         <SelectContent position="popper" sideOffset={4}>
                           {categories.map((cat) => (
@@ -1179,7 +1181,7 @@ export default function MyAssetInventoryPage() {
                     </div>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Asset Sub Category</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Asset Sub Category")}</Label>
                     <div className="flex gap-2 mt-1.5">
                       <Select
                         value={editingAsset.subCategoryId || ""}
@@ -1187,7 +1189,7 @@ export default function MyAssetInventoryPage() {
                         disabled={!editingAsset.categoryId}
                       >
                         <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Select Sub Category" />
+                          <SelectValue placeholder={t("Select Sub Category")} />
                         </SelectTrigger>
                         <SelectContent position="popper" sideOffset={4}>
                           {editFilteredSubCategories.map((sc) => (
@@ -1207,14 +1209,14 @@ export default function MyAssetInventoryPage() {
                 {/* Group & Custodian */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Asset Group</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Asset Group")}</Label>
                     <div className="flex gap-2 mt-1.5">
                       <Select
                         value={editingAsset.groupId || ""}
                         onValueChange={(value) => setEditingAsset({ ...editingAsset, groupId: value })}
                       >
                         <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Select Group" />
+                          <SelectValue placeholder={t("Select Group")} />
                         </SelectTrigger>
                         <SelectContent position="popper" sideOffset={4}>
                           {groups.map((g) => (
@@ -1230,13 +1232,13 @@ export default function MyAssetInventoryPage() {
                     </div>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Asset Custodian</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Asset Custodian")}</Label>
                     <Select
                       value={editingAsset.custodianId || ""}
                       onValueChange={(value) => setEditingAsset({ ...editingAsset, custodianId: value })}
                     >
                       <SelectTrigger className="mt-1.5">
-                        <SelectValue placeholder="Select Custodian" />
+                        <SelectValue placeholder={t("Select Custodian")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
                         {users.map((user) => (
@@ -1252,14 +1254,14 @@ export default function MyAssetInventoryPage() {
                 {/* Lifecycle Status & Location */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Lifecycle Status</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Lifecycle Status")}</Label>
                     <div className="flex gap-2 mt-1.5">
                       <Select
                         value={editingAsset.lifecycleStatusId || ""}
                         onValueChange={(value) => setEditingAsset({ ...editingAsset, lifecycleStatusId: value })}
                       >
                         <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Select Status" />
+                          <SelectValue placeholder={t("Select Status")} />
                         </SelectTrigger>
                         <SelectContent position="popper" sideOffset={4}>
                           {lifecycleStatuses.map((ls) => (
@@ -1275,11 +1277,11 @@ export default function MyAssetInventoryPage() {
                     </div>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Asset Location</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Asset Location")}</Label>
                     <Input
                       value={editingAsset.location || ""}
                       onChange={(e) => setEditingAsset({ ...editingAsset, location: e.target.value })}
-                      placeholder="Enter Location"
+                      placeholder={t("Enter Location")}
                       className="mt-1.5"
                     />
                   </div>
@@ -1288,11 +1290,11 @@ export default function MyAssetInventoryPage() {
                 {/* Criticality & Sensitivity */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Asset Criticality</Label>
-                    <Input value="N/A" disabled className="mt-1.5 bg-slate-50" />
+                    <Label className="text-sm font-medium text-slate-700">{t("Asset Criticality")}</Label>
+                    <Input value={t("N/A")} disabled className="mt-1.5 bg-slate-50" />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Asset Sensitivity</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Asset Sensitivity")}</Label>
                     <Input value="" disabled className="mt-1.5 bg-slate-50" />
                   </div>
                 </div>
@@ -1300,22 +1302,22 @@ export default function MyAssetInventoryPage() {
                 {/* Dates */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Acquisition Date</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Acquisition Date")}</Label>
                     <div className="mt-1.5">
                       <DatePicker
                         value={editingAsset.acquisitionDate || ""}
                         onChange={(date) => setEditingAsset({ ...editingAsset, acquisitionDate: date ? format(date, "yyyy-MM-dd") : null })}
-                        placeholder="Select Acquisition Date"
+                        placeholder={t("Select Acquisition Date")}
                       />
                     </div>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Next Review Date</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Next Review Date")}</Label>
                     <div className="mt-1.5">
                       <DatePicker
                         value={editingAsset.nextReviewDate || ""}
                         onChange={(date) => setEditingAsset({ ...editingAsset, nextReviewDate: date ? format(date, "yyyy-MM-dd") : null })}
-                        placeholder="Select Review Date"
+                        placeholder={t("Select Review Date")}
                       />
                     </div>
                   </div>
@@ -1326,8 +1328,8 @@ export default function MyAssetInventoryPage() {
 
           {/* Fixed Footer */}
           <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
-            <Button variant="outline" onClick={() => { setIsEditAssetOpen(false); setEditingAsset(null); }}>Cancel</Button>
-            <Button onClick={handleEditAsset}>Save Changes</Button>
+            <Button variant="outline" onClick={() => { setIsEditAssetOpen(false); setEditingAsset(null); }}>{t("Cancel")}</Button>
+            <Button onClick={handleEditAsset}>{t("Save Changes")}</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -1337,15 +1339,15 @@ export default function MyAssetInventoryPage() {
         <DialogContent className="sm:max-w-[400px] p-0 gap-0">
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Confirm Delete</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Confirm Delete")}</DialogTitle>
               <DialogDescription className="text-sm text-slate-500 mt-1">
-                Are you sure you want to delete this asset? This action cannot be undone.
+                {t("Are you sure you want to delete this asset? This action cannot be undone.")}
               </DialogDescription>
             </DialogHeader>
           </div>
           <div className="flex justify-end gap-2 px-6 py-4">
-            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleDeleteAsset}>Delete</Button>
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>{t("Cancel")}</Button>
+            <Button variant="destructive" onClick={handleDeleteAsset}>{t("Delete")}</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -1355,23 +1357,23 @@ export default function MyAssetInventoryPage() {
         <DialogContent className="sm:max-w-[400px] p-0 gap-0">
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Add Asset Category</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Asset Category")}</DialogTitle>
             </DialogHeader>
           </div>
           <div className="px-6 py-6">
             <div>
-              <Label className="text-sm font-medium text-slate-700">Category Name <span className="text-semantic-error">*</span></Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Category Name")} <span className="text-semantic-error">*</span></Label>
               <Input
                 value={newCategoryName}
                 onChange={(e) => setNewCategoryName(e.target.value)}
-                placeholder="Enter category name"
+                placeholder={t("Enter category name")}
                 className="mt-1.5"
               />
             </div>
           </div>
           <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100">
-            <Button variant="outline" onClick={() => { setNewCategoryName(""); setIsAddCategoryOpen(false); }}>Cancel</Button>
-            <Button onClick={handleAddCategory}>Save</Button>
+            <Button variant="outline" onClick={() => { setNewCategoryName(""); setIsAddCategoryOpen(false); }}>{t("Cancel")}</Button>
+            <Button onClick={handleAddCategory}>{t("Save")}</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -1381,23 +1383,23 @@ export default function MyAssetInventoryPage() {
         <DialogContent className="sm:max-w-[400px] p-0 gap-0">
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Add Asset Sub Category</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Asset Sub Category")}</DialogTitle>
             </DialogHeader>
           </div>
           <div className="px-6 py-6">
             <div>
-              <Label className="text-sm font-medium text-slate-700">Sub Category Name <span className="text-semantic-error">*</span></Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Sub Category Name")} <span className="text-semantic-error">*</span></Label>
               <Input
                 value={newSubCategoryName}
                 onChange={(e) => setNewSubCategoryName(e.target.value)}
-                placeholder="Enter sub category name"
+                placeholder={t("Enter sub category name")}
                 className="mt-1.5"
               />
             </div>
           </div>
           <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100">
-            <Button variant="outline" onClick={() => { setNewSubCategoryName(""); setIsAddSubCategoryOpen(false); }}>Cancel</Button>
-            <Button onClick={handleAddSubCategory}>Save</Button>
+            <Button variant="outline" onClick={() => { setNewSubCategoryName(""); setIsAddSubCategoryOpen(false); }}>{t("Cancel")}</Button>
+            <Button onClick={handleAddSubCategory}>{t("Save")}</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -1407,23 +1409,23 @@ export default function MyAssetInventoryPage() {
         <DialogContent className="sm:max-w-[400px] p-0 gap-0">
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Add Asset Group</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Asset Group")}</DialogTitle>
             </DialogHeader>
           </div>
           <div className="px-6 py-6">
             <div>
-              <Label className="text-sm font-medium text-slate-700">Group Name <span className="text-semantic-error">*</span></Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Group Name")} <span className="text-semantic-error">*</span></Label>
               <Input
                 value={newGroupName}
                 onChange={(e) => setNewGroupName(e.target.value)}
-                placeholder="Enter group name"
+                placeholder={t("Enter group name")}
                 className="mt-1.5"
               />
             </div>
           </div>
           <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100">
-            <Button variant="outline" onClick={() => { setNewGroupName(""); setIsAddGroupOpen(false); }}>Cancel</Button>
-            <Button onClick={handleAddGroup}>Save</Button>
+            <Button variant="outline" onClick={() => { setNewGroupName(""); setIsAddGroupOpen(false); }}>{t("Cancel")}</Button>
+            <Button onClick={handleAddGroup}>{t("Save")}</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -1433,23 +1435,23 @@ export default function MyAssetInventoryPage() {
         <DialogContent className="sm:max-w-[400px] p-0 gap-0">
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Add Lifecycle Status</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Lifecycle Status")}</DialogTitle>
             </DialogHeader>
           </div>
           <div className="px-6 py-6">
             <div>
-              <Label className="text-sm font-medium text-slate-700">Status Name <span className="text-semantic-error">*</span></Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Status Name")} <span className="text-semantic-error">*</span></Label>
               <Input
                 value={newLifecycleName}
                 onChange={(e) => setNewLifecycleName(e.target.value)}
-                placeholder="Enter status name"
+                placeholder={t("Enter status name")}
                 className="mt-1.5"
               />
             </div>
           </div>
           <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100">
-            <Button variant="outline" onClick={() => { setNewLifecycleName(""); setIsAddLifecycleOpen(false); }}>Cancel</Button>
-            <Button onClick={handleAddLifecycle}>Save</Button>
+            <Button variant="outline" onClick={() => { setNewLifecycleName(""); setIsAddLifecycleOpen(false); }}>{t("Cancel")}</Button>
+            <Button onClick={handleAddLifecycle}>{t("Save")}</Button>
           </div>
         </DialogContent>
       </Dialog>

@@ -15,6 +15,7 @@ import {
 import { Check, Sparkles, Upload, X, Home, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Department {
   id: string;
@@ -30,6 +31,7 @@ interface SuggestedRisk {
 
 export default function RiskIdentificationPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [departments, setDepartments] = useState<Department[]>([]);
   const [selectedDepartment, setSelectedDepartment] = useState<string>("");
   const [auditFocus, setAuditFocus] = useState<string>("");
@@ -61,7 +63,7 @@ export default function RiskIdentificationPage() {
 
   const handleSuggestRisks = async () => {
     if (!selectedDepartment) {
-      toast.error("Please select a department first");
+      toast.error(t("Please select a department first"));
       return;
     }
 
@@ -120,9 +122,9 @@ export default function RiskIdentificationPage() {
       }
 
       setSuggestedRisks(aiSuggestedRisks);
-      toast.success(`${aiSuggestedRisks.length} risk suggestions generated successfully`);
+      toast.success(`${aiSuggestedRisks.length} ${t("risk suggestions generated successfully")}`);
     } catch (error) {
-      toast.error("Failed to generate risk suggestions");
+      toast.error(t("Failed to generate risk suggestions"));
     } finally {
       setLoading(false);
     }
@@ -150,7 +152,7 @@ export default function RiskIdentificationPage() {
       setUploadedFiles(prev => [...prev, ...validFiles]);
     }
     if (validFiles.length < files.length) {
-      toast.error("Some files were skipped. Only PDF, DOC, DOCX, XLS, XLSX are supported.");
+      toast.error(t("Some files were skipped. Only PDF, DOC, DOCX, XLS, XLSX are supported."));
     }
   };
 
@@ -207,10 +209,10 @@ export default function RiskIdentificationPage() {
       }
 
       setAddedRisks(prev => new Set([...prev, risk.id]));
-      toast.success("Risk added to register successfully");
+      toast.success(t("Risk added to register successfully"));
     } catch (error) {
       console.error("Error adding risk:", error);
-      toast.error("Failed to add risk to register");
+      toast.error(t("Failed to add risk to register"));
     } finally {
       setAddingRisk(null);
     }
@@ -223,15 +225,15 @@ export default function RiskIdentificationPage() {
         <nav className="flex items-center gap-1.5 text-sm">
           <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
-            <span>Internal Audit</span>
+            <span>{t("Internal Audit")}</span>
           </Link>
           <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-          <span className="text-primary-700 font-medium">Risk Identification</span>
+          <span className="text-primary-700 font-medium">{t("Risk Identification")}</span>
         </nav>
 
         {/* Page Header */}
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold text-slate-800">Risk Identification</h1>
+          <h1 className="text-2xl font-bold text-slate-800">{t("Risk Identification")}</h1>
         </div>
         <div className="flex items-center justify-center h-[60vh]">
           <div className="flex flex-col items-center gap-4">
@@ -239,7 +241,7 @@ export default function RiskIdentificationPage() {
               <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
               <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
             </div>
-            <p className="text-sm text-slate-500 font-medium">Loading...</p>
+            <p className="text-sm text-slate-500 font-medium">{t("Loading...")}</p>
           </div>
         </div>
       </div>
@@ -252,15 +254,15 @@ export default function RiskIdentificationPage() {
       <nav className="flex items-center gap-1.5 text-sm">
         <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
-          <span>Internal Audit</span>
+          <span>{t("Internal Audit")}</span>
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-        <span className="text-primary-700 font-medium">Risk Identification</span>
+        <span className="text-primary-700 font-medium">{t("Risk Identification")}</span>
       </nav>
 
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">Risk Identification</h1>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Risk Identification")}</h1>
         <Button
           variant="outline"
           size="sm"
@@ -268,7 +270,7 @@ export default function RiskIdentificationPage() {
           onClick={() => router.push("/internal-audit/risk-register")}
         >
           <Sparkles className="h-4 w-4 mr-2" />
-          AI Integrated
+          {t("AI Integrated")}
         </Button>
       </div>
 
@@ -278,11 +280,11 @@ export default function RiskIdentificationPage() {
           {/* Department Selection */}
           <div>
             <label className="text-sm font-medium text-slate-700 mb-2 block">
-              Select a Department to Assess
+              {t("Select a Department to Assess")}
             </label>
             <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select department..." />
+                <SelectValue placeholder={t("Select department...")} />
               </SelectTrigger>
               <SelectContent>
                 {departments.map((dept) => (
@@ -297,10 +299,10 @@ export default function RiskIdentificationPage() {
           {/* Specific Audit Focus */}
           <div>
             <label className="text-sm font-medium text-slate-700 mb-2 block">
-              Specific Audit Focus (Optional)
+              {t("Specific Audit Focus (Optional)")}
             </label>
             <Textarea
-              placeholder="Describe specific areas or processes to focus on..."
+              placeholder={t("Describe specific areas or processes to focus on...")}
               value={auditFocus}
               onChange={(e) => setAuditFocus(e.target.value)}
               rows={4}
@@ -311,7 +313,7 @@ export default function RiskIdentificationPage() {
           {/* File Upload Area */}
           <div>
             <label className="text-sm font-medium text-slate-700 mb-2 block">
-              Supporting Documents (Optional)
+              {t("Supporting Documents (Optional)")}
             </label>
             <div
               className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
@@ -332,16 +334,16 @@ export default function RiskIdentificationPage() {
                 onChange={handleFileSelect}
               />
               <Upload className="h-10 w-10 mx-auto text-slate-300 mb-3" />
-              <p className="text-slate-500 mb-2">Drag and drop files here, or</p>
+              <p className="text-slate-500 mb-2">{t("Drag and drop files here, or")}</p>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 onClick={() => document.getElementById("file-upload")?.click()}
               >
-                Click to Upload
+                {t("Click to Upload")}
               </Button>
-              <p className="text-xs text-slate-400 mt-3">Supported formats: PDF, DOC, DOCX, XLS, XLSX</p>
+              <p className="text-xs text-slate-400 mt-3">{t("Supported formats: PDF, DOC, DOCX, XLS, XLSX")}</p>
             </div>
 
             {/* Uploaded Files List */}
@@ -383,12 +385,12 @@ export default function RiskIdentificationPage() {
               {loading ? (
                 <>
                   <div className="h-4 w-4 mr-2 rounded-full border-2 border-white border-t-transparent animate-spin"></div>
-                  Analyzing...
+                  {t("Analyzing...")}
                 </>
               ) : (
                 <>
                   <Sparkles className="h-4 w-4 mr-2" />
-                  Suggest Risks with AI
+                  {t("Suggest Risks with AI")}
                 </>
               )}
             </Button>
@@ -441,7 +443,7 @@ export default function RiskIdentificationPage() {
                   {addingRisk === risk.id ? (
                     <div className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin"></div>
                   ) : (
-                    "Add to Register"
+                    t("Add to Register")
                   )}
                 </Button>
               </div>
@@ -454,7 +456,7 @@ export default function RiskIdentificationPage() {
               <div className="flex items-center gap-2 text-green-700">
                 <Check className="h-5 w-5" />
                 <span className="font-medium">
-                  All {suggestedRisks.length} risks have been added to the register
+                  {`${t("All")} ${suggestedRisks.length} ${t("risks have been added to the register")}`}
                 </span>
               </div>
               <Button
@@ -462,7 +464,7 @@ export default function RiskIdentificationPage() {
                 className="text-green-700 p-0 mt-2"
                 onClick={() => router.push("/internal-audit/risk-register")}
               >
-                View Risk Register &rarr;
+                {t("View Risk Register")} &rarr;
               </Button>
             </div>
           )}

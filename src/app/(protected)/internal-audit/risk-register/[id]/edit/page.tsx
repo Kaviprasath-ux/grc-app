@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DatePicker } from "@/components/ui/date-picker";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Department {
   id: string;
@@ -48,6 +49,7 @@ export default function EditRiskPage() {
   const router = useRouter();
   const params = useParams();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [riskId, setRiskId] = useState("");
@@ -132,8 +134,8 @@ export default function EditRiskPage() {
         });
       } else {
         toast({
-          title: "Error",
-          description: "Failed to fetch risk details.",
+          title: t("Error"),
+          description: t("Failed to fetch risk details."),
           variant: "destructive",
         });
         router.push("/internal-audit/risk-register");
@@ -141,8 +143,8 @@ export default function EditRiskPage() {
     } catch (error) {
       console.error("Failed to fetch risk:", error);
       toast({
-        title: "Error",
-        description: "Failed to fetch risk details.",
+        title: t("Error"),
+        description: t("Failed to fetch risk details."),
         variant: "destructive",
       });
     } finally {
@@ -167,8 +169,8 @@ export default function EditRiskPage() {
 
     if (!formData.riskName.trim()) {
       toast({
-        title: "Error",
-        description: "Risk name is required.",
+        title: t("Error"),
+        description: t("Risk name is required."),
         variant: "destructive",
       });
       return;
@@ -198,23 +200,23 @@ export default function EditRiskPage() {
 
       if (response.ok) {
         toast({
-          title: "Success",
-          description: "Risk updated successfully.",
+          title: t("Success"),
+          description: t("Risk updated successfully."),
         });
         router.push("/internal-audit/risk-register");
       } else {
         const error = await response.json();
         toast({
-          title: "Error",
-          description: error.error || "Failed to update risk.",
+          title: t("Error"),
+          description: error.error || t("Failed to update risk."),
           variant: "destructive",
         });
       }
     } catch (error) {
       console.error("Failed to update risk:", error);
       toast({
-        title: "Error",
-        description: "Failed to update risk.",
+        title: t("Error"),
+        description: t("Failed to update risk."),
         variant: "destructive",
       });
     } finally {
@@ -230,8 +232,8 @@ export default function EditRiskPage() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <p className="text-sm text-muted-foreground">Internal Audit</p>
-            <h1 className="text-2xl font-semibold">Edit Risk</h1>
+            <p className="text-sm text-muted-foreground">{t("Internal Audit")}</p>
+            <h1 className="text-2xl font-semibold">{t("Edit Risk")}</h1>
           </div>
         </div>
         <div className="flex items-center justify-center h-64">
@@ -249,8 +251,8 @@ export default function EditRiskPage() {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
-          <p className="text-sm text-muted-foreground">Internal Audit</p>
-          <h1 className="text-2xl font-semibold">Edit Risk - {riskId}</h1>
+          <p className="text-sm text-muted-foreground">{t("Internal Audit")}</p>
+          <h1 className="text-2xl font-semibold">{t("Edit Risk")} - {riskId}</h1>
         </div>
       </div>
 
@@ -259,27 +261,27 @@ export default function EditRiskPage() {
         <div className="bg-card rounded-lg border p-6 space-y-6">
           {/* Basic Information */}
           <div className="space-y-4">
-            <h3 className="text-lg font-medium border-b pb-2">Basic Information</h3>
+            <h3 className="text-lg font-medium border-b pb-2">{t("Basic Information")}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="riskName">Risk Name *</Label>
+                <Label htmlFor="riskName">{t("Risk Name")} *</Label>
                 <Input
                   id="riskName"
                   value={formData.riskName}
                   onChange={(e) => setFormData({ ...formData, riskName: e.target.value })}
-                  placeholder="Enter risk name"
+                  placeholder={t("Enter risk name")}
                   className="mt-2"
                   required
                 />
               </div>
               <div>
-                <Label htmlFor="departmentId">Department</Label>
+                <Label htmlFor="departmentId">{t("Department")}</Label>
                 <Select
                   value={formData.departmentId}
                   onValueChange={(value) => setFormData({ ...formData, departmentId: value })}
                 >
                   <SelectTrigger className="mt-2">
-                    <SelectValue placeholder="Select department" />
+                    <SelectValue placeholder={t("Select department")} />
                   </SelectTrigger>
                   <SelectContent>
                     {departments.map((dept) => (
@@ -291,13 +293,13 @@ export default function EditRiskPage() {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="categoryId">Category</Label>
+                <Label htmlFor="categoryId">{t("Category")}</Label>
                 <Select
                   value={formData.categoryId}
                   onValueChange={(value) => setFormData({ ...formData, categoryId: value })}
                 >
                   <SelectTrigger className="mt-2">
-                    <SelectValue placeholder="Select category" />
+                    <SelectValue placeholder={t("Select category")} />
                   </SelectTrigger>
                   <SelectContent>
                     {categories.map((cat) => (
@@ -309,13 +311,13 @@ export default function EditRiskPage() {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="auditTypeId">Audit Type</Label>
+                <Label htmlFor="auditTypeId">{t("Audit Type")}</Label>
                 <Select
                   value={formData.auditTypeId}
                   onValueChange={(value) => setFormData({ ...formData, auditTypeId: value })}
                 >
                   <SelectTrigger className="mt-2">
-                    <SelectValue placeholder="Select audit type" />
+                    <SelectValue placeholder={t("Select audit type")} />
                   </SelectTrigger>
                   <SelectContent>
                     {auditTypes.map((type) => (
@@ -327,52 +329,52 @@ export default function EditRiskPage() {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="sectionProcess">Section/Process</Label>
+                <Label htmlFor="sectionProcess">{t("Section/Process")}</Label>
                 <Input
                   id="sectionProcess"
                   value={formData.sectionProcess}
                   onChange={(e) => setFormData({ ...formData, sectionProcess: e.target.value })}
-                  placeholder="Enter section/process"
+                  placeholder={t("Enter section/process")}
                   className="mt-2"
                 />
               </div>
               <div>
-                <Label htmlFor="subProcess">Sub Process</Label>
+                <Label htmlFor="subProcess">{t("Sub Process")}</Label>
                 <Input
                   id="subProcess"
                   value={formData.subProcess}
                   onChange={(e) => setFormData({ ...formData, subProcess: e.target.value })}
-                  placeholder="Enter sub process"
+                  placeholder={t("Enter sub process")}
                   className="mt-2"
                 />
               </div>
               <div>
-                <Label htmlFor="activity">Activity</Label>
+                <Label htmlFor="activity">{t("Activity")}</Label>
                 <Input
                   id="activity"
                   value={formData.activity}
                   onChange={(e) => setFormData({ ...formData, activity: e.target.value })}
-                  placeholder="Enter activity"
+                  placeholder={t("Enter activity")}
                   className="mt-2"
                 />
               </div>
               <div>
-                <Label htmlFor="creationDate">Creation Date</Label>
+                <Label htmlFor="creationDate">{t("Creation Date")}</Label>
                 <DatePicker
                   value={formData.creationDate}
                   onChange={(date) => setFormData({ ...formData, creationDate: date ? date.toISOString().split('T')[0] : "" })}
-                  placeholder="Select date"
+                  placeholder={t("Select date")}
                   className="mt-2"
                 />
               </div>
             </div>
             <div>
-              <Label htmlFor="riskDescription">Risk Description</Label>
+              <Label htmlFor="riskDescription">{t("Risk Description")}</Label>
               <Textarea
                 id="riskDescription"
                 value={formData.riskDescription}
                 onChange={(e) => setFormData({ ...formData, riskDescription: e.target.value })}
-                placeholder="Enter risk description"
+                placeholder={t("Enter risk description")}
                 className="mt-2"
                 rows={3}
               />
@@ -381,16 +383,16 @@ export default function EditRiskPage() {
 
           {/* Inherent Risk Assessment */}
           <div className="space-y-4">
-            <h3 className="text-lg font-medium border-b pb-2">Inherent Risk Assessment</h3>
+            <h3 className="text-lg font-medium border-b pb-2">{t("Inherent Risk Assessment")}</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <Label htmlFor="inherentLikelihood">Likelihood</Label>
+                <Label htmlFor="inherentLikelihood">{t("Likelihood")}</Label>
                 <Select
                   value={formData.inherentLikelihood}
                   onValueChange={(value) => setFormData({ ...formData, inherentLikelihood: value })}
                 >
                   <SelectTrigger className="mt-2">
-                    <SelectValue placeholder="Select likelihood" />
+                    <SelectValue placeholder={t("Select likelihood")} />
                   </SelectTrigger>
                   <SelectContent>
                     {probabilities.map((prob) => (
@@ -402,13 +404,13 @@ export default function EditRiskPage() {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="inherentImpact">Impact</Label>
+                <Label htmlFor="inherentImpact">{t("Impact")}</Label>
                 <Select
                   value={formData.inherentImpact}
                   onValueChange={(value) => setFormData({ ...formData, inherentImpact: value })}
                 >
                   <SelectTrigger className="mt-2">
-                    <SelectValue placeholder="Select impact" />
+                    <SelectValue placeholder={t("Select impact")} />
                   </SelectTrigger>
                   <SelectContent>
                     {impacts.map((imp) => (
@@ -420,7 +422,7 @@ export default function EditRiskPage() {
                 </Select>
               </div>
               <div>
-                <Label>Inherent Score</Label>
+                <Label>{t("Inherent Score")}</Label>
                 <Input
                   value={calculateInherentScore() || "-"}
                   disabled
@@ -432,32 +434,32 @@ export default function EditRiskPage() {
 
           {/* Control Information */}
           <div className="space-y-4">
-            <h3 className="text-lg font-medium border-b pb-2">Control Information</h3>
+            <h3 className="text-lg font-medium border-b pb-2">{t("Control Information")}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="controlDescription">Control Description</Label>
+                <Label htmlFor="controlDescription">{t("Control Description")}</Label>
                 <Textarea
                   id="controlDescription"
                   value={formData.controlDescription}
                   onChange={(e) => setFormData({ ...formData, controlDescription: e.target.value })}
-                  placeholder="Enter control description"
+                  placeholder={t("Enter control description")}
                   className="mt-2"
                   rows={3}
                 />
               </div>
               <div>
-                <Label htmlFor="controlEffectiveness">Control Effectiveness</Label>
+                <Label htmlFor="controlEffectiveness">{t("Control Effectiveness")}</Label>
                 <Select
                   value={formData.controlEffectiveness}
                   onValueChange={(value) => setFormData({ ...formData, controlEffectiveness: value })}
                 >
                   <SelectTrigger className="mt-2">
-                    <SelectValue placeholder="Select effectiveness" />
+                    <SelectValue placeholder={t("Select effectiveness")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Effective">Effective</SelectItem>
-                    <SelectItem value="Partially Effective">Partially Effective</SelectItem>
-                    <SelectItem value="Ineffective">Ineffective</SelectItem>
+                    <SelectItem value="Effective">{t("Effective")}</SelectItem>
+                    <SelectItem value="Partially Effective">{t("Partially Effective")}</SelectItem>
+                    <SelectItem value="Ineffective">{t("Ineffective")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -466,16 +468,16 @@ export default function EditRiskPage() {
 
           {/* Residual Risk Assessment */}
           <div className="space-y-4">
-            <h3 className="text-lg font-medium border-b pb-2">Residual Risk Assessment</h3>
+            <h3 className="text-lg font-medium border-b pb-2">{t("Residual Risk Assessment")}</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <Label htmlFor="residualLikelihood">Likelihood</Label>
+                <Label htmlFor="residualLikelihood">{t("Likelihood")}</Label>
                 <Select
                   value={formData.residualLikelihood}
                   onValueChange={(value) => setFormData({ ...formData, residualLikelihood: value })}
                 >
                   <SelectTrigger className="mt-2">
-                    <SelectValue placeholder="Select likelihood" />
+                    <SelectValue placeholder={t("Select likelihood")} />
                   </SelectTrigger>
                   <SelectContent>
                     {probabilities.map((prob) => (
@@ -487,13 +489,13 @@ export default function EditRiskPage() {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="residualImpact">Impact</Label>
+                <Label htmlFor="residualImpact">{t("Impact")}</Label>
                 <Select
                   value={formData.residualImpact}
                   onValueChange={(value) => setFormData({ ...formData, residualImpact: value })}
                 >
                   <SelectTrigger className="mt-2">
-                    <SelectValue placeholder="Select impact" />
+                    <SelectValue placeholder={t("Select impact")} />
                   </SelectTrigger>
                   <SelectContent>
                     {impacts.map((imp) => (
@@ -505,7 +507,7 @@ export default function EditRiskPage() {
                 </Select>
               </div>
               <div>
-                <Label>Residual Score</Label>
+                <Label>{t("Residual Score")}</Label>
                 <Input
                   value={calculateResidualScore() || "-"}
                   disabled
@@ -517,31 +519,31 @@ export default function EditRiskPage() {
 
           {/* Additional Information */}
           <div className="space-y-4">
-            <h3 className="text-lg font-medium border-b pb-2">Additional Information</h3>
+            <h3 className="text-lg font-medium border-b pb-2">{t("Additional Information")}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="status">Status</Label>
+                <Label htmlFor="status">{t("Status")}</Label>
                 <Select
                   value={formData.status}
                   onValueChange={(value) => setFormData({ ...formData, status: value })}
                 >
                   <SelectTrigger className="mt-2">
-                    <SelectValue placeholder="Select status" />
+                    <SelectValue placeholder={t("Select status")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Open">Open</SelectItem>
-                    <SelectItem value="Under Review">Under Review</SelectItem>
-                    <SelectItem value="Closed">Closed</SelectItem>
+                    <SelectItem value="Open">{t("Open")}</SelectItem>
+                    <SelectItem value="Under Review">{t("Under Review")}</SelectItem>
+                    <SelectItem value="Closed">{t("Closed")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label htmlFor="auditComment">Audit Comment</Label>
+                <Label htmlFor="auditComment">{t("Audit Comment")}</Label>
                 <Textarea
                   id="auditComment"
                   value={formData.auditComment}
                   onChange={(e) => setFormData({ ...formData, auditComment: e.target.value })}
-                  placeholder="Enter audit comment"
+                  placeholder={t("Enter audit comment")}
                   className="mt-2"
                   rows={2}
                 />
@@ -556,10 +558,10 @@ export default function EditRiskPage() {
               variant="outline"
               onClick={() => router.push("/internal-audit/risk-register")}
             >
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button type="submit" disabled={saving}>
-              {saving ? "Saving..." : "Save"}
+              {saving ? t("Saving...") : t("Save")}
             </Button>
           </div>
         </div>

@@ -22,6 +22,7 @@ import {
   Edit2,
 } from "lucide-react";
 import { DatePicker } from "@/components/ui/date-picker";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface User {
   id: string;
@@ -56,6 +57,7 @@ export default function ViewFindingPage() {
   const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();
+  const { t } = useLanguage();
   const engagementId = params.id as string;
   const findingId = params.findingId as string;
   const editMode = searchParams.get("edit") === "true";
@@ -90,12 +92,12 @@ export default function ViewFindingPage() {
         const data = await response.json();
         setFormData(data);
       } else {
-        toast.error("Finding not found");
+        toast.error(t("Finding not found"));
         router.push(`/internal-audit/fieldwork/${engagementId}`);
       }
     } catch (error) {
       console.error("Failed to fetch finding:", error);
-      toast.error("Failed to load finding");
+      toast.error(t("Failed to load finding"));
     } finally {
       setLoading(false);
     }
@@ -157,15 +159,15 @@ export default function ViewFindingPage() {
       });
 
       if (response.ok) {
-        toast.success("Finding updated successfully");
+        toast.success(t("Finding updated successfully"));
         setIsEditing(false);
         fetchFinding();
       } else {
-        toast.error("Failed to update finding");
+        toast.error(t("Failed to update finding"));
       }
     } catch (error) {
       console.error("Error updating finding:", error);
-      toast.error("Failed to update finding");
+      toast.error(t("Failed to update finding"));
     } finally {
       setSaving(false);
     }
@@ -177,12 +179,12 @@ export default function ViewFindingPage() {
         <div className="flex items-center gap-2 mb-6">
           <Button variant="ghost" size="sm" onClick={() => router.back()}>
             <ArrowLeft className="h-4 w-4 mr-1" />
-            Back
+            {t("Back")}
           </Button>
           <span className="text-gray-400">|</span>
-          <span className="text-gray-500">Audit Plan</span>
+          <span className="text-gray-500">{t("Audit Plan")}</span>
           <span className="text-gray-400">|</span>
-          <span className="text-[#1e3a5f] font-semibold">Finding Details</span>
+          <span className="text-[#1e3a5f] font-semibold">{t("Finding Details")}</span>
         </div>
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
@@ -202,12 +204,12 @@ export default function ViewFindingPage() {
             onClick={() => router.push(`/internal-audit/fieldwork/${engagementId}`)}
           >
             <ArrowLeft className="h-4 w-4 mr-1" />
-            Back
+            {t("Back")}
           </Button>
           <span className="text-gray-400">|</span>
-          <span className="text-gray-500">Audit Plan</span>
+          <span className="text-gray-500">{t("Audit Plan")}</span>
           <span className="text-gray-400">|</span>
-          <span className="text-[#1e3a5f] font-semibold">Finding Details - {formData.findingId}</span>
+          <span className="text-[#1e3a5f] font-semibold">{t("Finding Details")} - {formData.findingId}</span>
         </div>
         {!isEditing && (
           <Button
@@ -215,7 +217,7 @@ export default function ViewFindingPage() {
             onClick={() => setIsEditing(true)}
           >
             <Edit2 className="h-4 w-4 mr-2" />
-            Edit
+            {t("Edit")}
           </Button>
         )}
       </div>
@@ -225,7 +227,7 @@ export default function ViewFindingPage() {
         <div className="space-y-6">
           {/* Finding Title */}
           <div className="space-y-2">
-            <Label className="text-[#1e3a5f] font-medium">Finding Title</Label>
+            <Label className="text-[#1e3a5f] font-medium">{t("Finding Title")}</Label>
             {isEditing ? (
               <Input
                 value={formData.title}
@@ -241,7 +243,7 @@ export default function ViewFindingPage() {
 
           {/* Severity */}
           <div className="space-y-2">
-            <Label className="text-[#1e3a5f] font-medium">Severity</Label>
+            <Label className="text-[#1e3a5f] font-medium">{t("Severity")}</Label>
             {isEditing ? (
               <Select
                 value={formData.severity}
@@ -251,10 +253,10 @@ export default function ViewFindingPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Low">Low</SelectItem>
-                  <SelectItem value="Medium">Medium</SelectItem>
-                  <SelectItem value="High">High</SelectItem>
-                  <SelectItem value="Critical">Critical</SelectItem>
+                  <SelectItem value="Low">{t("Low")}</SelectItem>
+                  <SelectItem value="Medium">{t("Medium")}</SelectItem>
+                  <SelectItem value="High">{t("High")}</SelectItem>
+                  <SelectItem value="Critical">{t("Critical")}</SelectItem>
                 </SelectContent>
               </Select>
             ) : (
@@ -265,7 +267,7 @@ export default function ViewFindingPage() {
                   formData.severity === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
                   'bg-green-100 text-green-800'
                 }`}>
-                  {formData.severity}
+                  {t(formData.severity)}
                 </span>
               </div>
             )}
@@ -273,7 +275,7 @@ export default function ViewFindingPage() {
 
           {/* Criteria (What should be) */}
           <div className="space-y-2">
-            <Label className="text-[#1e3a5f] font-medium">Criteria (What should be)</Label>
+            <Label className="text-[#1e3a5f] font-medium">{t("Criteria (What should be)")}</Label>
             {isEditing ? (
               <Textarea
                 value={formData.criteria || ""}
@@ -290,7 +292,7 @@ export default function ViewFindingPage() {
 
           {/* Condition (What is) */}
           <div className="space-y-2">
-            <Label className="text-[#1e3a5f] font-medium">Condition (What is)</Label>
+            <Label className="text-[#1e3a5f] font-medium">{t("Condition (What is)")}</Label>
             {isEditing ? (
               <Textarea
                 value={formData.condition || ""}
@@ -307,7 +309,7 @@ export default function ViewFindingPage() {
 
           {/* Cause (Why it happened) */}
           <div className="space-y-2">
-            <Label className="text-[#1e3a5f] font-medium">Cause (Why it happened)</Label>
+            <Label className="text-[#1e3a5f] font-medium">{t("Cause (Why it happened)")}</Label>
             {isEditing ? (
               <Textarea
                 value={formData.cause || ""}
@@ -324,7 +326,7 @@ export default function ViewFindingPage() {
 
           {/* Effect (The consequence) */}
           <div className="space-y-2">
-            <Label className="text-[#1e3a5f] font-medium">Effect (The consequence)</Label>
+            <Label className="text-[#1e3a5f] font-medium">{t("Effect (The consequence)")}</Label>
             {isEditing ? (
               <Textarea
                 value={formData.effect || ""}
@@ -341,7 +343,7 @@ export default function ViewFindingPage() {
 
           {/* Recommendation */}
           <div className="space-y-2">
-            <Label className="text-[#1e3a5f] font-medium">Recommendation</Label>
+            <Label className="text-[#1e3a5f] font-medium">{t("Recommendation")}</Label>
             {isEditing ? (
               <Textarea
                 value={formData.recommendation || ""}
@@ -359,22 +361,22 @@ export default function ViewFindingPage() {
           {/* Corrective & Preventive Actions (CAPA) Section */}
           <div className="pt-4">
             <h2 className="text-lg font-semibold text-[#1e3a5f] mb-4">
-              Corrective & Preventive Actions (CAPA)
+              {t("Corrective & Preventive Actions (CAPA)")}
             </h2>
 
             {/* Responsible Person */}
             <div className="space-y-2 mb-4">
-              <Label className="text-[#1e3a5f] font-medium">Responsible Person</Label>
+              <Label className="text-[#1e3a5f] font-medium">{t("Responsible Person")}</Label>
               {isEditing ? (
                 <Select
                   value={formData.responsiblePersonId || "none"}
                   onValueChange={(value) => handleInputChange("responsiblePersonId", value)}
                 >
                   <SelectTrigger className="border-gray-300">
-                    <SelectValue placeholder="Select person" />
+                    <SelectValue placeholder={t("Select person")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Select person</SelectItem>
+                    <SelectItem value="none">{t("Select person")}</SelectItem>
                     {users.map((user) => (
                       <SelectItem key={user.id} value={user.id}>
                         {user.fullName || `${user.firstName} ${user.lastName}`}
@@ -391,7 +393,7 @@ export default function ViewFindingPage() {
 
             {/* Status */}
             <div className="space-y-2 mb-4">
-              <Label className="text-[#1e3a5f] font-medium">Status</Label>
+              <Label className="text-[#1e3a5f] font-medium">{t("Status")}</Label>
               {isEditing ? (
                 <Select
                   value={formData.status || "none"}
@@ -401,11 +403,11 @@ export default function ViewFindingPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Select status</SelectItem>
-                    <SelectItem value="Open">Open</SelectItem>
-                    <SelectItem value="In Progress">In Progress</SelectItem>
-                    <SelectItem value="Closed">Closed</SelectItem>
-                    <SelectItem value="Overdue">Overdue</SelectItem>
+                    <SelectItem value="none">{t("Select status")}</SelectItem>
+                    <SelectItem value="Open">{t("Open")}</SelectItem>
+                    <SelectItem value="In Progress">{t("In Progress")}</SelectItem>
+                    <SelectItem value="Closed">{t("Closed")}</SelectItem>
+                    <SelectItem value="Overdue">{t("Overdue")}</SelectItem>
                   </SelectContent>
                 </Select>
               ) : (
@@ -416,7 +418,7 @@ export default function ViewFindingPage() {
                     formData.status === 'Overdue' ? 'bg-red-100 text-red-800' :
                     'bg-gray-100 text-gray-800'
                   }`}>
-                    {formData.status}
+                    {t(formData.status)}
                   </span>
                 </div>
               )}
@@ -424,12 +426,12 @@ export default function ViewFindingPage() {
 
             {/* Target Closure Date */}
             <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">Target Closure Date</Label>
+              <Label className="text-[#1e3a5f] font-medium">{t("Target Closure Date")}</Label>
               {isEditing ? (
                 <DatePicker
                   value={formData.targetDate || undefined}
                   onChange={(date) => handleInputChange("targetDate", date ? date.toISOString().split('T')[0] : "")}
-                  placeholder="Select date"
+                  placeholder={t("Select date")}
                 />
               ) : (
                 <div className="p-3 bg-gray-50 rounded-md border">
@@ -450,7 +452,7 @@ export default function ViewFindingPage() {
                 }}
                 className="border-[#1e3a5f] text-[#1e3a5f] hover:bg-gray-50"
               >
-                Cancel
+                {t("Cancel")}
               </Button>
               <Button
                 onClick={handleSave}
@@ -460,12 +462,12 @@ export default function ViewFindingPage() {
                 {saving ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Saving...
+                    {t("Saving...")}
                   </>
                 ) : (
                   <>
                     <Save className="h-4 w-4 mr-2" />
-                    Save
+                    {t("Save")}
                   </>
                 )}
               </Button>

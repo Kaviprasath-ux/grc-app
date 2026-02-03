@@ -21,6 +21,7 @@ import {
   Eye,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Framework {
   id: string;
@@ -41,6 +42,7 @@ export default function MasterDataFrameworkPage() {
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const customerId = params.customerId as string;
 
   const [frameworks, setFrameworks] = useState<Framework[]>([]);
@@ -103,16 +105,16 @@ export default function MasterDataFrameworkPage() {
         body: JSON.stringify({ name: editName }),
       });
       if (response.ok) {
-        toast({ title: "Success", description: "Framework updated successfully" });
+        toast({ title: t("Success"), description: t("Framework updated successfully") });
         fetchFrameworks();
         setIsEditDialogOpen(false);
       } else {
         const error = await response.json();
-        toast({ title: "Error", description: error.error || "Failed to update framework", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to update framework"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error updating framework:", error);
-      toast({ title: "Error", description: "Failed to update framework", variant: "destructive" });
+      toast({ title: t("Error"), description: t("Failed to update framework"), variant: "destructive" });
     }
   };
 
@@ -128,16 +130,16 @@ export default function MasterDataFrameworkPage() {
         method: "DELETE",
       });
       if (response.ok) {
-        toast({ title: "Success", description: "Framework deleted successfully" });
+        toast({ title: t("Success"), description: t("Framework deleted successfully") });
         fetchFrameworks();
         setIsDeleteDialogOpen(false);
       } else {
         const error = await response.json();
-        toast({ title: "Error", description: error.error || "Failed to delete framework", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to delete framework"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error deleting framework:", error);
-      toast({ title: "Error", description: "Failed to delete framework", variant: "destructive" });
+      toast({ title: t("Error"), description: t("Failed to delete framework"), variant: "destructive" });
     }
   };
 
@@ -158,10 +160,10 @@ export default function MasterDataFrameworkPage() {
       const worksheet = XLSX.utils.json_to_sheet(exportData);
       XLSX.utils.book_append_sheet(workbook, worksheet, "Frameworks");
       XLSX.writeFile(workbook, "customer_frameworks.xlsx");
-      toast({ title: "Exported", description: "Frameworks exported successfully" });
+      toast({ title: t("Exported"), description: t("Frameworks exported successfully") });
     } catch (error) {
       console.error("Error exporting:", error);
-      toast({ title: "Error", description: "Failed to export frameworks", variant: "destructive" });
+      toast({ title: t("Error"), description: t("Failed to export frameworks"), variant: "destructive" });
     }
   };
 
@@ -183,9 +185,9 @@ export default function MasterDataFrameworkPage() {
             onClick={handleBack}
           >
             <ChevronLeft className="h-4 w-4" />
-            Back
+            {t("Back")}
           </button>
-          <h1 className="text-2xl font-bold text-blue-700">Framework</h1>
+          <h1 className="text-2xl font-bold text-blue-700">{t("Framework")}</h1>
         </div>
         <div className="flex items-center gap-3">
           <Button
@@ -193,14 +195,14 @@ export default function MasterDataFrameworkPage() {
             className="bg-blue-700 hover:bg-blue-800 text-white"
           >
             <Plus className="h-4 w-4 mr-1" />
-            New Framework
+            {t("New Framework")}
           </Button>
           <Button
             onClick={handleExport}
             variant="outline"
             className="border-gray-300 text-gray-700 hover:bg-gray-50"
           >
-            Export
+            {t("Export")}
           </Button>
         </div>
       </div>
@@ -216,7 +218,7 @@ export default function MasterDataFrameworkPage() {
             >
               <th className="text-left p-4 text-white font-semibold">
                 <div className="flex items-center gap-2">
-                  Framework Name
+                  {t("Framework Name")}
                   <button
                     onClick={() => setSortAsc(!sortAsc)}
                     className="text-white/80 hover:text-white"
@@ -225,7 +227,7 @@ export default function MasterDataFrameworkPage() {
                   </button>
                 </div>
               </th>
-              <th className="text-center p-4 text-white font-semibold w-40">Action</th>
+              <th className="text-center p-4 text-white font-semibold w-40">{t("Action")}</th>
               <th className="text-center p-4 text-white font-semibold w-16">
                 <button
                   onClick={() => setShowDetails(!showDetails)}
@@ -240,7 +242,7 @@ export default function MasterDataFrameworkPage() {
             {sortedFrameworks.length === 0 ? (
               <tr>
                 <td colSpan={3} className="text-center py-12 text-gray-500">
-                  No frameworks found.
+                  {t("No frameworks found.")}
                 </td>
               </tr>
             ) : (
@@ -257,14 +259,14 @@ export default function MasterDataFrameworkPage() {
                       <button
                         onClick={() => handleEditFramework(framework)}
                         className="text-blue-600 hover:text-blue-800"
-                        title="Edit"
+                        title={t("Edit")}
                       >
                         <Pencil className="h-5 w-5" />
                       </button>
                       <button
                         onClick={() => handleDeleteFramework(framework)}
                         className="text-red-500 hover:text-red-700"
-                        title="Delete"
+                        title={t("Delete")}
                       >
                         <Trash2 className="h-5 w-5" />
                       </button>
@@ -286,28 +288,28 @@ export default function MasterDataFrameworkPage() {
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-blue-700">Edit Framework</DialogTitle>
+            <DialogTitle className="text-blue-700">{t("Edit Framework")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label htmlFor="edit-name">Framework Name</Label>
+              <Label htmlFor="edit-name">{t("Framework Name")}</Label>
               <Input
                 id="edit-name"
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
-                placeholder="Enter framework name"
+                placeholder={t("Enter framework name")}
               />
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                Cancel
+                {t("Cancel")}
               </Button>
               <Button
                 onClick={handleSaveEdit}
                 disabled={!editName.trim()}
                 className="bg-blue-600 hover:bg-blue-700"
               >
-                Save
+                {t("Save")}
               </Button>
             </DialogFooter>
           </div>
@@ -318,21 +320,21 @@ export default function MasterDataFrameworkPage() {
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-red-600">Delete Framework</DialogTitle>
+            <DialogTitle className="text-red-600">{t("Delete Framework")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <p className="text-sm text-gray-600">
-              Are you sure you want to delete <strong>{deletingFramework?.name}</strong>? This action cannot be undone.
+              {t("Are you sure you want to delete")} <strong>{deletingFramework?.name}</strong>? {t("This action cannot be undone.")}
             </p>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
-                Cancel
+                {t("Cancel")}
               </Button>
               <Button
                 onClick={handleConfirmDelete}
                 className="bg-red-600 hover:bg-red-700 text-white"
               >
-                Delete
+                {t("Delete")}
               </Button>
             </DialogFooter>
           </div>

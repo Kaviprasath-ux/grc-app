@@ -38,6 +38,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useHasRole } from "@/hooks/usePermissions";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Framework {
   id: string;
@@ -83,6 +84,7 @@ const TEMPLATE_COLUMNS = [
 export default function CustomerAdminFrameworkPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const isGRCReviewer = useHasRole("GRCReviewer");
   const isDepartmentReviewer = useHasRole("DepartmentReviewer");
   const isReviewerRole = isGRCReviewer || isDepartmentReviewer;
@@ -206,22 +208,22 @@ export default function CustomerAdminFrameworkPage() {
         resetForm();
         fetchFrameworks();
         toast({
-          title: "Success",
-          description: "Framework created successfully",
+          title: t("Success"),
+          description: t("Framework created successfully"),
         });
       } else {
         const error = await response.json();
         toast({
-          title: "Error",
-          description: error.error || "Failed to create framework",
+          title: t("Error"),
+          description: error.error || t("Failed to create framework"),
           variant: "destructive",
         });
       }
     } catch (error) {
       console.error("Error creating framework:", error);
       toast({
-        title: "Error",
-        description: "Failed to create framework",
+        title: t("Error"),
+        description: t("Failed to create framework"),
         variant: "destructive",
       });
     }
@@ -252,16 +254,16 @@ export default function CustomerAdminFrameworkPage() {
       } else {
         const error = await response.json();
         toast({
-          title: "Error",
-          description: error.error || "Failed to create framework",
+          title: t("Error"),
+          description: error.error || t("Failed to create framework"),
           variant: "destructive",
         });
       }
     } catch (error) {
       console.error("Error creating framework:", error);
       toast({
-        title: "Error",
-        description: "Failed to create framework",
+        title: t("Error"),
+        description: t("Failed to create framework"),
         variant: "destructive",
       });
     }
@@ -296,8 +298,8 @@ export default function CustomerAdminFrameworkPage() {
 
       if (existingSubscribed) {
         toast({
-          title: "Already Subscribed",
-          description: `You are already subscribed to "${masterFramework.name}"`,
+          title: t("Already Subscribed"),
+          description: `${t("You are already subscribed to")} "${masterFramework.name}"`,
           variant: "default",
         });
         setSubscribingId(null);
@@ -333,8 +335,8 @@ export default function CustomerAdminFrameworkPage() {
         const error = await frameworkResponse.json();
         if (error.error?.includes("already exists")) {
           toast({
-            title: "Already Subscribed",
-            description: `Framework "${masterData.name}" already exists in your account`,
+            title: t("Already Subscribed"),
+            description: `${t("Framework")} "${masterData.name}" ${t("already exists in your account")}`,
             variant: "default",
           });
           setSubscribingId(null);
@@ -501,8 +503,8 @@ export default function CustomerAdminFrameworkPage() {
       const clonedRequirementsCount = Object.keys(requirementIdMap).length;
 
       toast({
-        title: "Subscribed Successfully",
-        description: `Subscribed to "${masterData.name}" with ${clonedRequirementsCount} requirements and ${clonedControlsCount} controls`,
+        title: t("Subscribed Successfully"),
+        description: `${t("Subscribed to")} "${masterData.name}" ${t("with")} ${clonedRequirementsCount} ${t("requirements and")} ${clonedControlsCount} ${t("controls")}`,
       });
 
       // Refresh frameworks list
@@ -511,8 +513,8 @@ export default function CustomerAdminFrameworkPage() {
     } catch (error) {
       console.error("Error subscribing to framework:", error);
       toast({
-        title: "Subscription Failed",
-        description: error instanceof Error ? error.message : "Failed to subscribe to framework",
+        title: t("Subscription Failed"),
+        description: error instanceof Error ? error.message : t("Failed to subscribe to framework"),
         variant: "destructive",
       });
     } finally {
@@ -570,13 +572,13 @@ export default function CustomerAdminFrameworkPage() {
         setImportSuccess(null);
       } else {
         toast({
-          title: "Invalid File",
-          description: "Please upload an Excel file (.xlsx)",
+          title: t("Invalid File"),
+          description: t("Please upload an Excel file (.xlsx)"),
           variant: "destructive",
         });
       }
     }
-  }, [toast]);
+  }, [toast, t]);
 
   const handleImportFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -588,8 +590,8 @@ export default function CustomerAdminFrameworkPage() {
         setImportSuccess(null);
       } else {
         toast({
-          title: "Invalid File",
-          description: "Please upload an Excel file (.xlsx)",
+          title: t("Invalid File"),
+          description: t("Please upload an Excel file (.xlsx)"),
           variant: "destructive",
         });
       }
@@ -617,14 +619,14 @@ export default function CustomerAdminFrameworkPage() {
       XLSX.writeFile(workbook, "framework_requirements_template.xlsx");
 
       toast({
-        title: "Template Downloaded",
-        description: "Sample template has been downloaded successfully",
+        title: t("Template Downloaded"),
+        description: t("Sample template has been downloaded successfully"),
       });
     } catch (error) {
       console.error("Error generating template:", error);
       toast({
-        title: "Error",
-        description: "Failed to download template",
+        title: t("Error"),
+        description: t("Failed to download template"),
         variant: "destructive",
       });
     }
@@ -653,7 +655,7 @@ export default function CustomerAdminFrameworkPage() {
         setImportSuccess(result.message);
         fetchFrameworks();
         toast({
-          title: "Import Successful",
+          title: t("Import Successful"),
           description: result.message,
         });
         // Auto-close the dialog after successful import
@@ -663,16 +665,16 @@ export default function CustomerAdminFrameworkPage() {
           setImportErrors(result.details);
         }
         toast({
-          title: "Import Failed",
-          description: result.error || "Failed to import requirements",
+          title: t("Import Failed"),
+          description: result.error || t("Failed to import requirements"),
           variant: "destructive",
         });
       }
     } catch (error) {
       console.error("Error importing file:", error);
       toast({
-        title: "Error",
-        description: "Failed to import requirements",
+        title: t("Error"),
+        description: t("Failed to import requirements"),
         variant: "destructive",
       });
     } finally {
@@ -698,20 +700,20 @@ export default function CustomerAdminFrameworkPage() {
         <nav className="flex items-center gap-1.5 text-sm">
           <Link href="/roles/customer-administrator/compliance" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
-            <span>Compliance</span>
+            <span>{t("Compliance")}</span>
           </Link>
           <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-          <span className="text-primary-700 font-medium">Integrated Frameworks</span>
+          <span className="text-primary-700 font-medium">{t("Integrated Frameworks")}</span>
         </nav>
 
-        <h1 className="text-2xl font-bold text-slate-800">Integrated Frameworks</h1>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Integrated Frameworks")}</h1>
         <div className="flex items-center justify-center h-[60vh]">
           <div className="flex flex-col items-center gap-4">
             <div className="relative">
               <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
               <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
             </div>
-            <p className="text-sm text-slate-500 font-medium">Loading frameworks...</p>
+            <p className="text-sm text-slate-500 font-medium">{t("Loading frameworks...")}</p>
           </div>
         </div>
       </div>
@@ -724,14 +726,14 @@ export default function CustomerAdminFrameworkPage() {
       <nav className="flex items-center gap-1.5 text-sm">
         <Link href="/roles/customer-administrator/compliance" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
-          <span>Compliance</span>
+          <span>{t("Compliance")}</span>
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-        <span className="text-primary-700 font-medium">Integrated Frameworks</span>
+        <span className="text-primary-700 font-medium">{t("Integrated Frameworks")}</span>
       </nav>
 
       {/* Page Header */}
-      <h1 className="text-2xl font-bold text-slate-800">Integrated Frameworks</h1>
+      <h1 className="text-2xl font-bold text-slate-800">{t("Integrated Frameworks")}</h1>
 
       {/* Toolbar */}
       <div className="flex items-center justify-between gap-4">
@@ -740,12 +742,12 @@ export default function CustomerAdminFrameworkPage() {
           {!isReviewerRole && (
             <Select value={subscriptionFilter} onValueChange={setSubscriptionFilter}>
               <SelectTrigger className="w-[160px] bg-white">
-                <SelectValue placeholder="Subscription" />
+                <SelectValue placeholder={t("Subscription")} />
               </SelectTrigger>
               <SelectContent className="bg-white">
-                <SelectItem value="all">All Subscriptions</SelectItem>
-                <SelectItem value="Subscribed">Subscribed</SelectItem>
-                <SelectItem value="Not Subscribed">Not Subscribed</SelectItem>
+                <SelectItem value="all">{t("All Subscriptions")}</SelectItem>
+                <SelectItem value="Subscribed">{t("Subscribed")}</SelectItem>
+                <SelectItem value="Not Subscribed">{t("Not Subscribed")}</SelectItem>
               </SelectContent>
             </Select>
           )}
@@ -753,13 +755,13 @@ export default function CustomerAdminFrameworkPage() {
           {/* Type Filter */}
           <Select value={typeFilter} onValueChange={setTypeFilter}>
             <SelectTrigger className="w-[140px] bg-white">
-              <SelectValue placeholder="All Types" />
+              <SelectValue placeholder={t("All Types")} />
             </SelectTrigger>
             <SelectContent className="bg-white">
-              <SelectItem value="all">All Types</SelectItem>
-              <SelectItem value="Framework">Framework</SelectItem>
-              <SelectItem value="Standard">Standard</SelectItem>
-              <SelectItem value="Regulation">Regulation</SelectItem>
+              <SelectItem value="all">{t("All Types")}</SelectItem>
+              <SelectItem value="Framework">{t("Framework")}</SelectItem>
+              <SelectItem value="Standard">{t("Standard")}</SelectItem>
+              <SelectItem value="Regulation">{t("Regulation")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -773,15 +775,15 @@ export default function CustomerAdminFrameworkPage() {
               size="sm"
               className="bg-primary-50 hover:bg-primary-100 text-primary-700 border-primary-200"
             >
-              <Sparkles className="h-4 w-4 mr-2" />
-              New Framework (AI)
+              <Sparkles className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+              {t("New Framework (AI)")}
             </Button>
             <Button
               onClick={openCreateDialog}
               size="sm"
             >
-              <Plus className="h-4 w-4 mr-2" />
-              New Framework
+              <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+              {t("New Framework")}
             </Button>
           </div>
         )}
@@ -791,7 +793,7 @@ export default function CustomerAdminFrameworkPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {currentFrameworks.length === 0 ? (
           <div className="col-span-full bg-white rounded-xl border border-slate-200 p-12 text-center">
-            <p className="text-slate-500">No frameworks found.</p>
+            <p className="text-slate-500">{t("No frameworks found.")}</p>
           </div>
         ) : (
           currentFrameworks.map((framework) => {
@@ -808,7 +810,7 @@ export default function CustomerAdminFrameworkPage() {
                   {framework.name}
                 </h4>
                 {isLocked && (
-                  <div className="flex items-center gap-2 ml-2 flex-shrink-0">
+                  <div className="flex items-center gap-2 ltr:ml-2 rtl:mr-2 flex-shrink-0">
                     <Button
                       size="sm"
                       variant="outline"
@@ -818,11 +820,11 @@ export default function CustomerAdminFrameworkPage() {
                     >
                       {subscribingId === framework.id ? (
                         <>
-                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                          Subscribing...
+                          <Loader2 className="h-3 w-3 ltr:mr-1 rtl:ml-1 animate-spin" />
+                          {t("Subscribing...")}
                         </>
                       ) : (
-                        "Subscribe"
+                        t("Subscribe")
                       )}
                     </Button>
                     <Lock className="h-5 w-5 text-slate-400" />
@@ -843,7 +845,7 @@ export default function CustomerAdminFrameworkPage() {
                     }
                     router.push(`/roles/customer-administrator/compliance/framework/${framework.id}/controls`);
                   }}
-                  title={isLocked ? "Framework not subscribed" : "Click to view controls"}
+                  title={isLocked ? t("Framework not subscribed") : t("Click to view controls")}
                 >
                   <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
                     {/* Background circle */}
@@ -871,7 +873,7 @@ export default function CustomerAdminFrameworkPage() {
                     <span className="text-lg font-bold text-slate-800">
                       {framework.compliancePercentage.toFixed(1)}%
                     </span>
-                    <span className="text-xs text-slate-500">Compliance</span>
+                    <span className="text-xs text-slate-500">{t("Compliance")}</span>
                   </div>
                 </div>
               </div>
@@ -890,7 +892,7 @@ export default function CustomerAdminFrameworkPage() {
                     }
                     router.push(`/roles/customer-administrator/compliance/framework/${framework.id}/policies`);
                   }}
-                  title={isLocked ? "Framework not subscribed" : "Click to view policies"}
+                  title={isLocked ? t("Framework not subscribed") : t("Click to view policies")}
                 >
                   <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
                     <div
@@ -900,7 +902,7 @@ export default function CustomerAdminFrameworkPage() {
                   </div>
                   <div className="text-right min-w-[80px]">
                     <span className="text-sm font-medium text-slate-700">{framework.policyPercentage.toFixed(1)}%</span>
-                    <span className="text-xs text-slate-500 ml-1">Policy</span>
+                    <span className="text-xs text-slate-500 ltr:ml-1 rtl:mr-1">{t("Policy")}</span>
                   </div>
                 </div>
 
@@ -916,7 +918,7 @@ export default function CustomerAdminFrameworkPage() {
                     }
                     router.push(`/roles/customer-administrator/compliance/framework/${framework.id}/evidence`);
                   }}
-                  title={isLocked ? "Framework not subscribed" : "Click to view evidence"}
+                  title={isLocked ? t("Framework not subscribed") : t("Click to view evidence")}
                 >
                   <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
                     <div
@@ -926,7 +928,7 @@ export default function CustomerAdminFrameworkPage() {
                   </div>
                   <div className="text-right min-w-[80px]">
                     <span className="text-sm font-medium text-slate-700">{framework.evidencePercentage.toFixed(1)}%</span>
-                    <span className="text-xs text-slate-500 ml-1">Evidence</span>
+                    <span className="text-xs text-slate-500 ltr:ml-1 rtl:mr-1">{t("Evidence")}</span>
                   </div>
                 </div>
               </div>
@@ -940,7 +942,7 @@ export default function CustomerAdminFrameworkPage() {
       {filteredFrameworks.length > 0 && (
         <div className="flex items-center justify-between">
           <div className="text-xs text-slate-500">
-            Showing {startIndex + 1} to {endIndex} of {filteredFrameworks.length} frameworks
+            {t("Showing")} {startIndex + 1} {t("to")} {endIndex} {t("of")} {filteredFrameworks.length} {t("frameworks")}
           </div>
           <div className="flex items-center gap-1">
             <Button
@@ -988,33 +990,32 @@ export default function CustomerAdminFrameworkPage() {
         <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Sticky Header */}
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
-            <DialogTitle className="text-lg font-semibold text-slate-800">Create Integrated Framework (AI)</DialogTitle>
+            <DialogTitle className="text-lg font-semibold text-slate-800">{t("Create Integrated Framework (AI)")}</DialogTitle>
           </div>
           {/* Scrollable Content */}
           <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
             <p className="text-sm text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-100">
-              Note: Custom framework will be automatically added in grey color to
-              differentiate between Subscribed Frameworks.
+              {t("Note: Custom framework will be automatically added in grey color to differentiate between Subscribed Frameworks.")}
             </p>
 
             <div className="space-y-2">
               <Label className="text-sm font-medium text-slate-700">
-                Integrated Framework Name <span className="text-semantic-error">*</span>
+                {t("Integrated Framework Name")} <span className="text-semantic-error">*</span>
               </Label>
               <Input
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Enter framework name"
+                placeholder={t("Enter framework name")}
                 className="bg-white"
               />
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700">Description</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
               <Textarea
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Enter description"
+                placeholder={t("Enter description")}
                 rows={3}
                 className="bg-white"
               />
@@ -1022,19 +1023,19 @@ export default function CustomerAdminFrameworkPage() {
 
             <div className="space-y-2">
               <Label className="text-sm font-medium text-slate-700">
-                Framework Type <span className="text-semantic-error">*</span>
+                {t("Framework Type")} <span className="text-semantic-error">*</span>
               </Label>
               <Select
                 value={formData.type}
                 onValueChange={(value) => setFormData({ ...formData, type: value })}
               >
                 <SelectTrigger className="w-full bg-white">
-                  <SelectValue placeholder="Select type" />
+                  <SelectValue placeholder={t("Select type")} />
                 </SelectTrigger>
                 <SelectContent className="bg-white">
-                  <SelectItem value="Framework">Framework</SelectItem>
-                  <SelectItem value="Standard">Standard</SelectItem>
-                  <SelectItem value="Regulation">Regulation</SelectItem>
+                  <SelectItem value="Framework">{t("Framework")}</SelectItem>
+                  <SelectItem value="Standard">{t("Standard")}</SelectItem>
+                  <SelectItem value="Regulation">{t("Regulation")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -1042,23 +1043,23 @@ export default function CustomerAdminFrameworkPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">
-                  Country <span className="text-semantic-error">*</span>
+                  {t("Country")} <span className="text-semantic-error">*</span>
                 </Label>
                 <Input
                   value={formData.country}
                   onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                  placeholder="Enter country"
+                  placeholder={t("Enter country")}
                   className="bg-white"
                 />
               </div>
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">
-                  Industry <span className="text-semantic-error">*</span>
+                  {t("Industry")} <span className="text-semantic-error">*</span>
                 </Label>
                 <Input
                   value={formData.industry}
                   onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
-                  placeholder="Enter industry"
+                  placeholder={t("Enter industry")}
                   className="bg-white"
                 />
               </div>
@@ -1066,7 +1067,7 @@ export default function CustomerAdminFrameworkPage() {
 
             {/* File Upload */}
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700">Upload Support Document</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Upload Support Document")}</Label>
               <div
                 className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
                   isDragging
@@ -1100,13 +1101,13 @@ export default function CustomerAdminFrameworkPage() {
                       }}
                       className="text-slate-400 hover:text-semantic-error"
                     >
-                      Remove
+                      {t("Remove")}
                     </Button>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center gap-2 text-slate-400">
                     <Upload className="h-8 w-8" />
-                    <span className="text-sm">Click here, or drop files here to upload.</span>
+                    <span className="text-sm">{t("Click here, or drop files here to upload.")}</span>
                   </div>
                 )}
               </div>
@@ -1115,14 +1116,14 @@ export default function CustomerAdminFrameworkPage() {
           {/* Sticky Footer */}
           <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
             <Button variant="outline" size="sm" onClick={() => setIsAICreateDialogOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button
               size="sm"
               onClick={handleAICreate}
               disabled={!formData.name || !formData.type || !formData.country || !formData.industry}
             >
-              Save
+              {t("Save")}
             </Button>
           </div>
         </DialogContent>
@@ -1133,44 +1134,43 @@ export default function CustomerAdminFrameworkPage() {
         <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
           {/* Sticky Header */}
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
-            <DialogTitle className="text-lg font-semibold text-slate-800">Create Integrated Framework</DialogTitle>
+            <DialogTitle className="text-lg font-semibold text-slate-800">{t("Create Integrated Framework")}</DialogTitle>
           </div>
           {/* Scrollable Content */}
           <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
             <p className="text-sm text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-100">
-              Create a new framework and import requirements from an Excel file.
-              Note: Custom framework will be automatically added in grey color to
-              differentiate between Subscribed Frameworks.
+              {t("Create a new framework and import requirements from an Excel file.")}
+              {" "}{t("Note: Custom framework will be automatically added in grey color to differentiate between Subscribed Frameworks.")}
             </p>
 
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700">Code</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Code")}</Label>
               <Input
                 value={formData.code}
                 onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                placeholder="Enter code"
+                placeholder={t("Enter code")}
                 className="bg-white"
               />
             </div>
 
             <div className="space-y-2">
               <Label className="text-sm font-medium text-slate-700">
-                Integrated Framework Name <span className="text-semantic-error">*</span>
+                {t("Integrated Framework Name")} <span className="text-semantic-error">*</span>
               </Label>
               <Input
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Enter framework name"
+                placeholder={t("Enter framework name")}
                 className="bg-white"
               />
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700">Description</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
               <Textarea
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Enter description"
+                placeholder={t("Enter description")}
                 rows={3}
                 className="bg-white"
               />
@@ -1178,19 +1178,19 @@ export default function CustomerAdminFrameworkPage() {
 
             <div className="space-y-2">
               <Label className="text-sm font-medium text-slate-700">
-                Framework Type <span className="text-semantic-error">*</span>
+                {t("Framework Type")} <span className="text-semantic-error">*</span>
               </Label>
               <Select
                 value={formData.type}
                 onValueChange={(value) => setFormData({ ...formData, type: value })}
               >
                 <SelectTrigger className="w-full bg-white">
-                  <SelectValue placeholder="Select type" />
+                  <SelectValue placeholder={t("Select type")} />
                 </SelectTrigger>
                 <SelectContent className="bg-white">
-                  <SelectItem value="Framework">Framework</SelectItem>
-                  <SelectItem value="Standard">Standard</SelectItem>
-                  <SelectItem value="Regulation">Regulation</SelectItem>
+                  <SelectItem value="Framework">{t("Framework")}</SelectItem>
+                  <SelectItem value="Standard">{t("Standard")}</SelectItem>
+                  <SelectItem value="Regulation">{t("Regulation")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -1198,23 +1198,23 @@ export default function CustomerAdminFrameworkPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">
-                  Country <span className="text-semantic-error">*</span>
+                  {t("Country")} <span className="text-semantic-error">*</span>
                 </Label>
                 <Input
                   value={formData.country}
                   onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                  placeholder="Enter country"
+                  placeholder={t("Enter country")}
                   className="bg-white"
                 />
               </div>
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">
-                  Industry <span className="text-semantic-error">*</span>
+                  {t("Industry")} <span className="text-semantic-error">*</span>
                 </Label>
                 <Input
                   value={formData.industry}
                   onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
-                  placeholder="Enter industry"
+                  placeholder={t("Enter industry")}
                   className="bg-white"
                 />
               </div>
@@ -1223,14 +1223,14 @@ export default function CustomerAdminFrameworkPage() {
           {/* Sticky Footer */}
           <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
             <Button variant="outline" size="sm" onClick={() => setIsCreateDialogOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button
               size="sm"
               onClick={handleCreate}
               disabled={!formData.name || !formData.type || !formData.country || !formData.industry}
             >
-              Create & Import
+              {t("Create & Import")}
             </Button>
           </div>
         </DialogContent>
@@ -1243,14 +1243,14 @@ export default function CustomerAdminFrameworkPage() {
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
             <DialogTitle className="flex items-center gap-2 text-lg font-semibold text-slate-800">
               <FileSpreadsheet className="h-5 w-5 text-success-500" />
-              Import Framework Requirements
+              {t("Import Framework Requirements")}
             </DialogTitle>
           </div>
           {/* Scrollable Content */}
           <div className="px-6 py-5 space-y-5 overflow-y-auto flex-1">
             <p className="text-sm text-slate-600">
-              Upload an Excel file (.xlsx) containing your framework requirements.
-              You can download the sample template to see the required format.
+              {t("Upload an Excel file (.xlsx) containing your framework requirements.")}
+              {" "}{t("You can download the sample template to see the required format.")}
             </p>
 
             {/* Download Template Button */}
@@ -1260,17 +1260,17 @@ export default function CustomerAdminFrameworkPage() {
                 size="sm"
                 onClick={handleDownloadTemplate}
               >
-                <Download className="h-4 w-4 mr-2" />
-                Download Sample Template
+                <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                {t("Download Sample Template")}
               </Button>
               <span className="text-xs text-slate-500">
-                Use this template to ensure correct column headers
+                {t("Use this template to ensure correct column headers")}
               </span>
             </div>
 
             {/* File Upload Area */}
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-700">Upload Document</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Upload Document")}</Label>
               <div
                 className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
                   isDraggingImport
@@ -1321,9 +1321,9 @@ export default function CustomerAdminFrameworkPage() {
                     <Upload className="h-12 w-12" />
                     <div>
                       <span className="text-sm font-medium">
-                        Click to upload or drag and drop
+                        {t("Click to upload or drag and drop")}
                       </span>
-                      <p className="text-xs mt-1">Excel files only (.xlsx)</p>
+                      <p className="text-xs mt-1">{t("Excel files only (.xlsx)")}</p>
                     </div>
                   </div>
                 )}
@@ -1338,7 +1338,7 @@ export default function CustomerAdminFrameworkPage() {
                   <p className="text-sm font-medium text-success-800">{importSuccess}</p>
                   {importErrors.length > 0 && (
                     <p className="text-xs text-success-600 mt-1">
-                      Some warnings occurred during import. See details below.
+                      {t("Some warnings occurred during import. See details below.")}
                     </p>
                   )}
                 </div>
@@ -1351,7 +1351,7 @@ export default function CustomerAdminFrameworkPage() {
                 <div className="flex items-center gap-2 text-semantic-error">
                   <AlertCircle className="h-4 w-4" />
                   <span className="text-sm font-medium">
-                    {importSuccess ? "Warnings" : "Validation Errors"}
+                    {importSuccess ? t("Warnings") : t("Validation Errors")}
                   </span>
                 </div>
                 <div className="max-h-40 overflow-y-auto border border-error-200 rounded-lg bg-error-50">
@@ -1360,7 +1360,7 @@ export default function CustomerAdminFrameworkPage() {
                       key={index}
                       className="px-3 py-2 text-sm text-semantic-error border-b border-error-100 last:border-b-0"
                     >
-                      {error.row > 0 && <span className="font-medium">Row {error.row}: </span>}
+                      {error.row > 0 && <span className="font-medium">{t("Row")} {error.row}: </span>}
                       {error.column && <span className="font-medium">{error.column} - </span>}
                       {error.message}
                     </div>
@@ -1371,14 +1371,14 @@ export default function CustomerAdminFrameworkPage() {
 
             {/* Required Columns Info */}
             <div className="bg-slate-50 rounded-lg p-4 border border-slate-100">
-              <p className="text-sm font-medium text-slate-700 mb-2">Required Column Headers:</p>
+              <p className="text-sm font-medium text-slate-700 mb-2">{t("Required Column Headers:")}</p>
               <div className="flex flex-wrap gap-2">
                 {TEMPLATE_COLUMNS.map((col) => (
                   <span
                     key={col}
                     className="text-xs px-2 py-1 bg-white border border-slate-200 rounded-md text-slate-600"
                   >
-                    {col}
+                    {t(col)}
                   </span>
                 ))}
               </div>
@@ -1387,7 +1387,7 @@ export default function CustomerAdminFrameworkPage() {
           {/* Sticky Footer */}
           <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
             <Button variant="outline" size="sm" onClick={handleCloseImportDialog}>
-              {importSuccess ? "Close" : "Skip"}
+              {importSuccess ? t("Close") : t("Skip")}
             </Button>
             <Button
               size="sm"
@@ -1396,13 +1396,13 @@ export default function CustomerAdminFrameworkPage() {
             >
               {isImporting ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
-                  Importing...
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent ltr:mr-2 rtl:ml-2" />
+                  {t("Importing...")}
                 </>
               ) : (
                 <>
-                  <Upload className="h-4 w-4 mr-2" />
-                  Import
+                  <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                  {t("Import")}
                 </>
               )}
             </Button>
