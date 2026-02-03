@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
@@ -37,6 +37,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import {
@@ -49,6 +55,9 @@ import {
   Loader2,
   Home,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -86,6 +95,64 @@ interface Engagement {
   assignedAuditors: string[];
 }
 
+interface AuditTask {
+  id: string;
+  task: string;
+  done: boolean;
+  plannedHours: string;
+  actualHours: string;
+  auditorId: string;
+  comments: string;
+}
+
+interface UploadedFile {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+}
+
+interface EngagementFormData {
+  engagementTitle: string;
+  engagementObjective: string;
+  engagementScope: string;
+  departmentId: string;
+  linkedRiskIds: string[];
+  auditRating: string;
+  auditType: string;
+  auditorId: string;
+  auditeeId: string;
+  startDate: string;
+  targetDate: string;
+  initialObservation: string;
+  relatedPolicies: string;
+}
+
+const defaultTasks: AuditTask[] = [
+  { id: "1", task: "Audit Preparation & Update", done: false, plannedHours: "", actualHours: "", auditorId: "", comments: "" },
+  { id: "2", task: "Documentation Review", done: false, plannedHours: "", actualHours: "", auditorId: "", comments: "" },
+  { id: "3", task: "Sample Selection", done: false, plannedHours: "", actualHours: "", auditorId: "", comments: "" },
+  { id: "4", task: "Result of Previous Audit", done: false, plannedHours: "", actualHours: "", auditorId: "", comments: "" },
+  { id: "5", task: "Related Policies", done: false, plannedHours: "", actualHours: "", auditorId: "", comments: "" },
+  { id: "6", task: "Related Procedures", done: false, plannedHours: "", actualHours: "", auditorId: "", comments: "" },
+];
+
+const emptyFormData: EngagementFormData = {
+  engagementTitle: "",
+  engagementObjective: "",
+  engagementScope: "",
+  departmentId: "",
+  linkedRiskIds: [],
+  auditRating: "",
+  auditType: "",
+  auditorId: "",
+  auditeeId: "",
+  startDate: "",
+  targetDate: "",
+  initialObservation: "",
+  relatedPolicies: "",
+};
+
 export default function AuditPlanningPage() {
   const router = useRouter();
   const { data: session } = useSession();
@@ -112,26 +179,31 @@ export default function AuditPlanningPage() {
   const [reportStartDate, setReportStartDate] = useState("");
   const [reportEndDate, setReportEndDate] = useState("");
 
-  // Add Engagement dialog
+  // Add/Edit Engagement dialog
   const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const [addDialogLoading, setAddDialogLoading] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingEngagementId, setEditingEngagementId] = useState<string | null>(null);
+  const [dialogLoading, setDialogLoading] = useState(false);
   const [risks, setRisks] = useState<Risk[]>([]);
+  const [historicalRisks, setHistoricalRisks] = useState<Risk[]>([]);
   const [auditors, setAuditors] = useState<User[]>([]);
   const [auditees, setAuditees] = useState<User[]>([]);
   const [saving, setSaving] = useState(false);
-  const [engagementForm, setEngagementForm] = useState({
-    engagementTitle: "",
-    engagementObjective: "",
-    engagementScope: "",
-    departmentId: "",
-    linkedRiskIds: [] as string[],
-    auditRating: "",
-    auditType: "",
-    auditorId: "",
-    auditeeId: "",
-    startDate: "",
-    targetDate: "",
-  });
+  const [engagementForm, setEngagementForm] = useState<EngagementFormData>(emptyFormData);
+  const [tasks, setTasks] = useState<AuditTask[]>([...defaultTasks]);
+
+  // File uploads
+  const attachFileRef = useRef<HTMLInputElement>(null);
+  const workpaperRef = useRef<HTMLInputElement>(null);
+  const [attachedFiles, setAttachedFiles] = useState<UploadedFile[]>([]);
+  const [workpaperFiles, setWorkpaperFiles] = useState<UploadedFile[]>([]);
+  const [isDragOverAttach, setIsDragOverAttach] = useState(false);
+  const [isDragOverWorkpaper, setIsDragOverWorkpaper] = useState(false);
+
+  // Collapsible sections
+  const [observationOpen, setObservationOpen] = useState(false);
+  const [procedureOpen, setProcedureOpen] = useState(false);
+  const [policiesOpen, setPoliciesOpen] = useState(false);
 
   const isAuditHead = session?.user?.roles?.includes("AuditHead");
 
@@ -201,6 +273,19 @@ export default function AuditPlanningPage() {
     }
   };
 
+  const fetchHistoricalRisks = async (departmentId: string) => {
+    try {
+      const lastYear = new Date().getFullYear() - 1;
+      const response = await fetch(`/api/internal-audit/risks?departmentId=${departmentId}&year=${lastYear}`);
+      if (response.ok) {
+        const data = await response.json();
+        setHistoricalRisks(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch historical risks:", error);
+    }
+  };
+
   const fetchAuditorsAndAuditees = async () => {
     try {
       const [auditeesRes, auditorsRes] = await Promise.all([
@@ -221,77 +306,209 @@ export default function AuditPlanningPage() {
     }
   };
 
-  const openAddDialog = async () => {
-    setEngagementForm({
-      engagementTitle: "",
-      engagementObjective: "",
-      engagementScope: "",
-      departmentId: "",
-      linkedRiskIds: [],
-      auditRating: "",
-      auditType: "",
-      auditorId: "",
-      auditeeId: "",
-      startDate: "",
-      targetDate: "",
-    });
+  const resetFormState = () => {
+    setEngagementForm(emptyFormData);
+    setTasks([...defaultTasks]);
     setRisks([]);
+    setHistoricalRisks([]);
+    setAttachedFiles([]);
+    setWorkpaperFiles([]);
+    setObservationOpen(false);
+    setProcedureOpen(false);
+    setPoliciesOpen(false);
+  };
+
+  const openAddDialog = async () => {
+    resetFormState();
     setAddDialogOpen(true);
-    setAddDialogLoading(true);
+    setDialogLoading(true);
     await fetchAuditorsAndAuditees();
-    setAddDialogLoading(false);
+    setDialogLoading(false);
+  };
+
+  const openEditDialog = async (engagement: Engagement) => {
+    resetFormState();
+    setEditingEngagementId(engagement.id);
+    setEditDialogOpen(true);
+    setDialogLoading(true);
+
+    try {
+      await fetchAuditorsAndAuditees();
+
+      const response = await fetch(`/api/internal-audit/engagements/${engagement.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        setEngagementForm({
+          engagementTitle: data.engagementTitle || "",
+          engagementObjective: data.engagementObjective || "",
+          engagementScope: data.engagementScope || "",
+          departmentId: data.departmentId || "",
+          linkedRiskIds: data.linkedRiskIds || [],
+          auditRating: data.auditRating || "",
+          auditType: data.auditType || "",
+          auditorId: data.assignedAuditorId || "",
+          auditeeId: data.auditeeId || "",
+          startDate: data.plannedStartDate ? data.plannedStartDate.split("T")[0] : "",
+          targetDate: data.plannedEndDate ? data.plannedEndDate.split("T")[0] : "",
+          initialObservation: data.initialObservation || "",
+          relatedPolicies: data.relatedPolicies || "",
+        });
+
+        // Fetch risks for the department
+        if (data.departmentId) {
+          await fetchRisksForDepartment(data.departmentId);
+          await fetchHistoricalRisks(data.departmentId);
+        }
+      } else {
+        toast.error(t("Failed to load engagement"));
+        setEditDialogOpen(false);
+      }
+    } catch (error) {
+      console.error("Failed to fetch engagement:", error);
+      toast.error(t("Failed to load engagement"));
+      setEditDialogOpen(false);
+    } finally {
+      setDialogLoading(false);
+    }
   };
 
   const handleEngagementDepartmentChange = async (departmentId: string) => {
     setEngagementForm({ ...engagementForm, departmentId, linkedRiskIds: [] });
     if (departmentId) {
       await fetchRisksForDepartment(departmentId);
+      await fetchHistoricalRisks(departmentId);
     } else {
       setRisks([]);
+      setHistoricalRisks([]);
     }
   };
 
-  const handleSaveEngagement = async () => {
+  // File upload handlers
+  const handleFileDrop = async (e: React.DragEvent, type: "attach" | "workpaper") => {
+    e.preventDefault();
+    if (type === "attach") setIsDragOverAttach(false);
+    else setIsDragOverWorkpaper(false);
+
+    const files = Array.from(e.dataTransfer.files);
+    await uploadFiles(files, type);
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>, type: "attach" | "workpaper") => {
+    const files = e.target.files ? Array.from(e.target.files) : [];
+    await uploadFiles(files, type);
+    e.target.value = "";
+  };
+
+  const uploadFiles = async (files: File[], type: "attach" | "workpaper") => {
+    for (const file of files) {
+      const newFile: UploadedFile = {
+        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+        name: file.name,
+        size: file.size,
+        type: file.type,
+      };
+
+      if (type === "attach") {
+        setAttachedFiles((prev) => [...prev, newFile]);
+      } else {
+        setWorkpaperFiles((prev) => [...prev, newFile]);
+      }
+    }
+  };
+
+  const removeFile = (fileId: string, type: "attach" | "workpaper") => {
+    if (type === "attach") {
+      setAttachedFiles((prev) => prev.filter((f) => f.id !== fileId));
+    } else {
+      setWorkpaperFiles((prev) => prev.filter((f) => f.id !== fileId));
+    }
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  };
+
+  // Task handlers
+  const addTaskRow = () => {
+    const newTask: AuditTask = {
+      id: Date.now().toString(),
+      task: "",
+      done: false,
+      plannedHours: "",
+      actualHours: "",
+      auditorId: "",
+      comments: "",
+    };
+    setTasks([...tasks, newTask]);
+  };
+
+  const updateTask = (id: string, field: keyof AuditTask, value: string | boolean) => {
+    setTasks(tasks.map((t) => (t.id === id ? { ...t, [field]: value } : t)));
+  };
+
+  const removeTask = (id: string) => {
+    setTasks(tasks.filter((t) => t.id !== id));
+  };
+
+  const calculateTotalHours = (field: "plannedHours" | "actualHours") => {
+    return tasks.reduce((sum, task) => sum + (parseFloat(task[field]) || 0), 0);
+  };
+
+  const validateEngagementForm = (): boolean => {
     if (!engagementForm.engagementTitle.trim()) {
       toast.error(t("Engagement Title is required"));
-      return;
+      return false;
     }
     if (!engagementForm.engagementObjective.trim()) {
       toast.error(t("Engagement Objective is required"));
-      return;
+      return false;
     }
     if (!engagementForm.engagementScope.trim()) {
       toast.error(t("Engagement Scope is required"));
-      return;
+      return false;
     }
     if (!engagementForm.departmentId) {
       toast.error(t("Department is required"));
-      return;
+      return false;
     }
     if (!engagementForm.auditorId) {
       toast.error(t("Auditor is required"));
-      return;
+      return false;
     }
     if (!engagementForm.startDate) {
       toast.error(t("Start Date is required"));
-      return;
+      return false;
     }
     if (!engagementForm.targetDate) {
       toast.error(t("Target Date is required"));
-      return;
+      return false;
     }
+    return true;
+  };
+
+  const handleSaveEngagement = async () => {
+    if (!validateEngagementForm()) return;
 
     setSaving(true);
     try {
       const response = await fetch("/api/internal-audit/engagements", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(engagementForm),
+        body: JSON.stringify({
+          ...engagementForm,
+          tasks,
+          plannedHours: calculateTotalHours("plannedHours"),
+        }),
       });
 
       if (response.ok) {
         toast.success(t("Engagement created successfully"));
         setAddDialogOpen(false);
+        resetFormState();
         fetchEngagements();
       } else {
         const error = await response.json();
@@ -300,6 +517,39 @@ export default function AuditPlanningPage() {
     } catch (error) {
       console.error("Failed to create engagement:", error);
       toast.error(t("Failed to create engagement"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleUpdateEngagement = async () => {
+    if (!validateEngagementForm() || !editingEngagementId) return;
+
+    setSaving(true);
+    try {
+      const response = await fetch(`/api/internal-audit/engagements/${editingEngagementId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...engagementForm,
+          tasks,
+          plannedHours: calculateTotalHours("plannedHours"),
+        }),
+      });
+
+      if (response.ok) {
+        toast.success(t("Engagement updated successfully"));
+        setEditDialogOpen(false);
+        setEditingEngagementId(null);
+        resetFormState();
+        fetchEngagements();
+      } else {
+        const error = await response.json();
+        toast.error(error.error || t("Failed to update engagement"));
+      }
+    } catch (error) {
+      console.error("Failed to update engagement:", error);
+      toast.error(t("Failed to update engagement"));
     } finally {
       setSaving(false);
     }
@@ -335,7 +585,6 @@ export default function AuditPlanningPage() {
 
   const handleExport = async () => {
     try {
-      // Create CSV content
       const headers = ["Audit ID", "Engagement Title", "Department", "Audit Type", "Assigned Auditors", "Status"];
       const rows = engagements.map(e => [
         e.auditId,
@@ -407,6 +656,465 @@ export default function AuditPlanningPage() {
       router.push(`/internal-audit/audit-planning/report-preview?filterType=DateRange&startDate=${reportStartDate}&endDate=${reportEndDate}`);
     }
   };
+
+  // Render the engagement form content (shared between Add and Edit dialogs)
+  const renderEngagementFormContent = () => (
+    <div className="space-y-4">
+      {/* Engagement Title */}
+      <div className="space-y-2">
+        <Label className="text-sm font-medium text-slate-700">
+          {t("Engagement Title")} <span className="text-red-500">*</span>
+        </Label>
+        <Input
+          value={engagementForm.engagementTitle}
+          onChange={(e) => setEngagementForm({ ...engagementForm, engagementTitle: e.target.value })}
+          placeholder={t("Enter engagement title")}
+          className="w-full bg-white"
+        />
+      </div>
+
+      {/* Engagement Objective */}
+      <div className="space-y-2">
+        <Label className="text-sm font-medium text-slate-700">
+          {t("Engagement Objective")} <span className="text-red-500">*</span>
+        </Label>
+        <Textarea
+          value={engagementForm.engagementObjective}
+          onChange={(e) => setEngagementForm({ ...engagementForm, engagementObjective: e.target.value })}
+          placeholder={t("Enter engagement objective")}
+          rows={3}
+          className="w-full bg-white resize-none"
+        />
+      </div>
+
+      {/* Engagement Scope */}
+      <div className="space-y-2">
+        <Label className="text-sm font-medium text-slate-700">
+          {t("Engagement Scope")} <span className="text-red-500">*</span>
+        </Label>
+        <Textarea
+          value={engagementForm.engagementScope}
+          onChange={(e) => setEngagementForm({ ...engagementForm, engagementScope: e.target.value })}
+          placeholder={t("Enter engagement scope")}
+          rows={3}
+          className="w-full bg-white resize-none"
+        />
+      </div>
+
+      {/* Department */}
+      <div className="space-y-2">
+        <Label className="text-sm font-medium text-slate-700">
+          {t("Department")} <span className="text-red-500">*</span>
+        </Label>
+        <Select
+          value={engagementForm.departmentId}
+          onValueChange={handleEngagementDepartmentChange}
+        >
+          <SelectTrigger className="w-full bg-white">
+            <SelectValue placeholder={t("Select department")} />
+          </SelectTrigger>
+          <SelectContent>
+            {departments.map((dept) => (
+              <SelectItem key={dept.id} value={dept.id}>
+                {dept.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Link Open Risks */}
+      <div className="space-y-2">
+        <Label className="text-sm font-medium text-slate-700">
+          {t("Link Open Risks in this Department")}
+        </Label>
+        <Select
+          value={engagementForm.linkedRiskIds[0] || ""}
+          onValueChange={(value) => setEngagementForm({ ...engagementForm, linkedRiskIds: value ? [value] : [] })}
+        >
+          <SelectTrigger className="w-full bg-white">
+            <SelectValue placeholder={t("Select risk")} />
+          </SelectTrigger>
+          <SelectContent>
+            {risks.length > 0 ? (
+              risks.map((risk) => (
+                <SelectItem key={risk.id} value={risk.id}>
+                  {risk.riskId} - {risk.riskName}
+                </SelectItem>
+              ))
+            ) : (
+              <SelectItem value="none" disabled>
+                {engagementForm.departmentId ? t("No open risks found") : t("Select a department first")}
+              </SelectItem>
+            )}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Historical Risks */}
+      <div className="space-y-2">
+        <Label className="text-sm font-medium text-slate-700">{t("Historical Risks (For reference, last year)")}</Label>
+        <div className="border rounded-lg p-3 min-h-[50px] bg-slate-50">
+          {historicalRisks.length > 0 ? (
+            <ul className="space-y-1">
+              {historicalRisks.map((risk) => (
+                <li key={risk.id} className="text-sm text-slate-600">
+                  {risk.riskId} - {risk.riskName} ({risk.riskLevel || t("N/A")})
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-slate-400 text-center text-sm">{t("No items found")}</p>
+          )}
+        </div>
+      </div>
+
+      {/* Two columns for Audit Rating and Audit Type */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label className="text-sm font-medium text-slate-700">{t("Audit Rating")}</Label>
+          <Select
+            value={engagementForm.auditRating}
+            onValueChange={(value) => setEngagementForm({ ...engagementForm, auditRating: value })}
+          >
+            <SelectTrigger className="w-full bg-white">
+              <SelectValue placeholder={t("Select rating")} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Satisfactory">{t("Satisfactory")}</SelectItem>
+              <SelectItem value="Needs Improvement">{t("Needs Improvement")}</SelectItem>
+              <SelectItem value="Unsatisfactory">{t("Unsatisfactory")}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label className="text-sm font-medium text-slate-700">{t("Audit Type")}</Label>
+          <Select
+            value={engagementForm.auditType}
+            onValueChange={(value) => setEngagementForm({ ...engagementForm, auditType: value })}
+          >
+            <SelectTrigger className="w-full bg-white">
+              <SelectValue placeholder={t("Select type")} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Internal Audit">{t("Internal Audit")}</SelectItem>
+              <SelectItem value="Compliance Audit">{t("Compliance Audit")}</SelectItem>
+              <SelectItem value="Financial Audit">{t("Financial Audit")}</SelectItem>
+              <SelectItem value="Operational Audit">{t("Operational Audit")}</SelectItem>
+              <SelectItem value="IT Audit">{t("IT Audit")}</SelectItem>
+              <SelectItem value="Assurance">{t("Assurance")}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Two columns for Auditor and Auditee */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label className="text-sm font-medium text-slate-700">
+            {t("Auditor")} <span className="text-red-500">*</span>
+          </Label>
+          <Select
+            value={engagementForm.auditorId}
+            onValueChange={(value) => setEngagementForm({ ...engagementForm, auditorId: value })}
+          >
+            <SelectTrigger className="w-full bg-white">
+              <SelectValue placeholder={t("Select auditor")} />
+            </SelectTrigger>
+            <SelectContent>
+              {auditors.length > 0 ? (
+                auditors.map((user) => (
+                  <SelectItem key={user.id} value={user.id}>
+                    {user.fullName}
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="none" disabled>
+                  {t("No auditors available")}
+                </SelectItem>
+              )}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label className="text-sm font-medium text-slate-700">{t("Auditee")}</Label>
+          <Select
+            value={engagementForm.auditeeId}
+            onValueChange={(value) => setEngagementForm({ ...engagementForm, auditeeId: value })}
+          >
+            <SelectTrigger className="w-full bg-white">
+              <SelectValue placeholder={t("Select auditee")} />
+            </SelectTrigger>
+            <SelectContent>
+              {auditees.length > 0 ? (
+                auditees.map((user) => (
+                  <SelectItem key={user.id} value={user.id}>
+                    {user.fullName}
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="none" disabled>
+                  {t("No auditees available")}
+                </SelectItem>
+              )}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Two columns for Start Date and Target Date */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label className="text-sm font-medium text-slate-700">
+            {t("Start Date")} <span className="text-red-500">*</span>
+          </Label>
+          <DatePicker
+            value={engagementForm.startDate}
+            onChange={(date) => setEngagementForm({ ...engagementForm, startDate: date ? date.toISOString().split('T')[0] : "" })}
+            placeholder={t("Select start date")}
+            className="w-full h-10 bg-white"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label className="text-sm font-medium text-slate-700">
+            {t("Target Date")} <span className="text-red-500">*</span>
+          </Label>
+          <DatePicker
+            value={engagementForm.targetDate}
+            onChange={(date) => setEngagementForm({ ...engagementForm, targetDate: date ? date.toISOString().split('T')[0] : "" })}
+            placeholder={t("Select target date")}
+            className="w-full h-10 bg-white"
+          />
+        </div>
+      </div>
+
+      {/* Attach File */}
+      <div className="space-y-2">
+        <Label className="text-sm font-medium text-slate-700">{t("Attach File")}</Label>
+        <div
+          className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
+            isDragOverAttach ? "border-primary-500 bg-primary-50" : "border-slate-300"
+          }`}
+          onDragOver={(e) => { e.preventDefault(); setIsDragOverAttach(true); }}
+          onDragLeave={() => setIsDragOverAttach(false)}
+          onDrop={(e) => handleFileDrop(e, "attach")}
+          onClick={() => attachFileRef.current?.click()}
+        >
+          <p className="text-slate-500 text-sm">{t("Drag and drop or select file.")}</p>
+          <input
+            ref={attachFileRef}
+            type="file"
+            className="hidden"
+            multiple
+            onChange={(e) => handleFileSelect(e, "attach")}
+          />
+        </div>
+        {attachedFiles.length > 0 && (
+          <div className="space-y-2 mt-2">
+            {attachedFiles.map((file) => (
+              <div key={file.id} className="flex items-center justify-between p-2 bg-slate-50 rounded border">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-slate-500" />
+                  <span className="text-sm">{file.name}</span>
+                  <span className="text-xs text-slate-400">({formatFileSize(file.size)})</span>
+                </div>
+                <Button type="button" variant="ghost" size="sm" onClick={() => removeFile(file.id, "attach")}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Upload Workpaper */}
+      <div className="space-y-2">
+        <Label className="text-sm font-medium text-slate-700">{t("Upload Workpaper")}</Label>
+        <div
+          className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
+            isDragOverWorkpaper ? "border-primary-500 bg-primary-50" : "border-slate-300"
+          }`}
+          onDragOver={(e) => { e.preventDefault(); setIsDragOverWorkpaper(true); }}
+          onDragLeave={() => setIsDragOverWorkpaper(false)}
+          onDrop={(e) => handleFileDrop(e, "workpaper")}
+          onClick={() => workpaperRef.current?.click()}
+        >
+          <p className="text-slate-500 text-sm">{t("Drag and drop or select file.")}</p>
+          <input
+            ref={workpaperRef}
+            type="file"
+            className="hidden"
+            multiple
+            onChange={(e) => handleFileSelect(e, "workpaper")}
+          />
+        </div>
+        {workpaperFiles.length > 0 && (
+          <div className="space-y-2 mt-2">
+            {workpaperFiles.map((file) => (
+              <div key={file.id} className="flex items-center justify-between p-2 bg-slate-50 rounded border">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-slate-500" />
+                  <span className="text-sm">{file.name}</span>
+                  <span className="text-xs text-slate-400">({formatFileSize(file.size)})</span>
+                </div>
+                <Button type="button" variant="ghost" size="sm" onClick={() => removeFile(file.id, "workpaper")}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Initial Audit Observation - Collapsible */}
+      <Collapsible open={observationOpen} onOpenChange={setObservationOpen}>
+        <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
+          <span className="text-slate-700 font-medium text-sm">{t("Initial Audit Observation")}</span>
+          {observationOpen ? <ChevronUp className="h-4 w-4 text-slate-500" /> : <ChevronDown className="h-4 w-4 text-slate-500" />}
+        </CollapsibleTrigger>
+        <CollapsibleContent className="p-3 border border-t-0 rounded-b-lg bg-white">
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-slate-700">{t("Auditor's Initial Observation")}</Label>
+            <Textarea
+              value={engagementForm.initialObservation}
+              onChange={(e) => setEngagementForm({ ...engagementForm, initialObservation: e.target.value })}
+              rows={3}
+              className="w-full bg-white resize-none"
+            />
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+
+      {/* Audit Testing Procedure - Collapsible */}
+      <Collapsible open={procedureOpen} onOpenChange={setProcedureOpen}>
+        <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
+          <span className="text-slate-700 font-medium text-sm">{t("Audit Testing Procedure")}</span>
+          {procedureOpen ? <ChevronUp className="h-4 w-4 text-slate-500" /> : <ChevronDown className="h-4 w-4 text-slate-500" />}
+        </CollapsibleTrigger>
+        <CollapsibleContent className="p-3 border border-t-0 rounded-b-lg bg-white">
+          <div className="flex justify-end mb-3">
+            <Button type="button" size="sm" onClick={addTaskRow} className="bg-primary-600 hover:bg-primary-700">
+              <Plus className="h-3 w-3 mr-1" />
+              {t("Add Task Row")}
+            </Button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr className="text-left text-slate-600">
+                  <th className="p-2 border-b font-medium">{t("Task")}</th>
+                  <th className="p-2 border-b w-12 font-medium">{t("Done")}</th>
+                  <th className="p-2 border-b w-20 font-medium">{t("Planned Hours")}</th>
+                  <th className="p-2 border-b w-20 font-medium">{t("Actual Hours")}</th>
+                  <th className="p-2 border-b w-32 font-medium">{t("Auditor")}</th>
+                  <th className="p-2 border-b font-medium">{t("Comments")}</th>
+                  <th className="p-2 border-b w-10"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {tasks.map((task) => (
+                  <tr key={task.id}>
+                    <td className="p-1 border-b">
+                      <Input
+                        value={task.task}
+                        onChange={(e) => updateTask(task.id, "task", e.target.value)}
+                        className="border-slate-200 h-8 text-sm"
+                      />
+                    </td>
+                    <td className="p-1 border-b text-center">
+                      <Checkbox
+                        checked={task.done}
+                        onCheckedChange={(checked) => updateTask(task.id, "done", !!checked)}
+                      />
+                    </td>
+                    <td className="p-1 border-b">
+                      <Input
+                        type="number"
+                        value={task.plannedHours}
+                        onChange={(e) => updateTask(task.id, "plannedHours", e.target.value)}
+                        className="border-slate-200 h-8 text-sm"
+                      />
+                    </td>
+                    <td className="p-1 border-b">
+                      <Input
+                        type="number"
+                        value={task.actualHours}
+                        onChange={(e) => updateTask(task.id, "actualHours", e.target.value)}
+                        className="border-slate-200 h-8 text-sm"
+                      />
+                    </td>
+                    <td className="p-1 border-b">
+                      <Select
+                        value={task.auditorId}
+                        onValueChange={(value) => updateTask(task.id, "auditorId", value)}
+                      >
+                        <SelectTrigger className="border-slate-200 h-8 text-sm">
+                          <SelectValue placeholder={t("Select")} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {auditors.map((user) => (
+                            <SelectItem key={user.id} value={user.id}>
+                              {user.fullName}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </td>
+                    <td className="p-1 border-b">
+                      <Input
+                        value={task.comments}
+                        onChange={(e) => updateTask(task.id, "comments", e.target.value)}
+                        className="border-slate-200 h-8 text-sm"
+                      />
+                    </td>
+                    <td className="p-1 border-b">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeTask(task.id)}
+                        className="text-red-500 hover:text-red-700 h-8 w-8 p-0"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+                <tr className="font-medium text-sm">
+                  <td className="p-2"></td>
+                  <td className="p-2"></td>
+                  <td className="p-2 text-slate-700">{t("Total")}: {calculateTotalHours("plannedHours")}</td>
+                  <td className="p-2 text-slate-700">{t("Total")}: {calculateTotalHours("actualHours")}</td>
+                  <td className="p-2"></td>
+                  <td className="p-2"></td>
+                  <td className="p-2"></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+
+      {/* Related Policies & Procedures - Collapsible */}
+      <Collapsible open={policiesOpen} onOpenChange={setPoliciesOpen}>
+        <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
+          <span className="text-slate-700 font-medium text-sm">{t("Related Policies & Procedures")}</span>
+          {policiesOpen ? <ChevronUp className="h-4 w-4 text-slate-500" /> : <ChevronDown className="h-4 w-4 text-slate-500" />}
+        </CollapsibleTrigger>
+        <CollapsibleContent className="p-3 border border-t-0 rounded-b-lg bg-white">
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-slate-700">{t("Related Policies / Procedures")}</Label>
+            <Textarea
+              value={engagementForm.relatedPolicies}
+              onChange={(e) => setEngagementForm({ ...engagementForm, relatedPolicies: e.target.value })}
+              rows={3}
+              className="w-full bg-white resize-none"
+            />
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+    </div>
+  );
 
 
   if (loading) {
@@ -542,7 +1250,7 @@ export default function AuditPlanningPage() {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 text-slate-400 hover:text-slate-600"
-                        onClick={() => router.push(`/internal-audit/audit-planning/${engagement.id}/edit`)}
+                        onClick={() => openEditDialog(engagement)}
                         title={t("Edit")}
                       >
                         <Pencil className="h-4 w-4" />
@@ -678,7 +1386,7 @@ export default function AuditPlanningPage() {
 
       {/* Add Engagement Dialog */}
       <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
+        <DialogContent className="sm:max-w-[800px] p-0 gap-0 max-h-[90vh] flex flex-col">
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
@@ -690,222 +1398,12 @@ export default function AuditPlanningPage() {
 
           {/* Scrollable Content */}
           <div className="flex-1 overflow-y-auto px-6 py-6">
-            {addDialogLoading ? (
+            {dialogLoading ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
               </div>
             ) : (
-              <div className="space-y-4">
-                {/* Engagement Title */}
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-slate-700">
-                    {t("Engagement Title")} <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    value={engagementForm.engagementTitle}
-                    onChange={(e) => setEngagementForm({ ...engagementForm, engagementTitle: e.target.value })}
-                    placeholder={t("Enter engagement title")}
-                    className="w-full bg-white"
-                  />
-                </div>
-
-                {/* Engagement Objective */}
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-slate-700">
-                    {t("Engagement Objective")} <span className="text-red-500">*</span>
-                  </Label>
-                  <Textarea
-                    value={engagementForm.engagementObjective}
-                    onChange={(e) => setEngagementForm({ ...engagementForm, engagementObjective: e.target.value })}
-                    placeholder={t("Enter engagement objective")}
-                    rows={3}
-                    className="w-full bg-white resize-none"
-                  />
-                </div>
-
-                {/* Engagement Scope */}
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-slate-700">
-                    {t("Engagement Scope")} <span className="text-red-500">*</span>
-                  </Label>
-                  <Textarea
-                    value={engagementForm.engagementScope}
-                    onChange={(e) => setEngagementForm({ ...engagementForm, engagementScope: e.target.value })}
-                    placeholder={t("Enter engagement scope")}
-                    rows={3}
-                    className="w-full bg-white resize-none"
-                  />
-                </div>
-
-                {/* Department */}
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-slate-700">
-                    {t("Department")} <span className="text-red-500">*</span>
-                  </Label>
-                  <Select
-                    value={engagementForm.departmentId}
-                    onValueChange={handleEngagementDepartmentChange}
-                  >
-                    <SelectTrigger className="w-full bg-white">
-                      <SelectValue placeholder={t("Select department")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {departments.map((dept) => (
-                        <SelectItem key={dept.id} value={dept.id}>
-                          {dept.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Link Open Risks */}
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-slate-700">
-                    {t("Link Open Risks")}
-                  </Label>
-                  <Select
-                    value={engagementForm.linkedRiskIds[0] || ""}
-                    onValueChange={(value) => setEngagementForm({ ...engagementForm, linkedRiskIds: value ? [value] : [] })}
-                  >
-                    <SelectTrigger className="w-full bg-white">
-                      <SelectValue placeholder={t("Select risk")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {risks.length > 0 ? (
-                        risks.map((risk) => (
-                          <SelectItem key={risk.id} value={risk.id}>
-                            {risk.riskId} - {risk.riskName}
-                          </SelectItem>
-                        ))
-                      ) : (
-                        <SelectItem value="none" disabled>
-                          {engagementForm.departmentId ? t("No open risks found") : t("Select a department first")}
-                        </SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Two columns for Audit Rating and Audit Type */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium text-slate-700">{t("Audit Rating")}</Label>
-                    <Select
-                      value={engagementForm.auditRating}
-                      onValueChange={(value) => setEngagementForm({ ...engagementForm, auditRating: value })}
-                    >
-                      <SelectTrigger className="w-full bg-white">
-                        <SelectValue placeholder={t("Select rating")} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Satisfactory">{t("Satisfactory")}</SelectItem>
-                        <SelectItem value="Needs Improvement">{t("Needs Improvement")}</SelectItem>
-                        <SelectItem value="Unsatisfactory">{t("Unsatisfactory")}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium text-slate-700">{t("Audit Type")}</Label>
-                    <Select
-                      value={engagementForm.auditType}
-                      onValueChange={(value) => setEngagementForm({ ...engagementForm, auditType: value })}
-                    >
-                      <SelectTrigger className="w-full bg-white">
-                        <SelectValue placeholder={t("Select type")} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Internal Audit">{t("Internal Audit")}</SelectItem>
-                        <SelectItem value="Compliance Audit">{t("Compliance Audit")}</SelectItem>
-                        <SelectItem value="Financial Audit">{t("Financial Audit")}</SelectItem>
-                        <SelectItem value="Operational Audit">{t("Operational Audit")}</SelectItem>
-                        <SelectItem value="IT Audit">{t("IT Audit")}</SelectItem>
-                        <SelectItem value="Assurance">{t("Assurance")}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                {/* Two columns for Auditor and Auditee */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium text-slate-700">
-                      {t("Auditor")} <span className="text-red-500">*</span>
-                    </Label>
-                    <Select
-                      value={engagementForm.auditorId}
-                      onValueChange={(value) => setEngagementForm({ ...engagementForm, auditorId: value })}
-                    >
-                      <SelectTrigger className="w-full bg-white">
-                        <SelectValue placeholder={t("Select auditor")} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {auditors.length > 0 ? (
-                          auditors.map((user) => (
-                            <SelectItem key={user.id} value={user.id}>
-                              {user.fullName}
-                            </SelectItem>
-                          ))
-                        ) : (
-                          <SelectItem value="none" disabled>
-                            {t("No auditors available")}
-                          </SelectItem>
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium text-slate-700">{t("Auditee")}</Label>
-                    <Select
-                      value={engagementForm.auditeeId}
-                      onValueChange={(value) => setEngagementForm({ ...engagementForm, auditeeId: value })}
-                    >
-                      <SelectTrigger className="w-full bg-white">
-                        <SelectValue placeholder={t("Select auditee")} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {auditees.length > 0 ? (
-                          auditees.map((user) => (
-                            <SelectItem key={user.id} value={user.id}>
-                              {user.fullName}
-                            </SelectItem>
-                          ))
-                        ) : (
-                          <SelectItem value="none" disabled>
-                            {t("No auditees available")}
-                          </SelectItem>
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                {/* Two columns for Start Date and Target Date */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium text-slate-700">
-                      {t("Start Date")} <span className="text-red-500">*</span>
-                    </Label>
-                    <DatePicker
-                      value={engagementForm.startDate}
-                      onChange={(date) => setEngagementForm({ ...engagementForm, startDate: date ? date.toISOString().split('T')[0] : "" })}
-                      placeholder={t("Select start date")}
-                      className="w-full h-10 bg-white"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium text-slate-700">
-                      {t("Target Date")} <span className="text-red-500">*</span>
-                    </Label>
-                    <DatePicker
-                      value={engagementForm.targetDate}
-                      onChange={(date) => setEngagementForm({ ...engagementForm, targetDate: date ? date.toISOString().split('T')[0] : "" })}
-                      placeholder={t("Select target date")}
-                      className="w-full h-10 bg-white"
-                    />
-                  </div>
-                </div>
-              </div>
+              renderEngagementFormContent()
             )}
           </div>
 
@@ -916,10 +1414,49 @@ export default function AuditPlanningPage() {
             </Button>
             <Button
               onClick={handleSaveEngagement}
-              disabled={saving || addDialogLoading}
+              disabled={saving || dialogLoading}
               className="bg-primary-600 hover:bg-primary-700"
             >
               {saving ? t("Saving...") : t("Save")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Engagement Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="sm:max-w-[800px] p-0 gap-0 max-h-[90vh] flex flex-col">
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">
+                {t("Edit Audit Plan")}
+              </DialogTitle>
+            </DialogHeader>
+          </div>
+
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            {dialogLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
+              </div>
+            ) : (
+              renderEngagementFormContent()
+            )}
+          </div>
+
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <Button variant="outline" onClick={() => { setEditDialogOpen(false); setEditingEngagementId(null); }}>
+              {t("Cancel")}
+            </Button>
+            <Button
+              onClick={handleUpdateEngagement}
+              disabled={saving || dialogLoading}
+              className="bg-primary-600 hover:bg-primary-700"
+            >
+              {saving ? t("Saving...") : t("Update")}
             </Button>
           </div>
         </DialogContent>
