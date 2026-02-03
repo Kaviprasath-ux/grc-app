@@ -47,8 +47,6 @@ export const GET = withAuth(
               category: true,
             },
           },
-          framework: true,
-          requirement: true,
           requester: {
             select: {
               id: true,

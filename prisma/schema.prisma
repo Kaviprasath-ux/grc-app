@@ -966,6 +966,11 @@ model Evidence {
   kpiExpectedScore      Float?
   kpiDescription        String?
   kpiCalculationFormula String?
+  // AI status fields
+  aiIngestStatus        String?              // NOT_STARTED, QUEUED, PROCESSING, INGESTED, FAILED
+  aiIngestedAt          DateTime?
+  aiReviewStatus        String?              // NOT_READY, IN_PROGRESS, COMPLETED, FAILED
+  aiReviewedAt          DateTime?
   createdAt             DateTime             @default(now())
   updatedAt             DateTime             @updatedAt
   attachments           EvidenceAttachment[]
@@ -973,6 +978,8 @@ model Evidence {
   evidenceControls      EvidenceControl[]
   linkedArtifacts       EvidenceArtifact[]
   evidenceAIReviews     EvidenceAIReview[]
+  evidenceAIIngestJobs  EvidenceAIIngestJob[]
+  evidenceAIIngestResults EvidenceAIIngestResult[]
 
   @@unique([customerAccountId, evidenceCode])
   @@index([customerAccountId])
@@ -2716,14 +2723,54 @@ model EvidenceAIReview {
   evidence          Evidence         @relation(fields: [evidenceId], references: [id], onDelete: Cascade)
   status            String           @default("pending") // pending, completed, failed
   critique          String?          @db.Text
+  complianceSummary String?          @db.Text
+  complianceScore   Float?
+  gaps              String?          @db.Text // JSON string
+  suggestions       String?          @db.Text // JSON string
   similarityScore   Float?
   recommendations   String?          @db.Text // JSON string
+  rawResponse       String?          @db.Text // Full AI response JSON
   aiOperationId     String?
   aiOperation       AIOperation?     @relation(fields: [aiOperationId], references: [id])
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
 
   @@index([evidenceId])
+}
+
+// Evidence AI Ingest Job - tracks RunPod ingest jobs
+model EvidenceAIIngestJob {
+  id            String    @id @default(cuid())
+  evidenceId    String
+  evidence      Evidence  @relation(fields: [evidenceId], references: [id], onDelete: Cascade)
+  attachmentId  String?   // Optional specific attachment
+  runpodJobId   String    @unique // RunPod job ID
+  status        String    @default("queued") // queued, processing, completed, failed
+  error         String?   @db.Text
+  result        String?   @db.Text // JSON result
+  completedAt   DateTime? // When the job completed
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @default(now()) @updatedAt
+
+  @@index([evidenceId])
+  @@index([runpodJobId])
+}
+
+// Evidence AI Ingest Result - stores extracted content from AI ingest
+model EvidenceAIIngestResult {
+  id              String    @id @default(cuid())
+  evidenceId      String
+  evidence        Evidence  @relation(fields: [evidenceId], references: [id], onDelete: Cascade)
+  jobId           String    @unique // RunPod job ID reference
+  extractedText   String?   @db.Text // JSON array of extracted messages
+  embeddings      String?   @db.Text // Optional embeddings data
+  metadata        String?   @db.Text // JSON metadata
+  indexingStatus  String?   // success, failed
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @default(now()) @updatedAt
+
+  @@index([evidenceId])
+  @@index([jobId])
 }
 
 model PolicyAIReview {
