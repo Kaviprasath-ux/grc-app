@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +33,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 
 interface KPI {
   id: string;
@@ -64,10 +66,14 @@ const statuses = ["Scheduled", "Missed", "Overdue", "Achieved"];
 export default function KPIsPage() {
   const router = useRouter();
   const { t } = useLanguage();
+  const { data: session } = useSession();
   const [kpis, setKpis] = useState<KPI[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+
+  // Check if user is Customer Administrator
+  const isCustomerAdmin = session?.roles?.includes("CustomerAdministrator") || false;
 
   const fetchKPIs = useCallback(async () => {
     try {
@@ -157,14 +163,72 @@ export default function KPIsPage() {
       <div className="grid grid-cols-2 gap-6">
         {/* Status Chart Card */}
         <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <div className="flex items-center gap-3 mb-4">
+          <div className="flex items-center gap-3 mb-2">
             <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
               <ClipboardList className="h-5 w-5" />
             </div>
             <h3 className="text-base font-semibold text-slate-800">{t("Status")}</h3>
+            <span className="ml-auto text-2xl font-bold text-slate-800">{statusCounts.total}</span>
           </div>
-          <div className="flex items-center justify-between">
-            <div className="space-y-2 flex-1">
+          {isCustomerAdmin ? (
+            <div className="h-[200px]">
+              {statusCounts.total > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: t("Scheduled"), value: statusCounts.scheduled, color: "#3b82f6" },
+                        { name: t("Missed"), value: statusCounts.missed, color: "#ef4444" },
+                        { name: t("Overdue"), value: statusCounts.overdue, color: "#f59e0b" },
+                        { name: t("Achieved"), value: statusCounts.achieved, color: "#22c55e" },
+                      ].filter(item => item.value > 0)}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={40}
+                      outerRadius={70}
+                      paddingAngle={2}
+                      dataKey="value"
+                    >
+                      {[
+                        { name: t("Scheduled"), value: statusCounts.scheduled, color: "#3b82f6" },
+                        { name: t("Missed"), value: statusCounts.missed, color: "#ef4444" },
+                        { name: t("Overdue"), value: statusCounts.overdue, color: "#f59e0b" },
+                        { name: t("Achieved"), value: statusCounts.achieved, color: "#22c55e" },
+                      ].filter(item => item.value > 0).map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          const data = payload[0].payload;
+                          return (
+                            <div className="text-xs text-slate-600">
+                              {data.name}: {data.value}
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                    <Legend
+                      layout="vertical"
+                      align="right"
+                      verticalAlign="middle"
+                      iconType="circle"
+                      iconSize={8}
+                      formatter={(value) => <span className="text-xs text-slate-600">{value}</span>}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-slate-400">
+                  {t("No data")}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-2 mt-4">
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 rounded-full bg-info" />
                 <span className="text-sm text-slate-600">{t("Scheduled")}</span>
@@ -194,23 +258,71 @@ export default function KPIsPage() {
                 </span>
               </div>
             </div>
-            <div className="text-center ml-8">
-              <p className="text-sm text-slate-500">{t("Total")}</p>
-              <p className="text-3xl font-bold tracking-tight text-slate-800">{statusCounts.total}</p>
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Department Chart Card */}
         <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <div className="flex items-center gap-3 mb-4">
+          <div className="flex items-center gap-3 mb-2">
             <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
               <Building2 className="h-5 w-5" />
             </div>
             <h3 className="text-base font-semibold text-slate-800">{t("Department")}</h3>
+            <span className="ml-auto text-2xl font-bold text-slate-800">{statusCounts.total}</span>
           </div>
-          <div className="flex items-center justify-between">
-            <div className="space-y-2 flex-1">
+          {isCustomerAdmin ? (
+            <div className="h-[200px]">
+              {statusCounts.total > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={Object.entries(departmentCounts).map(([name, value], idx) => ({
+                        name,
+                        value,
+                        color: ["#3b82f6", "#22c55e", "#f59e0b", "#6366f1", "#ef4444", "#8b5cf6", "#ec4899"][idx % 7]
+                      }))}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={40}
+                      outerRadius={70}
+                      paddingAngle={2}
+                      dataKey="value"
+                    >
+                      {Object.entries(departmentCounts).map(([, ], idx) => (
+                        <Cell key={`cell-${idx}`} fill={["#3b82f6", "#22c55e", "#f59e0b", "#6366f1", "#ef4444", "#8b5cf6", "#ec4899"][idx % 7]} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          const data = payload[0].payload;
+                          return (
+                            <div className="text-xs text-slate-600">
+                              {data.name}: {data.value}
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                    <Legend
+                      layout="vertical"
+                      align="right"
+                      verticalAlign="middle"
+                      iconType="circle"
+                      iconSize={8}
+                      formatter={(value) => <span className="text-xs text-slate-600 truncate max-w-[80px] inline-block">{value}</span>}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-slate-400">
+                  {t("No data")}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-2 mt-4">
               {Object.entries(departmentCounts)
                 .slice(0, 4)
                 .map(([dept, count], idx) => (
@@ -235,11 +347,7 @@ export default function KPIsPage() {
                   </div>
                 ))}
             </div>
-            <div className="text-center ml-8">
-              <p className="text-sm text-slate-500">{t("Total")}</p>
-              <p className="text-3xl font-bold tracking-tight text-slate-800">{statusCounts.total}</p>
-            </div>
-          </div>
+          )}
         </div>
       </div>
 
