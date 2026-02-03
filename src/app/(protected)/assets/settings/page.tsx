@@ -33,6 +33,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface AssetCategory {
   id: string;
@@ -102,71 +103,90 @@ interface ScoringConfig {
 }
 
 // Setting categories for block navigation (matching UAT: CIA, Asset, Lifecycle Status)
-const settingCategories = [
+const settingCategoriesConfig = [
   {
     id: "cia",
-    title: "CIA",
-    description: "Configure CIA ratings and scoring",
+    titleKey: "CIA",
+    descriptionKey: "Configure CIA ratings and scoring",
     icon: Settings2,
   },
   {
     id: "asset",
-    title: "Asset",
-    description: "Manage asset entities and configurations",
+    titleKey: "Asset",
+    descriptionKey: "Manage asset entities and configurations",
     icon: FolderTree,
   },
   {
     id: "lifecycle",
-    title: "Lifecycle Status",
-    description: "Define asset lifecycle stages",
+    titleKey: "Lifecycle Status",
+    descriptionKey: "Define asset lifecycle stages",
     icon: Clock,
   },
 ];
 
 // Entity sub-categories for navigation (under Asset section - matching UAT)
-const entitySubCategories = [
+const entitySubCategoriesConfig = [
   {
     id: "asset-list",
-    title: "Asset",
-    description: "View and manage all assets",
+    titleKey: "Asset",
+    descriptionKey: "View and manage all assets",
     icon: FolderOpen,
   },
   {
     id: "subcategories",
-    title: "Asset Sub Category",
-    description: "Sub-categories under main categories",
+    titleKey: "Asset Sub Category",
+    descriptionKey: "Sub-categories under main categories",
     icon: Layers,
   },
   {
     id: "groups",
-    title: "Asset Group",
-    description: "Logical groupings for assets",
+    titleKey: "Asset Group",
+    descriptionKey: "Logical groupings for assets",
     icon: Group,
   },
   {
     id: "categories",
-    title: "Asset Category",
-    description: "Top-level asset categories (e.g., Hardware, Software)",
+    titleKey: "Asset Category",
+    descriptionKey: "Top-level asset categories (e.g., Hardware, Software)",
     icon: FolderOpen,
   },
   {
     id: "sensitivity",
-    title: "Asset Sensitivity",
-    description: "Asset sensitivity levels",
+    titleKey: "Asset Sensitivity",
+    descriptionKey: "Asset sensitivity levels",
     icon: Lock,
   },
 ];
 
-const SCORING_CALCULATION_TYPES = [
-  { value: "high_of_all", label: "High of all" },
-  { value: "addition_of_all", label: "Addition of all" },
-  { value: "product_of_all", label: "Product of all" },
+const SCORING_CALCULATION_TYPES_CONFIG = [
+  { value: "high_of_all", labelKey: "High of all" },
+  { value: "addition_of_all", labelKey: "Addition of all" },
+  { value: "product_of_all", labelKey: "Product of all" },
 ];
 
 export default function AssetSettingsPage() {
+  const { t } = useLanguage();
   const { toast } = useToast();
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [entitySubTab, setEntitySubTab] = useState<string | null>(null);
+
+  // Translated arrays
+  const settingCategories = settingCategoriesConfig.map(cat => ({
+    ...cat,
+    title: t(cat.titleKey),
+    description: t(cat.descriptionKey),
+  }));
+
+  const entitySubCategories = entitySubCategoriesConfig.map(cat => ({
+    ...cat,
+    title: t(cat.titleKey),
+    description: t(cat.descriptionKey),
+  }));
+
+  const SCORING_CALCULATION_TYPES = SCORING_CALCULATION_TYPES_CONFIG.map(type => ({
+    ...type,
+    label: t(type.labelKey),
+  }));
 
   // Data states
   const [categories, setCategories] = useState<AssetCategory[]>([]);
@@ -269,7 +289,7 @@ export default function AssetSettingsPage() {
         setIsAddOpen(false);
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to create category", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to create category"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error adding category:", error);
@@ -291,7 +311,7 @@ export default function AssetSettingsPage() {
         setSelectedItem(null);
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to update category", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to update category"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error updating category:", error);
@@ -308,7 +328,7 @@ export default function AssetSettingsPage() {
         setSelectedItem(null);
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to delete category", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to delete category"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error deleting category:", error);
@@ -331,7 +351,7 @@ export default function AssetSettingsPage() {
         setIsAddOpen(false);
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to create sub-category", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to create sub-category"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error adding sub-category:", error);
@@ -353,7 +373,7 @@ export default function AssetSettingsPage() {
         setSelectedItem(null);
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to update sub-category", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to update sub-category"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error updating sub-category:", error);
@@ -370,7 +390,7 @@ export default function AssetSettingsPage() {
         setSelectedItem(null);
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to delete sub-category", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to delete sub-category"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error deleting sub-category:", error);
@@ -393,7 +413,7 @@ export default function AssetSettingsPage() {
         setIsAddOpen(false);
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to create group", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to create group"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error adding group:", error);
@@ -415,7 +435,7 @@ export default function AssetSettingsPage() {
         setSelectedItem(null);
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to update group", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to update group"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error updating group:", error);
@@ -432,7 +452,7 @@ export default function AssetSettingsPage() {
         setSelectedItem(null);
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to delete group", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to delete group"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error deleting group:", error);
@@ -455,7 +475,7 @@ export default function AssetSettingsPage() {
         setIsAddOpen(false);
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to create lifecycle status", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to create lifecycle status"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error adding lifecycle status:", error);
@@ -477,7 +497,7 @@ export default function AssetSettingsPage() {
         setSelectedItem(null);
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to update lifecycle status", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to update lifecycle status"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error updating lifecycle status:", error);
@@ -494,7 +514,7 @@ export default function AssetSettingsPage() {
         setSelectedItem(null);
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to delete lifecycle status", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to delete lifecycle status"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error deleting lifecycle status:", error);
@@ -537,7 +557,7 @@ export default function AssetSettingsPage() {
         setIsAddOpen(false);
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to create asset", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to create asset"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error adding asset:", error);
@@ -560,7 +580,7 @@ export default function AssetSettingsPage() {
         setIsAddOpen(false);
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to create sensitivity", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to create sensitivity"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error adding sensitivity:", error);
@@ -582,7 +602,7 @@ export default function AssetSettingsPage() {
         setSelectedItem(null);
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to update sensitivity", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to update sensitivity"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error updating sensitivity:", error);
@@ -599,7 +619,7 @@ export default function AssetSettingsPage() {
         setSelectedItem(null);
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to delete sensitivity", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to delete sensitivity"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error deleting sensitivity:", error);
@@ -626,7 +646,7 @@ export default function AssetSettingsPage() {
         setIsCiaAddOpen(false);
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to create CIA rating", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to create CIA rating"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error adding CIA rating:", error);
@@ -651,7 +671,7 @@ export default function AssetSettingsPage() {
         setSelectedCiaRating(null);
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to update CIA rating", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to update CIA rating"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error updating CIA rating:", error);
@@ -668,7 +688,7 @@ export default function AssetSettingsPage() {
         setSelectedCiaRating(null);
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.error || "Failed to delete CIA rating", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to delete CIA rating"), variant: "destructive" });
       }
     } catch (error) {
       console.error("Error deleting CIA rating:", error);
@@ -778,7 +798,7 @@ export default function AssetSettingsPage() {
       const text = e.target?.result as string;
       const lines = text.split("\n").filter(line => line.trim());
       if (lines.length < 2) {
-        toast({ title: "Error", description: "Invalid CSV file", variant: "destructive" });
+        toast({ title: t("Error"), description: t("Invalid CSV file"), variant: "destructive" });
         return;
       }
 
@@ -801,7 +821,7 @@ export default function AssetSettingsPage() {
       }
 
       fetchData();
-      toast({ title: "Success", description: `Imported ${imported} categories` });
+      toast({ title: t("Success"), description: `${t("Imported")} ${imported} ${t("categories")}` });
     };
     reader.readAsText(file);
     event.target.value = "";
@@ -817,7 +837,7 @@ export default function AssetSettingsPage() {
       const text = e.target?.result as string;
       const lines = text.split("\n").filter(line => line.trim());
       if (lines.length < 2) {
-        toast({ title: "Error", description: "Invalid CSV file", variant: "destructive" });
+        toast({ title: t("Error"), description: t("Invalid CSV file"), variant: "destructive" });
         return;
       }
 
@@ -840,7 +860,7 @@ export default function AssetSettingsPage() {
       }
 
       fetchData();
-      toast({ title: "Success", description: `Imported ${imported} lifecycle statuses` });
+      toast({ title: t("Success"), description: `${t("Imported")} ${imported} ${t("lifecycle statuses")}` });
     };
     reader.readAsText(file);
     event.target.value = "";
@@ -886,10 +906,10 @@ export default function AssetSettingsPage() {
 
   // Column definitions - Asset Category (matching UAT: Title, Status, Action)
   const categoryColumns: ColumnDef<AssetCategory>[] = [
-    { accessorKey: "name", header: "Title" },
+    { accessorKey: "name", header: t("Title") },
     {
       accessorKey: "status",
-      header: "Status",
+      header: t("Status"),
       cell: ({ row }) => (
         <Badge variant={row.getValue("status") === "Active" ? "default" : "secondary"}>
           {row.getValue("status") as string}
@@ -898,7 +918,7 @@ export default function AssetSettingsPage() {
     },
     {
       id: "actions",
-      header: "Action",
+      header: t("Action"),
       cell: ({ row }) => (
         <div className="flex gap-2">
           <Button
@@ -935,12 +955,12 @@ export default function AssetSettingsPage() {
 
   // Asset Sub Category columns matching UAT
   const subCategoryColumns: ColumnDef<AssetSubCategory>[] = [
-    { accessorKey: "category.name", header: "Asset Category", cell: ({ row }) => row.original.category?.name || "-" },
-    { accessorKey: "name", header: "Asset Sub-Category" },
-    { accessorKey: "description", header: "Description", cell: ({ row }) => row.getValue("description") || "-" },
+    { accessorKey: "category.name", header: t("Asset Category"), cell: ({ row }) => row.original.category?.name || "-" },
+    { accessorKey: "name", header: t("Asset Sub-Category") },
+    { accessorKey: "description", header: t("Description"), cell: ({ row }) => row.getValue("description") || "-" },
     {
       accessorKey: "status",
-      header: "Status",
+      header: t("Status"),
       cell: ({ row }) => (
         <Badge variant={row.getValue("status") === "Active" ? "default" : "secondary"}>
           {row.getValue("status") as string}
@@ -949,7 +969,7 @@ export default function AssetSettingsPage() {
     },
     {
       id: "actions",
-      header: "Action",
+      header: t("Action"),
       cell: ({ row }) => (
         <div className="flex gap-2">
           <Button
@@ -986,11 +1006,11 @@ export default function AssetSettingsPage() {
   ];
 
   const groupColumns: ColumnDef<AssetGroup>[] = [
-    { accessorKey: "name", header: "Name" },
-    { accessorKey: "description", header: "Description", cell: ({ row }) => row.getValue("description") || "-" },
+    { accessorKey: "name", header: t("Name") },
+    { accessorKey: "description", header: t("Description"), cell: ({ row }) => row.getValue("description") || "-" },
     {
       accessorKey: "status",
-      header: "Status",
+      header: t("Status"),
       cell: ({ row }) => (
         <Badge variant={(row.original as any).status === "Active" ? "default" : "secondary"}>
           {(row.original as any).status || "Active"}
@@ -999,7 +1019,7 @@ export default function AssetSettingsPage() {
     },
     {
       id: "actions",
-      header: "Action",
+      header: t("Action"),
       cell: ({ row }) => (
         <div className="flex gap-2">
           <Button
@@ -1035,10 +1055,10 @@ export default function AssetSettingsPage() {
   ];
 
   const sensitivityColumns: ColumnDef<AssetSensitivity>[] = [
-    { accessorKey: "name", header: "Name" },
+    { accessorKey: "name", header: t("Name") },
     {
       id: "actions",
-      header: "Action",
+      header: t("Action"),
       cell: ({ row }) => (
         <div className="flex gap-2">
           <Button
@@ -1074,32 +1094,32 @@ export default function AssetSettingsPage() {
 
   // Asset list columns for settings view (matching UAT)
   const assetSettingsColumns: ColumnDef<Asset>[] = [
-    { accessorKey: "name", header: "Name" },
-    { accessorKey: "assetId", header: "ID" },
-    { accessorKey: "location", header: "Location", cell: ({ row }) => row.getValue("location") || "-" },
-    { accessorKey: "value", header: "Value", cell: ({ row }) => row.getValue("value") || "-" },
+    { accessorKey: "name", header: t("Name") },
+    { accessorKey: "assetId", header: t("ID") },
+    { accessorKey: "location", header: t("Location"), cell: ({ row }) => row.getValue("location") || "-" },
+    { accessorKey: "value", header: t("Value"), cell: ({ row }) => row.getValue("value") || "-" },
     {
       accessorKey: "acquisitionDate",
-      header: "Acquisition date",
+      header: t("Acquisition date"),
       cell: ({ row }) => row.original.acquisitionDate
         ? new Date(row.original.acquisitionDate).toLocaleDateString('en-GB')
         : "-"
     },
     {
       accessorKey: "lifecycleStatus.name",
-      header: "Status",
+      header: t("Status"),
       cell: ({ row }) => row.original.lifecycleStatus?.name || "-"
     },
     {
       accessorKey: "nextReviewDate",
-      header: "Next review date",
+      header: t("Next review date"),
       cell: ({ row }) => row.original.nextReviewDate
         ? new Date(row.original.nextReviewDate).toLocaleDateString('en-GB')
         : "-"
     },
     {
       accessorKey: "sensitivity.name",
-      header: "Asset sensitivity",
+      header: t("Asset sensitivity"),
       cell: ({ row }) => row.original.sensitivity?.name || "-"
     },
     {
@@ -1120,10 +1140,10 @@ export default function AssetSettingsPage() {
 
   // Lifecycle columns matching UAT (Name, Action only)
   const lifecycleColumns: ColumnDef<AssetLifecycleStatus>[] = [
-    { accessorKey: "name", header: "Name" },
+    { accessorKey: "name", header: t("Name") },
     {
       id: "actions",
-      header: "Action",
+      header: t("Action"),
       cell: ({ row }) => (
         <div className="flex gap-2">
           <Button
@@ -1201,7 +1221,7 @@ export default function AssetSettingsPage() {
             <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
             <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
           </div>
-          <p className="text-sm text-slate-500 font-medium">Loading settings...</p>
+          <p className="text-sm text-slate-500 font-medium">{t("Loading settings...")}</p>
         </div>
       </div>
     );
@@ -1245,12 +1265,12 @@ export default function AssetSettingsPage() {
 
     const getAddButtonLabel = () => {
       switch (entitySubTab) {
-        case "asset-list": return "New Asset";
-        case "subcategories": return "New Asset Sub Category";
-        case "groups": return "New Asset Group";
-        case "categories": return "New Asset Category";
-        case "sensitivity": return "New Asset Sensitivity";
-        default: return "Add New";
+        case "asset-list": return t("New Asset");
+        case "subcategories": return t("New Asset Sub Category");
+        case "groups": return t("New Asset Group");
+        case "categories": return t("New Asset Category");
+        case "sensitivity": return t("New Asset Sensitivity");
+        default: return t("Add New");
       }
     };
 
@@ -1260,26 +1280,26 @@ export default function AssetSettingsPage() {
         <nav className="flex items-center gap-1.5 text-sm">
           <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
-            <span>Asset Management</span>
+            <span>{t("Asset Management")}</span>
           </Link>
           <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
           <button onClick={() => setEntitySubTab(null)} className="text-slate-500 hover:text-primary-600 transition-colors">
-            Settings
+            {t("Settings")}
           </button>
           <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-          <span className="text-primary-700 font-medium">{currentEntitySub?.title || "Settings"}</span>
+          <span className="text-primary-700 font-medium">{currentEntitySub?.title || t("Settings")}</span>
         </nav>
 
         {/* Page Header */}
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold text-slate-800">{currentEntitySub?.title || "Settings"}</h1>
+          <h1 className="text-2xl font-bold text-slate-800">{currentEntitySub?.title || t("Settings")}</h1>
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input
-              placeholder="Search..."
+              placeholder={t("Search...")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 w-[250px] bg-white border-slate-200"
@@ -1297,14 +1317,14 @@ export default function AssetSettingsPage() {
                 <Button variant="outline" size="sm" asChild>
                   <span>
                     <Download className="h-4 w-4 mr-2" />
-                    Import
+                    {t("Import")}
                   </span>
                 </Button>
               </label>
             )}
             <Button variant="outline" size="sm" onClick={getExportHandler()}>
               <Upload className="h-4 w-4 mr-2" />
-              Export
+              {t("Export")}
             </Button>
             <Button size="sm" onClick={() => {
               if (entitySubTab === "categories") {
@@ -1347,14 +1367,14 @@ export default function AssetSettingsPage() {
           <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto" onOpenAutoFocus={(e) => e.preventDefault()}>
             <DialogHeader>
               <DialogTitle>
-                Add {entitySubTab === "categories" ? "Category" :
-                     entitySubTab === "subcategories" ? "Sub Category" :
-                     entitySubTab === "groups" ? "Group" :
-                     entitySubTab === "sensitivity" ? "Sensitivity" :
-                     entitySubTab === "asset-list" ? "Asset" : "Item"}
+                {t("Add")} {entitySubTab === "categories" ? t("Category") :
+                     entitySubTab === "subcategories" ? t("Sub Category") :
+                     entitySubTab === "groups" ? t("Group") :
+                     entitySubTab === "sensitivity" ? t("Sensitivity") :
+                     entitySubTab === "asset-list" ? t("Asset") : t("Item")}
               </DialogTitle>
               <DialogDescription>
-                Enter the details for the new item
+                {t("Enter the details for the new item")}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
@@ -1362,31 +1382,31 @@ export default function AssetSettingsPage() {
                 <>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Asset ID *</Label>
+                      <Label>{t("Asset ID")} *</Label>
                       <Input
                         value={assetForm.assetId}
                         onChange={(e) => setAssetForm({ ...assetForm, assetId: e.target.value })}
-                        placeholder="e.g., AST-001"
+                        placeholder={t("e.g., AST-001")}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Name *</Label>
+                      <Label>{t("Name")} *</Label>
                       <Input
                         value={assetForm.name}
                         onChange={(e) => setAssetForm({ ...assetForm, name: e.target.value })}
-                        placeholder="e.g., Production Server 1"
+                        placeholder={t("e.g., Production Server 1")}
                       />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Category</Label>
+                      <Label>{t("Category")}</Label>
                       <Select
                         value={assetForm.categoryId}
                         onValueChange={(value) => setAssetForm({ ...assetForm, categoryId: value })}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Select category" />
+                          <SelectValue placeholder={t("Select category")} />
                         </SelectTrigger>
                         <SelectContent>
                           {categories.map((cat) => (
@@ -1398,13 +1418,13 @@ export default function AssetSettingsPage() {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label>Sub Category</Label>
+                      <Label>{t("Sub Category")}</Label>
                       <Select
                         value={assetForm.subCategoryId}
                         onValueChange={(value) => setAssetForm({ ...assetForm, subCategoryId: value })}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Select sub category" />
+                          <SelectValue placeholder={t("Select sub category")} />
                         </SelectTrigger>
                         <SelectContent>
                           {subCategories
@@ -1420,13 +1440,13 @@ export default function AssetSettingsPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Group</Label>
+                      <Label>{t("Group")}</Label>
                       <Select
                         value={assetForm.groupId}
                         onValueChange={(value) => setAssetForm({ ...assetForm, groupId: value })}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Select group" />
+                          <SelectValue placeholder={t("Select group")} />
                         </SelectTrigger>
                         <SelectContent>
                           {groups.map((g) => (
@@ -1438,13 +1458,13 @@ export default function AssetSettingsPage() {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label>Sensitivity</Label>
+                      <Label>{t("Sensitivity")}</Label>
                       <Select
                         value={assetForm.sensitivityId}
                         onValueChange={(value) => setAssetForm({ ...assetForm, sensitivityId: value })}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Select sensitivity" />
+                          <SelectValue placeholder={t("Select sensitivity")} />
                         </SelectTrigger>
                         <SelectContent>
                           {sensitivities.map((s) => (
@@ -1458,13 +1478,13 @@ export default function AssetSettingsPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Lifecycle Status</Label>
+                      <Label>{t("Lifecycle Status")}</Label>
                       <Select
                         value={assetForm.lifecycleStatusId}
                         onValueChange={(value) => setAssetForm({ ...assetForm, lifecycleStatusId: value })}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Select status" />
+                          <SelectValue placeholder={t("Select status")} />
                         </SelectTrigger>
                         <SelectContent>
                           {lifecycleStatuses.map((ls) => (
@@ -1476,21 +1496,21 @@ export default function AssetSettingsPage() {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label>Value</Label>
+                      <Label>{t("Value")}</Label>
                       <Input
                         type="number"
                         value={assetForm.value || ""}
                         onChange={(e) => setAssetForm({ ...assetForm, value: parseFloat(e.target.value) || 0 })}
-                        placeholder="e.g., 10000"
+                        placeholder={t("e.g., 10000")}
                       />
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label>Location</Label>
+                    <Label>{t("Location")}</Label>
                     <Input
                       value={assetForm.location}
                       onChange={(e) => setAssetForm({ ...assetForm, location: e.target.value })}
-                      placeholder="e.g., Data Center 1"
+                      placeholder={t("e.g., Data Center 1")}
                     />
                   </div>
                 </>
@@ -1499,24 +1519,24 @@ export default function AssetSettingsPage() {
               {entitySubTab === "categories" && (
                 <>
                   <div className="space-y-2">
-                    <Label>Name *</Label>
+                    <Label>{t("Name")} *</Label>
                     <Input
                       value={categoryForm.name}
                       onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
-                      placeholder="e.g., Hardware, Software, Data"
+                      placeholder={t("e.g., Hardware, Software, Data")}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Description</Label>
+                    <Label>{t("Description")}</Label>
                     <textarea
                       value={categoryForm.description}
                       onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
-                      placeholder="Enter description"
+                      placeholder={t("Enter description")}
                       className="w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Status</Label>
+                    <Label>{t("Status")}</Label>
                     <Select
                       value={categoryForm.status}
                       onValueChange={(value) => setCategoryForm({ ...categoryForm, status: value })}
@@ -1525,8 +1545,8 @@ export default function AssetSettingsPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Active">Active</SelectItem>
-                        <SelectItem value="Inactive">Inactive</SelectItem>
+                        <SelectItem value="Active">{t("Active")}</SelectItem>
+                        <SelectItem value="Inactive">{t("Inactive")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -1536,13 +1556,13 @@ export default function AssetSettingsPage() {
               {entitySubTab === "subcategories" && (
                 <>
                   <div className="space-y-2">
-                    <Label>Category *</Label>
+                    <Label>{t("Category")} *</Label>
                     <Select
                       value={subCategoryForm.categoryId}
                       onValueChange={(value) => setSubCategoryForm({ ...subCategoryForm, categoryId: value })}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select category" />
+                        <SelectValue placeholder={t("Select category")} />
                       </SelectTrigger>
                       <SelectContent>
                         {categories.map((cat) => (
@@ -1554,19 +1574,19 @@ export default function AssetSettingsPage() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>Name *</Label>
+                    <Label>{t("Name")} *</Label>
                     <Input
                       value={subCategoryForm.name}
                       onChange={(e) => setSubCategoryForm({ ...subCategoryForm, name: e.target.value })}
-                      placeholder="e.g., Server, Firewall, Router"
+                      placeholder={t("e.g., Server, Firewall, Router")}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Description</Label>
+                    <Label>{t("Description")}</Label>
                     <textarea
                       value={subCategoryForm.description}
                       onChange={(e) => setSubCategoryForm({ ...subCategoryForm, description: e.target.value })}
-                      placeholder="Enter description"
+                      placeholder={t("Enter description")}
                       className="w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
                     />
                   </div>
@@ -1576,19 +1596,19 @@ export default function AssetSettingsPage() {
               {entitySubTab === "groups" && (
                 <>
                   <div className="space-y-2">
-                    <Label>Name *</Label>
+                    <Label>{t("Name")} *</Label>
                     <Input
                       value={groupForm.name}
                       onChange={(e) => setGroupForm({ ...groupForm, name: e.target.value })}
-                      placeholder="e.g., Security Tools, Payment Systems"
+                      placeholder={t("e.g., Security Tools, Payment Systems")}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Description</Label>
+                    <Label>{t("Description")}</Label>
                     <textarea
                       value={groupForm.description}
                       onChange={(e) => setGroupForm({ ...groupForm, description: e.target.value })}
-                      placeholder="Enter description"
+                      placeholder={t("Enter description")}
                       className="w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
                     />
                   </div>
@@ -1598,19 +1618,19 @@ export default function AssetSettingsPage() {
               {entitySubTab === "sensitivity" && (
                 <>
                   <div className="space-y-2">
-                    <Label>Name *</Label>
+                    <Label>{t("Name")} *</Label>
                     <Input
                       value={sensitivityForm.name}
                       onChange={(e) => setSensitivityForm({ ...sensitivityForm, name: e.target.value })}
-                      placeholder="e.g., High, Medium, Low"
+                      placeholder={t("e.g., High, Medium, Low")}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Description</Label>
+                    <Label>{t("Description")}</Label>
                     <textarea
                       value={sensitivityForm.description}
                       onChange={(e) => setSensitivityForm({ ...sensitivityForm, description: e.target.value })}
-                      placeholder="Enter description"
+                      placeholder={t("Enter description")}
                       className="w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
                     />
                   </div>
@@ -1619,7 +1639,7 @@ export default function AssetSettingsPage() {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsAddOpen(false)}>
-                Cancel
+                {t("Cancel")}
               </Button>
               <Button onClick={() => {
                 if (entitySubTab === "asset-list") {
@@ -1634,7 +1654,7 @@ export default function AssetSettingsPage() {
                   handleAddSensitivity();
                 }
               }}>
-                Save
+                {t("Save")}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -1647,13 +1667,13 @@ export default function AssetSettingsPage() {
             <div className="px-6 py-5 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-lg font-semibold text-slate-800">
-                  Edit {entitySubTab === "categories" ? "Category" :
-                        entitySubTab === "subcategories" ? "Sub Category" :
-                        entitySubTab === "groups" ? "Group" :
-                        entitySubTab === "sensitivity" ? "Sensitivity" : "Item"}
+                  {t("Edit")} {entitySubTab === "categories" ? t("Category") :
+                        entitySubTab === "subcategories" ? t("Sub Category") :
+                        entitySubTab === "groups" ? t("Group") :
+                        entitySubTab === "sensitivity" ? t("Sensitivity") : t("Item")}
                 </DialogTitle>
                 <DialogDescription>
-                  Update the details
+                  {t("Update the details")}
                 </DialogDescription>
               </DialogHeader>
             </div>
@@ -1663,25 +1683,25 @@ export default function AssetSettingsPage() {
               {entitySubTab === "categories" && (
                 <>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Name *</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
                     <Input
                       value={categoryForm.name}
                       onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
-                      placeholder="e.g., Hardware, Software, Data"
+                      placeholder={t("e.g., Hardware, Software, Data")}
                       className="mt-1.5"
                     />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Description</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
                     <textarea
                       value={categoryForm.description}
                       onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
-                      placeholder="Enter description"
+                      placeholder={t("Enter description")}
                       className="mt-1.5 w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
                     />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Status</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Status")}</Label>
                     <Select
                       value={categoryForm.status}
                       onValueChange={(value) => setCategoryForm({ ...categoryForm, status: value })}
@@ -1690,8 +1710,8 @@ export default function AssetSettingsPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Active">Active</SelectItem>
-                        <SelectItem value="Inactive">Inactive</SelectItem>
+                        <SelectItem value="Active">{t("Active")}</SelectItem>
+                        <SelectItem value="Inactive">{t("Inactive")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -1701,13 +1721,13 @@ export default function AssetSettingsPage() {
               {entitySubTab === "subcategories" && (
                 <>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Category *</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Category")} *</Label>
                     <Select
                       value={subCategoryForm.categoryId}
                       onValueChange={(value) => setSubCategoryForm({ ...subCategoryForm, categoryId: value })}
                     >
                       <SelectTrigger className="mt-1.5 w-full">
-                        <SelectValue placeholder="Select category" />
+                        <SelectValue placeholder={t("Select category")} />
                       </SelectTrigger>
                       <SelectContent>
                         {categories.map((cat) => (
@@ -1719,20 +1739,20 @@ export default function AssetSettingsPage() {
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Name *</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
                     <Input
                       value={subCategoryForm.name}
                       onChange={(e) => setSubCategoryForm({ ...subCategoryForm, name: e.target.value })}
-                      placeholder="e.g., Server, Firewall, Router"
+                      placeholder={t("e.g., Server, Firewall, Router")}
                       className="mt-1.5"
                     />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Description</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
                     <textarea
                       value={subCategoryForm.description}
                       onChange={(e) => setSubCategoryForm({ ...subCategoryForm, description: e.target.value })}
-                      placeholder="Enter description"
+                      placeholder={t("Enter description")}
                       className="mt-1.5 w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
                     />
                   </div>
@@ -1742,20 +1762,20 @@ export default function AssetSettingsPage() {
               {entitySubTab === "groups" && (
                 <>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Name *</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
                     <Input
                       value={groupForm.name}
                       onChange={(e) => setGroupForm({ ...groupForm, name: e.target.value })}
-                      placeholder="e.g., Security Tools, Payment Systems"
+                      placeholder={t("e.g., Security Tools, Payment Systems")}
                       className="mt-1.5"
                     />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Description</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
                     <textarea
                       value={groupForm.description}
                       onChange={(e) => setGroupForm({ ...groupForm, description: e.target.value })}
-                      placeholder="Enter description"
+                      placeholder={t("Enter description")}
                       className="mt-1.5 w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
                     />
                   </div>
@@ -1765,20 +1785,20 @@ export default function AssetSettingsPage() {
               {entitySubTab === "sensitivity" && (
                 <>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Name *</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
                     <Input
                       value={sensitivityForm.name}
                       onChange={(e) => setSensitivityForm({ ...sensitivityForm, name: e.target.value })}
-                      placeholder="e.g., High, Medium, Low"
+                      placeholder={t("e.g., High, Medium, Low")}
                       className="mt-1.5"
                     />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Description</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
                     <textarea
                       value={sensitivityForm.description}
                       onChange={(e) => setSensitivityForm({ ...sensitivityForm, description: e.target.value })}
-                      placeholder="Enter description"
+                      placeholder={t("Enter description")}
                       className="mt-1.5 w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
                     />
                   </div>
@@ -1789,7 +1809,7 @@ export default function AssetSettingsPage() {
             {/* Fixed Footer */}
             <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
               <Button variant="outline" onClick={() => setIsEditOpen(false)}>
-                Cancel
+                {t("Cancel")}
               </Button>
               <Button onClick={() => {
                 if (entitySubTab === "categories") {
@@ -1802,7 +1822,7 @@ export default function AssetSettingsPage() {
                   handleEditSensitivity();
                 }
               }}>
-                Save Changes
+                {t("Save Changes")}
               </Button>
             </div>
           </DialogContent>
@@ -1814,9 +1834,9 @@ export default function AssetSettingsPage() {
             {/* Fixed Header */}
             <div className="px-6 py-5 border-b border-slate-100">
               <DialogHeader>
-                <DialogTitle className="text-lg font-semibold text-slate-800">Confirm Delete</DialogTitle>
+                <DialogTitle className="text-lg font-semibold text-slate-800">{t("Confirm Delete")}</DialogTitle>
                 <DialogDescription>
-                  Are you sure you want to delete this item? This action cannot be undone.
+                  {t("Are you sure you want to delete this item? This action cannot be undone.")}
                 </DialogDescription>
               </DialogHeader>
             </div>
@@ -1824,7 +1844,7 @@ export default function AssetSettingsPage() {
             {/* Fixed Footer */}
             <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
               <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>
-                Cancel
+                {t("Cancel")}
               </Button>
               <Button variant="destructive" onClick={() => {
                 if (entitySubTab === "categories") {
@@ -1837,7 +1857,7 @@ export default function AssetSettingsPage() {
                   handleDeleteSensitivity();
                 }
               }}>
-                Delete
+                {t("Delete")}
               </Button>
             </div>
           </DialogContent>
@@ -1854,19 +1874,19 @@ export default function AssetSettingsPage() {
         <nav className="flex items-center gap-1.5 text-sm">
           <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
-            <span>Asset Management</span>
+            <span>{t("Asset Management")}</span>
           </Link>
           <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
           <button onClick={() => setActiveCategory(null)} className="text-slate-500 hover:text-primary-600 transition-colors">
-            Settings
+            {t("Settings")}
           </button>
           <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-          <span className="text-primary-700 font-medium">Asset Settings</span>
+          <span className="text-primary-700 font-medium">{t("Asset Settings")}</span>
         </nav>
 
         {/* Page Header */}
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold text-slate-800">Asset Settings</h1>
+          <h1 className="text-2xl font-bold text-slate-800">{t("Asset Settings")}</h1>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -1892,7 +1912,7 @@ export default function AssetSettingsPage() {
                 </div>
                 <div className="flex items-center justify-between pt-3 border-t border-slate-100">
                   <span className="text-sm text-slate-500">
-                    {itemCount} {itemCount === 1 ? "item" : "items"}
+                    {itemCount} {itemCount === 1 ? t("item") : t("items")}
                   </span>
                   <Button
                     variant="outline"
@@ -1902,7 +1922,7 @@ export default function AssetSettingsPage() {
                       setSearchTerm("");
                     }}
                   >
-                    Manage
+                    {t("Manage")}
                   </Button>
                 </div>
               </div>
@@ -1925,26 +1945,26 @@ export default function AssetSettingsPage() {
         <nav className="flex items-center gap-1.5 text-sm">
           <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
-            <span>Asset Management</span>
+            <span>{t("Asset Management")}</span>
           </Link>
           <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
           <button onClick={() => setActiveCategory(null)} className="text-slate-500 hover:text-primary-600 transition-colors">
-            Settings
+            {t("Settings")}
           </button>
           <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-          <span className="text-primary-700 font-medium">Lifecycle Status</span>
+          <span className="text-primary-700 font-medium">{t("Lifecycle Status")}</span>
         </nav>
 
         {/* Page Header */}
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold text-slate-800">Lifecycle Status</h1>
+          <h1 className="text-2xl font-bold text-slate-800">{t("Lifecycle Status")}</h1>
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search..."
+              placeholder={t("Search...")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 w-[250px] bg-white border-slate-200"
@@ -1961,20 +1981,20 @@ export default function AssetSettingsPage() {
               <Button variant="outline" size="sm" asChild>
                 <span>
                   <Download className="h-4 w-4 mr-2" />
-                  Import
+                  {t("Import")}
                 </span>
               </Button>
             </label>
             <Button variant="outline" size="sm" onClick={handleExportLifecycleStatuses}>
               <Upload className="h-4 w-4 mr-2" />
-              Export
+              {t("Export")}
             </Button>
             <Button size="sm" onClick={() => {
               setLifecycleForm({ name: "", description: "", order: lifecycleStatuses.length });
               setIsAddOpen(true);
             }}>
               <Plus className="h-4 w-4 mr-2" />
-              Add New
+              {t("Add New")}
             </Button>
           </div>
         </div>
@@ -1991,9 +2011,9 @@ export default function AssetSettingsPage() {
             {/* Fixed Header */}
             <div className="px-6 py-5 border-b border-slate-100">
               <DialogHeader>
-                <DialogTitle className="text-lg font-semibold text-slate-800">Add Lifecycle Status</DialogTitle>
+                <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Lifecycle Status")}</DialogTitle>
                 <DialogDescription>
-                  Enter the details for the new lifecycle status
+                  {t("Enter the details for the new lifecycle status")}
                 </DialogDescription>
               </DialogHeader>
             </div>
@@ -2001,25 +2021,25 @@ export default function AssetSettingsPage() {
             {/* Content */}
             <div className="px-6 py-6 space-y-5">
               <div>
-                <Label className="text-sm font-medium text-slate-700">Name *</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
                 <Input
                   value={lifecycleForm.name}
                   onChange={(e) => setLifecycleForm({ ...lifecycleForm, name: e.target.value })}
-                  placeholder="e.g., Active, In Use, Retired"
+                  placeholder={t("e.g., Active, In Use, Retired")}
                   className="mt-1.5"
                 />
               </div>
               <div>
-                <Label className="text-sm font-medium text-slate-700">Description</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
                 <textarea
                   value={lifecycleForm.description}
                   onChange={(e) => setLifecycleForm({ ...lifecycleForm, description: e.target.value })}
-                  placeholder="Enter description"
+                  placeholder={t("Enter description")}
                   className="mt-1.5 w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
                 />
               </div>
               <div>
-                <Label className="text-sm font-medium text-slate-700">Order</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Order")}</Label>
                 <Input
                   type="number"
                   value={lifecycleForm.order}
@@ -2032,10 +2052,10 @@ export default function AssetSettingsPage() {
             {/* Fixed Footer */}
             <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
               <Button variant="outline" onClick={() => setIsAddOpen(false)}>
-                Cancel
+                {t("Cancel")}
               </Button>
               <Button onClick={handleAddLifecycle}>
-                Save
+                {t("Save")}
               </Button>
             </div>
           </DialogContent>
@@ -2047,9 +2067,9 @@ export default function AssetSettingsPage() {
             {/* Fixed Header */}
             <div className="px-6 py-5 border-b border-slate-100">
               <DialogHeader>
-                <DialogTitle className="text-lg font-semibold text-slate-800">Edit Lifecycle Status</DialogTitle>
+                <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Lifecycle Status")}</DialogTitle>
                 <DialogDescription>
-                  Update the lifecycle status details
+                  {t("Update the lifecycle status details")}
                 </DialogDescription>
               </DialogHeader>
             </div>
@@ -2057,7 +2077,7 @@ export default function AssetSettingsPage() {
             {/* Content */}
             <div className="px-6 py-6 space-y-5">
               <div>
-                <Label className="text-sm font-medium text-slate-700">Name *</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
                 <Input
                   value={lifecycleForm.name}
                   onChange={(e) => setLifecycleForm({ ...lifecycleForm, name: e.target.value })}
@@ -2065,16 +2085,16 @@ export default function AssetSettingsPage() {
                 />
               </div>
               <div>
-                <Label className="text-sm font-medium text-slate-700">Description</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
                 <textarea
                   value={lifecycleForm.description}
                   onChange={(e) => setLifecycleForm({ ...lifecycleForm, description: e.target.value })}
-                  placeholder="Enter description"
+                  placeholder={t("Enter description")}
                   className="mt-1.5 w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
                 />
               </div>
               <div>
-                <Label className="text-sm font-medium text-slate-700">Order</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Order")}</Label>
                 <Input
                   type="number"
                   value={lifecycleForm.order}
@@ -2087,10 +2107,10 @@ export default function AssetSettingsPage() {
             {/* Fixed Footer */}
             <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
               <Button variant="outline" onClick={() => setIsEditOpen(false)}>
-                Cancel
+                {t("Cancel")}
               </Button>
               <Button onClick={handleEditLifecycle}>
-                Save
+                {t("Save")}
               </Button>
             </div>
           </DialogContent>
@@ -2102,9 +2122,9 @@ export default function AssetSettingsPage() {
             {/* Fixed Header */}
             <div className="px-6 py-5 border-b border-slate-100">
               <DialogHeader>
-                <DialogTitle className="text-lg font-semibold text-slate-800">Delete Lifecycle Status</DialogTitle>
+                <DialogTitle className="text-lg font-semibold text-slate-800">{t("Delete Lifecycle Status")}</DialogTitle>
                 <DialogDescription>
-                  Are you sure you want to delete this lifecycle status? This action cannot be undone.
+                  {t("Are you sure you want to delete this lifecycle status? This action cannot be undone.")}
                 </DialogDescription>
               </DialogHeader>
             </div>
@@ -2112,10 +2132,10 @@ export default function AssetSettingsPage() {
             {/* Fixed Footer */}
             <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
               <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>
-                Cancel
+                {t("Cancel")}
               </Button>
               <Button variant="destructive" onClick={handleDeleteLifecycle}>
-                Delete
+                {t("Delete")}
               </Button>
             </div>
           </DialogContent>
@@ -2132,19 +2152,19 @@ export default function AssetSettingsPage() {
         <nav className="flex items-center gap-1.5 text-sm">
           <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
-            <span>Asset Management</span>
+            <span>{t("Asset Management")}</span>
           </Link>
           <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
           <button onClick={() => setActiveCategory(null)} className="text-slate-500 hover:text-primary-600 transition-colors">
-            Settings
+            {t("Settings")}
           </button>
           <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-          <span className="text-primary-700 font-medium">CIA Configuration</span>
+          <span className="text-primary-700 font-medium">{t("CIA Configuration")}</span>
         </nav>
 
         {/* Page Header */}
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold text-slate-800">CIA Configuration</h1>
+          <h1 className="text-2xl font-bold text-slate-800">{t("CIA Configuration")}</h1>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -2154,7 +2174,7 @@ export default function AssetSettingsPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Lock className="h-5 w-5 text-blue-600" />
-                  <CardTitle className="text-lg">Confidentiality</CardTitle>
+                  <CardTitle className="text-lg">{t("Confidentiality")}</CardTitle>
                 </div>
                 <Button size="sm" onClick={() => {
                   setCiaRatingType("Confidentiality");
@@ -2162,7 +2182,7 @@ export default function AssetSettingsPage() {
                   setIsCiaAddOpen(true);
                 }}>
                   <Plus className="h-4 w-4 mr-1" />
-                  New Confidentiality
+                  {t("New Confidentiality")}
                 </Button>
               </div>
             </CardHeader>
@@ -2171,9 +2191,9 @@ export default function AssetSettingsPage() {
                 <table className="w-full">
                   <thead className="bg-muted/50">
                     <tr>
-                      <th className="px-4 py-2 text-left text-sm font-medium">Label</th>
-                      <th className="px-4 py-2 text-left text-sm font-medium">Value</th>
-                      <th className="px-4 py-2 text-right text-sm font-medium">Actions</th>
+                      <th className="px-4 py-2 text-left text-sm font-medium">{t("Label")}</th>
+                      <th className="px-4 py-2 text-left text-sm font-medium">{t("Value")}</th>
+                      <th className="px-4 py-2 text-right text-sm font-medium">{t("Actions")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -2201,7 +2221,7 @@ export default function AssetSettingsPage() {
                       </tr>
                     ))}
                     {confidentialityRatings.length === 0 && (
-                      <tr><td colSpan={3} className="px-4 py-4 text-center text-sm text-muted-foreground">No ratings defined</td></tr>
+                      <tr><td colSpan={3} className="px-4 py-4 text-center text-sm text-muted-foreground">{t("No ratings defined")}</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -2215,7 +2235,7 @@ export default function AssetSettingsPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <CheckCircle className="h-5 w-5 text-green-600" />
-                  <CardTitle className="text-lg">Integrity</CardTitle>
+                  <CardTitle className="text-lg">{t("Integrity")}</CardTitle>
                 </div>
                 <Button size="sm" onClick={() => {
                   setCiaRatingType("Integrity");
@@ -2223,7 +2243,7 @@ export default function AssetSettingsPage() {
                   setIsCiaAddOpen(true);
                 }}>
                   <Plus className="h-4 w-4 mr-1" />
-                  New Integrity
+                  {t("New Integrity")}
                 </Button>
               </div>
             </CardHeader>
@@ -2232,9 +2252,9 @@ export default function AssetSettingsPage() {
                 <table className="w-full">
                   <thead className="bg-muted/50">
                     <tr>
-                      <th className="px-4 py-2 text-left text-sm font-medium">Label</th>
-                      <th className="px-4 py-2 text-left text-sm font-medium">Value</th>
-                      <th className="px-4 py-2 text-right text-sm font-medium">Actions</th>
+                      <th className="px-4 py-2 text-left text-sm font-medium">{t("Label")}</th>
+                      <th className="px-4 py-2 text-left text-sm font-medium">{t("Value")}</th>
+                      <th className="px-4 py-2 text-right text-sm font-medium">{t("Actions")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -2262,7 +2282,7 @@ export default function AssetSettingsPage() {
                       </tr>
                     ))}
                     {integrityRatings.length === 0 && (
-                      <tr><td colSpan={3} className="px-4 py-4 text-center text-sm text-muted-foreground">No ratings defined</td></tr>
+                      <tr><td colSpan={3} className="px-4 py-4 text-center text-sm text-muted-foreground">{t("No ratings defined")}</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -2276,7 +2296,7 @@ export default function AssetSettingsPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <RefreshCw className="h-5 w-5 text-purple-600" />
-                  <CardTitle className="text-lg">Availability</CardTitle>
+                  <CardTitle className="text-lg">{t("Availability")}</CardTitle>
                 </div>
                 <Button size="sm" onClick={() => {
                   setCiaRatingType("Availability");
@@ -2284,7 +2304,7 @@ export default function AssetSettingsPage() {
                   setIsCiaAddOpen(true);
                 }}>
                   <Plus className="h-4 w-4 mr-1" />
-                  New Availability
+                  {t("New Availability")}
                 </Button>
               </div>
             </CardHeader>
@@ -2293,9 +2313,9 @@ export default function AssetSettingsPage() {
                 <table className="w-full">
                   <thead className="bg-muted/50">
                     <tr>
-                      <th className="px-4 py-2 text-left text-sm font-medium">Label</th>
-                      <th className="px-4 py-2 text-left text-sm font-medium">Value</th>
-                      <th className="px-4 py-2 text-right text-sm font-medium">Actions</th>
+                      <th className="px-4 py-2 text-left text-sm font-medium">{t("Label")}</th>
+                      <th className="px-4 py-2 text-left text-sm font-medium">{t("Value")}</th>
+                      <th className="px-4 py-2 text-right text-sm font-medium">{t("Actions")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -2323,7 +2343,7 @@ export default function AssetSettingsPage() {
                       </tr>
                     ))}
                     {availabilityRatings.length === 0 && (
-                      <tr><td colSpan={3} className="px-4 py-4 text-center text-sm text-muted-foreground">No ratings defined</td></tr>
+                      <tr><td colSpan={3} className="px-4 py-4 text-center text-sm text-muted-foreground">{t("No ratings defined")}</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -2338,11 +2358,11 @@ export default function AssetSettingsPage() {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-lg">Scoring Configuration</CardTitle>
+                <CardTitle className="text-lg">{t("Scoring Configuration")}</CardTitle>
                 <CardDescription>
                   {scoringCalculationType === "high_of_all"
-                    ? "Define the high range value for each criticality rating"
-                    : "Define low and high range values for each criticality rating"}
+                    ? t("Define the high range value for each criticality rating")
+                    : t("Define low and high range values for each criticality rating")}
                 </CardDescription>
               </div>
               <div className="flex items-center gap-2">
@@ -2375,16 +2395,16 @@ export default function AssetSettingsPage() {
               <table className="w-full">
                 <thead className="bg-muted/50">
                   <tr>
-                    <th className="px-4 py-3 text-left text-sm font-medium">Rating</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium">{t("Rating")}</th>
                     {scoringCalculationType === "high_of_all" ? (
-                      <th className="px-4 py-3 text-left text-sm font-medium">High range</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium">{t("High range")}</th>
                     ) : (
                       <>
-                        <th className="px-4 py-3 text-left text-sm font-medium">Low range</th>
-                        <th className="px-4 py-3 text-left text-sm font-medium">High range</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium">{t("Low range")}</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium">{t("High range")}</th>
                       </>
                     )}
-                    <th className="px-4 py-3 text-right text-sm font-medium">Actions</th>
+                    <th className="px-4 py-3 text-right text-sm font-medium">{t("Actions")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -2444,7 +2464,7 @@ export default function AssetSettingsPage() {
                   {scoringConfigs.length === 0 && (
                     <tr className="border-t">
                       <td colSpan={scoringCalculationType === "high_of_all" ? 3 : 4} className="px-4 py-8 text-center text-muted-foreground">
-                        No scoring configurations. Click "New Scoring Configuration" to add one.
+                        {t("No scoring configurations. Click \"New Scoring Configuration\" to add one.")}
                       </td>
                     </tr>
                   )}
@@ -2452,14 +2472,14 @@ export default function AssetSettingsPage() {
               </table>
             </div>
             <div className="mt-4 p-4 bg-muted/50 rounded-lg">
-              <h4 className="text-sm font-medium mb-2">How scoring works:</h4>
+              <h4 className="text-sm font-medium mb-2">{t("How scoring works:")}</h4>
               <p className="text-sm text-muted-foreground">
                 {scoringCalculationType === "high_of_all" &&
-                  "The highest value among Confidentiality, Integrity, and Availability is used as the final score."}
+                  t("The highest value among Confidentiality, Integrity, and Availability is used as the final score.")}
                 {scoringCalculationType === "addition_of_all" &&
-                  "All three CIA values are added together to calculate the final score."}
+                  t("All three CIA values are added together to calculate the final score.")}
                 {scoringCalculationType === "product_of_all" &&
-                  "All three CIA values are multiplied together to calculate the final score."}
+                  t("All three CIA values are multiplied together to calculate the final score.")}
               </p>
             </div>
           </CardContent>
@@ -2471,9 +2491,9 @@ export default function AssetSettingsPage() {
             {/* Fixed Header */}
             <div className="px-6 py-5 border-b border-slate-100">
               <DialogHeader>
-                <DialogTitle className="text-lg font-semibold text-slate-800">Edit Scoring Configuration</DialogTitle>
+                <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Scoring Configuration")}</DialogTitle>
                 <DialogDescription>
-                  Update the score range and color for this criticality level
+                  {t("Update the score range and color for this criticality level")}
                 </DialogDescription>
               </DialogHeader>
             </div>
@@ -2481,17 +2501,17 @@ export default function AssetSettingsPage() {
             {/* Content */}
             <div className="px-6 py-6 space-y-5">
               <div>
-                <Label className="text-sm font-medium text-slate-700">Criticality Level</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Criticality Level")}</Label>
                 <Input
                   value={scoringConfigForm.level}
                   onChange={(e) => setScoringConfigForm({ ...scoringConfigForm, level: e.target.value })}
-                  placeholder="e.g., Critical, High, Medium, Low"
+                  placeholder={t("e.g., Critical, High, Medium, Low")}
                   className="mt-1.5"
                 />
               </div>
               {scoringCalculationType === "high_of_all" ? (
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">High range</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("High range")}</Label>
                   <Input
                     type="number"
                     value={scoringConfigForm.maxScore}
@@ -2502,7 +2522,7 @@ export default function AssetSettingsPage() {
               ) : (
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Low range</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Low range")}</Label>
                     <Input
                       type="number"
                       value={scoringConfigForm.minScore}
@@ -2511,7 +2531,7 @@ export default function AssetSettingsPage() {
                     />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">High range</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("High range")}</Label>
                     <Input
                       type="number"
                       value={scoringConfigForm.maxScore}
@@ -2522,7 +2542,7 @@ export default function AssetSettingsPage() {
                 </div>
               )}
               <div>
-                <Label className="text-sm font-medium text-slate-700">Color</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Color")}</Label>
                 <div className="flex items-center gap-2 mt-1.5">
                   <input
                     type="color"
@@ -2533,7 +2553,7 @@ export default function AssetSettingsPage() {
                   <Input
                     value={scoringConfigForm.color}
                     onChange={(e) => setScoringConfigForm({ ...scoringConfigForm, color: e.target.value })}
-                    placeholder="#000000"
+                    placeholder={t("#000000")}
                     className="flex-1"
                   />
                 </div>
@@ -2543,9 +2563,9 @@ export default function AssetSettingsPage() {
             {/* Fixed Footer */}
             <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
               <Button variant="outline" onClick={() => setIsScoringEditOpen(false)}>
-                Cancel
+                {t("Cancel")}
               </Button>
-              <Button onClick={handleUpdateScoringConfig}>Save Changes</Button>
+              <Button onClick={handleUpdateScoringConfig}>{t("Save Changes")}</Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -2556,9 +2576,9 @@ export default function AssetSettingsPage() {
             {/* Fixed Header */}
             <div className="px-6 py-5 border-b border-slate-100">
               <DialogHeader>
-                <DialogTitle className="text-lg font-semibold text-slate-800">Add Scoring Configuration</DialogTitle>
+                <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Scoring Configuration")}</DialogTitle>
                 <DialogDescription>
-                  Add a new scoring configuration for criticality rating
+                  {t("Add a new scoring configuration for criticality rating")}
                 </DialogDescription>
               </DialogHeader>
             </div>
@@ -2566,17 +2586,17 @@ export default function AssetSettingsPage() {
             {/* Content */}
             <div className="px-6 py-6 space-y-5">
               <div>
-                <Label className="text-sm font-medium text-slate-700">Rating *</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Rating")} *</Label>
                 <Input
                   value={scoringConfigForm.level}
                   onChange={(e) => setScoringConfigForm({ ...scoringConfigForm, level: e.target.value })}
-                  placeholder="e.g., Critical, High, Medium, Low"
+                  placeholder={t("e.g., Critical, High, Medium, Low")}
                   className="mt-1.5"
                 />
               </div>
               {scoringCalculationType === "high_of_all" ? (
                 <div>
-                  <Label className="text-sm font-medium text-slate-700">High range</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t("High range")}</Label>
                   <Input
                     type="number"
                     value={scoringConfigForm.maxScore}
@@ -2587,7 +2607,7 @@ export default function AssetSettingsPage() {
               ) : (
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">Low range</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("Low range")}</Label>
                     <Input
                       type="number"
                       value={scoringConfigForm.minScore}
@@ -2596,7 +2616,7 @@ export default function AssetSettingsPage() {
                     />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">High range</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t("High range")}</Label>
                     <Input
                       type="number"
                       value={scoringConfigForm.maxScore}
@@ -2607,7 +2627,7 @@ export default function AssetSettingsPage() {
                 </div>
               )}
               <div>
-                <Label className="text-sm font-medium text-slate-700">Color</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Color")}</Label>
                 <div className="flex items-center gap-2 mt-1.5">
                   <input
                     type="color"
@@ -2618,7 +2638,7 @@ export default function AssetSettingsPage() {
                   <Input
                     value={scoringConfigForm.color}
                     onChange={(e) => setScoringConfigForm({ ...scoringConfigForm, color: e.target.value })}
-                    placeholder="#000000"
+                    placeholder={t("#000000")}
                     className="flex-1"
                   />
                 </div>
@@ -2628,9 +2648,9 @@ export default function AssetSettingsPage() {
             {/* Fixed Footer */}
             <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
               <Button variant="outline" onClick={() => setIsScoringAddOpen(false)}>
-                Cancel
+                {t("Cancel")}
               </Button>
-              <Button onClick={handleAddScoringConfig}>Add</Button>
+              <Button onClick={handleAddScoringConfig}>{t("Add")}</Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -2641,9 +2661,9 @@ export default function AssetSettingsPage() {
             {/* Fixed Header */}
             <div className="px-6 py-5 border-b border-slate-100">
               <DialogHeader>
-                <DialogTitle className="text-lg font-semibold text-slate-800">Delete Scoring Configuration</DialogTitle>
+                <DialogTitle className="text-lg font-semibold text-slate-800">{t("Delete Scoring Configuration")}</DialogTitle>
                 <DialogDescription>
-                  Are you sure you want to delete the "{selectedScoringConfig?.level}" scoring configuration? This action cannot be undone.
+                  {`${t("Are you sure you want to delete the")} "${selectedScoringConfig?.level}" ${t("scoring configuration? This action cannot be undone.")}`}
                 </DialogDescription>
               </DialogHeader>
             </div>
@@ -2651,9 +2671,9 @@ export default function AssetSettingsPage() {
             {/* Fixed Footer */}
             <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
               <Button variant="outline" onClick={() => setIsScoringDeleteOpen(false)}>
-                Cancel
+                {t("Cancel")}
               </Button>
-              <Button variant="destructive" onClick={handleDeleteScoringConfig}>Delete</Button>
+              <Button variant="destructive" onClick={handleDeleteScoringConfig}>{t("Delete")}</Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -2664,9 +2684,9 @@ export default function AssetSettingsPage() {
             {/* Fixed Header */}
             <div className="px-6 py-5 border-b border-slate-100">
               <DialogHeader>
-                <DialogTitle className="text-lg font-semibold text-slate-800">New {ciaRatingType}</DialogTitle>
+                <DialogTitle className="text-lg font-semibold text-slate-800">{t("New")} {t(ciaRatingType)}</DialogTitle>
                 <DialogDescription>
-                  Add a new {ciaRatingType.toLowerCase()} rating level
+                  {`${t("Add a new")} ${t(ciaRatingType.toLowerCase())} ${t("rating level")}`}
                 </DialogDescription>
               </DialogHeader>
             </div>
@@ -2674,21 +2694,21 @@ export default function AssetSettingsPage() {
             {/* Content */}
             <div className="px-6 py-6 space-y-5">
               <div>
-                <Label className="text-sm font-medium text-slate-700">Label *</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Label")} *</Label>
                 <Input
                   value={ciaRatingForm.label}
                   onChange={(e) => setCiaRatingForm({ ...ciaRatingForm, label: e.target.value })}
-                  placeholder="e.g., high, medium, low"
+                  placeholder={t("e.g., high, medium, low")}
                   className="mt-1.5"
                 />
               </div>
               <div>
-                <Label className="text-sm font-medium text-slate-700">Value *</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Value")} *</Label>
                 <Input
                   type="number"
                   value={ciaRatingForm.value}
                   onChange={(e) => setCiaRatingForm({ ...ciaRatingForm, value: parseInt(e.target.value) || 0 })}
-                  placeholder="e.g., 10, 5, 1"
+                  placeholder={t("e.g., 10, 5, 1")}
                   className="mt-1.5"
                 />
               </div>
@@ -2697,9 +2717,9 @@ export default function AssetSettingsPage() {
             {/* Fixed Footer */}
             <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
               <Button variant="outline" onClick={() => setIsCiaAddOpen(false)}>
-                Cancel
+                {t("Cancel")}
               </Button>
-              <Button onClick={handleAddCiaRating}>Add</Button>
+              <Button onClick={handleAddCiaRating}>{t("Add")}</Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -2710,9 +2730,9 @@ export default function AssetSettingsPage() {
             {/* Fixed Header */}
             <div className="px-6 py-5 border-b border-slate-100">
               <DialogHeader>
-                <DialogTitle className="text-lg font-semibold text-slate-800">Edit Rating</DialogTitle>
+                <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Rating")}</DialogTitle>
                 <DialogDescription>
-                  Update the rating details
+                  {t("Update the rating details")}
                 </DialogDescription>
               </DialogHeader>
             </div>
@@ -2720,7 +2740,7 @@ export default function AssetSettingsPage() {
             {/* Content */}
             <div className="px-6 py-6 space-y-5">
               <div>
-                <Label className="text-sm font-medium text-slate-700">Label *</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Label")} *</Label>
                 <Input
                   value={ciaRatingForm.label}
                   onChange={(e) => setCiaRatingForm({ ...ciaRatingForm, label: e.target.value })}
@@ -2728,7 +2748,7 @@ export default function AssetSettingsPage() {
                 />
               </div>
               <div>
-                <Label className="text-sm font-medium text-slate-700">Value *</Label>
+                <Label className="text-sm font-medium text-slate-700">{t("Value")} *</Label>
                 <Input
                   type="number"
                   value={ciaRatingForm.value}
@@ -2741,9 +2761,9 @@ export default function AssetSettingsPage() {
             {/* Fixed Footer */}
             <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
               <Button variant="outline" onClick={() => setIsCiaEditOpen(false)}>
-                Cancel
+                {t("Cancel")}
               </Button>
-              <Button onClick={handleEditCiaRating}>Save Changes</Button>
+              <Button onClick={handleEditCiaRating}>{t("Save Changes")}</Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -2754,9 +2774,9 @@ export default function AssetSettingsPage() {
             {/* Fixed Header */}
             <div className="px-6 py-5 border-b border-slate-100">
               <DialogHeader>
-                <DialogTitle className="text-lg font-semibold text-slate-800">Confirm Delete</DialogTitle>
+                <DialogTitle className="text-lg font-semibold text-slate-800">{t("Confirm Delete")}</DialogTitle>
                 <DialogDescription>
-                  Are you sure you want to delete this rating? This action cannot be undone.
+                  {t("Are you sure you want to delete this rating? This action cannot be undone.")}
                 </DialogDescription>
               </DialogHeader>
             </div>
@@ -2764,10 +2784,10 @@ export default function AssetSettingsPage() {
             {/* Fixed Footer */}
             <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
               <Button variant="outline" onClick={() => setIsCiaDeleteOpen(false)}>
-                Cancel
+                {t("Cancel")}
               </Button>
               <Button variant="destructive" onClick={handleDeleteCiaRating}>
-                Delete
+                {t("Delete")}
               </Button>
             </div>
           </DialogContent>
@@ -2783,15 +2803,15 @@ export default function AssetSettingsPage() {
       <nav className="flex items-center gap-1.5 text-sm">
         <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
-          <span>Asset Management</span>
+          <span>{t("Asset Management")}</span>
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-        <span className="text-primary-700 font-medium">Settings</span>
+        <span className="text-primary-700 font-medium">{t("Settings")}</span>
       </nav>
 
       {/* Page Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">Asset Settings</h1>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Asset Settings")}</h1>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -2817,7 +2837,7 @@ export default function AssetSettingsPage() {
               </div>
               <div className="flex items-center justify-between pt-3 border-t border-slate-100">
                 <span className="text-sm text-slate-500">
-                  {itemCount} {itemCount === 1 ? "item" : "items"}
+                  {itemCount} {itemCount === 1 ? t("item") : t("items")}
                 </span>
                 <Button
                   variant="outline"
@@ -2827,7 +2847,7 @@ export default function AssetSettingsPage() {
                     setSearchTerm("");
                   }}
                 >
-                  Manage
+                  {t("Manage")}
                 </Button>
               </div>
             </div>
@@ -2840,37 +2860,37 @@ export default function AssetSettingsPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              Add {entitySubTab === "categories" ? "Category" :
-                   entitySubTab === "subcategories" ? "Sub Category" :
-                   entitySubTab === "groups" ? "Group" :
-                   activeCategory === "lifecycle" ? "Lifecycle Status" : "Item"}
+              {t("Add")} {entitySubTab === "categories" ? t("Category") :
+                   entitySubTab === "subcategories" ? t("Sub Category") :
+                   entitySubTab === "groups" ? t("Group") :
+                   activeCategory === "lifecycle" ? t("Lifecycle Status") : t("Item")}
             </DialogTitle>
             <DialogDescription>
-              Enter the details for the new item
+              {t("Enter the details for the new item")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             {entitySubTab === "categories" && (
               <>
                 <div className="space-y-2">
-                  <Label>Name *</Label>
+                  <Label>{t("Name")} *</Label>
                   <Input
                     value={categoryForm.name}
                     onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
-                    placeholder="e.g., Hardware, Software, Data"
+                    placeholder={t("e.g., Hardware, Software, Data")}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Description</Label>
+                  <Label>{t("Description")}</Label>
                   <textarea
                     value={categoryForm.description}
                     onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
-                    placeholder="Enter description"
+                    placeholder={t("Enter description")}
                     className="w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Status</Label>
+                  <Label>{t("Status")}</Label>
                   <Select
                     value={categoryForm.status}
                     onValueChange={(value) => setCategoryForm({ ...categoryForm, status: value })}
@@ -2879,8 +2899,8 @@ export default function AssetSettingsPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Active">Active</SelectItem>
-                      <SelectItem value="Inactive">Inactive</SelectItem>
+                      <SelectItem value="Active">{t("Active")}</SelectItem>
+                      <SelectItem value="Inactive">{t("Inactive")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -2890,13 +2910,13 @@ export default function AssetSettingsPage() {
             {entitySubTab === "subcategories" && (
               <>
                 <div className="space-y-2">
-                  <Label>Category *</Label>
+                  <Label>{t("Category")} *</Label>
                   <Select
                     value={subCategoryForm.categoryId}
                     onValueChange={(value) => setSubCategoryForm({ ...subCategoryForm, categoryId: value })}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
+                      <SelectValue placeholder={t("Select category")} />
                     </SelectTrigger>
                     <SelectContent>
                       {categories.map((cat) => (
@@ -2908,19 +2928,19 @@ export default function AssetSettingsPage() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Name *</Label>
+                  <Label>{t("Name")} *</Label>
                   <Input
                     value={subCategoryForm.name}
                     onChange={(e) => setSubCategoryForm({ ...subCategoryForm, name: e.target.value })}
-                    placeholder="e.g., Server, Firewall, Router"
+                    placeholder={t("e.g., Server, Firewall, Router")}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Description</Label>
+                  <Label>{t("Description")}</Label>
                   <textarea
                     value={subCategoryForm.description}
                     onChange={(e) => setSubCategoryForm({ ...subCategoryForm, description: e.target.value })}
-                    placeholder="Enter description"
+                    placeholder={t("Enter description")}
                     className="w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
                   />
                 </div>
@@ -2930,19 +2950,19 @@ export default function AssetSettingsPage() {
             {entitySubTab === "groups" && (
               <>
                 <div className="space-y-2">
-                  <Label>Name *</Label>
+                  <Label>{t("Name")} *</Label>
                   <Input
                     value={groupForm.name}
                     onChange={(e) => setGroupForm({ ...groupForm, name: e.target.value })}
-                    placeholder="e.g., Security Tools, Payment Systems"
+                    placeholder={t("e.g., Security Tools, Payment Systems")}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Description</Label>
+                  <Label>{t("Description")}</Label>
                   <textarea
                     value={groupForm.description}
                     onChange={(e) => setGroupForm({ ...groupForm, description: e.target.value })}
-                    placeholder="Enter description"
+                    placeholder={t("Enter description")}
                     className="w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
                   />
                 </div>
@@ -2952,11 +2972,11 @@ export default function AssetSettingsPage() {
             {entitySubTab === "sensitivity" && (
               <>
                 <div className="space-y-2">
-                  <Label>Name *</Label>
+                  <Label>{t("Name")} *</Label>
                   <Input
                     value={sensitivityForm.name}
                     onChange={(e) => setSensitivityForm({ ...sensitivityForm, name: e.target.value })}
-                    placeholder="e.g., high, medium, low"
+                    placeholder={t("e.g., high, medium, low")}
                   />
                 </div>
               </>
@@ -2965,24 +2985,24 @@ export default function AssetSettingsPage() {
             {activeCategory === "lifecycle" && (
               <>
                 <div className="space-y-2">
-                  <Label>Name *</Label>
+                  <Label>{t("Name")} *</Label>
                   <Input
                     value={lifecycleForm.name}
                     onChange={(e) => setLifecycleForm({ ...lifecycleForm, name: e.target.value })}
-                    placeholder="e.g., Active, In Use, Retired"
+                    placeholder={t("e.g., Active, In Use, Retired")}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Description</Label>
+                  <Label>{t("Description")}</Label>
                   <textarea
                     value={lifecycleForm.description}
                     onChange={(e) => setLifecycleForm({ ...lifecycleForm, description: e.target.value })}
-                    placeholder="Enter description"
+                    placeholder={t("Enter description")}
                     className="w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Order</Label>
+                  <Label>{t("Order")}</Label>
                   <Input
                     type="number"
                     value={lifecycleForm.order}
@@ -2994,7 +3014,7 @@ export default function AssetSettingsPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAddOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button onClick={() => {
               if (activeCategory === "lifecycle") {
@@ -3009,7 +3029,7 @@ export default function AssetSettingsPage() {
                 handleAddSensitivity();
               }
             }}>
-              Add
+              {t("Add")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -3019,23 +3039,23 @@ export default function AssetSettingsPage() {
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Item</DialogTitle>
+            <DialogTitle>{t("Edit Item")}</DialogTitle>
             <DialogDescription>
-              Update the item details
+              {t("Update the item details")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             {entitySubTab === "categories" && (
               <>
                 <div className="space-y-2">
-                  <Label>Name *</Label>
+                  <Label>{t("Name")} *</Label>
                   <Input
                     value={categoryForm.name}
                     onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Description</Label>
+                  <Label>{t("Description")}</Label>
                   <textarea
                     value={categoryForm.description}
                     onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
@@ -3043,7 +3063,7 @@ export default function AssetSettingsPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Status</Label>
+                  <Label>{t("Status")}</Label>
                   <Select
                     value={categoryForm.status}
                     onValueChange={(value) => setCategoryForm({ ...categoryForm, status: value })}
@@ -3052,8 +3072,8 @@ export default function AssetSettingsPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Active">Active</SelectItem>
-                      <SelectItem value="Inactive">Inactive</SelectItem>
+                      <SelectItem value="Active">{t("Active")}</SelectItem>
+                      <SelectItem value="Inactive">{t("Inactive")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -3063,7 +3083,7 @@ export default function AssetSettingsPage() {
             {entitySubTab === "subcategories" && (
               <>
                 <div className="space-y-2">
-                  <Label>Category *</Label>
+                  <Label>{t("Category")} *</Label>
                   <Select
                     value={subCategoryForm.categoryId}
                     onValueChange={(value) => setSubCategoryForm({ ...subCategoryForm, categoryId: value })}
@@ -3081,14 +3101,14 @@ export default function AssetSettingsPage() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Name *</Label>
+                  <Label>{t("Name")} *</Label>
                   <Input
                     value={subCategoryForm.name}
                     onChange={(e) => setSubCategoryForm({ ...subCategoryForm, name: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Description</Label>
+                  <Label>{t("Description")}</Label>
                   <textarea
                     value={subCategoryForm.description}
                     onChange={(e) => setSubCategoryForm({ ...subCategoryForm, description: e.target.value })}
@@ -3101,14 +3121,14 @@ export default function AssetSettingsPage() {
             {entitySubTab === "groups" && (
               <>
                 <div className="space-y-2">
-                  <Label>Name *</Label>
+                  <Label>{t("Name")} *</Label>
                   <Input
                     value={groupForm.name}
                     onChange={(e) => setGroupForm({ ...groupForm, name: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Description</Label>
+                  <Label>{t("Description")}</Label>
                   <textarea
                     value={groupForm.description}
                     onChange={(e) => setGroupForm({ ...groupForm, description: e.target.value })}
@@ -3121,7 +3141,7 @@ export default function AssetSettingsPage() {
             {entitySubTab === "sensitivity" && (
               <>
                 <div className="space-y-2">
-                  <Label>Name *</Label>
+                  <Label>{t("Name")} *</Label>
                   <Input
                     value={sensitivityForm.name}
                     onChange={(e) => setSensitivityForm({ ...sensitivityForm, name: e.target.value })}
@@ -3133,14 +3153,14 @@ export default function AssetSettingsPage() {
             {activeCategory === "lifecycle" && (
               <>
                 <div className="space-y-2">
-                  <Label>Name *</Label>
+                  <Label>{t("Name")} *</Label>
                   <Input
                     value={lifecycleForm.name}
                     onChange={(e) => setLifecycleForm({ ...lifecycleForm, name: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Description</Label>
+                  <Label>{t("Description")}</Label>
                   <textarea
                     value={lifecycleForm.description}
                     onChange={(e) => setLifecycleForm({ ...lifecycleForm, description: e.target.value })}
@@ -3148,7 +3168,7 @@ export default function AssetSettingsPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Order</Label>
+                  <Label>{t("Order")}</Label>
                   <Input
                     type="number"
                     value={lifecycleForm.order}
@@ -3160,7 +3180,7 @@ export default function AssetSettingsPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button onClick={() => {
               if (activeCategory === "lifecycle") {
@@ -3175,7 +3195,7 @@ export default function AssetSettingsPage() {
                 handleEditSensitivity();
               }
             }}>
-              Save Changes
+              {t("Save Changes")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -3185,14 +3205,14 @@ export default function AssetSettingsPage() {
       <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Confirm Delete</DialogTitle>
+            <DialogTitle>{t("Confirm Delete")}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this item? This action cannot be undone.
+              {t("Are you sure you want to delete this item? This action cannot be undone.")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button variant="destructive" onClick={() => {
               if (activeCategory === "lifecycle") {
@@ -3207,7 +3227,7 @@ export default function AssetSettingsPage() {
                 handleDeleteSensitivity();
               }
             }}>
-              Delete
+              {t("Delete")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -3219,9 +3239,9 @@ export default function AssetSettingsPage() {
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">New {ciaRatingType}</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("New")} {t(ciaRatingType)}</DialogTitle>
               <DialogDescription>
-                Add a new {ciaRatingType.toLowerCase()} rating level
+                {`${t("Add a new")} ${t(ciaRatingType.toLowerCase())} ${t("rating level")}`}
               </DialogDescription>
             </DialogHeader>
           </div>
@@ -3229,21 +3249,21 @@ export default function AssetSettingsPage() {
           {/* Content */}
           <div className="px-6 py-6 space-y-5">
             <div>
-              <Label className="text-sm font-medium text-slate-700">Label *</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Label")} *</Label>
               <Input
                 value={ciaRatingForm.label}
                 onChange={(e) => setCiaRatingForm({ ...ciaRatingForm, label: e.target.value })}
-                placeholder="e.g., high, medium, low"
+                placeholder={t("e.g., high, medium, low")}
                 className="mt-1.5"
               />
             </div>
             <div>
-              <Label className="text-sm font-medium text-slate-700">Value *</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Value")} *</Label>
               <Input
                 type="number"
                 value={ciaRatingForm.value}
                 onChange={(e) => setCiaRatingForm({ ...ciaRatingForm, value: parseInt(e.target.value) || 0 })}
-                placeholder="e.g., 10, 5, 1"
+                placeholder={t("e.g., 10, 5, 1")}
                 className="mt-1.5"
               />
             </div>
@@ -3252,9 +3272,9 @@ export default function AssetSettingsPage() {
           {/* Fixed Footer */}
           <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsCiaAddOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
-            <Button onClick={handleAddCiaRating}>Add</Button>
+            <Button onClick={handleAddCiaRating}>{t("Add")}</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -3265,9 +3285,9 @@ export default function AssetSettingsPage() {
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Edit Rating</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Rating")}</DialogTitle>
               <DialogDescription>
-                Update the rating details
+                {t("Update the rating details")}
               </DialogDescription>
             </DialogHeader>
           </div>
@@ -3275,7 +3295,7 @@ export default function AssetSettingsPage() {
           {/* Content */}
           <div className="px-6 py-6 space-y-5">
             <div>
-              <Label className="text-sm font-medium text-slate-700">Label *</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Label")} *</Label>
               <Input
                 value={ciaRatingForm.label}
                 onChange={(e) => setCiaRatingForm({ ...ciaRatingForm, label: e.target.value })}
@@ -3283,7 +3303,7 @@ export default function AssetSettingsPage() {
               />
             </div>
             <div>
-              <Label className="text-sm font-medium text-slate-700">Value *</Label>
+              <Label className="text-sm font-medium text-slate-700">{t("Value")} *</Label>
               <Input
                 type="number"
                 value={ciaRatingForm.value}
@@ -3296,9 +3316,9 @@ export default function AssetSettingsPage() {
           {/* Fixed Footer */}
           <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsCiaEditOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
-            <Button onClick={handleEditCiaRating}>Save Changes</Button>
+            <Button onClick={handleEditCiaRating}>{t("Save Changes")}</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -3309,9 +3329,9 @@ export default function AssetSettingsPage() {
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Confirm Delete</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Confirm Delete")}</DialogTitle>
               <DialogDescription>
-                Are you sure you want to delete this rating? This action cannot be undone.
+                {t("Are you sure you want to delete this rating? This action cannot be undone.")}
               </DialogDescription>
             </DialogHeader>
           </div>
@@ -3319,10 +3339,10 @@ export default function AssetSettingsPage() {
           {/* Fixed Footer */}
           <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsCiaDeleteOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button variant="destructive" onClick={handleDeleteCiaRating}>
-              Delete
+              {t("Delete")}
             </Button>
           </div>
         </DialogContent>

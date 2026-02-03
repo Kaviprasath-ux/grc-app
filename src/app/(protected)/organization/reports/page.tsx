@@ -12,6 +12,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Download, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Home } from "lucide-react";
 import Link from "next/link";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // Organization Report Types matching UAT exactly
 const reportTypes = [
@@ -40,6 +41,7 @@ interface ReportData {
 
 export default function OrganizationReportsPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [selectedReport, setSelectedReport] = useState<typeof reportTypes[0] | null>(null);
   const [reportData, setReportData] = useState<ReportData[]>([]);
   const [loading, setLoading] = useState(false);
@@ -226,21 +228,21 @@ export default function OrganizationReportsPage() {
       <nav className="flex items-center gap-1.5 text-sm">
         <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
-          <span>Organization</span>
+          <span>{t("Organization")}</span>
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-        <span className="text-primary-700 font-medium">Reports</span>
+        <span className="text-primary-700 font-medium">{t("Reports")}</span>
       </nav>
 
       {/* Page Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">Reports</h1>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Reports")}</h1>
       </div>
 
       {/* Actions */}
       <div className="flex items-center justify-end">
         <Button onClick={() => setIsManagementDialogOpen(true)}>
-          Get Management Report
+          {t("Get Management Report")}
         </Button>
       </div>
 
@@ -253,7 +255,7 @@ export default function OrganizationReportsPage() {
             className="w-full justify-start text-left h-auto py-3 px-4 hover:bg-slate-50 border-slate-200"
             onClick={() => handleReportClick(report)}
           >
-            {report.title}
+            {t(report.title)}
           </Button>
         ))}
       </div>
@@ -265,10 +267,10 @@ export default function OrganizationReportsPage() {
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <div className="flex items-center justify-between pr-8">
-                <DialogTitle className="text-lg font-semibold text-slate-800">{selectedReport?.title}</DialogTitle>
+                <DialogTitle className="text-lg font-semibold text-slate-800">{selectedReport ? t(selectedReport.title) : ""}</DialogTitle>
                 <Button variant="outline" size="sm" onClick={handleExport}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Export
+                  <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                  {t("Export")}
                 </Button>
               </div>
             </DialogHeader>
@@ -297,7 +299,7 @@ export default function OrganizationReportsPage() {
                     {paginatedData.length === 0 ? (
                       <tr>
                         <td colSpan={selectedReport?.columns.length || 1} className="text-center py-8 text-slate-500">
-                          No data found
+                          {t("No data found")}
                         </td>
                       </tr>
                     ) : (
@@ -321,7 +323,7 @@ export default function OrganizationReportsPage() {
           {totalItems > 0 && (
             <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
               <span className="text-sm text-slate-500">
-                {startItem} to {endItem} of {totalItems}
+                {startItem} {t("to")} {endItem} {t("of")} {totalItems}
               </span>
               <div className="flex items-center gap-1">
                 <Button
@@ -343,7 +345,7 @@ export default function OrganizationReportsPage() {
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
                 <span className="text-sm text-slate-600 px-2">
-                  Page {currentPage} of {totalPages || 1}
+                  {t("Page")} {currentPage} {t("of")} {totalPages || 1}
                 </span>
                 <Button
                   variant="ghost"
@@ -375,7 +377,7 @@ export default function OrganizationReportsPage() {
           {/* Fixed Header */}
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-800">Process Report Parameters</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Process Report Parameters")}</DialogTitle>
             </DialogHeader>
           </div>
 
@@ -393,7 +395,7 @@ export default function OrganizationReportsPage() {
                     htmlFor={option.id}
                     className="text-sm font-medium text-slate-700 leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
                   >
-                    {option.label}
+                    {t(option.label)}
                   </label>
                 </div>
               ))}
@@ -403,10 +405,10 @@ export default function OrganizationReportsPage() {
           {/* Fixed Footer */}
           <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => setIsManagementDialogOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button onClick={handleShowManagementReport}>
-              Show Report
+              {t("Show Report")}
             </Button>
           </div>
         </DialogContent>

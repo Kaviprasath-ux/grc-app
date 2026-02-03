@@ -1,46 +1,109 @@
 import { NextRequest, NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, getCustomerAccountId, getAuditHeadId } from "@/lib/api-auth";
 
 // Audit-related roles that can be assigned in Internal Audit user management
-// Auditor role is removed - only AuditHead, AuditManager, and Auditee are available
 const AUDIT_ROLES = ["AuditHead", "AuditManager", "Auditee"];
+
+// Roles that CustomerAdmin can create (only AuditHead)
+const CUSTOMER_ADMIN_ALLOWED_ROLES = ["AuditHead"];
+
+// Roles that AuditHead can create (AuditManager and Auditee - NOT AuditHead)
+const AUDIT_HEAD_ALLOWED_ROLES = ["AuditManager", "Auditee"];
 
 // GET all audit users - filtered by tenant and audit head
 // AuditHead can only see their own managed users (AuditManager/Auditee)
 // CustomerAdmin/GRCAdmin can see all audit users
+// Query params:
+//   ?role=Auditee - Returns only auditees associated with the current audit head
+//   ?role=auditors - Returns the audit head and their audit managers (for auditor dropdown)
+//   ?role=AuditManager - Returns only audit managers associated with the current audit head
 export const GET = withAuth(
   async (req: NextRequest, context, session) => {
     try {
       const tenantFilter = getTenantFilter(session);
+      const { searchParams } = new URL(req.url);
+      const roleFilter = searchParams.get("role");
 
-      // Build the where clause
-      const whereClause: Record<string, unknown> = {
+      // Determine audit head context
+      const isAuditHead = session.roles.includes('AuditHead');
+      const isAdmin = session.roles.includes('GRCAdministrator') || session.roles.includes('CustomerAdministrator');
+      const auditHeadId = getAuditHeadId(session);
+
+      // Build the where clause based on role filter
+      let whereClause: Record<string, unknown> = {
         ...tenantFilter,
-        // Only show users with audit roles
-        userRoles: {
+      };
+
+      if (roleFilter === "Auditee") {
+        // Return only auditees associated with this audit head
+        whereClause = {
+          ...whereClause,
+          userRoles: {
+            some: {
+              role: { name: "Auditee" },
+            },
+          },
+        };
+        if (auditHeadId) {
+          whereClause.auditHeadId = auditHeadId;
+        }
+      } else if (roleFilter === "auditors") {
+        // Return audit head + audit managers for auditor dropdown
+        // This includes the audit head themselves and their audit managers
+        if (auditHeadId) {
+          whereClause.OR = [
+            { id: auditHeadId }, // Include the audit head themselves
+            {
+              auditHeadId: auditHeadId,
+              userRoles: {
+                some: {
+                  role: { name: "AuditManager" },
+                },
+              },
+            }, // Include audit managers under this audit head
+          ];
+        } else {
+          // If no audit head context, return users with AuditHead or AuditManager roles
+          whereClause.userRoles = {
+            some: {
+              role: { name: { in: ["AuditHead", "AuditManager"] } },
+            },
+          };
+        }
+      } else if (roleFilter === "AuditManager") {
+        // Return only audit managers associated with this audit head
+        whereClause = {
+          ...whereClause,
+          userRoles: {
+            some: {
+              role: { name: "AuditManager" },
+            },
+          },
+        };
+        if (auditHeadId) {
+          whereClause.auditHeadId = auditHeadId;
+        }
+      } else {
+        // Default: return all audit users
+        whereClause.userRoles = {
           some: {
             role: {
               name: { in: AUDIT_ROLES },
             },
           },
-        },
-      };
+        };
 
-      // For AuditHead, only show users they manage (users with their ID as auditHeadId)
-      // CustomerAdmin/GRCAdmin can see all audit users within their tenant
-      const isAuditHead = session.roles.includes('AuditHead');
-      const isAdmin = session.roles.includes('GRCAdministrator') || session.roles.includes('CustomerAdministrator');
-
-      if (isAuditHead && !isAdmin) {
-        // AuditHead sees only their managed users + themselves
-        whereClause.OR = [
-          { auditHeadId: session.id },  // Users managed by this AuditHead
-          { id: session.id },            // Include themselves
-        ];
+        // For AuditHead (not admin), only show users they manage + themselves
+        if (isAuditHead && !isAdmin) {
+          whereClause.OR = [
+            { auditHeadId: session.id },  // Users managed by this AuditHead
+            { id: session.id },            // Include themselves
+          ];
+        }
       }
 
-      // Note: User model doesn't have auditHead relation - removed
       const users = await prisma.user.findMany({
         where: whereClause,
         include: {
@@ -77,8 +140,9 @@ export const GET = withAuth(
 );
 
 // POST create new audit user
-// AuditHead creates users under their management (sets auditHeadId to their ID)
-// CustomerAdmin can create AuditHead users (no auditHeadId) or assign to existing AuditHead
+// Role creation restrictions:
+// - CustomerAdmin can ONLY create AuditHead users
+// - AuditHead can ONLY create AuditManager and Auditee users (associated with themselves)
 export const POST = withAuth(
   async (req: NextRequest, context, session) => {
     try {
@@ -94,7 +158,6 @@ export const POST = withAuth(
         designation,
         role,
         departmentId,
-        auditHeadId: requestedAuditHeadId, // Explicitly set by CustomerAdmin (optional)
       } = body;
 
       if (!userId || !userName || !email || !password || !firstName || !lastName || !fullName) {
@@ -104,36 +167,52 @@ export const POST = withAuth(
         );
       }
 
-      // Get customer account ID for multi-tenant isolation
-      const customerAccountId = getCustomerAccountId(session);
+      // Determine who is creating the user
+      const isAuditHead = session.roles.includes('AuditHead');
+      const isCustomerAdmin = session.roles.includes('CustomerAdministrator');
+      const isGRCAdmin = session.roles.includes('GRCAdministrator');
 
       // Parse roles (comma-separated string)
       const roleNames: string[] = role ? role.split(",").map((r: string) => r.trim()).filter(Boolean) : [];
 
+      // Validate role restrictions based on who is creating
+      if (isCustomerAdmin && !isGRCAdmin) {
+        // CustomerAdmin can ONLY create AuditHead users
+        const invalidRoles = roleNames.filter(r => !CUSTOMER_ADMIN_ALLOWED_ROLES.includes(r));
+        if (invalidRoles.length > 0) {
+          return NextResponse.json(
+            { error: `Customer Administrator can only create Audit Head users. Cannot assign roles: ${invalidRoles.join(', ')}` },
+            { status: 403 }
+          );
+        }
+      } else if (isAuditHead && !isCustomerAdmin && !isGRCAdmin) {
+        // AuditHead can ONLY create AuditManager and Auditee users
+        const invalidRoles = roleNames.filter(r => !AUDIT_HEAD_ALLOWED_ROLES.includes(r));
+        if (invalidRoles.length > 0) {
+          return NextResponse.json(
+            { error: `Audit Head can only create Audit Manager and Auditee users. Cannot assign roles: ${invalidRoles.join(', ')}` },
+            { status: 403 }
+          );
+        }
+      }
+
       // Determine the auditHeadId for this new user
       // Rules:
       // 1. If creating an AuditHead, no auditHeadId is set (they are their own head)
-      // 2. If AuditHead is creating AuditManager/Auditee, set auditHeadId to session.id
-      // 3. If CustomerAdmin is creating and provides auditHeadId, use that
-      // 4. If CustomerAdmin is creating without auditHeadId for non-AuditHead role, require it
+      // 2. If AuditHead is creating AuditManager/Auditee, set auditHeadId to session.id (automatic association)
       let auditHeadIdToSet: string | null = null;
       const isCreatingAuditHead = roleNames.includes('AuditHead');
-      const isAuditHead = session.roles.includes('AuditHead');
-      const isAdmin = session.roles.includes('GRCAdministrator') || session.roles.includes('CustomerAdministrator');
 
       if (isCreatingAuditHead) {
         // AuditHead users don't have an auditHeadId (they are the head)
         auditHeadIdToSet = null;
-      } else if (isAuditHead && !isAdmin) {
-        // AuditHead creating subordinates - they manage these users
+      } else if (isAuditHead && !isCustomerAdmin && !isGRCAdmin) {
+        // AuditHead creating subordinates - automatically associate with themselves
         auditHeadIdToSet = session.id;
-      } else if (isAdmin) {
-        // Admin can explicitly assign to an AuditHead
-        if (requestedAuditHeadId) {
-          auditHeadIdToSet = requestedAuditHeadId;
-        }
-        // If not provided, leave null (admin will need to assign later)
       }
+
+      // Get customer account ID for multi-tenant isolation
+      const customerAccountId = getCustomerAccountId(session);
 
       // Find or create roles in the Role table
       const roleRecords = [];
@@ -156,13 +235,15 @@ export const POST = withAuth(
         }
       }
 
-      // Note: User model doesn't have auditHeadId field - removed
+      // Hash the password before storing
+      const hashedPassword = await bcrypt.hash(password, 10);
+
       const user = await prisma.user.create({
         data: {
           userId,
           userName,
           email,
-          password, // In production, hash this password!
+          password: hashedPassword,
           firstName,
           lastName,
           fullName,
@@ -175,6 +256,8 @@ export const POST = withAuth(
           isBlocked: false,
           departmentId: departmentId || null,
           customerAccountId,
+          // Set auditHeadId for AuditManager/Auditee users created by AuditHead
+          auditHeadId: auditHeadIdToSet,
           // Create UserRole entries for each role
           userRoles: {
             create: roleRecords.map((r) => ({
@@ -192,6 +275,9 @@ export const POST = withAuth(
                 select: { id: true, name: true },
               },
             },
+          },
+          auditHead: {
+            select: { id: true, fullName: true },
           },
         },
       });

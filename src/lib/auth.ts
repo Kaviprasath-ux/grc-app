@@ -80,6 +80,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 name: true,
               },
             },
+            auditHead: { select: { id: true, fullName: true } },
             userRoles: {
               include: {
                 role: {
@@ -133,7 +134,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           customerAccountId: user.customerAccountId,
           customerAccountCode: user.customerAccount?.code || null,
           customerAccountName: user.customerAccount?.name || null,
-          // Note: User model doesn't have auditHeadId field yet
+          // Audit Head isolation: Include auditHeadId for audit team members
+          auditHeadId: user.auditHeadId,
           roles: effectiveRoles,
           permissions: [], // Placeholder - expanded in session callback
         };
@@ -159,7 +161,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.customerAccountId = user.customerAccountId;
         token.customerAccountCode = user.customerAccountCode;
         token.customerAccountName = user.customerAccountName;
-        // Note: User model doesn't have auditHeadId field yet
+        // Audit Head isolation: Store auditHeadId in JWT
+        token.auditHeadId = user.auditHeadId;
         token.roles = user.roles;
         // Don't store permissions in JWT - they'll be expanded in session callback
       }
@@ -176,7 +179,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.customerAccountId = token.customerAccountId as string | null;
         session.user.customerAccountCode = token.customerAccountCode as string | null;
         session.user.customerAccountName = token.customerAccountName as string | null;
-        // Note: User model doesn't have auditHeadId field yet
+        // Audit Head isolation: Include auditHeadId in session
+        session.user.auditHeadId = token.auditHeadId as string | null;
         session.user.roles = (token.roles as string[]) || [];
 
         // Expand permissions from roles here (session callback runs server-side)

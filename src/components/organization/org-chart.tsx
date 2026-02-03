@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // Unified subtle color for all elements
 const THEME_COLOR = "#64748b"; // slate-500 - subtle and professional
@@ -197,6 +198,7 @@ function OrgChartTree({ nodes, level = 0, showDepartment = true }: { nodes: Tree
 type ViewMode = "role" | "department";
 
 export function OrgChart() {
+  const { t } = useLanguage();
   const [users, setUsers] = useState<UserNode[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
@@ -442,7 +444,7 @@ export function OrgChart() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Loading organization chart...</p>
+        <p className="text-muted-foreground">{t("Loading organization chart...")}</p>
       </div>
     );
   }
@@ -451,7 +453,7 @@ export function OrgChart() {
     return (
       <div className="flex items-center justify-center h-64">
         <p className="text-muted-foreground">
-          No users found. Add users and assign reporting managers to build the organization chart.
+          {t("No users found. Add users and assign reporting managers to build the organization chart.")}
         </p>
       </div>
     );
@@ -462,24 +464,24 @@ export function OrgChart() {
       {/* View Mode Controls */}
       <div className="flex items-end gap-4 mb-6">
         <div className="w-48">
-          <Label className="text-sm font-medium text-slate-700 mb-1.5 block">View Mode</Label>
+          <Label className="text-sm font-medium text-slate-700 mb-1.5 block">{t("View Mode")}</Label>
           <Select value={viewMode} onValueChange={(value: ViewMode) => setViewMode(value)}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="role">Role-wise Chart</SelectItem>
-              <SelectItem value="department">Department-wise Chart</SelectItem>
+              <SelectItem value="role">{t("Role-wise Chart")}</SelectItem>
+              <SelectItem value="department">{t("Department-wise Chart")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         {viewMode === "department" && (
           <div className="w-48">
-            <Label className="text-sm font-medium text-slate-700 mb-1.5 block">Department</Label>
+            <Label className="text-sm font-medium text-slate-700 mb-1.5 block">{t("Department")}</Label>
             <Select value={selectedDepartmentId} onValueChange={setSelectedDepartmentId}>
               <SelectTrigger>
-                <SelectValue placeholder="Select department" />
+                <SelectValue placeholder={t("Select department")} />
               </SelectTrigger>
               <SelectContent>
                 {departments.map((dept) => (
@@ -498,10 +500,10 @@ export function OrgChart() {
         <div className="flex items-center justify-center h-64 border border-dashed border-slate-200 rounded-lg">
           <p className="text-muted-foreground">
             {viewMode === "department" && selectedDepartmentId
-              ? `No users found in ${selectedDepartment?.name || "selected department"}. Assign users to this department to see the hierarchy.`
+              ? `${t("No users found in")} ${selectedDepartment?.name || t("selected department")}. ${t("Assign users to this department to see the hierarchy.")}`
               : viewMode === "department"
-              ? "Select a department to view its hierarchy."
-              : "No organization hierarchy defined. Assign reporting managers to users to build the chart."}
+              ? t("Select a department to view its hierarchy.")
+              : t("No organization hierarchy defined. Assign reporting managers to users to build the chart.")}
           </p>
         </div>
       ) : (

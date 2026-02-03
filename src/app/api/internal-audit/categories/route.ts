@@ -1,13 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { withAuth } from "@/lib/api-auth";
+import { withAuth, getTenantFilter, getAuditHeadId } from "@/lib/api-auth";
 
 // GET all audit categories
-// NOTE: AuditCategory model doesn't have customerAccountId or auditHeadId yet - tenant filtering disabled
+// Multi-tenant: Filter by customerAccountId and auditHeadId
 export const GET = withAuth(
-  async () => {
+  async (req, context, session) => {
     try {
+      const tenantFilter = getTenantFilter(session);
+      const auditHeadId = getAuditHeadId(session);
+
       const categories = await prisma.auditCategory.findMany({
+        where: {
+          ...tenantFilter,
+          ...(auditHeadId ? { auditHeadId } : {}),
+        },
         include: {
           _count: {
             select: { internalAuditRisks: true },
@@ -25,13 +32,13 @@ export const GET = withAuth(
       );
     }
   },
-  { resource: "audit.settings", action: "edit" }
+  { resource: "audit.settings", action: "view" }
 );
 
 // POST create a new audit category
-// NOTE: AuditCategory model doesn't have customerAccountId or auditHeadId yet - tenant filtering disabled
+// Multi-tenant: Associate with customerAccountId and auditHeadId
 export const POST = withAuth(
-  async (req: NextRequest) => {
+  async (req: NextRequest, context, session) => {
     try {
       const body = await req.json();
       const { name } = body;
@@ -43,9 +50,16 @@ export const POST = withAuth(
         );
       }
 
-      // Check for duplicate
+      const tenantFilter = getTenantFilter(session);
+      const auditHeadId = getAuditHeadId(session);
+
+      // Check for duplicate within same tenant and audit head
       const existing = await prisma.auditCategory.findFirst({
-        where: { name },
+        where: {
+          name,
+          ...tenantFilter,
+          ...(auditHeadId ? { auditHeadId } : {}),
+        },
       });
 
       if (existing) {
@@ -56,7 +70,11 @@ export const POST = withAuth(
       }
 
       const category = await prisma.auditCategory.create({
-        data: { name },
+        data: {
+          name,
+          customerAccountId: session.customerAccountId,
+          auditHeadId: auditHeadId,
+        },
       });
 
       return NextResponse.json(category, { status: 201 });

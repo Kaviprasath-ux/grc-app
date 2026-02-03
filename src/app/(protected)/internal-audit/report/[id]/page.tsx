@@ -15,6 +15,7 @@ import {
 import { toast } from "sonner";
 import { Loader2, ArrowLeft, Download, Pencil } from "lucide-react";
 import { useHasRole } from "@/hooks/usePermissions";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Finding {
   id: string;
@@ -75,6 +76,7 @@ interface PageProps {
 export default function AuditReportViewPage({ params }: PageProps) {
   const { id: engagementId } = use(params);
   const router = useRouter();
+  const { t } = useLanguage();
   const isAuditHead = useHasRole("AuditHead");
   const isAuditee = useHasRole("Auditee");
 
@@ -137,12 +139,12 @@ export default function AuditReportViewPage({ params }: PageProps) {
         });
         setAuditeeComment(data.auditeeComment || "");
       } else {
-        toast.error("Failed to fetch report");
+        toast.error(t("Failed to fetch report"));
         router.push("/internal-audit/report");
       }
     } catch (error) {
       console.error("Error fetching report:", error);
-      toast.error("Failed to fetch report");
+      toast.error(t("Failed to fetch report"));
     } finally {
       setLoading(false);
     }
@@ -195,13 +197,13 @@ export default function AuditReportViewPage({ params }: PageProps) {
         const updatedReport = await response.json();
         setReport(updatedReport);
         setIsEditing(false);
-        toast.success("Report saved successfully");
+        toast.success(t("Report saved successfully"));
       } else {
-        toast.error("Failed to save report");
+        toast.error(t("Failed to save report"));
       }
     } catch (error) {
       console.error("Error saving report:", error);
-      toast.error("Failed to save report");
+      toast.error(t("Failed to save report"));
     } finally {
       setSaving(false);
     }
@@ -222,13 +224,13 @@ export default function AuditReportViewPage({ params }: PageProps) {
         const updatedReport = await response.json();
         setReport(updatedReport);
         setIsEditingAuditeeComment(false);
-        toast.success("Auditee comment saved successfully");
+        toast.success(t("Auditee comment saved successfully"));
       } else {
-        toast.error("Failed to save auditee comment");
+        toast.error(t("Failed to save auditee comment"));
       }
     } catch (error) {
       console.error("Error saving auditee comment:", error);
-      toast.error("Failed to save auditee comment");
+      toast.error(t("Failed to save auditee comment"));
     } finally {
       setSavingAuditeeComment(false);
     }
@@ -250,11 +252,11 @@ export default function AuditReportViewPage({ params }: PageProps) {
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
       } else {
-        toast.error("Failed to download report");
+        toast.error(t("Failed to download report"));
       }
     } catch (error) {
       console.error("Error downloading report:", error);
-      toast.error("Failed to download report");
+      toast.error(t("Failed to download report"));
     }
   };
 
@@ -278,7 +280,7 @@ export default function AuditReportViewPage({ params }: PageProps) {
   if (!report) {
     return (
       <div className="p-6">
-        <p className="text-gray-500">Report not found</p>
+        <p className="text-gray-500">{t("Report not found")}</p>
       </div>
     );
   }
@@ -294,12 +296,12 @@ export default function AuditReportViewPage({ params }: PageProps) {
         <div className="flex items-center gap-2 text-sm">
           <Link href="/internal-audit/report" className="flex items-center gap-1 text-gray-600 hover:text-[#1e3a5f]">
             <ArrowLeft className="h-4 w-4" />
-            Back
+            {t("Back")}
           </Link>
           <span className="text-gray-400">|</span>
-          <span className="text-gray-600">Report</span>
+          <span className="text-gray-600">{t("Report")}</span>
           <span className="text-gray-400">|</span>
-          <span className="text-[#1e3a5f] font-semibold">Audit Report</span>
+          <span className="text-[#1e3a5f] font-semibold">{t("Audit Report")}</span>
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -307,7 +309,7 @@ export default function AuditReportViewPage({ params }: PageProps) {
             onClick={handleDownloadReport}
           >
             <Download className="h-4 w-4 mr-2" />
-            Download Report
+            {t("Download Report")}
           </Button>
           {isAuditHead && (
             <>
@@ -317,7 +319,7 @@ export default function AuditReportViewPage({ params }: PageProps) {
                   onClick={() => setIsEditing(true)}
                 >
                   <Pencil className="h-4 w-4 mr-2" />
-                  Edit
+                  {t("Edit")}
                 </Button>
               ) : (
                 <>
@@ -348,7 +350,7 @@ export default function AuditReportViewPage({ params }: PageProps) {
                       });
                     }}
                   >
-                    Cancel
+                    {t("Cancel")}
                   </Button>
                   <Button
                     className="bg-[#1e3a5f] hover:bg-[#2e4a6f]"
@@ -358,10 +360,10 @@ export default function AuditReportViewPage({ params }: PageProps) {
                     {saving ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Saving...
+                        {t("Saving...")}
                       </>
                     ) : (
-                      "Save"
+                      t("Save")
                     )}
                   </Button>
                 </>
@@ -375,29 +377,29 @@ export default function AuditReportViewPage({ params }: PageProps) {
       <div className="bg-white border rounded-lg p-8 space-y-6">
         {/* Report Title */}
         <h1 className="text-lg font-bold text-center uppercase">
-          REPORT ON INTERNAL AUDIT FOR THE PERIOD FROM {formatDate(report.engagement.actualStartDate || report.engagement.plannedStartDate)} TO {formatDate(report.engagement.actualEndDate || report.engagement.plannedEndDate)}
+          {t("REPORT ON INTERNAL AUDIT FOR THE PERIOD FROM")} {formatDate(report.engagement.actualStartDate || report.engagement.plannedStartDate)} {t("TO")} {formatDate(report.engagement.actualEndDate || report.engagement.plannedEndDate)}
         </h1>
 
         {/* Report Metadata */}
         <div className="space-y-2 text-sm">
           <div className="flex">
-            <span className="font-semibold w-40">Audit Title:</span>
+            <span className="font-semibold w-40">{t("Audit Title")}:</span>
             <span className="text-blue-600">{report.title}</span>
           </div>
           <div className="flex">
-            <span className="font-semibold w-40">Report Number:</span>
+            <span className="font-semibold w-40">{t("Report Number")}:</span>
             <span className="text-blue-600">{report.reportCode}</span>
           </div>
           <div className="flex">
-            <span className="font-semibold w-40">Report Date:</span>
+            <span className="font-semibold w-40">{t("Report Date")}:</span>
             <span className="text-blue-600">{reportDate}</span>
           </div>
           <div className="flex">
-            <span className="font-semibold w-40">Fieldwork Period:</span>
+            <span className="font-semibold w-40">{t("Fieldwork Period")}:</span>
             <span className="text-blue-600">{fieldworkPeriod}</span>
           </div>
           <div className="flex">
-            <span className="font-semibold w-40">Assigned Auditor:</span>
+            <span className="font-semibold w-40">{t("Assigned Auditor")}:</span>
             <span>
               {report.engagement.assignedAuditor
                 ? `${report.engagement.assignedAuditor.firstName} ${report.engagement.assignedAuditor.lastName}`
@@ -405,18 +407,18 @@ export default function AuditReportViewPage({ params }: PageProps) {
             </span>
           </div>
           <div className="flex">
-            <span className="font-semibold w-40">Distribution:</span>
+            <span className="font-semibold w-40">{t("Distribution")}:</span>
             <span className="text-blue-600">{distribution}</span>
           </div>
           <div className="flex items-center">
-            <span className="font-semibold w-40">Auditee:</span>
+            <span className="font-semibold w-40">{t("Auditee")}:</span>
             {isEditing ? (
               <Select
                 value={editForm.auditeeId}
                 onValueChange={(value) => setEditForm((prev) => ({ ...prev, auditeeId: value }))}
               >
                 <SelectTrigger className="w-64">
-                  <SelectValue placeholder="Select Auditee" />
+                  <SelectValue placeholder={t("Select Auditee")} />
                 </SelectTrigger>
                 <SelectContent>
                   {users.map((user) => (
@@ -441,7 +443,7 @@ export default function AuditReportViewPage({ params }: PageProps) {
 
         {/* Executive Summary */}
         <div>
-          <h2 className="font-bold text-base mb-2">Executive Summary</h2>
+          <h2 className="font-bold text-base mb-2">{t("Executive Summary")}</h2>
           {isEditing ? (
             <Textarea
               value={editForm.executiveSummary}
@@ -460,7 +462,7 @@ export default function AuditReportViewPage({ params }: PageProps) {
 
         {/* Summary */}
         <div>
-          <h2 className="font-bold text-base mb-2">Summary</h2>
+          <h2 className="font-bold text-base mb-2">{t("Summary")}</h2>
           {isEditing ? (
             <Textarea
               value={editForm.summary}
@@ -479,10 +481,10 @@ export default function AuditReportViewPage({ params }: PageProps) {
 
         {/* Overall Result */}
         <div>
-          <h2 className="font-bold text-base mb-2">Overall Result</h2>
+          <h2 className="font-bold text-base mb-2">{t("Overall Result")}</h2>
           {isEditing ? (
             <div className="space-y-2">
-              <p className="text-xs text-gray-500">Use {"{RESULT}"} placeholder for dynamic Pass/Fail value</p>
+              <p className="text-xs text-gray-500">{t("Use {RESULT} placeholder for dynamic Pass/Fail value")}</p>
               <Textarea
                 value={editForm.overallResultText}
                 onChange={(e) => setEditForm((prev) => ({ ...prev, overallResultText: e.target.value }))}
@@ -513,7 +515,7 @@ export default function AuditReportViewPage({ params }: PageProps) {
 
         {/* Background */}
         <div>
-          <h2 className="font-bold text-base mb-2">Background</h2>
+          <h2 className="font-bold text-base mb-2">{t("Background")}</h2>
           {isEditing ? (
             <Textarea
               value={editForm.background}
@@ -532,7 +534,7 @@ export default function AuditReportViewPage({ params }: PageProps) {
 
         {/* Objective */}
         <div>
-          <h2 className="font-bold text-base mb-2">Objective</h2>
+          <h2 className="font-bold text-base mb-2">{t("Objective")}</h2>
           {isEditing ? (
             <Textarea
               value={editForm.objective}
@@ -551,7 +553,7 @@ export default function AuditReportViewPage({ params }: PageProps) {
 
         {/* Scope */}
         <div>
-          <h2 className="font-bold text-base mb-2">Scope</h2>
+          <h2 className="font-bold text-base mb-2">{t("Scope")}</h2>
           {isEditing ? (
             <Textarea
               value={editForm.scope}
@@ -570,7 +572,7 @@ export default function AuditReportViewPage({ params }: PageProps) {
 
         {/* Recommendations */}
         <div>
-          <h2 className="font-bold text-base mb-2">Recommendations</h2>
+          <h2 className="font-bold text-base mb-2">{t("Recommendations")}</h2>
           {isEditing ? (
             <Textarea
               value={editForm.recommendations}
@@ -589,7 +591,7 @@ export default function AuditReportViewPage({ params }: PageProps) {
 
         {/* Conclusion */}
         <div>
-          <h2 className="font-bold text-base mb-2">Conclusion</h2>
+          <h2 className="font-bold text-base mb-2">{t("Conclusion")}</h2>
           {isEditing ? (
             <Textarea
               value={editForm.conclusion}
@@ -607,20 +609,20 @@ export default function AuditReportViewPage({ params }: PageProps) {
         {/* Detail Findings */}
         <hr className="border-gray-300" />
         <div>
-          <h2 className="font-bold text-base mb-4">Detail Findings</h2>
+          <h2 className="font-bold text-base mb-4">{t("Detail Findings")}</h2>
 
           {/* Static template text - not editable, only Pass/Fail is dynamic */}
           <p className="text-sm mb-4">
-            The controls tested were found to be{" "}
+            {t("The controls tested were found to be")}{" "}
             <span className={`font-semibold ${report.overallResult === "Pass" ? "text-green-700" : "text-red-700"}`}>
               {report.overallResult || "Pass"}
-            </span>, providing adequate assurance over financial reporting and operational integrity.
+            </span>{t(", providing adequate assurance over financial reporting and operational integrity.")}
           </p>
 
           {/* Summary of Observation */}
-          <h3 className="font-bold text-sm mb-3">Summary of Observation</h3>
+          <h3 className="font-bold text-sm mb-3">{t("Summary of Observation")}</h3>
           <p className="text-sm mb-3">
-            The following table summarizes the observations identified during the audit, categorized by severity level.
+            {t("The following table summarizes the observations identified during the audit, categorized by severity level.")}
           </p>
 
           {/* Summary Table */}
@@ -628,10 +630,10 @@ export default function AuditReportViewPage({ params }: PageProps) {
             <table className="w-full text-sm">
               <thead className="bg-gray-100">
                 <tr>
-                  <th className="px-4 py-2 text-left font-semibold border-b">Severity</th>
-                  <th className="px-4 py-2 text-left font-semibold border-b">Findings</th>
-                  <th className="px-4 py-2 text-left font-semibold border-b">Recommendations</th>
-                  <th className="px-4 py-2 text-left font-semibold border-b">Status</th>
+                  <th className="px-4 py-2 text-left font-semibold border-b">{t("Severity")}</th>
+                  <th className="px-4 py-2 text-left font-semibold border-b">{t("Findings")}</th>
+                  <th className="px-4 py-2 text-left font-semibold border-b">{t("Recommendations")}</th>
+                  <th className="px-4 py-2 text-left font-semibold border-b">{t("Status")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -656,7 +658,7 @@ export default function AuditReportViewPage({ params }: PageProps) {
                 ) : (
                   <tr>
                     <td colSpan={4} className="px-4 py-4 text-center text-gray-500 italic">
-                      No observations recorded
+                      {t("No observations recorded")}
                     </td>
                   </tr>
                 )}
@@ -666,7 +668,7 @@ export default function AuditReportViewPage({ params }: PageProps) {
 
           {/* Total Findings */}
           <div className="text-sm font-semibold">
-            Total Findings: {report.engagement.findings?.length || 0}
+            {t("Total Findings")}: {report.engagement.findings?.length || 0}
           </div>
         </div>
 
@@ -674,7 +676,7 @@ export default function AuditReportViewPage({ params }: PageProps) {
         <hr className="border-gray-300" />
         <div>
           <div className="flex items-center justify-between mb-2">
-            <h2 className="font-bold text-base">Auditee Comment</h2>
+            <h2 className="font-bold text-base">{t("Auditee Comment")}</h2>
             {isAuditee && !isAuditHead && !isEditingAuditeeComment && (
               <Button
                 size="sm"
@@ -682,7 +684,7 @@ export default function AuditReportViewPage({ params }: PageProps) {
                 onClick={() => setIsEditingAuditeeComment(true)}
               >
                 <Pencil className="h-3 w-3 mr-1" />
-                Edit
+                {t("Edit")}
               </Button>
             )}
           </div>
@@ -693,7 +695,7 @@ export default function AuditReportViewPage({ params }: PageProps) {
                 onChange={(e) => setAuditeeComment(e.target.value)}
                 rows={4}
                 className="w-full"
-                placeholder="Enter your comment..."
+                placeholder={t("Enter your comment...")}
               />
               <div className="flex gap-2">
                 <Button
@@ -705,10 +707,10 @@ export default function AuditReportViewPage({ params }: PageProps) {
                   {savingAuditeeComment ? (
                     <>
                       <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                      Saving...
+                      {t("Saving...")}
                     </>
                   ) : (
-                    "Save"
+                    t("Save")
                   )}
                 </Button>
                 <Button
@@ -719,13 +721,13 @@ export default function AuditReportViewPage({ params }: PageProps) {
                     setAuditeeComment(report.auditeeComment || "");
                   }}
                 >
-                  Cancel
+                  {t("Cancel")}
                 </Button>
               </div>
             </div>
           ) : (
             <p className="text-sm whitespace-pre-wrap">
-              {report.auditeeComment || <span className="text-gray-400 italic">No comment provided</span>}
+              {report.auditeeComment || <span className="text-gray-400 italic">{t("No comment provided")}</span>}
             </p>
           )}
         </div>

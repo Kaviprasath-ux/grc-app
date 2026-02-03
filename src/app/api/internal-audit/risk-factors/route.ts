@@ -1,13 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { withAuth } from "@/lib/api-auth";
+import { withAuth, getTenantFilter, getAuditHeadId } from "@/lib/api-auth";
 
 // GET all risk factors
-// Note: AuditRiskFactor model doesn't have customerAccountId field yet - tenant filtering disabled
+// Multi-tenant: Filter by customerAccountId and auditHeadId
 export const GET = withAuth(
-  async () => {
+  async (req, context, session) => {
     try {
+      const tenantFilter = getTenantFilter(session);
+      const auditHeadId = getAuditHeadId(session);
+
       const factors = await prisma.auditRiskFactor.findMany({
+        where: {
+          ...tenantFilter,
+          ...(auditHeadId ? { auditHeadId } : {}),
+        },
         orderBy: { label: "asc" },
       });
 
@@ -24,12 +31,14 @@ export const GET = withAuth(
 );
 
 // POST create a new risk factor
-// Note: AuditRiskFactor model doesn't have customerAccountId field yet - tenant assignment disabled
+// Multi-tenant: Associate with customerAccountId and auditHeadId
 export const POST = withAuth(
-  async (req: NextRequest) => {
+  async (req: NextRequest, context, session) => {
     try {
       const body = await req.json();
       const { label } = body;
+      const tenantFilter = getTenantFilter(session);
+      const auditHeadId = getAuditHeadId(session);
 
       if (!label) {
         return NextResponse.json(
@@ -38,9 +47,13 @@ export const POST = withAuth(
         );
       }
 
-      // Check for duplicate
+      // Check for duplicate within same tenant and audit head
       const existing = await prisma.auditRiskFactor.findFirst({
-        where: { label },
+        where: {
+          label,
+          ...tenantFilter,
+          ...(auditHeadId ? { auditHeadId } : {}),
+        },
       });
 
       if (existing) {
@@ -51,7 +64,11 @@ export const POST = withAuth(
       }
 
       const factor = await prisma.auditRiskFactor.create({
-        data: { label },
+        data: {
+          label,
+          customerAccountId: session.customerAccountId,
+          auditHeadId: auditHeadId,
+        },
       });
 
       return NextResponse.json(factor, { status: 201 });

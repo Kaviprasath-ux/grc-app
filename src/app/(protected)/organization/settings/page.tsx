@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { ColumnDef } from "@tanstack/react-table";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface SettingItem {
   id: string;
@@ -87,6 +88,7 @@ const initialSettingsData: Record<string, SettingItem[]> = {
 export default function OrganizationSettingsPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [settingsData, setSettingsData] = useState<Record<string, SettingItem[]>>(initialSettingsData);
   const [searchTerm, setSearchTerm] = useState("");
@@ -114,7 +116,7 @@ export default function OrganizationSettingsPage() {
   // CRUD operations
   const handleAddItem = () => {
     if (!activeCategory || !newItem.name.trim()) {
-      toast({ title: "Error", description: "Please enter a name", variant: "destructive" });
+      toast({ title: t("Error"), description: t("Please enter a name"), variant: "destructive" });
       return;
     }
     const newId = Date.now().toString();
@@ -124,7 +126,7 @@ export default function OrganizationSettingsPage() {
     });
     setNewItem({ name: "", description: "" });
     setIsAddItemOpen(false);
-    toast({ title: "Success", description: "Item added successfully" });
+    toast({ title: t("Success"), description: t("Item added successfully") });
   };
 
   const handleEditItem = () => {
@@ -137,7 +139,7 @@ export default function OrganizationSettingsPage() {
     });
     setIsEditItemOpen(false);
     setEditingItem(null);
-    toast({ title: "Success", description: "Item updated successfully" });
+    toast({ title: t("Success"), description: t("Item updated successfully") });
   };
 
   const handleDeleteItem = () => {
@@ -147,26 +149,26 @@ export default function OrganizationSettingsPage() {
       [activeCategory]: currentData.filter((item) => item.id !== deletingItemId),
     });
     setDeletingItemId(null);
-    toast({ title: "Success", description: "Item deleted successfully" });
+    toast({ title: t("Success"), description: t("Item deleted successfully") });
   };
 
   // Columns for settings table - matching profile page pattern
   const settingColumns: ColumnDef<SettingItem>[] = [
     {
       accessorKey: "name",
-      header: "Name",
+      header: t("Name"),
       cell: ({ row }) => <span className="font-medium text-slate-800">{row.getValue("name")}</span>,
     },
     {
       accessorKey: "description",
-      header: "Description",
+      header: t("Description"),
       cell: ({ row }) => (
         <span className="text-slate-600">{row.getValue("description") || "-"}</span>
       ),
     },
     {
       id: "actions",
-      header: "Actions",
+      header: t("Actions"),
       cell: ({ row }) => (
         <div className="flex gap-1">
           <Button
@@ -197,33 +199,42 @@ export default function OrganizationSettingsPage() {
   if (activeCategory) {
     return (
       <div className="space-y-6">
-        {/* Page Header with Back Button */}
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9 text-slate-600 hover:text-slate-800"
+        {/* Breadcrumb */}
+        <nav className="flex items-center gap-1.5 text-sm">
+          <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>Organization</span>
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <button
             onClick={() => setActiveCategory(null)}
+            className="text-slate-500 hover:text-primary-600 transition-colors"
           >
-            <ChevronLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-2xl font-bold text-slate-800">{currentCategory?.title}</h1>
+            {t("Settings")}
+          </button>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <span className="text-primary-700 font-medium">{currentCategory ? t(currentCategory.title) : ""}</span>
+        </nav>
+
+        {/* Page Header */}
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-bold text-slate-800">{currentCategory ? t(currentCategory.title) : ""}</h1>
         </div>
 
         {/* Toolbar - Search and Actions */}
         <div className="flex items-center justify-between gap-4">
           <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input
-              placeholder={`Search ${currentCategory?.title.toLowerCase()}...`}
+              placeholder={`${t("Search")} ${currentCategory ? t(currentCategory.title).toLowerCase() : ""}...`}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-white border-slate-200"
+              className="ltr:pl-10 rtl:pr-10 bg-white border-slate-200"
             />
           </div>
           <Button size="sm" onClick={() => setIsAddItemOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add {currentCategory?.title}
+            <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+            {t("Add")} {currentCategory ? t(currentCategory.title) : ""}
           </Button>
         </div>
 
@@ -241,7 +252,7 @@ export default function OrganizationSettingsPage() {
             <div className="px-6 py-5 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-lg font-semibold text-slate-800">
-                  Add {currentCategory?.title}
+                  {t("Add")} {currentCategory ? t(currentCategory.title) : ""}
                 </DialogTitle>
               </DialogHeader>
             </div>
@@ -251,23 +262,23 @@ export default function OrganizationSettingsPage() {
               <div className="space-y-5">
                 <div>
                   <Label className="text-sm font-medium text-slate-700">
-                    Name <span className="text-error">*</span>
+                    {t("Name")} <span className="text-error">*</span>
                   </Label>
                   <Input
                     value={newItem.name}
                     onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
-                    placeholder="Enter name"
+                    placeholder={t("Enter name")}
                     className="mt-1.5 bg-white"
                   />
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-slate-700">
-                    Description
+                    {t("Description")}
                   </Label>
                   <Input
                     value={newItem.description}
                     onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
-                    placeholder="Enter description"
+                    placeholder={t("Enter description")}
                     className="mt-1.5 bg-white"
                   />
                 </div>
@@ -277,9 +288,9 @@ export default function OrganizationSettingsPage() {
             {/* Fixed Footer */}
             <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
               <Button variant="outline" onClick={() => setIsAddItemOpen(false)}>
-                Cancel
+                {t("Cancel")}
               </Button>
-              <Button onClick={handleAddItem}>Save</Button>
+              <Button onClick={handleAddItem}>{t("Save")}</Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -291,7 +302,7 @@ export default function OrganizationSettingsPage() {
             <div className="px-6 py-5 border-b border-slate-100">
               <DialogHeader>
                 <DialogTitle className="text-lg font-semibold text-slate-800">
-                  Edit {currentCategory?.title}
+                  {t("Edit")} {currentCategory ? t(currentCategory.title) : ""}
                 </DialogTitle>
               </DialogHeader>
             </div>
@@ -302,7 +313,7 @@ export default function OrganizationSettingsPage() {
                 <div className="space-y-5">
                   <div>
                     <Label className="text-sm font-medium text-slate-700">
-                      Name <span className="text-error">*</span>
+                      {t("Name")} <span className="text-error">*</span>
                     </Label>
                     <Input
                       value={editingItem.name}
@@ -312,7 +323,7 @@ export default function OrganizationSettingsPage() {
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-slate-700">
-                      Description
+                      {t("Description")}
                     </Label>
                     <Input
                       value={editingItem.description || ""}
@@ -327,9 +338,9 @@ export default function OrganizationSettingsPage() {
             {/* Fixed Footer */}
             <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
               <Button variant="outline" onClick={() => setIsEditItemOpen(false)}>
-                Cancel
+                {t("Cancel")}
               </Button>
-              <Button onClick={handleEditItem}>Save</Button>
+              <Button onClick={handleEditItem}>{t("Save")}</Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -338,14 +349,14 @@ export default function OrganizationSettingsPage() {
         <AlertDialog open={!!deletingItemId} onOpenChange={(open) => !open && setDeletingItemId(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Delete {currentCategory?.title}</AlertDialogTitle>
+              <AlertDialogTitle>{t("Delete")} {currentCategory ? t(currentCategory.title) : ""}</AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to delete this item? This action cannot be undone.
+                {t("Are you sure you want to delete this item? This action cannot be undone.")}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDeleteItem}>Delete</AlertDialogAction>
+              <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteItem}>{t("Delete")}</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
@@ -360,15 +371,15 @@ export default function OrganizationSettingsPage() {
       <nav className="flex items-center gap-1.5 text-sm">
         <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
-          <span>Organization</span>
+          <span>{t("Organization")}</span>
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-        <span className="text-primary-700 font-medium">Settings</span>
+        <span className="text-primary-700 font-medium">{t("Settings")}</span>
       </nav>
 
       {/* Page Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">Organization Settings</h1>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Organization Settings")}</h1>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -394,15 +405,15 @@ export default function OrganizationSettingsPage() {
                   <Icon className="h-6 w-6 text-primary-600" />
                 </div>
                 <div>
-                  <h3 className="text-base font-semibold text-slate-800">{category.title}</h3>
+                  <h3 className="text-base font-semibold text-slate-800">{t(category.title)}</h3>
                   <p className="text-sm text-slate-500">
-                    {category.description}
+                    {t(category.description)}
                   </p>
                 </div>
               </div>
               <div className="mt-4 pt-3 border-t border-slate-100">
                 <span className="text-sm text-slate-500">
-                  {itemCount} {itemCount === 1 ? "item" : "items"}
+                  {itemCount} {itemCount === 1 ? t("item") : t("items")}
                 </span>
               </div>
             </div>

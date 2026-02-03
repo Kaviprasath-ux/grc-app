@@ -6,15 +6,33 @@ interface RouteContext {
   params: Promise<{ id: string }>;
 }
 
-// GET single exception - filtered by customer account
+// GET single exception - filtered by customer account and department for DepartmentReviewer
 export const GET = withAuth(
   async (req, context: RouteContext, session) => {
     try {
       const { id } = await context.params;
       const tenantFilter = getTenantFilter(session);
 
+      // Build where clause
+      const where: Record<string, unknown> = { id, ...tenantFilter };
+
+      // DepartmentReviewer can only see exceptions from their own department
+      const isDepartmentReviewer = session.roles.includes("DepartmentReviewer");
+      const isDepartmentContributor = session.roles.includes("DepartmentContributor");
+      const hasAdminRole = session.roles.some(role =>
+        ["GRCAdministrator", "CustomerAdministrator", "Reviewer", "Contributor"].includes(role)
+      );
+
+      if ((isDepartmentReviewer || isDepartmentContributor) && !hasAdminRole) {
+        if (session.departmentId) {
+          where.departmentId = session.departmentId;
+        } else {
+          where.departmentId = "__NO_DEPARTMENT__";
+        }
+      }
+
       const exception = await prisma.exception.findFirst({
-        where: { id, ...tenantFilter },
+        where,
         include: {
           department: true,
           control: {
@@ -93,6 +111,8 @@ export const PUT = withAuth(
         controlId,
         policyId,
         riskId,
+        frameworkId,
+        requirementId,
         requesterId,
         approverId,
         approvedBy,
@@ -104,7 +124,7 @@ export const PUT = withAuth(
       // First, verify the exception belongs to the user's customer account
       const existing = await prisma.exception.findUnique({
         where: { id },
-        select: { customerAccountId: true },
+        select: { customerAccountId: true, departmentId: true },
       });
 
       if (!existing) {
@@ -116,6 +136,19 @@ export const PUT = withAuth(
 
       if (!validateTenantAccess(session, existing.customerAccountId)) {
         return forbidden("Access denied to this exception");
+      }
+
+      // DepartmentReviewer can only update exceptions from their own department
+      const isDepartmentReviewer = session.roles.includes("DepartmentReviewer");
+      const isDepartmentContributor = session.roles.includes("DepartmentContributor");
+      const hasAdminRole = session.roles.some(role =>
+        ["GRCAdministrator", "CustomerAdministrator", "Reviewer", "Contributor"].includes(role)
+      );
+
+      if ((isDepartmentReviewer || isDepartmentContributor) && !hasAdminRole) {
+        if (existing.departmentId !== session.departmentId) {
+          return forbidden("Access denied - you can only update exceptions from your department");
+        }
       }
 
       // Build update data - only include fields that are explicitly provided
@@ -139,6 +172,8 @@ export const PUT = withAuth(
         updateData.controlId = null;
         updateData.policyId = null;
         updateData.riskId = null;
+        updateData.frameworkId = null;
+        updateData.requirementId = null;
 
         if (category === "Control" && controlId) {
           updateData.controlId = controlId;
@@ -146,6 +181,9 @@ export const PUT = withAuth(
           updateData.policyId = policyId;
         } else if (category === "Risk" && riskId) {
           updateData.riskId = riskId;
+        } else if (category === "Compliance") {
+          if (frameworkId) updateData.frameworkId = frameworkId;
+          if (requirementId) updateData.requirementId = requirementId;
         }
       }
 
@@ -157,6 +195,8 @@ export const PUT = withAuth(
           control: true,
           policy: true,
           risk: true,
+          framework: true,
+          requirement: true,
           requester: {
             select: {
               id: true,
@@ -210,7 +250,7 @@ export const DELETE = withAuth(
       // First, verify the exception belongs to the user's customer account
       const existing = await prisma.exception.findUnique({
         where: { id },
-        select: { customerAccountId: true },
+        select: { customerAccountId: true, departmentId: true },
       });
 
       if (!existing) {
@@ -222,6 +262,19 @@ export const DELETE = withAuth(
 
       if (!validateTenantAccess(session, existing.customerAccountId)) {
         return forbidden("Access denied to this exception");
+      }
+
+      // DepartmentReviewer can only delete exceptions from their own department
+      const isDepartmentReviewer = session.roles.includes("DepartmentReviewer");
+      const isDepartmentContributor = session.roles.includes("DepartmentContributor");
+      const hasAdminRole = session.roles.some(role =>
+        ["GRCAdministrator", "CustomerAdministrator", "Reviewer", "Contributor"].includes(role)
+      );
+
+      if ((isDepartmentReviewer || isDepartmentContributor) && !hasAdminRole) {
+        if (existing.departmentId !== session.departmentId) {
+          return forbidden("Access denied - you can only delete exceptions from your department");
+        }
       }
 
       await prisma.exception.delete({

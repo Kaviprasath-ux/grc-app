@@ -37,7 +37,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Pencil, Trash2, Upload, Plus, Calendar } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2, Upload, Plus, Calendar, Home, ChevronRight } from "lucide-react";
+import Link from "next/link";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -508,16 +509,22 @@ export default function KPIDetailPage({
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>{t("Compliance")}</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <Link href="/compliance/kpis" className="text-slate-500 hover:text-primary-600 transition-colors">
+          {t("KPIs")}
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">{kpi.code}</span>
+      </nav>
+
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8"
-          onClick={() => router.push("/compliance/kpis")}
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
+      <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-bold text-slate-800">{t("KPI Detail")}</h1>
       </div>
 

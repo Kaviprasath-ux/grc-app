@@ -185,6 +185,29 @@ export interface ApiError {
     details?: unknown;
 }
 
+// ==================== RISK SEMANTIC MATCH API (Aliases for backward compatibility) ====================
+
+export interface RiskSemanticMatchJobResponse {
+    job_id: string;
+    status: 'queued' | 'processing' | 'completed' | 'error';
+    message?: string;
+}
+
+export interface RiskSemanticMatchStatus {
+    job_id: string;
+    status: 'queued' | 'processing' | 'completed' | 'error' | 'not_found';
+    message?: string;
+    error?: string | null;
+}
+
+export interface RiskSemanticMatchResult {
+    results?: SemanticMatchingResults;
+    status: 'success' | 'processing' | 'not_found' | 'error';
+    job_id?: string;
+    error?: string | null;
+    message?: string;
+}
+
 // ==================== FRAMEWORK GENERATION API ====================
 
 export interface FrameworkJobResponse {
@@ -213,6 +236,8 @@ export interface FrameworkGenerationResult {
     framework_code?: string;
     requirements: FrameworkRequirement[];
     total_requirements: number;
+    requirements_count?: number;
     status: 'success' | 'error';
     message?: string;
+    data?: any;
 }

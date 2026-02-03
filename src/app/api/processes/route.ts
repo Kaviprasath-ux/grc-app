@@ -106,8 +106,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const process = await prisma.process.create({
-      data: {
+    const processData = {
         processCode: finalProcessCode,
         name,
         description,
@@ -115,7 +114,6 @@ export async function POST(request: NextRequest) {
         departmentId: departmentId || null,
         ownerId: ownerId || null,
         status: status || "Active",
-        customerAccount: { connect: { id: customerAccountId } },
         processFrequency,
         natureOfImplementation,
         riskRating,
@@ -130,7 +128,14 @@ export async function POST(request: NextRequest) {
         accountableId: accountableId || null,
         consultedId: consultedId || null,
         informedId: informedId || null,
-      },
+      };
+
+    if (customerAccountId) {
+      (processData as Record<string, unknown>).customerAccountId = customerAccountId;
+    }
+
+    const process = await prisma.process.create({
+      data: processData as Parameters<typeof prisma.process.create>[0]['data'],
       include: {
         department: true,
         owner: true,

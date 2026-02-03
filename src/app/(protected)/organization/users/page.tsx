@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Plus, MoreVertical, Pencil, Trash2, Search, Upload, Download } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Upload, Download, Home, ChevronRight, Eye } from "lucide-react";
+import Link from "next/link";
 import { DataGrid, FilterBar } from "@/components/shared";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -22,15 +23,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Accordion,
   AccordionContent,
@@ -89,11 +83,17 @@ interface User {
 }
 
 // RBAC roles mapped by function
+// Note: For Audit function, roles are filtered based on who is creating the user
 const rolesByFunction: Record<string, string[]> = {
   Business: ["DepartmentReviewer", "DepartmentContributor", "Contributor"],
   Security: ["Reviewer"],
   Audit: ["AuditHead", "AuditManager", "Auditor", "Auditee", "AuditUser"],
 };
+
+// CustomerAdmin can only create AuditHead when selecting Audit function
+const customerAdminAuditRoles = ["AuditHead"];
+// AuditHead can only create AuditManager and Auditee when selecting Audit function
+const auditHeadAuditRoles = ["AuditManager", "Auditee"];
 
 // All assignable roles for filtering (excludes GRCAdministrator)
 const allUserRoles = [
@@ -133,7 +133,9 @@ export default function UsersPage() {
   // Dialog states
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
   const [isEditUserOpen, setIsEditUserOpen] = useState(false);
+  const [isViewUserOpen, setIsViewUserOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [viewingUser, setViewingUser] = useState<User | null>(null);
 
   // Change password dialog states
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
@@ -582,57 +584,44 @@ export default function UsersPage() {
       id: "actions",
       header: t("Actions"),
       cell: ({ row }) => (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <MoreVertical className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem
-              onClick={() => {
-                setEditingUser(row.original);
-                if (row.original.function) {
-                  fetchReportingManagers(row.original.function);
-                }
-                setIsEditUserOpen(true);
-              }}
-            >
-              {t("Edit")}
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => {
-                setEditingUser(row.original);
-                if (row.original.function) {
-                  fetchReportingManagers(row.original.function);
-                }
-                setIsEditUserOpen(true);
-              }}
-            >
-              {t("View Details")}
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => {
-                setEditingUser(row.original);
-                setIsChangePasswordOpen(true);
-              }}
-            >
-              {t("Reset Password")}
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              className="text-destructive"
-              onClick={() => handleDeactivateUser(row.original)}
-            >
-              {t("Deactivate")}
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              className="text-destructive"
-              onClick={() => openDeleteDialog(row.original)}
-            >
-              {t("Delete")}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-slate-400 hover:text-slate-600"
+            onClick={() => {
+              setViewingUser(row.original);
+              setIsViewUserOpen(true);
+            }}
+            title={t("View Details")}
+          >
+            <Eye className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-slate-400 hover:text-slate-600"
+            onClick={() => {
+              setEditingUser(row.original);
+              if (row.original.function) {
+                fetchReportingManagers(row.original.function);
+              }
+              setIsEditUserOpen(true);
+            }}
+            title={t("Edit")}
+          >
+            <Pencil className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+            onClick={() => openDeleteDialog(row.original)}
+            title={t("Delete")}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
       ),
     },
   ];
@@ -696,7 +685,18 @@ export default function UsersPage() {
   if (isDeptRole) {
     return (
       <div className="space-y-6">
-        <div>
+        {/* Breadcrumb */}
+        <nav className="flex items-center gap-1.5 text-sm">
+          <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>{t("Organization")}</span>
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <span className="text-primary-700 font-medium">{t("Users")}</span>
+        </nav>
+
+        {/* Page Header */}
+        <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-bold text-slate-800">{t("Account Overview")}</h1>
         </div>
 
@@ -718,8 +718,18 @@ export default function UsersPage() {
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>{t("Organization")}</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">{t("Users")}</span>
+      </nav>
+
       {/* Page Header */}
-      <div>
+      <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-bold text-slate-800">{t("Users")}</h1>
       </div>
 
@@ -800,12 +810,25 @@ export default function UsersPage() {
                                     size="icon"
                                     className="h-8 w-8 text-slate-400 hover:text-slate-600"
                                     onClick={() => {
+                                      setViewingUser(user);
+                                      setIsViewUserOpen(true);
+                                    }}
+                                    title={t("View Details")}
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                                    onClick={() => {
                                       setEditingUser(user);
                                       if (user.function) {
                                         fetchReportingManagers(user.function);
                                       }
                                       setIsEditUserOpen(true);
                                     }}
+                                    title={t("Edit")}
                                   >
                                     <Pencil className="h-4 w-4" />
                                   </Button>
@@ -814,6 +837,7 @@ export default function UsersPage() {
                                     size="icon"
                                     className="h-8 w-8 text-slate-400 hover:text-semantic-error"
                                     onClick={() => openDeleteDialog(user)}
+                                    title={t("Delete")}
                                   >
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
@@ -1055,11 +1079,20 @@ export default function UsersPage() {
                               <SelectValue placeholder={userForm.function ? t("Select role") : t("Select function first")} />
                             </SelectTrigger>
                             <SelectContent position="popper" sideOffset={4} className="max-h-[200px]">
-                              {userForm.function && rolesByFunction[userForm.function]?.map((role) => (
-                                <SelectItem key={role} value={role}>
-                                  {role}
-                                </SelectItem>
-                              ))}
+                              {userForm.function && (
+                                // For Audit function, CustomerAdmin can only assign AuditHead role
+                                userForm.function === "Audit" && userRoles.includes("CustomerAdministrator") && !userRoles.includes("GRCAdministrator")
+                                  ? customerAdminAuditRoles.map((role) => (
+                                      <SelectItem key={role} value={role}>
+                                        {role}
+                                      </SelectItem>
+                                    ))
+                                  : rolesByFunction[userForm.function]?.map((role) => (
+                                      <SelectItem key={role} value={role}>
+                                        {role}
+                                      </SelectItem>
+                                    ))
+                              )}
                             </SelectContent>
                           </Select>
                         </div>
@@ -1663,6 +1696,140 @@ export default function UsersPage() {
                 {importing ? t("Importing...") : t("Import")}
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* View User Details Dialog (Read-Only) */}
+      <Dialog open={isViewUserOpen} onOpenChange={(open) => {
+        setIsViewUserOpen(open);
+        if (!open) setViewingUser(null);
+      }}>
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("User Details")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          {/* Scrollable Content */}
+          {viewingUser && (
+            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
+              {/* User ID */}
+              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                <Label className="text-end text-slate-500">{t("User ID")}</Label>
+                <span className="text-sm text-slate-800">{viewingUser.id?.slice(0, 8) || "-"}</span>
+              </div>
+
+              {/* First Name */}
+              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                <Label className="text-end text-slate-500">{t("First Name")}</Label>
+                <span className="text-sm text-slate-800">{viewingUser.firstName || "-"}</span>
+              </div>
+
+              {/* Last Name */}
+              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                <Label className="text-end text-slate-500">{t("Last Name")}</Label>
+                <span className="text-sm text-slate-800">{viewingUser.lastName || "-"}</span>
+              </div>
+
+              {/* Full Name */}
+              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                <Label className="text-end text-slate-500">{t("Full Name")}</Label>
+                <span className="text-sm text-slate-800">{viewingUser.fullName || "-"}</span>
+              </div>
+
+              {/* Email */}
+              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                <Label className="text-end text-slate-500">{t("Email")}</Label>
+                <span className="text-sm text-slate-800">{viewingUser.email || "-"}</span>
+              </div>
+
+              {/* Username */}
+              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                <Label className="text-end text-slate-500">{t("Username")}</Label>
+                <span className="text-sm text-slate-800">{viewingUser.userName || "-"}</span>
+              </div>
+
+              {/* Function */}
+              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                <Label className="text-end text-slate-500">{t("Function")}</Label>
+                <span className="text-sm text-slate-800">{viewingUser.function || "-"}</span>
+              </div>
+
+              {/* Role */}
+              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                <Label className="text-end text-slate-500">{t("User Role")}</Label>
+                <span className="text-sm text-slate-800">{viewingUser.role || "-"}</span>
+              </div>
+
+              {/* Department */}
+              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                <Label className="text-end text-slate-500">{t("Department")}</Label>
+                <span className="text-sm text-slate-800">{viewingUser.department?.name || "-"}</span>
+              </div>
+
+              {/* Designation */}
+              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                <Label className="text-end text-slate-500">{t("Designation")}</Label>
+                <span className="text-sm text-slate-800">{viewingUser.designation || "-"}</span>
+              </div>
+
+              {/* Reporting Manager */}
+              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                <Label className="text-end text-slate-500">{t("Reporting Manager")}</Label>
+                <span className="text-sm text-slate-800">{viewingUser.reportingManager?.fullName || "-"}</span>
+              </div>
+
+              {/* Language */}
+              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                <Label className="text-end text-slate-500">{t("Language")}</Label>
+                <span className="text-sm text-slate-800">{viewingUser.language || "-"}</span>
+              </div>
+
+              {/* Timezone */}
+              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                <Label className="text-end text-slate-500">{t("Timezone")}</Label>
+                <span className="text-sm text-slate-800">{viewingUser.timezone || "-"}</span>
+              </div>
+
+              {/* Blocked */}
+              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                <Label className="text-end text-slate-500">{t("Blocked")}</Label>
+                <span className="text-sm text-slate-800">{viewingUser.isBlocked ? t("Yes") : t("No")}</span>
+              </div>
+
+              {/* Active */}
+              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                <Label className="text-end text-slate-500">{t("Active")}</Label>
+                <Badge
+                  variant="outline"
+                  className={viewingUser.isActive
+                    ? "border-transparent bg-success-light text-success-dark w-fit"
+                    : "border-transparent bg-slate-100 text-slate-600 w-fit"
+                  }
+                >
+                  {viewingUser.isActive ? t("Active") : t("Inactive")}
+                </Badge>
+              </div>
+            </div>
+          )}
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <Button variant="outline" onClick={() => setIsViewUserOpen(false)}>
+              {t("Close")}
+            </Button>
+            <Button onClick={() => {
+              setIsViewUserOpen(false);
+              setEditingUser(viewingUser);
+              if (viewingUser?.function) {
+                fetchReportingManagers(viewingUser.function);
+              }
+              setIsEditUserOpen(true);
+            }}>
+              <Pencil className="h-4 w-4 mr-2" />
+              {t("Edit")}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

@@ -47,7 +47,8 @@ function NavItemComponent({ item, depth = 0 }: NavItemProps) {
           className={cn(
             "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
             "text-slate-600 hover:text-slate-900 hover:bg-slate-100",
-            (isOpen || hasActiveChild) && "text-slate-900 bg-slate-50"
+            (isOpen || hasActiveChild) && "text-slate-900 bg-slate-50",
+            isRTL && "flex-row-reverse"
           )}
         >
           {Icon && (
@@ -86,7 +87,8 @@ function NavItemComponent({ item, depth = 0 }: NavItemProps) {
           onClick={() => signOut({ callbackUrl: "/login" })}
           className={cn(
             "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
-            "text-slate-500 hover:text-red-600 hover:bg-red-50"
+            "text-slate-500 hover:text-red-600 hover:bg-red-50",
+            isRTL && "flex-row-reverse"
           )}
         >
           <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-500 group-hover:bg-red-50 group-hover:text-red-500">
@@ -106,7 +108,8 @@ function NavItemComponent({ item, depth = 0 }: NavItemProps) {
         className={cn(
           "flex items-center gap-2 px-3 py-2 rounded-md text-[13px] font-medium transition-all duration-200 my-0.5",
           "text-slate-500 hover:text-slate-900 hover:bg-slate-100",
-          isActive && "text-primary-600 bg-primary-50 hover:bg-primary-100"
+          isActive && "text-primary-600 bg-primary-50 hover:bg-primary-100",
+          isRTL && "flex-row-reverse"
         )}
       >
         {Icon && <Icon className="h-4 w-4 shrink-0" />}
@@ -123,7 +126,8 @@ function NavItemComponent({ item, depth = 0 }: NavItemProps) {
         className={cn(
           "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
           "text-slate-600 hover:text-slate-900 hover:bg-slate-100",
-          isActive && "text-primary-700 bg-primary-50"
+          isActive && "text-primary-700 bg-primary-50",
+          isRTL && "flex-row-reverse"
         )}
       >
         {Icon && (

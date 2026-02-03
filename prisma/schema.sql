@@ -305,6 +305,8 @@ CREATE TABLE "Framework" (
     "country" TEXT,
     "industry" TEXT,
     "isCustom" BOOLEAN NOT NULL DEFAULT false,
+    "isMasterTemplate" BOOLEAN NOT NULL DEFAULT false,
+    "sourceFrameworkId" TEXT,
     "logo" TEXT,
     "supportDocumentUrl" TEXT,
     "compliancePercentage" DOUBLE PRECISION NOT NULL DEFAULT 0,
@@ -721,6 +723,8 @@ CREATE TABLE "Exception" (
     "controlId" TEXT,
     "policyId" TEXT,
     "riskId" TEXT,
+    "frameworkId" TEXT,
+    "requirementId" TEXT,
     "requesterId" TEXT,
     "approverId" TEXT,
     "approvedBy" TEXT,
@@ -811,6 +815,33 @@ CREATE TABLE "PolicyAttachment" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "PolicyAttachment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "GovernanceVaultDocument" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT NOT NULL,
+    "documentCode" TEXT NOT NULL,
+    "fileName" TEXT NOT NULL,
+    "fileType" TEXT,
+    "fileSize" INTEGER,
+    "filePath" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'Active',
+    "uploadedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "GovernanceVaultDocument_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "GovernanceVaultDocumentLink" (
+    "id" TEXT NOT NULL,
+    "documentId" TEXT NOT NULL,
+    "policyId" TEXT NOT NULL,
+    "linkedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "GovernanceVaultDocumentLink_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -1924,6 +1955,73 @@ CREATE TABLE "AuditLog" (
 );
 
 -- CreateTable
+CREATE TABLE "AIOperation" (
+    "id" TEXT NOT NULL,
+    "endpoint" TEXT NOT NULL,
+    "method" TEXT NOT NULL DEFAULT 'POST',
+    "requestBody" TEXT,
+    "responseBody" TEXT,
+    "statusCode" INTEGER,
+    "latencyMs" INTEGER,
+    "error" TEXT,
+    "jobId" TEXT,
+    "userId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "AIOperation_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "AIJob" (
+    "id" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'PENDING',
+    "providerJobId" TEXT,
+    "result" TEXT,
+    "error" TEXT,
+    "metadata" TEXT,
+    "userId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "AIJob_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "EvidenceAIReview" (
+    "id" TEXT NOT NULL,
+    "evidenceId" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'pending',
+    "critique" TEXT,
+    "similarityScore" DOUBLE PRECISION,
+    "recommendations" TEXT,
+    "aiOperationId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "EvidenceAIReview_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "PolicyAIReview" (
+    "id" TEXT NOT NULL,
+    "policyId" TEXT NOT NULL,
+    "documentId" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'ingested',
+    "complianceSummary" TEXT,
+    "riskScore" DOUBLE PRECISION,
+    "matchedControls" TEXT,
+    "gaps" TEXT,
+    "recommendations" TEXT,
+    "reviewedAt" TIMESTAMP(3),
+    "aiOperationId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "PolicyAIReview_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "_EngagementTeamMembers" (
     "A" TEXT NOT NULL,
     "B" TEXT NOT NULL
@@ -1982,6 +2080,9 @@ CREATE INDEX "Service_customerAccountId_idx" ON "Service"("customerAccountId");
 
 -- CreateIndex
 CREATE INDEX "Framework_customerAccountId_idx" ON "Framework"("customerAccountId");
+
+-- CreateIndex
+CREATE INDEX "Framework_sourceFrameworkId_idx" ON "Framework"("sourceFrameworkId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Framework_customerAccountId_name_key" ON "Framework"("customerAccountId", "name");
@@ -2084,6 +2185,15 @@ CREATE INDEX "KPI_customerAccountId_idx" ON "KPI"("customerAccountId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "KPI_customerAccountId_code_key" ON "KPI"("customerAccountId", "code");
+
+-- CreateIndex
+CREATE INDEX "GovernanceVaultDocument_customerAccountId_idx" ON "GovernanceVaultDocument"("customerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "GovernanceVaultDocument_customerAccountId_documentCode_key" ON "GovernanceVaultDocument"("customerAccountId", "documentCode");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "GovernanceVaultDocumentLink_documentId_policyId_key" ON "GovernanceVaultDocumentLink"("documentId", "policyId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "PolicyControl_policyId_controlId_key" ON "PolicyControl"("policyId", "controlId");
@@ -2455,6 +2565,24 @@ CREATE UNIQUE INDEX "InternalAuditCAPA_customerAccountId_capaId_key" ON "Interna
 CREATE UNIQUE INDEX "InternalAuditDocument_documentCode_key" ON "InternalAuditDocument"("documentCode");
 
 -- CreateIndex
+CREATE INDEX "AIOperation_userId_idx" ON "AIOperation"("userId");
+
+-- CreateIndex
+CREATE INDEX "AIOperation_jobId_idx" ON "AIOperation"("jobId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "AIJob_providerJobId_key" ON "AIJob"("providerJobId");
+
+-- CreateIndex
+CREATE INDEX "AIJob_userId_idx" ON "AIJob"("userId");
+
+-- CreateIndex
+CREATE INDEX "EvidenceAIReview_evidenceId_idx" ON "EvidenceAIReview"("evidenceId");
+
+-- CreateIndex
+CREATE INDEX "PolicyAIReview_policyId_idx" ON "PolicyAIReview"("policyId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "_EngagementTeamMembers_AB_unique" ON "_EngagementTeamMembers"("A", "B");
 
 -- CreateIndex
@@ -2549,6 +2677,9 @@ ALTER TABLE "Service" ADD CONSTRAINT "Service_customerAccountId_fkey" FOREIGN KE
 
 -- AddForeignKey
 ALTER TABLE "Framework" ADD CONSTRAINT "Framework_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Framework" ADD CONSTRAINT "Framework_sourceFrameworkId_fkey" FOREIGN KEY ("sourceFrameworkId") REFERENCES "Framework"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "RequirementCategory" ADD CONSTRAINT "RequirementCategory_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -2704,6 +2835,12 @@ ALTER TABLE "Exception" ADD CONSTRAINT "Exception_policyId_fkey" FOREIGN KEY ("p
 ALTER TABLE "Exception" ADD CONSTRAINT "Exception_riskId_fkey" FOREIGN KEY ("riskId") REFERENCES "Risk"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "Exception" ADD CONSTRAINT "Exception_frameworkId_fkey" FOREIGN KEY ("frameworkId") REFERENCES "Framework"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Exception" ADD CONSTRAINT "Exception_requirementId_fkey" FOREIGN KEY ("requirementId") REFERENCES "Requirement"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "Exception" ADD CONSTRAINT "Exception_requesterId_fkey" FOREIGN KEY ("requesterId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -2729,6 +2866,15 @@ ALTER TABLE "KPIActionPlan" ADD CONSTRAINT "KPIActionPlan_kpiReviewId_fkey" FORE
 
 -- AddForeignKey
 ALTER TABLE "PolicyAttachment" ADD CONSTRAINT "PolicyAttachment_policyId_fkey" FOREIGN KEY ("policyId") REFERENCES "Policy"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "GovernanceVaultDocument" ADD CONSTRAINT "GovernanceVaultDocument_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "GovernanceVaultDocumentLink" ADD CONSTRAINT "GovernanceVaultDocumentLink_documentId_fkey" FOREIGN KEY ("documentId") REFERENCES "GovernanceVaultDocument"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "GovernanceVaultDocumentLink" ADD CONSTRAINT "GovernanceVaultDocumentLink_policyId_fkey" FOREIGN KEY ("policyId") REFERENCES "Policy"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "EvidenceAttachment" ADD CONSTRAINT "EvidenceAttachment_evidenceId_fkey" FOREIGN KEY ("evidenceId") REFERENCES "Evidence"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -3125,6 +3271,24 @@ ALTER TABLE "InternalAuditDocument" ADD CONSTRAINT "InternalAuditDocument_custom
 
 -- AddForeignKey
 ALTER TABLE "InternalAuditDocument" ADD CONSTRAINT "InternalAuditDocument_auditHeadId_fkey" FOREIGN KEY ("auditHeadId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AIOperation" ADD CONSTRAINT "AIOperation_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AIJob" ADD CONSTRAINT "AIJob_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "EvidenceAIReview" ADD CONSTRAINT "EvidenceAIReview_evidenceId_fkey" FOREIGN KEY ("evidenceId") REFERENCES "Evidence"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "EvidenceAIReview" ADD CONSTRAINT "EvidenceAIReview_aiOperationId_fkey" FOREIGN KEY ("aiOperationId") REFERENCES "AIOperation"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PolicyAIReview" ADD CONSTRAINT "PolicyAIReview_policyId_fkey" FOREIGN KEY ("policyId") REFERENCES "Policy"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PolicyAIReview" ADD CONSTRAINT "PolicyAIReview_aiOperationId_fkey" FOREIGN KEY ("aiOperationId") REFERENCES "AIOperation"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "_EngagementTeamMembers" ADD CONSTRAINT "_EngagementTeamMembers_A_fkey" FOREIGN KEY ("A") REFERENCES "AuditEngagement"("id") ON DELETE CASCADE ON UPDATE CASCADE;

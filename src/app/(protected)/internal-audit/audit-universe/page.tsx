@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Clock, CalendarDays, CheckCircle, AlertTriangle, PlayCircle, Home, ChevronRight } from "lucide-react";
 import Link from "next/link";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface AuditItem {
   id: string;
@@ -36,6 +37,7 @@ interface AuditUniverseData {
 
 export default function AuditUniversePage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [data, setData] = useState<AuditUniverseData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -108,15 +110,15 @@ export default function AuditUniversePage() {
         <nav className="flex items-center gap-1.5 text-sm">
           <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
-            <span>Internal Audit</span>
+            <span>{t("Internal Audit")}</span>
           </Link>
           <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-          <span className="text-primary-700 font-medium">Audit Universe</span>
+          <span className="text-primary-700 font-medium">{t("Audit Universe")}</span>
         </nav>
 
         {/* Page Header */}
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold text-slate-800">Audit Universe</h1>
+          <h1 className="text-2xl font-bold text-slate-800">{t("Audit Universe")}</h1>
         </div>
         <div className="flex items-center justify-center h-[60vh]">
           <div className="flex flex-col items-center gap-4">
@@ -124,7 +126,7 @@ export default function AuditUniversePage() {
               <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
               <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
             </div>
-            <p className="text-sm text-slate-500 font-medium">Loading audit universe...</p>
+            <p className="text-sm text-slate-500 font-medium">{t("Loading audit universe...")}</p>
           </div>
         </div>
       </div>
@@ -137,17 +139,17 @@ export default function AuditUniversePage() {
       <nav className="flex items-center gap-1.5 text-sm">
         <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
-          <span>Internal Audit</span>
+          <span>{t("Internal Audit")}</span>
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-        <span className="text-primary-700 font-medium">Audit Universe</span>
+        <span className="text-primary-700 font-medium">{t("Audit Universe")}</span>
       </nav>
 
       {/* Page Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">Audit Universe</h1>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Audit Universe")}</h1>
         <div className="text-sm text-slate-500">
-          {data?.totalDepartments || 0} Departments | {data?.totalAudits || 0} Audits
+          {data?.totalDepartments || 0} {t("Departments")} | {data?.totalAudits || 0} {t("Audits")}
         </div>
       </div>
 
@@ -157,7 +159,7 @@ export default function AuditUniversePage() {
             {/* Root Node */}
             <div className="flex justify-center mb-8">
               <div className="bg-primary-600 text-white px-8 py-4 rounded-lg font-semibold">
-                Audit Universe
+                {t("Audit Universe")}
               </div>
             </div>
 
@@ -193,7 +195,7 @@ export default function AuditUniversePage() {
                         {dept.name}
                       </span>
                       <div className={`text-xs mt-1 ${dept.audits.length > 0 ? 'text-slate-400' : 'text-slate-300'}`}>
-                        {dept.audits.length > 0 ? `${dept.audits.length} audit(s)` : 'No audits'}
+                        {dept.audits.length > 0 ? `${dept.audits.length} ${t("audit(s)")}` : t("No audits")}
                       </div>
                     </div>
 
@@ -218,8 +220,8 @@ export default function AuditUniversePage() {
                                   </div>
                                   <div className="text-xs space-y-1">
                                     <div className="flex justify-between gap-4">
-                                      <span className="opacity-80">Actual</span>
-                                      <span className="opacity-80">Planned</span>
+                                      <span className="opacity-80">{t("Actual")}</span>
+                                      <span className="opacity-80">{t("Planned")}</span>
                                     </div>
                                     <div className="flex justify-between gap-4">
                                       <span className="font-medium">
@@ -238,24 +240,24 @@ export default function AuditUniversePage() {
                                   <div className="text-xs space-y-1">
                                     <div className="flex items-center gap-2">
                                       <CalendarDays className="h-3 w-3" />
-                                      <span>Start: {formatDate(audit.startDate)}</span>
+                                      <span>{t("Start")}: {formatDate(audit.startDate)}</span>
                                     </div>
                                     <div className="flex items-center gap-2">
                                       <CalendarDays className="h-3 w-3" />
-                                      <span>End: {formatDate(audit.endDate)}</span>
+                                      <span>{t("End")}: {formatDate(audit.endDate)}</span>
                                     </div>
                                     <div className="flex items-center gap-2">
                                       <Clock className="h-3 w-3" />
-                                      <span>Status: {audit.status}</span>
+                                      <span>{t("Status")}: {audit.status}</span>
                                     </div>
                                     {audit.actualHours > audit.plannedHours && (
                                       <div className="flex items-center gap-2 text-red-600">
                                         <AlertTriangle className="h-3 w-3" />
-                                        <span>Over budget by {audit.actualHours - audit.plannedHours}h</span>
+                                        <span>{t("Over budget by")} {audit.actualHours - audit.plannedHours}h</span>
                                       </div>
                                     )}
                                   </div>
-                                  <p className="text-xs text-slate-400 italic">Click to view details</p>
+                                  <p className="text-xs text-slate-400 italic">{t("Click to view details")}</p>
                                 </div>
                               </TooltipContent>
                             </Tooltip>
@@ -276,8 +278,8 @@ export default function AuditUniversePage() {
             {/* Empty state */}
             {(!data?.departments || data.departments.length === 0) && (
               <div className="text-center py-12 text-slate-500">
-                <p className="text-lg">No audits in the universe yet</p>
-                <p className="text-sm mt-2">Audits will appear here once created and assigned to departments</p>
+                <p className="text-lg">{t("No audits in the universe yet")}</p>
+                <p className="text-sm mt-2">{t("Audits will appear here once created and assigned to departments")}</p>
               </div>
             )}
           </div>
@@ -287,29 +289,29 @@ export default function AuditUniversePage() {
       {/* Legend */}
       <div className="bg-white rounded-xl border border-slate-200">
         <div className="px-6 py-4 border-b border-slate-100">
-          <h3 className="text-base font-semibold text-slate-800">Legend</h3>
+          <h3 className="text-base font-semibold text-slate-800">{t("Legend")}</h3>
         </div>
         <div className="p-6">
           <div className="flex gap-6 flex-wrap">
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 bg-blue-500 rounded"></div>
-              <span className="text-sm text-slate-600">Planned</span>
+              <span className="text-sm text-slate-600">{t("Planned")}</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 bg-orange-500 rounded"></div>
-              <span className="text-sm text-slate-600">In Progress</span>
+              <span className="text-sm text-slate-600">{t("In Progress")}</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 bg-yellow-500 rounded"></div>
-              <span className="text-sm text-slate-600">Approaching Budget</span>
+              <span className="text-sm text-slate-600">{t("Approaching Budget")}</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 bg-green-500 rounded"></div>
-              <span className="text-sm text-slate-600">Completed (On Budget)</span>
+              <span className="text-sm text-slate-600">{t("Completed (On Budget)")}</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 bg-red-500 rounded"></div>
-              <span className="text-sm text-slate-600">Over Budget</span>
+              <span className="text-sm text-slate-600">{t("Over Budget")}</span>
             </div>
           </div>
         </div>
@@ -319,18 +321,18 @@ export default function AuditUniversePage() {
       {data?.departments && data.departments.length > 0 && (
         <div className="bg-white rounded-xl border border-slate-200">
           <div className="px-6 py-4 border-b border-slate-100">
-            <h3 className="text-base font-semibold text-slate-800">Hours Summary by Department</h3>
+            <h3 className="text-base font-semibold text-slate-800">{t("Hours Summary by Department")}</h3>
           </div>
           <div className="p-6">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-slate-200">
-                    <th className="text-left py-2 px-3 font-semibold text-slate-600">Department</th>
-                    <th className="text-right py-2 px-3 font-semibold text-slate-600">Audits</th>
-                    <th className="text-right py-2 px-3 font-semibold text-slate-600">Total Planned Hours</th>
-                    <th className="text-right py-2 px-3 font-semibold text-slate-600">Total Actual Hours</th>
-                    <th className="text-right py-2 px-3 font-semibold text-slate-600">Variance</th>
+                    <th className="text-left py-2 px-3 font-semibold text-slate-600">{t("Department")}</th>
+                    <th className="text-right py-2 px-3 font-semibold text-slate-600">{t("Audits")}</th>
+                    <th className="text-right py-2 px-3 font-semibold text-slate-600">{t("Total Planned Hours")}</th>
+                    <th className="text-right py-2 px-3 font-semibold text-slate-600">{t("Total Actual Hours")}</th>
+                    <th className="text-right py-2 px-3 font-semibold text-slate-600">{t("Variance")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -354,7 +356,7 @@ export default function AuditUniversePage() {
                 </tbody>
                 <tfoot>
                   <tr className="font-semibold bg-slate-50 text-slate-800">
-                    <td className="py-2 px-3">Total</td>
+                    <td className="py-2 px-3">{t("Total")}</td>
                     <td className="text-right py-2 px-3">{data.totalAudits}</td>
                     <td className="text-right py-2 px-3">
                       {data.departments.reduce((sum, d) => sum + d.audits.reduce((s, a) => s + a.plannedHours, 0), 0)}h

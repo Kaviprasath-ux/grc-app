@@ -17,6 +17,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Process {
   id: string;
@@ -49,6 +50,7 @@ const BAR_COLORS: Record<string, string> = {
 function ManagementReportContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t } = useLanguage();
   const [processes, setProcesses] = useState<Process[]>([]);
   const [kpis, setKpis] = useState<KPI[]>([]);
   const [loading, setLoading] = useState(true);
@@ -220,11 +222,11 @@ function ManagementReportContent() {
           >
             <ChevronLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-2xl font-bold text-slate-800">Management Report</h1>
+          <h1 className="text-2xl font-bold text-slate-800">{t("Management Report")}</h1>
         </div>
         <Button onClick={handleDownloadReport}>
-          <Download className="h-4 w-4 mr-2" />
-          Download Report
+          <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+          {t("Download Report")}
         </Button>
       </div>
 
@@ -232,8 +234,8 @@ function ManagementReportContent() {
       <div ref={reportRef} className="space-y-6">
         {/* Report Title Card */}
         <div className="bg-white rounded-xl border border-slate-200 px-6 py-4">
-          <h2 className="text-lg font-semibold text-slate-800">Process Management Report</h2>
-          <p className="text-sm text-slate-500 mt-1">Generated on {new Date().toLocaleDateString()}</p>
+          <h2 className="text-lg font-semibold text-slate-800">{t("Process Management Report")}</h2>
+          <p className="text-sm text-slate-500 mt-1">{t("Generated on")} {new Date().toLocaleDateString()}</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -241,7 +243,7 @@ function ManagementReportContent() {
           {selectedOptions.includes("process-by-department") && (
             <div className="bg-white rounded-xl border border-slate-200">
               <div className="px-6 py-4 border-b border-slate-100">
-                <h3 className="text-base font-semibold text-slate-800">Process by Department</h3>
+                <h3 className="text-base font-semibold text-slate-800">{t("Process by Department")}</h3>
               </div>
               <div className="p-6">
                 {processByDepartmentData.length > 0 ? (
@@ -265,7 +267,7 @@ function ManagementReportContent() {
                     </PieChart>
                   </ResponsiveContainer>
                 ) : (
-                  <p className="text-sm text-slate-500 text-center py-8">No data available</p>
+                  <p className="text-sm text-slate-500 text-center py-8">{t("No data available")}</p>
                 )}
               </div>
             </div>
@@ -275,7 +277,7 @@ function ManagementReportContent() {
           {selectedOptions.includes("process-by-criticality") && (
             <div className="bg-white rounded-xl border border-slate-200">
               <div className="px-6 py-4 border-b border-slate-100">
-                <h3 className="text-base font-semibold text-slate-800">Process by Criticality</h3>
+                <h3 className="text-base font-semibold text-slate-800">{t("Process by Criticality")}</h3>
               </div>
               <div className="p-6">
                 {processByCriticalityData.length > 0 ? (
@@ -299,7 +301,7 @@ function ManagementReportContent() {
                     </PieChart>
                   </ResponsiveContainer>
                 ) : (
-                  <p className="text-sm text-slate-500 text-center py-8">No data available</p>
+                  <p className="text-sm text-slate-500 text-center py-8">{t("No data available")}</p>
                 )}
               </div>
             </div>
@@ -309,7 +311,7 @@ function ManagementReportContent() {
           {selectedOptions.includes("kpi-by-measurement") && (
             <div className="bg-white rounded-xl border border-slate-200">
               <div className="px-6 py-4 border-b border-slate-100">
-                <h3 className="text-base font-semibold text-slate-800">KPI Measurement by Department</h3>
+                <h3 className="text-base font-semibold text-slate-800">{t("KPI Measurement by Department")}</h3>
               </div>
               <div className="p-6">
                 {kpiByMeasurementData.length > 0 ? (
@@ -333,7 +335,7 @@ function ManagementReportContent() {
                     </PieChart>
                   </ResponsiveContainer>
                 ) : (
-                  <p className="text-sm text-slate-500 text-center py-8">No KPI data available</p>
+                  <p className="text-sm text-slate-500 text-center py-8">{t("No KPI data available")}</p>
                 )}
               </div>
             </div>
@@ -343,7 +345,7 @@ function ManagementReportContent() {
           {selectedOptions.includes("process-by-risk") && (
             <div className="bg-white rounded-xl border border-slate-200">
               <div className="px-6 py-4 border-b border-slate-100">
-                <h3 className="text-base font-semibold text-slate-800">Process by Risk</h3>
+                <h3 className="text-base font-semibold text-slate-800">{t("Process by Risk")}</h3>
               </div>
               <div className="p-6">
                 {processByRiskData.length > 0 ? (
@@ -367,7 +369,7 @@ function ManagementReportContent() {
                     </PieChart>
                   </ResponsiveContainer>
                 ) : (
-                  <p className="text-sm text-slate-500 text-center py-8">No risk data available</p>
+                  <p className="text-sm text-slate-500 text-center py-8">{t("No risk data available")}</p>
                 )}
               </div>
             </div>
@@ -378,14 +380,14 @@ function ManagementReportContent() {
         {selectedOptions.includes("top-5-process-risk") && (
           <div className="bg-white rounded-xl border border-slate-200">
             <div className="px-6 py-4 border-b border-slate-100">
-              <h3 className="text-base font-semibold text-slate-800">Top 5 Process Risk</h3>
+              <h3 className="text-base font-semibold text-slate-800">{t("Top 5 Process Risk")}</h3>
             </div>
             <table className="w-full">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50/50">
                   <th className="text-left py-4 pl-4 text-xs font-semibold text-slate-600">#</th>
-                  <th className="text-left py-4 text-xs font-semibold text-slate-600">Process Name</th>
-                  <th className="text-left py-4 pr-4 text-xs font-semibold text-slate-600">Risk Score</th>
+                  <th className="text-left py-4 text-xs font-semibold text-slate-600">{t("Process Name")}</th>
+                  <th className="text-left py-4 pr-4 text-xs font-semibold text-slate-600">{t("Risk Score")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -399,7 +401,7 @@ function ManagementReportContent() {
                 {top5ProcessRisk.length === 0 && (
                   <tr>
                     <td colSpan={3} className="py-8 text-center text-slate-500">
-                      No process risk data available
+                      {t("No process risk data available")}
                     </td>
                   </tr>
                 )}
@@ -412,7 +414,7 @@ function ManagementReportContent() {
         {selectedOptions.includes("kpi-by-performance") && (
           <div className="bg-white rounded-xl border border-slate-200">
             <div className="px-6 py-4 border-b border-slate-100">
-              <h3 className="text-base font-semibold text-slate-800">KPI Performance by Department</h3>
+              <h3 className="text-base font-semibold text-slate-800">{t("KPI Performance by Department")}</h3>
             </div>
             <div className="p-6">
               {kpiByPerformanceData.length > 0 ? (
@@ -426,7 +428,7 @@ function ManagementReportContent() {
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Bar dataKey="value" name="Count">
+                    <Bar dataKey="value" name={t("Count")}>
                       {kpiByPerformanceData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.fill} />
                       ))}
@@ -434,25 +436,25 @@ function ManagementReportContent() {
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
-                <p className="text-sm text-slate-500 text-center py-8">No KPI performance data available</p>
+                <p className="text-sm text-slate-500 text-center py-8">{t("No KPI performance data available")}</p>
               )}
               {/* Legend */}
               <div className="flex gap-4 mt-4 text-xs justify-center">
                 <div className="flex items-center gap-1">
                   <div className="w-3 h-3 bg-orange-500 rounded"></div>
-                  <span className="text-slate-600">Overdue</span>
+                  <span className="text-slate-600">{t("Overdue")}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <div className="w-3 h-3 bg-green-500 rounded"></div>
-                  <span className="text-slate-600">Achieved</span>
+                  <span className="text-slate-600">{t("Achieved")}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <div className="w-3 h-3 bg-red-500 rounded"></div>
-                  <span className="text-slate-600">Missed</span>
+                  <span className="text-slate-600">{t("Missed")}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <div className="w-3 h-3 bg-blue-500 rounded"></div>
-                  <span className="text-slate-600">Scheduled</span>
+                  <span className="text-slate-600">{t("Scheduled")}</span>
                 </div>
               </div>
             </div>

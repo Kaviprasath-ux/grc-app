@@ -53,15 +53,18 @@ import {
   MessageSquare,
   Send,
   Calendar,
-  Brain,
   X,
   CheckCircle,
   XCircle,
   Clock,
   Loader2,
   Layers,
+  Home,
+  ChevronRight,
 } from "lucide-react";
+import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { EvidenceAIReview } from "@/components/evidence/EvidenceAIReview";
 
 // Cycle status types
 type CycleStatus = "none" | "submitted" | "validated" | "rejected";
@@ -270,9 +273,6 @@ export default function EvidenceDetailPage() {
   // Cycle status state (per-cycle approval workflow)
   const [cycleStatuses, setCycleStatuses] = useState<Record<string, CycleStatusData>>({});
 
-  // AI Review state
-  const [aiReviewLoading, setAiReviewLoading] = useState(false);
-
   // Publish validation dialog
   const [publishBlockedMessage, setPublishBlockedMessage] = useState<string | null>(null);
 
@@ -463,42 +463,6 @@ export default function EvidenceDetailPage() {
     const newData = { ...currentData, ...data };
     setCycleStatuses((prev) => ({ ...prev, [period]: newData }));
     setCycleStatusToStorage(evidence.id, period, newData);
-  };
-
-  // Handler: Start AI Review
-  const handleStartAIReview = async () => {
-    if (!selectedMonth) return;
-
-    // Validate: Must have attachment for this cycle
-    if (!selectedCycleHasAttachments) {
-      toast.error(t("Please upload an attachment for this cycle first."));
-      return;
-    }
-
-    setAiReviewLoading(true);
-
-    // Simulate AI review process (since we can't add new APIs)
-    // In a real implementation, this would call an existing AI review service
-    try {
-      // Update status to pending
-      updateCycleStatus(selectedMonth, { aiReviewStatus: "pending" });
-
-      // Simulate AI processing time
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      // Update status to completed with result
-      updateCycleStatus(selectedMonth, {
-        aiReviewStatus: "completed",
-        aiReviewResult: t("AI Review completed successfully. Document meets compliance requirements.")
-      });
-
-      toast.success(t("AI Review completed successfully!"));
-    } catch (error) {
-      console.error("AI Review error:", error);
-      toast.error(t("AI Review failed. Please try again."));
-    } finally {
-      setAiReviewLoading(false);
-    }
   };
 
   // Handler: Submit for Approval (DepartmentReviewer only)
@@ -1129,20 +1093,24 @@ export default function EvidenceDetailPage() {
   // Regular User View - Full features
   return (
     <div className="space-y-6 p-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>{t("Compliance")}</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <Link href="/compliance/evidence" className="text-slate-500 hover:text-primary-600 transition-colors">
+          {t("Evidence")}
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">{evidence.evidenceCode}</span>
+      </nav>
+
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.push("/compliance/evidence")}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold">{t("Evidence Detail Page")}</h1>
-            <p className="text-gray-600">{evidence.evidenceCode} - {evidence.name}</p>
-          </div>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold">{evidence.name}</h1>
           <Badge className={statusColors[evidence.status] || "bg-gray-500 text-white"}>
             {t(evidence.status)}
           </Badge>
@@ -1164,6 +1132,7 @@ export default function EvidenceDetailPage() {
           </Button>
         </div>
       </div>
+      <p className="text-gray-600">{evidence.evidenceCode}</p>
 
       {/* Status Workflow Steps */}
       <div className="flex items-center justify-center gap-4 py-4 bg-gray-50 rounded-lg">
@@ -1556,55 +1525,11 @@ export default function EvidenceDetailPage() {
               })}
             </div>
 
-            {/* AI Review Section */}
-            {selectedMonth && (
-              <Card className={`mb-4 ${getSelectedCycleStatus().aiReviewStatus === "none" ? "opacity-60" : ""}`}>
-                <CardHeader className="py-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Brain className={`h-5 w-5 ${getSelectedCycleStatus().aiReviewStatus === "completed" ? "text-green-600" : "text-gray-400"}`} />
-                      <span className="font-medium">{t("AI Review")}</span>
-                      {getSelectedCycleStatus().aiReviewStatus === "completed" && (
-                        <Badge className="bg-green-100 text-green-700 border-green-300">{t("Completed")}</Badge>
-                      )}
-                      {getSelectedCycleStatus().aiReviewStatus === "pending" && (
-                        <Badge className="bg-yellow-100 text-yellow-700 border-yellow-300">{t("In Progress")}</Badge>
-                      )}
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={handleStartAIReview}
-                      disabled={aiReviewLoading || getSelectedCycleStatus().aiReviewStatus === "completed"}
-                    >
-                      {aiReviewLoading ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                          {t("Reviewing...")}
-                        </>
-                      ) : getSelectedCycleStatus().aiReviewStatus === "completed" ? (
-                        <>
-                          <Check className="h-4 w-4 mr-1" />
-                          {t("Review Complete")}
-                        </>
-                      ) : (
-                        <>
-                          <Brain className="h-4 w-4 mr-1" />
-                          {t("Start AI Review")}
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </CardHeader>
-                {getSelectedCycleStatus().aiReviewStatus === "completed" && getSelectedCycleStatus().aiReviewResult && (
-                  <CardContent className="pt-0">
-                    <p className="text-sm text-gray-600 bg-green-50 p-3 rounded border border-green-200">
-                      {getSelectedCycleStatus().aiReviewResult}
-                    </p>
-                  </CardContent>
-                )}
-              </Card>
-            )}
+            {/* AI Review Section - Real AI Integration */}
+            <EvidenceAIReview
+              evidenceId={id}
+              hasAttachments={hasAnyAttachments || false}
+            />
 
             {/* Approval Workflow Buttons */}
             {selectedMonth && (

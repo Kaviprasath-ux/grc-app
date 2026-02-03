@@ -1,6 +1,9 @@
 "use client";
 
+import { useLanguage } from "@/contexts/LanguageContext";
+
 export default function GRCAdminLandingPage() {
+  const { t } = useLanguage();
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
       <div className="relative w-[600px] h-[600px]">
@@ -38,7 +41,7 @@ export default function GRCAdminLandingPage() {
             filter="url(#glow)"
             transform="rotate(-45, 300, 300)"
           >
-            Governance
+            {t("Governance")}
           </text>
 
           {/* Risk Management - Top Right */}
@@ -52,7 +55,7 @@ export default function GRCAdminLandingPage() {
             filter="url(#glow)"
             transform="rotate(90, 545, 300)"
           >
-            Risk Management
+            {t("Risk Management")}
           </text>
 
           {/* Compliance - Bottom */}
@@ -65,7 +68,7 @@ export default function GRCAdminLandingPage() {
             textAnchor="middle"
             filter="url(#glow)"
           >
-            Compliance
+            {t("Compliance")}
           </text>
 
           {/* Inner circle border */}
@@ -86,42 +89,42 @@ export default function GRCAdminLandingPage() {
 
           {/* Center text */}
           <text x="300" y="285" textAnchor="middle" fill="#00d4ff" fontSize="36" fontWeight="bold" filter="url(#glow)">
-            GRC
+            {t("GRC")}
           </text>
           <text x="300" y="310" textAnchor="middle" fill="#00d4ff" fontSize="12">
-            Governance, Risk
+            {t("Governance, Risk")}
           </text>
           <text x="300" y="328" textAnchor="middle" fill="#00d4ff" fontSize="12">
-            Management &amp; Compliance
+            {t("Management & Compliance")}
           </text>
 
           {/* Labels around the inner sections - positioned on the star points */}
           {/* Control Activities - Top Left point */}
-          <text x="220" y="195" textAnchor="middle" fill="white" fontSize="11" fontWeight="500">Control</text>
-          <text x="220" y="210" textAnchor="middle" fill="white" fontSize="11" fontWeight="500">Activities</text>
+          <text x="220" y="195" textAnchor="middle" fill="white" fontSize="11" fontWeight="500">{t("Control")}</text>
+          <text x="220" y="210" textAnchor="middle" fill="white" fontSize="11" fontWeight="500">{t("Activities")}</text>
 
           {/* Audits - Left of Control Activities */}
-          <text x="170" y="235" textAnchor="middle" fill="white" fontSize="11" fontWeight="500">Audits</text>
+          <text x="170" y="235" textAnchor="middle" fill="white" fontSize="11" fontWeight="500">{t("Audits")}</text>
 
           {/* Strategy Management - Top Right point */}
-          <text x="380" y="235" textAnchor="middle" fill="white" fontSize="11" fontWeight="500">Strategy</text>
-          <text x="380" y="250" textAnchor="middle" fill="white" fontSize="11" fontWeight="500">Management</text>
+          <text x="380" y="235" textAnchor="middle" fill="white" fontSize="11" fontWeight="500">{t("Strategy")}</text>
+          <text x="380" y="250" textAnchor="middle" fill="white" fontSize="11" fontWeight="500">{t("Management")}</text>
 
           {/* Business Process - Right point */}
-          <text x="435" y="330" textAnchor="middle" fill="white" fontSize="11" fontWeight="500">Business</text>
-          <text x="435" y="345" textAnchor="middle" fill="white" fontSize="11" fontWeight="500">Process</text>
+          <text x="435" y="330" textAnchor="middle" fill="white" fontSize="11" fontWeight="500">{t("Business")}</text>
+          <text x="435" y="345" textAnchor="middle" fill="white" fontSize="11" fontWeight="500">{t("Process")}</text>
 
           {/* Policies & Procedures - Bottom Right point */}
-          <text x="385" y="420" textAnchor="middle" fill="white" fontSize="11" fontWeight="500">Policies &amp;</text>
-          <text x="385" y="435" textAnchor="middle" fill="white" fontSize="11" fontWeight="500">Procedures</text>
+          <text x="385" y="420" textAnchor="middle" fill="white" fontSize="11" fontWeight="500">{t("Policies &")}</text>
+          <text x="385" y="435" textAnchor="middle" fill="white" fontSize="11" fontWeight="500">{t("Procedures")}</text>
 
           {/* Performance Management - Bottom Left point */}
-          <text x="215" y="420" textAnchor="middle" fill="white" fontSize="11" fontWeight="500">Performance</text>
-          <text x="215" y="435" textAnchor="middle" fill="white" fontSize="11" fontWeight="500">Management</text>
+          <text x="215" y="420" textAnchor="middle" fill="white" fontSize="11" fontWeight="500">{t("Performance")}</text>
+          <text x="215" y="435" textAnchor="middle" fill="white" fontSize="11" fontWeight="500">{t("Management")}</text>
 
           {/* Risk Management - Left point */}
-          <text x="165" y="330" textAnchor="middle" fill="white" fontSize="11" fontWeight="500">Risk</text>
-          <text x="165" y="345" textAnchor="middle" fill="white" fontSize="11" fontWeight="500">Management</text>
+          <text x="165" y="330" textAnchor="middle" fill="white" fontSize="11" fontWeight="500">{t("Risk")}</text>
+          <text x="165" y="345" textAnchor="middle" fill="white" fontSize="11" fontWeight="500">{t("Management")}</text>
         </svg>
       </div>
     </div>

@@ -40,7 +40,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, CheckCircle, MessageSquare, Send, Trash2, XCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle, MessageSquare, Send, Trash2, XCircle, Home, ChevronRight, ChevronLeft } from "lucide-react";
+import Link from "next/link";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -172,14 +173,26 @@ export default function ExceptionDetailPage({
   const [sendBackDialogOpen, setSendBackDialogOpen] = useState(false);
   const [sendBackComment, setSendBackComment] = useState("");
 
+  // Resubmit state (for rejected exceptions)
+  const [resubmitDialogOpen, setResubmitDialogOpen] = useState(false);
+  const [resubmitComment, setResubmitComment] = useState("");
+  const [resubmitting, setResubmitting] = useState(false);
+
   // Check if current user is the approver
   const currentUserId = session?.user?.id;
   const userRoles = (session?.user?.roles as string[]) || [];
   const isApprover = currentUserId && exception?.approver?.id === currentUserId;
   const isDepartmentReviewer = userRoles.includes("DepartmentReviewer");
+  const isCustomerAdmin = userRoles.includes("CustomerAdministrator");
+
+  // Check if exception is rejected and can be resubmitted
+  const isRejectedStatus = exception?.status === "Rejected";
+  const canResubmit = isCustomerAdmin && isRejectedStatus;
 
   // DepartmentReviewer can only view and approve/reject, not edit other fields
-  const isReadOnly = isDepartmentReviewer;
+  // Also make read-only when status is Approved
+  const isApprovedStatus = exception?.status === "Approved";
+  const isReadOnly = isDepartmentReviewer || isApprovedStatus;
 
   const fetchException = useCallback(async () => {
     try {
@@ -246,8 +259,7 @@ export default function ExceptionDetailPage({
           requesterId: formData.requesterId || null,
           approverId: formData.approverId || null,
           endDate: formData.endDate || null,
-          approvedBy: formData.approvedBy || null,
-          approvedDate: formData.approvedDate || null,
+          // Note: approvedBy and approvedDate are system-managed via Approve action
         }),
       });
 
@@ -378,6 +390,55 @@ export default function ExceptionDetailPage({
     }
   };
 
+  const handleResubmit = async () => {
+    if (!resubmitComment.trim()) {
+      toast.error(t("Please enter a comment"));
+      return;
+    }
+
+    setResubmitting(true);
+    try {
+      // First add the comment
+      const commentResponse = await fetch(`/api/exceptions/${id}/comments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content: `[Resubmitted] ${resubmitComment}`,
+          userName: session?.user?.name || "Administrator",
+        }),
+      });
+
+      if (!commentResponse.ok) {
+        const errorData = await commentResponse.json();
+        throw new Error(errorData.error || "Failed to add comment");
+      }
+
+      // Then update status back to Pending
+      const response = await fetch(`/api/exceptions/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "Pending",
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to resubmit exception");
+      }
+
+      toast.success(t("Exception resubmitted for approval"));
+      setResubmitComment("");
+      setResubmitDialogOpen(false);
+      await fetchException();
+    } catch (error) {
+      console.error("Error resubmitting exception:", error);
+      toast.error(error instanceof Error ? error.message : t("Failed to resubmit exception"));
+    } finally {
+      setResubmitting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -396,20 +457,35 @@ export default function ExceptionDetailPage({
 
   return (
     <div className="space-y-6 p-6">
+      {/* Back Button and Breadcrumb */}
+      <div className="flex items-center gap-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => router.back()}
+          className="flex items-center gap-1 text-slate-600 hover:text-slate-900"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          {t("Back")}
+        </Button>
+        <nav className="flex items-center gap-1.5 text-sm">
+          <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>{t("Compliance")}</span>
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <Link href="/compliance/exceptions" className="text-slate-500 hover:text-primary-600 transition-colors">
+            {t("Exceptions")}
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <span className="text-primary-700 font-medium">{exception.exceptionCode}</span>
+        </nav>
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.push("/compliance/exceptions")}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold">{t("Exception Detail Page")}</h1>
-            <p className="text-gray-600">{exception.exceptionCode} - {exception.name}</p>
-          </div>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold">{exception.name}</h1>
           <Badge className={statusColors[exception.status] || "bg-gray-100"}>
             {exception.status}
           </Badge>
@@ -438,6 +514,17 @@ export default function ExceptionDetailPage({
               </Button>
             </>
           )}
+          {/* Resubmit button - visible to CustomerAdministrator when status is Rejected */}
+          {canResubmit && (
+            <Button
+              variant="default"
+              className="bg-blue-600 hover:bg-blue-700"
+              onClick={() => setResubmitDialogOpen(true)}
+            >
+              <Send className="h-4 w-4 mr-2" />
+              {t("Submit")}
+            </Button>
+          )}
           <Button
             variant="outline"
             onClick={() => setCommentDialogOpen(true)}
@@ -445,7 +532,7 @@ export default function ExceptionDetailPage({
             <MessageSquare className="h-4 w-4 mr-2" />
             {t("Comments")} ({exception.comments?.length || 0})
           </Button>
-          {!isReadOnly && (
+          {!isReadOnly && !isApprovedStatus && (
             <Button
               variant="destructive"
               onClick={() => setDeleteDialogOpen(true)}
@@ -463,6 +550,11 @@ export default function ExceptionDetailPage({
         <Card>
           <CardHeader>
             <CardTitle>{t("Exception Details")}</CardTitle>
+            {isApprovedStatus && (
+              <p className="text-sm text-green-600 mt-1">
+                {t("This exception has been approved and cannot be edited.")}
+              </p>
+            )}
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-4">
@@ -693,25 +785,17 @@ export default function ExceptionDetailPage({
                 <div className="space-y-2">
                   <Label className="font-medium">{t("Approved by")}</Label>
                   <Input
-                    value={formData.approvedBy}
-                    onChange={(e) =>
-                      setFormData({ ...formData, approvedBy: e.target.value })
-                    }
-                    placeholder={isReadOnly ? "-" : t("Enter approver name")}
-                    disabled={isReadOnly}
-                    className={isReadOnly ? "bg-gray-100" : ""}
+                    value={formData.approvedBy || "-"}
+                    disabled
+                    className="bg-gray-100"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label className="font-medium">{t("Approved Date")}</Label>
                   <Input
-                    type={isReadOnly ? "text" : "date"}
-                    value={isReadOnly && formData.approvedDate ? new Date(formData.approvedDate).toLocaleDateString("en-GB") : formData.approvedDate}
-                    onChange={(e) =>
-                      setFormData({ ...formData, approvedDate: e.target.value })
-                    }
-                    disabled={isReadOnly}
-                    className={isReadOnly ? "bg-gray-100" : ""}
+                    value={formData.approvedDate ? new Date(formData.approvedDate).toLocaleDateString("en-GB") : "-"}
+                    disabled
+                    className="bg-gray-100"
                   />
                 </div>
               </div>
@@ -888,6 +972,52 @@ export default function ExceptionDetailPage({
                 disabled={!sendBackComment.trim() || approving}
               >
                 {approving ? t("Processing...") : t("Send Back")}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Resubmit Dialog - for rejected exceptions */}
+      <Dialog open={resubmitDialogOpen} onOpenChange={setResubmitDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("Resubmit Exception")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">
+              {t("Please provide a comment explaining the changes made before resubmitting for approval.")}
+            </p>
+            <div className="space-y-2">
+              <Label className="font-medium">
+                {t("Comment")} <span className="text-red-500">*</span>
+              </Label>
+              <Textarea
+                value={resubmitComment}
+                onChange={(e) => setResubmitComment(e.target.value)}
+                placeholder={t("Enter your comment...")}
+                rows={4}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setResubmitComment("");
+                  setResubmitDialogOpen(false);
+                }}
+              >
+                {t("Cancel")}
+              </Button>
+              <Button
+                type="button"
+                className="bg-blue-600 hover:bg-blue-700"
+                onClick={handleResubmit}
+                disabled={!resubmitComment.trim() || resubmitting}
+              >
+                <Send className="h-4 w-4 mr-2" />
+                {resubmitting ? t("Submitting...") : t("Submit")}
               </Button>
             </div>
           </div>

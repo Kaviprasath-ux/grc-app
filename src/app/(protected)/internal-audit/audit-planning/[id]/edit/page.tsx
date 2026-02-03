@@ -31,6 +31,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { DatePicker } from "@/components/ui/date-picker";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Department {
   id: string;
@@ -86,6 +87,7 @@ export default function EditEngagementPage({ params }: PageProps) {
   const { id: engagementId } = use(params);
   const router = useRouter();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -191,12 +193,12 @@ export default function EditEngagementPage({ params }: PageProps) {
       } else {
         const errorData = await engagementRes.json();
         console.error("Failed to load engagement:", errorData);
-        toast({ title: "Error", description: errorData.error || "Failed to load engagement", variant: "destructive" });
+        toast({ title: t("Error"), description: errorData.error || t("Failed to load engagement"), variant: "destructive" });
         router.push("/internal-audit/audit-planning");
       }
     } catch (error) {
       console.error("Failed to fetch data:", error);
-      toast({ title: "Error", description: "Failed to load data", variant: "destructive" });
+      toast({ title: t("Error"), description: t("Failed to load data"), variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -306,27 +308,27 @@ export default function EditEngagementPage({ params }: PageProps) {
     e.preventDefault();
 
     if (!formData.engagementTitle.trim()) {
-      toast({ title: "Error", description: "Engagement Title is required", variant: "destructive" });
+      toast({ title: t("Error"), description: t("Engagement Title is required"), variant: "destructive" });
       return;
     }
     if (!formData.engagementObjective.trim()) {
-      toast({ title: "Error", description: "Engagement Objective is required", variant: "destructive" });
+      toast({ title: t("Error"), description: t("Engagement Objective is required"), variant: "destructive" });
       return;
     }
     if (!formData.engagementScope.trim()) {
-      toast({ title: "Error", description: "Engagement Scope is required", variant: "destructive" });
+      toast({ title: t("Error"), description: t("Engagement Scope is required"), variant: "destructive" });
       return;
     }
     if (!formData.departmentId) {
-      toast({ title: "Error", description: "Department is required", variant: "destructive" });
+      toast({ title: t("Error"), description: t("Department is required"), variant: "destructive" });
       return;
     }
     if (!formData.startDate) {
-      toast({ title: "Error", description: "Start Date is required", variant: "destructive" });
+      toast({ title: t("Error"), description: t("Start Date is required"), variant: "destructive" });
       return;
     }
     if (!formData.targetDate) {
-      toast({ title: "Error", description: "Target Date is required", variant: "destructive" });
+      toast({ title: t("Error"), description: t("Target Date is required"), variant: "destructive" });
       return;
     }
 
@@ -345,14 +347,14 @@ export default function EditEngagementPage({ params }: PageProps) {
       });
 
       if (response.ok) {
-        toast({ title: "Success", description: "Engagement updated successfully" });
+        toast({ title: t("Success"), description: t("Engagement updated successfully") });
         router.push("/internal-audit/audit-planning");
       } else {
         const error = await response.json();
-        toast({ title: "Error", description: error.error || "Failed to update engagement", variant: "destructive" });
+        toast({ title: t("Error"), description: error.error || t("Failed to update engagement"), variant: "destructive" });
       }
     } catch (error) {
-      toast({ title: "Error", description: "Failed to update engagement", variant: "destructive" });
+      toast({ title: t("Error"), description: t("Failed to update engagement"), variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -364,10 +366,10 @@ export default function EditEngagementPage({ params }: PageProps) {
         <div className="flex items-center gap-4 mb-6">
           <Button variant="ghost" size="sm" onClick={() => router.back()}>
             <ArrowLeft className="h-4 w-4 mr-1" />
-            Back
+            {t("Back")}
           </Button>
-          <div className="text-sm text-muted-foreground">Audit Plan</div>
-          <h1 className="text-xl font-semibold text-blue-900">Edit Audit Plan</h1>
+          <div className="text-sm text-muted-foreground">{t("Audit Plan")}</div>
+          <h1 className="text-xl font-semibold text-blue-900">{t("Edit Audit Plan")}</h1>
         </div>
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
@@ -382,34 +384,34 @@ export default function EditEngagementPage({ params }: PageProps) {
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" onClick={() => router.back()}>
           <ArrowLeft className="h-4 w-4 mr-1" />
-          Back
+          {t("Back")}
         </Button>
-        <div className="text-sm text-muted-foreground">Audit Plan</div>
-        <h1 className="text-xl font-semibold text-blue-900">Edit Audit Plan</h1>
+        <div className="text-sm text-muted-foreground">{t("Audit Plan")}</div>
+        <h1 className="text-xl font-semibold text-blue-900">{t("Edit Audit Plan")}</h1>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Engagement Title */}
         <div className="space-y-2">
           <Label className="text-blue-800">
-            Engagement Title <span className="text-red-500">*</span>
+            {t("Engagement Title")} <span className="text-red-500">*</span>
           </Label>
           <Input
             value={formData.engagementTitle}
             onChange={(e) => setFormData({ ...formData, engagementTitle: e.target.value })}
-            placeholder="Enter Name"
+            placeholder={t("Enter Name")}
           />
         </div>
 
         {/* Engagement Objective */}
         <div className="space-y-2">
           <Label className="text-blue-800">
-            Engagement Objective <span className="text-red-500">*</span>
+            {t("Engagement Objective")} <span className="text-red-500">*</span>
           </Label>
           <Textarea
             value={formData.engagementObjective}
             onChange={(e) => setFormData({ ...formData, engagementObjective: e.target.value })}
-            placeholder="Objective"
+            placeholder={t("Objective")}
             rows={4}
           />
         </div>
@@ -417,12 +419,12 @@ export default function EditEngagementPage({ params }: PageProps) {
         {/* Engagement Scope */}
         <div className="space-y-2">
           <Label className="text-blue-800">
-            Engagement Scope <span className="text-red-500">*</span>
+            {t("Engagement Scope")} <span className="text-red-500">*</span>
           </Label>
           <Textarea
             value={formData.engagementScope}
             onChange={(e) => setFormData({ ...formData, engagementScope: e.target.value })}
-            placeholder="Scope"
+            placeholder={t("Scope")}
             rows={4}
           />
         </div>
@@ -430,14 +432,14 @@ export default function EditEngagementPage({ params }: PageProps) {
         {/* Department */}
         <div className="space-y-2">
           <Label className="text-blue-800">
-            Department <span className="text-red-500">*</span>
+            {t("Department")} <span className="text-red-500">*</span>
           </Label>
           <Select
             value={formData.departmentId}
             onValueChange={(value) => setFormData({ ...formData, departmentId: value, linkedRiskIds: [] })}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Select Department" />
+              <SelectValue placeholder={t("Select Department")} />
             </SelectTrigger>
             <SelectContent>
               {departments.map((dept) => (
@@ -452,14 +454,14 @@ export default function EditEngagementPage({ params }: PageProps) {
         {/* Link Open Risks */}
         <div className="space-y-2">
           <Label className="text-blue-800">
-            Link Open Risks in this Department <span className="text-red-500">*</span>
+            {t("Link Open Risks in this Department")} <span className="text-red-500">*</span>
           </Label>
           <Select
             value={formData.linkedRiskIds[0] || ""}
             onValueChange={(value) => setFormData({ ...formData, linkedRiskIds: [value] })}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Select Risk" />
+              <SelectValue placeholder={t("Select Risk")} />
             </SelectTrigger>
             <SelectContent>
               {risks.length > 0 ? (
@@ -470,7 +472,7 @@ export default function EditEngagementPage({ params }: PageProps) {
                 ))
               ) : (
                 <SelectItem value="none" disabled>
-                  No open risks found
+                  {t("No open risks found")}
                 </SelectItem>
               )}
             </SelectContent>
@@ -479,57 +481,57 @@ export default function EditEngagementPage({ params }: PageProps) {
 
         {/* Historical Risks */}
         <div className="space-y-2">
-          <Label className="text-blue-800">Historical Risks (For reference, last year)</Label>
+          <Label className="text-blue-800">{t("Historical Risks (For reference, last year)")}</Label>
           <div className="border rounded-lg p-4 min-h-[60px] bg-gray-50">
             {historicalRisks.length > 0 ? (
               <ul className="space-y-1">
                 {historicalRisks.map((risk) => (
                   <li key={risk.id} className="text-sm">
-                    {risk.riskId} - {risk.riskName} ({risk.riskLevel || "N/A"})
+                    {risk.riskId} - {risk.riskName} ({risk.riskLevel || t("N/A")})
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="text-gray-500 text-center">No items found</p>
+              <p className="text-gray-500 text-center">{t("No items found")}</p>
             )}
           </div>
         </div>
 
         {/* Audit Rating */}
         <div className="space-y-2">
-          <Label className="text-blue-800">Audit Rating</Label>
+          <Label className="text-blue-800">{t("Audit Rating")}</Label>
           <Select
             value={formData.auditRating}
             onValueChange={(value) => setFormData({ ...formData, auditRating: value })}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Select Audit Rating" />
+              <SelectValue placeholder={t("Select Audit Rating")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Satisfactory">Satisfactory</SelectItem>
-              <SelectItem value="Needs Improvement">Needs Improvement</SelectItem>
-              <SelectItem value="Unsatisfactory">Unsatisfactory</SelectItem>
+              <SelectItem value="Satisfactory">{t("Satisfactory")}</SelectItem>
+              <SelectItem value="Needs Improvement">{t("Needs Improvement")}</SelectItem>
+              <SelectItem value="Unsatisfactory">{t("Unsatisfactory")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         {/* Audit Type */}
         <div className="space-y-2">
-          <Label className="text-blue-800">Audit Type</Label>
+          <Label className="text-blue-800">{t("Audit Type")}</Label>
           <Select
             value={formData.auditType}
             onValueChange={(value) => setFormData({ ...formData, auditType: value })}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Select AuditType" />
+              <SelectValue placeholder={t("Select Audit Type")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Internal Audit">Internal Audit</SelectItem>
-              <SelectItem value="Compliance Audit">Compliance Audit</SelectItem>
-              <SelectItem value="Financial Audit">Financial Audit</SelectItem>
-              <SelectItem value="Operational Audit">Operational Audit</SelectItem>
-              <SelectItem value="IT Audit">IT Audit</SelectItem>
-              <SelectItem value="Assurance">Assurance</SelectItem>
+              <SelectItem value="Internal Audit">{t("Internal Audit")}</SelectItem>
+              <SelectItem value="Compliance Audit">{t("Compliance Audit")}</SelectItem>
+              <SelectItem value="Financial Audit">{t("Financial Audit")}</SelectItem>
+              <SelectItem value="Operational Audit">{t("Operational Audit")}</SelectItem>
+              <SelectItem value="IT Audit">{t("IT Audit")}</SelectItem>
+              <SelectItem value="Assurance">{t("Assurance")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -537,14 +539,14 @@ export default function EditEngagementPage({ params }: PageProps) {
         {/* Auditor (Audit Manager) */}
         <div className="space-y-2">
           <Label className="text-blue-800">
-            Auditor <span className="text-red-500">*</span>
+            {t("Auditor")} <span className="text-red-500">*</span>
           </Label>
           <Select
             value={formData.auditorId}
             onValueChange={(value) => setFormData({ ...formData, auditorId: value })}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Select Auditor" />
+              <SelectValue placeholder={t("Select Auditor")} />
             </SelectTrigger>
             <SelectContent>
               {auditors.length > 0 ? (
@@ -555,7 +557,7 @@ export default function EditEngagementPage({ params }: PageProps) {
                 ))
               ) : (
                 <SelectItem value="none" disabled>
-                  No auditors available
+                  {t("No auditors available")}
                 </SelectItem>
               )}
             </SelectContent>
@@ -564,13 +566,13 @@ export default function EditEngagementPage({ params }: PageProps) {
 
         {/* Auditee */}
         <div className="space-y-2">
-          <Label className="text-blue-800">Auditee</Label>
+          <Label className="text-blue-800">{t("Auditee")}</Label>
           <Select
             value={formData.auditeeId}
             onValueChange={(value) => setFormData({ ...formData, auditeeId: value })}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Select Auditee" />
+              <SelectValue placeholder={t("Select Auditee")} />
             </SelectTrigger>
             <SelectContent>
               {auditees.length > 0 ? (
@@ -581,7 +583,7 @@ export default function EditEngagementPage({ params }: PageProps) {
                 ))
               ) : (
                 <SelectItem value="none" disabled>
-                  No auditees assigned to you
+                  {t("No auditees assigned to you")}
                 </SelectItem>
               )}
             </SelectContent>
@@ -592,29 +594,29 @@ export default function EditEngagementPage({ params }: PageProps) {
         <div className="grid grid-cols-2 gap-6">
           <div className="space-y-2">
             <Label className="text-blue-800">
-              Start Date <span className="text-red-500">*</span>
+              {t("Start Date")} <span className="text-red-500">*</span>
             </Label>
             <DatePicker
               value={formData.startDate}
               onChange={(date) => setFormData({ ...formData, startDate: date ? date.toISOString().split('T')[0] : "" })}
-              placeholder="Select start date"
+              placeholder={t("Select start date")}
             />
           </div>
           <div className="space-y-2">
             <Label className="text-blue-800">
-              Target Date <span className="text-red-500">*</span>
+              {t("Target Date")} <span className="text-red-500">*</span>
             </Label>
             <DatePicker
               value={formData.targetDate}
               onChange={(date) => setFormData({ ...formData, targetDate: date ? date.toISOString().split('T')[0] : "" })}
-              placeholder="Select target date"
+              placeholder={t("Select target date")}
             />
           </div>
         </div>
 
         {/* Attach File */}
         <div className="space-y-2">
-          <Label className="text-blue-800">Attach File</Label>
+          <Label className="text-blue-800">{t("Attach File")}</Label>
           <div
             className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
               isDragOverAttach ? "border-blue-500 bg-blue-50" : "border-gray-300"
@@ -624,7 +626,7 @@ export default function EditEngagementPage({ params }: PageProps) {
             onDrop={(e) => handleFileDrop(e, "attach")}
             onClick={() => attachFileRef.current?.click()}
           >
-            <p className="text-gray-600">Drag and drop or select file.</p>
+            <p className="text-gray-600">{t("Drag and drop or select file.")}</p>
             <input
               ref={attachFileRef}
               type="file"
@@ -653,7 +655,7 @@ export default function EditEngagementPage({ params }: PageProps) {
 
         {/* Upload Workpaper */}
         <div className="space-y-2">
-          <Label className="text-blue-800">Upload Workpaper</Label>
+          <Label className="text-blue-800">{t("Upload Workpaper")}</Label>
           <div
             className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
               isDragOverWorkpaper ? "border-blue-500 bg-blue-50" : "border-gray-300"
@@ -663,7 +665,7 @@ export default function EditEngagementPage({ params }: PageProps) {
             onDrop={(e) => handleFileDrop(e, "workpaper")}
             onClick={() => workpaperRef.current?.click()}
           >
-            <p className="text-gray-600">Drag and drop or select file.</p>
+            <p className="text-gray-600">{t("Drag and drop or select file.")}</p>
             <input
               ref={workpaperRef}
               type="file"
@@ -693,12 +695,12 @@ export default function EditEngagementPage({ params }: PageProps) {
         {/* Initial Audit Observation */}
         <Collapsible open={observationOpen} onOpenChange={setObservationOpen}>
           <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-blue-50 rounded-lg hover:bg-blue-100">
-            <span className="text-blue-800 font-medium">Initial Audit Observation</span>
+            <span className="text-blue-800 font-medium">{t("Initial Audit Observation")}</span>
             {observationOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
           </CollapsibleTrigger>
           <CollapsibleContent className="p-4 border border-t-0 rounded-b-lg">
             <div className="space-y-2">
-              <Label className="text-blue-800">Auditor's Initial Observation</Label>
+              <Label className="text-blue-800">{t("Auditor's Initial Observation")}</Label>
               <Textarea
                 value={formData.initialObservation}
                 onChange={(e) => setFormData({ ...formData, initialObservation: e.target.value })}
@@ -711,26 +713,26 @@ export default function EditEngagementPage({ params }: PageProps) {
         {/* Audit Testing Procedure */}
         <Collapsible open={procedureOpen} onOpenChange={setProcedureOpen}>
           <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-blue-50 rounded-lg hover:bg-blue-100">
-            <span className="text-blue-800 font-medium">Audit Testing Procedure</span>
+            <span className="text-blue-800 font-medium">{t("Audit Testing Procedure")}</span>
             {procedureOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
           </CollapsibleTrigger>
           <CollapsibleContent className="p-4 border border-t-0 rounded-b-lg">
             <div className="flex justify-end mb-4">
               <Button type="button" onClick={addTaskRow} className="bg-blue-600 hover:bg-blue-700">
                 <Plus className="h-4 w-4 mr-2" />
-                Add Task Row
+                {t("Add Task Row")}
               </Button>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="text-left text-blue-800">
-                    <th className="p-2 border-b">Task</th>
-                    <th className="p-2 border-b w-16">Done</th>
-                    <th className="p-2 border-b w-24">Planned Hours</th>
-                    <th className="p-2 border-b w-24">Actual Hours</th>
-                    <th className="p-2 border-b w-40">Auditor</th>
-                    <th className="p-2 border-b">Comments</th>
+                    <th className="p-2 border-b">{t("Task")}</th>
+                    <th className="p-2 border-b w-16">{t("Done")}</th>
+                    <th className="p-2 border-b w-24">{t("Planned Hours")}</th>
+                    <th className="p-2 border-b w-24">{t("Actual Hours")}</th>
+                    <th className="p-2 border-b w-40">{t("Auditor")}</th>
+                    <th className="p-2 border-b">{t("Comments")}</th>
                     <th className="p-2 border-b w-12"></th>
                   </tr>
                 </thead>
@@ -772,7 +774,7 @@ export default function EditEngagementPage({ params }: PageProps) {
                           onValueChange={(value) => updateTask(task.id, "auditorId", value)}
                         >
                           <SelectTrigger className="border-gray-200">
-                            <SelectValue placeholder="Select Auditor" />
+                            <SelectValue placeholder={t("Select Auditor")} />
                           </SelectTrigger>
                           <SelectContent>
                             {auditors.length > 0 ? (
@@ -783,7 +785,7 @@ export default function EditEngagementPage({ params }: PageProps) {
                               ))
                             ) : (
                               <SelectItem value="none" disabled>
-                                No auditors available
+                                {t("No auditors available")}
                               </SelectItem>
                             )}
                           </SelectContent>
@@ -812,8 +814,8 @@ export default function EditEngagementPage({ params }: PageProps) {
                   <tr className="font-medium">
                     <td className="p-2"></td>
                     <td className="p-2"></td>
-                    <td className="p-2 text-blue-800">Total: {calculateTotalHours("plannedHours")}</td>
-                    <td className="p-2 text-blue-800">Total: {calculateTotalHours("actualHours")}</td>
+                    <td className="p-2 text-blue-800">{t("Total")}: {calculateTotalHours("plannedHours")}</td>
+                    <td className="p-2 text-blue-800">{t("Total")}: {calculateTotalHours("actualHours")}</td>
                     <td className="p-2"></td>
                     <td className="p-2"></td>
                     <td className="p-2"></td>
@@ -827,12 +829,12 @@ export default function EditEngagementPage({ params }: PageProps) {
         {/* Related Policies & Procedures */}
         <Collapsible open={policiesOpen} onOpenChange={setPoliciesOpen}>
           <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-blue-50 rounded-lg hover:bg-blue-100">
-            <span className="text-blue-800 font-medium">Related Policies & Procedures</span>
+            <span className="text-blue-800 font-medium">{t("Related Policies & Procedures")}</span>
             {policiesOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
           </CollapsibleTrigger>
           <CollapsibleContent className="p-4 border border-t-0 rounded-b-lg">
             <div className="space-y-2">
-              <Label className="text-blue-800">Related Policies / Procedures</Label>
+              <Label className="text-blue-800">{t("Related Policies / Procedures")}</Label>
               <Textarea
                 value={formData.relatedPolicies}
                 onChange={(e) => setFormData({ ...formData, relatedPolicies: e.target.value })}
@@ -849,10 +851,10 @@ export default function EditEngagementPage({ params }: PageProps) {
             variant="outline"
             onClick={() => router.push("/internal-audit/audit-planning")}
           >
-            Cancel
+            {t("Cancel")}
           </Button>
           <Button type="submit" disabled={saving} className="bg-blue-600 hover:bg-blue-700">
-            {saving ? "Saving..." : "Update"}
+            {saving ? t("Saving...") : t("Update")}
           </Button>
         </div>
       </form>

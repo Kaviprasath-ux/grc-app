@@ -1,115 +1,141 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { withAuth, getTenantFilter, getAuditHeadId } from "@/lib/api-auth";
 
 // GET a single impact
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
+// Multi-tenant: Filter by customerAccountId and auditHeadId
+export const GET = withAuth(
+  async (req: NextRequest, { params }: { params: Promise<{ id: string }> }, session) => {
+    try {
+      const { id } = await params;
+      const tenantFilter = getTenantFilter(session);
+      const auditHeadId = getAuditHeadId(session);
 
-    const impact = await prisma.auditImpact.findUnique({
-      where: { id },
-    });
-
-    if (!impact) {
-      return NextResponse.json(
-        { error: "Impact not found" },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json(impact);
-  } catch (error) {
-    console.error("Error fetching impact:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch impact" },
-      { status: 500 }
-    );
-  }
-}
-
-// PUT update an impact
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const body = await request.json();
-    const { label, value } = body;
-
-    const existing = await prisma.auditImpact.findUnique({ where: { id } });
-    if (!existing) {
-      return NextResponse.json(
-        { error: "Impact not found" },
-        { status: 404 }
-      );
-    }
-
-    // Check for duplicate label if label is being changed
-    // NOTE: AuditImpact model doesn't have customerAccountId - tenant filtering disabled
-    if (label && label !== existing.label) {
-      const duplicate = await prisma.auditImpact.findFirst({
+      const impact = await prisma.auditImpact.findFirst({
         where: {
-          label,
-          id: { not: id }
+          id,
+          ...tenantFilter,
+          ...(auditHeadId ? { auditHeadId } : {}),
         },
       });
-      if (duplicate) {
+
+      if (!impact) {
         return NextResponse.json(
-          { error: "Impact with this label already exists" },
-          { status: 400 }
+          { error: "Impact not found" },
+          { status: 404 }
         );
       }
-    }
 
-    const impact = await prisma.auditImpact.update({
-      where: { id },
-      data: {
-        ...(label !== undefined && { label }),
-        ...(value !== undefined && { value }),
-      },
-    });
-
-    return NextResponse.json(impact);
-  } catch (error) {
-    console.error("Error updating impact:", error);
-    return NextResponse.json(
-      { error: "Failed to update impact" },
-      { status: 500 }
-    );
-  }
-}
-
-// DELETE an impact
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-
-    const existing = await prisma.auditImpact.findUnique({
-      where: { id },
-    });
-
-    if (!existing) {
+      return NextResponse.json(impact);
+    } catch (error) {
+      console.error("Error fetching impact:", error);
       return NextResponse.json(
-        { error: "Impact not found" },
-        { status: 404 }
+        { error: "Failed to fetch impact" },
+        { status: 500 }
       );
     }
+  },
+  { resource: "audit.settings", action: "view" }
+);
 
-    await prisma.auditImpact.delete({ where: { id } });
+// PUT update an impact
+// Multi-tenant: Filter by customerAccountId and auditHeadId
+export const PUT = withAuth(
+  async (req: NextRequest, { params }: { params: Promise<{ id: string }> }, session) => {
+    try {
+      const { id } = await params;
+      const tenantFilter = getTenantFilter(session);
+      const auditHeadId = getAuditHeadId(session);
+      const body = await req.json();
+      const { label, value } = body;
 
-    return NextResponse.json({ message: "Impact deleted successfully" });
-  } catch (error) {
-    console.error("Error deleting impact:", error);
-    return NextResponse.json(
-      { error: "Failed to delete impact" },
-      { status: 500 }
-    );
-  }
-}
+      const existing = await prisma.auditImpact.findFirst({
+        where: {
+          id,
+          ...tenantFilter,
+          ...(auditHeadId ? { auditHeadId } : {}),
+        },
+      });
+
+      if (!existing) {
+        return NextResponse.json(
+          { error: "Impact not found" },
+          { status: 404 }
+        );
+      }
+
+      // Check for duplicate label if label is being changed
+      if (label && label !== existing.label) {
+        const duplicate = await prisma.auditImpact.findFirst({
+          where: {
+            label,
+            ...tenantFilter,
+            ...(auditHeadId ? { auditHeadId } : {}),
+            NOT: { id },
+          },
+        });
+        if (duplicate) {
+          return NextResponse.json(
+            { error: "Impact with this label already exists" },
+            { status: 400 }
+          );
+        }
+      }
+
+      const impact = await prisma.auditImpact.update({
+        where: { id },
+        data: {
+          ...(label !== undefined && { label }),
+          ...(value !== undefined && { value }),
+        },
+      });
+
+      return NextResponse.json(impact);
+    } catch (error) {
+      console.error("Error updating impact:", error);
+      return NextResponse.json(
+        { error: "Failed to update impact" },
+        { status: 500 }
+      );
+    }
+  },
+  { resource: "audit.settings", action: "edit" }
+);
+
+// DELETE an impact
+// Multi-tenant: Filter by customerAccountId and auditHeadId
+export const DELETE = withAuth(
+  async (req: NextRequest, { params }: { params: Promise<{ id: string }> }, session) => {
+    try {
+      const { id } = await params;
+      const tenantFilter = getTenantFilter(session);
+      const auditHeadId = getAuditHeadId(session);
+
+      const existing = await prisma.auditImpact.findFirst({
+        where: {
+          id,
+          ...tenantFilter,
+          ...(auditHeadId ? { auditHeadId } : {}),
+        },
+      });
+
+      if (!existing) {
+        return NextResponse.json(
+          { error: "Impact not found" },
+          { status: 404 }
+        );
+      }
+
+      await prisma.auditImpact.delete({ where: { id } });
+
+      return NextResponse.json({ message: "Impact deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting impact:", error);
+      return NextResponse.json(
+        { error: "Failed to delete impact" },
+        { status: 500 }
+      );
+    }
+  },
+  { resource: "audit.settings", action: "delete" }
+);

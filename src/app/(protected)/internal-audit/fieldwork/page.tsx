@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Unauthorized } from "@/components/ui/unauthorized";
 import {
   Table,
@@ -30,7 +30,19 @@ import {
   Loader2,
   ArrowUpDown,
   Home,
+  Eye,
+  Pencil,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { DatePicker } from "@/components/ui/date-picker";
 import Link from "next/link";
 
 interface Department {
@@ -59,7 +71,7 @@ interface Engagement {
 
 export default function FieldworkPage() {
   const router = useRouter();
-  const { data: session } = useSession();
+  const { t } = useLanguage();
   const { canView, isLoading: permissionsLoading } = usePermissions('audit.fieldwork');
   const [engagements, setEngagements] = useState<Engagement[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -78,6 +90,23 @@ export default function FieldworkPage() {
   // Sorting
   const [sortField, setSortField] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+
+  // View Dialog
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [viewingEngagement, setViewingEngagement] = useState<Engagement | null>(null);
+
+  // Edit Dialog
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingEngagement, setEditingEngagement] = useState<Engagement | null>(null);
+  const [editForm, setEditForm] = useState({
+    engagementTitle: "",
+    departmentId: "",
+    auditorId: "",
+    startDate: null as Date | null,
+    targetDate: null as Date | null,
+    status: "",
+  });
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     fetchDepartments();
@@ -133,7 +162,7 @@ export default function FieldworkPage() {
       }
     } catch (error) {
       console.error("Failed to fetch engagements:", error);
-      toast.error("Failed to fetch fieldwork data");
+      toast.error(t("Failed to fetch fieldwork data"));
     } finally {
       setLoading(false);
     }
@@ -155,7 +184,7 @@ export default function FieldworkPage() {
     if (engagement.assignedAuditors && engagement.assignedAuditors.length > 0) {
       return engagement.assignedAuditors.join(", ");
     }
-    return "No items found";
+    return t("No items found");
   };
 
   const handleSort = (field: string) => {
@@ -164,6 +193,72 @@ export default function FieldworkPage() {
     } else {
       setSortField(field);
       setSortDirection("asc");
+    }
+  };
+
+  const openViewDialog = (engagement: Engagement) => {
+    setViewingEngagement(engagement);
+    setIsViewDialogOpen(true);
+  };
+
+  const openEditDialog = (engagement: Engagement) => {
+    setEditingEngagement(engagement);
+    setEditForm({
+      engagementTitle: engagement.engagementTitle || "",
+      departmentId: engagement.department?.id || "",
+      auditorId: engagement.assignedAuditor?.id || engagement.assignedAuditorId || "",
+      startDate: engagement.startDate ? new Date(engagement.startDate) : null,
+      targetDate: engagement.endDate ? new Date(engagement.endDate) : null,
+      status: engagement.status || "",
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingEngagement) return;
+
+    setSaving(true);
+    try {
+      const response = await fetch(`/api/internal-audit/engagements/${editingEngagement.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          engagementTitle: editForm.engagementTitle,
+          departmentId: editForm.departmentId || null,
+          auditorId: editForm.auditorId || null,
+          startDate: editForm.startDate?.toISOString() || null,
+          targetDate: editForm.targetDate?.toISOString() || null,
+          status: editForm.status,
+        }),
+      });
+
+      if (response.ok) {
+        toast.success(t("Engagement updated successfully"));
+        setIsEditDialogOpen(false);
+        setEditingEngagement(null);
+        fetchEngagements();
+      } else {
+        const error = await response.json();
+        toast.error(error.error || t("Failed to update engagement"));
+      }
+    } catch (error) {
+      console.error("Error updating engagement:", error);
+      toast.error(t("Failed to update engagement"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const getStatusBadgeColor = (status: string) => {
+    switch (status) {
+      case "Planned":
+        return "bg-blue-100 text-blue-700";
+      case "In Progress":
+        return "bg-yellow-100 text-yellow-700";
+      case "Completed":
+        return "bg-green-100 text-green-700";
+      default:
+        return "bg-slate-100 text-slate-700";
     }
   };
 
@@ -244,14 +339,14 @@ export default function FieldworkPage() {
   if (permissionsLoading || loading) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-slate-800">Fieldwork</h1>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Fieldwork")}</h1>
         <div className="flex items-center justify-center h-[60vh]">
           <div className="flex flex-col items-center gap-4">
             <div className="relative">
               <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
               <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
             </div>
-            <p className="text-sm text-slate-500 font-medium">Loading...</p>
+            <p className="text-sm text-slate-500 font-medium">{t("Loading...")}</p>
           </div>
         </div>
       </div>
@@ -260,7 +355,7 @@ export default function FieldworkPage() {
 
   // Show unauthorized if user doesn't have view permission
   if (!canView) {
-    return <Unauthorized description="You don't have permission to access Fieldwork." />;
+    return <Unauthorized description={t("You don't have permission to access Fieldwork.")} />;
   }
 
   return (
@@ -269,58 +364,63 @@ export default function FieldworkPage() {
       <nav className="flex items-center gap-1.5 text-sm">
         <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
-          <span>Internal Audit</span>
+          <span>{t("Internal Audit")}</span>
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-        <span className="text-primary-700 font-medium">Fieldwork</span>
+        <span className="text-primary-700 font-medium">{t("Fieldwork")}</span>
       </nav>
 
       {/* Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">Fieldwork</h1>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Fieldwork")}</h1>
       </div>
 
-      {/* Filters */}
-      <div className="flex items-center justify-end gap-3">
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[140px] bg-white">
-            <SelectValue placeholder="All Status" />
-          </SelectTrigger>
-          <SelectContent className="bg-white">
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="Planned">Planned</SelectItem>
-            <SelectItem value="In Progress">In Progress</SelectItem>
-            <SelectItem value="Completed">Completed</SelectItem>
-          </SelectContent>
-        </Select>
+      {/* Toolbar */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[140px] bg-white">
+              <SelectValue placeholder={t("All Status")} />
+            </SelectTrigger>
+            <SelectContent className="bg-white">
+              <SelectItem value="all">{t("All Status")}</SelectItem>
+              <SelectItem value="Planned">{t("Planned")}</SelectItem>
+              <SelectItem value="In Progress">{t("In Progress")}</SelectItem>
+              <SelectItem value="Completed">{t("Completed")}</SelectItem>
+            </SelectContent>
+          </Select>
 
-        <Select value={auditorFilter} onValueChange={setAuditorFilter}>
-          <SelectTrigger className="w-[160px] bg-white">
-            <SelectValue placeholder="All Auditors" />
-          </SelectTrigger>
-          <SelectContent className="bg-white">
-            <SelectItem value="all">All Auditors</SelectItem>
-            {auditors.map((auditor) => (
-              <SelectItem key={auditor.id} value={auditor.id}>
-                {auditor.firstName} {auditor.lastName}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          <Select value={auditorFilter} onValueChange={setAuditorFilter}>
+            <SelectTrigger className="w-[160px] bg-white">
+              <SelectValue placeholder={t("All Auditors")} />
+            </SelectTrigger>
+            <SelectContent className="bg-white">
+              <SelectItem value="all">{t("All Auditors")}</SelectItem>
+              {auditors.map((auditor) => (
+                <SelectItem key={auditor.id} value={auditor.id}>
+                  {auditor.firstName} {auditor.lastName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-        <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-          <SelectTrigger className="w-[180px] bg-white">
-            <SelectValue placeholder="All Departments" />
-          </SelectTrigger>
-          <SelectContent className="bg-white">
-            <SelectItem value="all">All Departments</SelectItem>
-            {departments.map((dept) => (
-              <SelectItem key={dept.id} value={dept.id}>
-                {dept.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+            <SelectTrigger className="w-[180px] bg-white">
+              <SelectValue placeholder={t("All Departments")} />
+            </SelectTrigger>
+            <SelectContent className="bg-white">
+              <SelectItem value="all">{t("All Departments")}</SelectItem>
+              {departments.map((dept) => (
+                <SelectItem key={dept.id} value={dept.id}>
+                  {dept.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex items-center gap-2">
+          {/* Action buttons would go here if needed */}
+        </div>
       </div>
 
       {/* Table */}
@@ -328,13 +428,13 @@ export default function FieldworkPage() {
         <Table>
           <TableHeader>
             <TableRow className="border-b border-slate-100 bg-slate-50/50">
-              <SortableHeader field="auditId">Audit ID</SortableHeader>
-              <SortableHeader field="name">Name</SortableHeader>
-              <SortableHeader field="auditor">Auditor</SortableHeader>
-              <SortableHeader field="startDate">Start Date</SortableHeader>
-              <SortableHeader field="targetDate">Target Date</SortableHeader>
-              <SortableHeader field="status">Status</SortableHeader>
-              <TableHead className="text-xs font-semibold text-slate-600 py-4">Action</TableHead>
+              <SortableHeader field="auditId">{t("Audit ID")}</SortableHeader>
+              <SortableHeader field="name">{t("Name")}</SortableHeader>
+              <SortableHeader field="auditor">{t("Auditor")}</SortableHeader>
+              <SortableHeader field="startDate">{t("Start Date")}</SortableHeader>
+              <SortableHeader field="targetDate">{t("Target Date")}</SortableHeader>
+              <SortableHeader field="status">{t("Status")}</SortableHeader>
+              <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Action")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -350,21 +450,41 @@ export default function FieldworkPage() {
                   <TableCell className="py-4 text-sm text-slate-700">{formatDate(engagement.endDate)}</TableCell>
                   <TableCell className="py-4 text-sm text-slate-700">{engagement.status}</TableCell>
                   <TableCell className="py-4">
-                    <Button
-                      variant="default"
-                      size="sm"
-                      className="bg-primary-600 hover:bg-primary-700 text-white"
-                      onClick={() => router.push(`/internal-audit/fieldwork/${engagement.id}`)}
-                    >
-                      Add/View Details
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-slate-600 hover:text-primary-600 hover:bg-primary-50"
+                        onClick={() => openViewDialog(engagement)}
+                        title={t("View Details")}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-slate-600 hover:text-primary-600 hover:bg-primary-50"
+                        onClick={() => openEditDialog(engagement)}
+                        title={t("Edit")}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="bg-primary-600 hover:bg-primary-700 text-white"
+                        onClick={() => router.push(`/internal-audit/fieldwork/${engagement.id}`)}
+                      >
+                        {t("Open")}
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
             ) : (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-8 text-slate-500">
-                  No fieldwork items found
+                  {t("No fieldwork items found")}
                 </TableCell>
               </TableRow>
             )}
@@ -375,7 +495,7 @@ export default function FieldworkPage() {
         {sortedEngagements.length > 0 && (
           <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
             <span className="text-sm text-slate-500">
-              {startIndex + 1} to {Math.min(endIndex, sortedEngagements.length)} of {sortedEngagements.length}
+              {startIndex + 1} {t("to")} {Math.min(endIndex, sortedEngagements.length)} {t("of")} {sortedEngagements.length}
             </span>
             <div className="flex items-center gap-1">
               <Button
@@ -418,6 +538,207 @@ export default function FieldworkPage() {
           </div>
         )}
       </div>
+
+      {/* View Dialog */}
+      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Engagement Details")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          {/* Content */}
+          {viewingEngagement && (
+            <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
+              {/* Audit ID */}
+              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                <Label className="text-end text-slate-500">{t("Audit ID")}</Label>
+                <span className="text-sm text-slate-800">{viewingEngagement.auditId}</span>
+              </div>
+
+              {/* Engagement Title */}
+              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                <Label className="text-end text-slate-500">{t("Engagement Title")}</Label>
+                <span className="text-sm text-slate-800">{viewingEngagement.engagementTitle}</span>
+              </div>
+
+              {/* Department */}
+              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                <Label className="text-end text-slate-500">{t("Department")}</Label>
+                <span className="text-sm text-slate-800">{viewingEngagement.department?.name || "-"}</span>
+              </div>
+
+              {/* Auditor */}
+              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                <Label className="text-end text-slate-500">{t("Auditor")}</Label>
+                <span className="text-sm text-slate-800">{getAuditorName(viewingEngagement)}</span>
+              </div>
+
+              {/* Start Date */}
+              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                <Label className="text-end text-slate-500">{t("Start Date")}</Label>
+                <span className="text-sm text-slate-800">{formatDate(viewingEngagement.startDate)}</span>
+              </div>
+
+              {/* Target Date */}
+              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                <Label className="text-end text-slate-500">{t("Target Date")}</Label>
+                <span className="text-sm text-slate-800">{formatDate(viewingEngagement.endDate)}</span>
+              </div>
+
+              {/* Status */}
+              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                <Label className="text-end text-slate-500">{t("Status")}</Label>
+                <Badge className={`w-fit ${getStatusBadgeColor(viewingEngagement.status)}`}>
+                  {viewingEngagement.status}
+                </Badge>
+              </div>
+            </div>
+          )}
+          {/* Fixed Footer */}
+          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
+            <Button variant="outline" size="sm" onClick={() => setIsViewDialogOpen(false)}>
+              {t("Close")}
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => {
+                setIsViewDialogOpen(false);
+                if (viewingEngagement) {
+                  openEditDialog(viewingEngagement);
+                }
+              }}
+            >
+              <Pencil className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+              {t("Edit")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit Engagement")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          {/* Scrollable Content */}
+          {editingEngagement && (
+            <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
+              {/* Audit ID - Read Only */}
+              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                <Label className="text-end">{t("Audit ID")}</Label>
+                <span className="text-sm text-muted-foreground">{editingEngagement.auditId}</span>
+              </div>
+
+              {/* Engagement Title */}
+              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                <Label htmlFor="editEngagementTitle" className="text-end">{t("Engagement Title")}</Label>
+                <Input
+                  id="editEngagementTitle"
+                  value={editForm.engagementTitle}
+                  onChange={(e) => setEditForm({ ...editForm, engagementTitle: e.target.value })}
+                  className="bg-white"
+                />
+              </div>
+
+              {/* Department */}
+              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                <Label htmlFor="editDepartment" className="text-end">{t("Department")}</Label>
+                <Select
+                  value={editForm.departmentId}
+                  onValueChange={(value) => setEditForm({ ...editForm, departmentId: value })}
+                >
+                  <SelectTrigger className="w-full bg-white">
+                    <SelectValue placeholder={t("Select Department")} />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white">
+                    {departments.map((dept) => (
+                      <SelectItem key={dept.id} value={dept.id}>
+                        {dept.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Auditor */}
+              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                <Label htmlFor="editAuditor" className="text-end">{t("Auditor")}</Label>
+                <Select
+                  value={editForm.auditorId}
+                  onValueChange={(value) => setEditForm({ ...editForm, auditorId: value })}
+                >
+                  <SelectTrigger className="w-full bg-white">
+                    <SelectValue placeholder={t("Select Auditor")} />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white">
+                    {auditors.map((auditor) => (
+                      <SelectItem key={auditor.id} value={auditor.id}>
+                        {auditor.firstName} {auditor.lastName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Start Date */}
+              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                <Label className="text-end">{t("Start Date")}</Label>
+                <DatePicker
+                  value={editForm.startDate || undefined}
+                  onChange={(date: Date | undefined) => setEditForm({ ...editForm, startDate: date || null })}
+                />
+              </div>
+
+              {/* Target Date */}
+              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                <Label className="text-end">{t("Target Date")}</Label>
+                <DatePicker
+                  value={editForm.targetDate || undefined}
+                  onChange={(date: Date | undefined) => setEditForm({ ...editForm, targetDate: date || null })}
+                />
+              </div>
+
+              {/* Status */}
+              <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                <Label htmlFor="editStatus" className="text-end">{t("Status")}</Label>
+                <Select
+                  value={editForm.status}
+                  onValueChange={(value) => setEditForm({ ...editForm, status: value })}
+                >
+                  <SelectTrigger className="w-full bg-white">
+                    <SelectValue placeholder={t("Select Status")} />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white">
+                    <SelectItem value="Planned">{t("Planned")}</SelectItem>
+                    <SelectItem value="In Progress">{t("In Progress")}</SelectItem>
+                    <SelectItem value="Completed">{t("Completed")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+          {/* Fixed Footer */}
+          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
+            <Button variant="outline" size="sm" onClick={() => setIsEditDialogOpen(false)}>
+              {t("Cancel")}
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleSaveEdit}
+              disabled={saving}
+            >
+              {saving && <Loader2 className="ltr:mr-2 rtl:ml-2 h-4 w-4 animate-spin" />}
+              {t("Save")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -1,120 +1,147 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { withAuth, getTenantFilter, getAuditHeadId } from "@/lib/api-auth";
 
 // GET a single scoring range
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
+// Multi-tenant: Filter by customerAccountId and auditHeadId
+export const GET = withAuth(
+  async (req: NextRequest, { params }: { params: Promise<{ id: string }> }, session) => {
+    try {
+      const { id } = await params;
+      const tenantFilter = getTenantFilter(session);
+      const auditHeadId = getAuditHeadId(session);
 
-    const range = await prisma.auditScoringRange.findUnique({
-      where: { id },
-    });
-
-    if (!range) {
-      return NextResponse.json(
-        { error: "Scoring range not found" },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json(range);
-  } catch (error) {
-    console.error("Error fetching scoring range:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch scoring range" },
-      { status: 500 }
-    );
-  }
-}
-
-// PUT update a scoring range
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const body = await request.json();
-    const { label, lowValue, highValue, calculationType } = body;
-
-    const existing = await prisma.auditScoringRange.findUnique({ where: { id } });
-    if (!existing) {
-      return NextResponse.json(
-        { error: "Scoring range not found" },
-        { status: 404 }
-      );
-    }
-
-    // Check for duplicate label if label or calculationType is being changed
-    const newLabel = label ?? existing.label;
-    const newCalcType = calculationType ?? existing.calculationType;
-
-    if (newLabel !== existing.label || newCalcType !== existing.calculationType) {
-      const duplicate = await prisma.auditScoringRange.findFirst({
+      const range = await prisma.auditScoringRange.findFirst({
         where: {
-          label: newLabel,
-          calculationType: newCalcType,
-          NOT: { id }
+          id,
+          ...tenantFilter,
+          ...(auditHeadId ? { auditHeadId } : {}),
         },
       });
-      if (duplicate) {
+
+      if (!range) {
         return NextResponse.json(
-          { error: "Scoring range with this label already exists for this calculation type" },
-          { status: 400 }
+          { error: "Scoring range not found" },
+          { status: 404 }
         );
       }
-    }
 
-    const range = await prisma.auditScoringRange.update({
-      where: { id },
-      data: {
-        ...(label !== undefined && { label }),
-        ...(lowValue !== undefined && { lowValue }),
-        ...(highValue !== undefined && { highValue }),
-        ...(calculationType !== undefined && { calculationType }),
-      },
-    });
-
-    return NextResponse.json(range);
-  } catch (error) {
-    console.error("Error updating scoring range:", error);
-    return NextResponse.json(
-      { error: "Failed to update scoring range" },
-      { status: 500 }
-    );
-  }
-}
-
-// DELETE a scoring range
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-
-    const existing = await prisma.auditScoringRange.findUnique({
-      where: { id },
-    });
-
-    if (!existing) {
+      return NextResponse.json(range);
+    } catch (error) {
+      console.error("Error fetching scoring range:", error);
       return NextResponse.json(
-        { error: "Scoring range not found" },
-        { status: 404 }
+        { error: "Failed to fetch scoring range" },
+        { status: 500 }
       );
     }
+  },
+  { resource: "audit.settings", action: "view" }
+);
 
-    await prisma.auditScoringRange.delete({ where: { id } });
+// PUT update a scoring range
+// Multi-tenant: Filter by customerAccountId and auditHeadId
+export const PUT = withAuth(
+  async (req: NextRequest, { params }: { params: Promise<{ id: string }> }, session) => {
+    try {
+      const { id } = await params;
+      const tenantFilter = getTenantFilter(session);
+      const auditHeadId = getAuditHeadId(session);
+      const body = await req.json();
+      const { label, lowValue, highValue, calculationType } = body;
 
-    return NextResponse.json({ message: "Scoring range deleted successfully" });
-  } catch (error) {
-    console.error("Error deleting scoring range:", error);
-    return NextResponse.json(
-      { error: "Failed to delete scoring range" },
-      { status: 500 }
-    );
-  }
-}
+      const existing = await prisma.auditScoringRange.findFirst({
+        where: {
+          id,
+          ...tenantFilter,
+          ...(auditHeadId ? { auditHeadId } : {}),
+        },
+      });
+
+      if (!existing) {
+        return NextResponse.json(
+          { error: "Scoring range not found" },
+          { status: 404 }
+        );
+      }
+
+      // Check for duplicate label if label or calculationType is being changed
+      const newLabel = label ?? existing.label;
+      const newCalcType = calculationType ?? existing.calculationType;
+
+      if (newLabel !== existing.label || newCalcType !== existing.calculationType) {
+        const duplicate = await prisma.auditScoringRange.findFirst({
+          where: {
+            label: newLabel,
+            calculationType: newCalcType,
+            ...tenantFilter,
+            ...(auditHeadId ? { auditHeadId } : {}),
+            NOT: { id },
+          },
+        });
+        if (duplicate) {
+          return NextResponse.json(
+            { error: "Scoring range with this label already exists for this calculation type" },
+            { status: 400 }
+          );
+        }
+      }
+
+      const range = await prisma.auditScoringRange.update({
+        where: { id },
+        data: {
+          ...(label !== undefined && { label }),
+          ...(lowValue !== undefined && { lowValue }),
+          ...(highValue !== undefined && { highValue }),
+          ...(calculationType !== undefined && { calculationType }),
+        },
+      });
+
+      return NextResponse.json(range);
+    } catch (error) {
+      console.error("Error updating scoring range:", error);
+      return NextResponse.json(
+        { error: "Failed to update scoring range" },
+        { status: 500 }
+      );
+    }
+  },
+  { resource: "audit.settings", action: "edit" }
+);
+
+// DELETE a scoring range
+// Multi-tenant: Filter by customerAccountId and auditHeadId
+export const DELETE = withAuth(
+  async (req: NextRequest, { params }: { params: Promise<{ id: string }> }, session) => {
+    try {
+      const { id } = await params;
+      const tenantFilter = getTenantFilter(session);
+      const auditHeadId = getAuditHeadId(session);
+
+      const existing = await prisma.auditScoringRange.findFirst({
+        where: {
+          id,
+          ...tenantFilter,
+          ...(auditHeadId ? { auditHeadId } : {}),
+        },
+      });
+
+      if (!existing) {
+        return NextResponse.json(
+          { error: "Scoring range not found" },
+          { status: 404 }
+        );
+      }
+
+      await prisma.auditScoringRange.delete({ where: { id } });
+
+      return NextResponse.json({ message: "Scoring range deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting scoring range:", error);
+      return NextResponse.json(
+        { error: "Failed to delete scoring range" },
+        { status: 500 }
+      );
+    }
+  },
+  { resource: "audit.settings", action: "delete" }
+);

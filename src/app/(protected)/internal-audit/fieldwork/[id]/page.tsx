@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -32,7 +31,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -41,6 +39,7 @@ import {
   ArrowLeft,
   ChevronDown,
   ChevronUp,
+  ChevronRight,
   FileText,
   Download,
   Eye,
@@ -53,10 +52,16 @@ import {
   Pencil,
   Trash2,
   Save,
+  Paperclip,
+  Check,
+  AlertCircle,
+  Home,
 } from "lucide-react";
 import { useHasRole } from "@/hooks/usePermissions";
 import { useSession } from "next-auth/react";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { DatePicker } from "@/components/ui/date-picker";
+import Link from "next/link";
 
 interface Department {
   id: string;
@@ -114,6 +119,15 @@ interface TaskItem {
   comments: string;
 }
 
+interface EvidenceAttachment {
+  id: string;
+  fileName: string;
+  fileType: string | null;
+  fileSize: number | null;
+  filePath: string;
+  uploadedAt: string;
+}
+
 interface EvidenceRequest {
   id: string;
   title: string;
@@ -123,7 +137,13 @@ interface EvidenceRequest {
   auditee: string;
   auditeeId?: string | null;
   numberOfSamples?: string | null;
-  attachmentCount?: number;
+  aiReviewStatus?: string | null;
+  aiReviewComment?: string | null;
+  clarificationComment?: string | null;
+  clarificationDocumentName?: string | null;
+  clarificationByUserName?: string | null;
+  clarificationSentAt?: string | null;
+  attachments?: EvidenceAttachment[];
 }
 
 interface Finding {
@@ -152,10 +172,24 @@ export default function FieldworkDetailsPage() {
   const router = useRouter();
   const params = useParams();
   const engagementId = params.id as string;
+  const { data: session } = useSession();
+  const { t } = useLanguage();
+  const currentUserId = session?.user?.id;
   const isAuditHead = useHasRole("AuditHead");
+  const isAuditManager = useHasRole("AuditManager");
+  const isAuditor = useHasRole("Auditor");
+  const isAuditee = useHasRole("Auditee");
+
+  // Check if user is part of the audit team (not just an auditee)
+  const isAuditTeam = isAuditHead || isAuditManager || isAuditor;
+  // Check if user is ONLY an auditee (not also part of audit team)
+  const isAuditeeOnly = isAuditee && !isAuditTeam;
 
   const [loading, setLoading] = useState(true);
   const [engagement, setEngagement] = useState<Engagement | null>(null);
+
+  // Check if engagement is completed (read-only mode)
+  const isCompleted = engagement?.status === "Completed";
 
   // Collapsible section states
   const [engagementDetailsOpen, setEngagementDetailsOpen] = useState(true);
@@ -173,10 +207,11 @@ export default function FieldworkDetailsPage() {
   const [evidenceRequests, setEvidenceRequests] = useState<EvidenceRequest[]>([]);
   const [otherDocuments, setOtherDocuments] = useState<Workpaper[]>([]);
   const [findings, setFindings] = useState<Finding[]>([]);
-  const [users, setUsers] = useState<{ id: string; fullName: string }[]>([]);
+  const [auditees, setAuditees] = useState<{ id: string; fullName: string; department?: { name: string } | null }[]>([]);
 
   // Upload states
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const attachmentFileInputRef = useRef<HTMLInputElement>(null);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const [uploadCategory, setUploadCategory] = useState("workpapers");
@@ -186,6 +221,8 @@ export default function FieldworkDetailsPage() {
   const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [addFindingDialogOpen, setAddFindingDialogOpen] = useState(false);
+  const [addFullFindingDialogOpen, setAddFullFindingDialogOpen] = useState(false);
+  const [savingFullFinding, setSavingFullFinding] = useState(false);
   const [addingTask, setAddingTask] = useState(false);
   const [savingTask, setSavingTask] = useState<string | null>(null);
   const [uploadingTaskDocument, setUploadingTaskDocument] = useState<string | null>(null);
@@ -224,8 +261,10 @@ export default function FieldworkDetailsPage() {
     title: "",
     description: "",
     auditee: "",
+    auditeeId: "",
     dueDate: "",
     status: "",
+    numberOfSamples: "",
   });
   const [savingEvidence, setSavingEvidence] = useState(false);
   const [deleteEvidenceDialogOpen, setDeleteEvidenceDialogOpen] = useState(false);
@@ -240,6 +279,23 @@ export default function FieldworkDetailsPage() {
   const [generatingAIReview, setGeneratingAIReview] = useState(false);
   const [aiReviewDialogOpen, setAiReviewDialogOpen] = useState(false);
   const [aiReviewResult, setAiReviewResult] = useState<string>("");
+
+  // Need Clarification dialog states (Audit Head sends)
+  const [clarificationDialogOpen, setClarificationDialogOpen] = useState(false);
+  const [clarificationEvidence, setClarificationEvidence] = useState<EvidenceRequest | null>(null);
+  const [clarificationDocument, setClarificationDocument] = useState<string>("");
+  const [clarificationComment, setClarificationComment] = useState<string>("");
+  const [sendingClarification, setSendingClarification] = useState(false);
+
+  // Auditee view clarification popup states
+  const [auditeeClariDialogOpen, setAuditeeClariDialogOpen] = useState(false);
+  const [auditeeClariEvidence, setAuditeeClariEvidence] = useState<EvidenceRequest | null>(null);
+
+  // Auditee Respond dialog states
+  const [respondDialogOpen, setRespondDialogOpen] = useState(false);
+  const [respondComment, setRespondComment] = useState<string>("");
+  const [respondFiles, setRespondFiles] = useState<File[]>([]);
+  const [sendingResponse, setSendingResponse] = useState(false);
 
   // Workpaper delete states
   const [deleteWorkpaperDialogOpen, setDeleteWorkpaperDialogOpen] = useState(false);
@@ -275,26 +331,45 @@ export default function FieldworkDetailsPage() {
     recommendation: "",
   });
 
+  // Full finding form state (for full form dialog)
+  const [fullFinding, setFullFinding] = useState({
+    findingTitle: "",
+    severity: "",
+    criteria: "",
+    condition: "",
+    cause: "",
+    effect: "",
+    recommendation: "",
+    responsiblePersonId: "",
+    status: "",
+    targetClosureDate: "",
+  });
 
   const [newEvidence, setNewEvidence] = useState({
     title: "",
     description: "",
     auditee: "",
+    auditeeId: "",
     dueDate: "",
+    numberOfSamples: "",
   });
 
   useEffect(() => {
     if (engagementId) {
       fetchEngagementDetails();
-      fetchWorkpapers();
-      fetchAIWorkpapers();
-      fetchTaskList();
       fetchEvidenceRequests();
-      fetchOtherDocuments();
       fetchFindings();
-      fetchUsers();
+
+      // Only fetch audit team data if not an auditee-only user
+      if (!isAuditeeOnly) {
+        fetchWorkpapers();
+        fetchAIWorkpapers();
+        fetchTaskList();
+        fetchOtherDocuments();
+        fetchAuditees();
+      }
     }
-  }, [engagementId]);
+  }, [engagementId, isAuditeeOnly]);
 
   const fetchEngagementDetails = async () => {
     try {
@@ -305,7 +380,7 @@ export default function FieldworkDetailsPage() {
       }
     } catch (error) {
       console.error("Failed to fetch engagement:", error);
-      toast.error("Failed to fetch engagement details");
+      toast.error(t("Failed to fetch engagement details"));
     } finally {
       setLoading(false);
     }
@@ -383,19 +458,20 @@ export default function FieldworkDetailsPage() {
     }
   };
 
-  const fetchUsers = async () => {
+  const fetchAuditees = async () => {
     try {
-      const response = await fetch("/api/users");
+      const response = await fetch("/api/users/my-auditees");
       if (response.ok) {
         const data = await response.json();
-        const userList = Array.isArray(data) ? data : [];
-        setUsers(userList.map((u: { id: string; fullName: string }) => ({
+        const auditeeList = data.auditees || [];
+        setAuditees(auditeeList.map((u: { id: string; fullName: string; department?: { name: string } | null }) => ({
           id: u.id,
           fullName: u.fullName,
+          department: u.department,
         })));
       }
     } catch (error) {
-      console.error("Failed to fetch users:", error);
+      console.error("Failed to fetch auditees:", error);
     }
   };
 
@@ -415,6 +491,11 @@ export default function FieldworkDetailsPage() {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
+
+  // Filter evidence requests for auditees - they only see requests assigned to them
+  const filteredEvidenceRequests = isAuditee && !isAuditHead
+    ? evidenceRequests.filter(er => er.auditeeId === currentUserId)
+    : evidenceRequests;
 
   const getAuditorName = () => {
     if (!engagement) return "-";
@@ -460,7 +541,7 @@ export default function FieldworkDetailsPage() {
 
   const handleUploadFiles = async () => {
     if (uploadedFiles.length === 0) {
-      toast.error("Please select files to upload");
+      toast.error(t("Please select files to upload"));
       return;
     }
 
@@ -480,7 +561,7 @@ export default function FieldworkDetailsPage() {
       });
 
       if (response.ok) {
-        toast.success("Files uploaded successfully");
+        toast.success(t("Files uploaded successfully"));
         setUploadDialogOpen(false);
         setUploadedFiles([]);
         if (uploadCategory === "workpapers") {
@@ -489,11 +570,11 @@ export default function FieldworkDetailsPage() {
           fetchOtherDocuments();
         }
       } else {
-        toast.error("Failed to upload files");
+        toast.error(t("Failed to upload files"));
       }
     } catch (error) {
       console.error("Upload error:", error);
-      toast.error("Failed to upload files");
+      toast.error(t("Failed to upload files"));
     } finally {
       setUploading(false);
     }
@@ -534,7 +615,7 @@ export default function FieldworkDetailsPage() {
   const handleUpdateAIWorkpaper = async () => {
     if (!selectedAIWorkpaper) return;
     if (!editAIWorkpaper.task.trim()) {
-      toast.error("Task is required");
+      toast.error(t("Task is required"));
       return;
     }
 
@@ -557,15 +638,15 @@ export default function FieldworkDetailsPage() {
               : wp
           )
         );
-        toast.success("AI Workpaper updated successfully");
+        toast.success(t("AI Workpaper updated successfully"));
         setEditAIWorkpaperDialogOpen(false);
         setSelectedAIWorkpaper(null);
       } else {
-        toast.error("Failed to update AI Workpaper");
+        toast.error(t("Failed to update AI Workpaper"));
       }
     } catch (error) {
       console.error("Error updating AI Workpaper:", error);
-      toast.error("Failed to update AI Workpaper");
+      toast.error(t("Failed to update AI Workpaper"));
     } finally {
       setSavingAIWorkpaper(false);
     }
@@ -585,15 +666,15 @@ export default function FieldworkDetailsPage() {
         setAiWorkpapers((prev) =>
           prev.filter((wp) => wp.id !== selectedAIWorkpaper.id)
         );
-        toast.success("AI Workpaper deleted successfully");
+        toast.success(t("AI Workpaper deleted successfully"));
         setDeleteAIWorkpaperDialogOpen(false);
         setSelectedAIWorkpaper(null);
       } else {
-        toast.error("Failed to delete AI Workpaper");
+        toast.error(t("Failed to delete AI Workpaper"));
       }
     } catch (error) {
       console.error("Error deleting AI Workpaper:", error);
-      toast.error("Failed to delete AI Workpaper");
+      toast.error(t("Failed to delete AI Workpaper"));
     } finally {
       setDeletingAIWorkpaper(false);
     }
@@ -615,11 +696,11 @@ export default function FieldworkDetailsPage() {
         const data = await response.json();
         setGeneratedWorkpapers(data.workpapers || []);
       } else {
-        toast.error("Failed to generate AI workpapers");
+        toast.error(t("Failed to generate AI workpapers"));
       }
     } catch (error) {
       console.error("Error generating AI workpapers:", error);
-      toast.error("Failed to generate AI workpapers");
+      toast.error(t("Failed to generate AI workpapers"));
     } finally {
       setGeneratingWorkpapers(false);
     }
@@ -633,7 +714,7 @@ export default function FieldworkDetailsPage() {
 
   const handleAddSelectedWorkpapers = async () => {
     if (selectedGeneratedIds.length === 0) {
-      toast.error("Please select at least one workpaper");
+      toast.error(t("Please select at least one workpaper"));
       return;
     }
 
@@ -655,16 +736,16 @@ export default function FieldworkDetailsPage() {
       if (response.ok) {
         const data = await response.json();
         setAiWorkpapers((prev) => [...prev, ...data.workpapers]);
-        toast.success(`${selectedGeneratedIds.length} workpaper(s) added successfully`);
+        toast.success(t("Workpapers added successfully"));
         setGenerateAIDialogOpen(false);
         setGeneratedWorkpapers([]);
         setSelectedGeneratedIds([]);
       } else {
-        toast.error("Failed to add workpapers");
+        toast.error(t("Failed to add workpapers"));
       }
     } catch (error) {
       console.error("Error adding workpapers:", error);
-      toast.error("Failed to add workpapers");
+      toast.error(t("Failed to add workpapers"));
     } finally {
       setAddingGeneratedWorkpapers(false);
     }
@@ -672,7 +753,7 @@ export default function FieldworkDetailsPage() {
 
   const handleAddFinding = async () => {
     if (!newFinding.title.trim()) {
-      toast.error("Finding title is required");
+      toast.error(t("Finding title is required"));
       return;
     }
 
@@ -684,15 +765,69 @@ export default function FieldworkDetailsPage() {
       });
 
       if (response.ok) {
-        toast.success("Finding added successfully");
+        toast.success(t("Finding added successfully"));
         setAddFindingDialogOpen(false);
         setNewFinding({ title: "", description: "", severity: "Medium", recommendation: "" });
         fetchFindings();
       } else {
-        toast.error("Failed to add finding");
+        toast.error(t("Failed to add finding"));
       }
     } catch (error) {
-      toast.error("Failed to add finding");
+      toast.error(t("Failed to add finding"));
+    }
+  };
+
+  // Handle adding a full finding (with all fields)
+  const handleAddFullFinding = async () => {
+    if (!fullFinding.findingTitle.trim()) {
+      toast.error(t("Finding title is required"));
+      return;
+    }
+
+    setSavingFullFinding(true);
+    try {
+      const response = await fetch(`/api/internal-audit/fieldwork/${engagementId}/findings`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: fullFinding.findingTitle,
+          severity: fullFinding.severity || "Medium",
+          criteria: fullFinding.criteria || null,
+          condition: fullFinding.condition || null,
+          cause: fullFinding.cause || null,
+          effect: fullFinding.effect || null,
+          recommendation: fullFinding.recommendation || null,
+          responsiblePersonId: fullFinding.responsiblePersonId || null,
+          status: fullFinding.status || "Open",
+          targetDate: fullFinding.targetClosureDate || null,
+        }),
+      });
+
+      if (response.ok) {
+        toast.success(t("Finding added successfully"));
+        setAddFullFindingDialogOpen(false);
+        setFullFinding({
+          findingTitle: "",
+          severity: "",
+          criteria: "",
+          condition: "",
+          cause: "",
+          effect: "",
+          recommendation: "",
+          responsiblePersonId: "",
+          status: "",
+          targetClosureDate: "",
+        });
+        fetchFindings();
+      } else {
+        const error = await response.json();
+        toast.error(error.error || t("Failed to add finding"));
+      }
+    } catch (error) {
+      console.error("Error adding finding:", error);
+      toast.error(t("Failed to add finding"));
+    } finally {
+      setSavingFullFinding(false);
     }
   };
 
@@ -707,16 +842,16 @@ export default function FieldworkDetailsPage() {
       );
 
       if (response.ok) {
-        toast.success("Finding deleted successfully");
+        toast.success(t("Finding deleted successfully"));
         setDeleteFindingDialogOpen(false);
         setFindingToDelete(null);
         fetchFindings();
       } else {
-        toast.error("Failed to delete finding");
+        toast.error(t("Failed to delete finding"));
       }
     } catch (error) {
       console.error("Error deleting finding:", error);
-      toast.error("Failed to delete finding");
+      toast.error(t("Failed to delete finding"));
     } finally {
       setDeletingFinding(false);
     }
@@ -724,11 +859,11 @@ export default function FieldworkDetailsPage() {
 
   const handleUploadDocument = async () => {
     if (!newDocument.title.trim()) {
-      toast.error("Document title is required");
+      toast.error(t("Document title is required"));
       return;
     }
     if (uploadedFiles.length === 0) {
-      toast.error("Please select a file to upload");
+      toast.error(t("Please select a file to upload"));
       return;
     }
 
@@ -751,17 +886,17 @@ export default function FieldworkDetailsPage() {
       });
 
       if (response.ok) {
-        toast.success("Document uploaded successfully");
+        toast.success(t("Document uploaded successfully"));
         setNewDocumentDialogOpen(false);
         setNewDocument({ title: "", documentType: "", description: "" });
         setUploadedFiles([]);
         fetchOtherDocuments();
       } else {
-        toast.error("Failed to upload document");
+        toast.error(t("Failed to upload document"));
       }
     } catch (error) {
       console.error("Upload error:", error);
-      toast.error("Failed to upload document");
+      toast.error(t("Failed to upload document"));
     } finally {
       setUploading(false);
     }
@@ -778,16 +913,16 @@ export default function FieldworkDetailsPage() {
       );
 
       if (response.ok) {
-        toast.success("Document deleted successfully");
+        toast.success(t("Document deleted successfully"));
         setDeleteDocumentDialogOpen(false);
         setDocumentToDelete(null);
         fetchOtherDocuments();
       } else {
-        toast.error("Failed to delete document");
+        toast.error(t("Failed to delete document"));
       }
     } catch (error) {
       console.error("Error deleting document:", error);
-      toast.error("Failed to delete document");
+      toast.error(t("Failed to delete document"));
     } finally {
       setDeletingDocument(false);
     }
@@ -804,16 +939,16 @@ export default function FieldworkDetailsPage() {
       );
 
       if (response.ok) {
-        toast.success("Workpaper deleted successfully");
+        toast.success(t("Workpaper deleted successfully"));
         setDeleteWorkpaperDialogOpen(false);
         setWorkpaperToDelete(null);
         fetchWorkpapers();
       } else {
-        toast.error("Failed to delete workpaper");
+        toast.error(t("Failed to delete workpaper"));
       }
     } catch (error) {
       console.error("Error deleting workpaper:", error);
-      toast.error("Failed to delete workpaper");
+      toast.error(t("Failed to delete workpaper"));
     } finally {
       setDeletingWorkpaper(false);
     }
@@ -833,7 +968,7 @@ export default function FieldworkDetailsPage() {
   const handleUpdateDocument = async () => {
     if (!selectedDocument) return;
     if (!editDocument.title.trim()) {
-      toast.error("Document title is required");
+      toast.error(t("Document title is required"));
       return;
     }
 
@@ -853,17 +988,17 @@ export default function FieldworkDetailsPage() {
       );
 
       if (response.ok) {
-        toast.success("Document updated successfully");
+        toast.success(t("Document updated successfully"));
         setViewEditDocumentDialogOpen(false);
         setSelectedDocument(null);
         setIsEditingDocument(false);
         fetchOtherDocuments();
       } else {
-        toast.error("Failed to update document");
+        toast.error(t("Failed to update document"));
       }
     } catch (error) {
       console.error("Error updating document:", error);
-      toast.error("Failed to update document");
+      toast.error(t("Failed to update document"));
     } finally {
       setSavingDocument(false);
     }
@@ -876,8 +1011,10 @@ export default function FieldworkDetailsPage() {
       title: er.title || "",
       description: er.description || "",
       auditee: er.auditee || "",
+      auditeeId: er.auditeeId || "",
       dueDate: er.dueDate ? new Date(er.dueDate).toISOString().split("T")[0] : "",
       status: er.status || "Pending",
+      numberOfSamples: er.numberOfSamples || "",
     });
     setIsEditingEvidence(editMode);
     setViewEditEvidenceDialogOpen(true);
@@ -886,7 +1023,7 @@ export default function FieldworkDetailsPage() {
   const handleUpdateEvidence = async () => {
     if (!selectedEvidence) return;
     if (!editEvidence.title.trim()) {
-      toast.error("Title is required");
+      toast.error(t("Title is required"));
       return;
     }
 
@@ -901,24 +1038,26 @@ export default function FieldworkDetailsPage() {
             title: editEvidence.title,
             description: editEvidence.description,
             auditee: editEvidence.auditee,
+            auditeeId: editEvidence.auditeeId || null,
             dueDate: editEvidence.dueDate || null,
             status: editEvidence.status,
+            numberOfSamples: editEvidence.numberOfSamples || null,
           }),
         }
       );
 
       if (response.ok) {
-        toast.success("Evidence request updated successfully");
+        toast.success(t("Evidence request updated successfully"));
         setViewEditEvidenceDialogOpen(false);
         setSelectedEvidence(null);
         setIsEditingEvidence(false);
         fetchEvidenceRequests();
       } else {
-        toast.error("Failed to update evidence request");
+        toast.error(t("Failed to update evidence request"));
       }
     } catch (error) {
       console.error("Error updating evidence request:", error);
-      toast.error("Failed to update evidence request");
+      toast.error(t("Failed to update evidence request"));
     } finally {
       setSavingEvidence(false);
     }
@@ -935,16 +1074,16 @@ export default function FieldworkDetailsPage() {
       );
 
       if (response.ok) {
-        toast.success("Evidence request deleted successfully");
+        toast.success(t("Evidence request deleted successfully"));
         setDeleteEvidenceDialogOpen(false);
         setEvidenceToDelete(null);
         fetchEvidenceRequests();
       } else {
-        toast.error("Failed to delete evidence request");
+        toast.error(t("Failed to delete evidence request"));
       }
     } catch (error) {
       console.error("Error deleting evidence request:", error);
-      toast.error("Failed to delete evidence request");
+      toast.error(t("Failed to delete evidence request"));
     } finally {
       setDeletingEvidence(false);
     }
@@ -959,7 +1098,7 @@ export default function FieldworkDetailsPage() {
   const handleUploadAttachment = async () => {
     if (!evidenceForAttachment) return;
     if (uploadedFiles.length === 0) {
-      toast.error("Please select a file to upload");
+      toast.error(t("Please select a file to upload"));
       return;
     }
 
@@ -981,19 +1120,153 @@ export default function FieldworkDetailsPage() {
       );
 
       if (response.ok) {
-        toast.success("Attachment uploaded successfully");
+        toast.success(t("Attachment uploaded successfully"));
         setAttachmentDialogOpen(false);
         setEvidenceForAttachment(null);
         setUploadedFiles([]);
         fetchEvidenceRequests();
       } else {
-        toast.error("Failed to upload attachment");
+        toast.error(t("Failed to upload attachment"));
       }
     } catch (error) {
       console.error("Error uploading attachment:", error);
-      toast.error("Failed to upload attachment");
+      toast.error(t("Failed to upload attachment"));
     } finally {
       setUploadingAttachment(false);
+    }
+  };
+
+  // Evidence Request Approval handlers
+  const handleApproveEvidence = async (evidenceId: string) => {
+    try {
+      const response = await fetch(
+        `/api/internal-audit/fieldwork/${engagementId}/evidence-requests/${evidenceId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            status: "Reviewed",
+            aiReviewStatus: "Satisfactory",
+          }),
+        }
+      );
+
+      if (response.ok) {
+        toast.success(t("Evidence request approved"));
+        fetchEvidenceRequests();
+      } else {
+        toast.error(t("Failed to approve evidence request"));
+      }
+    } catch (error) {
+      console.error("Error approving evidence:", error);
+      toast.error(t("Failed to approve evidence request"));
+    }
+  };
+
+  // Open clarification dialog
+  const handleOpenClarificationDialog = (evidence: EvidenceRequest) => {
+    setClarificationEvidence(evidence);
+    setClarificationDocument(evidence.attachments?.[0]?.fileName || "");
+    setClarificationComment("");
+    setClarificationDialogOpen(true);
+  };
+
+  // Send clarification request
+  const handleSendClarification = async () => {
+    if (!clarificationEvidence) return;
+
+    setSendingClarification(true);
+    try {
+      const response = await fetch(
+        `/api/internal-audit/fieldwork/${engagementId}/evidence-requests/${clarificationEvidence.id}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            status: "Pending",
+            aiReviewStatus: "Needs Attention",
+            clarificationComment: clarificationComment,
+            clarificationDocumentName: clarificationDocument,
+            clarificationByUserId: session?.user?.id,
+            clarificationByUserName: session?.user?.name,
+            clarificationSentAt: new Date().toISOString(),
+          }),
+        }
+      );
+
+      if (response.ok) {
+        toast.success(t("The document has been returned for clarification"));
+        setClarificationDialogOpen(false);
+        setClarificationEvidence(null);
+        setClarificationDocument("");
+        setClarificationComment("");
+        setViewEditEvidenceDialogOpen(false);
+        setSelectedEvidence(null);
+        fetchEvidenceRequests();
+      } else {
+        toast.error(t("Failed to request clarification"));
+      }
+    } catch (error) {
+      console.error("Error requesting clarification:", error);
+      toast.error(t("Failed to request clarification"));
+    } finally {
+      setSendingClarification(false);
+    }
+  };
+
+  // Auditee Send Response handler
+  const handleSendResponse = async () => {
+    if (!auditeeClariEvidence) return;
+
+    setSendingResponse(true);
+    try {
+      // Upload file if provided
+      if (respondFiles.length > 0) {
+        const formData = new FormData();
+        respondFiles.forEach((file) => {
+          formData.append("files", file);
+        });
+
+        await fetch(
+          `/api/internal-audit/fieldwork/${engagementId}/evidence-requests/${auditeeClariEvidence.id}/attachments`,
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
+      }
+
+      // Update status to Submitted and clear clarification
+      await fetch(
+        `/api/internal-audit/fieldwork/${engagementId}/evidence-requests/${auditeeClariEvidence.id}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            status: "Submitted",
+            clarificationComment: null,
+            clarificationDocumentName: null,
+            clarificationByUserId: null,
+            clarificationByUserName: null,
+            clarificationSentAt: null,
+          }),
+        }
+      );
+
+      toast.success(t("Response submitted successfully"));
+      setRespondDialogOpen(false);
+      setAuditeeClariDialogOpen(false);
+      setAuditeeClariEvidence(null);
+      setRespondComment("");
+      setRespondFiles([]);
+      setViewEditEvidenceDialogOpen(false);
+      setSelectedEvidence(null);
+      fetchEvidenceRequests();
+    } catch (error) {
+      console.error("Error sending response:", error);
+      toast.error(t("Failed to send response"));
+    } finally {
+      setSendingResponse(false);
     }
   };
 
@@ -1008,25 +1281,15 @@ export default function FieldworkDetailsPage() {
 
   const handleSelectAllEvidence = (checked: boolean) => {
     if (checked) {
-      setSelectedEvidenceIds(evidenceRequests.map((er) => er.id));
+      setSelectedEvidenceIds(filteredEvidenceRequests.map((er) => er.id));
     } else {
       setSelectedEvidenceIds([]);
     }
   };
 
-  const selectedWithFilesCount = selectedEvidenceIds.filter((id) => {
-    const er = evidenceRequests.find((r) => r.id === id);
-    return (er?.attachmentCount ?? 0) > 0;
-  }).length;
-  const canRunAIReview = selectedEvidenceIds.length > 0 && selectedWithFilesCount > 0;
-
   const handleAIReview = async () => {
     if (selectedEvidenceIds.length === 0) {
-      toast.error("Please select at least one evidence request");
-      return;
-    }
-    if (selectedWithFilesCount === 0) {
-      toast.error("Select evidence requests that have at least one file. Use 'Add attachment' to upload files first.");
+      toast.error(t("Please select at least one evidence request"));
       return;
     }
 
@@ -1045,14 +1308,13 @@ export default function FieldworkDetailsPage() {
         const data = await response.json();
         setAiReviewResult(data.review || data.result || "AI Review completed successfully.");
         setAiReviewDialogOpen(true);
-        toast.success("AI Review generated successfully");
+        toast.success(t("AI Review generated successfully"));
       } else {
-        const err = await response.json().catch(() => ({})) as { error?: string };
-        toast.error(err?.error ?? "Failed to generate AI review");
+        toast.error(t("Failed to generate AI review"));
       }
     } catch (error) {
       console.error("Error generating AI review:", error);
-      toast.error("Failed to generate AI review");
+      toast.error(t("Failed to generate AI review"));
     } finally {
       setGeneratingAIReview(false);
     }
@@ -1068,10 +1330,10 @@ export default function FieldworkDetailsPage() {
       if (response.ok) {
         fetchTaskList();
       } else {
-        toast.error("Failed to add task");
+        toast.error(t("Failed to add task"));
       }
     } catch (error) {
-      toast.error("Failed to add task");
+      toast.error(t("Failed to add task"));
     } finally {
       setAddingTask(false);
     }
@@ -1090,10 +1352,10 @@ export default function FieldworkDetailsPage() {
           prev.map((t) => (t.id === taskId ? { ...t, [field]: value } : t))
         );
       } else {
-        toast.error("Failed to update task");
+        toast.error(t("Failed to update task"));
       }
     } catch (error) {
-      toast.error("Failed to update task");
+      toast.error(t("Failed to update task"));
     }
   };
 
@@ -1122,12 +1384,12 @@ export default function FieldworkDetailsPage() {
               : t
           )
         );
-        toast.success("Document uploaded successfully");
+        toast.success(t("Document uploaded successfully"));
       } else {
-        toast.error("Failed to upload document");
+        toast.error(t("Failed to upload document"));
       }
     } catch (error) {
-      toast.error("Failed to upload document");
+      toast.error(t("Failed to upload document"));
     } finally {
       setUploadingTaskDocument(null);
     }
@@ -1142,12 +1404,12 @@ export default function FieldworkDetailsPage() {
 
       if (response.ok) {
         fetchTaskList();
-        toast.success("Task deleted successfully");
+        toast.success(t("Task deleted successfully"));
       } else {
-        toast.error("Failed to delete task");
+        toast.error(t("Failed to delete task"));
       }
     } catch (error) {
-      toast.error("Failed to delete task");
+      toast.error(t("Failed to delete task"));
     }
   };
 
@@ -1166,12 +1428,12 @@ export default function FieldworkDetailsPage() {
       });
 
       if (response.ok) {
-        toast.success("Task saved successfully");
+        toast.success(t("Task saved successfully"));
       } else {
-        toast.error("Failed to save task");
+        toast.error(t("Failed to save task"));
       }
     } catch (error) {
-      toast.error("Failed to save task");
+      toast.error(t("Failed to save task"));
     } finally {
       setSavingTask(null);
     }
@@ -1179,27 +1441,37 @@ export default function FieldworkDetailsPage() {
 
   const handleAddEvidence = async () => {
     if (!newEvidence.title.trim()) {
-      toast.error("Evidence title is required");
+      toast.error(t("Evidence title is required"));
       return;
     }
 
     try {
+      const payload = {
+        title: newEvidence.title,
+        description: newEvidence.description,
+        auditee: newEvidence.auditee,
+        auditeeId: newEvidence.auditeeId || null,
+        dueDate: newEvidence.dueDate,
+        numberOfSamples: newEvidence.numberOfSamples || null,
+        status: "Pending",
+      };
+
       const response = await fetch(`/api/internal-audit/fieldwork/${engagementId}/evidence-requests`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...newEvidence, status: "Pending" }),
+        body: JSON.stringify(payload),
       });
 
       if (response.ok) {
-        toast.success("Evidence request added successfully");
+        toast.success(t("Evidence request added successfully"));
         setAddEvidenceDialogOpen(false);
-        setNewEvidence({ title: "", description: "", auditee: "", dueDate: "" });
+        setNewEvidence({ title: "", description: "", auditee: "", auditeeId: "", dueDate: "", numberOfSamples: "" });
         fetchEvidenceRequests();
       } else {
-        toast.error("Failed to add evidence request");
+        toast.error(t("Failed to add evidence request"));
       }
     } catch (error) {
-      toast.error("Failed to add evidence request");
+      toast.error(t("Failed to add evidence request"));
     }
   };
 
@@ -1215,14 +1487,14 @@ export default function FieldworkDetailsPage() {
       });
 
       if (response.ok) {
-        toast.success("Engagement marked as completed");
+        toast.success(t("Engagement marked as completed"));
         setEngagement({ ...engagement, status: "Completed" });
       } else {
-        toast.error("Failed to mark engagement as completed");
+        toast.error(t("Failed to mark engagement as completed"));
       }
     } catch (error) {
       console.error("Error marking engagement as completed:", error);
-      toast.error("Failed to mark engagement as completed");
+      toast.error(t("Failed to mark engagement as completed"));
     } finally {
       setMarkingComplete(false);
     }
@@ -1242,44 +1514,46 @@ export default function FieldworkDetailsPage() {
     headerAction?: React.ReactNode;
   }) => (
     <Collapsible open={isOpen} onOpenChange={onToggle}>
-      <Card className="overflow-hidden">
-        <div className="flex items-center justify-between p-4 bg-blue-50">
-          <CollapsibleTrigger className="flex-1 flex items-center justify-between hover:bg-blue-100 transition-colors -m-4 p-4 mr-0">
-            <span className="text-[#1e3a5f] font-semibold">{title}</span>
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-slate-100">
+          <CollapsibleTrigger className="flex-1 flex items-center justify-between rounded -mx-2 -my-1 px-2 py-1">
+            <span className="text-slate-800 font-semibold text-sm">{title}</span>
             <div className="flex items-center gap-2">
               {isOpen ? (
-                <ChevronUp className="h-5 w-5 text-[#1e3a5f]" />
+                <ChevronUp className="h-4 w-4 text-slate-500" />
               ) : (
-                <ChevronDown className="h-5 w-5 text-[#1e3a5f]" />
+                <ChevronDown className="h-4 w-4 text-slate-500" />
               )}
             </div>
           </CollapsibleTrigger>
           {headerAction && (
-            <div className="ml-2 z-10">
+            <div className="ltr:ml-2 rtl:mr-2 z-10">
               {headerAction}
             </div>
           )}
         </div>
         <CollapsibleContent>
-          <div className="p-4 border-t">{children}</div>
+          <div className="p-4">{children}</div>
         </CollapsibleContent>
-      </Card>
+      </div>
     </Collapsible>
   );
 
   if (loading) {
     return (
-      <div className="p-6">
-        <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" size="sm" onClick={() => router.back()}>
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back
-          </Button>
-          <span className="text-gray-500">Internal Audit</span>
-          <span className="text-[#1e3a5f] font-semibold">Field Work</span>
-        </div>
+      <div className="space-y-6">
+        <nav className="flex items-center gap-1.5 text-sm">
+          <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>{t("Internal Audit")}</span>
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <Link href="/internal-audit/fieldwork" className="text-slate-500 hover:text-primary-600 transition-colors">
+            {t("Fieldwork")}
+          </Link>
+        </nav>
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+          <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
         </div>
       </div>
     );
@@ -1287,41 +1561,66 @@ export default function FieldworkDetailsPage() {
 
   if (!engagement) {
     return (
-      <div className="p-6">
-        <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" size="sm" onClick={() => router.back()}>
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back
-          </Button>
-          <span className="text-gray-500">Internal Audit</span>
-          <span className="text-[#1e3a5f] font-semibold">Field Work</span>
+      <div className="space-y-6">
+        <nav className="flex items-center gap-1.5 text-sm">
+          <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>{t("Internal Audit")}</span>
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <Link href="/internal-audit/fieldwork" className="text-slate-500 hover:text-primary-600 transition-colors">
+            {t("Fieldwork")}
+          </Link>
+        </nav>
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-bold text-slate-800">{t("Fieldwork")}</h1>
         </div>
-        <div className="text-center py-8 text-gray-500">Engagement not found</div>
+        <div className="bg-white rounded-xl border border-slate-200 p-8 text-center text-slate-500">
+          {t("Engagement not found")}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-4">
-      {/* Breadcrumb Header */}
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="sm" onClick={() => router.push("/internal-audit/fieldwork")}>
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          Back
-        </Button>
-        <span className="text-gray-500">|</span>
-        <span className="text-gray-500">Internal Audit</span>
-        <span className="text-gray-500">|</span>
-        <span className="text-[#1e3a5f] font-semibold">Field Work</span>
+    <div className="space-y-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>{t("Internal Audit")}</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <Link href="/internal-audit/fieldwork" className="text-slate-500 hover:text-primary-600 transition-colors">
+          {t("Fieldwork")}
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">{engagement.auditId}</span>
+      </nav>
+
+      {/* Page Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-bold text-slate-800">{engagement.engagementTitle}</h1>
+          <p className="text-sm text-slate-500">{engagement.auditId}</p>
+        </div>
+        {isCompleted && (
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-md text-sm text-emerald-700">
+            <Check className="h-4 w-4" />
+            <span>{t("Completed")}</span>
+          </div>
+        )}
       </div>
 
       {/* Engagement Details Section */}
       <CollapsibleSection
-        title={`Engagement Details : ${engagement.auditId} - ${engagement.engagementTitle}`}
+        title={`${t("Engagement Details")} : ${engagement.auditId} - ${engagement.engagementTitle}`}
         isOpen={engagementDetailsOpen}
         onToggle={() => setEngagementDetailsOpen(!engagementDetailsOpen)}
         headerAction={
           <div className="flex items-center gap-2">
+            {/* Hide Comments button for auditees */}
+            {!isAuditeeOnly && (
             <Button
               variant="outline"
               size="sm"
@@ -1330,12 +1629,14 @@ export default function FieldworkDetailsPage() {
                 setCommentsDialogOpen(true);
               }}
             >
-              Comments
+              {t("Comments")}
             </Button>
-            {engagement.status !== "Completed" && (
+            )}
+            {/* Hide Mark as Completed button for auditees */}
+            {engagement.status !== "Completed" && !isAuditeeOnly && (
               <Button
                 size="sm"
-                className="bg-[#1e3a5f] hover:bg-[#2d4a6f] text-white"
+                className="bg-primary-600 hover:bg-primary-700 text-white"
                 onClick={(e) => {
                   e.stopPropagation();
                   handleMarkAsCompleted();
@@ -1344,11 +1645,11 @@ export default function FieldworkDetailsPage() {
               >
                 {markingComplete ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Marking...
+                    <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
+                    {t("Marking...")}
                   </>
                 ) : (
-                  "Mark as Completed"
+                  t("Mark as Completed")
                 )}
               </Button>
             )}
@@ -1357,37 +1658,38 @@ export default function FieldworkDetailsPage() {
       >
         <div className="grid grid-cols-3 gap-6 p-4 bg-white rounded-lg border">
           <div>
-            <Label className="text-[#1e3a5f] font-medium">Engagement ID</Label>
+            <Label className="text-slate-700 font-medium">{t("Engagement ID")}</Label>
             <p className="mt-1">{engagement.auditId}</p>
           </div>
           <div>
-            <Label className="text-[#1e3a5f] font-medium">Title</Label>
+            <Label className="text-slate-700 font-medium">{t("Title")}</Label>
             <p className="mt-1">{engagement.engagementTitle}</p>
           </div>
           <div>
-            <Label className="text-[#1e3a5f] font-medium">Auditor</Label>
+            <Label className="text-slate-700 font-medium">{t("Auditor")}</Label>
             <p className="mt-1">{getAuditorName()}</p>
           </div>
           <div>
-            <Label className="text-[#1e3a5f] font-medium">Timeline</Label>
+            <Label className="text-slate-700 font-medium">{t("Timeline")}</Label>
             <p className="mt-1">
-              {formatDate(engagement.startDate)} to {formatDate(engagement.endDate)}
+              {formatDate(engagement.startDate)} {t("to")} {formatDate(engagement.endDate)}
             </p>
           </div>
           <div>
-            <Label className="text-[#1e3a5f] font-medium">Status</Label>
+            <Label className="text-slate-700 font-medium">{t("Status")}</Label>
             <p className="mt-1">{engagement.status}</p>
           </div>
           <div>
-            <Label className="text-[#1e3a5f] font-medium">Department</Label>
+            <Label className="text-slate-700 font-medium">{t("Department")}</Label>
             <p className="mt-1">{engagement.department?.name || "-"}</p>
           </div>
         </div>
       </CollapsibleSection>
 
-      {/* Workpapers Section */}
+      {/* Workpapers Section - Hidden for auditees */}
+      {!isAuditeeOnly && (
       <CollapsibleSection
-        title="Workpapers"
+        title={t("Workpapers")}
         isOpen={workpapersOpen}
         onToggle={() => setWorkpapersOpen(!workpapersOpen)}
       >
@@ -1396,14 +1698,13 @@ export default function FieldworkDetailsPage() {
             <div className="flex justify-end">
               <Button
                 size="sm"
-                className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
                 onClick={() => {
                   setUploadCategory("workpapers");
                   setUploadDialogOpen(true);
                 }}
               >
-                <Upload className="h-4 w-4 mr-2" />
-                Upload Workpaper
+                <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                {t("Upload Workpaper")}
               </Button>
             </div>
           )}
@@ -1419,7 +1720,7 @@ export default function FieldworkDetailsPage() {
                     href={`/api${wp.filePath}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[#1e3a5f] hover:underline font-medium flex-grow"
+                    className="text-slate-700 hover:underline font-medium flex-grow"
                   >
                     {wp.fileName}
                   </a>
@@ -1427,15 +1728,15 @@ export default function FieldworkDetailsPage() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      title="View"
+                      title={t("View")}
                       onClick={() => window.open(`/api${wp.filePath}`, "_blank")}
                     >
-                      <Eye className="h-5 w-5 text-gray-600" />
+                      <Eye className="h-5 w-5 text-slate-600" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon"
-                      title="Download"
+                      title={t("Download")}
                       onClick={() => {
                         const link = document.createElement("a");
                         link.href = `/api${wp.filePath}`;
@@ -1443,13 +1744,13 @@ export default function FieldworkDetailsPage() {
                         link.click();
                       }}
                     >
-                      <Download className="h-5 w-5 text-gray-600" />
+                      <Download className="h-5 w-5 text-slate-600" />
                     </Button>
                     {isAuditHead && (
                       <Button
                         variant="ghost"
                         size="icon"
-                        title="Delete"
+                        title={t("Delete")}
                         onClick={() => {
                           setWorkpaperToDelete(wp);
                           setDeleteWorkpaperDialogOpen(true);
@@ -1463,14 +1764,16 @@ export default function FieldworkDetailsPage() {
               ))}
             </div>
           ) : (
-            <div className="text-center py-8 text-gray-500">No workpapers uploaded yet</div>
+            <div className="text-center py-8 text-slate-500">{t("No workpapers uploaded yet")}</div>
           )}
         </div>
       </CollapsibleSection>
+      )}
 
-      {/* AI-Generated Workpapers Section */}
+      {/* AI-Generated Workpapers Section - Hidden for auditees */}
+      {!isAuditeeOnly && (
       <CollapsibleSection
-        title="AI-Generated Workpapers"
+        title={t("AI-Generated Workpapers")}
         isOpen={aiWorkpapersOpen}
         onToggle={() => setAiWorkpapersOpen(!aiWorkpapersOpen)}
       >
@@ -1479,47 +1782,46 @@ export default function FieldworkDetailsPage() {
             <div className="flex justify-end">
               <Button
                 size="sm"
-                className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
                 onClick={handleGenerateAIWorkpapers}
-                disabled={generatingWorkpapers}
+                disabled={generatingWorkpapers || isCompleted}
               >
                 {generatingWorkpapers ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Generating...
+                    <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
+                    {t("Generating...")}
                   </>
                 ) : (
                   <>
-                    <FileText className="h-4 w-4 mr-2" />
-                    Generate Workpaper with AI
+                    <FileText className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                    {t("Generate Workpaper with AI")}
                   </>
                 )}
               </Button>
             </div>
           )}
           {aiWorkpapers.length > 0 ? (
-            <div className="border rounded-lg overflow-hidden">
+            <div className="bg-white border rounded-lg overflow-hidden">
               <Table>
               <TableHeader>
-                <TableRow className="bg-gray-50 border-b">
-                  <TableHead className="text-[#1e3a5f] font-semibold w-[200px]">Task</TableHead>
-                  <TableHead className="text-[#1e3a5f] font-semibold w-[180px]">Evidences</TableHead>
-                  <TableHead className="text-[#1e3a5f] font-semibold w-[250px]">Steps</TableHead>
-                  <TableHead className="text-[#1e3a5f] font-semibold w-[120px]">Question Checklist</TableHead>
-                  <TableHead className="text-[#1e3a5f] font-semibold w-[100px]">Comments</TableHead>
+                <TableRow className="bg-slate-50 border-b">
+                  <TableHead className="text-slate-700 font-semibold w-[200px]">{t("Task")}</TableHead>
+                  <TableHead className="text-slate-700 font-semibold w-[180px]">{t("Evidences")}</TableHead>
+                  <TableHead className="text-slate-700 font-semibold w-[250px]">{t("Steps")}</TableHead>
+                  <TableHead className="text-slate-700 font-semibold w-[120px]">{t("Question Checklist")}</TableHead>
+                  <TableHead className="text-slate-700 font-semibold w-[100px]">{t("Comments")}</TableHead>
                   {isAuditHead && (
-                    <TableHead className="text-[#1e3a5f] font-semibold w-[100px]">Action</TableHead>
+                    <TableHead className="text-slate-700 font-semibold w-[100px]">{t("Action")}</TableHead>
                   )}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {aiWorkpapers.map((wp) => (
-                  <TableRow key={wp.id} className="border-b hover:bg-gray-50">
+                  <TableRow key={wp.id} className="border-b hover:bg-slate-50">
                     <TableCell className="align-top py-4">
                       <div className="space-y-3">
-                        <p className="text-gray-800">{wp.task}</p>
+                        <p className="text-slate-800">{wp.task}</p>
                         <div>
-                          <span className="text-[#1e3a5f] font-medium block mb-1">Executed</span>
+                          <span className="text-slate-700 font-medium block mb-1">{t("Executed")}</span>
                           <Checkbox
                             checked={wp.executed}
                             onCheckedChange={() => handleToggleExecuted(wp.id, wp.executed)}
@@ -1528,10 +1830,10 @@ export default function FieldworkDetailsPage() {
                       </div>
                     </TableCell>
                     <TableCell className="align-top py-4">
-                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{wp.evidences}</p>
+                      <p className="text-sm text-slate-700 whitespace-pre-wrap">{wp.evidences}</p>
                     </TableCell>
                     <TableCell className="align-top py-4">
-                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{wp.steps}</p>
+                      <p className="text-sm text-slate-700 whitespace-pre-wrap">{wp.steps}</p>
                     </TableCell>
                     <TableCell className="align-top py-4 text-center">
                       {wp.questionChecklist || "-"}
@@ -1545,15 +1847,15 @@ export default function FieldworkDetailsPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            title="Edit"
+                            title={t("Edit")}
                             onClick={() => handleOpenEditAIWorkpaper(wp)}
                           >
-                            <Pencil className="h-4 w-4 text-blue-600" />
+                            <Pencil className="h-4 w-4 text-primary-600" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
-                            title="Delete"
+                            title={t("Delete")}
                             onClick={() => {
                               setSelectedAIWorkpaper(wp);
                               setDeleteAIWorkpaperDialogOpen(true);
@@ -1570,14 +1872,16 @@ export default function FieldworkDetailsPage() {
               </Table>
             </div>
           ) : (
-            <div className="text-center py-8 text-gray-500">No AI-generated workpapers available</div>
+            <div className="text-center py-8 text-slate-500">{t("No AI-generated workpapers available")}</div>
           )}
         </div>
       </CollapsibleSection>
+      )}
 
-      {/* Audit Engagement Task List Section */}
+      {/* Audit Engagement Task List Section - Hidden for auditees */}
+      {!isAuditeeOnly && (
       <CollapsibleSection
-        title="Audit Engagement Task List"
+        title={t("Audit Engagement Task List")}
         isOpen={taskListOpen}
         onToggle={() => setTaskListOpen(!taskListOpen)}
       >
@@ -1585,65 +1889,85 @@ export default function FieldworkDetailsPage() {
           <div className="flex justify-end">
             <Button
               size="sm"
-              className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
               onClick={handleAddTask}
-              disabled={addingTask}
+              disabled={addingTask || isCompleted}
             >
               {addingTask ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
               ) : (
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               )}
-              Add Task
+              {t("Add Task")}
             </Button>
           </div>
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-[#1e3a5f] hover:bg-[#1e3a5f]">
-                <TableHead className="text-white w-[80px]">Ref No</TableHead>
-                <TableHead className="text-white">Task</TableHead>
-                <TableHead className="text-white w-[200px]">Document</TableHead>
-                <TableHead className="text-white w-[100px] text-center">Executed</TableHead>
-                <TableHead className="text-white">Comments</TableHead>
-                {isAuditHead && <TableHead className="text-white w-[100px]">Action</TableHead>}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {taskList.length > 0 ? (
-                taskList.map((task) => (
-                  <TableRow key={task.id} className="hover:bg-gray-50">
-                    <TableCell>
-                      <Input
-                        value={task.refNo}
-                        readOnly
-                        className="w-16 bg-gray-50 text-center"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        value={task.task}
-                        onChange={(e) => handleUpdateTask(task.id, "task", e.target.value)}
-                        onBlur={(e) => handleUpdateTask(task.id, "task", e.target.value)}
-                        placeholder="Enter task description"
-                        className="border-gray-300"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      {task.document ? (
-                        <div className="flex items-center gap-2">
-                          <a
-                            href={`/api${task.document}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:underline text-sm truncate max-w-[120px]"
-                            title={task.documentName || "Document"}
-                          >
-                            {task.documentName || "View"}
-                          </a>
+          <div className="bg-white border rounded-lg overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-b border-slate-100 bg-slate-50/50">
+                  <TableHead className="text-xs font-semibold text-slate-600 w-[80px]">{t("Ref No")}</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600">{t("Task")}</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600 w-[200px]">{t("Document")}</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600 w-[100px] text-center">{t("Executed")}</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600">{t("Comments")}</TableHead>
+                  {isAuditHead && <TableHead className="text-xs font-semibold text-slate-600 w-[100px]">{t("Action")}</TableHead>}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {taskList.length > 0 ? (
+                  taskList.map((task) => (
+                    <TableRow key={task.id} className="hover:bg-slate-50">
+                      <TableCell>
+                        <Input
+                          value={task.refNo}
+                          readOnly
+                          className="w-16 bg-slate-50 text-center"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          value={task.task}
+                          onChange={(e) => handleUpdateTask(task.id, "task", e.target.value)}
+                          onBlur={(e) => handleUpdateTask(task.id, "task", e.target.value)}
+                          placeholder={t("Enter task description")}
+                          className="border-slate-300"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        {task.document ? (
+                          <div className="flex items-center gap-2">
+                            <a
+                              href={`/api${task.document}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary-600 hover:underline text-sm truncate max-w-[120px]"
+                              title={task.documentName || t("Document")}
+                            >
+                              {task.documentName || t("View")}
+                            </a>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6"
+                              onClick={() => {
+                                const input = document.createElement("input");
+                                input.type = "file";
+                                input.accept = ".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg";
+                                input.onchange = (e) => {
+                                  const file = (e.target as HTMLInputElement).files?.[0];
+                                  if (file) handleUploadTaskDocument(task.id, file);
+                                };
+                                input.click();
+                              }}
+                            >
+                              <Upload className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        ) : (
                           <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6"
+                            variant="outline"
+                            size="sm"
+                            className="text-xs"
+                            disabled={uploadingTaskDocument === task.id || isCompleted}
                             onClick={() => {
                               const input = document.createElement("input");
                               input.type = "file";
@@ -1655,245 +1979,385 @@ export default function FieldworkDetailsPage() {
                               input.click();
                             }}
                           >
-                            <Upload className="h-3 w-3" />
+                            {uploadingTaskDocument === task.id ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <>
+                                <Upload className="h-3 w-3 mr-1" />
+                                {t("Upload")}
+                              </>
+                            )}
                           </Button>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Checkbox
+                          checked={task.executed}
+                          onCheckedChange={(checked) =>
+                            handleUpdateTask(task.id, "executed", checked === true)
+                          }
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          value={task.comments}
+                          onChange={(e) => handleUpdateTask(task.id, "comments", e.target.value)}
+                          onBlur={(e) => handleUpdateTask(task.id, "comments", e.target.value)}
+                          placeholder={t("Enter comments")}
+                          className="border-slate-300"
+                        />
+                      </TableCell>
+                      {isAuditHead && (
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleSaveTask(task)}
+                              disabled={savingTask === task.id || isCompleted}
+                              title={t("Save task")}
+                            >
+                              {savingTask === task.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin text-green-600" />
+                              ) : (
+                                <Save className="h-4 w-4 text-green-600" />
+                              )}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDeleteTask(task.id)}
+                              title={t("Delete task")}
+                              disabled={isCompleted}
+                            >
+                              <Trash2 className="h-4 w-4 text-red-600" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={isAuditHead ? 6 : 5} className="text-center py-8 text-slate-500">
+                      {t("No tasks found. Click \"Add Task\" to create one.")}
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      </CollapsibleSection>
+      )}
+
+      {/* Evidence Request Section - Visible for auditees */}
+      <CollapsibleSection
+        title={t("Evidence Request")}
+        isOpen={evidenceRequestOpen}
+        onToggle={() => setEvidenceRequestOpen(!evidenceRequestOpen)}
+      >
+        <div className="space-y-4">
+          {/* Header with buttons - only for audit team */}
+          {!isAuditeeOnly && (
+            <div className="flex justify-between items-center">
+              <div>
+                {isAuditHead && selectedEvidenceIds.length > 0 && (
+                  <Button
+                    size="sm"
+                    className="bg-emerald-600 hover:bg-emerald-700"
+                    onClick={handleAIReview}
+                    disabled={generatingAIReview || isCompleted}
+                  >
+                    {generatingAIReview ? (
+                      <>
+                        <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
+                        {t("Generating...")}
+                      </>
+                    ) : (
+                      <>
+                        <MessageSquare className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                        {t("AI Review")} ({selectedEvidenceIds.length})
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
+              {isAuditHead && (
+                <Button
+                  size="sm"
+                  onClick={() => setAddEvidenceDialogOpen(true)}
+                  disabled={isCompleted}
+                >
+                  <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                  {t("Add Evidence Request")}
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* Card-based UI for Auditees (like VerifAI) */}
+          {isAuditeeOnly ? (
+            filteredEvidenceRequests.length > 0 ? (
+              <div className="space-y-4">
+                {filteredEvidenceRequests.map((er) => (
+                  <div key={er.id} className="bg-slate-50 rounded-lg border border-slate-200 p-4">
+                    <div className="flex items-start gap-4">
+                      {/* Checkbox */}
+                      <div className="pt-1">
+                        <Checkbox
+                          checked={selectedEvidenceIds.includes(er.id)}
+                          onCheckedChange={(checked) => handleSelectEvidence(er.id, checked === true)}
+                          className="border-primary-600 data-[state=checked]:bg-primary-600 data-[state=checked]:text-white"
+                        />
+                      </div>
+
+                      {/* Left side - Title & Description */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-slate-700 font-semibold">
+                            {t("Title")} : {er.title}
+                          </span>
+                          <span className="text-slate-400">|</span>
+                          <span className="text-slate-700 font-semibold">
+                            {t("Sample Size")} : {er.numberOfSamples || "-"}
+                          </span>
                         </div>
-                      ) : (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-xs"
-                          disabled={uploadingTaskDocument === task.id}
-                          onClick={() => {
-                            const input = document.createElement("input");
-                            input.type = "file";
-                            input.accept = ".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg";
-                            input.onchange = (e) => {
-                              const file = (e.target as HTMLInputElement).files?.[0];
-                              if (file) handleUploadTaskDocument(task.id, file);
-                            };
-                            input.click();
-                          }}
-                        >
-                          {uploadingTaskDocument === task.id ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
+                        <p className="text-slate-500 text-sm">
+                          {t("Description")}: {er.description || "-"}
+                        </p>
+                        {/* Uploaded files info */}
+                        {er.attachments && er.attachments.length > 0 && (
+                          <div className="mt-2 flex items-center gap-2 text-sm text-green-600">
+                            <FileText className="h-4 w-4" />
+                            <span>{er.attachments.length} {t("file(s) uploaded")}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Middle - AI Review Section */}
+                      <div className="flex-shrink-0 w-[280px]">
+                        <div className="flex items-center gap-2 mb-1">
+                          <MessageSquare className="h-4 w-4 text-slate-500" />
+                          <span className="text-sm font-medium text-slate-700">{t("AI Review")}</span>
+                        </div>
+                        <div className="flex items-center gap-1 mb-1">
+                          {er.aiReviewStatus === 'Satisfactory' ? (
+                            <>
+                              <div className="w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center">
+                                <span className="text-white text-xs">✓</span>
+                              </div>
+                              <span className="text-sm text-green-600 font-medium">{t("Satisfactory")}</span>
+                            </>
+                          ) : er.aiReviewStatus === 'Needs Attention' ? (
+                            <>
+                              <div className="w-4 h-4 rounded-full bg-red-500 flex items-center justify-center">
+                                <span className="text-white text-xs">✕</span>
+                              </div>
+                              <span className="text-sm text-red-600 font-medium">{t("Needs Attention")}</span>
+                            </>
                           ) : (
                             <>
-                              <Upload className="h-3 w-3 mr-1" />
-                              Upload
+                              <div className="w-4 h-4 rounded-full bg-yellow-500 flex items-center justify-center">
+                                <span className="text-white text-xs">⏳</span>
+                              </div>
+                              <span className="text-sm text-yellow-600 font-medium">
+                                {er.status === 'Submitted' ? t('Awaiting Review') : t('Pending')}
+                              </span>
                             </>
                           )}
+                        </div>
+                        <p className="text-xs text-amber-600 line-clamp-2">
+                          {!er.aiReviewStatus && er.status === 'Pending'
+                            ? t('Waiting for document upload and review.')
+                            : !er.aiReviewStatus && er.status === 'Submitted'
+                            ? t('Document submitted. Awaiting AI review.')
+                            : er.aiReviewStatus
+                            ? t('AI review completed.')
+                            : t('Awaiting review.')}
+                        </p>
+                      </div>
+
+                      {/* Right side - Action Icons */}
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title={t("View Details")}
+                          onClick={() => handleOpenViewEvidence(er, false)}
+                          className="h-8 w-8"
+                        >
+                          <Eye className="h-5 w-5 text-slate-700" />
                         </Button>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Checkbox
-                        checked={task.executed}
-                        onCheckedChange={(checked) =>
-                          handleUpdateTask(task.id, "executed", checked === true)
-                        }
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        value={task.comments}
-                        onChange={(e) => handleUpdateTask(task.id, "comments", e.target.value)}
-                        onBlur={(e) => handleUpdateTask(task.id, "comments", e.target.value)}
-                        placeholder="Enter comments"
-                        className="border-gray-300"
-                      />
-                    </TableCell>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title={t("Add Attachment")}
+                          onClick={() => handleOpenAttachmentDialog(er)}
+                          className="h-8 w-8"
+                        >
+                          <Paperclip className="h-5 w-5 text-slate-700" />
+                        </Button>
+                      </div>
+                    </div>
+                    {/* Submit Response Button - only show when status is Pending */}
+                    {er.status === 'Pending' && (
+                      <div className="flex justify-end mt-4">
+                        <Button
+                          className="bg-primary-600 hover:bg-primary-700 text-white"
+                          onClick={() => {
+                            setAuditeeClariEvidence(er);
+                            setRespondDialogOpen(true);
+                          }}
+                        >
+                          {t("Submit Response")}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-slate-500">{t("No evidence requests found")}</div>
+            )
+          ) : (
+            /* Table-based UI for Audit Team */
+            filteredEvidenceRequests.length > 0 ? (
+              <div className="bg-white border rounded-lg overflow-hidden">
+                <Table>
+                <TableHeader>
+                  <TableRow className="border-b border-slate-100 bg-slate-50/50">
                     {isAuditHead && (
+                      <TableHead className="text-xs font-semibold text-slate-600 w-[50px]">
+                        <Checkbox
+                          checked={selectedEvidenceIds.length === filteredEvidenceRequests.length && filteredEvidenceRequests.length > 0}
+                          onCheckedChange={(checked) => handleSelectAllEvidence(checked === true)}
+                          className="border-white data-[state=checked]:bg-white data-[state=checked]:text-slate-700"
+                        />
+                      </TableHead>
+                    )}
+                    <TableHead className="text-xs font-semibold text-slate-600">{t("Title")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600">{t("Description")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600">{t("Auditee")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600">{t("Samples")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600">{t("Due Date")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600">{t("Status")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600">{t("AI Review")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600">{t("Action")}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredEvidenceRequests.map((er) => (
+                    <TableRow key={er.id} className="hover:bg-slate-50">
+                      {isAuditHead && (
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedEvidenceIds.includes(er.id)}
+                            onCheckedChange={(checked) => handleSelectEvidence(er.id, checked === true)}
+                          />
+                        </TableCell>
+                      )}
+                      <TableCell className="font-medium">{er.title}</TableCell>
+                      <TableCell className="max-w-[200px] truncate">{er.description}</TableCell>
+                      <TableCell>{er.auditee || "-"}</TableCell>
+                      <TableCell>{er.numberOfSamples || "-"}</TableCell>
+                      <TableCell>{formatDate(er.dueDate)}</TableCell>
+                      <TableCell>
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                          er.status === 'Reviewed' ? 'bg-emerald-100 text-emerald-800' :
+                          er.status === 'Submitted' ? 'bg-blue-100 text-blue-800' :
+                          er.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-slate-100 text-slate-800'
+                        }`}>
+                          {er.status}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        {er.aiReviewStatus ? (
+                          <div className="flex items-center gap-1">
+                            {er.aiReviewStatus === 'Satisfactory' ? (
+                              <>
+                                <div className="w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center">
+                                  <span className="text-white text-xs">✓</span>
+                                </div>
+                                <span className="text-sm text-green-600 font-medium">{t("Satisfactory")}</span>
+                              </>
+                            ) : (
+                              <>
+                                <div className="w-4 h-4 rounded-full bg-red-500 flex items-center justify-center">
+                                  <span className="text-white text-xs">✕</span>
+                                </div>
+                                <span className="text-sm text-red-600 font-medium">{t("Needs Attention")}</span>
+                              </>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-sm text-slate-400">-</span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleSaveTask(task)}
-                            disabled={savingTask === task.id}
-                            title="Save task"
+                            title={t("View")}
+                            onClick={() => handleOpenViewEvidence(er, false)}
                           >
-                            {savingTask === task.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin text-green-600" />
-                            ) : (
-                              <Save className="h-4 w-4 text-green-600" />
-                            )}
+                            <Eye className="h-4 w-4 text-slate-600" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDeleteTask(task.id)}
-                            title="Delete task"
-                          >
-                            <Trash2 className="h-4 w-4 text-red-600" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    )}
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={isAuditHead ? 6 : 5} className="text-center py-8 text-gray-500">
-                    No tasks found. Click "Add Task" to create one.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </CollapsibleSection>
-
-      {/* Evidence Request Section */}
-      <CollapsibleSection
-        title="Evidence Request"
-        isOpen={evidenceRequestOpen}
-        onToggle={() => setEvidenceRequestOpen(!evidenceRequestOpen)}
-      >
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <div>
-              {isAuditHead && selectedEvidenceIds.length > 0 && (
-                <Button
-                  size="sm"
-                  className="bg-green-600 hover:bg-green-700"
-                  onClick={handleAIReview}
-                  disabled={generatingAIReview || !canRunAIReview}
-                  title={!canRunAIReview ? "Select evidence requests with at least one file to run AI Review" : undefined}
-                >
-                  {generatingAIReview ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <MessageSquare className="h-4 w-4 mr-2" />
-                      AI Review ({selectedEvidenceIds.length})
-                    </>
-                  )}
-                </Button>
-              )}
-            </div>
-            <Button
-              size="sm"
-              className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
-              onClick={() => setAddEvidenceDialogOpen(true)}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Evidence Request
-            </Button>
-          </div>
-          {evidenceRequests.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-[#1e3a5f] hover:bg-[#1e3a5f]">
-                  {isAuditHead && (
-                    <TableHead className="text-white w-[50px]">
-                      <Checkbox
-                        checked={selectedEvidenceIds.length === evidenceRequests.length && evidenceRequests.length > 0}
-                        onCheckedChange={(checked) => handleSelectAllEvidence(checked === true)}
-                        className="border-white data-[state=checked]:bg-white data-[state=checked]:text-[#1e3a5f]"
-                      />
-                    </TableHead>
-                  )}
-                  <TableHead className="text-white">Title</TableHead>
-                  <TableHead className="text-white">Description</TableHead>
-                  <TableHead className="text-white">Auditee</TableHead>
-                  <TableHead className="text-white">Due Date</TableHead>
-                  <TableHead className="text-white">Status</TableHead>
-                  <TableHead className="text-white">Files</TableHead>
-                  <TableHead className="text-white">Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {evidenceRequests.map((er) => (
-                  <TableRow key={er.id} className="hover:bg-gray-50">
-                    {isAuditHead && (
-                      <TableCell>
-                        <Checkbox
-                          checked={selectedEvidenceIds.includes(er.id)}
-                          onCheckedChange={(checked) => handleSelectEvidence(er.id, checked === true)}
-                        />
-                      </TableCell>
-                    )}
-                    <TableCell className="font-medium">{er.title}</TableCell>
-                    <TableCell className="max-w-[200px] truncate">{er.description}</TableCell>
-                    <TableCell>{er.auditee || "-"}</TableCell>
-                    <TableCell>{formatDate(er.dueDate)}</TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        er.status === 'Reviewed' ? 'bg-green-100 text-green-800' :
-                        er.status === 'Submitted' ? 'bg-blue-100 text-blue-800' :
-                        er.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {er.status}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {(er.attachmentCount ?? 0) > 0 ? (
-                        <span className="text-green-600 font-medium">{er.attachmentCount}</span>
-                      ) : (
-                        <span className="text-amber-600">0</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          title="View"
-                          onClick={() => handleOpenViewEvidence(er, false)}
-                        >
-                          <Eye className="h-4 w-4 text-gray-600" />
-                        </Button>
-                        {isAuditHead && (
-                          <>
+                          {/* Auditees can upload attachments to their own evidence requests */}
+                          {(isAuditHead || (isAuditee && er.auditeeId === currentUserId)) && (
                             <Button
                               variant="ghost"
                               size="icon"
-                              title="Add Attachment"
+                              title={t("Add Attachment")}
                               onClick={() => handleOpenAttachmentDialog(er)}
                             >
                               <Upload className="h-4 w-4 text-green-600" />
                             </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              title="Edit"
-                              onClick={() => handleOpenViewEvidence(er, true)}
-                            >
-                              <Pencil className="h-4 w-4 text-blue-600" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              title="Delete"
-                              onClick={() => {
-                                setEvidenceToDelete(er);
-                                setDeleteEvidenceDialogOpen(true);
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4 text-red-600" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <div className="text-center py-8 text-gray-500">No evidence requests found</div>
+                          )}
+                          {/* Only Audit Heads can edit and delete */}
+                          {isAuditHead && (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title={t("Edit")}
+                                onClick={() => handleOpenViewEvidence(er, true)}
+                              >
+                                <Pencil className="h-4 w-4 text-primary-600" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title={t("Delete")}
+                                onClick={() => {
+                                  setEvidenceToDelete(er);
+                                  setDeleteEvidenceDialogOpen(true);
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4 text-red-600" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+                </Table>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-slate-500">{t("No evidence requests found")}</div>
+            )
           )}
         </div>
       </CollapsibleSection>
 
-      {/* Other Documents Section */}
+      {/* Other Documents Section - Hidden for auditees */}
+      {!isAuditeeOnly && (
       <CollapsibleSection
-        title="Other Documents"
+        title={t("Other Documents")}
         isOpen={otherDocsOpen}
         onToggle={() => setOtherDocsOpen(!otherDocsOpen)}
       >
@@ -1901,231 +2365,237 @@ export default function FieldworkDetailsPage() {
           <div className="flex justify-end">
             <Button
               size="sm"
-              className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
               onClick={() => {
                 setUploadedFiles([]);
                 setNewDocument({ title: "", documentType: "", description: "" });
                 setNewDocumentDialogOpen(true);
               }}
             >
-              <Upload className="h-4 w-4 mr-2" />
-              Upload Document
+              <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+              {t("Upload Document")}
             </Button>
           </div>
           {otherDocuments.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-[#1e3a5f] hover:bg-[#1e3a5f]">
-                  <TableHead className="text-white">Title</TableHead>
-                  <TableHead className="text-white">Document Type</TableHead>
-                  <TableHead className="text-white">Description</TableHead>
-                  <TableHead className="text-white">File</TableHead>
-                  <TableHead className="text-white">Uploaded</TableHead>
-                  <TableHead className="text-white">Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {otherDocuments.map((doc) => (
-                  <TableRow key={doc.id} className="hover:bg-gray-50">
-                    <TableCell className="font-medium">{doc.title || doc.fileName}</TableCell>
-                    <TableCell>{doc.documentType || "-"}</TableCell>
-                    <TableCell className="max-w-[200px] truncate">{doc.description || "-"}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-blue-600" />
-                        <span className="text-sm">{doc.fileName}</span>
-                        <span className="text-xs text-gray-400">({formatFileSize(doc.fileSize)})</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>{formatDate(doc.uploadedAt)}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          title="View"
-                          onClick={() => handleOpenViewDocument(doc, false)}
-                        >
-                          <Eye className="h-4 w-4 text-gray-600" />
-                        </Button>
-                        {isAuditHead && (
-                          <>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              title="Edit"
-                              onClick={() => handleOpenViewDocument(doc, true)}
-                            >
-                              <Pencil className="h-4 w-4 text-blue-600" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              title="Delete"
-                              onClick={() => {
-                                setDocumentToDelete(doc);
-                                setDeleteDocumentDialogOpen(true);
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4 text-red-600" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </TableCell>
+            <div className="bg-white border rounded-lg overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b border-slate-100 bg-slate-50/50">
+                    <TableHead className="text-xs font-semibold text-slate-600">{t("Title")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600">{t("Document Type")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600">{t("Description")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600">{t("File")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600">{t("Uploaded")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600">{t("Action")}</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {otherDocuments.map((doc) => (
+                    <TableRow key={doc.id} className="hover:bg-slate-50">
+                      <TableCell className="font-medium">{doc.title || doc.fileName}</TableCell>
+                      <TableCell>{doc.documentType || "-"}</TableCell>
+                      <TableCell className="max-w-[200px] truncate">{doc.description || "-"}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-primary-600" />
+                          <span className="text-sm">{doc.fileName}</span>
+                          <span className="text-xs text-slate-400">({formatFileSize(doc.fileSize)})</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>{formatDate(doc.uploadedAt)}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title={t("View")}
+                            onClick={() => handleOpenViewDocument(doc, false)}
+                          >
+                            <Eye className="h-4 w-4 text-slate-600" />
+                          </Button>
+                          {isAuditHead && (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title={t("Edit")}
+                                onClick={() => handleOpenViewDocument(doc, true)}
+                              >
+                                <Pencil className="h-4 w-4 text-primary-600" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title={t("Delete")}
+                                onClick={() => {
+                                  setDocumentToDelete(doc);
+                                  setDeleteDocumentDialogOpen(true);
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4 text-red-600" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           ) : (
-            <div className="text-center py-8 text-gray-500">No other documents uploaded yet</div>
+            <div className="text-center py-8 text-slate-500">{t("No other documents uploaded yet")}</div>
           )}
         </div>
       </CollapsibleSection>
+      )}
 
-      {/* Findings Section */}
+      {/* Findings Section - Visible for auditees */}
       <CollapsibleSection
-        title="Findings"
+        title={t("Findings")}
         isOpen={findingsOpen}
         onToggle={() => setFindingsOpen(!findingsOpen)}
       >
         <div className="space-y-4">
-          <div className="flex justify-end gap-2">
-            {!isAuditHead && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setAddFindingDialogOpen(true)}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Quick Add
-              </Button>
-            )}
+          {/* Hide Add Finding button for auditees - they can only view findings */}
+          {!isAuditeeOnly && (
+          <div className="flex justify-end">
             <Button
               size="sm"
-              className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
-              onClick={() => router.push(`/internal-audit/fieldwork/${engagementId}/add-finding`)}
+              onClick={() => setAddFullFindingDialogOpen(true)}
+              disabled={isCompleted}
             >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Finding (Full Form)
+              <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+              {t("Add Finding")}
             </Button>
           </div>
+          )}
           {findings.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-[#1e3a5f] hover:bg-[#1e3a5f]">
-                  <TableHead className="text-white">Finding ID</TableHead>
-                  <TableHead className="text-white">Title</TableHead>
-                  <TableHead className="text-white">Severity</TableHead>
-                  <TableHead className="text-white">Responsible Person</TableHead>
-                  <TableHead className="text-white">Target Date</TableHead>
-                  <TableHead className="text-white">Status</TableHead>
-                  <TableHead className="text-white">Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {findings.map((finding) => (
-                  <TableRow key={finding.id} className="hover:bg-gray-50">
-                    <TableCell className="font-medium">{finding.findingId || '-'}</TableCell>
-                    <TableCell className="max-w-[200px] truncate">{finding.title}</TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        finding.severity === 'Critical' ? 'bg-red-100 text-red-800' :
-                        finding.severity === 'High' ? 'bg-orange-100 text-orange-800' :
-                        finding.severity === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-green-100 text-green-800'
-                      }`}>
-                        {finding.severity}
-                      </span>
-                    </TableCell>
-                    <TableCell>{finding.responsiblePerson || '-'}</TableCell>
-                    <TableCell>{formatDate(finding.targetDate || null)}</TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        finding.status === 'Closed' ? 'bg-green-100 text-green-800' :
-                        finding.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
-                        finding.status === 'Overdue' ? 'bg-red-100 text-red-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {finding.status}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => router.push(`/internal-audit/fieldwork/${engagementId}/findings/${finding.id}`)}
-                          title="View"
-                        >
-                          <Eye className="h-4 w-4 text-gray-600" />
-                        </Button>
-                        {isAuditHead && (
-                          <>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => router.push(`/internal-audit/fieldwork/${engagementId}/findings/${finding.id}?edit=true`)}
-                              title="Edit"
-                            >
-                              <Pencil className="h-4 w-4 text-blue-600" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
-                                setFindingToDelete(finding);
-                                setDeleteFindingDialogOpen(true);
-                              }}
-                              title="Delete"
-                            >
-                              <Trash2 className="h-4 w-4 text-red-600" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </TableCell>
+            <div className="bg-white border rounded-lg overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b border-slate-100 bg-slate-50/50">
+                    <TableHead className="text-xs font-semibold text-slate-600">{t("Finding ID")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600">{t("Title")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600">{t("Severity")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600">{t("Responsible Person")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600">{t("Target Date")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600">{t("Status")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600">{t("Action")}</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {findings.map((finding) => (
+                    <TableRow key={finding.id} className="hover:bg-slate-50">
+                      <TableCell className="font-medium">{finding.findingId || '-'}</TableCell>
+                      <TableCell className="max-w-[200px] truncate">{finding.title}</TableCell>
+                      <TableCell>
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                          finding.severity === 'Critical' ? 'bg-red-100 text-red-800' :
+                          finding.severity === 'High' ? 'bg-orange-100 text-orange-800' :
+                          finding.severity === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-emerald-100 text-emerald-800'
+                        }`}>
+                          {finding.severity}
+                        </span>
+                      </TableCell>
+                      <TableCell>{finding.responsiblePerson || '-'}</TableCell>
+                      <TableCell>{formatDate(finding.targetDate || null)}</TableCell>
+                      <TableCell>
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                          finding.status === 'Closed' ? 'bg-emerald-100 text-emerald-800' :
+                          finding.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
+                          finding.status === 'Overdue' ? 'bg-red-100 text-red-800' :
+                          'bg-slate-100 text-slate-800'
+                        }`}>
+                          {finding.status}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => router.push(`/internal-audit/fieldwork/${engagementId}/findings/${finding.id}`)}
+                            title={t("View")}
+                          >
+                            <Eye className="h-4 w-4 text-slate-600" />
+                          </Button>
+                          {isAuditHead && (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => router.push(`/internal-audit/fieldwork/${engagementId}/findings/${finding.id}?edit=true`)}
+                                title={t("Edit")}
+                              >
+                                <Pencil className="h-4 w-4 text-primary-600" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  setFindingToDelete(finding);
+                                  setDeleteFindingDialogOpen(true);
+                                }}
+                                title={t("Delete")}
+                              >
+                                <Trash2 className="h-4 w-4 text-red-600" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           ) : (
-            <div className="text-center py-8 text-gray-500">No findings recorded yet</div>
+            <div className="text-center py-8 text-slate-500">{t("No findings recorded yet")}</div>
           )}
         </div>
       </CollapsibleSection>
 
       {/* Comments Dialog */}
       <Dialog open={commentsDialogOpen} onOpenChange={setCommentsDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Engagement Comments</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <Textarea placeholder="Add a comment..." rows={4} />
-            <div className="text-sm text-gray-500">No comments yet</div>
+        <DialogContent className="sm:max-w-[700px] flex flex-col p-0 gap-0 max-h-[90vh]">
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Engagement Comments")}</DialogTitle>
+            </DialogHeader>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCommentsDialogOpen(false)}>
-              Close
+          {/* Scrollable Content */}
+          <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
+            <Textarea placeholder={t("Add a comment...")} rows={4} />
+            <div className="text-sm text-slate-500">{t("No comments yet")}</div>
+          </div>
+          {/* Fixed Footer */}
+          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
+            <Button variant="outline" size="sm" onClick={() => setCommentsDialogOpen(false)}>
+              {t("Close")}
             </Button>
-            <Button className="bg-[#1e3a5f] hover:bg-[#2d4a6f]">Add Comment</Button>
-          </DialogFooter>
+            <Button size="sm">{t("Add Comment")}</Button>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Upload Dialog */}
       <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>
-              Upload {uploadCategory === "workpapers" ? "Workpaper" : "Document"}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
+        <DialogContent className="sm:max-w-[700px] flex flex-col p-0 gap-0 max-h-[90vh]">
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">
+                {t("Upload")} {uploadCategory === "workpapers" ? t("Workpaper") : t("Document")}
+              </DialogTitle>
+            </DialogHeader>
+          </div>
+          {/* Scrollable Content */}
+          <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
             <div
               className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-                isDragOver ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-gray-400"
+                isDragOver ? "border-primary-500 bg-primary-50" : "border-slate-300 hover:border-slate-400"
               }`}
               onDragOver={(e) => {
                 e.preventDefault();
@@ -2135,10 +2605,10 @@ export default function FieldworkDetailsPage() {
               onDrop={handleFileDrop}
               onClick={() => fileInputRef.current?.click()}
             >
-              <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-              <p className="text-gray-600">Drag and drop files here, or click to browse</p>
-              <p className="text-sm text-gray-400 mt-1">
-                Supported formats: PDF, DOC, DOCX, XLS, XLSX, PNG, JPG
+              <Upload className="h-8 w-8 text-slate-400 mx-auto mb-2" />
+              <p className="text-slate-600">{t("Drag and drop files here, or click to browse")}</p>
+              <p className="text-sm text-slate-400 mt-1">
+                {t("Supported formats")}: PDF, DOC, DOCX, XLS, XLSX, PNG, JPG
               </p>
               <input
                 ref={fileInputRef}
@@ -2154,13 +2624,13 @@ export default function FieldworkDetailsPage() {
                 {uploadedFiles.map((file) => (
                   <div
                     key={file.id}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border"
+                    className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border"
                   >
                     <div className="flex items-center gap-3">
-                      <FileText className="h-5 w-5 text-blue-500" />
+                      <FileText className="h-5 w-5 text-primary-500" />
                       <div>
                         <span className="text-sm font-medium">{file.name}</span>
-                        <span className="text-xs text-gray-400 ml-2">
+                        <span className="text-xs text-slate-400 ml-2">
                           ({formatFileSize(file.size)})
                         </span>
                       </div>
@@ -2178,54 +2648,59 @@ export default function FieldworkDetailsPage() {
               </div>
             )}
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setUploadDialogOpen(false)}>
-              Cancel
+          {/* Fixed Footer */}
+          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
+            <Button variant="outline" size="sm" onClick={() => setUploadDialogOpen(false)}>
+              {t("Cancel")}
             </Button>
             <Button
-              className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
+              size="sm"
               onClick={handleUploadFiles}
-              disabled={uploading || uploadedFiles.length === 0}
+              disabled={uploading || uploadedFiles.length === 0 || isCompleted}
             >
               {uploading ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Uploading...
+                  <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
+                  {t("Uploading...")}
                 </>
               ) : (
-                "Upload"
+                t("Upload")
               )}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Add Finding Dialog */}
       <Dialog open={addFindingDialogOpen} onOpenChange={setAddFindingDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Add Finding</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Title *</Label>
+        <DialogContent className="sm:max-w-[700px] flex flex-col p-0 gap-0 max-h-[90vh]">
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Finding")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          {/* Scrollable Content */}
+          <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-end text-slate-500">{t("Title")} <span className="text-red-500">*</span></Label>
               <Input
                 value={newFinding.title}
                 onChange={(e) => setNewFinding({ ...newFinding, title: e.target.value })}
-                placeholder="Enter finding title"
+                placeholder={t("Enter finding title")}
               />
             </div>
-            <div className="space-y-2">
-              <Label>Description</Label>
+            <div className="grid grid-cols-[140px_1fr] items-start gap-4">
+              <Label className="text-end text-slate-500 pt-2">{t("Description")}</Label>
               <Textarea
                 value={newFinding.description}
                 onChange={(e) => setNewFinding({ ...newFinding, description: e.target.value })}
-                placeholder="Enter description"
+                placeholder={t("Enter description")}
                 rows={3}
               />
             </div>
-            <div className="space-y-2">
-              <Label>Severity</Label>
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-end text-slate-500">{t("Severity")}</Label>
               <Select
                 value={newFinding.severity}
                 onValueChange={(value) => setNewFinding({ ...newFinding, severity: value })}
@@ -2234,455 +2709,685 @@ export default function FieldworkDetailsPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Low">Low</SelectItem>
-                  <SelectItem value="Medium">Medium</SelectItem>
-                  <SelectItem value="High">High</SelectItem>
-                  <SelectItem value="Critical">Critical</SelectItem>
+                  <SelectItem value="Low">{t("Low")}</SelectItem>
+                  <SelectItem value="Medium">{t("Medium")}</SelectItem>
+                  <SelectItem value="High">{t("High")}</SelectItem>
+                  <SelectItem value="Critical">{t("Critical")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label>Recommendation</Label>
+            <div className="grid grid-cols-[140px_1fr] items-start gap-4">
+              <Label className="text-end text-slate-500 pt-2">{t("Recommendation")}</Label>
               <Textarea
                 value={newFinding.recommendation}
                 onChange={(e) => setNewFinding({ ...newFinding, recommendation: e.target.value })}
-                placeholder="Enter recommendation"
+                placeholder={t("Enter recommendation")}
                 rows={3}
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setAddFindingDialogOpen(false)}>
-              Cancel
+          {/* Fixed Footer */}
+          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
+            <Button variant="outline" size="sm" onClick={() => setAddFindingDialogOpen(false)}>
+              {t("Cancel")}
             </Button>
-            <Button className="bg-[#1e3a5f] hover:bg-[#2d4a6f]" onClick={handleAddFinding}>
-              Add Finding
+            <Button size="sm" onClick={handleAddFinding}>
+              {t("Add Finding")}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
-      {/* Add Evidence Request Dialog */}
-      <Dialog open={addEvidenceDialogOpen} onOpenChange={setAddEvidenceDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Add Evidence Request</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Title *</Label>
+      {/* Add Full Finding Dialog */}
+      <Dialog open={addFullFindingDialogOpen} onOpenChange={setAddFullFindingDialogOpen}>
+        <DialogContent className="sm:max-w-[700px] flex flex-col p-0 gap-0 max-h-[90vh]">
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Finding")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          {/* Scrollable Content */}
+          <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
+            {/* Finding Title */}
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-end text-slate-500">{t("Finding Title")} <span className="text-red-500">*</span></Label>
               <Input
-                value={newEvidence.title}
-                onChange={(e) => setNewEvidence({ ...newEvidence, title: e.target.value })}
-                placeholder="Enter evidence request title"
+                value={fullFinding.findingTitle}
+                onChange={(e) => setFullFinding({ ...fullFinding, findingTitle: e.target.value })}
+                placeholder={t("Enter finding title")}
+                className="bg-white"
               />
             </div>
-            <div className="space-y-2">
-              <Label>Description</Label>
-              <Textarea
-                value={newEvidence.description}
-                onChange={(e) => setNewEvidence({ ...newEvidence, description: e.target.value })}
-                placeholder="Enter description"
-                rows={3}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Auditee</Label>
+
+            {/* Severity */}
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-end text-slate-500">{t("Severity")}</Label>
               <Select
-                value={newEvidence.auditee}
-                onValueChange={(value) => setNewEvidence({ ...newEvidence, auditee: value })}
+                value={fullFinding.severity}
+                onValueChange={(value) => setFullFinding({ ...fullFinding, severity: value })}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select auditee" />
+                <SelectTrigger className="bg-white">
+                  <SelectValue placeholder={t("Select severity")} />
                 </SelectTrigger>
                 <SelectContent>
-                  {users.map((user) => (
-                    <SelectItem key={user.id} value={user.fullName}>
+                  <SelectItem value="Low">{t("Low")}</SelectItem>
+                  <SelectItem value="Medium">{t("Medium")}</SelectItem>
+                  <SelectItem value="High">{t("High")}</SelectItem>
+                  <SelectItem value="Critical">{t("Critical")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Criteria */}
+            <div className="grid grid-cols-[140px_1fr] items-start gap-4">
+              <Label className="text-end text-slate-500 pt-2">{t("Criteria (What should be)")}</Label>
+              <Textarea
+                value={fullFinding.criteria}
+                onChange={(e) => setFullFinding({ ...fullFinding, criteria: e.target.value })}
+                placeholder={t("Enter criteria")}
+                rows={3}
+                className="bg-white"
+              />
+            </div>
+
+            {/* Condition */}
+            <div className="grid grid-cols-[140px_1fr] items-start gap-4">
+              <Label className="text-end text-slate-500 pt-2">{t("Condition (What is)")}</Label>
+              <Textarea
+                value={fullFinding.condition}
+                onChange={(e) => setFullFinding({ ...fullFinding, condition: e.target.value })}
+                placeholder={t("Enter condition")}
+                rows={3}
+                className="bg-white"
+              />
+            </div>
+
+            {/* Cause */}
+            <div className="grid grid-cols-[140px_1fr] items-start gap-4">
+              <Label className="text-end text-slate-500 pt-2">{t("Cause (Why it happened)")}</Label>
+              <Textarea
+                value={fullFinding.cause}
+                onChange={(e) => setFullFinding({ ...fullFinding, cause: e.target.value })}
+                placeholder={t("Enter cause")}
+                rows={3}
+                className="bg-white"
+              />
+            </div>
+
+            {/* Effect */}
+            <div className="grid grid-cols-[140px_1fr] items-start gap-4">
+              <Label className="text-end text-slate-500 pt-2">{t("Effect (The consequence)")}</Label>
+              <Textarea
+                value={fullFinding.effect}
+                onChange={(e) => setFullFinding({ ...fullFinding, effect: e.target.value })}
+                placeholder={t("Enter effect")}
+                rows={3}
+                className="bg-white"
+              />
+            </div>
+
+            {/* Recommendation */}
+            <div className="grid grid-cols-[140px_1fr] items-start gap-4">
+              <Label className="text-end text-slate-500 pt-2">{t("Recommendation")}</Label>
+              <Textarea
+                value={fullFinding.recommendation}
+                onChange={(e) => setFullFinding({ ...fullFinding, recommendation: e.target.value })}
+                placeholder={t("Enter recommendation")}
+                rows={3}
+                className="bg-white"
+              />
+            </div>
+
+            {/* CAPA Section Header */}
+            <div className="pt-2 border-t border-slate-100">
+              <h3 className="text-sm font-semibold text-slate-800">{t("Corrective & Preventive Actions (CAPA)")}</h3>
+            </div>
+
+            {/* Responsible Person */}
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-end text-slate-500">{t("Responsible Person")}</Label>
+              <Select
+                value={fullFinding.responsiblePersonId}
+                onValueChange={(value) => setFullFinding({ ...fullFinding, responsiblePersonId: value })}
+              >
+                <SelectTrigger className="bg-white">
+                  <SelectValue placeholder={t("Select person")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {auditees.map((user) => (
+                    <SelectItem key={user.id} value={user.id}>
                       {user.fullName}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label>Due Date</Label>
+
+            {/* Status */}
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-end text-slate-500">{t("Status")}</Label>
+              <Select
+                value={fullFinding.status}
+                onValueChange={(value) => setFullFinding({ ...fullFinding, status: value })}
+              >
+                <SelectTrigger className="bg-white">
+                  <SelectValue placeholder={t("Select status")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Open">{t("Open")}</SelectItem>
+                  <SelectItem value="In Progress">{t("In Progress")}</SelectItem>
+                  <SelectItem value="Closed">{t("Closed")}</SelectItem>
+                  <SelectItem value="Overdue">{t("Overdue")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Target Closure Date */}
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-end text-slate-500">{t("Target Closure Date")}</Label>
               <DatePicker
-                value={newEvidence.dueDate}
-                onChange={(date) => setNewEvidence({ ...newEvidence, dueDate: date ? date.toISOString().split('T')[0] : "" })}
-                placeholder="Select due date"
+                value={fullFinding.targetClosureDate}
+                onChange={(date) => setFullFinding({ ...fullFinding, targetClosureDate: date ? date.toISOString().split('T')[0] : "" })}
+                placeholder={t("Select date")}
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setAddEvidenceDialogOpen(false)}>
-              Cancel
+          {/* Fixed Footer */}
+          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
+            <Button variant="outline" size="sm" onClick={() => setAddFullFindingDialogOpen(false)}>
+              {t("Cancel")}
             </Button>
-            <Button className="bg-[#1e3a5f] hover:bg-[#2d4a6f]" onClick={handleAddEvidence}>
-              Add Evidence Request
+            <Button size="sm" onClick={handleAddFullFinding} disabled={savingFullFinding}>
+              {savingFullFinding ? (
+                <>
+                  <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
+                  {t("Saving...")}
+                </>
+              ) : (
+                t("Save")
+              )}
             </Button>
-          </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Evidence Request Dialog */}
+      <Dialog open={addEvidenceDialogOpen} onOpenChange={setAddEvidenceDialogOpen}>
+        <DialogContent className="sm:max-w-[700px] flex flex-col p-0 gap-0 max-h-[90vh]">
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Evidence Request")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          {/* Scrollable Content */}
+          <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-end text-slate-500">{t("Title")} <span className="text-red-500">*</span></Label>
+              <Input
+                value={newEvidence.title}
+                onChange={(e) => setNewEvidence({ ...newEvidence, title: e.target.value })}
+                placeholder={t("Enter evidence request title")}
+              />
+            </div>
+            <div className="grid grid-cols-[140px_1fr] items-start gap-4">
+              <Label className="text-end text-slate-500 pt-2">{t("Description")}</Label>
+              <Textarea
+                value={newEvidence.description}
+                onChange={(e) => setNewEvidence({ ...newEvidence, description: e.target.value })}
+                placeholder={t("Enter description")}
+                rows={3}
+              />
+            </div>
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-end text-slate-500">{t("Auditee")} <span className="text-red-500">*</span></Label>
+              <Select
+                value={newEvidence.auditeeId}
+                onValueChange={(value) => {
+                  const selectedAuditee = auditees.find(a => a.id === value);
+                  setNewEvidence({
+                    ...newEvidence,
+                    auditeeId: value,
+                    auditee: selectedAuditee?.fullName || ""
+                  });
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t("Select auditee")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {auditees.map((auditee) => (
+                    <SelectItem key={auditee.id} value={auditee.id}>
+                      {auditee.fullName} {auditee.department?.name ? `(${auditee.department.name})` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-end text-slate-500">{t("Number of Samples")}</Label>
+              <Input
+                type="number"
+                min="1"
+                value={newEvidence.numberOfSamples}
+                onChange={(e) => setNewEvidence({ ...newEvidence, numberOfSamples: e.target.value })}
+                placeholder={t("Enter number of samples required")}
+              />
+            </div>
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-end text-slate-500">{t("Due Date")}</Label>
+              <DatePicker
+                value={newEvidence.dueDate}
+                onChange={(date) => setNewEvidence({ ...newEvidence, dueDate: date ? date.toISOString().split('T')[0] : "" })}
+                placeholder={t("Select due date")}
+              />
+            </div>
+          </div>
+          {/* Fixed Footer */}
+          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
+            <Button variant="outline" size="sm" onClick={() => setAddEvidenceDialogOpen(false)}>
+              {t("Cancel")}
+            </Button>
+            <Button size="sm" onClick={handleAddEvidence}>
+              {t("Add Evidence Request")}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Delete Finding Confirmation Dialog */}
       <Dialog open={deleteFindingDialogOpen} onOpenChange={setDeleteFindingDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Delete Finding</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete the finding "{findingToDelete?.title}"? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
+        <DialogContent className="sm:max-w-[400px] p-0 gap-0">
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Delete Finding")}</DialogTitle>
+              <DialogDescription className="text-slate-600">
+                {t("Are you sure you want to delete the finding")} &quot;{findingToDelete?.title}&quot;? {t("This action cannot be undone.")}
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="px-6 py-4 flex justify-end gap-2">
             <Button
               variant="outline"
+              size="sm"
               onClick={() => {
                 setDeleteFindingDialogOpen(false);
                 setFindingToDelete(null);
               }}
             >
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button
               variant="destructive"
+              size="sm"
               onClick={handleDeleteFinding}
-              disabled={deletingFinding}
+              disabled={deletingFinding || isCompleted}
             >
               {deletingFinding ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Deleting...
+                  <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
+                  {t("Deleting...")}
                 </>
               ) : (
-                "Delete"
+                t("Delete")
               )}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* New Document Upload Dialog */}
       <Dialog open={newDocumentDialogOpen} onOpenChange={setNewDocumentDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>New Document</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">Title</Label>
+        <DialogContent className="sm:max-w-[700px] flex flex-col p-0 gap-0 max-h-[90vh]">
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("New Document")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          {/* Scrollable Content */}
+          <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-end text-slate-500">{t("Title")}</Label>
               <Input
                 value={newDocument.title}
                 onChange={(e) => setNewDocument({ ...newDocument, title: e.target.value })}
-                placeholder="Enter document title"
+                placeholder={t("Enter document title")}
               />
             </div>
-            <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">Document Type</Label>
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-end text-slate-500">{t("Document Type")}</Label>
               <Select
                 value={newDocument.documentType}
                 onValueChange={(value) => setNewDocument({ ...newDocument, documentType: value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select document type" />
+                  <SelectValue placeholder={t("Select document type")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Policy">Policy</SelectItem>
-                  <SelectItem value="Procedure">Procedure</SelectItem>
-                  <SelectItem value="Report">Report</SelectItem>
-                  <SelectItem value="Evidence">Evidence</SelectItem>
-                  <SelectItem value="Memo">Memo</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
+                  <SelectItem value="Minutes of Meeting">{t("Minutes of Meeting")}</SelectItem>
+                  <SelectItem value="Approval Document">{t("Approval Document")}</SelectItem>
+                  <SelectItem value="Email Communication">{t("Email Communication")}</SelectItem>
+                  <SelectItem value="Contract">{t("Contract")}</SelectItem>
+                  <SelectItem value="Invoice">{t("Invoice")}</SelectItem>
+                  <SelectItem value="Policy Document">{t("Policy Document")}</SelectItem>
+                  <SelectItem value="Other">{t("Other")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">Description</Label>
+            <div className="grid grid-cols-[140px_1fr] items-start gap-4">
+              <Label className="text-end text-slate-500 pt-2">{t("Description")}</Label>
               <Textarea
                 value={newDocument.description}
                 onChange={(e) => setNewDocument({ ...newDocument, description: e.target.value })}
-                placeholder="Enter description"
+                placeholder={t("Enter description")}
                 rows={4}
               />
             </div>
-            <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">Attach File</Label>
-              <div
-                className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
-                  isDragOver ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-gray-400"
-                }`}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setIsDragOver(true);
-                }}
-                onDragLeave={() => setIsDragOver(false)}
-                onDrop={handleFileDrop}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <p className="text-gray-600">Click here, or drop files here to upload.</p>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  className="hidden"
-                  accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
-                  onChange={handleFileSelect}
-                />
-              </div>
-              {uploadedFiles.length > 0 && (
-                <div className="space-y-2 mt-2">
-                  {uploadedFiles.map((file) => (
-                    <div
-                      key={file.id}
-                      className="flex items-center justify-between p-2 bg-gray-50 rounded border"
-                    >
-                      <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-blue-500" />
-                        <span className="text-sm">{file.name}</span>
-                        <span className="text-xs text-gray-400">({formatFileSize(file.size)})</span>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeFile(file.id)}
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50 h-6 w-6 p-0"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
+            <div className="grid grid-cols-[140px_1fr] items-start gap-4">
+              <Label className="text-end text-slate-500 pt-2">{t("Attach File")}</Label>
+              <div>
+                <div
+                  className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
+                    isDragOver ? "border-primary-500 bg-primary-50" : "border-slate-300 hover:border-slate-400"
+                  }`}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setIsDragOver(true);
+                  }}
+                  onDragLeave={() => setIsDragOver(false)}
+                  onDrop={handleFileDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <p className="text-slate-600">{t("Click here, or drop files here to upload.")}</p>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    className="hidden"
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
+                    onChange={handleFileSelect}
+                  />
                 </div>
-              )}
+                {uploadedFiles.length > 0 && (
+                  <div className="space-y-2 mt-2">
+                    {uploadedFiles.map((file) => (
+                      <div
+                        key={file.id}
+                        className="flex items-center justify-between p-2 bg-slate-50 rounded border"
+                      >
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-primary-500" />
+                          <span className="text-sm">{file.name}</span>
+                          <span className="text-xs text-slate-400">({formatFileSize(file.size)})</span>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeFile(file.id)}
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50 h-6 w-6 p-0"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-          <DialogFooter>
+          {/* Fixed Footer */}
+          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
             <Button
               variant="outline"
+              size="sm"
               onClick={() => {
                 setNewDocumentDialogOpen(false);
                 setUploadedFiles([]);
                 setNewDocument({ title: "", documentType: "", description: "" });
               }}
             >
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button
-              className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
+              size="sm"
               onClick={handleUploadDocument}
-              disabled={uploading}
+              disabled={uploading || isCompleted}
             >
               {uploading ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Saving...
+                  <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
+                  {t("Saving...")}
                 </>
               ) : (
-                "Save"
+                t("Save")
               )}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Delete Document Confirmation Dialog */}
       <Dialog open={deleteDocumentDialogOpen} onOpenChange={setDeleteDocumentDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Delete Document</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete "{documentToDelete?.title || documentToDelete?.fileName}"? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
+        <DialogContent className="sm:max-w-[400px] p-0 gap-0">
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Delete Document")}</DialogTitle>
+              <DialogDescription className="text-slate-600">
+                {t("Are you sure you want to delete")} &quot;{documentToDelete?.title || documentToDelete?.fileName}&quot;? {t("This action cannot be undone.")}
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="px-6 py-4 flex justify-end gap-2">
             <Button
               variant="outline"
+              size="sm"
               onClick={() => {
                 setDeleteDocumentDialogOpen(false);
                 setDocumentToDelete(null);
               }}
             >
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button
               variant="destructive"
+              size="sm"
               onClick={handleDeleteDocument}
-              disabled={deletingDocument}
+              disabled={deletingDocument || isCompleted}
             >
               {deletingDocument ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Deleting...
+                  <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
+                  {t("Deleting...")}
                 </>
               ) : (
-                "Delete"
+                t("Delete")
               )}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Delete Workpaper Confirmation Dialog */}
       <Dialog open={deleteWorkpaperDialogOpen} onOpenChange={setDeleteWorkpaperDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Delete Workpaper</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete "{workpaperToDelete?.fileName}"? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
+        <DialogContent className="sm:max-w-[400px] p-0 gap-0">
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Delete Workpaper")}</DialogTitle>
+              <DialogDescription className="text-slate-600">
+                {t("Are you sure you want to delete")} &quot;{workpaperToDelete?.fileName}&quot;? {t("This action cannot be undone.")}
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="px-6 py-4 flex justify-end gap-2">
             <Button
               variant="outline"
+              size="sm"
               onClick={() => {
                 setDeleteWorkpaperDialogOpen(false);
                 setWorkpaperToDelete(null);
               }}
             >
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button
               variant="destructive"
+              size="sm"
               onClick={handleDeleteWorkpaper}
-              disabled={deletingWorkpaper}
+              disabled={deletingWorkpaper || isCompleted}
             >
               {deletingWorkpaper ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Deleting...
+                  <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
+                  {t("Deleting...")}
                 </>
               ) : (
-                "Delete"
+                t("Delete")
               )}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Edit AI Workpaper Dialog */}
       <Dialog open={editAIWorkpaperDialogOpen} onOpenChange={setEditAIWorkpaperDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit AI Workpaper</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">Task *</Label>
+        <DialogContent className="sm:max-w-[700px] flex flex-col p-0 gap-0 max-h-[90vh]">
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit AI Workpaper")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          {/* Scrollable Content */}
+          <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-end text-slate-500">{t("Task")} <span className="text-red-500">*</span></Label>
               <Input
                 value={editAIWorkpaper.task}
                 onChange={(e) => setEditAIWorkpaper({ ...editAIWorkpaper, task: e.target.value })}
-                placeholder="Enter task description"
+                placeholder={t("Enter task description")}
               />
             </div>
-            <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">Evidences</Label>
+            <div className="grid grid-cols-[140px_1fr] items-start gap-4">
+              <Label className="text-end text-slate-500 pt-2">{t("Evidences")}</Label>
               <Textarea
                 value={editAIWorkpaper.evidences}
                 onChange={(e) => setEditAIWorkpaper({ ...editAIWorkpaper, evidences: e.target.value })}
-                placeholder="Enter evidences (one per line)"
+                placeholder={t("Enter evidences (one per line)")}
                 rows={4}
               />
             </div>
-            <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">Steps</Label>
+            <div className="grid grid-cols-[140px_1fr] items-start gap-4">
+              <Label className="text-end text-slate-500 pt-2">{t("Steps")}</Label>
               <Textarea
                 value={editAIWorkpaper.steps}
                 onChange={(e) => setEditAIWorkpaper({ ...editAIWorkpaper, steps: e.target.value })}
-                placeholder="Enter steps (one per line)"
+                placeholder={t("Enter steps (one per line)")}
                 rows={4}
               />
             </div>
-            <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">Question Checklist</Label>
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <Label className="text-end text-slate-500">{t("Question Checklist")}</Label>
               <Input
                 value={editAIWorkpaper.questionChecklist}
                 onChange={(e) => setEditAIWorkpaper({ ...editAIWorkpaper, questionChecklist: e.target.value })}
-                placeholder="Enter question checklist"
+                placeholder={t("Enter question checklist")}
               />
             </div>
-            <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">Comments</Label>
+            <div className="grid grid-cols-[140px_1fr] items-start gap-4">
+              <Label className="text-end text-slate-500 pt-2">{t("Comments")}</Label>
               <Textarea
                 value={editAIWorkpaper.comments}
                 onChange={(e) => setEditAIWorkpaper({ ...editAIWorkpaper, comments: e.target.value })}
-                placeholder="Enter comments"
+                placeholder={t("Enter comments")}
                 rows={2}
               />
             </div>
           </div>
-          <DialogFooter>
+          {/* Fixed Footer */}
+          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
             <Button
               variant="outline"
+              size="sm"
               onClick={() => {
                 setEditAIWorkpaperDialogOpen(false);
                 setSelectedAIWorkpaper(null);
               }}
             >
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button
-              className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
+              size="sm"
               onClick={handleUpdateAIWorkpaper}
-              disabled={savingAIWorkpaper}
+              disabled={savingAIWorkpaper || isCompleted}
             >
               {savingAIWorkpaper ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Saving...
+                  <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
+                  {t("Saving...")}
                 </>
               ) : (
-                "Save Changes"
+                t("Save Changes")
               )}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Delete AI Workpaper Confirmation Dialog */}
       <Dialog open={deleteAIWorkpaperDialogOpen} onOpenChange={setDeleteAIWorkpaperDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Delete AI Workpaper</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete this AI workpaper? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
+        <DialogContent className="sm:max-w-[400px] p-0 gap-0">
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Delete AI Workpaper")}</DialogTitle>
+              <DialogDescription className="text-slate-600">
+                {t("Are you sure you want to delete this AI workpaper?")} {t("This action cannot be undone.")}
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="px-6 py-4 flex justify-end gap-2">
             <Button
               variant="outline"
+              size="sm"
               onClick={() => {
                 setDeleteAIWorkpaperDialogOpen(false);
                 setSelectedAIWorkpaper(null);
               }}
             >
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button
               variant="destructive"
+              size="sm"
               onClick={handleDeleteAIWorkpaper}
-              disabled={deletingAIWorkpaper}
+              disabled={deletingAIWorkpaper || isCompleted}
             >
               {deletingAIWorkpaper ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Deleting...
+                  <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
+                  {t("Deleting...")}
                 </>
               ) : (
-                "Delete"
+                t("Delete")
               )}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Generated Workpaper with AI Dialog */}
       <Dialog open={generateAIDialogOpen} onOpenChange={setGenerateAIDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
-          <DialogHeader>
-            <DialogTitle className="text-[#1e3a5f]">Generated Workpaper with AI</DialogTitle>
-          </DialogHeader>
-          <div className="flex-1 overflow-y-auto pr-2">
+        <DialogContent className="sm:max-w-[800px] p-0 gap-0 max-h-[90vh] flex flex-col">
+          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Generated Workpaper with AI")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="px-6 py-5 overflow-y-auto flex-1">
             {generatingWorkpapers ? (
               <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-[#1e3a5f]" />
-                <span className="ml-3 text-gray-600">Generating workpapers...</span>
+                <Loader2 className="h-8 w-8 animate-spin text-slate-700" />
+                <span className="ltr:ml-3 rtl:mr-3 text-slate-600">{t("Generating workpapers...")}</span>
               </div>
             ) : generatedWorkpapers.length > 0 ? (
               <div className="space-y-6">
@@ -2691,8 +3396,8 @@ export default function FieldworkDetailsPage() {
                     key={wp.id}
                     className={`border rounded-lg p-4 ${
                       selectedGeneratedIds.includes(wp.id)
-                        ? "border-[#1e3a5f] bg-blue-50"
-                        : "border-gray-200"
+                        ? "border-primary-600 bg-primary-50"
+                        : "border-slate-200"
                     }`}
                   >
                     <div className="flex items-start gap-3">
@@ -2702,18 +3407,18 @@ export default function FieldworkDetailsPage() {
                         className="mt-1"
                       />
                       <div className="flex-1 space-y-4">
-                        <h4 className="font-semibold text-gray-900">{wp.task}</h4>
+                        <h4 className="font-semibold text-slate-900">{wp.task}</h4>
 
                         <div>
-                          <h5 className="font-medium text-gray-700 mb-2">Steps</h5>
-                          <p className="text-sm text-gray-600 whitespace-pre-wrap pl-4">
+                          <h5 className="font-medium text-slate-700 mb-2">{t("Steps")}</h5>
+                          <p className="text-sm text-slate-600 whitespace-pre-wrap ltr:pl-4 rtl:pr-4">
                             {wp.steps}
                           </p>
                         </div>
 
                         <div>
-                          <h5 className="font-medium text-gray-700 mb-2">Evidences</h5>
-                          <p className="text-sm text-gray-600 whitespace-pre-wrap pl-4">
+                          <h5 className="font-medium text-slate-700 mb-2">{t("Evidences")}</h5>
+                          <p className="text-sm text-slate-600 whitespace-pre-wrap ltr:pl-4 rtl:pr-4">
                             {wp.evidences}
                           </p>
                         </div>
@@ -2723,109 +3428,115 @@ export default function FieldworkDetailsPage() {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-12 text-gray-500">
-                No workpapers generated. Click generate to create AI workpapers.
+              <div className="text-center py-12 text-slate-500">
+                {t("No workpapers generated. Click generate to create AI workpapers.")}
               </div>
             )}
           </div>
-          <DialogFooter className="mt-4 pt-4 border-t">
+          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
             <Button
               variant="outline"
+              size="sm"
               onClick={() => {
                 setGenerateAIDialogOpen(false);
                 setGeneratedWorkpapers([]);
                 setSelectedGeneratedIds([]);
               }}
             >
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button
-              className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
+              size="sm"
               onClick={handleAddSelectedWorkpapers}
-              disabled={addingGeneratedWorkpapers || selectedGeneratedIds.length === 0}
+              disabled={addingGeneratedWorkpapers || selectedGeneratedIds.length === 0 || isCompleted}
             >
               {addingGeneratedWorkpapers ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Adding...
+                  <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
+                  {t("Adding...")}
                 </>
               ) : (
-                `Add Selected (${selectedGeneratedIds.length})`
+                `${t("Add Selected")} (${selectedGeneratedIds.length})`
               )}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* View/Edit Document Dialog */}
       <Dialog open={viewEditDocumentDialogOpen} onOpenChange={setViewEditDocumentDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{isEditingDocument ? "Edit Document" : "Document Details"}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
+        <DialogContent className="sm:max-w-[700px] flex flex-col p-0 gap-0 max-h-[90vh]">
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{isEditingDocument ? t("Edit Document") : t("Document Details")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          {/* Scrollable Content */}
+          <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
             <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">Title</Label>
+              <Label className="text-slate-700 font-medium">{t("Title")}</Label>
               {isEditingDocument ? (
                 <Input
                   value={editDocument.title}
                   onChange={(e) => setEditDocument({ ...editDocument, title: e.target.value })}
-                  placeholder="Enter document title"
+                  placeholder={t("Enter document title")}
                 />
               ) : (
-                <div className="p-3 bg-gray-50 rounded-md border">
+                <div className="p-3 bg-slate-50 rounded-md border">
                   {selectedDocument?.title || selectedDocument?.fileName || "-"}
                 </div>
               )}
             </div>
             <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">Document Type</Label>
+              <Label className="text-slate-700 font-medium">{t("Document Type")}</Label>
               {isEditingDocument ? (
                 <Select
                   value={editDocument.documentType}
                   onValueChange={(value) => setEditDocument({ ...editDocument, documentType: value })}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select document type" />
+                    <SelectValue placeholder={t("Select document type")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Policy">Policy</SelectItem>
-                    <SelectItem value="Procedure">Procedure</SelectItem>
-                    <SelectItem value="Report">Report</SelectItem>
-                    <SelectItem value="Evidence">Evidence</SelectItem>
-                    <SelectItem value="Memo">Memo</SelectItem>
-                    <SelectItem value="Other">Other</SelectItem>
+                    <SelectItem value="Minutes of Meeting">{t("Minutes of Meeting")}</SelectItem>
+                    <SelectItem value="Approval Document">{t("Approval Document")}</SelectItem>
+                    <SelectItem value="Email Communication">{t("Email Communication")}</SelectItem>
+                    <SelectItem value="Contract">{t("Contract")}</SelectItem>
+                    <SelectItem value="Invoice">{t("Invoice")}</SelectItem>
+                    <SelectItem value="Policy Document">{t("Policy Document")}</SelectItem>
+                    <SelectItem value="Other">{t("Other")}</SelectItem>
                   </SelectContent>
                 </Select>
               ) : (
-                <div className="p-3 bg-gray-50 rounded-md border">
+                <div className="p-3 bg-slate-50 rounded-md border">
                   {selectedDocument?.documentType || "-"}
                 </div>
               )}
             </div>
             <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">Description</Label>
+              <Label className="text-slate-700 font-medium">{t("Description")}</Label>
               {isEditingDocument ? (
                 <Textarea
                   value={editDocument.description}
                   onChange={(e) => setEditDocument({ ...editDocument, description: e.target.value })}
-                  placeholder="Enter description"
+                  placeholder={t("Enter description")}
                   rows={4}
                 />
               ) : (
-                <div className="p-3 bg-gray-50 rounded-md border min-h-[100px]">
+                <div className="p-3 bg-slate-50 rounded-md border min-h-[100px]">
                   {selectedDocument?.description || "-"}
                 </div>
               )}
             </div>
             <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">Attached File</Label>
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md border">
+              <Label className="text-slate-700 font-medium">{t("Attached File")}</Label>
+              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-md border">
                 <div className="flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-blue-600" />
+                  <FileText className="h-5 w-5 text-primary-600" />
                   <div>
                     <p className="text-sm font-medium">{selectedDocument?.fileName}</p>
-                    <p className="text-xs text-gray-500">{formatFileSize(selectedDocument?.fileSize || 0)}</p>
+                    <p className="text-xs text-slate-500">{formatFileSize(selectedDocument?.fileSize || 0)}</p>
                   </div>
                 </div>
                 <Button
@@ -2840,13 +3551,14 @@ export default function FieldworkDetailsPage() {
                     }
                   }}
                 >
-                  <Download className="h-4 w-4 mr-2" />
-                  Download
+                  <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                  {t("Download")}
                 </Button>
               </div>
             </div>
           </div>
-          <DialogFooter>
+          {/* Fixed Footer */}
+          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
             <Button
               variant="outline"
               onClick={() => {
@@ -2855,132 +3567,296 @@ export default function FieldworkDetailsPage() {
                 setIsEditingDocument(false);
               }}
             >
-              {isEditingDocument ? "Cancel" : "Close"}
+              {isEditingDocument ? t("Cancel") : t("Close")}
             </Button>
             {isEditingDocument && (
               <Button
-                className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
+                size="sm"
                 onClick={handleUpdateDocument}
-                disabled={savingDocument}
+                disabled={savingDocument || isCompleted}
               >
                 {savingDocument ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Saving...
+                    <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
+                    {t("Saving...")}
                   </>
                 ) : (
-                  "Save"
+                  t("Save")
                 )}
               </Button>
             )}
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* View/Edit Evidence Request Dialog */}
       <Dialog open={viewEditEvidenceDialogOpen} onOpenChange={setViewEditEvidenceDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{isEditingEvidence ? "Edit Evidence Request" : "Evidence Request Details"}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
+        <DialogContent className="sm:max-w-[700px] flex flex-col p-0 gap-0 max-h-[90vh]">
+          {/* Fixed Header */}
+          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{isEditingEvidence ? t("Edit Evidence Request") : t("View Evidence Request")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          {/* Scrollable Content */}
+          <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
+            {/* Request Title */}
             <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">Title *</Label>
+              <Label className="text-slate-700 font-medium">{t("Request Title")} <span className="text-red-500">*</span></Label>
               {isEditingEvidence ? (
                 <Input
                   value={editEvidence.title}
                   onChange={(e) => setEditEvidence({ ...editEvidence, title: e.target.value })}
-                  placeholder="Enter title"
+                  placeholder={t("Enter title")}
                 />
               ) : (
-                <div className="p-3 bg-gray-50 rounded-md border">
+                <div className="p-3 bg-slate-50 rounded-md border">
                   {selectedEvidence?.title || "-"}
                 </div>
               )}
             </div>
+            {/* Auditee */}
             <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">Description</Label>
-              {isEditingEvidence ? (
-                <Textarea
-                  value={editEvidence.description}
-                  onChange={(e) => setEditEvidence({ ...editEvidence, description: e.target.value })}
-                  placeholder="Enter description"
-                  rows={3}
-                />
-              ) : (
-                <div className="p-3 bg-gray-50 rounded-md border min-h-[80px]">
-                  {selectedEvidence?.description || "-"}
-                </div>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">Auditee</Label>
+              <Label className="text-slate-700 font-medium">{t("Auditee")}</Label>
               {isEditingEvidence ? (
                 <Select
-                  value={editEvidence.auditee}
-                  onValueChange={(value) => setEditEvidence({ ...editEvidence, auditee: value })}
+                  value={editEvidence.auditeeId}
+                  onValueChange={(value) => {
+                    const selectedAuditee = auditees.find(a => a.id === value);
+                    setEditEvidence({
+                      ...editEvidence,
+                      auditeeId: value,
+                      auditee: selectedAuditee?.fullName || ""
+                    });
+                  }}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select auditee" />
+                    <SelectValue placeholder={t("Select auditee")}>
+                      {editEvidence.auditee && (
+                        <span className="inline-flex items-center gap-1 bg-slate-100 px-2 py-1 rounded text-sm">
+                          {editEvidence.auditee}
+                          <X className="h-3 w-3 cursor-pointer" onClick={(e) => {
+                            e.stopPropagation();
+                            setEditEvidence({ ...editEvidence, auditeeId: "", auditee: "" });
+                          }} />
+                        </span>
+                      )}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    {users.map((user) => (
-                      <SelectItem key={user.id} value={user.fullName}>
-                        {user.fullName}
+                    {auditees.map((auditee) => (
+                      <SelectItem key={auditee.id} value={auditee.id}>
+                        {auditee.fullName} {auditee.department?.name ? `(${auditee.department.name})` : ""}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               ) : (
-                <div className="p-3 bg-gray-50 rounded-md border">
+                <div className="p-3 bg-slate-50 rounded-md border">
                   {selectedEvidence?.auditee || "-"}
                 </div>
               )}
             </div>
+            {/* Number of Samples */}
             <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">Due Date</Label>
+              <Label className="text-slate-700 font-medium">{t("Number of Samples")}</Label>
               {isEditingEvidence ? (
                 <Input
-                  type="date"
-                  value={editEvidence.dueDate}
-                  onChange={(e) => setEditEvidence({ ...editEvidence, dueDate: e.target.value })}
+                  type="number"
+                  min="1"
+                  value={editEvidence.numberOfSamples}
+                  onChange={(e) => setEditEvidence({ ...editEvidence, numberOfSamples: e.target.value })}
+                  placeholder={t("Enter number of samples")}
                 />
               ) : (
-                <div className="p-3 bg-gray-50 rounded-md border">
-                  {selectedEvidence?.dueDate ? formatDate(selectedEvidence.dueDate) : "-"}
+                <div className="p-3 bg-slate-50 rounded-md border">
+                  {selectedEvidence?.numberOfSamples || "-"}
                 </div>
               )}
             </div>
+            {/* Description */}
             <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">Status</Label>
+              <Label className="text-slate-700 font-medium">{t("Description")}</Label>
               {isEditingEvidence ? (
-                <Select
-                  value={editEvidence.status}
-                  onValueChange={(value) => setEditEvidence({ ...editEvidence, status: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Pending">Pending</SelectItem>
-                    <SelectItem value="Submitted">Submitted</SelectItem>
-                    <SelectItem value="Reviewed">Reviewed</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Textarea
+                  value={editEvidence.description}
+                  onChange={(e) => setEditEvidence({ ...editEvidence, description: e.target.value })}
+                  placeholder={t("Enter description")}
+                  rows={4}
+                />
               ) : (
-                <div className="p-3 bg-gray-50 rounded-md border">
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${
-                    selectedEvidence?.status === 'Reviewed' ? 'bg-green-100 text-green-800' :
-                    selectedEvidence?.status === 'Submitted' ? 'bg-blue-100 text-blue-800' :
-                    'bg-yellow-100 text-yellow-800'
-                  }`}>
+                <div className="p-3 bg-slate-50 rounded-md border min-h-[80px]">
+                  {selectedEvidence?.description || "-"}
+                </div>
+              )}
+            </div>
+            {/* Attachments in Edit Mode */}
+            {isEditingEvidence && selectedEvidence?.attachments && selectedEvidence.attachments.length > 0 && (
+              <div className="space-y-2">
+                {selectedEvidence.attachments.map((att) => (
+                  <div key={att.id} className="flex items-center justify-between py-2 border-b">
+                    <div className="flex items-center gap-3">
+                      {att.fileType?.includes('image') ? (
+                        <div className="w-10 h-10 bg-blue-100 rounded flex items-center justify-center">
+                          <FileText className="h-5 w-5 text-primary-600" />
+                        </div>
+                      ) : att.fileName?.endsWith('.docx') || att.fileName?.endsWith('.doc') ? (
+                        <div className="w-10 h-10 bg-blue-100 rounded flex items-center justify-center">
+                          <FileSpreadsheet className="h-5 w-5 text-blue-800" />
+                        </div>
+                      ) : (
+                        <div className="w-10 h-10 bg-slate-100 rounded flex items-center justify-center">
+                          <FileText className="h-5 w-5 text-slate-600" />
+                        </div>
+                      )}
+                      <span className="text-sm text-primary-600">{att.fileName}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <a
+                        href={`/api${att.filePath}`}
+                        download
+                        className="p-1 hover:bg-slate-100 rounded"
+                        title={t("Download")}
+                      >
+                        <Download className="h-4 w-4 text-slate-600" />
+                      </a>
+                      <a
+                        href={`/api${att.filePath}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-1 hover:bg-slate-100 rounded"
+                        title={t("View")}
+                      >
+                        <Eye className="h-4 w-4 text-slate-600" />
+                      </a>
+                      <button
+                        className="p-1 hover:bg-red-50 rounded"
+                        title={t("Delete")}
+                        onClick={() => {
+                          // TODO: Implement delete attachment
+                          toast.info(t("Delete attachment functionality coming soon"));
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {/* View mode fields */}
+            {!isEditingEvidence && (
+              <>
+                <div className="space-y-2">
+                  <Label className="text-slate-700 font-medium">{t("Due Date")}</Label>
+                  <div className="p-3 bg-slate-50 rounded-md border">
+                    {selectedEvidence?.dueDate ? formatDate(selectedEvidence.dueDate) : "-"}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-slate-700 font-medium">{t("Status")}</Label>
+                  <div className="p-3 bg-slate-50 rounded-md border">
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${
+                      selectedEvidence?.status === 'Reviewed' ? 'bg-emerald-100 text-emerald-800' :
+                      selectedEvidence?.status === 'Submitted' ? 'bg-blue-100 text-blue-800' :
+                      'bg-yellow-100 text-yellow-800'
+                    }`}>
                     {selectedEvidence?.status || "-"}
                   </span>
                 </div>
+              </div>
+              {/* AI Review Section */}
+              {selectedEvidence?.aiReviewStatus && (
+                <div className="space-y-2">
+                  <Label className="text-slate-700 font-medium">{t("AI Review Result")}</Label>
+                  <div className={`p-3 rounded-md border ${
+                    selectedEvidence.aiReviewStatus === 'Satisfactory'
+                      ? 'bg-emerald-50 border-emerald-200'
+                      : 'bg-red-50 border-red-200'
+                  }`}>
+                    <div className="flex items-center gap-2 mb-2">
+                      {selectedEvidence.aiReviewStatus === 'Satisfactory' ? (
+                        <>
+                          <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center">
+                            <span className="text-white text-xs">✓</span>
+                          </div>
+                          <span className="font-medium text-green-700">{t("Satisfactory")}</span>
+                        </>
+                      ) : (
+                        <>
+                          <div className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center">
+                            <span className="text-white text-xs">✕</span>
+                          </div>
+                          <span className="font-medium text-red-700">{t("Needs Attention")}</span>
+                        </>
+                      )}
+                    </div>
+                    {selectedEvidence.aiReviewComment && (
+                      <p className={`text-sm ${
+                        selectedEvidence.aiReviewStatus === 'Satisfactory'
+                          ? 'text-green-600'
+                          : 'text-red-600'
+                      }`}>
+                        {selectedEvidence.aiReviewComment}
+                      </p>
+                    )}
+                  </div>
+                </div>
               )}
-            </div>
+              </>
+            )}
+            {/* Attachments section - only show in view mode */}
+            {!isEditingEvidence && selectedEvidence?.attachments && selectedEvidence.attachments.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-slate-700 font-medium">{t("Uploaded Attachments")}</Label>
+                <div className="p-3 bg-slate-50 rounded-md border space-y-2">
+                  {selectedEvidence.attachments.map((att) => (
+                    <div key={att.id} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-primary-600" />
+                        <span className="text-sm">{att.fileName}</span>
+                        <span className="text-xs text-slate-400">({formatFileSize(att.fileSize)})</span>
+                      </div>
+                      <a
+                        href={`/api${att.filePath}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary-600 hover:underline text-sm flex items-center gap-1"
+                      >
+                        <Download className="h-3 w-3" />
+                        {t("Download")}
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {!isEditingEvidence && (!selectedEvidence?.attachments || selectedEvidence.attachments.length === 0) && (
+              <div className="space-y-2">
+                <Label className="text-slate-700 font-medium">{t("Uploaded Attachments")}</Label>
+                <div className="p-3 bg-slate-50 rounded-md border text-slate-500 text-sm">
+                  {t("No attachments uploaded yet")}
+                </div>
+              </div>
+            )}
+            {/* Comments button for auditee when there's a clarification request */}
+            {!isEditingEvidence && isAuditeeOnly && selectedEvidence?.clarificationComment && (
+              <div className="flex justify-end mt-4">
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setAuditeeClariEvidence(selectedEvidence);
+                    setAuditeeClariDialogOpen(true);
+                  }}
+                >
+                  <MessageSquare className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                  {t("Comments")}
+                </Button>
+              </div>
+            )}
           </div>
-          <DialogFooter>
+          {/* Fixed Footer */}
+          <div className="flex-shrink-0 flex justify-between items-center px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button
               variant="outline"
               onClick={() => {
@@ -2989,119 +3865,362 @@ export default function FieldworkDetailsPage() {
                 setIsEditingEvidence(false);
               }}
             >
-              {isEditingEvidence ? "Cancel" : "Close"}
+              {isEditingEvidence ? t("Cancel") : t("Close")}
             </Button>
-            {isEditingEvidence && (
-              <Button
-                className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
-                onClick={handleUpdateEvidence}
-                disabled={savingEvidence}
+            <div className="flex gap-2">
+              {/* Approve/Need Clarification buttons for Audit Head when evidence has attachments */}
+              {!isEditingEvidence && isAuditHead && selectedEvidence?.attachments && selectedEvidence.attachments.length > 0 && selectedEvidence.status !== 'Reviewed' && (
+                <>
+                  <Button
+                    variant="outline"
+                    className="border-amber-500 text-amber-600 hover:bg-amber-50"
+                    onClick={() => {
+                      if (selectedEvidence) {
+                        handleOpenClarificationDialog(selectedEvidence);
+                      }
+                    }}
+                  >
+                    <AlertCircle className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                    {t("Need Clarification")}
+                  </Button>
+                  <Button
+                    className="bg-emerald-600 hover:bg-emerald-700"
+                    onClick={() => {
+                      if (selectedEvidence) {
+                        handleApproveEvidence(selectedEvidence.id);
+                        setViewEditEvidenceDialogOpen(false);
+                        setSelectedEvidence(null);
+                      }
+                    }}
+                  >
+                    <Check className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                    {t("Approve")}
+                  </Button>
+                </>
+              )}
+              {isEditingEvidence && (
+                <Button
+                  size="sm"
+                  onClick={handleUpdateEvidence}
+                  disabled={savingEvidence || isCompleted}
+                >
+                  {savingEvidence ? (
+                    <>
+                      <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
+                      {t("Saving...")}
+                    </>
+                  ) : (
+                    t("Save")
+                  )}
+                </Button>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Need Clarification Dialog */}
+      <Dialog open={clarificationDialogOpen} onOpenChange={setClarificationDialogOpen}>
+        <DialogContent className="sm:max-w-[450px] p-0 gap-0 max-h-[90vh] flex flex-col">
+          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Need Clarification")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
+            <div className="space-y-2">
+              <Label className="text-slate-700 font-medium">
+                {t("Select the document that requires clarification")}
+              </Label>
+              <Select
+                value={clarificationDocument}
+                onValueChange={setClarificationDocument}
               >
-                {savingEvidence ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  "Save"
-                )}
+                <SelectTrigger>
+                  <SelectValue placeholder={t("Select document")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {clarificationEvidence?.attachments?.map((att) => (
+                    <SelectItem key={att.id} value={att.fileName}>
+                      {att.fileName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-slate-700 font-medium">{t("Comment")}</Label>
+              <Textarea
+                value={clarificationComment}
+                onChange={(e) => setClarificationComment(e.target.value)}
+                placeholder={t("Enter your clarification request...")}
+                rows={5}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-slate-700 font-medium">{t("Previous Comments")}</Label>
+              <div className="p-3 bg-slate-50 rounded-md border border-slate-200 text-slate-500 text-sm text-center">
+                {t("No items found")}
+              </div>
+            </div>
+          </div>
+          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setClarificationDialogOpen(false)}
+            >
+              {t("Cancel")}
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleSendClarification}
+              disabled={sendingClarification || !clarificationDocument || isCompleted}
+            >
+              {sendingClarification ? (
+                <>
+                  <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
+                  {t("Sending...")}
+                </>
+              ) : (
+                t("Send")
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Auditee Clarification View Popup */}
+      <Dialog open={auditeeClariDialogOpen} onOpenChange={setAuditeeClariDialogOpen}>
+        <DialogContent className="sm:max-w-[450px] p-0 gap-0 max-h-[90vh] flex flex-col">
+          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Need Clarification")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
+            <div className="flex items-start justify-between">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-slate-700">{t("Document that requires clarification")}</p>
+                <p className="text-sm text-slate-900">{auditeeClariEvidence?.clarificationDocumentName || "-"}</p>
+              </div>
+              <Button
+                size="sm"
+                onClick={() => {
+                  setRespondComment("");
+                  setRespondFiles([]);
+                  setRespondDialogOpen(true);
+                }}
+              >
+                {t("Respond")}
               </Button>
-            )}
-          </DialogFooter>
+            </div>
+            <div className="border-t border-slate-100 pt-3">
+              <p className="text-sm text-slate-900">{auditeeClariEvidence?.clarificationComment || "-"}</p>
+              <p className="text-sm text-slate-500 mt-1">
+                ~ {auditeeClariEvidence?.clarificationByUserName || "Unknown"}
+              </p>
+              <p className="text-xs text-slate-400 mt-1">
+                {auditeeClariEvidence?.clarificationSentAt
+                  ? new Date(auditeeClariEvidence.clarificationSentAt).toLocaleString()
+                  : "-"}
+              </p>
+            </div>
+          </div>
+          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setAuditeeClariDialogOpen(false)}
+            >
+              {t("Close")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Auditee Respond Dialog */}
+      <Dialog open={respondDialogOpen} onOpenChange={setRespondDialogOpen}>
+        <DialogContent className="sm:max-w-[450px] p-0 gap-0 max-h-[90vh] flex flex-col">
+          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Respond")}</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
+            <div className="space-y-2">
+              <Label className="text-slate-700 font-medium">{t("Comment")}</Label>
+              <Textarea
+                value={respondComment}
+                onChange={(e) => setRespondComment(e.target.value)}
+                placeholder={t("Enter your response...")}
+                rows={5}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-slate-700 font-medium">{t("Attach File")}</Label>
+              <div
+                className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center cursor-pointer hover:border-slate-400 transition-colors"
+                onClick={() => {
+                  const input = document.createElement("input");
+                  input.type = "file";
+                  input.multiple = true;
+                  input.onchange = (e) => {
+                    const files = (e.target as HTMLInputElement).files;
+                    if (files) {
+                      setRespondFiles(Array.from(files));
+                    }
+                  };
+                  input.click();
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const files = e.dataTransfer.files;
+                  if (files) {
+                    setRespondFiles(Array.from(files));
+                  }
+                }}
+              >
+                <p className="text-slate-500">{t("Drag and drop or select file.")}</p>
+                {respondFiles.length > 0 && (
+                  <div className="mt-2 text-sm text-emerald-600">
+                    {respondFiles.map((f) => f.name).join(", ")}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setRespondDialogOpen(false)}
+            >
+              {t("Cancel")}
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleSendResponse}
+              disabled={sendingResponse || isCompleted}
+            >
+              {sendingResponse ? (
+                <>
+                  <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
+                  {t("Sending...")}
+                </>
+              ) : (
+                t("Send Response")
+              )}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Delete Evidence Request Confirmation Dialog */}
       <Dialog open={deleteEvidenceDialogOpen} onOpenChange={setDeleteEvidenceDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Delete Evidence Request</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete "{evidenceToDelete?.title}"? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
+        <DialogContent className="sm:max-w-[400px] p-0 gap-0">
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Delete Evidence Request")}</DialogTitle>
+              <DialogDescription className="text-slate-600">
+                {t("Are you sure you want to delete")} &quot;{evidenceToDelete?.title}&quot;? {t("This action cannot be undone.")}
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="px-6 py-4 flex justify-end gap-2">
             <Button
               variant="outline"
+              size="sm"
               onClick={() => {
                 setDeleteEvidenceDialogOpen(false);
                 setEvidenceToDelete(null);
               }}
             >
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button
               variant="destructive"
+              size="sm"
               onClick={handleDeleteEvidence}
-              disabled={deletingEvidence}
+              disabled={deletingEvidence || isCompleted}
             >
               {deletingEvidence ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Deleting...
+                  <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
+                  {t("Deleting...")}
                 </>
               ) : (
-                "Delete"
+                t("Delete")
               )}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* AI Review Result Dialog */}
       <Dialog open={aiReviewDialogOpen} onOpenChange={setAiReviewDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <MessageSquare className="h-5 w-5 text-green-600" />
-              AI Review Results
-            </DialogTitle>
-            <DialogDescription>
-              AI-generated review of {selectedEvidenceIds.length} evidence request(s)
-            </DialogDescription>
-          </DialogHeader>
-          <div className="mt-4">
+        <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col">
+          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-lg font-semibold text-slate-800">
+                <MessageSquare className="h-5 w-5 text-green-600" />
+                {t("AI Review Results")}
+              </DialogTitle>
+              <DialogDescription className="text-slate-600">
+                {t("AI-generated review of")} {selectedEvidenceIds.length} {t("evidence request(s)")}
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="px-6 py-5 overflow-y-auto flex-1">
             {aiReviewResult ? (
               <div className="prose prose-sm max-w-none">
-                <div className="bg-gray-50 rounded-lg p-4 whitespace-pre-wrap text-sm">
+                <div className="bg-slate-50 rounded-lg p-4 whitespace-pre-wrap text-sm">
                   {aiReviewResult}
                 </div>
               </div>
             ) : (
-              <div className="text-center py-8 text-gray-500">
-                No review generated yet
+              <div className="text-center py-8 text-slate-500">
+                {t("No review generated yet")}
               </div>
             )}
           </div>
-          <DialogFooter>
+          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
             <Button
               variant="outline"
+              size="sm"
               onClick={() => {
                 setAiReviewDialogOpen(false);
                 setAiReviewResult("");
               }}
             >
-              Close
+              {t("Close")}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Add Attachment Dialog */}
       <Dialog open={attachmentDialogOpen} onOpenChange={setAttachmentDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Add Attachment</DialogTitle>
-            <DialogDescription>
-              Upload attachment for: {evidenceForAttachment?.title}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
+        <DialogContent className="sm:max-w-[500px] p-0 gap-0 max-h-[90vh] flex flex-col">
+          <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("Add Attachment")}</DialogTitle>
+              <DialogDescription className="text-slate-600">
+                {t("Upload attachment for")}: {evidenceForAttachment?.title}
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
             <div className="space-y-2">
-              <Label className="text-[#1e3a5f] font-medium">Attach File</Label>
+              <Label className="text-slate-700 font-medium">{t("Attach File")}</Label>
               <div
                 className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
-                  isDragOver ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-gray-400"
+                  isDragOver ? "border-primary-500 bg-primary-50" : "border-slate-300 hover:border-slate-400"
                 }`}
                 onDragOver={(e) => {
                   e.preventDefault();
@@ -3109,11 +4228,11 @@ export default function FieldworkDetailsPage() {
                 }}
                 onDragLeave={() => setIsDragOver(false)}
                 onDrop={handleFileDrop}
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => attachmentFileInputRef.current?.click()}
               >
-                <p className="text-gray-600">Click here, or drop files here to upload.</p>
+                <p className="text-slate-600">{t("Click here, or drop files here to upload.")}</p>
                 <input
-                  ref={fileInputRef}
+                  ref={attachmentFileInputRef}
                   type="file"
                   className="hidden"
                   accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
@@ -3125,12 +4244,12 @@ export default function FieldworkDetailsPage() {
                   {uploadedFiles.map((file) => (
                     <div
                       key={file.id}
-                      className="flex items-center justify-between p-2 bg-gray-50 rounded border"
+                      className="flex items-center justify-between p-2 bg-slate-50 rounded border border-slate-200"
                     >
                       <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-blue-500" />
-                        <span className="text-sm">{file.name}</span>
-                        <span className="text-xs text-gray-400">({formatFileSize(file.size)})</span>
+                        <FileText className="h-4 w-4 text-primary-500" />
+                        <span className="text-sm text-slate-700">{file.name}</span>
+                        <span className="text-xs text-slate-400">({formatFileSize(file.size)})</span>
                       </div>
                       <Button
                         variant="ghost"
@@ -3146,32 +4265,33 @@ export default function FieldworkDetailsPage() {
               )}
             </div>
           </div>
-          <DialogFooter>
+          <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
             <Button
               variant="outline"
+              size="sm"
               onClick={() => {
                 setAttachmentDialogOpen(false);
                 setEvidenceForAttachment(null);
                 setUploadedFiles([]);
               }}
             >
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button
-              className="bg-[#1e3a5f] hover:bg-[#2d4a6f]"
+              size="sm"
               onClick={handleUploadAttachment}
-              disabled={uploadingAttachment}
+              disabled={uploadingAttachment || isCompleted}
             >
               {uploadingAttachment ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Uploading...
+                  <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
+                  {t("Uploading...")}
                 </>
               ) : (
-                "Upload"
+                t("Upload")
               )}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

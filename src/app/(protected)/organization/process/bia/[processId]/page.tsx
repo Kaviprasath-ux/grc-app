@@ -23,6 +23,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useSession } from "next-auth/react";
 import { useUserRoles } from "@/hooks/usePermissions";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Department {
   id: string;
@@ -114,6 +115,7 @@ export default function BIAPage() {
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const { data: session } = useSession();
   const userRoles = useUserRoles();
   const processId = params.processId as string;
@@ -241,13 +243,13 @@ export default function BIAPage() {
     } catch (error) {
       console.error("Error fetching data:", error);
       toast({
-        title: "Error",
-        description: "Failed to load data",
+        title: t("Error"),
+        description: t("Failed to load data"),
         variant: "destructive",
       });
     }
     setLoading(false);
-  }, [processId, toast]);
+  }, [processId, toast, t]);
 
   useEffect(() => {
     fetchData();
@@ -330,11 +332,11 @@ export default function BIAPage() {
   const getCalculationNote = () => {
     const calculationType = scoringConfig?.calculationType || "High of all";
     if (calculationType === "High of all") {
-      return "Note: The highest rating will be taken";
+      return t("Note: The highest rating will be taken");
     } else if (calculationType === "Addition of all") {
-      return "Note: Sum of all ratings will be calculated";
+      return t("Note: Sum of all ratings will be calculated");
     } else if (calculationType === "Product of all") {
-      return "Note: Product of all ratings will be calculated";
+      return t("Note: Product of all ratings will be calculated");
     }
     return "";
   };
@@ -371,22 +373,22 @@ export default function BIAPage() {
 
       if (res.ok) {
         toast({
-          title: "Saved",
-          description: "BIA data has been saved",
+          title: t("Saved"),
+          description: t("BIA data has been saved"),
         });
       } else {
         const error = await res.json();
         toast({
-          title: "Error",
-          description: error.error || "Failed to save BIA",
+          title: t("Error"),
+          description: error.error || t("Failed to save BIA"),
           variant: "destructive",
         });
       }
     } catch (error) {
       console.error("Error saving BIA:", error);
       toast({
-        title: "Error",
-        description: "Failed to save BIA",
+        title: t("Error"),
+        description: t("Failed to save BIA"),
         variant: "destructive",
       });
     }
@@ -396,8 +398,8 @@ export default function BIAPage() {
   const handleSubmitForApproval = async () => {
     if (!selectedApprover) {
       toast({
-        title: "Error",
-        description: "Please select an approver",
+        title: t("Error"),
+        description: t("Please select an approver"),
         variant: "destructive",
       });
       return;
@@ -445,24 +447,24 @@ export default function BIAPage() {
         });
 
         toast({
-          title: "Submitted",
-          description: "BIA has been submitted for approval",
+          title: t("Submitted"),
+          description: t("BIA has been submitted for approval"),
         });
         // Navigate back to process page
         router.push("/organization/process");
       } else {
         const error = await res.json();
         toast({
-          title: "Error",
-          description: error.error || "Failed to submit BIA",
+          title: t("Error"),
+          description: error.error || t("Failed to submit BIA"),
           variant: "destructive",
         });
       }
     } catch (error) {
       console.error("Error submitting BIA:", error);
       toast({
-        title: "Error",
-        description: "Failed to submit BIA",
+        title: t("Error"),
+        description: t("Failed to submit BIA"),
         variant: "destructive",
       });
     }
@@ -495,24 +497,24 @@ export default function BIAPage() {
         });
 
         toast({
-          title: "Approved",
-          description: "BIA has been approved",
+          title: t("Approved"),
+          description: t("BIA has been approved"),
         });
         setStatus("Approved");
         fetchData(); // Refresh data
       } else {
         const error = await res.json();
         toast({
-          title: "Error",
-          description: error.error || "Failed to approve BIA",
+          title: t("Error"),
+          description: error.error || t("Failed to approve BIA"),
           variant: "destructive",
         });
       }
     } catch (error) {
       console.error("Error approving BIA:", error);
       toast({
-        title: "Error",
-        description: "Failed to approve BIA",
+        title: t("Error"),
+        description: t("Failed to approve BIA"),
         variant: "destructive",
       });
     }
@@ -522,8 +524,8 @@ export default function BIAPage() {
   const handleSendBack = async () => {
     if (!sendBackComment.trim()) {
       toast({
-        title: "Error",
-        description: "Please enter a comment",
+        title: t("Error"),
+        description: t("Please enter a comment"),
         variant: "destructive",
       });
       return;
@@ -546,8 +548,8 @@ export default function BIAPage() {
 
       if (commentRes.ok) {
         toast({
-          title: "Sent Back",
-          description: "BIA has been sent back for revision",
+          title: t("Sent Back"),
+          description: t("BIA has been sent back for revision"),
         });
         setIsSendBackDialogOpen(false);
         setSendBackComment("");
@@ -556,16 +558,16 @@ export default function BIAPage() {
       } else {
         const error = await commentRes.json();
         toast({
-          title: "Error",
-          description: error.error || "Failed to send back BIA",
+          title: t("Error"),
+          description: error.error || t("Failed to send back BIA"),
           variant: "destructive",
         });
       }
     } catch (error) {
       console.error("Error sending back BIA:", error);
       toast({
-        title: "Error",
-        description: "Failed to send back BIA",
+        title: t("Error"),
+        description: t("Failed to send back BIA"),
         variant: "destructive",
       });
     }
@@ -591,7 +593,7 @@ export default function BIAPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{t("Loading...")}</p>
       </div>
     );
   }
@@ -608,7 +610,7 @@ export default function BIAPage() {
         >
           <ChevronLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-2xl font-bold text-slate-800">Business Impact Analysis</h1>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Business Impact Analysis")}</h1>
       </div>
 
       {/* Top controls row */}
@@ -620,11 +622,11 @@ export default function BIAPage() {
           status === "Sent Back" ? "text-error" :
           "text-slate-600"
         }`}>
-          {status}
+          {t(status)}
         </span>
         <Select value={selectedDepartment} onValueChange={setSelectedDepartment} disabled={isReviewer ? !(status === "Open" || status === "Sent Back") : !isEditable}>
           <SelectTrigger className="w-[200px] bg-white">
-            <SelectValue placeholder="Department" />
+            <SelectValue placeholder={t("Department")} />
           </SelectTrigger>
           <SelectContent>
             {departments.map((dept) => (
@@ -644,7 +646,7 @@ export default function BIAPage() {
           }
         >
           <SelectTrigger className="w-[200px] bg-white">
-            <SelectValue placeholder={!selectedDepartment ? "Select Department First" : "Approver"} />
+            <SelectValue placeholder={!selectedDepartment ? t("Select Department First") : t("Approver")} />
           </SelectTrigger>
           <SelectContent>
             {filteredApprovers.map((user) => (
@@ -664,10 +666,10 @@ export default function BIAPage() {
               disabled={saving}
               className="border-error/30 text-error hover:bg-error-light"
             >
-              Send Back
+              {t("Send Back")}
             </Button>
             <Button onClick={handleApprove} disabled={saving}>
-              {saving ? "Approving..." : "Approve"}
+              {saving ? t("Approving...") : t("Approve")}
             </Button>
           </>
         )}
@@ -675,7 +677,7 @@ export default function BIAPage() {
         {/* CustomerAdmin/Contributor: Show Submit button when status is Open or Sent Back */}
         {showSubmitButton && (
           <Button onClick={handleSubmitForApproval} disabled={saving}>
-            {saving ? "Submitting..." : "Submit For Approval"}
+            {saving ? t("Submitting...") : t("Submit For Approval")}
           </Button>
         )}
 
@@ -685,7 +687,7 @@ export default function BIAPage() {
             variant="ghost"
             size="icon"
             className="h-10 w-10"
-            title="View Comments"
+            title={t("View Comments")}
             onClick={() => setIsCommentsDialogOpen(true)}
           >
             <MessageSquare className="h-5 w-5 text-primary-600" />
@@ -698,7 +700,7 @@ export default function BIAPage() {
             variant="ghost"
             size="icon"
             className="h-10 w-10"
-            title={`View Comments (${biaComments.length})`}
+            title={`${t("View Comments")} (${biaComments.length})`}
             onClick={() => setIsCommentsDialogOpen(true)}
           >
             <MessageSquare className="h-5 w-5 text-primary-600" />
@@ -715,9 +717,9 @@ export default function BIAPage() {
         <div className="border rounded-lg overflow-hidden">
           {/* Table header */}
           <div className="grid grid-cols-3 bg-slate-800 text-white">
-            <div className="px-4 py-3 font-medium">Category</div>
-            <div className="px-4 py-3 font-medium text-center">BIA Rating</div>
-            <div className="px-4 py-3 font-medium">Description</div>
+            <div className="px-4 py-3 font-medium">{t("Category")}</div>
+            <div className="px-4 py-3 font-medium text-center">{t("BIA Rating")}</div>
+            <div className="px-4 py-3 font-medium">{t("Description")}</div>
           </div>
 
           {/* Table rows */}
@@ -757,14 +759,14 @@ export default function BIAPage() {
 
         {/* Impact Rating box */}
         <div className="border rounded-lg p-4 max-w-md">
-          <div className="font-medium">Impact Rating = {calculateImpactRating()}</div>
+          <div className="font-medium">{t("Impact Rating")} = {calculateImpactRating()}</div>
           <p className="text-sm text-muted-foreground mt-1">{getCalculationNote()}</p>
         </div>
 
         {/* Recovery metrics row */}
         <div className="grid grid-cols-6 gap-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-primary-600">RTO</label>
+            <label className="text-sm font-medium text-primary-600">{t("RTO")}</label>
             <Input
               type="number"
               value={rtoHours}
@@ -774,7 +776,7 @@ export default function BIAPage() {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-primary-600">Low</label>
+            <label className="text-sm font-medium text-primary-600">{t("Low")}</label>
             <Input
               type="number"
               value={lowValue}
@@ -784,7 +786,7 @@ export default function BIAPage() {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-primary-600">Critical</label>
+            <label className="text-sm font-medium text-primary-600">{t("Critical")}</label>
             <Input
               type="number"
               value={criticalValue}
@@ -794,7 +796,7 @@ export default function BIAPage() {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-primary-600">High</label>
+            <label className="text-sm font-medium text-primary-600">{t("High")}</label>
             <Input
               type="number"
               value={highValue}
@@ -804,7 +806,7 @@ export default function BIAPage() {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-primary-600">Medium</label>
+            <label className="text-sm font-medium text-primary-600">{t("Medium")}</label>
             <Input
               type="number"
               value={mediumValue}
@@ -814,7 +816,7 @@ export default function BIAPage() {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-primary-600">RPO</label>
+            <label className="text-sm font-medium text-primary-600">{t("RPO")}</label>
             <Input
               type="number"
               value={rpoHours}
@@ -829,11 +831,11 @@ export default function BIAPage() {
       {/* Footer buttons */}
       <div className="flex justify-end gap-2">
         <Button variant="outline" onClick={handleCancel}>
-          Cancel
+          {t("Cancel")}
         </Button>
         {isEditable && (
           <Button onClick={handleSave} disabled={saving}>
-            {saving ? "Saving..." : "Save"}
+            {saving ? t("Saving...") : t("Save")}
           </Button>
         )}
       </div>
@@ -842,26 +844,26 @@ export default function BIAPage() {
       <Dialog open={isSendBackDialogOpen} onOpenChange={setIsSendBackDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Send Back for Revision</DialogTitle>
+            <DialogTitle>{t("Send Back for Revision")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Comment *</label>
+              <label className="text-sm font-medium">{t("Comment")} *</label>
               <Textarea
                 value={sendBackComment}
                 onChange={(e) => setSendBackComment(e.target.value)}
-                placeholder="Enter reason for sending back..."
+                placeholder={t("Enter reason for sending back...")}
                 rows={4}
               />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsSendBackDialogOpen(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button onClick={handleSendBack} disabled={saving || !sendBackComment.trim()}>
-              <Send className="h-4 w-4 mr-2" />
-              {saving ? "Sending..." : "Submit"}
+              <Send className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+              {saving ? t("Sending...") : t("Submit")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -871,11 +873,11 @@ export default function BIAPage() {
       <Dialog open={isCommentsDialogOpen} onOpenChange={setIsCommentsDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>BIA Comments</DialogTitle>
+            <DialogTitle>{t("BIA Comments")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4 max-h-[400px] overflow-y-auto">
             {biaComments.length === 0 ? (
-              <p className="text-center text-muted-foreground py-4">No comments yet</p>
+              <p className="text-center text-muted-foreground py-4">{t("No comments yet")}</p>
             ) : (
               biaComments.map((comment) => (
                 <div key={comment.id} className="border rounded-lg p-4 space-y-2">
@@ -886,7 +888,7 @@ export default function BIAPage() {
                       comment.action === "SendBack" ? "bg-error-light text-error-dark" :
                       "bg-info-light text-info-dark"
                     }`}>
-                      {comment.action === "SendBack" ? "Sent Back" : comment.action}
+                      {comment.action === "SendBack" ? t("Sent Back") : t(comment.action)}
                     </span>
                   </div>
                   <p className="text-sm text-slate-700">{comment.comment}</p>
@@ -899,7 +901,7 @@ export default function BIAPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCommentsDialogOpen(false)}>
-              Close
+              {t("Close")}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -15,6 +15,7 @@ import {
 import { Check, Sparkles, Upload, X, Home, ChevronRight, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Department {
   id: string;
@@ -47,6 +48,7 @@ const MAX_FILES = 10;
 export default function RiskIdentificationPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { t } = useLanguage();
   const [departments, setDepartments] = useState<Department[]>([]);
   const [selectedDepartment, setSelectedDepartment] = useState<string>("");
   const [auditFocus, setAuditFocus] = useState<string>("");
@@ -120,7 +122,7 @@ export default function RiskIdentificationPage() {
 
   const handleSuggestRisks = async () => {
     if (!selectedDepartment) {
-      toast.error("Please select a department first");
+      toast.error(t("Please select a department first"));
       return;
     }
 
@@ -153,8 +155,8 @@ export default function RiskIdentificationPage() {
         query,
         timestamp: new Date(),
         result: total_risks
-          ? `Generated ${total_risks} risk(s) for ${deptName}.`
-          : `No risks generated for ${deptName}.`,
+          ? `${t("Generated")} ${total_risks} ${t("risk(s) for")} ${deptName}.`
+          : `${t("No risks generated for")} ${deptName}.`,
         generatedRisks: generatedRisks.length ? generatedRisks : undefined,
         total_risks,
         department: data.department ?? deptName,
@@ -214,10 +216,10 @@ export default function RiskIdentificationPage() {
         throw new Error("Failed to add risk to register");
       }
 
-      toast.success("Risk added to register successfully");
+      toast.success(t("Risk added to register successfully"));
     } catch (error) {
       console.error("Error adding risk:", error);
-      toast.error("Failed to add risk to register");
+      toast.error(t("Failed to add risk to register"));
     }
   };
 
@@ -239,15 +241,15 @@ export default function RiskIdentificationPage() {
         <nav className="flex items-center gap-1.5 text-sm">
           <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
             <Home className="h-4 w-4" />
-            <span>Internal Audit</span>
+            <span>{t("Internal Audit")}</span>
           </Link>
           <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-          <span className="text-primary-700 font-medium">Risk Identification</span>
+          <span className="text-primary-700 font-medium">{t("Risk Identification")}</span>
         </nav>
 
         {/* Page Header */}
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold text-slate-800">Risk Identification</h1>
+          <h1 className="text-2xl font-bold text-slate-800">{t("Risk Identification")}</h1>
         </div>
         <div className="flex items-center justify-center h-[60vh]">
           <div className="flex flex-col items-center gap-4">
@@ -255,7 +257,7 @@ export default function RiskIdentificationPage() {
               <div className="w-12 h-12 rounded-full border-4 border-slate-200"></div>
               <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
             </div>
-            <p className="text-sm text-slate-500 font-medium">Loading...</p>
+            <p className="text-sm text-slate-500 font-medium">{t("Loading...")}</p>
           </div>
         </div>
       </div>
@@ -268,15 +270,15 @@ export default function RiskIdentificationPage() {
       <nav className="flex items-center gap-1.5 text-sm">
         <Link href="/internal-audit/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
           <Home className="h-4 w-4" />
-          <span>Internal Audit</span>
+          <span>{t("Internal Audit")}</span>
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-        <span className="text-primary-700 font-medium">Risk Identification</span>
+        <span className="text-primary-700 font-medium">{t("Risk Identification")}</span>
       </nav>
 
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">Risk Identification</h1>
+        <h1 className="text-2xl font-bold text-slate-800">{t("Risk Identification")}</h1>
         <Button
           variant="outline"
           size="sm"
@@ -284,7 +286,7 @@ export default function RiskIdentificationPage() {
           onClick={() => router.push("/internal-audit/risk-register")}
         >
           <Sparkles className="h-4 w-4 mr-2" />
-          AI Integrated
+          {t("AI Integrated")}
         </Button>
       </div>
 
@@ -294,11 +296,11 @@ export default function RiskIdentificationPage() {
           {/* Department Selection */}
           <div>
             <label className="text-sm font-medium text-slate-700 mb-2 block">
-              Select a Department to Assess
+              {t("Select a Department to Assess")}
             </label>
             <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select department..." />
+                <SelectValue placeholder={t("Select department...")} />
               </SelectTrigger>
               <SelectContent>
                 {departments.map((dept) => (
@@ -313,10 +315,10 @@ export default function RiskIdentificationPage() {
           {/* Specific Audit Focus */}
           <div>
             <label className="text-sm font-medium text-slate-700 mb-2 block">
-              Specific Audit Focus (Optional)
+              {t("Specific Audit Focus (Optional)")}
             </label>
             <Textarea
-              placeholder="e.g. Payroll processing, Third-party management..."
+              placeholder={t("e.g. Payroll processing, Third-party management...")}
               value={auditFocus}
               onChange={(e) => setAuditFocus(e.target.value)}
               rows={4}
@@ -327,7 +329,7 @@ export default function RiskIdentificationPage() {
           {/* File Upload Area */}
           <div>
             <label className="text-sm font-medium text-slate-700 mb-2 block">
-              Supporting Documents (Optional)
+              {t("Supporting Documents (Optional)")}
             </label>
             <input
               ref={fileInputRef}
@@ -344,9 +346,9 @@ export default function RiskIdentificationPage() {
               onDragOver={handleDragOver}
             >
               <Upload className="h-10 w-10 mx-auto text-slate-300 mb-3" />
-              <p className="text-slate-500 mb-2">Drag and drop files here, or click to upload</p>
+              <p className="text-slate-500 mb-2">{t("Drag and drop files here, or click to upload")}</p>
               <p className="text-xs text-slate-400">
-                PDF, DOC, DOCX, XLS, XLSX, CSV, TXT (max {MAX_FILES} files)
+                {t("PDF, DOC, DOCX, XLS, XLSX, CSV, TXT")} ({t("max")} {MAX_FILES} {t("files")})
               </p>
             </div>
 
@@ -389,12 +391,12 @@ export default function RiskIdentificationPage() {
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Analyzing...
+                  {t("Analyzing...")}
                 </>
               ) : (
                 <>
                   <Sparkles className="h-4 w-4 mr-2" />
-                  Suggest Risks with AI
+                  {t("Suggest Risks with AI")}
                 </>
               )}
             </Button>
@@ -406,7 +408,7 @@ export default function RiskIdentificationPage() {
       {recentSearches.length > 0 && (
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-100">
-            <h3 className="text-sm font-medium text-slate-800">Recent Searches</h3>
+            <h3 className="text-sm font-medium text-slate-800">{t("Recent Searches")}</h3>
           </div>
           <div className="divide-y divide-slate-100">
             {recentSearches.map((search) => (
@@ -452,10 +454,10 @@ export default function RiskIdentificationPage() {
                                     {r.level}
                                   </Badge>
                                   {r.inherent_likelihood && (
-                                    <span>Likelihood: {r.inherent_likelihood}</span>
+                                    <span>{t("Likelihood")}: {r.inherent_likelihood}</span>
                                   )}
                                   {r.inherent_impact && (
-                                    <span>Impact: {r.inherent_impact}</span>
+                                    <span>{t("Impact")}: {r.inherent_impact}</span>
                                   )}
                                 </div>
                               </div>
@@ -465,7 +467,7 @@ export default function RiskIdentificationPage() {
                                 className="shrink-0"
                                 onClick={() => handleAddToRegister(r, selectedDepartment)}
                               >
-                                Add to Register
+                                {t("Add to Register")}
                               </Button>
                             </div>
                           </div>

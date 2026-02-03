@@ -31,7 +31,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Edit, FileText, Shield, AlertTriangle, ClipboardCheck, Link2, Plus, X } from "lucide-react";
+import { Edit, FileText, Shield, AlertTriangle, ClipboardCheck, Link2, Plus, X, Home, ChevronRight } from "lucide-react";
+import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Control {
@@ -350,26 +351,30 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
 
   return (
     <div className="p-6 space-y-6">
-      {/* Header with Back Link */}
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>{t("Compliance")}</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <Link href="/compliance/control" className="text-slate-500 hover:text-primary-600 transition-colors">
+          {t("Controls")}
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">{control.controlCode}</span>
+      </nav>
+
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => router.push("/compliance/control")}
-            className="text-primary hover:underline text-sm"
-          >
-            &lt;&lt; {t("Control")}
-          </button>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold">{control.name}</h1>
+          <Badge className={getStatusBadgeColor(control.status)}>{control.status}</Badge>
         </div>
         <Button variant="outline" onClick={() => setIsEditDialogOpen(true)}>
           <Edit className="h-4 w-4 mr-2" />
           {t("Edit Control")}
         </Button>
-      </div>
-
-      {/* Control Title */}
-      <div className="flex items-center gap-2">
-        <h1 className="text-2xl font-bold">{control.name}</h1>
-        <Badge className={getStatusBadgeColor(control.status)}>{control.status}</Badge>
       </div>
       <p className="text-slate-400">{control.controlCode}</p>
 
