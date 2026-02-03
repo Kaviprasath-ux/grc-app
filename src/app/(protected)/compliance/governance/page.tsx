@@ -1027,6 +1027,7 @@ export default function GovernancePage() {
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                              onClick={() => window.open(`/api/governance-vault/${doc.id}/download`, "_blank")}
                             >
                               <Download className="h-4 w-4" />
                             </Button>
