@@ -32,6 +32,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useToast } from "@/hooks/use-toast";
 
 interface NatureOfControl {
   id: string;
@@ -43,6 +44,7 @@ interface NatureOfControl {
 export default function NatureOfControlsPage() {
   const router = useRouter();
   const { t } = useLanguage();
+  const { toast } = useToast();
   const [items, setItems] = useState<NatureOfControl[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -110,9 +112,25 @@ export default function NatureOfControlsPage() {
       if (response.ok) {
         setDialogOpen(false);
         fetchItems();
+        toast({
+          title: "Success",
+          description: editItem ? "Nature of control updated successfully" : "Nature of control created successfully",
+        });
+      } else {
+        const data = await response.json();
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: data.error || "Failed to save nature of control",
+        });
       }
     } catch (error) {
       console.error("Failed to save:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to save nature of control",
+      });
     } finally {
       setSaving(false);
     }
@@ -133,10 +151,29 @@ export default function NatureOfControlsPage() {
 
       if (response.ok) {
         fetchItems();
+        toast({
+          title: "Success",
+          description: "Nature of control deleted successfully",
+        });
+        setDeleteDialogOpen(false);
+        setItemToDelete(null);
+      } else {
+        const data = await response.json();
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: data.error || "Failed to delete nature of control",
+        });
+        setDeleteDialogOpen(false);
+        setItemToDelete(null);
       }
     } catch (error) {
       console.error("Failed to delete:", error);
-    } finally {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete nature of control",
+      });
       setDeleteDialogOpen(false);
       setItemToDelete(null);
     }

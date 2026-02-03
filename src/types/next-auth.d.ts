@@ -14,7 +14,8 @@ declare module "next-auth" {
       customerAccountId: string | null;
       customerAccountCode: string | null;
       customerAccountName: string | null;
-      // Note: User model doesn't have auditHeadId field yet
+      // Audit Head isolation: auditHeadId for audit team members
+      auditHeadId: string | null;
       roles: string[];
       permissions: UserPermission[];
     } & DefaultSession["user"];
@@ -29,7 +30,8 @@ declare module "next-auth" {
     customerAccountId: string | null;
     customerAccountCode: string | null;
     customerAccountName: string | null;
-    // Note: User model doesn't have auditHeadId field yet
+    // Audit Head isolation: auditHeadId for audit team members
+    auditHeadId: string | null;
     roles: string[];
     permissions: UserPermission[];
   }
@@ -45,7 +47,8 @@ declare module "next-auth/jwt" {
     customerAccountId: string | null;
     customerAccountCode: string | null;
     customerAccountName: string | null;
-    // Note: User model doesn't have auditHeadId field yet
+    // Audit Head isolation: auditHeadId for audit team members
+    auditHeadId: string | null;
     roles: string[];
     permissions: UserPermission[];
   }

@@ -83,11 +83,17 @@ interface User {
 }
 
 // RBAC roles mapped by function
+// Note: For Audit function, roles are filtered based on who is creating the user
 const rolesByFunction: Record<string, string[]> = {
   Business: ["DepartmentReviewer", "DepartmentContributor", "Contributor"],
   Security: ["Reviewer"],
   Audit: ["AuditHead", "AuditManager", "Auditor", "Auditee", "AuditUser"],
 };
+
+// CustomerAdmin can only create AuditHead when selecting Audit function
+const customerAdminAuditRoles = ["AuditHead"];
+// AuditHead can only create AuditManager and Auditee when selecting Audit function
+const auditHeadAuditRoles = ["AuditManager", "Auditee"];
 
 // All assignable roles for filtering (excludes GRCAdministrator)
 const allUserRoles = [
@@ -1073,11 +1079,20 @@ export default function UsersPage() {
                               <SelectValue placeholder={userForm.function ? t("Select role") : t("Select function first")} />
                             </SelectTrigger>
                             <SelectContent position="popper" sideOffset={4} className="max-h-[200px]">
-                              {userForm.function && rolesByFunction[userForm.function]?.map((role) => (
-                                <SelectItem key={role} value={role}>
-                                  {role}
-                                </SelectItem>
-                              ))}
+                              {userForm.function && (
+                                // For Audit function, CustomerAdmin can only assign AuditHead role
+                                userForm.function === "Audit" && userRoles.includes("CustomerAdministrator") && !userRoles.includes("GRCAdministrator")
+                                  ? customerAdminAuditRoles.map((role) => (
+                                      <SelectItem key={role} value={role}>
+                                        {role}
+                                      </SelectItem>
+                                    ))
+                                  : rolesByFunction[userForm.function]?.map((role) => (
+                                      <SelectItem key={role} value={role}>
+                                        {role}
+                                      </SelectItem>
+                                    ))
+                              )}
                             </SelectContent>
                           </Select>
                         </div>

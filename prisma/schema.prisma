@@ -759,6 +759,8 @@ model Process {
   impactedByRisks        Risk[]          @relation("RiskImpactedProcess")
   // Attachments
   attachments            ProcessAttachment[]
+  // Audit Engagements
+  auditEngagements       AuditEngagement[]   @relation("EngagementProcess")
 
   @@unique([customerAccountId, processCode])
   @@index([customerAccountId])
@@ -2364,6 +2366,9 @@ model AuditEngagement {
   // Additional fields
   initialObservation  String?
   relatedPolicies     String?
+  // Process relation
+  processId           String?
+  process             Process?          @relation("EngagementProcess", fields: [processId], references: [id])
   // Status
   status              String            @default("Planned") // Planned, In Progress, Completed, Cancelled
   priority            String            @default("Medium") // Low, Medium, High

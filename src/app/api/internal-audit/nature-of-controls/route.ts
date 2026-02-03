@@ -1,13 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { withAuth } from "@/lib/api-auth";
+import { withAuth, getTenantFilter, getAuditHeadId } from "@/lib/api-auth";
 
 // GET all nature of controls
-// Note: AuditNatureOfControl model doesn't have customerAccountId field yet - tenant filtering disabled
+// Multi-tenant: Filter by customerAccountId and auditHeadId
 export const GET = withAuth(
-  async () => {
+  async (req, context, session) => {
     try {
+      const tenantFilter = getTenantFilter(session);
+      const auditHeadId = getAuditHeadId(session);
+
       const controls = await prisma.auditNatureOfControl.findMany({
+        where: {
+          ...tenantFilter,
+          ...(auditHeadId ? { auditHeadId } : {}),
+        },
         orderBy: { label: "asc" },
       });
 
@@ -20,13 +27,13 @@ export const GET = withAuth(
       );
     }
   },
-  { resource: "audit.settings", action: "edit" }
+  { resource: "audit.settings", action: "view" }
 );
 
 // POST create a new nature of control
-// Note: AuditNatureOfControl model doesn't have customerAccountId field yet - tenant assignment disabled
+// Multi-tenant: Associate with customerAccountId and auditHeadId
 export const POST = withAuth(
-  async (req: NextRequest) => {
+  async (req: NextRequest, context, session) => {
     try {
       const body = await req.json();
       const { label } = body;
@@ -38,9 +45,16 @@ export const POST = withAuth(
         );
       }
 
-      // Check for duplicate
+      const tenantFilter = getTenantFilter(session);
+      const auditHeadId = getAuditHeadId(session);
+
+      // Check for duplicate within same tenant and audit head
       const existing = await prisma.auditNatureOfControl.findFirst({
-        where: { label },
+        where: {
+          label,
+          ...tenantFilter,
+          ...(auditHeadId ? { auditHeadId } : {}),
+        },
       });
 
       if (existing) {
@@ -51,7 +65,11 @@ export const POST = withAuth(
       }
 
       const control = await prisma.auditNatureOfControl.create({
-        data: { label },
+        data: {
+          label,
+          customerAccountId: session.customerAccountId,
+          auditHeadId: auditHeadId,
+        },
       });
 
       return NextResponse.json(control, { status: 201 });

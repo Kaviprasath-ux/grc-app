@@ -54,6 +54,21 @@ interface User {
   email: string;
 }
 
+interface AuditType {
+  id: string;
+  name: string;
+}
+
+interface ScoringRange {
+  id: string;
+  label: string;
+}
+
+interface Process {
+  id: string;
+  name: string;
+}
+
 interface AuditTask {
   id: string;
   task: string;
@@ -93,6 +108,9 @@ export default function AddEngagementPage() {
   const [auditees, setAuditees] = useState<User[]>([]);
   const [auditors, setAuditors] = useState<User[]>([]);
   const [historicalRisks, setHistoricalRisks] = useState<Risk[]>([]);
+  const [auditTypes, setAuditTypes] = useState<AuditType[]>([]);
+  const [auditRatings, setAuditRatings] = useState<ScoringRange[]>([]);
+  const [processes, setProcesses] = useState<Process[]>([]);
 
   // Form data
   const [formData, setFormData] = useState({
@@ -105,6 +123,7 @@ export default function AddEngagementPage() {
     auditType: "",
     auditorId: "",
     auditeeId: "",
+    processId: "",
     startDate: "",
     targetDate: "",
     initialObservation: "",
@@ -143,11 +162,14 @@ export default function AddEngagementPage() {
 
   const fetchReferenceData = async () => {
     try {
-      const [deptRes, usersRes, auditeesRes, auditorsRes] = await Promise.all([
+      const [deptRes, usersRes, auditeesRes, auditorsRes, auditTypesRes, scoringRangesRes, processesRes] = await Promise.all([
         fetch("/api/departments"),
         fetch("/api/users"),
-        fetch("/api/users?forAuditHead=auditees"), // Auditees managed by this Audit Head
-        fetch("/api/users?forAuditHead=auditors"), // Audit Managers for this Audit Head
+        fetch("/api/internal-audit/users?role=Auditee"), // Auditees associated with this Audit Head
+        fetch("/api/internal-audit/users?role=auditors"), // Audit Head + Audit Managers
+        fetch("/api/internal-audit/audit-types"), // Audit Types from settings
+        fetch("/api/internal-audit/scoring-ranges"), // Scoring Ranges for audit ratings
+        fetch("/api/processes"), // Processes
       ]);
 
       if (deptRes.ok) setDepartments(await deptRes.json());
@@ -162,6 +184,20 @@ export default function AddEngagementPage() {
       if (auditorsRes.ok) {
         const auditorsData = await auditorsRes.json();
         setAuditors(auditorsData.users || auditorsData || []);
+      }
+      if (auditTypesRes.ok) {
+        const auditTypesData = await auditTypesRes.json();
+        setAuditTypes(auditTypesData || []);
+      }
+      if (scoringRangesRes.ok) {
+        const scoringRangesData = await scoringRangesRes.json();
+        // Get unique labels from scoring ranges for audit ratings
+        const uniqueLabels = [...new Set(scoringRangesData.map((r: ScoringRange) => r.label))];
+        setAuditRatings(uniqueLabels.map((label: string) => ({ id: label, label })));
+      }
+      if (processesRes.ok) {
+        const processesData = await processesRes.json();
+        setProcesses(processesData || []);
       }
     } catch (error) {
       console.error("Failed to fetch reference data:", error);
@@ -477,9 +513,17 @@ export default function AddEngagementPage() {
               <SelectValue placeholder={t("Select Audit Rating")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Satisfactory">{t("Satisfactory")}</SelectItem>
-              <SelectItem value="Needs Improvement">{t("Needs Improvement")}</SelectItem>
-              <SelectItem value="Unsatisfactory">{t("Unsatisfactory")}</SelectItem>
+              {auditRatings.length > 0 ? (
+                auditRatings.map((rating) => (
+                  <SelectItem key={rating.id} value={rating.label}>
+                    {rating.label}
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="none" disabled>
+                  {t("No ratings configured. Add in Settings > Risk Assessment.")}
+                </SelectItem>
+              )}
             </SelectContent>
           </Select>
         </div>
@@ -495,12 +539,17 @@ export default function AddEngagementPage() {
               <SelectValue placeholder={t("Select Audit Type")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Internal Audit">{t("Internal Audit")}</SelectItem>
-              <SelectItem value="Compliance Audit">{t("Compliance Audit")}</SelectItem>
-              <SelectItem value="Financial Audit">{t("Financial Audit")}</SelectItem>
-              <SelectItem value="Operational Audit">{t("Operational Audit")}</SelectItem>
-              <SelectItem value="IT Audit">{t("IT Audit")}</SelectItem>
-              <SelectItem value="Assurance">{t("Assurance")}</SelectItem>
+              {auditTypes.length > 0 ? (
+                auditTypes.map((type) => (
+                  <SelectItem key={type.id} value={type.name}>
+                    {type.name}
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="none" disabled>
+                  {t("No audit types configured. Add in Settings > Audit Type.")}
+                </SelectItem>
+              )}
             </SelectContent>
           </Select>
         </div>
@@ -553,6 +602,32 @@ export default function AddEngagementPage() {
               ) : (
                 <SelectItem value="none" disabled>
                   {t("No auditees assigned to you")}
+                </SelectItem>
+              )}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Process */}
+        <div className="space-y-2">
+          <Label className="text-blue-800">Process</Label>
+          <Select
+            value={formData.processId}
+            onValueChange={(value) => setFormData({ ...formData, processId: value })}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select Process" />
+            </SelectTrigger>
+            <SelectContent>
+              {processes.length > 0 ? (
+                processes.map((process) => (
+                  <SelectItem key={process.id} value={process.id}>
+                    {process.name}
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="none" disabled>
+                  No processes available
                 </SelectItem>
               )}
             </SelectContent>
