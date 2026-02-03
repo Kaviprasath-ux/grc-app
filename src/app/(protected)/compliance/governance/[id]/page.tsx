@@ -66,6 +66,9 @@ import {
   Layers,
   Home,
   ChevronRight,
+  Search,
+  File,
+  FileType,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -127,6 +130,21 @@ interface Policy {
     type: string;
     code: string;
   }>;
+  vaultDocumentLinks?: Array<{
+    id: string;
+    documentId: string;
+    policyId: string;
+    document: {
+      id: string;
+      documentCode: string;
+      fileName: string;
+      fileType: string;
+      fileSize: number;
+      filePath: string;
+      status: string;
+      uploadedAt: string;
+    };
+  }>;
 }
 
 interface Framework {
@@ -161,6 +179,17 @@ interface Control {
   name: string;
   status: string;
   domain?: { name: string } | null;
+}
+
+interface VaultDocument {
+  id: string;
+  documentId: string;
+  name: string;
+  type: string;
+  status: string;
+  uploadedAt: string;
+  filePath: string;
+  linkedGovernanceIds: string[];
 }
 
 const statusColors: Record<string, string> = {
@@ -229,6 +258,7 @@ export default function GovernanceDetailPage() {
   const [activeTab, setActiveTab] = useState("controls");
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [linkControlDialogOpen, setLinkControlDialogOpen] = useState(false);
+  const [linkExceptionDialogOpen, setLinkExceptionDialogOpen] = useState(false);
   const [assigneeDialogOpen, setAssigneeDialogOpen] = useState(false);
   const [approverDialogOpen, setApproverDialogOpen] = useState(false);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
@@ -241,6 +271,15 @@ export default function GovernanceDetailPage() {
   const [unpublishDialogOpen, setUnpublishDialogOpen] = useState(false);
   const [storedSignature, setStoredSignature] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Vault document linking state
+  const [linkFromVaultDialogOpen, setLinkFromVaultDialogOpen] = useState(false);
+  const [vaultDocuments, setVaultDocuments] = useState<VaultDocument[]>([]);
+  const [vaultSearchQuery, setVaultSearchQuery] = useState("");
+  const [selectedVaultDocIds, setSelectedVaultDocIds] = useState<string[]>([]);
+  const [linkingVaultDocs, setLinkingVaultDocs] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Edit form state
   const [editForm, setEditForm] = useState({
@@ -271,6 +310,14 @@ export default function GovernanceDetailPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [availableControls, setAvailableControls] = useState<Control[]>([]);
   const [selectedControlId, setSelectedControlId] = useState("");
+  const [availableExceptions, setAvailableExceptions] = useState<Array<{
+    id: string;
+    exceptionCode: string;
+    name: string;
+    status: string;
+    category: string;
+  }>>([]);
+  const [selectedExceptionId, setSelectedExceptionId] = useState("");
 
   const fetchPolicy = useCallback(async () => {
     try {
@@ -307,11 +354,12 @@ export default function GovernanceDetailPage() {
 
   const fetchReferenceData = useCallback(async () => {
     try {
-      const [frameworksRes, departmentsRes, usersRes, controlsRes] = await Promise.all([
+      const [frameworksRes, departmentsRes, usersRes, controlsRes, exceptionsRes] = await Promise.all([
         fetch("/api/frameworks"),
         fetch("/api/departments"),
         fetch("/api/users"),
         fetch("/api/controls"),
+        fetch("/api/exceptions"),
       ]);
 
       if (frameworksRes.ok) {
@@ -328,15 +376,32 @@ export default function GovernanceDetailPage() {
         const data = await controlsRes.json();
         setAvailableControls(Array.isArray(data) ? data : data.data || []);
       }
+      if (exceptionsRes.ok) {
+        const data = await exceptionsRes.json();
+        setAvailableExceptions(Array.isArray(data) ? data : data.data || []);
+      }
     } catch (error) {
       console.error("Error fetching reference data:", error);
+    }
+  }, []);
+
+  const fetchVaultDocuments = useCallback(async () => {
+    try {
+      const response = await fetch("/api/governance-vault");
+      if (response.ok) {
+        const data = await response.json();
+        setVaultDocuments(data.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching vault documents:", error);
     }
   }, []);
 
   useEffect(() => {
     fetchPolicy();
     fetchReferenceData();
-  }, [fetchPolicy, fetchReferenceData]);
+    fetchVaultDocuments();
+  }, [fetchPolicy, fetchReferenceData, fetchVaultDocuments]);
 
   // Filtered user lists for role-based assignment restrictions
   // Assignees: Only DepartmentContributor and DepartmentReviewer from the selected department
@@ -409,14 +474,16 @@ export default function GovernanceDetailPage() {
 
   const handleApprove = async () => {
     try {
-      const response = await fetch(`/api/policies/${id}`, {
-        method: "PUT",
+      const response = await fetch(`/api/policies/${id}/approve`, {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "Approved" }),
       });
 
       if (response.ok) {
         fetchPolicy();
+      } else {
+        const error = await response.json();
+        console.error("Approve failed:", error);
       }
     } catch (error) {
       console.error("Error approving policy:", error);
@@ -473,6 +540,40 @@ export default function GovernanceDetailPage() {
     }
   };
 
+  const handleLinkException = async () => {
+    if (!selectedExceptionId) return;
+
+    try {
+      const response = await fetch(`/api/policies/${id}/exceptions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ exceptionId: selectedExceptionId }),
+      });
+
+      if (response.ok) {
+        setLinkExceptionDialogOpen(false);
+        setSelectedExceptionId("");
+        fetchPolicy();
+      }
+    } catch (error) {
+      console.error("Error linking exception:", error);
+    }
+  };
+
+  const handleUnlinkException = async (exceptionId: string) => {
+    try {
+      const response = await fetch(`/api/policies/${id}/exceptions/${exceptionId}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        fetchPolicy();
+      }
+    } catch (error) {
+      console.error("Error unlinking exception:", error);
+    }
+  };
+
   const handleTriggerAIReview = async () => {
     try {
       const response = await fetch(`/api/policies/${id}`, {
@@ -502,6 +603,26 @@ export default function GovernanceDetailPage() {
       }
     } catch (error) {
       console.error("Error triggering AI review:", error);
+    }
+  };
+
+  const handleClearAIReview = async () => {
+    try {
+      const response = await fetch(`/api/policies/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          aiReviewStatus: null,
+          aiReviewScore: null,
+          aiReviewJustification: null,
+        }),
+      });
+
+      if (response.ok) {
+        fetchPolicy();
+      }
+    } catch (error) {
+      console.error("Error clearing AI review:", error);
     }
   };
 
@@ -580,6 +701,141 @@ export default function GovernanceDetailPage() {
     } catch (error) {
       console.error("Error deleting attachment:", error);
     }
+  };
+
+  // Drag and drop handlers
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      setUploadFile(files[0]);
+    }
+  };
+
+  const handleBrowseClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  // Link from vault handlers
+  const handleVaultDocSelect = (docId: string) => {
+    setSelectedVaultDocIds((prev) =>
+      prev.includes(docId)
+        ? prev.filter((id) => id !== docId)
+        : [...prev, docId]
+    );
+  };
+
+  const handleLinkVaultDocuments = async () => {
+    if (selectedVaultDocIds.length === 0) return;
+
+    setLinkingVaultDocs(true);
+    try {
+      // For each selected vault document, update its linked governance
+      for (const docId of selectedVaultDocIds) {
+        const vaultDoc = vaultDocuments.find((d) => d.id === docId);
+        if (vaultDoc) {
+          // Add current policy to the linked governance IDs
+          const newLinkedIds = [...new Set([...vaultDoc.linkedGovernanceIds, id])];
+          await fetch(`/api/governance-vault/${docId}/link`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ governanceIds: newLinkedIds }),
+          });
+        }
+      }
+
+      // Auto-transition to Draft status when document is linked
+      if (policy?.status === "Not Uploaded") {
+        await fetch(`/api/policies/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "Draft" }),
+        });
+      }
+
+      setLinkFromVaultDialogOpen(false);
+      setSelectedVaultDocIds([]);
+      setVaultSearchQuery("");
+      fetchVaultDocuments(); // Refresh vault documents
+      fetchPolicy(); // Refresh policy
+    } catch (error) {
+      console.error("Error linking vault documents:", error);
+    } finally {
+      setLinkingVaultDocs(false);
+    }
+  };
+
+  // Filter vault documents by search query
+  const filteredVaultDocuments = vaultDocuments.filter((doc) =>
+    doc.name.toLowerCase().includes(vaultSearchQuery.toLowerCase()) ||
+    doc.documentId.toLowerCase().includes(vaultSearchQuery.toLowerCase())
+  );
+
+  // Unlink vault document from policy
+  const handleUnlinkVaultDocument = async (vaultDocId: string) => {
+    try {
+      // First, fetch the current vault document to get its linked policies
+      const response = await fetch(`/api/governance-vault/${vaultDocId}`);
+      if (response.ok) {
+        const vaultDoc = await response.json();
+        // Remove current policy from linked governance IDs
+        const currentLinkedIds = vaultDoc.linkedGovernanceIds || [];
+        const newLinkedIds = currentLinkedIds.filter((gid: string) => gid !== id);
+
+        await fetch(`/api/governance-vault/${vaultDocId}/link`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ governanceIds: newLinkedIds }),
+        });
+
+        fetchVaultDocuments();
+        fetchPolicy();
+      }
+    } catch (error) {
+      console.error("Error unlinking vault document:", error);
+    }
+  };
+
+  // Get file type icon
+  const getFileTypeIcon = (fileType: string) => {
+    const type = fileType?.toLowerCase();
+    if (type === "doc" || type === "docx") {
+      return (
+        <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center">
+          <span className="text-white text-xs font-bold">W</span>
+        </div>
+      );
+    }
+    if (type === "xls" || type === "xlsx") {
+      return (
+        <div className="w-8 h-8 bg-green-600 rounded flex items-center justify-center">
+          <span className="text-white text-xs font-bold">X</span>
+        </div>
+      );
+    }
+    if (type === "pdf") {
+      return (
+        <div className="w-8 h-8 bg-red-600 rounded flex items-center justify-center">
+          <span className="text-white text-xs font-bold">P</span>
+        </div>
+      );
+    }
+    return (
+      <div className="w-8 h-8 bg-gray-400 rounded flex items-center justify-center">
+        <File className="h-4 w-4 text-white" />
+      </div>
+    );
   };
 
   const handlePublish = async () => {
@@ -704,6 +960,7 @@ export default function GovernanceDetailPage() {
   const linkedExceptions = policy.policyExceptions || [];
   const attachments = policy.attachments || [];
   const linkedDocuments = policy.linkedDocuments || [];
+  const linkedVaultDocuments = policy.vaultDocumentLinks || [];
 
   // Derive linked frameworks from policyControls -> control -> framework
   const linkedFrameworksFromControls = linkedControls
@@ -716,14 +973,10 @@ export default function GovernanceDetailPage() {
   // Get step states based on current status
   const stepStates = getStepStates(policy.status);
 
-  // Approve button visibility: Only CustomerAdmin who is the Approver can approve
-  // And only when status is Draft
+  // Approve button visibility: CustomerAdmin OR assigned Approver can approve when status is Draft
   const canShowApproveButton =
-    isCustomerAdmin &&
-    currentUserId &&
-    policy.approverId &&
-    currentUserId === policy.approverId &&
-    policy.status === "Draft";
+    policy.status === "Draft" &&
+    (isCustomerAdmin || (currentUserId && policy.approverId === currentUserId));
 
   // Publish button visibility: Only when status is Approved
   // And only if user is Assignee OR CustomerAdmin
@@ -749,31 +1002,42 @@ export default function GovernanceDetailPage() {
       id: "documents",
       label: t("Linked Documents"),
       icon: FileText,
-      count: linkedDocuments.length,
+      count: linkedDocuments.length + linkedVaultDocuments.length,
     },
   ];
 
   return (
     <div className="space-y-6 p-6">
-      {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
-        <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
-          <Home className="h-4 w-4" />
-          <span>{t("Compliance")}</span>
-        </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-        <Link href="/compliance/governance" className="text-slate-500 hover:text-primary-600 transition-colors">
-          {t("Governance")}
-        </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
-        <span className="text-primary-700 font-medium">{policy.code}</span>
-      </nav>
+      {/* Back Button and Breadcrumb */}
+      <div className="flex items-center gap-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => router.back()}
+          className="flex items-center gap-1 text-slate-600 hover:text-slate-900"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          {t("Back")}
+        </Button>
+        <nav className="flex items-center gap-1.5 text-sm">
+          <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>{t("Compliance")}</span>
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <Link href="/compliance/governance" className="text-slate-500 hover:text-primary-600 transition-colors">
+            {t("Governance")}
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <span className="text-primary-700 font-medium">{policy.code}</span>
+        </nav>
+      </div>
 
       {/* Header */}
       <div className="flex items-center justify-between">
 
         <div className="flex items-center gap-2">
-          {/* Approve Button - Only CustomerAdmin who is the Approver can see */}
+          {/* Approve Button - CustomerAdmin or assigned Approver can see when status is Draft */}
           {canShowApproveButton && (
             <Button variant="outline" onClick={handleApprove}>
               <Check className="h-4 w-4 mr-2" />
@@ -789,12 +1053,22 @@ export default function GovernanceDetailPage() {
             </Button>
           )}
 
-          {/* Start AI Review Button - Requires edit permission */}
+          {/* AI Review Buttons - Requires edit permission */}
           <PermissionGate resource="compliance.governance" action="edit">
-            {policy.aiReviewStatus !== "In Progress" && (
+            {policy.aiReviewStatus === "In Progress" ? (
+              <Button variant="outline" disabled>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2" />
+                {t("AI Review in Progress...")}
+              </Button>
+            ) : policy.aiReviewStatus === "Completed" ? (
+              <Button variant="outline" onClick={handleClearAIReview}>
+                <Sparkles className="h-4 w-4 mr-2" />
+                {t("Clear AI Results")}
+              </Button>
+            ) : (
               <Button variant="outline" onClick={handleTriggerAIReview}>
                 <Sparkles className="h-4 w-4 mr-2" />
-                {policy.aiReviewStatus === "Completed" ? t("Re-run AI Review") : t("Start AI Review")}
+                {t("Start AI Review")}
               </Button>
             )}
           </PermissionGate>
@@ -1325,11 +1599,17 @@ export default function GovernanceDetailPage() {
             </CardTitle>
             <div className="flex items-center gap-2">
               {/* Download Published Document Button */}
-              {attachments.length > 0 && (
+              {(attachments.length > 0 || linkedVaultDocuments.length > 0) && (
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => window.open(attachments[0].filePath, "_blank")}
+                  onClick={() => {
+                    if (attachments.length > 0) {
+                      window.open(attachments[0].filePath, "_blank");
+                    } else if (linkedVaultDocuments.length > 0) {
+                      window.open(`/api/governance-vault/${linkedVaultDocuments[0].document.id}/download`, "_blank");
+                    }
+                  }}
                 >
                   <Download className="h-4 w-4 mr-2" />
                   {t("Download")}
@@ -1380,6 +1660,11 @@ export default function GovernanceDetailPage() {
                     <div className="flex items-center gap-2 mt-1 p-2 bg-muted rounded-lg">
                       <FileText className="h-5 w-5 text-blue-600" />
                       <span className="font-medium">{attachments[0].fileName}</span>
+                    </div>
+                  ) : linkedVaultDocuments.length > 0 ? (
+                    <div className="flex items-center gap-2 mt-1 p-2 bg-muted rounded-lg">
+                      {getFileTypeIcon(linkedVaultDocuments[0].document.fileType)}
+                      <span className="font-medium">{linkedVaultDocuments[0].document.fileName}</span>
                     </div>
                   ) : (
                     <p className="text-slate-400 mt-1">{t("No document attached")}</p>
@@ -1457,143 +1742,516 @@ export default function GovernanceDetailPage() {
 
       {/* Attachments Section */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader>
           <CardTitle>{t("Attachments")}</CardTitle>
-          <PermissionGate resource="compliance.governance" action="edit">
-            {isCustomerAdmin ? (
-              /* Customer Admin: Upload dialog with full functionality */
-              <Dialog open={uploadDialogOpen} onOpenChange={(open) => {
-                setUploadDialogOpen(open);
-                if (!open) setUploadFile(null);
-              }}>
-                <DialogTrigger asChild>
-                  <Button size="sm">
-                    <Upload className="h-4 w-4 mr-2" />
-                    {t("Upload")}
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>{t("Upload Document")}</DialogTitle>
-                  </DialogHeader>
-                  <div className="py-4 space-y-4">
-                    <div>
-                      <Label>{t("Select File")}</Label>
-                      <Input
-                        type="file"
-                        onChange={handleFileSelect}
-                        className="mt-2"
-                        accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
-                      />
-                    </div>
-                    {uploadFile && (
-                      <div className="p-3 bg-muted rounded-lg">
-                        <p className="text-sm font-medium">{uploadFile.name}</p>
-                        <p className="text-xs text-slate-400">
-                          {(uploadFile.size / 1024).toFixed(2)} KB
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setUploadDialogOpen(false);
-                        setUploadFile(null);
-                      }}
-                      disabled={uploading}
-                    >
-                      {t("Cancel")}
-                    </Button>
-                    <Button
-                      onClick={handleUploadAttachment}
-                      disabled={!uploadFile || uploading}
-                    >
-                      {uploading ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                          {t("Uploading...")}
-                        </>
-                      ) : (
-                        t("Upload")
-                      )}
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            ) : (
-              /* GRC Admin / Other roles: Original simple button (no functionality) */
-              <Button size="sm">
-                <Upload className="h-4 w-4 mr-2" />
-                {t("Upload")}
-              </Button>
-            )}
-          </PermissionGate>
         </CardHeader>
         <CardContent>
-          {attachments.length === 0 ? (
-            <div className="text-center py-8 text-slate-400">
-              <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p>{t("No attachments uploaded")}</p>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t("File Name")}</TableHead>
-                  <TableHead>{t("Type")}</TableHead>
-                  <TableHead>{t("Uploaded")}</TableHead>
-                  <TableHead className="w-[100px]">{t("Actions")}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {attachments.map((att) => (
-                  <TableRow key={att.id}>
-                    <TableCell className="font-medium">{att.fileName}</TableCell>
-                    <TableCell>{att.fileType}</TableCell>
-                    <TableCell>{new Date(att.uploadedAt).toLocaleDateString()}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        {isCustomerAdmin ? (
-                          /* Customer Admin: Functional download button */
+          {isCustomerAdmin ? (
+            /* Customer Admin: 3 Card Options */
+            <div className="space-y-6">
+              {/* 3 Option Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Option 1: Upload Existing File */}
+                {(() => {
+                  const hasDocument = attachments.length > 0 || linkedVaultDocuments.length > 0;
+                  return (
+                    <Dialog open={uploadDialogOpen} onOpenChange={(open) => {
+                      if (hasDocument) return; // Don't open if already has document
+                      setUploadDialogOpen(open);
+                      if (!open) {
+                        setUploadFile(null);
+                        setIsDragOver(false);
+                      }
+                    }}>
+                      <DialogTrigger asChild disabled={hasDocument}>
+                        <div
+                          className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                            hasDocument
+                              ? "border-gray-100 bg-gray-50 cursor-not-allowed opacity-50"
+                              : "border-gray-200 cursor-pointer hover:border-primary hover:bg-primary/5"
+                          }`}
+                        >
+                          <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 ${
+                            hasDocument ? "bg-gray-100" : "bg-blue-100"
+                          }`}>
+                            <Upload className={`h-6 w-6 ${hasDocument ? "text-gray-400" : "text-blue-600"}`} />
+                          </div>
+                          <h3 className={`font-medium ${hasDocument ? "text-gray-400" : "text-gray-900"}`}>
+                            {t("Upload Existing File")}
+                          </h3>
+                          <p className={`text-sm mt-1 ${hasDocument ? "text-gray-300" : "text-gray-500"}`}>
+                            {hasDocument
+                              ? t("Delete existing file to upload new")
+                              : t("Upload document from your device")}
+                          </p>
+                        </div>
+                      </DialogTrigger>
+                  <DialogContent className="max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>{t("Upload Existing File")}</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4 space-y-4">
+                      {/* Drag and Drop Area */}
+                      <div
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                        className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                          isDragOver
+                            ? "border-primary bg-primary/10"
+                            : "border-gray-300 hover:border-gray-400"
+                        }`}
+                      >
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          onChange={handleFileSelect}
+                          className="hidden"
+                          accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
+                        />
+                        <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <Upload className="h-8 w-8 text-blue-600" />
+                        </div>
+                        <p className="text-gray-600 mb-2">
+                          {t("Drag and drop your file here, or")}
+                        </p>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handleBrowseClick}
+                        >
+                          {t("Browse Files")}
+                        </Button>
+                        <p className="text-xs text-gray-400 mt-3">
+                          {t("Supported formats: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT")}
+                        </p>
+                      </div>
+
+                      {/* Selected File Preview */}
+                      {uploadFile && (
+                        <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+                          {getFileTypeIcon(uploadFile.name.split(".").pop() || "")}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{uploadFile.name}</p>
+                            <p className="text-xs text-slate-400">
+                              {(uploadFile.size / 1024).toFixed(2)} KB
+                            </p>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setUploadFile(null)}
+                          >
+                            <Trash2 className="h-4 w-4 text-red-500" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setUploadDialogOpen(false);
+                          setUploadFile(null);
+                        }}
+                        disabled={uploading}
+                      >
+                        {t("Cancel")}
+                      </Button>
+                      <Button
+                        onClick={handleUploadAttachment}
+                        disabled={!uploadFile || uploading}
+                      >
+                        {uploading ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                            {t("Uploading...")}
+                          </>
+                        ) : (
+                          t("Upload")
+                        )}
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+                  );
+                })()}
+
+                {/* Option 2: Generate Policy Using AI */}
+                {(() => {
+                  const hasDocument = attachments.length > 0 || linkedVaultDocuments.length > 0;
+                  return (
+                    <div
+                      className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                        hasDocument
+                          ? "border-gray-100 bg-gray-50 cursor-not-allowed opacity-50"
+                          : "border-gray-200 cursor-pointer hover:border-primary hover:bg-primary/5"
+                      }`}
+                    >
+                      <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 ${
+                        hasDocument ? "bg-gray-100" : "bg-purple-100"
+                      }`}>
+                        <Sparkles className={`h-6 w-6 ${hasDocument ? "text-gray-400" : "text-purple-600"}`} />
+                      </div>
+                      <h3 className={`font-medium ${hasDocument ? "text-gray-400" : "text-gray-900"}`}>
+                        {t("Generate Policy Using AI")}
+                      </h3>
+                      <p className={`text-sm mt-1 ${hasDocument ? "text-gray-300" : "text-gray-500"}`}>
+                        {hasDocument
+                          ? t("Delete existing file to use AI")
+                          : t("Create document with AI assistance")}
+                      </p>
+                    </div>
+                  );
+                })()}
+
+                {/* Option 3: Link from Vault */}
+                {(() => {
+                  const hasDocument = attachments.length > 0 || linkedVaultDocuments.length > 0;
+                  return (
+                    <Dialog open={linkFromVaultDialogOpen} onOpenChange={(open) => {
+                      if (hasDocument) return; // Don't open if already has document
+                      setLinkFromVaultDialogOpen(open);
+                      if (!open) {
+                        setSelectedVaultDocIds([]);
+                        setVaultSearchQuery("");
+                      }
+                    }}>
+                      <DialogTrigger asChild disabled={hasDocument}>
+                        <div
+                          className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                            hasDocument
+                              ? "border-gray-100 bg-gray-50 cursor-not-allowed opacity-50"
+                              : "border-gray-200 cursor-pointer hover:border-primary hover:bg-primary/5"
+                          }`}
+                        >
+                          <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 ${
+                            hasDocument ? "bg-gray-100" : "bg-green-100"
+                          }`}>
+                            <Link2 className={`h-6 w-6 ${hasDocument ? "text-gray-400" : "text-green-600"}`} />
+                          </div>
+                          <h3 className={`font-medium ${hasDocument ? "text-gray-400" : "text-gray-900"}`}>
+                            {t("Link from Vault")}
+                          </h3>
+                          <p className={`text-sm mt-1 ${hasDocument ? "text-gray-300" : "text-gray-500"}`}>
+                            {hasDocument
+                              ? t("Delete existing file to link")
+                              : t("Link existing vault documents")}
+                          </p>
+                        </div>
+                      </DialogTrigger>
+                  <DialogContent className="max-w-2xl max-h-[80vh]">
+                    <DialogHeader>
+                      <DialogTitle>{t("Link from Vault")}</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4 space-y-4">
+                      {/* Search Bar */}
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <Input
+                          placeholder={t("Search documents...")}
+                          value={vaultSearchQuery}
+                          onChange={(e) => setVaultSearchQuery(e.target.value)}
+                          className="pl-10"
+                        />
+                      </div>
+
+                      {/* Document List */}
+                      <div className="border rounded-lg max-h-[400px] overflow-y-auto">
+                        {filteredVaultDocuments.length === 0 ? (
+                          <div className="text-center py-8 text-gray-400">
+                            <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                            <p>{t("No documents found in vault")}</p>
+                          </div>
+                        ) : (
+                          <div className="divide-y">
+                            {filteredVaultDocuments.map((doc) => {
+                              const isSelected = selectedVaultDocIds.includes(doc.id);
+                              const isAlreadyLinked = doc.linkedGovernanceIds.includes(id);
+
+                              return (
+                                <div
+                                  key={doc.id}
+                                  className={`flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer ${
+                                    isSelected ? "bg-blue-50" : ""
+                                  } ${isAlreadyLinked ? "opacity-50" : ""}`}
+                                  onClick={() => !isAlreadyLinked && handleVaultDocSelect(doc.id)}
+                                >
+                                  {/* Checkbox */}
+                                  <div className={`w-5 h-5 border-2 rounded flex items-center justify-center ${
+                                    isSelected
+                                      ? "bg-primary border-primary"
+                                      : "border-gray-300"
+                                  } ${isAlreadyLinked ? "bg-gray-200 border-gray-200" : ""}`}>
+                                    {(isSelected || isAlreadyLinked) && (
+                                      <Check className="h-3 w-3 text-white" />
+                                    )}
+                                  </div>
+
+                                  {/* File Icon */}
+                                  {getFileTypeIcon(doc.type)}
+
+                                  {/* Document Info */}
+                                  <div className="flex-1 min-w-0">
+                                    <p className="font-medium text-gray-900 truncate">{doc.name}</p>
+                                    <p className="text-xs text-gray-500">
+                                      {doc.documentId} • {doc.type.toUpperCase()} • {new Date(doc.uploadedAt).toLocaleDateString()}
+                                    </p>
+                                  </div>
+
+                                  {/* Already Linked Badge */}
+                                  {isAlreadyLinked && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      {t("Already Linked")}
+                                    </Badge>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Selected Count */}
+                      {selectedVaultDocIds.length > 0 && (
+                        <p className="text-sm text-gray-600">
+                          {selectedVaultDocIds.length} {t("document(s) selected")}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setLinkFromVaultDialogOpen(false);
+                          setSelectedVaultDocIds([]);
+                          setVaultSearchQuery("");
+                        }}
+                        disabled={linkingVaultDocs}
+                      >
+                        {t("Cancel")}
+                      </Button>
+                      <Button
+                        onClick={handleLinkVaultDocuments}
+                        disabled={selectedVaultDocIds.length === 0 || linkingVaultDocs}
+                      >
+                        {linkingVaultDocs ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                            {t("Linking...")}
+                          </>
+                        ) : (
+                          <>
+                            <Link2 className="h-4 w-4 mr-2" />
+                            {t("Link Artifact")}
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </DialogContent>
+                    </Dialog>
+                  );
+                })()}
+              </div>
+
+              {/* Uploaded Attachments */}
+              {attachments.length > 0 && (
+                <div className="mt-6">
+                  <h4 className="font-medium text-gray-900 mb-3">{t("Uploaded Files")}</h4>
+                  <div className="space-y-2">
+                    {attachments.map((att) => (
+                      <div
+                        key={att.id}
+                        className="flex items-center gap-3 p-4 bg-slate-50 rounded-lg"
+                      >
+                        {/* File Icon */}
+                        {getFileTypeIcon(att.fileType)}
+
+                        {/* File Info */}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-primary truncate">{att.fileName}</p>
+                          <p className="text-xs text-slate-500">
+                            By bts, {new Date(att.uploadedAt).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "2-digit",
+                              year: "numeric",
+                            })}
+                          </p>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-2">
                           <Button
                             variant="ghost"
                             size="icon"
                             onClick={() => window.open(att.filePath, "_blank")}
-                            title="Download"
+                            title={t("Download")}
                           >
                             <Download className="h-4 w-4" />
                           </Button>
-                        ) : (
-                          /* GRC Admin / Other: Original button (no functionality) */
-                          <Button variant="ghost" size="icon">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteAttachment(att.id)}
+                            title={t("Delete")}
+                          >
+                            <Trash2 className="h-4 w-4 text-red-500" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Linked Vault Documents */}
+              {linkedVaultDocuments.length > 0 && (
+                <div className="mt-6">
+                  <h4 className="font-medium text-gray-900 mb-3">{t("Linked from Vault")}</h4>
+                  <div className="space-y-2">
+                    {linkedVaultDocuments.map((link) => (
+                      <div
+                        key={link.id}
+                        className="flex items-center gap-3 p-4 bg-slate-50 rounded-lg"
+                      >
+                        {/* File Icon */}
+                        {getFileTypeIcon(link.document.fileType)}
+
+                        {/* File Info */}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-primary truncate">{link.document.fileName}</p>
+                          <p className="text-xs text-slate-500">
+                            By bts, {new Date(link.document.uploadedAt).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "2-digit",
+                              year: "numeric",
+                            })}
+                          </p>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => window.open(`/api/governance-vault/${link.document.id}/download`, "_blank")}
+                            title={t("Download")}
+                          >
                             <Download className="h-4 w-4" />
                           </Button>
-                        )}
-                        <PermissionGate resource="compliance.governance" action="delete">
-                          {isCustomerAdmin ? (
-                            /* Customer Admin: Functional delete button */
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleDeleteAttachment(att.id)}
-                            >
-                              <Trash2 className="h-4 w-4 text-red-500" />
-                            </Button>
-                          ) : (
-                            /* GRC Admin / Other: Original button (no functionality) */
-                            <Button variant="ghost" size="icon">
-                              <Trash2 className="h-4 w-4 text-red-500" />
-                            </Button>
-                          )}
-                        </PermissionGate>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleUnlinkVaultDocument(link.document.id)}
+                          >
+                            <Trash2 className="h-4 w-4 text-red-500" />
+                          </Button>
+                        </div>
                       </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            /* GRC Admin / Other roles: Original simple view */
+            <>
+              <PermissionGate resource="compliance.governance" action="edit">
+                <div className="mb-4">
+                  <Button size="sm">
+                    <Upload className="h-4 w-4 mr-2" />
+                    {t("Upload")}
+                  </Button>
+                </div>
+              </PermissionGate>
+              {attachments.length === 0 && linkedVaultDocuments.length === 0 ? (
+                <div className="text-center py-8 text-slate-400">
+                  <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p>{t("No attachments uploaded")}</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Uploaded Attachments */}
+                  {attachments.length > 0 && (
+                    <div>
+                      <h4 className="font-medium text-gray-900 mb-3">{t("Uploaded Files")}</h4>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>{t("File Name")}</TableHead>
+                            <TableHead>{t("Type")}</TableHead>
+                            <TableHead>{t("Uploaded")}</TableHead>
+                            <TableHead className="w-[100px]">{t("Actions")}</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {attachments.map((att) => (
+                            <TableRow key={att.id}>
+                              <TableCell className="font-medium">{att.fileName}</TableCell>
+                              <TableCell>{att.fileType}</TableCell>
+                              <TableCell>{new Date(att.uploadedAt).toLocaleDateString()}</TableCell>
+                              <TableCell>
+                                <div className="flex gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => window.open(att.filePath, "_blank")}
+                                  >
+                                    <Download className="h-4 w-4" />
+                                  </Button>
+                                  <PermissionGate resource="compliance.governance" action="delete">
+                                    <Button variant="ghost" size="icon">
+                                      <Trash2 className="h-4 w-4 text-red-500" />
+                                    </Button>
+                                  </PermissionGate>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+
+                  {/* Linked Vault Documents */}
+                  {linkedVaultDocuments.length > 0 && (
+                    <div>
+                      <h4 className="font-medium text-gray-900 mb-3">{t("Linked from Vault")}</h4>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>{t("File Name")}</TableHead>
+                            <TableHead>{t("Type")}</TableHead>
+                            <TableHead>{t("Uploaded")}</TableHead>
+                            <TableHead className="w-[100px]">{t("Actions")}</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {linkedVaultDocuments.map((link) => (
+                            <TableRow key={link.id}>
+                              <TableCell className="font-medium">{link.document.fileName}</TableCell>
+                              <TableCell>{link.document.fileType}</TableCell>
+                              <TableCell>{new Date(link.document.uploadedAt).toLocaleDateString()}</TableCell>
+                              <TableCell>
+                                <div className="flex gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => window.open(`/api/governance-vault/${link.document.id}/download`, "_blank")}
+                                  >
+                                    <Download className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
@@ -1739,7 +2397,11 @@ export default function GovernanceDetailPage() {
                 </TableHeader>
                 <TableBody>
                   {linkedControls.map((pc) => (
-                    <TableRow key={pc.control.id}>
+                    <TableRow
+                      key={pc.control.id}
+                      className="cursor-pointer hover:bg-slate-50"
+                      onClick={() => router.push(`/compliance/control/${pc.control.id}`)}
+                    >
                       <TableCell className="font-medium">{pc.control.controlCode}</TableCell>
                       <TableCell>{pc.control.name}</TableCell>
                       <TableCell>{pc.control.domain?.name || "-"}</TableCell>
@@ -1753,7 +2415,10 @@ export default function GovernanceDetailPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleUnlinkControl(pc.control.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleUnlinkControl(pc.control.id);
+                            }}
                             className="text-red-500 hover:text-red-700"
                           >
                             {t("Unlink")}
@@ -1771,8 +2436,48 @@ export default function GovernanceDetailPage() {
 
       {activeTab === "exceptions" && (
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>{t("Linked Exception")}</CardTitle>
+            {isCustomerAdmin && (
+              <Dialog open={linkExceptionDialogOpen} onOpenChange={setLinkExceptionDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    {t("Link Exception")}
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>{t("Link Exception")}</DialogTitle>
+                  </DialogHeader>
+                  <div className="py-4">
+                    <Label>{t("Select Exception")}</Label>
+                    <Select value={selectedExceptionId} onValueChange={setSelectedExceptionId}>
+                      <SelectTrigger className="mt-2">
+                        <SelectValue placeholder={t("Select an exception")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableExceptions
+                          .filter((e) => !linkedExceptions.find((le) => le.exception.id === e.id))
+                          .map((exception) => (
+                            <SelectItem key={exception.id} value={exception.id}>
+                              {exception.exceptionCode} - {exception.name}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => setLinkExceptionDialogOpen(false)}>
+                      {t("Cancel")}
+                    </Button>
+                    <Button onClick={handleLinkException} disabled={!selectedExceptionId}>
+                      {t("Link")}
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            )}
           </CardHeader>
           <CardContent>
             {linkedExceptions.length === 0 ? (
@@ -1788,11 +2493,16 @@ export default function GovernanceDetailPage() {
                     <TableHead>{t("Name")}</TableHead>
                     <TableHead>{t("Category")}</TableHead>
                     <TableHead>{t("Status")}</TableHead>
+                    {isCustomerAdmin && <TableHead className="w-[80px]">{t("Actions")}</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {linkedExceptions.map((pe) => (
-                    <TableRow key={pe.exception.id}>
+                    <TableRow
+                      key={pe.exception.id}
+                      className="cursor-pointer hover:bg-slate-50"
+                      onClick={() => router.push(`/compliance/exceptions/${pe.exception.id}`)}
+                    >
                       <TableCell className="font-medium">{pe.exception.exceptionCode}</TableCell>
                       <TableCell>{pe.exception.name}</TableCell>
                       <TableCell>{pe.exception.category}</TableCell>
@@ -1801,6 +2511,21 @@ export default function GovernanceDetailPage() {
                           {pe.exception.status}
                         </Badge>
                       </TableCell>
+                      {isCustomerAdmin && (
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleUnlinkException(pe.exception.id);
+                            }}
+                            className="text-red-500 hover:text-red-700"
+                          >
+                            {t("Unlink")}
+                          </Button>
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))}
                 </TableBody>
@@ -1812,48 +2537,104 @@ export default function GovernanceDetailPage() {
 
       {activeTab === "documents" && (
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader>
             <CardTitle>{t("Linked Documents")}</CardTitle>
-            <PermissionGate resource="compliance.governance" action="edit">
-              <Button size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                {t("Link Document")}
-              </Button>
-            </PermissionGate>
           </CardHeader>
           <CardContent>
-            {linkedDocuments.length === 0 ? (
+            {linkedDocuments.length === 0 && linkedVaultDocuments.length === 0 ? (
               <div className="text-center py-8 text-slate-400">
                 <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
                 <p>{t("No documents linked to this")} {(policy.documentType || "policy").toLowerCase()}</p>
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t("Code")}</TableHead>
-                    <TableHead>{t("Name")}</TableHead>
-                    <TableHead>{t("Type")}</TableHead>
-                    <TableHead className="w-[80px]">{t("Actions")}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {linkedDocuments.map((doc) => (
-                    <TableRow key={doc.id}>
-                      <TableCell className="font-medium">{doc.code}</TableCell>
-                      <TableCell>{doc.name}</TableCell>
-                      <TableCell>{doc.type}</TableCell>
-                      <TableCell>
-                        <PermissionGate resource="compliance.governance" action="edit">
-                          <Button variant="ghost" size="sm" className="text-red-500">
-                            {t("Unlink")}
+              <div className="space-y-4">
+                {/* Vault Documents */}
+                {linkedVaultDocuments.length > 0 && (
+                  <div className="space-y-2">
+                    {linkedVaultDocuments.map((link) => (
+                      <div
+                        key={link.id}
+                        className="flex items-center gap-3 p-4 bg-slate-50 rounded-lg"
+                      >
+                        {/* File Icon */}
+                        {getFileTypeIcon(link.document.fileType)}
+
+                        {/* Document Info */}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-primary truncate">{link.document.fileName}</p>
+                          <p className="text-xs text-slate-500">
+                            By bts, {new Date(link.document.uploadedAt).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "2-digit",
+                              year: "numeric",
+                            })}
+                          </p>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-2">
+                          {/* Download Button */}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => window.open(`/api/governance-vault/${link.document.id}/download`, "_blank")}
+                            title={t("Download")}
+                          >
+                            <Download className="h-4 w-4 text-primary" />
                           </Button>
-                        </PermissionGate>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+
+                          {/* Unlink Button */}
+                          <PermissionGate resource="compliance.governance" action="edit">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleUnlinkVaultDocument(link.document.id)}
+                              className="text-slate-600"
+                            >
+                              {t("Unlink")}
+                            </Button>
+                          </PermissionGate>
+
+                          {/* Status Badge */}
+                          <Badge variant="outline" className="text-green-600 border-green-600">
+                            {link.document.status}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Regular Linked Documents (if any) */}
+                {linkedDocuments.length > 0 && (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>{t("Code")}</TableHead>
+                        <TableHead>{t("Name")}</TableHead>
+                        <TableHead>{t("Type")}</TableHead>
+                        <TableHead className="w-[80px]">{t("Actions")}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {linkedDocuments.map((doc) => (
+                        <TableRow key={doc.id}>
+                          <TableCell className="font-medium">{doc.code}</TableCell>
+                          <TableCell>{doc.name}</TableCell>
+                          <TableCell>{doc.type}</TableCell>
+                          <TableCell>
+                            <PermissionGate resource="compliance.governance" action="edit">
+                              <Button variant="ghost" size="sm" className="text-red-500">
+                                {t("Unlink")}
+                              </Button>
+                            </PermissionGate>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </div>
             )}
           </CardContent>
         </Card>

@@ -51,6 +51,17 @@ export const POST = withAuth(
             policyId,
           })),
         });
+
+        // Update status of linked policies from "Not Uploaded" to "Draft"
+        await prisma.policy.updateMany({
+          where: {
+            id: { in: governanceIds },
+            status: "Not Uploaded",
+          },
+          data: {
+            status: "Draft",
+          },
+        });
       }
 
       // Fetch updated document with links

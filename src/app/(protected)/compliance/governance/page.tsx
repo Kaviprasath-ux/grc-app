@@ -543,11 +543,25 @@ export default function GovernancePage() {
     }
   };
 
-  const openLinkDialog = (doc: VaultDocument) => {
+  const openLinkDialog = async (doc: VaultDocument) => {
     setSelectedVaultDoc(doc);
     setSelectedGovernanceIds(doc.linkedGovernanceIds || []);
     setLinkSearch("");
     setLinkDocTypeFilter("all");
+
+    // Fetch all policies if not already loaded
+    if (allPolicies.length === 0) {
+      try {
+        const response = await fetch(`/api/policies?limit=1000`);
+        if (response.ok) {
+          const data = await response.json();
+          setAllPolicies(data.data || []);
+        }
+      } catch (error) {
+        console.error("Error fetching policies for link dialog:", error);
+      }
+    }
+
     setIsLinkDialogOpen(true);
   };
 
@@ -1217,7 +1231,7 @@ export default function GovernancePage() {
 
       {/* Link Governance Dialog */}
       <Dialog open={isLinkDialogOpen} onOpenChange={setIsLinkDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] p-0 gap-0 max-h-[90vh] flex flex-col">
+        <DialogContent className="sm:max-w-[600px] p-0 gap-0 max-h-[90vh] flex flex-col" showCloseButton={false}>
           <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between flex-shrink-0">
             <DialogTitle className="text-lg font-semibold text-primary-700">{t("Select Governance")}</DialogTitle>
             <Button variant="ghost" size="icon" onClick={() => setIsLinkDialogOpen(false)}>
