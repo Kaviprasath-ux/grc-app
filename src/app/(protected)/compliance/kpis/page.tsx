@@ -73,7 +73,8 @@ export default function KPIsPage() {
   const [statusFilter, setStatusFilter] = useState("");
 
   // Check if user is Customer Administrator
-  const isCustomerAdmin = session?.roles?.includes("CustomerAdministrator") || false;
+  const userRoles = (session?.user?.roles as string[]) || [];
+  const isCustomerAdmin = userRoles.includes("CustomerAdministrator");
 
   const fetchKPIs = useCallback(async () => {
     try {
