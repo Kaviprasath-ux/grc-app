@@ -55,8 +55,15 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Upload,
-  ArrowLeft,
   Home,
+  User,
+  FileText,
+  CheckSquare,
+  ArrowUpFromLine,
+  Users,
+  Link2,
+  Download,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -121,6 +128,16 @@ interface Domain {
   name: string;
 }
 
+interface VaultDocument {
+  id: string;
+  documentId: string;
+  name: string;
+  type: string;
+  status: string;
+  uploadedAt: string;
+  linkedGovernanceIds: string[];
+}
+
 const DOCUMENT_TYPES = ["Policy", "Standard", "Procedure"];
 const RECURRENCE_OPTIONS = ["Weekly", "Monthly", "Quarterly", "Yearly"];
 
@@ -133,14 +150,19 @@ export default function GovernancePage() {
   const isCustomerAdmin = useHasRole("CustomerAdministrator");
   const { t } = useLanguage();
   const [policies, setPolicies] = useState<Policy[]>([]);
+  const [allPolicies, setAllPolicies] = useState<Policy[]>([]);
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<string>("Dashboard");
   const [activeDocType, setActiveDocType] = useState<string>("Policy");
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const itemsPerPage = 20;
+
+  // Status filter for cards
+  const [statusFilter, setStatusFilter] = useState<string>("");
 
   // Filters
   const [frameworkFilter, setFrameworkFilter] = useState<string>("all");
@@ -190,13 +212,42 @@ export default function GovernancePage() {
     assigneeId: "",
   });
 
+  // Vault documents
+  const [vaultDocuments, setVaultDocuments] = useState<VaultDocument[]>([]);
+  const [vaultLoading, setVaultLoading] = useState(false);
+  const [vaultFile, setVaultFile] = useState<File | null>(null);
+  const [isVaultDragging, setIsVaultDragging] = useState(false);
+
+  // Link Governance Dialog
+  const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
+  const [selectedVaultDoc, setSelectedVaultDoc] = useState<VaultDocument | null>(null);
+  const [linkSearch, setLinkSearch] = useState("");
+  const [linkDocTypeFilter, setLinkDocTypeFilter] = useState<string>("all");
+  const [selectedGovernanceIds, setSelectedGovernanceIds] = useState<string[]>([]);
+
+  // Status counts for dashboard
+  const [statusCounts, setStatusCounts] = useState({
+    notUploaded: 0,
+    draft: 0,
+    approved: 0,
+    published: 0,
+    needsReview: 0,
+    total: 0,
+  });
+
   useEffect(() => {
     fetchFilterOptions();
   }, [session?.user?.id]);
 
   useEffect(() => {
-    fetchPolicies();
-  }, [activeDocType, currentPage, frameworkFilter]);
+    if (activeTab === "Dashboard") {
+      fetchAllPoliciesForDashboard();
+    } else if (activeTab === "Information Security Vault") {
+      fetchVaultDocuments();
+    } else {
+      fetchPolicies();
+    }
+  }, [activeTab, activeDocType, currentPage, frameworkFilter, statusFilter]);
 
   const fetchFilterOptions = async () => {
     try {
@@ -212,7 +263,6 @@ export default function GovernancePage() {
         const userData = await userRes.json();
         setUsers(userData);
 
-        // Find current user to get customerCode for customer scoping
         if (session?.user?.id) {
           const currentUserData = userData.find((u: User) => u.id === session.user.id);
           if (currentUserData) {
@@ -240,6 +290,33 @@ export default function GovernancePage() {
     }
   };
 
+  const fetchAllPoliciesForDashboard = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/policies?limit=1000`);
+      if (response.ok) {
+        const data = await response.json();
+        const all = data.data || [];
+        setAllPolicies(all);
+
+        // Calculate status counts
+        const counts = {
+          notUploaded: all.filter((p: Policy) => p.status === "Not Uploaded").length,
+          draft: all.filter((p: Policy) => p.status === "Draft").length,
+          approved: all.filter((p: Policy) => p.status === "Approved").length,
+          published: all.filter((p: Policy) => p.status === "Published").length,
+          needsReview: all.filter((p: Policy) => p.status === "Needs Review").length,
+          total: all.length,
+        };
+        setStatusCounts(counts);
+      }
+    } catch (error) {
+      console.error("Error fetching policies for dashboard:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const fetchPolicies = useCallback(async () => {
     try {
       setLoading(true);
@@ -249,6 +326,7 @@ export default function GovernancePage() {
       params.set("documentType", activeDocType);
       if (frameworkFilter && frameworkFilter !== "all") params.set("frameworkId", frameworkFilter);
       if (search) params.set("search", search);
+      if (statusFilter) params.set("status", statusFilter);
 
       const response = await fetch(`/api/policies?${params.toString()}`);
       if (response.ok) {
@@ -256,17 +334,56 @@ export default function GovernancePage() {
         setPolicies(data.data || []);
         setTotal(data.pagination?.total || 0);
         setTotalPages(data.pagination?.totalPages || 1);
+
+        // Also update counts for current doc type
+        const allForType = await fetch(`/api/policies?documentType=${activeDocType}&limit=1000`);
+        if (allForType.ok) {
+          const allData = await allForType.json();
+          const all = allData.data || [];
+          setStatusCounts({
+            notUploaded: all.filter((p: Policy) => p.status === "Not Uploaded").length,
+            draft: all.filter((p: Policy) => p.status === "Draft").length,
+            approved: all.filter((p: Policy) => p.status === "Approved").length,
+            published: all.filter((p: Policy) => p.status === "Published").length,
+            needsReview: all.filter((p: Policy) => p.status === "Needs Review").length,
+            total: all.length,
+          });
+        }
       }
     } catch (error) {
       console.error("Error fetching policies:", error);
     } finally {
       setLoading(false);
     }
-  }, [activeDocType, currentPage, frameworkFilter, search]);
+  }, [activeDocType, currentPage, frameworkFilter, search, statusFilter]);
+
+  const fetchVaultDocuments = async () => {
+    try {
+      setVaultLoading(true);
+      const response = await fetch("/api/governance-vault");
+      if (response.ok) {
+        const data = await response.json();
+        setVaultDocuments(data.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching vault documents:", error);
+    } finally {
+      setVaultLoading(false);
+    }
+  };
 
   const handleSearch = () => {
     setCurrentPage(1);
     fetchPolicies();
+  };
+
+  const handleStatusCardClick = (status: string) => {
+    if (statusFilter === status) {
+      setStatusFilter("");
+    } else {
+      setStatusFilter(status);
+    }
+    setCurrentPage(1);
   };
 
   const handleCreatePolicy = async () => {
@@ -376,6 +493,82 @@ export default function GovernancePage() {
     }
   };
 
+  // Vault file handling
+  const handleVaultDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsVaultDragging(true);
+  };
+
+  const handleVaultDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsVaultDragging(false);
+  };
+
+  const handleVaultDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsVaultDragging(false);
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      await uploadVaultFile(files[0]);
+    }
+  };
+
+  const uploadVaultFile = async (file: File) => {
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/api/governance-vault", {
+        method: "POST",
+        body: formData,
+      });
+      if (response.ok) {
+        fetchVaultDocuments();
+      }
+    } catch (error) {
+      console.error("Error uploading vault file:", error);
+    }
+  };
+
+  const handleDeleteVaultDoc = async (docId: string) => {
+    try {
+      const response = await fetch(`/api/governance-vault/${docId}`, {
+        method: "DELETE",
+      });
+      if (response.ok) {
+        fetchVaultDocuments();
+      }
+    } catch (error) {
+      console.error("Error deleting vault document:", error);
+    }
+  };
+
+  const openLinkDialog = (doc: VaultDocument) => {
+    setSelectedVaultDoc(doc);
+    setSelectedGovernanceIds(doc.linkedGovernanceIds || []);
+    setLinkSearch("");
+    setLinkDocTypeFilter("all");
+    setIsLinkDialogOpen(true);
+  };
+
+  const handleLinkGovernance = async () => {
+    if (!selectedVaultDoc) return;
+    try {
+      const response = await fetch(`/api/governance-vault/${selectedVaultDoc.id}/link`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ governanceIds: selectedGovernanceIds }),
+      });
+      if (response.ok) {
+        fetchVaultDocuments();
+        setIsLinkDialogOpen(false);
+        setSelectedVaultDoc(null);
+      }
+    } catch (error) {
+      console.error("Error linking governance:", error);
+    }
+  };
+
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
       case "Published": return "bg-green-100 text-green-800";
@@ -384,6 +577,7 @@ export default function GovernancePage() {
       case "Needs Review": return "bg-orange-100 text-orange-800";
       case "Not Uploaded": return "bg-gray-100 text-gray-800";
       case "Pending Approval": return "bg-purple-100 text-purple-800";
+      case "Active": return "bg-green-100 text-green-800";
       default: return "bg-gray-100 text-gray-800";
     }
   };
@@ -398,16 +592,20 @@ export default function GovernancePage() {
     return matchesSearch && matchesDomain && matchesStatus;
   });
 
-  // The /api/users and /api/departments endpoints already apply tenant filtering,
-  // so data is already scoped to the user's customerAccountId.
-  const getCustomerScopedUsers = () => users;
+  // Filter governance for link dialog
+  const filteredGovernanceForLink = allPolicies.filter((p) => {
+    const matchesSearch = !linkSearch ||
+      p.name.toLowerCase().includes(linkSearch.toLowerCase()) ||
+      p.code.toLowerCase().includes(linkSearch.toLowerCase());
+    const matchesType = linkDocTypeFilter === "all" || p.documentType === linkDocTypeFilter;
+    return matchesSearch && matchesType;
+  });
 
+  const getCustomerScopedUsers = () => users;
   const getCustomerScopedDepartments = () => departments;
 
-  // Filter users for Assignee dropdown: only DepartmentReviewers and DepartmentContributors from the selected department
   const filteredUsers = (() => {
     if (!newPolicy.departmentId) return [];
-
     return users.filter((u) => {
       if (u.departmentId !== newPolicy.departmentId) return false;
       return u.userRoles?.some((ur) =>
@@ -416,10 +614,8 @@ export default function GovernancePage() {
     });
   })();
 
-  // Filter users for Edit Assignee dropdown
   const filteredEditUsers = (() => {
     if (!editData.departmentId) return [];
-
     return users.filter((u) => {
       if (u.departmentId !== editData.departmentId) return false;
       return u.userRoles?.some((ur) =>
@@ -459,19 +655,65 @@ export default function GovernancePage() {
   };
 
   const handleTabChange = (tab: string) => {
-    setActiveDocType(tab);
+    setActiveTab(tab);
+    if (tab === "Policy" || tab === "Standard" || tab === "Procedure") {
+      setActiveDocType(tab);
+    }
     setCurrentPage(1);
     setSearch("");
     setFrameworkFilter("all");
+    setStatusFilter("");
   };
 
   const canProceedStep1 = newPolicy.name && newPolicy.departmentId && newPolicy.documentType && newPolicy.recurrence && newPolicy.assigneeId;
 
-  // Pagination helpers
   const startItem = total > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0;
   const endItem = Math.min(currentPage * itemsPerPage, total);
 
-  // Show loading while checking permissions
+  // Status card component
+  const StatusCard = ({ icon: Icon, count, label, status, secondaryCount }: {
+    icon: React.ElementType;
+    count: number;
+    label: string;
+    status: string;
+    secondaryCount?: number;
+  }) => (
+    <div
+      className={`relative overflow-hidden rounded-2xl p-6 cursor-pointer transition-all ${
+        statusFilter === status ? "ring-2 ring-primary-500" : ""
+      }`}
+      style={{
+        background: "linear-gradient(135deg, #1e3a5f 0%, #0d1b2a 50%, #1e3a5f 100%)",
+      }}
+      onClick={() => handleStatusCardClick(status)}
+    >
+      <div className="relative z-10">
+        <div className="flex justify-center mb-4">
+          <div className="w-12 h-12 rounded-full border-2 border-dashed border-white/40 flex items-center justify-center">
+            <Icon className="h-5 w-5 text-white/80" />
+          </div>
+        </div>
+        <div className="text-center">
+          <div className="text-4xl font-bold text-white mb-2">
+            {secondaryCount !== undefined ? `${count}/${secondaryCount}` : count}
+          </div>
+          <div className="text-white/80 text-sm font-medium">{label}</div>
+        </div>
+      </div>
+      {/* Decorative background pattern */}
+      <div className="absolute inset-0 opacity-20">
+        <svg className="w-full h-full" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+              <circle cx="1" cy="1" r="1" fill="white" opacity="0.3" />
+            </pattern>
+          </defs>
+          <rect width="200" height="200" fill="url(#grid)" />
+        </svg>
+      </div>
+    </div>
+  );
+
   if (permissionsLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -483,7 +725,6 @@ export default function GovernancePage() {
     );
   }
 
-  // Show unauthorized if user cannot view
   if (!canView) {
     return <Unauthorized description={t("You don't have permission to access Governance.")} />;
   }
@@ -501,63 +742,362 @@ export default function GovernancePage() {
       </nav>
 
       {/* Header */}
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-slate-800">{t("Governance")}</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-primary-700">{t("Governance")}</h1>
+        {isCustomerAdmin && activeTab !== "Dashboard" && activeTab !== "Information Security Vault" && (
+          <Button onClick={() => {
+            setNewPolicy({ ...newPolicy, documentType: activeDocType });
+            setIsCreateDialogOpen(true);
+          }}>
+            <Plus className="h-4 w-4 mr-2" />
+            {t("New Governance")}
+          </Button>
+        )}
       </div>
 
-      {/* Tabs */}
-      <Tabs value={activeDocType} onValueChange={handleTabChange}>
-        <TabsList>
-          <TabsTrigger value="Policy">{t("Policy")}</TabsTrigger>
-          <TabsTrigger value="Standard">{t("Standards")}</TabsTrigger>
-          <TabsTrigger value="Procedure">{t("Procedures")}</TabsTrigger>
-        </TabsList>
+      {/* Tabs - Only show for Customer Administrator */}
+      {isCustomerAdmin ? (
+        <Tabs value={activeTab} onValueChange={handleTabChange}>
+          <TabsList>
+            <TabsTrigger value="Dashboard">{t("Dashboard")}</TabsTrigger>
+            <TabsTrigger value="Policy">{t("Policy")}</TabsTrigger>
+            <TabsTrigger value="Standard">{t("Standards")}</TabsTrigger>
+            <TabsTrigger value="Procedure">{t("Procedures")}</TabsTrigger>
+            <TabsTrigger value="Information Security Vault">{t("Information Security Vault")}</TabsTrigger>
+          </TabsList>
 
-        {/* Tab Content - Same structure for all tabs */}
-        {["Policy", "Standard", "Procedure"].map((docType) => (
-          <TabsContent key={docType} value={docType} className="mt-6 space-y-4">
-            {/* Search, Filter, and Action Buttons Row */}
-            <div className="flex items-center gap-3">
-              <Input
-                placeholder={t(`Search by ${docType.toLowerCase()} name or code...`)}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                className="max-w-md bg-white"
-              />
-              <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
-                <SelectTrigger className="w-[200px] bg-white">
-                  <SelectValue placeholder={t("Integrated Framework")} />
-                </SelectTrigger>
-                <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
-                  <SelectItem value="all">{t("Integrated Framework")}</SelectItem>
-                  {frameworks.map((f) => (
-                    <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <div className="flex-1" />
-              <PermissionGate resource="compliance.governance" action="delete">
-                <Button variant="outline" size="sm" className="text-semantic-error hover:text-semantic-error hover:bg-red-50" onClick={() => setIsDeleteAllDialogOpen(true)}>
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  {t("Delete All")}
-                </Button>
-              </PermissionGate>
-              <PermissionGate resource="compliance.governance" action="create">
-                <Button variant="outline" size="sm" onClick={() => setIsImportDialogOpen(true)}>
+          {/* Dashboard Tab */}
+          <TabsContent value="Dashboard" className="mt-6 space-y-6">
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="relative h-8 w-8">
+                  <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
+                  <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-white rounded-xl border border-slate-200 p-6">
+                <div className="grid grid-cols-5 gap-4">
+                  <StatusCard icon={User} count={statusCounts.notUploaded} label={t("Not Uploaded")} status="Not Uploaded" />
+                  <StatusCard icon={FileText} count={statusCounts.draft} label={t("Draft")} status="Draft" />
+                  <StatusCard icon={CheckSquare} count={statusCounts.approved} label={t("Approved")} status="Approved" />
+                  <StatusCard icon={ArrowUpFromLine} count={statusCounts.published} label={t("Published")} status="Published" />
+                  <StatusCard icon={Users} count={statusCounts.needsReview} label={t("Needs Review")} status="Needs Review" />
+                </div>
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Policy, Standard, Procedure Tabs */}
+          {["Policy", "Standard", "Procedure"].map((docType) => (
+            <TabsContent key={docType} value={docType} className="mt-6 space-y-4">
+              {/* Framework Filter */}
+              <div className="flex justify-end">
+                <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
+                  <SelectTrigger className="w-[200px] bg-white">
+                    <SelectValue placeholder={t("Integrated Framework")} />
+                  </SelectTrigger>
+                  <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                    <SelectItem value="all">{t("Integrated Framework")}</SelectItem>
+                    {frameworks.map((f) => (
+                      <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Status Cards */}
+              <div className="bg-white rounded-xl border border-slate-200 p-6">
+                <div className="grid grid-cols-5 gap-4">
+                  <StatusCard icon={User} count={statusCounts.notUploaded} label={t("Not Uploaded")} status="Not Uploaded" />
+                  <StatusCard icon={FileText} count={statusCounts.draft} label={t("Draft")} status="Draft" />
+                  <StatusCard icon={CheckSquare} count={statusCounts.approved} label={t("Approved")} status="Approved" />
+                  <StatusCard
+                    icon={ArrowUpFromLine}
+                    count={statusCounts.published}
+                    secondaryCount={statusCounts.total}
+                    label={t("Published")}
+                    status="Published"
+                  />
+                  <StatusCard icon={Users} count={statusCounts.needsReview} label={t("Needs Review")} status="Needs Review" />
+                </div>
+              </div>
+
+              {/* Search, Filter, and Action Buttons Row */}
+              <div className="flex items-center gap-3">
+                <Input
+                  placeholder={t("Search By Code, Name, Department, Assignee, Approver")}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                  className="flex-1 bg-white"
+                />
+                <Select value={statusFilter || "all"} onValueChange={(v) => setStatusFilter(v === "all" ? "" : v)}>
+                  <SelectTrigger className="w-[150px] bg-white">
+                    <SelectValue placeholder={t("Status")} />
+                  </SelectTrigger>
+                  <SelectContent position="popper" sideOffset={4} className="bg-white">
+                    <SelectItem value="all">{t("Status")}</SelectItem>
+                    <SelectItem value="Not Uploaded">{t("Not Uploaded")}</SelectItem>
+                    <SelectItem value="Draft">{t("Draft")}</SelectItem>
+                    <SelectItem value="Approved">{t("Approved")}</SelectItem>
+                    <SelectItem value="Published">{t("Published")}</SelectItem>
+                    <SelectItem value="Needs Review">{t("Needs Review")}</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button variant="outline" size="sm">
                   <Upload className="h-4 w-4 mr-2" />
-                  {t("Import")}
+                  {t("Export")}
                 </Button>
-              </PermissionGate>
-              {isCustomerAdmin ? (
-                <Button size="sm" onClick={() => {
-                  setNewPolicy({ ...newPolicy, documentType: activeDocType });
-                  setIsCreateDialogOpen(true);
-                }}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  {t("New Governance")}
-                </Button>
+              </div>
+
+              {/* Table */}
+              {loading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="relative h-8 w-8">
+                    <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
+                    <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+                  </div>
+                </div>
               ) : (
+                <div className="bg-white rounded-xl border border-slate-200">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-primary-700">
+                        <TableHead className="text-xs font-semibold text-white py-4 pl-4">{t("Code")}</TableHead>
+                        <TableHead className="text-xs font-semibold text-white py-4">{t("Name")}</TableHead>
+                        <TableHead className="text-xs font-semibold text-white py-4">{t("Status")}</TableHead>
+                        <TableHead className="text-xs font-semibold text-white py-4">{t("Assignee")}</TableHead>
+                        <TableHead className="text-xs font-semibold text-white py-4">{t("Approver")}</TableHead>
+                        <TableHead className="text-xs font-semibold text-white py-4">{t("Department Name")}</TableHead>
+                        <TableHead className="text-xs font-semibold text-white py-4">{t("Action")}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {policies.map((policy) => (
+                        <TableRow
+                          key={policy.id}
+                          className="border-b border-slate-100 last:border-0 cursor-pointer hover:bg-slate-50"
+                          onDoubleClick={() => router.push(`/compliance/governance/${policy.id}`)}
+                        >
+                          <TableCell className="py-3 pl-4 text-sm font-medium text-slate-900">{policy.code}</TableCell>
+                          <TableCell className="py-3 text-sm text-slate-700 max-w-[200px] truncate">{policy.name}</TableCell>
+                          <TableCell className="py-3 text-sm text-slate-700">{policy.status}</TableCell>
+                          <TableCell className="py-3 text-sm text-slate-700">{policy.assignee?.fullName || "-"}</TableCell>
+                          <TableCell className="py-3 text-sm text-slate-700">{policy.approver?.fullName || "-"}</TableCell>
+                          <TableCell className="py-3 text-sm text-slate-700">{policy.department?.name || "-"}</TableCell>
+                          <TableCell className="py-3">
+                            <div className="flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openEditDialog(policy);
+                                }}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setPolicyToDelete(policy);
+                                  setIsDeleteDialogOpen(true);
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {policies.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={7} className="h-24 text-center text-slate-500">
+                            {t(`No ${docType.toLowerCase()}s found`)}
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+
+                  {/* Pagination */}
+                  <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
+                    <span className="text-sm text-slate-500">
+                      {total > 0 ? `${startItem} ${t("to")} ${endItem} ${t("of")} ${total}` : t(`No ${docType.toLowerCase()}s`)}
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="icon" disabled={currentPage === 1} onClick={() => setCurrentPage(1)} className="h-8 w-8">
+                        <ChevronsLeft className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" disabled={currentPage === 1} onClick={() => setCurrentPage((p) => p - 1)} className="h-8 w-8">
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" disabled={currentPage >= totalPages} onClick={() => setCurrentPage((p) => p + 1)} className="h-8 w-8">
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" disabled={currentPage >= totalPages} onClick={() => setCurrentPage(totalPages)} className="h-8 w-8">
+                        <ChevronsRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </TabsContent>
+          ))}
+
+          {/* Information Security Vault Tab */}
+          <TabsContent value="Information Security Vault" className="mt-6 space-y-4">
+            {/* File Upload Area */}
+            <div
+              className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+                isVaultDragging ? "border-primary bg-primary-50" : "border-slate-300 hover:border-slate-400"
+              }`}
+              onDragOver={handleVaultDragOver}
+              onDragLeave={handleVaultDragLeave}
+              onDrop={handleVaultDrop}
+              onClick={() => document.getElementById("vault-file")?.click()}
+            >
+              <p className="text-slate-600">{t("Drag and drop or select file.")}</p>
+              <input
+                type="file"
+                className="hidden"
+                id="vault-file"
+                onChange={(e) => {
+                  const files = e.target.files;
+                  if (files && files.length > 0) {
+                    uploadVaultFile(files[0]);
+                  }
+                }}
+              />
+            </div>
+
+            {/* Vault Documents Table */}
+            {vaultLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="relative h-8 w-8">
+                  <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
+                  <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-white rounded-xl border border-slate-200">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-primary-700">
+                      <TableHead className="text-xs font-semibold text-white py-4 pl-4">{t("Document ID")}</TableHead>
+                      <TableHead className="text-xs font-semibold text-white py-4">{t("Document Name")}</TableHead>
+                      <TableHead className="text-xs font-semibold text-white py-4">{t("Type")}</TableHead>
+                      <TableHead className="text-xs font-semibold text-white py-4">{t("Status")}</TableHead>
+                      <TableHead className="text-xs font-semibold text-white py-4">{t("Date Uploaded")}</TableHead>
+                      <TableHead className="text-xs font-semibold text-white py-4">{t("Actions")}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {vaultDocuments.map((doc) => (
+                      <TableRow key={doc.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                        <TableCell className="py-3 pl-4 text-sm font-medium text-slate-900">{doc.documentId}</TableCell>
+                        <TableCell className="py-3 text-sm text-slate-700 max-w-[200px] truncate">{doc.name}</TableCell>
+                        <TableCell className="py-3 text-sm text-slate-700">{doc.type}</TableCell>
+                        <TableCell className="py-3">
+                          <Badge className={getStatusBadgeColor(doc.status)}>{doc.status}</Badge>
+                        </TableCell>
+                        <TableCell className="py-3 text-sm text-slate-700">
+                          {new Date(doc.uploadedAt).toLocaleDateString("en-GB", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                          })}
+                        </TableCell>
+                        <TableCell className="py-3">
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                              onClick={() => openLinkDialog(doc)}
+                            >
+                              <Link2 className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                            >
+                              <Download className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-slate-400 hover:text-semantic-error"
+                              onClick={() => handleDeleteVaultDoc(doc.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {vaultDocuments.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={6} className="h-24 text-center text-slate-500">
+                          {t("No documents found")}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+      ) : (
+        // Non-Customer Admin view - original tabs
+        <Tabs value={activeDocType} onValueChange={handleTabChange}>
+          <TabsList>
+            <TabsTrigger value="Policy">{t("Policy")}</TabsTrigger>
+            <TabsTrigger value="Standard">{t("Standards")}</TabsTrigger>
+            <TabsTrigger value="Procedure">{t("Procedures")}</TabsTrigger>
+          </TabsList>
+
+          {["Policy", "Standard", "Procedure"].map((docType) => (
+            <TabsContent key={docType} value={docType} className="mt-6 space-y-4">
+              <div className="flex items-center gap-3">
+                <Input
+                  placeholder={t(`Search by ${docType.toLowerCase()} name or code...`)}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                  className="max-w-md bg-white"
+                />
+                <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
+                  <SelectTrigger className="w-[200px] bg-white">
+                    <SelectValue placeholder={t("Integrated Framework")} />
+                  </SelectTrigger>
+                  <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                    <SelectItem value="all">{t("Integrated Framework")}</SelectItem>
+                    {frameworks.map((f) => (
+                      <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="flex-1" />
+                <PermissionGate resource="compliance.governance" action="delete">
+                  <Button variant="outline" size="sm" className="text-semantic-error hover:text-semantic-error hover:bg-red-50" onClick={() => setIsDeleteAllDialogOpen(true)}>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    {t("Delete All")}
+                  </Button>
+                </PermissionGate>
+                <PermissionGate resource="compliance.governance" action="create">
+                  <Button variant="outline" size="sm" onClick={() => setIsImportDialogOpen(true)}>
+                    <Upload className="h-4 w-4 mr-2" />
+                    {t("Import")}
+                  </Button>
+                </PermissionGate>
                 <PermissionGate resource="compliance.governance" action="create">
                   <Button size="sm" onClick={() => {
                     setNewPolicy({ ...newPolicy, documentType: activeDocType });
@@ -567,19 +1107,16 @@ export default function GovernancePage() {
                     {t("New Governance")}
                   </Button>
                 </PermissionGate>
-              )}
-            </div>
-
-            {/* Table */}
-            {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="relative h-8 w-8">
-                  <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
-                  <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
-                </div>
               </div>
-            ) : (
-              <>
+
+              {loading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="relative h-8 w-8">
+                    <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
+                    <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+                  </div>
+                </div>
+              ) : (
                 <div className="bg-white rounded-xl border border-slate-200">
                   <Table>
                     <TableHeader>
@@ -603,9 +1140,7 @@ export default function GovernancePage() {
                           <TableCell className="py-3 pl-4 text-sm font-medium text-slate-900">{policy.code}</TableCell>
                           <TableCell className="py-3 text-sm text-slate-700">{policy.name}</TableCell>
                           <TableCell className="py-3">
-                            <Badge className={getStatusBadgeColor(policy.status)}>
-                              {policy.status}
-                            </Badge>
+                            <Badge className={getStatusBadgeColor(policy.status)}>{policy.status}</Badge>
                           </TableCell>
                           <TableCell className="py-3 text-sm text-slate-700">{policy.assignee?.fullName || "-"}</TableCell>
                           <TableCell className="py-3 text-sm text-slate-700">{policy.approver?.fullName || "-"}</TableCell>
@@ -653,56 +1188,113 @@ export default function GovernancePage() {
                     </TableBody>
                   </Table>
 
-                  {/* Pagination */}
                   <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
                     <span className="text-sm text-slate-500">
                       {total > 0 ? `${startItem} ${t("to")} ${endItem} ${t("of")} ${total}` : t(`No ${docType.toLowerCase()}s`)}
                     </span>
                     <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        disabled={currentPage === 1}
-                        onClick={() => setCurrentPage(1)}
-                        className="h-8 w-8"
-                      >
+                      <Button variant="ghost" size="icon" disabled={currentPage === 1} onClick={() => setCurrentPage(1)} className="h-8 w-8">
                         <ChevronsLeft className="h-4 w-4" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        disabled={currentPage === 1}
-                        onClick={() => setCurrentPage((p) => p - 1)}
-                        className="h-8 w-8"
-                      >
+                      <Button variant="ghost" size="icon" disabled={currentPage === 1} onClick={() => setCurrentPage((p) => p - 1)} className="h-8 w-8">
                         <ChevronLeft className="h-4 w-4" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        disabled={currentPage >= totalPages}
-                        onClick={() => setCurrentPage((p) => p + 1)}
-                        className="h-8 w-8"
-                      >
+                      <Button variant="ghost" size="icon" disabled={currentPage >= totalPages} onClick={() => setCurrentPage((p) => p + 1)} className="h-8 w-8">
                         <ChevronRight className="h-4 w-4" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        disabled={currentPage >= totalPages}
-                        onClick={() => setCurrentPage(totalPages)}
-                        className="h-8 w-8"
-                      >
+                      <Button variant="ghost" size="icon" disabled={currentPage >= totalPages} onClick={() => setCurrentPage(totalPages)} className="h-8 w-8">
                         <ChevronsRight className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
                 </div>
-              </>
-            )}
-          </TabsContent>
-        ))}
-      </Tabs>
+              )}
+            </TabsContent>
+          ))}
+        </Tabs>
+      )}
+
+      {/* Link Governance Dialog */}
+      <Dialog open={isLinkDialogOpen} onOpenChange={setIsLinkDialogOpen}>
+        <DialogContent className="sm:max-w-[600px] p-0 gap-0 max-h-[90vh] flex flex-col">
+          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between flex-shrink-0">
+            <DialogTitle className="text-lg font-semibold text-primary-700">{t("Select Governance")}</DialogTitle>
+            <Button variant="ghost" size="icon" onClick={() => setIsLinkDialogOpen(false)}>
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <div className="overflow-y-auto flex-1 px-6 py-4">
+            {/* Search and Filter */}
+            <div className="flex gap-3 mb-4">
+              <Input
+                placeholder={t("Search By Code , Name")}
+                value={linkSearch}
+                onChange={(e) => setLinkSearch(e.target.value)}
+                className="flex-1 border-primary-300 rounded-full"
+              />
+              <Select value={linkDocTypeFilter} onValueChange={setLinkDocTypeFilter}>
+                <SelectTrigger className="w-[150px] bg-slate-100 border-0">
+                  <SelectValue placeholder={t("Document Type")} />
+                </SelectTrigger>
+                <SelectContent position="popper" sideOffset={4} className="bg-white">
+                  <SelectItem value="all">{t("Document Type")}</SelectItem>
+                  <SelectItem value="Policy">{t("Policy")}</SelectItem>
+                  <SelectItem value="Standard">{t("Standard")}</SelectItem>
+                  <SelectItem value="Procedure">{t("Procedure")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Governance List */}
+            <div className="space-y-3 max-h-[400px] overflow-y-auto">
+              {filteredGovernanceForLink.map((gov) => (
+                <div
+                  key={gov.id}
+                  className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${
+                    selectedGovernanceIds.includes(gov.id)
+                      ? "border-primary-500 bg-primary-50"
+                      : "border-primary-200 hover:border-primary-300"
+                  }`}
+                  onClick={() => {
+                    if (selectedGovernanceIds.includes(gov.id)) {
+                      setSelectedGovernanceIds(selectedGovernanceIds.filter((id) => id !== gov.id));
+                    } else {
+                      setSelectedGovernanceIds([...selectedGovernanceIds, gov.id]);
+                    }
+                  }}
+                >
+                  <Checkbox
+                    checked={selectedGovernanceIds.includes(gov.id)}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setSelectedGovernanceIds([...selectedGovernanceIds, gov.id]);
+                      } else {
+                        setSelectedGovernanceIds(selectedGovernanceIds.filter((id) => id !== gov.id));
+                      }
+                    }}
+                    className="border-primary-300"
+                  />
+                  <span className="text-primary-700 font-medium">
+                    {gov.code} : {gov.name}
+                  </span>
+                </div>
+              ))}
+              {filteredGovernanceForLink.length === 0 && (
+                <div className="text-center py-8 text-slate-500">
+                  {t("No governance found")}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 flex-shrink-0">
+            <Button onClick={handleLinkGovernance}>
+              {t("Link Governance")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Create Dialog - 3 Steps */}
       <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
@@ -710,16 +1302,13 @@ export default function GovernancePage() {
         setIsCreateDialogOpen(open);
       }}>
         <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
-          {/* Sticky Header */}
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("New Governance")} - {t("Step")} {createStep} {t("of")} 3</DialogTitle>
             </DialogHeader>
           </div>
 
-          {/* Scrollable Content */}
           <div className="overflow-y-auto flex-1 px-6 py-5">
-            {/* Step Indicator */}
             <div className="flex items-center justify-center gap-2 pb-5">
               {[1, 2, 3].map((step) => (
                 <div key={step} className="flex items-center">
@@ -739,7 +1328,6 @@ export default function GovernancePage() {
               ))}
             </div>
 
-            {/* Step 1: Basic Information */}
             {createStep === 1 && (
               <div className="space-y-4">
                 <div>
@@ -820,7 +1408,6 @@ export default function GovernancePage() {
               </div>
             )}
 
-            {/* Step 2: Link Controls */}
             {createStep === 2 && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -828,7 +1415,6 @@ export default function GovernancePage() {
                   <Badge variant="secondary">{selectedControlIds.length} {t("selected")}</Badge>
                 </div>
 
-                {/* Control Filters */}
                 <div className="flex gap-4">
                   <div className="flex-1">
                     <Input
@@ -862,7 +1448,6 @@ export default function GovernancePage() {
                   </Select>
                 </div>
 
-                {/* Controls Table */}
                 <div className="bg-white rounded-xl border border-slate-200 max-h-[300px] overflow-y-auto">
                   <Table>
                     <TableHeader>
@@ -912,7 +1497,6 @@ export default function GovernancePage() {
               </div>
             )}
 
-            {/* Step 3: Review */}
             {createStep === 3 && (
               <div className="space-y-6">
                 <div className="text-lg font-medium text-slate-800">{t("Review Information")}</div>
@@ -967,7 +1551,6 @@ export default function GovernancePage() {
             )}
           </div>
 
-          {/* Sticky Footer */}
           <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex-shrink-0">
             <Button variant="outline" onClick={() => {
               if (createStep > 1) setCreateStep(createStep - 1);
@@ -1030,7 +1613,6 @@ export default function GovernancePage() {
       {/* Import Dialog */}
       <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
         <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
-          {/* Sticky Header */}
           <div className="px-6 py-5 border-b border-slate-100">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-lg font-semibold text-slate-800">
@@ -1040,7 +1622,6 @@ export default function GovernancePage() {
             </DialogHeader>
           </div>
 
-          {/* Content */}
           <div className="px-6 py-6">
             <p className="text-sm text-slate-500 mb-4">
               {t("Upload a CSV or Excel file to import")} {t(activeDocType).toLowerCase()}s.
@@ -1093,7 +1674,6 @@ export default function GovernancePage() {
             </div>
           </div>
 
-          {/* Sticky Footer */}
           <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
             <Button variant="outline" onClick={() => {
               setIsImportDialogOpen(false);
@@ -1116,14 +1696,12 @@ export default function GovernancePage() {
         setIsEditDialogOpen(open);
       }}>
         <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
-          {/* Sticky Header */}
           <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-slate-800">{t("Edit")} {t(editingPolicy?.documentType || "Governance")}</DialogTitle>
             </DialogHeader>
           </div>
 
-          {/* Scrollable Content */}
           <div className="overflow-y-auto flex-1 px-6 py-5">
             <div className="space-y-4">
               <div>
@@ -1204,7 +1782,6 @@ export default function GovernancePage() {
             </div>
           </div>
 
-          {/* Sticky Footer */}
           <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex-shrink-0">
             <Button variant="outline" onClick={() => {
               setIsEditDialogOpen(false);
