@@ -14,6 +14,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -25,7 +31,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -55,6 +60,20 @@ import {
   ChevronsRight,
   Check,
   Home,
+  Upload,
+  FileText,
+  Eye,
+  Download,
+  Sparkles,
+  File,
+  Image,
+  FileType,
+  X,
+  CloudOff,
+  FileEdit,
+  BadgeCheck,
+  CheckCircle2,
+  AlertTriangle,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -68,8 +87,18 @@ interface Evidence {
   status: string;
   departmentId: string | null;
   assigneeId: string | null;
+  issueIdentifiedBy: string | null;
   department?: { id: string; name: string } | null;
   assignee?: { id: string; fullName: string } | null;
+}
+
+interface Artifact {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+  uploadedAt: string;
+  uploadedBy: string;
 }
 
 interface Control {
@@ -117,6 +146,12 @@ interface ControlDomain {
   name: string;
 }
 
+interface StatusCount {
+  status: string;
+  count: number;
+  total?: number;
+}
+
 const statusColors: Record<string, string> = {
   "Not Uploaded": "bg-slate-100 text-slate-600",
   Draft: "bg-warning-light text-warning-dark",
@@ -140,6 +175,9 @@ export default function EvidencePage() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [createStep, setCreateStep] = useState(1);
 
+  // Tabs state
+  const [activeTab, setActiveTab] = useState("evidence-request");
+
   // Import dialog states
   const importFileInputRef = useRef<HTMLInputElement>(null);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
@@ -147,11 +185,26 @@ export default function EvidencePage() {
   const [importing, setImporting] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
+  // Artifacts state
+  const artifactFileInputRef = useRef<HTMLInputElement>(null);
+  const [artifacts, setArtifacts] = useState<Artifact[]>([]);
+  const [artifactDragging, setArtifactDragging] = useState(false);
+
   // Delete dialogs
   const [isDeleteAllDialogOpen, setIsDeleteAllDialogOpen] = useState(false);
 
   // Filters
   const [frameworkFilter, setFrameworkFilter] = useState<string>("all");
+  const [departmentFilter, setDepartmentFilter] = useState<string>("all");
+
+  // Status counts
+  const [statusCounts, setStatusCounts] = useState<StatusCount[]>([
+    { status: "Not Uploaded", count: 0 },
+    { status: "Draft", count: 0 },
+    { status: "Validated", count: 0 },
+    { status: "Published", count: 0, total: 0 },
+    { status: "Need Attention", count: 0 },
+  ]);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -189,6 +242,7 @@ export default function EvidencePage() {
       setLoading(true);
       const params = new URLSearchParams();
       if (frameworkFilter && frameworkFilter !== "all") params.append("frameworkId", frameworkFilter);
+      if (departmentFilter && departmentFilter !== "all") params.append("departmentId", departmentFilter);
       if (searchTerm) params.append("search", searchTerm);
       params.append("page", currentPage.toString());
       params.append("limit", itemsPerPage.toString());
@@ -199,13 +253,35 @@ export default function EvidencePage() {
         setEvidences(data.data || []);
         setTotal(data.pagination?.total || 0);
         setTotalPages(data.pagination?.totalPages || 1);
+
+        // Calculate status counts from the data
+        const allEvidences = data.data || [];
+        const counts: Record<string, number> = {
+          "Not Uploaded": 0,
+          "Draft": 0,
+          "Validated": 0,
+          "Published": 0,
+          "Need Attention": 0,
+        };
+        allEvidences.forEach((e: Evidence) => {
+          if (counts[e.status] !== undefined) {
+            counts[e.status]++;
+          }
+        });
+        setStatusCounts([
+          { status: "Not Uploaded", count: counts["Not Uploaded"] },
+          { status: "Draft", count: counts["Draft"] },
+          { status: "Validated", count: counts["Validated"] },
+          { status: "Published", count: counts["Published"], total: data.pagination?.total || 0 },
+          { status: "Need Attention", count: counts["Need Attention"] },
+        ]);
       }
     } catch (error) {
       console.error("Error fetching evidences:", error);
     } finally {
       setLoading(false);
     }
-  }, [frameworkFilter, searchTerm, currentPage]);
+  }, [frameworkFilter, departmentFilter, searchTerm, currentPage]);
 
   const fetchReferenceData = useCallback(async () => {
     try {
@@ -412,6 +488,74 @@ export default function EvidencePage() {
     }
   };
 
+  // Artifact handling
+  const handleArtifactDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setArtifactDragging(true);
+  };
+
+  const handleArtifactDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setArtifactDragging(false);
+  };
+
+  const handleArtifactDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setArtifactDragging(false);
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      handleArtifactUpload(files);
+    }
+  };
+
+  const handleArtifactFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      handleArtifactUpload(files);
+    }
+  };
+
+  const handleArtifactUpload = (files: FileList) => {
+    const newArtifacts: Artifact[] = Array.from(files).map((file, index) => ({
+      id: `new-${Date.now()}-${index}`,
+      name: file.name,
+      type: getFileType(file.name),
+      size: file.size,
+      uploadedAt: new Date().toISOString().split('T')[0],
+      uploadedBy: session?.user?.name || "Current User",
+    }));
+    setArtifacts([...newArtifacts, ...artifacts]);
+  };
+
+  const getFileType = (filename: string): string => {
+    const ext = filename.split('.').pop()?.toLowerCase() || '';
+    if (['pdf'].includes(ext)) return 'pdf';
+    if (['png', 'jpg', 'jpeg', 'gif', 'svg'].includes(ext)) return 'image';
+    if (['xlsx', 'xls', 'csv'].includes(ext)) return 'spreadsheet';
+    if (['doc', 'docx'].includes(ext)) return 'document';
+    return 'file';
+  };
+
+  const getFileIcon = (type: string) => {
+    switch (type) {
+      case 'pdf': return <FileText className="h-5 w-5 text-red-500" />;
+      case 'image': return <Image className="h-5 w-5 text-blue-500" />;
+      case 'spreadsheet': return <FileSpreadsheet className="h-5 w-5 text-green-500" />;
+      case 'document': return <FileType className="h-5 w-5 text-blue-600" />;
+      default: return <File className="h-5 w-5 text-slate-500" />;
+    }
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  };
+
+  const handleDeleteArtifact = (id: string) => {
+    setArtifacts(artifacts.filter(a => a.id !== id));
+  };
+
   const toggleControlSelection = (controlId: string) => {
     setSelectedControlIds((prev) =>
       prev.includes(controlId)
@@ -460,150 +604,305 @@ export default function EvidencePage() {
         <h1 className="text-2xl font-bold text-slate-800">{t("Evidence")}</h1>
       </div>
 
-      {/* Search, Filter, and Action Buttons Row */}
-      <div className="flex items-center gap-3">
-        <Input
-          placeholder={t("Search by name, domain or assignee...")}
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-          className="max-w-md bg-white"
-        />
-        <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
-          <SelectTrigger className="w-[200px] bg-white">
-            <SelectValue placeholder={t("Integrated Framework")} />
-          </SelectTrigger>
-          <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
-            <SelectItem value="all">{t("Integrated Framework")}</SelectItem>
-            {frameworks.map((f) => (
-              <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <div className="flex-1" />
-        <PermissionGate resource="compliance.evidence" action="create">
-          <Button variant="outline" size="sm" onClick={() => setIsImportDialogOpen(true)}>
-            <FileSpreadsheet className="h-4 w-4 mr-2" />
-            {t("Import")}
-          </Button>
-        </PermissionGate>
-        <PermissionGate resource="compliance.evidence" action="delete">
-          <Button variant="outline" size="sm" className="text-semantic-error hover:text-semantic-error hover:bg-red-50" onClick={() => setIsDeleteAllDialogOpen(true)}>
-            <Trash2 className="h-4 w-4 mr-2" />
-            {t("Delete All")}
-          </Button>
-        </PermissionGate>
-        {isCustomerAdmin ? (
-          <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            {t("New Evidence")}
-          </Button>
-        ) : (
-          <PermissionGate resource="compliance.evidence" action="create">
-            <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              {t("New Evidence")}
-            </Button>
-          </PermissionGate>
-        )}
-      </div>
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="evidence-request">
+            {t("Evidence Request List")}
+          </TabsTrigger>
+          <TabsTrigger value="artifacts">
+            {t("Artifacts")}
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Table */}
-      {loading ? (
-        <div className="flex items-center justify-center py-8">
-          <div className="relative h-8 w-8">
-            <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
-            <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
-          </div>
-        </div>
-      ) : (
-        <div className="bg-white rounded-xl border border-slate-200">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-b border-slate-100 bg-slate-50/50">
-                <TableHead className="text-xs font-semibold text-slate-600 py-4 pl-4">{t("Evidence Code")}</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Evidence Name")}</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Domain")}</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Status")}</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Assignee")}</TableHead>
-                <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Department Name")}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {evidences.map((evidence) => (
-                <TableRow
-                  key={evidence.id}
-                  className="border-b border-slate-100 last:border-0 cursor-pointer hover:bg-slate-50"
-                  onDoubleClick={() => router.push(`/compliance/evidence/${evidence.id}`)}
+        {/* Evidence Request List Tab */}
+        <TabsContent value="evidence-request" className="mt-6 space-y-6">
+          {/* Status Tile Cards */}
+          <div className="grid grid-cols-5 gap-4">
+            {statusCounts.map((statusItem) => {
+              const statusIcons: Record<string, React.ReactNode> = {
+                "Not Uploaded": <CloudOff className="h-5 w-5" />,
+                "Draft": <FileEdit className="h-5 w-5" />,
+                "Validated": <BadgeCheck className="h-5 w-5" />,
+                "Published": <CheckCircle2 className="h-5 w-5" />,
+                "Need Attention": <AlertTriangle className="h-5 w-5" />,
+              };
+              const icon = statusIcons[statusItem.status] || statusIcons["Not Uploaded"];
+
+              return (
+                <div
+                  key={statusItem.status}
+                  className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm"
                 >
-                  <TableCell className="py-4 pl-4 text-sm font-medium text-slate-900">{evidence.evidenceCode}</TableCell>
-                  <TableCell className="py-4 text-sm text-slate-700">{evidence.name}</TableCell>
-                  <TableCell className="py-4 text-sm text-slate-700">{evidence.domain || "-"}</TableCell>
-                  <TableCell className="py-4">
-                    <Badge className={statusColors[evidence.status] || "bg-gray-100 text-gray-800"}>
-                      {evidence.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="py-4 text-sm text-slate-700">{evidence.assignee?.fullName || "-"}</TableCell>
-                  <TableCell className="py-4 text-sm text-slate-700">{evidence.department?.name || "-"}</TableCell>
-                </TableRow>
-              ))}
-              {evidences.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-slate-500">
-                    {t("No evidence records found")}
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
+                      {icon}
+                    </div>
+                  </div>
+                  <div className="text-3xl font-bold text-slate-800 mb-1">
+                    {statusItem.status === "Published" && statusItem.total
+                      ? `${statusItem.count}/${statusItem.total}`
+                      : statusItem.count}
+                  </div>
+                  <div className="text-sm font-medium text-slate-500">
+                    {t(statusItem.status)}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
 
-          {/* Pagination */}
-          <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
-            <span className="text-sm text-slate-500">
-              {total > 0 ? `${startItem} ${t("to")} ${endItem} ${t("of")} ${total}` : t("No evidence")}
-            </span>
-            <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage(1)}
-                className="h-8 w-8"
-              >
-                <ChevronsLeft className="h-4 w-4" />
+          {/* Search, Filter, and Action Buttons Row */}
+          <div className="flex items-center gap-3">
+            <Input
+              placeholder={t("Search by name, domain or assignee...")}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+              className="max-w-md bg-white"
+            />
+            <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+              <SelectTrigger className="w-[200px] bg-white">
+                <SelectValue placeholder={t("Department")} />
+              </SelectTrigger>
+              <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                <SelectItem value="all">{t("All Departments")}</SelectItem>
+                {departments.map((d) => (
+                  <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
+              <SelectTrigger className="w-[200px] bg-white">
+                <SelectValue placeholder={t("Integrated Framework")} />
+              </SelectTrigger>
+              <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                <SelectItem value="all">{t("Integrated Framework")}</SelectItem>
+                {frameworks.map((f) => (
+                  <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="flex-1" />
+            <PermissionGate resource="compliance.evidence" action="create">
+              <Button variant="outline" size="sm" onClick={() => setIsImportDialogOpen(true)}>
+                <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                {t("Import")}
               </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage((p) => p - 1)}
-                className="h-8 w-8"
-              >
-                <ChevronLeft className="h-4 w-4" />
+            </PermissionGate>
+            <PermissionGate resource="compliance.evidence" action="delete">
+              <Button variant="outline" size="sm" className="text-semantic-error hover:text-semantic-error hover:bg-red-50" onClick={() => setIsDeleteAllDialogOpen(true)}>
+                <Trash2 className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                {t("Delete All")}
               </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                disabled={currentPage >= totalPages}
-                onClick={() => setCurrentPage((p) => p + 1)}
-                className="h-8 w-8"
-              >
-                <ChevronRight className="h-4 w-4" />
+            </PermissionGate>
+            {isCustomerAdmin ? (
+              <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
+                <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                {t("New Evidence")}
               </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                disabled={currentPage >= totalPages}
-                onClick={() => setCurrentPage(totalPages)}
-                className="h-8 w-8"
+            ) : (
+              <PermissionGate resource="compliance.evidence" action="create">
+                <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
+                  <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                  {t("New Evidence")}
+                </Button>
+              </PermissionGate>
+            )}
+          </div>
+
+          {/* Table */}
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="relative h-8 w-8">
+                <div className="absolute inset-0 rounded-full border-4 border-slate-200"></div>
+                <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl border border-slate-200">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b border-slate-100 bg-slate-50/50">
+                    <TableHead className="text-xs font-semibold text-slate-600 py-4 pl-4">{t("Evidence Code")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Evidence Name")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Domain")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Status")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Issue Identified By")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Assignee")}</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600 py-4">{t("Department Name")}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {evidences.map((evidence) => (
+                    <TableRow
+                      key={evidence.id}
+                      className="border-b border-slate-100 last:border-0 cursor-pointer hover:bg-slate-50"
+                      onDoubleClick={() => router.push(`/compliance/evidence/${evidence.id}`)}
+                    >
+                      <TableCell className="py-4 pl-4 text-sm font-medium text-slate-900">{evidence.evidenceCode}</TableCell>
+                      <TableCell className="py-4 text-sm text-slate-700">{evidence.name}</TableCell>
+                      <TableCell className="py-4 text-sm text-slate-700">{evidence.domain || "-"}</TableCell>
+                      <TableCell className="py-4">
+                        <Badge className={statusColors[evidence.status] || "bg-gray-100 text-gray-800"}>
+                          {evidence.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="py-4 text-sm text-slate-700">{evidence.issueIdentifiedBy || "-"}</TableCell>
+                      <TableCell className="py-4 text-sm text-slate-700">{evidence.assignee?.fullName || "-"}</TableCell>
+                      <TableCell className="py-4 text-sm text-slate-700">{evidence.department?.name || "-"}</TableCell>
+                    </TableRow>
+                  ))}
+                  {evidences.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8 text-slate-500">
+                        {t("No evidence records found")}
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+
+              {/* Pagination */}
+              <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
+                <span className="text-sm text-slate-500">
+                  {total > 0 ? `${startItem} ${t("to")} ${endItem} ${t("of")} ${total}` : t("No evidence")}
+                </span>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(1)}
+                    className="h-8 w-8"
+                  >
+                    <ChevronsLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((p) => p - 1)}
+                    className="h-8 w-8"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    disabled={currentPage >= totalPages}
+                    onClick={() => setCurrentPage((p) => p + 1)}
+                    className="h-8 w-8"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    disabled={currentPage >= totalPages}
+                    onClick={() => setCurrentPage(totalPages)}
+                    className="h-8 w-8"
+                  >
+                    <ChevronsRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Artifacts Tab */}
+        <TabsContent value="artifacts" className="mt-6 space-y-6">
+          {/* Add Artifact Header and AI Review Button */}
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-semibold text-slate-800">{t("Add Artifact")}</h3>
+            <Button variant="outline" size="sm" className="gap-2">
+              <Sparkles className="h-4 w-4 text-purple-500" />
+              {t("AI Review Artifacts")}
+            </Button>
+          </div>
+
+          {/* File Upload Area */}
+          <div
+            className={`border-2 border-dashed rounded-xl p-8 text-center transition-all ${
+              artifactDragging
+                ? "border-primary-500 bg-primary-50"
+                : "border-slate-300 hover:border-slate-400 bg-slate-50"
+            }`}
+            onDragOver={handleArtifactDragOver}
+            onDragLeave={handleArtifactDragLeave}
+            onDrop={handleArtifactDrop}
+          >
+            <input
+              ref={artifactFileInputRef}
+              type="file"
+              multiple
+              className="hidden"
+              onChange={handleArtifactFileChange}
+            />
+            <Upload className="h-12 w-12 mx-auto text-slate-400 mb-4" />
+            <p className="text-slate-600 mb-2">
+              {t("Drag and drop files here, or")}{" "}
+              <button
+                onClick={() => artifactFileInputRef.current?.click()}
+                className="text-primary-600 hover:text-primary-700 font-medium"
               >
-                <ChevronsRight className="h-4 w-4" />
-              </Button>
+                {t("click to upload")}
+              </button>
+            </p>
+            <p className="text-sm text-slate-400">
+              {t("Supported formats: PDF, PNG, JPG, XLSX, DOC, DOCX")}
+            </p>
+          </div>
+
+          {/* Artifacts List */}
+          <div className="bg-white rounded-xl border border-slate-200">
+            <div className="px-4 py-3 border-b border-slate-100">
+              <h3 className="font-semibold text-slate-800">{t("Uploaded Artifacts")}</h3>
+            </div>
+            <div className="divide-y divide-slate-100">
+              {artifacts.length === 0 ? (
+                <div className="p-8 text-center text-slate-500">
+                  {t("No artifacts uploaded yet")}
+                </div>
+              ) : (
+                artifacts.map((artifact) => (
+                  <div
+                    key={artifact.id}
+                    className="flex items-center gap-4 p-4 hover:bg-slate-50 transition-colors"
+                  >
+                    <div className="flex-shrink-0">
+                      {getFileIcon(artifact.type)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-slate-800 truncate">{artifact.name}</p>
+                      <p className="text-sm text-slate-500">
+                        {formatFileSize(artifact.size)} • {t("Uploaded by")} {artifact.uploadedBy} • {artifact.uploadedAt}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600">
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600">
+                        <Download className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-slate-400 hover:text-red-500"
+                        onClick={() => handleDeleteArtifact(artifact.id)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
-        </div>
-      )}
+        </TabsContent>
+      </Tabs>
 
       {/* Create Evidence Dialog - 3 Step Wizard */}
       <Dialog open={createDialogOpen} onOpenChange={(open) => {

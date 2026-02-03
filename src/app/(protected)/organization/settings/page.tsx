@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, Trash2, Settings2, MapPin, FileType, Clock, Briefcase, BarChart3, Search, ChevronLeft, ChevronRight, Home } from "lucide-react";
+import { Plus, Pencil, Trash2, Settings2, MapPin, FileType, Clock, Briefcase, BarChart3, Search, ChevronRight, Home } from "lucide-react";
 import Link from "next/link";
 import { DataGrid } from "@/components/shared";
 import { Button } from "@/components/ui/button";
@@ -382,39 +382,41 @@ export default function OrganizationSettingsPage() {
         <h1 className="text-2xl font-bold text-slate-800">{t("Organization Settings")}</h1>
       </div>
 
+      {/* Settings Card Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {settingCategories.map((category) => {
           const Icon = category.icon;
-          const itemCount = settingsData[category.id]?.length || 0;
 
           return (
             <div
               key={category.id}
-              className="cursor-pointer bg-white rounded-xl border border-slate-200 p-5"
-              onClick={() => {
-                // Navigate to dedicated BIA settings page
-                if (category.id === "bia") {
-                  router.push("/organization/settings/bia");
-                } else {
-                  setActiveCategory(category.id);
-                }
-              }}
+              className="bg-white rounded-xl border border-slate-200 p-5 flex flex-col h-full min-h-[160px]"
             >
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-primary-50 rounded-lg">
-                  <Icon className="h-6 w-6 text-primary-600" />
+              <div className="flex items-start gap-4 flex-1">
+                <div className="p-3 bg-blue-50 rounded-lg flex-shrink-0">
+                  <Icon className="h-6 w-6 text-blue-600" />
                 </div>
-                <div>
-                  <h3 className="text-base font-semibold text-slate-800">{t(category.title)}</h3>
-                  <p className="text-sm text-slate-500">
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-base font-semibold text-slate-800">{t(category.title)}</h4>
+                  <p className="text-sm text-slate-500 line-clamp-2">
                     {t(category.description)}
                   </p>
                 </div>
               </div>
-              <div className="mt-4 pt-3 border-t border-slate-100">
-                <span className="text-sm text-slate-500">
-                  {itemCount} {itemCount === 1 ? t("item") : t("items")}
-                </span>
+              <div className="flex items-center justify-end pt-3 mt-4 border-t border-slate-100">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (category.id === "bia") {
+                      router.push("/organization/settings/bia");
+                    } else {
+                      setActiveCategory(category.id);
+                    }
+                  }}
+                >
+                  {t("Manage")}
+                </Button>
               </div>
             </div>
           );
