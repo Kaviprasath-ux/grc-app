@@ -161,6 +161,13 @@ export const POST = withAuth(
       const customerAccountId = getCustomerAccountId(session);
       const auditHeadId = getAuditHeadId(session);
 
+      if (!customerAccountId) {
+        return NextResponse.json(
+          { error: 'Customer account not found' },
+          { status: 400 }
+        );
+      }
+
       // Generate audit ID
       const count = await prisma.auditEngagement.count();
       const auditId = String(count + 1).padStart(4, '0');
@@ -184,8 +191,8 @@ export const POST = withAuth(
           plannedHours: plannedHours || 0,
           actualHours: 0,
           status: 'Planned',
-          ...(customerAccountId ? { customerAccountId } : {}),
-          ...(auditHeadId ? { auditHeadId } : {}),
+          customerAccountId,
+          auditHeadId: auditHeadId || null,
         },
         include: {
           department: {
