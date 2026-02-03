@@ -25,9 +25,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Pencil, Image, Trash2, Upload } from "lucide-react";
+import { Pencil, Image, Trash2, Upload, Home, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Customer {
@@ -319,8 +320,18 @@ export default function CustomersPage() {
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/grc" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>{t("GRC")}</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">{t("Customers")}</span>
+      </nav>
+
       {/* Page Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-bold text-slate-800">{t("GRC Customer Account")}</h1>
       </div>
 

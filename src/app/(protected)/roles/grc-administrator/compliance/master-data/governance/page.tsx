@@ -38,8 +38,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft, Plus, Pencil, Trash2, Download, Upload, Search, Check, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, Download, Upload, Search, Check, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Home } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import Link from "next/link";
 
 interface Department {
   id: string;
@@ -520,16 +521,22 @@ export default function GovernanceMasterDataPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => router.push("/roles/grc-administrator/compliance/master-data")}
-          className="h-8 w-8 text-slate-400 hover:text-slate-600"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
+      {/* Breadcrumb and Header */}
+      <div className="flex flex-col gap-1">
+        <nav className="flex items-center gap-1.5 text-sm">
+          <Link href="/grc" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>{t("GRC")}</span>
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <span className="text-slate-500">{t("Compliance")}</span>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <Link href="/roles/grc-administrator/compliance/master-data" className="text-slate-500 hover:text-primary-600 transition-colors">
+            {t("Master Data")}
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <span className="text-primary-700 font-medium">{t("Governance")}</span>
+        </nav>
         <h1 className="text-2xl font-bold text-slate-800">{t("Governance")}</h1>
       </div>
 

@@ -1,17 +1,30 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Key } from "lucide-react";
+import { Key, Home, ChevronRight } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import Link from "next/link";
 
 export default function SsoConfigPage() {
   const { t } = useLanguage();
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center gap-3">
-        <Key className="h-8 w-8 text-blue-600" />
-        <h1 className="text-2xl font-bold text-blue-700">{t("SSO Configuration")}</h1>
+    <div className="space-y-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/grc" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>{t("GRC")}</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-slate-500">{t("Configuration")}</span>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">{t("SSO")}</span>
+      </nav>
+
+      {/* Page Header */}
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold text-slate-800">{t("SSO Configuration")}</h1>
       </div>
 
       <Card>

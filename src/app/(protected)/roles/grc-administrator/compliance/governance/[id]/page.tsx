@@ -58,7 +58,10 @@ import {
   Download,
   Calendar,
   ChevronLeft,
+  Home,
+  ChevronRight,
 } from "lucide-react";
+import Link from "next/link";
 
 interface Policy {
   id: string;
@@ -718,17 +721,25 @@ export default function GovernanceDetailPage() {
   ];
 
   return (
-    <div className="space-y-6 p-6">
-      {/* Header with Back Link */}
+    <div className="space-y-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/grc" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>{t("GRC")}</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-slate-500">{t("Compliance")}</span>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <Link href="/roles/grc-administrator/compliance/governance" className="text-slate-500 hover:text-primary-600 transition-colors">
+          {t("Governance")}
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">{policy.code}</span>
+      </nav>
+
+      {/* Page Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => router.push("/roles/grc-administrator/compliance/governance")}
-            className="text-primary hover:underline text-sm"
-          >
-            &lt;&lt; {typeLabels[policy.type] || "Policy"}
-          </button>
-        </div>
 
         <div className="flex items-center gap-2">
           {/* Approve Button */}

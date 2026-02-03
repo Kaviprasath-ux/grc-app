@@ -51,7 +51,9 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Upload,
+  Home,
 } from "lucide-react";
+import Link from "next/link";
 
 interface Template {
   id: string;
@@ -318,16 +320,22 @@ export default function GovernanceTemplatesPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => router.push("/roles/grc-administrator/compliance/master-data")}
-          className="h-8 w-8 text-slate-400 hover:text-slate-600"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
+      {/* Breadcrumb and Header */}
+      <div className="flex flex-col gap-1">
+        <nav className="flex items-center gap-1.5 text-sm">
+          <Link href="/grc" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+            <Home className="h-4 w-4" />
+            <span>{t("GRC")}</span>
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <span className="text-slate-500">{t("Compliance")}</span>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <Link href="/roles/grc-administrator/compliance/master-data" className="text-slate-500 hover:text-primary-600 transition-colors">
+            {t("Master Data")}
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+          <span className="text-primary-700 font-medium">{t("Governance Templates")}</span>
+        </nav>
         <h1 className="text-2xl font-bold text-slate-800">{t("Governance Templates")}</h1>
       </div>
 

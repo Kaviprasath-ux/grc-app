@@ -10,62 +10,59 @@ import {
   FileText,
   Home,
   ChevronRight,
+  LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
+
+interface MasterDataCategory {
+  name: string;
+  description: string;
+  icon: LucideIcon;
+  href: string;
+}
 
 export default function MasterDataPage() {
   const router = useRouter();
   const { t } = useLanguage();
 
-  const masterDataCategories = [
+  const masterDataCategories: MasterDataCategory[] = [
     {
       name: t("Framework"),
       description: t("Manage compliance frameworks and standards"),
       icon: Layers,
       href: "/compliance/master-data/framework",
-      bgColor: "bg-info-light",
-      iconColor: "text-info-dark",
     },
     {
       name: t("Controls"),
       description: t("Manage control definitions and templates"),
       icon: Shield,
       href: "/compliance/master-data/controls",
-      bgColor: "bg-success-light",
-      iconColor: "text-success-dark",
     },
     {
       name: t("Governance"),
       description: t("Manage governance document templates"),
       icon: FileCheck,
       href: "/compliance/master-data/governance",
-      bgColor: "bg-primary-100",
-      iconColor: "text-primary-700",
     },
     {
       name: t("Evidences"),
       description: t("Manage evidence definitions and requirements"),
       icon: ClipboardList,
       href: "/compliance/master-data/evidences",
-      bgColor: "bg-warning-light",
-      iconColor: "text-warning-dark",
     },
     {
       name: t("Domain"),
       description: t("Manage control domains and categories"),
       icon: FolderTree,
       href: "/compliance/master-data/domain",
-      bgColor: "bg-info-light",
-      iconColor: "text-info-dark",
     },
     {
       name: t("Governance Templates"),
       description: t("Manage policy, standard, and procedure templates"),
       icon: FileText,
       href: "/compliance/master-data/governance-templates",
-      bgColor: "bg-error-light",
-      iconColor: "text-error-dark",
     },
   ];
 
@@ -87,28 +84,38 @@ export default function MasterDataPage() {
       </div>
 
       {/* Category Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-        {masterDataCategories.map((category) => (
-          <div
-            key={category.href}
-            className="bg-white rounded-xl border border-slate-200 p-6 cursor-pointer hover:bg-slate-50 transition-colors"
-            onClick={() => router.push(category.href)}
-          >
-            <div className="flex flex-col items-center text-center space-y-4">
-              <div className={`p-4 rounded-full ${category.bgColor}`}>
-                <category.icon className={`h-8 w-8 ${category.iconColor}`} />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {masterDataCategories.map((category) => {
+          const Icon = category.icon;
+
+          return (
+            <div
+              key={category.href}
+              className="bg-white rounded-xl border border-slate-200 p-5 flex flex-col h-full min-h-[160px]"
+            >
+              <div className="flex items-start gap-4 flex-1">
+                <div className="p-3 bg-blue-50 rounded-lg flex-shrink-0">
+                  <Icon className="h-6 w-6 text-blue-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-base font-semibold text-slate-800">{category.name}</h4>
+                  <p className="text-sm text-slate-500 line-clamp-2">
+                    {category.description}
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-lg font-semibold text-slate-800">
-                  {category.name}
-                </h3>
-                <p className="text-sm text-slate-500 mt-1">
-                  {category.description}
-                </p>
+              <div className="flex items-center justify-end pt-3 mt-4 border-t border-slate-100">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push(category.href)}
+                >
+                  {t("Manage")}
+                </Button>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

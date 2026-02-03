@@ -19,7 +19,10 @@ import {
   Trash2,
   ArrowUpDown,
   Eye,
+  Home,
+  ChevronRight,
 } from "lucide-react";
+import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -176,31 +179,44 @@ export default function MasterDataFrameworkPage() {
   }
 
   return (
-    <div className="p-6 space-y-4">
-      {/* Header */}
+    <div className="space-y-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/grc" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>{t("GRC")}</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <Link href="/grc/customers" className="text-slate-500 hover:text-primary-600 transition-colors">
+          {t("Customers")}
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <Link href={`/grc/customers/${customerId}/frameworks`} className="text-slate-500 hover:text-primary-600 transition-colors">
+          {t("Frameworks")}
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-slate-500">{t("Master Data")}</span>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">{t("Framework")}</span>
+      </nav>
+
+      {/* Page Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <button
-            className="text-gray-700 hover:text-gray-900 flex items-center gap-1 text-sm font-medium"
-            onClick={handleBack}
-          >
-            <ChevronLeft className="h-4 w-4" />
-            {t("Back")}
-          </button>
-          <h1 className="text-2xl font-bold text-blue-700">{t("Framework")}</h1>
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-bold text-slate-800">{t("Framework")}</h1>
         </div>
         <div className="flex items-center gap-3">
           <Button
             onClick={handleNewFramework}
-            className="bg-blue-700 hover:bg-blue-800 text-white"
+            size="sm"
           >
-            <Plus className="h-4 w-4 mr-1" />
+            <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
             {t("New Framework")}
           </Button>
           <Button
             onClick={handleExport}
             variant="outline"
-            className="border-gray-300 text-gray-700 hover:bg-gray-50"
+            size="sm"
           >
             {t("Export")}
           </Button>

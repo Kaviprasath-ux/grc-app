@@ -45,8 +45,11 @@ import {
   Server,
   CheckCircle,
   XCircle,
+  Home,
+  ChevronRight,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import Link from "next/link";
 
 interface Framework {
   id: string;
@@ -842,40 +845,43 @@ export default function CustomerFrameworkOverviewPage() {
   }
 
   return (
-    <div className="p-6 space-y-4">
+    <div className="space-y-6">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        <Link href="/grc" className="flex items-center gap-1.5 text-slate-500 hover:text-primary-600 transition-colors">
+          <Home className="h-4 w-4" />
+          <span>{t("GRC")}</span>
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <Link href="/grc/customers" className="text-slate-500 hover:text-primary-600 transition-colors">
+          {t("Customers")}
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-slate-500">{customer?.customerName || t("Customer")}</span>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+        <span className="text-primary-700 font-medium">{t("Frameworks")}</span>
+      </nav>
+
       {/* Header Section - only visible on Framework tab */}
       {activeTab === "Framework" && (
         <div className="flex items-start justify-between">
-          <div className="flex items-start gap-4">
-            <Button
-              variant="ghost"
-              className="text-gray-600 hover:text-gray-800 p-0 h-auto"
-              onClick={handleBack}
-            >
-              <ChevronLeft className="h-5 w-5 mr-1" />
-              {t("Back")}
-            </Button>
-            <div>
-              <h1 className="text-2xl font-semibold text-blue-700">{t("Frameworks")}</h1>
-              <p className="text-sm text-blue-600 bg-blue-100 px-2 py-1 mt-1 inline-block">
-                {customer?.customerName || t("Loading...")}
-              </p>
-            </div>
+          <div className="flex flex-col gap-1">
+            <h1 className="text-2xl font-bold text-slate-800">{t("Frameworks")}</h1>
           </div>
           <div className="flex items-center gap-3">
             <Button
               onClick={openSelectDialog}
               variant="outline"
-              className="border-blue-600 text-blue-600 hover:bg-blue-50"
+              size="sm"
             >
-              <Library className="h-4 w-4 mr-2" />
+              <Library className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("Framework Select")}
             </Button>
             <Button
               onClick={openCreateDialog}
-              className="bg-green-600 hover:bg-green-700 text-white"
+              size="sm"
             >
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("New Integrated Framework")}
             </Button>
             <Select value={creationMode} onValueChange={setCreationMode}>
