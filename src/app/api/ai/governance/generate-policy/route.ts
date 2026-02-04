@@ -30,11 +30,20 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "policyId and prompt are required" }, { status: 400 });
         }
 
-        // Fetch Policy with Attachments and Metadata
+        // Fetch Policy with Attachments, Controls, and their Frameworks
         const policy = await prisma.policy.findUnique({
             where: { id: policyId },
             include: {
-                attachments: { orderBy: { createdAt: 'desc' }, take: 1 }
+                attachments: { orderBy: { createdAt: 'desc' }, take: 1 },
+                policyControls: {
+                    include: {
+                        control: {
+                            include: {
+                                framework: { select: { name: true } }
+                            }
+                        }
+                    }
+                }
             }
         });
 
@@ -72,14 +81,25 @@ export async function POST(req: NextRequest) {
         formData.append("document_type", "Policy");
         formData.append("document_name", name || policy.name || "Generated Policy");
 
-        // Use actual framework names from DB (JSON to Array)
-        // TODO: frameworkNames field doesn't exist on Policy model yet - needs schema migration
-        // const frameworkNames: string[] = policy.frameworkNames ? JSON.parse(policy.frameworkNames as string) : ["General"];
-        const frameworkNames: string[] = ["General"]; // Default until schema is updated
+        // Extract unique framework names from linked controls
+        const frameworkNamesSet = new Set<string>();
+        policy.policyControls.forEach(pc => {
+            if (pc.control.framework?.name) {
+                frameworkNamesSet.add(pc.control.framework.name);
+            }
+        });
+        const frameworkNames: string[] = frameworkNamesSet.size > 0
+            ? Array.from(frameworkNamesSet)
+            : ["General"]; // Fallback if no frameworks linked
         frameworkNames.forEach(f => formData.append("framework_names", f));
 
-        // Map requirements/controls
-        formData.append("mapped_controls", prompt);
+        // Map requirements/controls as array (OpenAPI expects array of strings)
+        // Split prompt by commas or newlines to create array
+        const mappedControlsArray = prompt
+            .split(/[,\n]+/)
+            .map((c: string) => c.trim())
+            .filter((c: string) => c.length > 0);
+        mappedControlsArray.forEach((control: string) => formData.append("mapped_controls", control));
 
         // 0-Dummy: Use actual buffer if available, or a minimal valid PDF-ish blob if forced
         const finalBlob = templateBuffer
@@ -88,11 +108,8 @@ export async function POST(req: NextRequest) {
 
         formData.append("template", finalBlob, templateFileName);
 
-        const response = await aiApiClient.post("/api/generate_policy/", formData, {
-            headers: {
-                "Content-Type": "multipart/form-data",
-            },
-        });
+        // Note: Don't set Content-Type for FormData - browser sets it with boundary automatically
+        const response = await aiApiClient.post("/api/generate_policy/", formData);
 
         const { file_content, file_name } = response.data;
         const latencyMs = Date.now() - startTime;

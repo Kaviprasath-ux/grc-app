@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, validateTenantAccess, forbidden } from "@/lib/api-auth";
-import { AI_CONFIG, getAIMultipartHeaders } from "@/lib/ai-config";
+import aiApiClient from "@/lib/ai-api-client";
 import fs from "fs";
 import path from "path";
 
@@ -68,9 +68,9 @@ export const POST = withAuth(
       formData.append("base_id", evidence.frameworkId || evidence.customerAccountId);
       formData.append("file_code", evidence.evidenceCode);
       formData.append("document_id", evidence.id);
+      formData.append("doc_type", "evidence"); // Consistent doc_type for all evidence documents
 
-      // Attach files and determine doc_type from first file extension
-      let docType = "pdf"; // default
+      // Attach files
       for (const attachment of evidence.attachments) {
         const filePath = path.join(process.cwd(), attachment.filePath);
 
@@ -80,46 +80,23 @@ export const POST = withAuth(
           continue;
         }
 
-        // Get file extension for doc_type
-        const ext = attachment.fileName.split('.').pop()?.toLowerCase() || "pdf";
-        docType = ext;
-
         const fileBuffer = fs.readFileSync(filePath);
         const blob = new Blob([fileBuffer], { type: attachment.fileType || "application/octet-stream" });
         const file = new File([blob], attachment.fileName, { type: attachment.fileType || "application/octet-stream" });
 
         formData.append("files", file);
       }
-      formData.append("doc_type", docType);
+      console.log("input",formData)
 
-      // Call RunPod ingest endpoint
-      const runpodUrl = `${AI_CONFIG.baseUrl}${AI_CONFIG.endpoints.ingest}`;
-      console.log(`[AI] POST ${AI_CONFIG.endpoints.ingest} → calling ${runpodUrl}`);
-
-      const runpodResponse = await fetch(runpodUrl, {
-        method: "POST",
-        headers: getAIMultipartHeaders(),
-        body: formData,
-      });
-
-      const responseStatus = runpodResponse.status;
-      console.log(`[AI] POST ${AI_CONFIG.endpoints.ingest} → ${responseStatus}`);
-
-      if (!runpodResponse.ok) {
-        const errorText = await runpodResponse.text();
-        console.log(`[AI] POST ${AI_CONFIG.endpoints.ingest} → ${responseStatus} (error: ${errorText})`);
-        return NextResponse.json(
-          { error: "AI ingest failed", details: errorText },
-          { status: 502 }
-        );
-      }
+      // Call RunPod ingest endpoint via standardized aiApiClient
+      // Note: Don't set Content-Type for FormData - browser sets it with boundary automatically
+      const response = await aiApiClient.post("/api/grc_ingest", formData);
+      console.log ("[Evidence Ingest] RunPod Response:", response.data);
 
       // Response: { "job_id": "...", "status": "queued" }
-      const runpodData = await runpodResponse.json();
+      const runpodData = response.data;
       const jobId = runpodData.job_id;
       const status = runpodData.status?.toLowerCase() || "queued";
-
-      console.log(`[AI] POST ${AI_CONFIG.endpoints.ingest} → 200`, JSON.stringify(runpodData));
 
       if (!jobId) {
         return NextResponse.json(
@@ -150,11 +127,15 @@ export const POST = withAuth(
         job_id: jobId,
         status: status,
       });
-    } catch (error) {
-      console.error("Error triggering AI ingest:", error);
+    } catch (error: any) {
+      console.error("[Evidence Ingest] Error:", error);
       return NextResponse.json(
-        { error: "Failed to trigger AI ingest", details: String(error) },
-        { status: 500 }
+        {
+          error: error.message || "Failed to trigger AI ingest",
+          details: error.rawResponse?.substring(0, 200) || error.data || String(error),
+          requestId: error.requestId
+        },
+        { status: error.status || 500 }
       );
     }
   },

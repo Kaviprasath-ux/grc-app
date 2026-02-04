@@ -71,6 +71,7 @@ import {
   File,
   FileType,
   X,
+  Eye,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -203,6 +204,56 @@ interface VaultDocument {
   linkedGovernanceIds: string[];
 }
 
+// AI Review Control Result interface
+interface AIReviewControlResult {
+  control_code: string;
+  status: string;
+  answer: string;
+  score?: number | null;
+  question?: string;
+  status_code?: number;
+  uuid?: string;
+}
+
+// AI Review Evidence Result interface
+interface AIReviewEvidenceResult {
+  control_code: string;
+  status: string;
+  answer: string;
+  score?: number | null;
+  question?: string;
+  status_code?: number;
+  uuid?: string;
+}
+
+// AI Review Response interface
+interface AIReviewResponse {
+  success: boolean;
+  compliance_score: number;
+  compliance_summary: string;
+  total_controls: number;
+  compliant_controls: number;
+  gaps: Array<{
+    control_code: string;
+    status: string;
+    answer: string;
+    score?: number | null;
+  }>;
+  recommendations: Array<{
+    control_code: string;
+    recommendation: string;
+  }>;
+  raw_response?: {
+    controls_response: AIReviewControlResult[];
+    evidence_response?: AIReviewEvidenceResult[];
+    policy_compliant_data?: {
+      total_controls: number;
+      total_compliant_controls: number;
+      compliant_percent: number;
+    };
+  };
+}
+
 const statusColors: Record<string, string> = {
   "Not Uploaded": "bg-gray-100 text-gray-800",
   Draft: "bg-yellow-100 text-yellow-800",
@@ -282,6 +333,15 @@ export default function GovernanceDetailPage() {
   const [unpublishDialogOpen, setUnpublishDialogOpen] = useState(false);
   const [storedSignature, setStoredSignature] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // AI Generate Policy state
+  const [generatePolicyDialogOpen, setGeneratePolicyDialogOpen] = useState(false);
+  const [generatePolicyPrompt, setGeneratePolicyPrompt] = useState("");
+  const [generatingPolicy, setGeneratingPolicy] = useState(false);
+
+  // AI Review Details Modal state
+  const [aiReviewDetailsOpen, setAiReviewDetailsOpen] = useState(false);
+  const [aiReviewResult, setAiReviewResult] = useState<AIReviewResponse | null>(null);
 
   // Vault document linking state
   const [linkFromVaultDialogOpen, setLinkFromVaultDialogOpen] = useState(false);
@@ -633,33 +693,42 @@ export default function GovernanceDetailPage() {
 
   const handleTriggerAIReview = async () => {
     try {
-      const response = await fetch(`/api/policies/${id}`, {
-        method: "PUT",
+      // Set status to In Progress first
+      setPolicy(prev => prev ? { ...prev, aiReviewStatus: "In Progress" } : prev);
+
+      // Call real RunPod API for policy review
+      const response = await fetch("/api/ai/governance/review", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          aiReviewStatus: "In Progress",
-        }),
+        body: JSON.stringify({ policyId: id }),
       });
 
       if (response.ok) {
-        // Simulate AI review completion after delay
-        setTimeout(async () => {
-          await fetch(`/api/policies/${id}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              aiReviewStatus: "Completed",
-              aiReviewScore: Math.floor(Math.random() * 30) + 70,
-              aiReviewJustification:
-                "The document meets compliance requirements with minor recommendations for improvement in clarity and scope definition.",
-            }),
-          });
-          fetchPolicy();
-        }, 2000);
+        const result = await response.json();
+        // Store the AI review result for detailed view
+        setAiReviewResult(result);
+        // Refresh policy to get updated AI review results
+        fetchPolicy();
+      } else {
+        const error = await response.json();
+        console.error("AI Review failed:", error);
+        // Update status to Failed
+        await fetch(`/api/policies/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ aiReviewStatus: "Failed" }),
+        });
         fetchPolicy();
       }
     } catch (error) {
       console.error("Error triggering AI review:", error);
+      // Update status to Failed on error
+      await fetch(`/api/policies/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ aiReviewStatus: "Failed" }),
+      });
+      fetchPolicy();
     }
   };
 
@@ -676,10 +745,46 @@ export default function GovernanceDetailPage() {
       });
 
       if (response.ok) {
+        setAiReviewResult(null);
         fetchPolicy();
       }
     } catch (error) {
       console.error("Error clearing AI review:", error);
+    }
+  };
+
+  const handleGeneratePolicy = async () => {
+    if (!generatePolicyPrompt.trim()) {
+      return;
+    }
+
+    setGeneratingPolicy(true);
+    try {
+      // Call real RunPod API to generate policy
+      const response = await fetch("/api/ai/governance/generate-policy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          policyId: id,
+          prompt: generatePolicyPrompt,
+          name: policy?.name,
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        // Close dialog and refresh policy to show new attachment
+        setGeneratePolicyDialogOpen(false);
+        setGeneratePolicyPrompt("");
+        fetchPolicy();
+      } else {
+        const error = await response.json();
+        console.error("AI Policy generation failed:", error);
+      }
+    } catch (error) {
+      console.error("Error generating policy:", error);
+    } finally {
+      setGeneratingPolicy(false);
     }
   };
 
@@ -1605,7 +1710,7 @@ export default function GovernanceDetailPage() {
               <p>{t("AI Review has not been performed yet")}</p>
             </div>
           ) : policy.aiReviewStatus === "In Progress" ? (
-            <div className="flex items-center gap-4">
+            <div className="flex items-center justify-center gap-4 py-4">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
               <p>{t("AI Review in progress...")}</p>
             </div>
@@ -1641,10 +1746,97 @@ export default function GovernanceDetailPage() {
                   <p className="mt-1 p-3 bg-muted rounded-lg">{policy.aiReviewJustification}</p>
                 </div>
               )}
+              {/* View More Button */}
+              {aiReviewResult && aiReviewResult.raw_response?.controls_response && (
+                <div className="col-span-3 mt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setAiReviewDetailsOpen(true)}
+                  >
+                    <Eye className="h-4 w-4 ltr:mr-2 rtl:ml-2 text-blue-500" />
+                    {t("View More")}
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </CardContent>
       </Card>
+
+      {/* AI Review Details Modal */}
+      <Dialog open={aiReviewDetailsOpen} onOpenChange={setAiReviewDetailsOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5" />
+              {t("AI Review Details")}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            {aiReviewResult?.raw_response?.controls_response?.map((control, index) => (
+              <div
+                key={index}
+                className="bg-slate-50 dark:bg-slate-900 rounded-lg p-6 border border-slate-200 dark:border-slate-700"
+              >
+                <div className="grid grid-cols-2 gap-6">
+                  {/* Left Column */}
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                        {t("Control Code")}
+                      </p>
+                      <p className="text-slate-700 dark:text-slate-300">
+                        {control.control_code}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                        {t("Question")}
+                      </p>
+                      <p className="text-slate-700 dark:text-slate-300">
+                        {control.question || "-"}
+                      </p>
+                    </div>
+                  </div>
+                  {/* Right Column */}
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                        {t("Status")}
+                      </p>
+                      <Badge
+                        className={
+                          control.status?.toLowerCase() === "compliant"
+                            ? "bg-green-100 text-green-800"
+                            : control.status?.toLowerCase() === "non-compliant"
+                            ? "bg-red-100 text-red-800"
+                            : "bg-yellow-100 text-yellow-800"
+                        }
+                      >
+                        {control.status ? control.status.charAt(0).toUpperCase() + control.status.slice(1) : "-"}
+                      </Badge>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                        {t("Answer")}
+                      </p>
+                      <p className="text-slate-700 dark:text-slate-300">
+                        {control.answer || "-"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {(!aiReviewResult?.raw_response?.controls_response ||
+              aiReviewResult.raw_response.controls_response.length === 0) && (
+              <div className="text-center py-8 text-slate-400">
+                <p>{t("No detailed review data available")}</p>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Published Section - Only show when status is Published */}
       {policy.status === "Published" && (
@@ -1938,27 +2130,99 @@ export default function GovernanceDetailPage() {
                 {(() => {
                   const hasDocument = attachments.length > 0 || linkedVaultDocuments.length > 0;
                   return (
-                    <div
-                      className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-                        hasDocument
-                          ? "border-gray-100 bg-gray-50 cursor-not-allowed opacity-50"
-                          : "border-gray-200 cursor-pointer hover:border-primary hover:bg-primary/5"
-                      }`}
-                    >
-                      <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 ${
-                        hasDocument ? "bg-gray-100" : "bg-purple-100"
-                      }`}>
-                        <Sparkles className={`h-6 w-6 ${hasDocument ? "text-gray-400" : "text-purple-600"}`} />
-                      </div>
-                      <h3 className={`font-medium ${hasDocument ? "text-gray-400" : "text-gray-900"}`}>
-                        {t("Generate Policy Using AI")}
-                      </h3>
-                      <p className={`text-sm mt-1 ${hasDocument ? "text-gray-300" : "text-gray-500"}`}>
-                        {hasDocument
-                          ? t("Delete existing file to use AI")
-                          : t("Create document with AI assistance")}
-                      </p>
-                    </div>
+                    <Dialog open={generatePolicyDialogOpen} onOpenChange={(open) => {
+                      if (hasDocument) return;
+                      setGeneratePolicyDialogOpen(open);
+                      if (!open) {
+                        setGeneratePolicyPrompt("");
+                      }
+                    }}>
+                      <DialogTrigger asChild disabled={hasDocument}>
+                        <div
+                          className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                            hasDocument
+                              ? "border-gray-100 bg-gray-50 cursor-not-allowed opacity-50"
+                              : "border-gray-200 cursor-pointer hover:border-primary hover:bg-primary/5"
+                          }`}
+                        >
+                          <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 ${
+                            hasDocument ? "bg-gray-100" : "bg-purple-100"
+                          }`}>
+                            <Sparkles className={`h-6 w-6 ${hasDocument ? "text-gray-400" : "text-purple-600"}`} />
+                          </div>
+                          <h3 className={`font-medium ${hasDocument ? "text-gray-400" : "text-gray-900"}`}>
+                            {t("Generate Policy Using AI")}
+                          </h3>
+                          <p className={`text-sm mt-1 ${hasDocument ? "text-gray-300" : "text-gray-500"}`}>
+                            {hasDocument
+                              ? t("Delete existing file to use AI")
+                              : t("Create document with AI assistance")}
+                          </p>
+                        </div>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-2xl">
+                        <DialogHeader>
+                          <DialogTitle>{t("Generate Policy Using AI")}</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                          <div>
+                            <Label>{t("Policy Name")}</Label>
+                            <Input value={policy?.name || ""} disabled className="bg-gray-50" />
+                          </div>
+                          <div>
+                            <Label>{t("Requirements / Controls to Include")}</Label>
+                            <Textarea
+                              placeholder={t("Enter the requirements, controls, or topics you want the AI to include in the policy document. Separate multiple items with commas or new lines.")}
+                              value={generatePolicyPrompt}
+                              onChange={(e) => setGeneratePolicyPrompt(e.target.value)}
+                              rows={6}
+                              className="mt-1"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              {t("Example: Access control procedures, Password requirements, Data classification, Incident response")}
+                            </p>
+                          </div>
+                          {policy?.policyControls && policy.policyControls.length > 0 && (
+                            <div>
+                              <Label>{t("Linked Controls")}</Label>
+                              <div className="mt-1 p-3 bg-gray-50 rounded-lg max-h-32 overflow-y-auto">
+                                <div className="flex flex-wrap gap-1">
+                                  {policy.policyControls.map((pc) => (
+                                    <Badge key={pc.control.id} variant="outline" className="text-xs">
+                                      {pc.control.controlCode}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {t("These controls will be included in the generation context")}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex justify-end gap-2">
+                          <Button variant="outline" onClick={() => setGeneratePolicyDialogOpen(false)}>
+                            {t("Cancel")}
+                          </Button>
+                          <Button
+                            onClick={handleGeneratePolicy}
+                            disabled={generatingPolicy || !generatePolicyPrompt.trim()}
+                          >
+                            {generatingPolicy ? (
+                              <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                                {t("Generating...")}
+                              </>
+                            ) : (
+                              <>
+                                <Sparkles className="h-4 w-4 mr-2" />
+                                {t("Generate Policy")}
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                   );
                 })()}
 

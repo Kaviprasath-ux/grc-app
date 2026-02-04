@@ -62,11 +62,8 @@ export async function POST(req: NextRequest) {
         console.log(`[Governance Ingest] Ingesting policy ${policy.code} (RunPod Contract Sync)`);
 
         // Step 2: Call RunPod via aiApiClient
-        const response = await aiApiClient.post("/api/grc_ingest", runpodFormData, {
-            headers: {
-                "Content-Type": "multipart/form-data",
-            },
-        });
+        // Note: Don't set Content-Type for FormData - browser sets it with boundary automatically
+        const response = await aiApiClient.post("/api/grc_ingest", runpodFormData);
 
         // Backend may return job_id for async tracking or document_id for sync
         const jobId = response.data.job_id;

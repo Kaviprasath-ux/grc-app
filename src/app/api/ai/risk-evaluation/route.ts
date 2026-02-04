@@ -82,6 +82,7 @@ async function handler(
                 Department: process.department?.name || "General"
             }
         };
+        console.log("AI Request Payload:", JSON.stringify(requestPayload));
 
         // Pre-flight Log
         const operation = await aiAuditService.logOperation({
@@ -93,6 +94,7 @@ async function handler(
 
         // 4. Call AI Service (Synchronous)
         const response = await aiApiClient.post(endpoint, requestPayload);
+        console.log(response)
         const result = response.data;
         const latencyMs = Date.now() - startTime;
 

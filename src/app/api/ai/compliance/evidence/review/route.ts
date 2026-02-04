@@ -28,11 +28,17 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "evidenceId is required" }, { status: 400 });
         }
 
-        // Load Evidence with linked data (Artifacts/Controls)
+        // Load Evidence with attachments (ingested files) and controls
         const evidence = await prisma.evidence.findUnique({
             where: { id: evidenceId },
             include: {
-                linkedArtifacts: { include: { artifact: true } },
+                attachments: {
+                    select: {
+                        id: true,
+                        fileName: true,
+                    },
+                    orderBy: { uploadedAt: "desc" },
+                },
                 evidenceControls: { include: { control: true } }
             }
         });
@@ -70,11 +76,13 @@ export async function POST(req: NextRequest) {
         }
 
         // Prepare RunPod Payload (grc_evidencePayLoad)
-        // evidences: Array of { evidence_code: string, evidence_artifact: string }
-        const evidencesPayload = evidence.linkedArtifacts.map(la => ({
+        // Use attachments (ingested files) for evidence_artifact - these match what was ingested
+        const evidencesPayload = [{
             evidence_code: evidence.evidenceCode,
-            evidence_artifact: la.artifact.fileName // Using fileName as identifier for backend context
-        }));
+            evidence_artifact: evidence.attachments
+                .map(att => att.fileName)
+                .join(", ") || evidence.evidenceCode
+        }];
 
         const runpodPayload = {
             user_id: userId,

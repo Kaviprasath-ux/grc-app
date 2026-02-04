@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, validateTenantAccess, forbidden } from "@/lib/api-auth";
-import { AI_CONFIG, getAIHeaders } from "@/lib/ai-config";
+import aiApiClient from "@/lib/ai-api-client";
 
 interface RequestBody {
   evidenceId: string;
@@ -26,18 +26,16 @@ export const POST = withAuth(
       }
 
       // Verify evidence exists and user has access
+      // Include attachments (ingested files) instead of linkedArtifacts
       const evidence = await prisma.evidence.findUnique({
         where: { id: evidenceId },
         include: {
-          linkedArtifacts: {
-            include: {
-              artifact: {
-                select: {
-                  artifactCode: true,
-                  name: true,
-                },
-              },
+          attachments: {
+            select: {
+              id: true,
+              fileName: true,
             },
+            orderBy: { uploadedAt: "desc" },
           },
         },
       });
@@ -53,8 +51,9 @@ export const POST = withAuth(
         return forbidden("Access denied to this evidence");
       }
 
-      // Verify evidence has been ingested
-      if (evidence.aiIngestStatus !== "INGESTED") {
+      // Verify evidence has been ingested (case-insensitive check)
+      const ingestStatus = evidence.aiIngestStatus?.toUpperCase();
+      if (ingestStatus !== "INGESTED" && ingestStatus !== "COMPLETED") {
         return NextResponse.json(
           { error: `Evidence must be ingested first. Current status: ${evidence.aiIngestStatus || "NOT_STARTED"}` },
           { status: 400 }
@@ -68,6 +67,7 @@ export const POST = withAuth(
       });
 
       // Prepare AI query request
+      // Use attachments (ingested files) for evidence_artifact - these are what was actually ingested
       const requestBody = {
         user_id: session.id,
         evidence_id: evidence.id,
@@ -75,26 +75,19 @@ export const POST = withAuth(
         evidences: [
           {
             evidence_code: evidence.evidenceCode,
-            evidence_artifact: evidence.linkedArtifacts
-              .map((la) => `${la.artifact.artifactCode}: ${la.artifact.name}`)
-              .join(", ") || "",
+            evidence_artifact: evidence.attachments
+              .map((att) => att.fileName)
+              .join(", ") || evidence.evidenceCode,
           },
         ],
       };
 
-      // Call RunPod evidence query endpoint
-      const runpodUrl = `${AI_CONFIG.baseUrl}${AI_CONFIG.endpoints.evidenceQuery}`;
-      console.log(`Calling RunPod AI review: ${runpodUrl}`);
-
-      const runpodResponse = await fetch(runpodUrl, {
-        method: "POST",
-        headers: getAIHeaders(),
-        body: JSON.stringify(requestBody),
-      });
-
-      if (!runpodResponse.ok) {
-        const errorText = await runpodResponse.text();
-        console.error("RunPod AI review failed:", errorText);
+      // Call RunPod evidence query endpoint via standardized aiApiClient
+      let response;
+      try {
+        response = await aiApiClient.post("/api/grc_evidence_query", requestBody);
+      } catch (apiError: any) {
+        console.error("[Evidence Review] RunPod API failed:", apiError);
 
         // Update evidence review status to failed
         await prisma.evidence.update({
@@ -105,21 +98,26 @@ export const POST = withAuth(
         });
 
         return NextResponse.json(
-          { error: "AI review failed", details: errorText },
-          { status: 502 }
+          {
+            error: "AI review failed",
+            details: apiError.rawResponse?.substring(0, 200) || apiError.message,
+            requestId: apiError.requestId
+          },
+          { status: apiError.status || 502 }
         );
       }
 
-      const runpodData = await runpodResponse.json();
+      const runpodData = response.data;
 
       // Create AI operation record
       const aiOperation = await prisma.aIOperation.create({
         data: {
-          endpoint: runpodUrl,
+          endpoint: "/api/grc_evidence_query",
           method: "POST",
           requestBody: JSON.stringify(requestBody),
           responseBody: JSON.stringify(runpodData),
-          statusCode: runpodResponse.status,
+          statusCode: response.status,
+          latencyMs: response.latencyMs,
           userId: session.id,
         },
       });
@@ -163,23 +161,16 @@ export const POST = withAuth(
           recommendations: reviewRecord.recommendations ? JSON.parse(reviewRecord.recommendations) : null,
         },
       });
-    } catch (error) {
-      console.error("Error triggering AI review:", error);
-
-      // Try to update evidence status to failed
-      try {
-        const body: RequestBody = await req.json();
-        await prisma.evidence.update({
-          where: { id: body.evidenceId },
-          data: { aiReviewStatus: "FAILED" },
-        });
-      } catch (e) {
-        // Ignore update errors
-      }
+    } catch (error: any) {
+      console.error("[Evidence Review] Error:", error);
 
       return NextResponse.json(
-        { error: "Failed to trigger AI review", details: String(error) },
-        { status: 500 }
+        {
+          error: error.message || "Failed to trigger AI review",
+          details: error.rawResponse?.substring(0, 200) || String(error),
+          requestId: error.requestId
+        },
+        { status: error.status || 500 }
       );
     }
   },
