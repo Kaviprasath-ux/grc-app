@@ -1649,7 +1649,7 @@ export default function FieldworkDetailsPage() {
                   e.stopPropagation();
                   handleMarkAsCompleted();
                 }}
-                disabled={markingComplete}
+                disabled={markingComplete || isReadOnly}
               >
                 {markingComplete ? (
                   <>
@@ -1710,6 +1710,7 @@ export default function FieldworkDetailsPage() {
                   setUploadCategory("workpapers");
                   setUploadDialogOpen(true);
                 }}
+                disabled={isReadOnly}
               >
                 <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                 {t("Upload Workpaper")}
@@ -1763,6 +1764,7 @@ export default function FieldworkDetailsPage() {
                           setWorkpaperToDelete(wp);
                           setDeleteWorkpaperDialogOpen(true);
                         }}
+                        disabled={isReadOnly}
                       >
                         <Trash2 className="h-5 w-5 text-red-500" />
                       </Button>
@@ -1857,6 +1859,7 @@ export default function FieldworkDetailsPage() {
                             size="icon"
                             title={t("Edit")}
                             onClick={() => handleOpenEditAIWorkpaper(wp)}
+                            disabled={isReadOnly}
                           >
                             <Pencil className="h-4 w-4 text-primary-600" />
                           </Button>
@@ -1868,6 +1871,7 @@ export default function FieldworkDetailsPage() {
                               setSelectedAIWorkpaper(wp);
                               setDeleteAIWorkpaperDialogOpen(true);
                             }}
+                            disabled={isReadOnly}
                           >
                             <Trash2 className="h-4 w-4 text-red-500" />
                           </Button>
@@ -2332,6 +2336,7 @@ export default function FieldworkDetailsPage() {
                                 size="icon"
                                 title={t("Edit")}
                                 onClick={() => handleOpenViewEvidence(er, true)}
+                                disabled={isReadOnly}
                               >
                                 <Pencil className="h-4 w-4 text-primary-600" />
                               </Button>
@@ -2343,6 +2348,7 @@ export default function FieldworkDetailsPage() {
                                   setEvidenceToDelete(er);
                                   setDeleteEvidenceDialogOpen(true);
                                 }}
+                                disabled={isReadOnly}
                               >
                                 <Trash2 className="h-4 w-4 text-red-600" />
                               </Button>
@@ -2378,6 +2384,7 @@ export default function FieldworkDetailsPage() {
                 setNewDocument({ title: "", documentType: "", description: "" });
                 setNewDocumentDialogOpen(true);
               }}
+              disabled={isReadOnly}
             >
               <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("Upload Document")}
@@ -2427,6 +2434,7 @@ export default function FieldworkDetailsPage() {
                                 size="icon"
                                 title={t("Edit")}
                                 onClick={() => handleOpenViewDocument(doc, true)}
+                                disabled={isReadOnly}
                               >
                                 <Pencil className="h-4 w-4 text-primary-600" />
                               </Button>
@@ -2438,6 +2446,7 @@ export default function FieldworkDetailsPage() {
                                   setDocumentToDelete(doc);
                                   setDeleteDocumentDialogOpen(true);
                                 }}
+                                disabled={isReadOnly}
                               >
                                 <Trash2 className="h-4 w-4 text-red-600" />
                               </Button>
@@ -2535,6 +2544,7 @@ export default function FieldworkDetailsPage() {
                                 size="icon"
                                 onClick={() => router.push(`/internal-audit/fieldwork/${engagementId}/findings/${finding.id}?edit=true`)}
                                 title={t("Edit")}
+                                disabled={isReadOnly}
                               >
                                 <Pencil className="h-4 w-4 text-primary-600" />
                               </Button>
@@ -2546,6 +2556,7 @@ export default function FieldworkDetailsPage() {
                                   setDeleteFindingDialogOpen(true);
                                 }}
                                 title={t("Delete")}
+                                disabled={isReadOnly}
                               >
                                 <Trash2 className="h-4 w-4 text-red-600" />
                               </Button>
@@ -2739,7 +2750,7 @@ export default function FieldworkDetailsPage() {
             <Button variant="outline" size="sm" onClick={() => setAddFindingDialogOpen(false)}>
               {t("Cancel")}
             </Button>
-            <Button size="sm" onClick={handleAddFinding}>
+            <Button size="sm" onClick={handleAddFinding} disabled={isReadOnly}>
               {t("Add Finding")}
             </Button>
           </div>
@@ -2906,7 +2917,7 @@ export default function FieldworkDetailsPage() {
             <Button variant="outline" size="sm" onClick={() => setAddFullFindingDialogOpen(false)}>
               {t("Cancel")}
             </Button>
-            <Button size="sm" onClick={handleAddFullFinding} disabled={savingFullFinding}>
+            <Button size="sm" onClick={handleAddFullFinding} disabled={savingFullFinding || isReadOnly}>
               {savingFullFinding ? (
                 <>
                   <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
@@ -2997,7 +3008,7 @@ export default function FieldworkDetailsPage() {
             <Button variant="outline" size="sm" onClick={() => setAddEvidenceDialogOpen(false)}>
               {t("Cancel")}
             </Button>
-            <Button size="sm" onClick={handleAddEvidence}>
+            <Button size="sm" onClick={handleAddEvidence} disabled={isReadOnly}>
               {t("Add Evidence Request")}
             </Button>
           </div>
@@ -3738,12 +3749,13 @@ export default function FieldworkDetailsPage() {
                         <Eye className="h-4 w-4 text-slate-600" />
                       </a>
                       <button
-                        className="p-1 hover:bg-red-50 rounded"
+                        className="p-1 hover:bg-red-50 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                         title={t("Delete")}
                         onClick={() => {
                           // TODO: Implement delete attachment
                           toast.info(t("Delete attachment functionality coming soon"));
                         }}
+                        disabled={isReadOnly}
                       >
                         <Trash2 className="h-4 w-4 text-red-500" />
                       </button>

@@ -469,14 +469,6 @@ export default function FieldworkPage() {
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
-                      <Button
-                        variant="default"
-                        size="sm"
-                        className="bg-primary-600 hover:bg-primary-700 text-white"
-                        onClick={() => router.push(`/internal-audit/fieldwork/${engagement.id}`)}
-                      >
-                        {t("Open")}
-                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>
