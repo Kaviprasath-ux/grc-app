@@ -451,24 +451,27 @@ export default function FieldworkPage() {
                   <TableCell className="py-4 text-sm text-slate-700">{engagement.status}</TableCell>
                   <TableCell className="py-4">
                     <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-slate-600 hover:text-primary-600 hover:bg-primary-50"
-                        onClick={() => router.push(`/internal-audit/fieldwork/${engagement.id}?mode=view`)}
-                        title={t("View Details")}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-slate-600 hover:text-primary-600 hover:bg-primary-50"
-                        onClick={() => router.push(`/internal-audit/fieldwork/${engagement.id}?mode=edit`)}
-                        title={t("Edit")}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
+                      {engagement.status === "Completed" ? (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-slate-600 hover:text-primary-600 hover:bg-primary-50"
+                          onClick={() => router.push(`/internal-audit/fieldwork/${engagement.id}?mode=view`)}
+                          title={t("View Details")}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-slate-600 hover:text-primary-600 hover:bg-primary-50"
+                          onClick={() => router.push(`/internal-audit/fieldwork/${engagement.id}?mode=edit`)}
+                          title={t("Edit")}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
