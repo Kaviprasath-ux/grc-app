@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -171,6 +171,7 @@ interface UploadedFile {
 export default function FieldworkDetailsPage() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const engagementId = params.id as string;
   const { data: session } = useSession();
   const { t } = useLanguage();
@@ -179,6 +180,10 @@ export default function FieldworkDetailsPage() {
   const isAuditManager = useHasRole("AuditManager");
   const isAuditor = useHasRole("Auditor");
   const isAuditee = useHasRole("Auditee");
+
+  // Check URL mode parameter (view = read-only, edit = editable)
+  const urlMode = searchParams.get("mode");
+  const isViewMode = urlMode === "view";
 
   // Check if user is part of the audit team (not just an auditee)
   const isAuditTeam = isAuditHead || isAuditManager || isAuditor;
@@ -190,6 +195,9 @@ export default function FieldworkDetailsPage() {
 
   // Check if engagement is completed (read-only mode)
   const isCompleted = engagement?.status === "Completed";
+
+  // Page is read-only if in view mode OR engagement is completed
+  const isReadOnly = isViewMode || isCompleted;
 
   // Collapsible section states
   const [engagementDetailsOpen, setEngagementDetailsOpen] = useState(true);
@@ -1783,7 +1791,7 @@ export default function FieldworkDetailsPage() {
               <Button
                 size="sm"
                 onClick={handleGenerateAIWorkpapers}
-                disabled={generatingWorkpapers || isCompleted}
+                disabled={generatingWorkpapers || isReadOnly}
               >
                 {generatingWorkpapers ? (
                   <>
@@ -1890,7 +1898,7 @@ export default function FieldworkDetailsPage() {
             <Button
               size="sm"
               onClick={handleAddTask}
-              disabled={addingTask || isCompleted}
+              disabled={addingTask || isReadOnly}
             >
               {addingTask ? (
                 <Loader2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 animate-spin" />
@@ -1967,7 +1975,7 @@ export default function FieldworkDetailsPage() {
                             variant="outline"
                             size="sm"
                             className="text-xs"
-                            disabled={uploadingTaskDocument === task.id || isCompleted}
+                            disabled={uploadingTaskDocument === task.id || isReadOnly}
                             onClick={() => {
                               const input = document.createElement("input");
                               input.type = "file";
@@ -2014,7 +2022,7 @@ export default function FieldworkDetailsPage() {
                               variant="ghost"
                               size="icon"
                               onClick={() => handleSaveTask(task)}
-                              disabled={savingTask === task.id || isCompleted}
+                              disabled={savingTask === task.id || isReadOnly}
                               title={t("Save task")}
                             >
                               {savingTask === task.id ? (
@@ -2028,7 +2036,7 @@ export default function FieldworkDetailsPage() {
                               size="icon"
                               onClick={() => handleDeleteTask(task.id)}
                               title={t("Delete task")}
-                              disabled={isCompleted}
+                              disabled={isReadOnly}
                             >
                               <Trash2 className="h-4 w-4 text-red-600" />
                             </Button>
@@ -2067,7 +2075,7 @@ export default function FieldworkDetailsPage() {
                     size="sm"
                     className="bg-emerald-600 hover:bg-emerald-700"
                     onClick={handleAIReview}
-                    disabled={generatingAIReview || isCompleted}
+                    disabled={generatingAIReview || isReadOnly}
                   >
                     {generatingAIReview ? (
                       <>
@@ -2087,7 +2095,7 @@ export default function FieldworkDetailsPage() {
                 <Button
                   size="sm"
                   onClick={() => setAddEvidenceDialogOpen(true)}
-                  disabled={isCompleted}
+                  disabled={isReadOnly}
                 >
                   <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
                   {t("Add Evidence Request")}
@@ -2462,7 +2470,7 @@ export default function FieldworkDetailsPage() {
             <Button
               size="sm"
               onClick={() => setAddFullFindingDialogOpen(true)}
-              disabled={isCompleted}
+              disabled={isReadOnly}
             >
               <Plus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
               {t("Add Finding")}
@@ -2656,7 +2664,7 @@ export default function FieldworkDetailsPage() {
             <Button
               size="sm"
               onClick={handleUploadFiles}
-              disabled={uploading || uploadedFiles.length === 0 || isCompleted}
+              disabled={uploading || uploadedFiles.length === 0 || isReadOnly}
             >
               {uploading ? (
                 <>
@@ -3022,7 +3030,7 @@ export default function FieldworkDetailsPage() {
               variant="destructive"
               size="sm"
               onClick={handleDeleteFinding}
-              disabled={deletingFinding || isCompleted}
+              disabled={deletingFinding || isReadOnly}
             >
               {deletingFinding ? (
                 <>
@@ -3152,7 +3160,7 @@ export default function FieldworkDetailsPage() {
             <Button
               size="sm"
               onClick={handleUploadDocument}
-              disabled={uploading || isCompleted}
+              disabled={uploading || isReadOnly}
             >
               {uploading ? (
                 <>
@@ -3193,7 +3201,7 @@ export default function FieldworkDetailsPage() {
               variant="destructive"
               size="sm"
               onClick={handleDeleteDocument}
-              disabled={deletingDocument || isCompleted}
+              disabled={deletingDocument || isReadOnly}
             >
               {deletingDocument ? (
                 <>
@@ -3234,7 +3242,7 @@ export default function FieldworkDetailsPage() {
               variant="destructive"
               size="sm"
               onClick={handleDeleteWorkpaper}
-              disabled={deletingWorkpaper || isCompleted}
+              disabled={deletingWorkpaper || isReadOnly}
             >
               {deletingWorkpaper ? (
                 <>
@@ -3319,7 +3327,7 @@ export default function FieldworkDetailsPage() {
             <Button
               size="sm"
               onClick={handleUpdateAIWorkpaper}
-              disabled={savingAIWorkpaper || isCompleted}
+              disabled={savingAIWorkpaper || isReadOnly}
             >
               {savingAIWorkpaper ? (
                 <>
@@ -3360,7 +3368,7 @@ export default function FieldworkDetailsPage() {
               variant="destructive"
               size="sm"
               onClick={handleDeleteAIWorkpaper}
-              disabled={deletingAIWorkpaper || isCompleted}
+              disabled={deletingAIWorkpaper || isReadOnly}
             >
               {deletingAIWorkpaper ? (
                 <>
@@ -3448,7 +3456,7 @@ export default function FieldworkDetailsPage() {
             <Button
               size="sm"
               onClick={handleAddSelectedWorkpapers}
-              disabled={addingGeneratedWorkpapers || selectedGeneratedIds.length === 0 || isCompleted}
+              disabled={addingGeneratedWorkpapers || selectedGeneratedIds.length === 0 || isReadOnly}
             >
               {addingGeneratedWorkpapers ? (
                 <>
@@ -3573,7 +3581,7 @@ export default function FieldworkDetailsPage() {
               <Button
                 size="sm"
                 onClick={handleUpdateDocument}
-                disabled={savingDocument || isCompleted}
+                disabled={savingDocument || isReadOnly}
               >
                 {savingDocument ? (
                   <>
@@ -3902,7 +3910,7 @@ export default function FieldworkDetailsPage() {
                 <Button
                   size="sm"
                   onClick={handleUpdateEvidence}
-                  disabled={savingEvidence || isCompleted}
+                  disabled={savingEvidence || isReadOnly}
                 >
                   {savingEvidence ? (
                     <>
@@ -3975,7 +3983,7 @@ export default function FieldworkDetailsPage() {
             <Button
               size="sm"
               onClick={handleSendClarification}
-              disabled={sendingClarification || !clarificationDocument || isCompleted}
+              disabled={sendingClarification || !clarificationDocument || isReadOnly}
             >
               {sendingClarification ? (
                 <>
@@ -4106,7 +4114,7 @@ export default function FieldworkDetailsPage() {
             <Button
               size="sm"
               onClick={handleSendResponse}
-              disabled={sendingResponse || isCompleted}
+              disabled={sendingResponse || isReadOnly}
             >
               {sendingResponse ? (
                 <>
@@ -4147,7 +4155,7 @@ export default function FieldworkDetailsPage() {
               variant="destructive"
               size="sm"
               onClick={handleDeleteEvidence}
-              disabled={deletingEvidence || isCompleted}
+              disabled={deletingEvidence || isReadOnly}
             >
               {deletingEvidence ? (
                 <>
@@ -4280,7 +4288,7 @@ export default function FieldworkDetailsPage() {
             <Button
               size="sm"
               onClick={handleUploadAttachment}
-              disabled={uploadingAttachment || isCompleted}
+              disabled={uploadingAttachment || isReadOnly}
             >
               {uploadingAttachment ? (
                 <>
