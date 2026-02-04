@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,7 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Upload, X, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DatePicker } from "@/components/ui/date-picker";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -45,6 +45,13 @@ interface Impact {
   value: number;
 }
 
+interface UploadedFile {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+}
+
 export default function EditRiskPage() {
   const router = useRouter();
   const params = useParams();
@@ -53,6 +60,12 @@ export default function EditRiskPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [riskId, setRiskId] = useState("");
+
+  // File upload states
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
 
   // Reference data
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -162,6 +175,91 @@ export default function EditRiskPage() {
     const likelihood = formData.residualLikelihood ? parseInt(formData.residualLikelihood) : 0;
     const impact = formData.residualImpact ? parseInt(formData.residualImpact) : 0;
     return likelihood * impact;
+  };
+
+  // File upload handlers
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      await handleFiles(Array.from(files));
+    }
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      await handleFiles(Array.from(files));
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const handleFiles = async (files: File[]) => {
+    setUploading(true);
+    try {
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const uploadRes = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (uploadRes.ok) {
+          const uploadData = await uploadRes.json();
+          setUploadedFiles((prev) => [
+            ...prev,
+            {
+              id: uploadData.file.id || Date.now().toString(),
+              name: file.name,
+              size: file.size,
+              type: file.type,
+            },
+          ]);
+        } else {
+          toast({
+            title: t("Error"),
+            description: `${t("Failed to upload")} ${file.name}`,
+            variant: "destructive",
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error uploading files:", error);
+      toast({
+        title: t("Error"),
+        description: t("Failed to upload files"),
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeFile = (fileId: string) => {
+    setUploadedFiles((prev) => prev.filter((f) => f.id !== fileId));
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -548,6 +646,76 @@ export default function EditRiskPage() {
                   rows={2}
                 />
               </div>
+            </div>
+
+            {/* File Upload Section */}
+            <div className="mt-4">
+              <Label className="text-sm font-medium text-slate-700">{t("Attachments")}</Label>
+              <div
+                className={`mt-1.5 border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer ${
+                  isDragOver ? "border-primary bg-primary/5" : "border-slate-200 hover:border-slate-300"
+                }`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {uploading ? (
+                  <div className="flex flex-col items-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-3"></div>
+                    <p className="text-slate-500 text-sm">{t("Uploading...")}</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center">
+                    <Upload className="h-8 w-8 text-slate-400 mb-2" />
+                    <p className="text-slate-600 text-sm font-medium">{t("Drag and drop files here")}</p>
+                    <p className="text-slate-400 text-xs mt-1">{t("or click to browse")}</p>
+                    <p className="text-slate-400 text-xs mt-2">
+                      {t("Supported: PDF, DOC, DOCX, XLS, XLSX, CSV, TXT, PNG, JPG")}
+                    </p>
+                  </div>
+                )}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className="hidden"
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.png,.jpg,.jpeg"
+                  onChange={handleFileSelect}
+                  multiple
+                />
+              </div>
+
+              {/* Uploaded Files List */}
+              {uploadedFiles.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  {uploadedFiles.map((file) => (
+                    <div
+                      key={file.id}
+                      className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200"
+                    >
+                      <div className="flex items-center gap-3">
+                        <FileText className="h-5 w-5 text-slate-500" />
+                        <div>
+                          <p className="text-sm font-medium text-slate-700">{file.name}</p>
+                          <p className="text-xs text-slate-500">{formatFileSize(file.size)}</p>
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeFile(file.id);
+                        }}
+                        className="h-8 w-8 p-0 text-slate-400 hover:text-red-500"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
