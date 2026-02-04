@@ -53,6 +53,16 @@ interface User {
   email: string;
 }
 
+interface AuditType {
+  id: string;
+  name: string;
+}
+
+interface ScoringRange {
+  id: string;
+  label: string;
+}
+
 interface AuditTask {
   id: string;
   task: string;
@@ -97,6 +107,8 @@ export default function EditEngagementPage({ params }: PageProps) {
   const [users, setUsers] = useState<User[]>([]);
   const [auditees, setAuditees] = useState<User[]>([]);
   const [auditors, setAuditors] = useState<User[]>([]);
+  const [auditTypes, setAuditTypes] = useState<AuditType[]>([]);
+  const [auditRatings, setAuditRatings] = useState<ScoringRange[]>([]);
   const [historicalRisks, setHistoricalRisks] = useState<Risk[]>([]);
 
   // Form data
@@ -148,11 +160,13 @@ export default function EditEngagementPage({ params }: PageProps) {
 
   const fetchReferenceData = async () => {
     try {
-      const [deptRes, usersRes, auditeesRes, auditorsRes, engagementRes] = await Promise.all([
+      const [deptRes, usersRes, auditeesRes, auditorsRes, auditTypesRes, scoringRangesRes, engagementRes] = await Promise.all([
         fetch("/api/departments"),
         fetch("/api/users"),
-        fetch("/api/users?forAuditHead=auditees"), // Auditees managed by this Audit Head
-        fetch("/api/users?forAuditHead=auditors"), // Audit Managers for this Audit Head
+        fetch("/api/internal-audit/users?role=Auditee"), // Auditees associated with this Audit Head
+        fetch("/api/internal-audit/users?role=auditors"), // Audit Head + Audit Managers
+        fetch("/api/internal-audit/audit-types"), // Audit Types from settings
+        fetch("/api/internal-audit/scoring-ranges"), // Scoring Ranges for audit ratings
         fetch(`/api/internal-audit/engagements/${engagementId}`),
       ]);
 
@@ -168,6 +182,16 @@ export default function EditEngagementPage({ params }: PageProps) {
       if (auditorsRes.ok) {
         const auditorsData = await auditorsRes.json();
         setAuditors(auditorsData.users || auditorsData || []);
+      }
+      if (auditTypesRes.ok) {
+        const auditTypesData = await auditTypesRes.json();
+        setAuditTypes(auditTypesData || []);
+      }
+      if (scoringRangesRes.ok) {
+        const scoringRangesData = await scoringRangesRes.json();
+        // Get unique labels from scoring ranges for audit ratings
+        const uniqueLabels = [...new Set<string>(scoringRangesData.map((r: ScoringRange) => r.label))];
+        setAuditRatings(uniqueLabels.map((label) => ({ id: label, label })));
       }
 
       if (engagementRes.ok) {
@@ -508,9 +532,17 @@ export default function EditEngagementPage({ params }: PageProps) {
               <SelectValue placeholder={t("Select Audit Rating")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Satisfactory">{t("Satisfactory")}</SelectItem>
-              <SelectItem value="Needs Improvement">{t("Needs Improvement")}</SelectItem>
-              <SelectItem value="Unsatisfactory">{t("Unsatisfactory")}</SelectItem>
+              {auditRatings.length > 0 ? (
+                auditRatings.map((rating) => (
+                  <SelectItem key={rating.id} value={rating.label}>
+                    {rating.label}
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="none" disabled>
+                  {t("No ratings configured")}
+                </SelectItem>
+              )}
             </SelectContent>
           </Select>
         </div>
@@ -526,12 +558,17 @@ export default function EditEngagementPage({ params }: PageProps) {
               <SelectValue placeholder={t("Select Audit Type")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Internal Audit">{t("Internal Audit")}</SelectItem>
-              <SelectItem value="Compliance Audit">{t("Compliance Audit")}</SelectItem>
-              <SelectItem value="Financial Audit">{t("Financial Audit")}</SelectItem>
-              <SelectItem value="Operational Audit">{t("Operational Audit")}</SelectItem>
-              <SelectItem value="IT Audit">{t("IT Audit")}</SelectItem>
-              <SelectItem value="Assurance">{t("Assurance")}</SelectItem>
+              {auditTypes.length > 0 ? (
+                auditTypes.map((type) => (
+                  <SelectItem key={type.id} value={type.name}>
+                    {type.name}
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="none" disabled>
+                  {t("No audit types configured")}
+                </SelectItem>
+              )}
             </SelectContent>
           </Select>
         </div>

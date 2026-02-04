@@ -83,6 +83,16 @@ interface User {
   email: string;
 }
 
+interface AuditType {
+  id: string;
+  name: string;
+}
+
+interface ScoringRange {
+  id: string;
+  label: string;
+}
+
 interface Engagement {
   id: string;
   auditId: string;
@@ -188,6 +198,8 @@ export default function AuditPlanningPage() {
   const [historicalRisks, setHistoricalRisks] = useState<Risk[]>([]);
   const [auditors, setAuditors] = useState<User[]>([]);
   const [auditees, setAuditees] = useState<User[]>([]);
+  const [auditTypes, setAuditTypes] = useState<AuditType[]>([]);
+  const [auditRatings, setAuditRatings] = useState<ScoringRange[]>([]);
   const [saving, setSaving] = useState(false);
   const [engagementForm, setEngagementForm] = useState<EngagementFormData>(emptyFormData);
   const [tasks, setTasks] = useState<AuditTask[]>([...defaultTasks]);
@@ -288,9 +300,11 @@ export default function AuditPlanningPage() {
 
   const fetchAuditorsAndAuditees = async () => {
     try {
-      const [auditeesRes, auditorsRes] = await Promise.all([
-        fetch("/api/users?forAuditHead=auditees"),
-        fetch("/api/users?forAuditHead=auditors"),
+      const [auditeesRes, auditorsRes, auditTypesRes, scoringRangesRes] = await Promise.all([
+        fetch("/api/internal-audit/users?role=Auditee"),
+        fetch("/api/internal-audit/users?role=auditors"),
+        fetch("/api/internal-audit/audit-types"),
+        fetch("/api/internal-audit/scoring-ranges"),
       ]);
 
       if (auditeesRes.ok) {
@@ -300,6 +314,16 @@ export default function AuditPlanningPage() {
       if (auditorsRes.ok) {
         const auditorsData = await auditorsRes.json();
         setAuditors(auditorsData.users || auditorsData || []);
+      }
+      if (auditTypesRes.ok) {
+        const auditTypesData = await auditTypesRes.json();
+        setAuditTypes(auditTypesData || []);
+      }
+      if (scoringRangesRes.ok) {
+        const scoringRangesData = await scoringRangesRes.json();
+        // Get unique labels from scoring ranges for audit ratings
+        const uniqueLabels = [...new Set<string>(scoringRangesData.map((r: ScoringRange) => r.label))];
+        setAuditRatings(uniqueLabels.map((label) => ({ id: label, label })));
       }
     } catch (error) {
       console.error("Failed to fetch auditors/auditees:", error);
@@ -781,9 +805,17 @@ export default function AuditPlanningPage() {
               <SelectValue placeholder={t("Select rating")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Satisfactory">{t("Satisfactory")}</SelectItem>
-              <SelectItem value="Needs Improvement">{t("Needs Improvement")}</SelectItem>
-              <SelectItem value="Unsatisfactory">{t("Unsatisfactory")}</SelectItem>
+              {auditRatings.length > 0 ? (
+                auditRatings.map((rating) => (
+                  <SelectItem key={rating.id} value={rating.label}>
+                    {rating.label}
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="none" disabled>
+                  {t("No ratings configured")}
+                </SelectItem>
+              )}
             </SelectContent>
           </Select>
         </div>
@@ -797,12 +829,17 @@ export default function AuditPlanningPage() {
               <SelectValue placeholder={t("Select type")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Internal Audit">{t("Internal Audit")}</SelectItem>
-              <SelectItem value="Compliance Audit">{t("Compliance Audit")}</SelectItem>
-              <SelectItem value="Financial Audit">{t("Financial Audit")}</SelectItem>
-              <SelectItem value="Operational Audit">{t("Operational Audit")}</SelectItem>
-              <SelectItem value="IT Audit">{t("IT Audit")}</SelectItem>
-              <SelectItem value="Assurance">{t("Assurance")}</SelectItem>
+              {auditTypes.length > 0 ? (
+                auditTypes.map((type) => (
+                  <SelectItem key={type.id} value={type.name}>
+                    {type.name}
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="none" disabled>
+                  {t("No audit types configured")}
+                </SelectItem>
+              )}
             </SelectContent>
           </Select>
         </div>
