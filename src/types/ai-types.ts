@@ -242,34 +242,3 @@ export interface FrameworkGenerationResult {
     data?: any;
 }
 
-// Risk Semantic Match types
-export interface RiskSemanticMatchJobResponse {
-  job_id: string;
-  status: string;
-  message?: string;
-}
-
-export interface RiskSemanticMatchStatus {
-  job_id?: string;
-  status: 'queued' | 'processing' | 'completed' | 'error';
-  message?: string;
-  progress?: number;
-}
-
-export interface GeneratedRisk {
-  id?: string;
-  name: string;
-  description?: string;
-  category?: string;
-  likelihood?: number;
-  impact?: number;
-  [key: string]: any;
-}
-
-export interface RiskSemanticMatchResult {
-  status: string;
-  message?: string;
-  matched_count?: number;
-  new_count?: number;
-  data?: any;
-}
