@@ -52,6 +52,17 @@ export const POST = withAuth(
           })),
           skipDuplicates: true,
         });
+
+        // Update evidence status to Draft if currently "Not Uploaded"
+        await prisma.evidence.updateMany({
+          where: {
+            id: { in: evidenceIds },
+            status: "Not Uploaded",
+          },
+          data: {
+            status: "Draft",
+          },
+        });
       }
 
       // Fetch updated artifact with linked evidences
