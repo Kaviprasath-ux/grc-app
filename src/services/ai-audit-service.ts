@@ -68,16 +68,17 @@ export const aiAuditService = {
 
     /**
      * Updates the status and result of an AI job.
+     * jobId is the provider job id (e.g. from RunPod).
      */
     async updateJobStatus(jobId: string, status: string, result?: any, error?: string) {
         try {
-            return await (prisma.aIJob as any).update({
-                where: { id: jobId } as any,
+            return await prisma.aIJob.update({
+                where: { providerJobId: jobId },
                 data: {
                     status: status,
-                    result: result ? JSON.stringify(result) : undefined,
-                    error: error,
-                } as any,
+                    ...(result !== undefined && { result: JSON.stringify(result) }),
+                    ...(error !== undefined && { error: error }),
+                },
             });
         } catch (err) {
             console.error("Failed to update AI job status:", err);

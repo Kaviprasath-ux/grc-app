@@ -19,11 +19,13 @@ class AIApiClient {
             console.log(`✓ API Secret loaded (${API_SECRET.substring(0, 4)}...)`);
         }
         
-        const headers = {
-            "Content-Type": "application/json",
+        // Omit Content-Type for FormData - fetch sets it with boundary automatically
+        const isFormData = options.body instanceof FormData;
+        const headers: Record<string, string> = {
             // Backend expects 'auth' header for API key
             "auth": API_SECRET || "",
-            ...options.headers,
+            ...(isFormData ? {} : { "Content-Type": "application/json" }),
+            ...(options.headers as Record<string, string> || {}),
         };
 
         try {

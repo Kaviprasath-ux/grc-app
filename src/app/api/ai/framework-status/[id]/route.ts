@@ -96,15 +96,16 @@ async function handler(
   Next Poll         : In 15 seconds
   Keep polling...
 `);
-        } else if (result.status === 'failed' || result.status === 'FAILED') {
+        } else if (['failed', 'FAILED', 'error', 'ERROR'].includes(result.status)) {
             console.log(`
-❌ JOB FAILED
-  Status            : FAILED
+❌ JOB FAILED / ERROR
+  Status            : ${result.status}
   Error             : ${result.error || 'Unknown error'}
   Error Code        : ${result.error_code || 'N/A'}
-  Message           : ${result.error_message || 'No message'}
+  Message           : ${result.error_message || result.message || 'No message'}
+  Detail            : ${JSON.stringify(result.detail || result)}
   
-  Action Required   : Review error and retry
+  Action Required   : Review error and retry. Check RunPod/Python backend logs.
 `);
         }
 

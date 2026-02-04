@@ -47,9 +47,9 @@ async function handler(
 ⏱️  Fetching results from backend...
 `);
 
-        // Call Python backend
         const response = await aiApiClient.get(endpoint);
-        const aiResult = response.data;
+        const rawData = response.data;
+        const aiResult = rawData?.result ?? rawData;
 
         console.log(`
 📋 FRAMEWORK DATA RECEIVED FROM AI BACKEND
