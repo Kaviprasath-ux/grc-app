@@ -133,7 +133,6 @@ interface EvidenceRequest {
   title: string;
   description: string;
   status: string;
-  dueDate: string | null;
   auditee: string;
   auditeeId?: string | null;
   numberOfSamples?: string | null;
@@ -270,7 +269,6 @@ export default function FieldworkDetailsPage() {
     description: "",
     auditee: "",
     auditeeId: "",
-    dueDate: "",
     status: "",
     numberOfSamples: "",
   });
@@ -358,7 +356,6 @@ export default function FieldworkDetailsPage() {
     description: "",
     auditee: "",
     auditeeId: "",
-    dueDate: "",
     numberOfSamples: "",
   });
 
@@ -1020,7 +1017,6 @@ export default function FieldworkDetailsPage() {
       description: er.description || "",
       auditee: er.auditee || "",
       auditeeId: er.auditeeId || "",
-      dueDate: er.dueDate ? new Date(er.dueDate).toISOString().split("T")[0] : "",
       status: er.status || "Pending",
       numberOfSamples: er.numberOfSamples || "",
     });
@@ -1047,7 +1043,6 @@ export default function FieldworkDetailsPage() {
             description: editEvidence.description,
             auditee: editEvidence.auditee,
             auditeeId: editEvidence.auditeeId || null,
-            dueDate: editEvidence.dueDate || null,
             status: editEvidence.status,
             numberOfSamples: editEvidence.numberOfSamples || null,
           }),
@@ -1459,7 +1454,6 @@ export default function FieldworkDetailsPage() {
         description: newEvidence.description,
         auditee: newEvidence.auditee,
         auditeeId: newEvidence.auditeeId || null,
-        dueDate: newEvidence.dueDate,
         numberOfSamples: newEvidence.numberOfSamples || null,
         status: "Pending",
       };
@@ -1473,7 +1467,7 @@ export default function FieldworkDetailsPage() {
       if (response.ok) {
         toast.success(t("Evidence request added successfully"));
         setAddEvidenceDialogOpen(false);
-        setNewEvidence({ title: "", description: "", auditee: "", auditeeId: "", dueDate: "", numberOfSamples: "" });
+        setNewEvidence({ title: "", description: "", auditee: "", auditeeId: "", numberOfSamples: "" });
         fetchEvidenceRequests();
       } else {
         toast.error(t("Failed to add evidence request"));
@@ -2252,7 +2246,6 @@ export default function FieldworkDetailsPage() {
                     <TableHead className="text-xs font-semibold text-slate-600">{t("Description")}</TableHead>
                     <TableHead className="text-xs font-semibold text-slate-600">{t("Auditee")}</TableHead>
                     <TableHead className="text-xs font-semibold text-slate-600">{t("Samples")}</TableHead>
-                    <TableHead className="text-xs font-semibold text-slate-600">{t("Due Date")}</TableHead>
                     <TableHead className="text-xs font-semibold text-slate-600">{t("Status")}</TableHead>
                     <TableHead className="text-xs font-semibold text-slate-600">{t("AI Review")}</TableHead>
                     <TableHead className="text-xs font-semibold text-slate-600">{t("Action")}</TableHead>
@@ -2273,7 +2266,6 @@ export default function FieldworkDetailsPage() {
                       <TableCell className="max-w-[200px] truncate">{er.description}</TableCell>
                       <TableCell>{er.auditee || "-"}</TableCell>
                       <TableCell>{er.numberOfSamples || "-"}</TableCell>
-                      <TableCell>{formatDate(er.dueDate)}</TableCell>
                       <TableCell>
                         <span className={`px-2 py-1 rounded text-xs font-medium ${
                           er.status === 'Reviewed' ? 'bg-emerald-100 text-emerald-800' :
@@ -2992,14 +2984,6 @@ export default function FieldworkDetailsPage() {
                 value={newEvidence.numberOfSamples}
                 onChange={(e) => setNewEvidence({ ...newEvidence, numberOfSamples: e.target.value })}
                 placeholder={t("Enter number of samples required")}
-              />
-            </div>
-            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-              <Label className="text-end text-slate-500">{t("Due Date")}</Label>
-              <DatePicker
-                value={newEvidence.dueDate}
-                onChange={(date) => setNewEvidence({ ...newEvidence, dueDate: date ? date.toISOString().split('T')[0] : "" })}
-                placeholder={t("Select due date")}
               />
             </div>
           </div>
@@ -3767,12 +3751,6 @@ export default function FieldworkDetailsPage() {
             {/* View mode fields */}
             {!isEditingEvidence && (
               <>
-                <div className="space-y-2">
-                  <Label className="text-slate-700 font-medium">{t("Due Date")}</Label>
-                  <div className="p-3 bg-slate-50 rounded-md border">
-                    {selectedEvidence?.dueDate ? formatDate(selectedEvidence.dueDate) : "-"}
-                  </div>
-                </div>
                 <div className="space-y-2">
                   <Label className="text-slate-700 font-medium">{t("Status")}</Label>
                   <div className="p-3 bg-slate-50 rounded-md border">
