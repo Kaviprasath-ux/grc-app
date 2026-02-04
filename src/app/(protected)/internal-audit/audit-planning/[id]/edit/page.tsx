@@ -58,6 +58,11 @@ interface AuditType {
   name: string;
 }
 
+interface Process {
+  id: string;
+  name: string;
+}
+
 interface ScoringRange {
   id: string;
   label: string;
@@ -110,6 +115,7 @@ export default function EditEngagementPage({ params }: PageProps) {
   const [auditTypes, setAuditTypes] = useState<AuditType[]>([]);
   const [auditRatings, setAuditRatings] = useState<ScoringRange[]>([]);
   const [historicalRisks, setHistoricalRisks] = useState<Risk[]>([]);
+  const [processes, setProcesses] = useState<Process[]>([]);
 
   // Form data
   const [formData, setFormData] = useState({
@@ -118,6 +124,7 @@ export default function EditEngagementPage({ params }: PageProps) {
     engagementScope: "",
     departmentId: "",
     linkedRiskIds: [] as string[],
+    processId: "",
     auditRating: "",
     auditType: "",
     auditorId: "",
@@ -160,13 +167,14 @@ export default function EditEngagementPage({ params }: PageProps) {
 
   const fetchReferenceData = async () => {
     try {
-      const [deptRes, usersRes, auditeesRes, auditorsRes, auditTypesRes, scoringRangesRes, engagementRes] = await Promise.all([
+      const [deptRes, usersRes, auditeesRes, auditorsRes, auditTypesRes, scoringRangesRes, processesRes, engagementRes] = await Promise.all([
         fetch("/api/departments"),
         fetch("/api/users"),
         fetch("/api/internal-audit/users?role=Auditee"), // Auditees associated with this Audit Head
         fetch("/api/internal-audit/users?role=auditors"), // Audit Head + Audit Managers
         fetch("/api/internal-audit/audit-types"), // Audit Types from settings
         fetch("/api/internal-audit/scoring-ranges"), // Scoring Ranges for audit ratings
+        fetch("/api/internal-audit/processes"), // Internal Audit Processes
         fetch(`/api/internal-audit/engagements/${engagementId}`),
       ]);
 
@@ -193,6 +201,10 @@ export default function EditEngagementPage({ params }: PageProps) {
         const uniqueLabels = [...new Set<string>(scoringRangesData.map((r: ScoringRange) => r.label))];
         setAuditRatings(uniqueLabels.map((label) => ({ id: label, label })));
       }
+      if (processesRes.ok) {
+        const processesData = await processesRes.json();
+        setProcesses(processesData || []);
+      }
 
       if (engagementRes.ok) {
         const engagement = await engagementRes.json();
@@ -204,6 +216,7 @@ export default function EditEngagementPage({ params }: PageProps) {
           engagementScope: engagement.engagementScope || "",
           departmentId: engagement.departmentId || "",
           linkedRiskIds: engagement.linkedRiskIds || [],
+          processId: engagement.processId || "",
           auditRating: engagement.auditRating || "",
           auditType: engagement.auditType || "",
           auditorId: engagement.assignedAuditorId || "",
@@ -519,6 +532,32 @@ export default function EditEngagementPage({ params }: PageProps) {
               <p className="text-gray-500 text-center">{t("No items found")}</p>
             )}
           </div>
+        </div>
+
+        {/* Process */}
+        <div className="space-y-2">
+          <Label className="text-blue-800">{t("Process")}</Label>
+          <Select
+            value={formData.processId}
+            onValueChange={(value) => setFormData({ ...formData, processId: value })}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder={t("Select Process")} />
+            </SelectTrigger>
+            <SelectContent>
+              {processes.length > 0 ? (
+                processes.map((process) => (
+                  <SelectItem key={process.id} value={process.id}>
+                    {process.name}
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="none" disabled>
+                  {t("No processes available")}
+                </SelectItem>
+              )}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Audit Rating */}

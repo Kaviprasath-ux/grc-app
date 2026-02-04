@@ -122,6 +122,11 @@ interface UploadedFile {
   type: string;
 }
 
+interface Process {
+  id: string;
+  name: string;
+}
+
 interface EngagementFormData {
   engagementTitle: string;
   engagementObjective: string;
@@ -132,6 +137,7 @@ interface EngagementFormData {
   auditType: string;
   auditorId: string;
   auditeeId: string;
+  processId: string;
   startDate: string;
   targetDate: string;
   initialObservation: string;
@@ -157,6 +163,7 @@ const emptyFormData: EngagementFormData = {
   auditType: "",
   auditorId: "",
   auditeeId: "",
+  processId: "",
   startDate: "",
   targetDate: "",
   initialObservation: "",
@@ -200,6 +207,7 @@ export default function AuditPlanningPage() {
   const [auditees, setAuditees] = useState<User[]>([]);
   const [auditTypes, setAuditTypes] = useState<AuditType[]>([]);
   const [auditRatings, setAuditRatings] = useState<ScoringRange[]>([]);
+  const [processes, setProcesses] = useState<Process[]>([]);
   const [saving, setSaving] = useState(false);
   const [engagementForm, setEngagementForm] = useState<EngagementFormData>(emptyFormData);
   const [tasks, setTasks] = useState<AuditTask[]>([...defaultTasks]);
@@ -300,11 +308,12 @@ export default function AuditPlanningPage() {
 
   const fetchAuditorsAndAuditees = async () => {
     try {
-      const [auditeesRes, auditorsRes, auditTypesRes, scoringRangesRes] = await Promise.all([
+      const [auditeesRes, auditorsRes, auditTypesRes, scoringRangesRes, processesRes] = await Promise.all([
         fetch("/api/internal-audit/users?role=Auditee"),
         fetch("/api/internal-audit/users?role=auditors"),
         fetch("/api/internal-audit/audit-types"),
         fetch("/api/internal-audit/scoring-ranges"),
+        fetch("/api/internal-audit/processes"),
       ]);
 
       if (auditeesRes.ok) {
@@ -324,6 +333,10 @@ export default function AuditPlanningPage() {
         // Get unique labels from scoring ranges for audit ratings
         const uniqueLabels = [...new Set<string>(scoringRangesData.map((r: ScoringRange) => r.label))];
         setAuditRatings(uniqueLabels.map((label) => ({ id: label, label })));
+      }
+      if (processesRes.ok) {
+        const processesData = await processesRes.json();
+        setProcesses(processesData || []);
       }
     } catch (error) {
       console.error("Failed to fetch auditors/auditees:", error);
@@ -372,6 +385,7 @@ export default function AuditPlanningPage() {
           auditType: data.auditType || "",
           auditorId: data.assignedAuditorId || "",
           auditeeId: data.auditeeId || "",
+          processId: data.processId || "",
           startDate: data.plannedStartDate ? data.plannedStartDate.split("T")[0] : "",
           targetDate: data.plannedEndDate ? data.plannedEndDate.split("T")[0] : "",
           initialObservation: data.initialObservation || "",
@@ -791,6 +805,32 @@ export default function AuditPlanningPage() {
             <p className="text-slate-400 text-center text-sm">{t("No items found")}</p>
           )}
         </div>
+      </div>
+
+      {/* Process */}
+      <div className="space-y-2">
+        <Label className="text-sm font-medium text-slate-700">{t("Process")}</Label>
+        <Select
+          value={engagementForm.processId}
+          onValueChange={(value) => setEngagementForm({ ...engagementForm, processId: value })}
+        >
+          <SelectTrigger className="w-full bg-white">
+            <SelectValue placeholder={t("Select Process")} />
+          </SelectTrigger>
+          <SelectContent>
+            {processes.length > 0 ? (
+              processes.map((process) => (
+                <SelectItem key={process.id} value={process.id}>
+                  {process.name}
+                </SelectItem>
+              ))
+            ) : (
+              <SelectItem value="none" disabled>
+                {t("No processes available")}
+              </SelectItem>
+            )}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Two columns for Audit Rating and Audit Type */}

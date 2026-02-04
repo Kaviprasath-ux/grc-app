@@ -169,7 +169,7 @@ export default function AddEngagementPage() {
         fetch("/api/internal-audit/users?role=auditors"), // Audit Head + Audit Managers
         fetch("/api/internal-audit/audit-types"), // Audit Types from settings
         fetch("/api/internal-audit/scoring-ranges"), // Scoring Ranges for audit ratings
-        fetch("/api/processes"), // Processes
+        fetch("/api/internal-audit/processes"), // Internal Audit Processes
       ]);
 
       if (deptRes.ok) setDepartments(await deptRes.json());
