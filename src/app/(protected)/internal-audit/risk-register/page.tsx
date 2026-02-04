@@ -25,9 +25,12 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -125,6 +128,34 @@ interface InternalAuditRisk {
   engagementId?: string | null; // Link to audit engagement/plan
 }
 
+const RISK_LEVEL_MAP: Record<string, string> = {
+  Extreme: "critical",
+  High: "high",
+  Medium: "medium",
+  Low: "low",
+};
+
+interface AuditTask {
+  task_name: string;
+  audit_steps: string[];
+  audit_checklist_questions: string[];
+  evidence_to_collect: string[];
+}
+
+interface AuditPlanItem {
+  audit_code: string;
+  audit_title: string;
+  audit_objective: string;
+  audit_scope: string;
+  associated_risks: string[];
+  audit_tasks: AuditTask[];
+}
+
+interface FieldworkAuditPlanResponse {
+  department_name: string;
+  audit_plan: AuditPlanItem[];
+}
+
 interface InternalAuditRiskDetail {
   id: string;
   riskId: string;
@@ -195,6 +226,11 @@ export default function RiskRegisterPage() {
 
   // AI Audit Selection dialog (new - frontend filtered)
   const [aiAuditSelectionOpen, setAiAuditSelectionOpen] = useState(false);
+
+  // Fieldwork Audit Plan (from Generate Audit Plan per department)
+  const [generatingFieldworkDeptId, setGeneratingFieldworkDeptId] = useState<string | null>(null);
+  const [fieldworkPlanResult, setFieldworkPlanResult] = useState<FieldworkAuditPlanResponse | null>(null);
+  const [fieldworkPlanDialogOpen, setFieldworkPlanDialogOpen] = useState(false);
 
   // Check if user is Audit Head
   const isAuditHead = session?.user?.roles?.some(
@@ -837,6 +873,41 @@ export default function RiskRegisterPage() {
     setAiAuditSelectionOpen(true);
   };
 
+  // Generate fieldwork audit plan for a department (calls fieldwork-audit-plan API)
+  const handleGenerateFieldworkPlan = async (group: { department: Department; risks: InternalAuditRisk[] }) => {
+    const deptId = group.department.id;
+    setGeneratingFieldworkDeptId(deptId);
+    try {
+      const risksPayload = group.risks.length
+        ? group.risks.map((r) => ({
+            associated_risk: (r.riskDescription || r.riskName || "").trim() || r.riskId,
+            risks_level: RISK_LEVEL_MAP[r.riskLevel ?? ""] || "medium",
+          }))
+        : [{ associated_risk: `General audit focus for ${group.department.name}`, risks_level: "medium" as const }];
+
+      const payload = { department_name: group.department.name, risks: risksPayload };
+      const res = await fetch("/api/internal-audit/fieldwork-audit-plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        toast({ title: t("Error"), description: data?.error || t("Failed to generate audit plan"), variant: "destructive" });
+        return;
+      }
+      setFieldworkPlanResult(data as FieldworkAuditPlanResponse);
+      setFieldworkPlanDialogOpen(true);
+      toast({ title: t("Success"), description: t("Audit plan generated") });
+    } catch (e) {
+      console.error("Generate fieldwork audit plan error:", e);
+      toast({ title: t("Error"), description: t("Failed to generate audit plan"), variant: "destructive" });
+    } finally {
+      setGeneratingFieldworkDeptId(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -1339,18 +1410,26 @@ export default function RiskRegisterPage() {
                           <h3 className="font-semibold text-slate-800">{group.department.name}</h3>
                           <span className="text-xs text-slate-500">({group.risks.length} {t("risks")})</span>
                         </div>
-                        {/* Generate Audit Plan button - visible only to Audit Head, non-functional placeholder */}
+                        {/* Generate Audit Plan button - calls fieldwork-audit-plan API */}
                         {isAuditHead && (
                           <Button
                             size="sm"
                             variant="outline"
                             className="bg-primary-50 hover:bg-primary-100 text-primary-700 border-primary-200"
-                            onClick={() => {
-                              // Placeholder - no action
-                            }}
+                            onClick={() => handleGenerateFieldworkPlan(group)}
+                            disabled={!!generatingFieldworkDeptId}
                           >
-                            <FileText className="h-4 w-4 mr-2" />
-                            {t("Generate Audit Plan")}
+                            {generatingFieldworkDeptId === group.department.id ? (
+                              <>
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                {t("Generating...")}
+                              </>
+                            ) : (
+                              <>
+                                <FileText className="h-4 w-4 mr-2" />
+                                {t("Generate Audit Plan")}
+                              </>
+                            )}
                           </Button>
                         )}
                       </div>
@@ -1397,6 +1476,69 @@ export default function RiskRegisterPage() {
               {t("Cancel")}
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Fieldwork Audit Plan Result Dialog */}
+      <Dialog open={fieldworkPlanDialogOpen} onOpenChange={setFieldworkPlanDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{t("Generated Audit Plan")}</DialogTitle>
+            <DialogDescription>
+              {fieldworkPlanResult?.department_name && `${t("Department")}: ${fieldworkPlanResult.department_name}`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {fieldworkPlanResult?.audit_plan?.length ? (
+              fieldworkPlanResult.audit_plan.map((plan, idx) => (
+                <Card key={idx}>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">
+                      {plan.audit_code} – {plan.audit_title}
+                    </CardTitle>
+                    {plan.audit_objective && (
+                      <CardDescription>{t("Objective")}: {plan.audit_objective}</CardDescription>
+                    )}
+                    {plan.audit_scope && (
+                      <p className="text-sm text-muted-foreground">{t("Scope")}: {plan.audit_scope}</p>
+                    )}
+                    {plan.associated_risks?.length > 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        {t("Associated risks")}: {plan.associated_risks.join("; ")}
+                      </p>
+                    )}
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {plan.audit_tasks?.map((task, ti) => (
+                      <div key={ti} className="rounded border p-3 text-sm">
+                        <p className="font-medium">{task.task_name}</p>
+                        {task.audit_steps?.length > 0 && (
+                          <ul className="list-disc list-inside mt-1 text-muted-foreground">
+                            {task.audit_steps.slice(0, 3).map((s, si) => (
+                              <li key={si}>{s}</li>
+                            ))}
+                            {task.audit_steps.length > 3 && (
+                              <li>…and {task.audit_steps.length - 3} more</li>
+                            )}
+                          </ul>
+                        )}
+                        {task.evidence_to_collect?.length > 0 && (
+                          <p className="mt-1 text-xs">{t("Evidence")}: {task.evidence_to_collect.slice(0, 2).join(", ")}</p>
+                        )}
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <p className="text-muted-foreground">{t("No audit plans in response.")}</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setFieldworkPlanDialogOpen(false)}>
+              {t("Close")}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

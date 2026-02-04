@@ -44,6 +44,8 @@ export const GET = withAuth(
         auditeeId: er.auditeeId || null,
         numberOfSamples: er.sampleSize || null,
         attachmentCount: er.attachments?.length ?? 0,
+        aiReviewStatus: er.aiReviewStatus || null,
+        aiReviewComment: er.aiReviewComment || null,
       }));
 
       return NextResponse.json(transformed);

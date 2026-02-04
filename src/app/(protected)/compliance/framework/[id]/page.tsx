@@ -1449,6 +1449,38 @@ export default function FrameworkDetailPage({
     return true;
   });
 
+  // Use dummy data if no requirements from API - memoized for stable references
+  // MUST be called unconditionally (before any early return) to follow Rules of Hooks
+  const hasApiRequirements = useMemo(() => {
+    return framework?.requirements && framework.requirements.length > 0;
+  }, [framework?.requirements]);
+
+  const requirementsToUse = useMemo(() => {
+    return hasApiRequirements && framework ? framework.requirements : [];
+  }, [hasApiRequirements, framework?.requirements]);
+
+  const requirementHierarchy = useMemo(() => {
+    return hasApiRequirements && framework
+      ? buildHierarchy(requirementsToUse)
+      : dummyRequirements;
+  }, [hasApiRequirements, requirementsToUse, framework]);
+
+  const filteredHierarchy = filterRequirements(requirementHierarchy);
+
+  const flatRequirements = useMemo(() => {
+    return hasApiRequirements && framework
+      ? requirementsToUse
+      : flattenRequirements(dummyRequirements);
+  }, [hasApiRequirements, requirementsToUse, framework]);
+
+  const soaTotalPages = Math.ceil(flatRequirements.length / SOA_PAGE_SIZE);
+  const soaStartIndex = soaPage * SOA_PAGE_SIZE;
+  const soaEndIndex = Math.min(soaStartIndex + SOA_PAGE_SIZE, flatRequirements.length);
+
+  const soaRequirements = useMemo(() => {
+    return flatRequirements.slice(soaStartIndex, soaEndIndex);
+  }, [flatRequirements, soaStartIndex, soaEndIndex]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
@@ -1473,39 +1505,6 @@ export default function FrameworkDetailPage({
       </div>
     );
   }
-
-  // Use dummy data if no requirements from API - memoized for stable references
-  const hasApiRequirements = useMemo(() => {
-    return framework.requirements && framework.requirements.length > 0;
-  }, [framework.requirements]);
-
-  const requirementsToUse = useMemo(() => {
-    return hasApiRequirements ? framework.requirements : [];
-  }, [hasApiRequirements, framework.requirements]);
-
-  // For display, use dummy data as hierarchy (already structured with children)
-  const requirementHierarchy = useMemo(() => {
-    return hasApiRequirements
-      ? buildHierarchy(requirementsToUse)
-      : dummyRequirements;
-  }, [hasApiRequirements, requirementsToUse]);
-
-  const filteredHierarchy = filterRequirements(requirementHierarchy);
-
-  // SOA data - memoized to prevent position changes during editing
-  const flatRequirements = useMemo(() => {
-    return hasApiRequirements
-      ? requirementsToUse
-      : flattenRequirements(dummyRequirements);
-  }, [hasApiRequirements, requirementsToUse]);
-
-  const soaTotalPages = Math.ceil(flatRequirements.length / SOA_PAGE_SIZE);
-  const soaStartIndex = soaPage * SOA_PAGE_SIZE;
-  const soaEndIndex = Math.min(soaStartIndex + SOA_PAGE_SIZE, flatRequirements.length);
-
-  const soaRequirements = useMemo(() => {
-    return flatRequirements.slice(soaStartIndex, soaEndIndex);
-  }, [flatRequirements, soaStartIndex, soaEndIndex]);
 
   return (
     <div className="space-y-6">

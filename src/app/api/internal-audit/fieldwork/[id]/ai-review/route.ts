@@ -42,9 +42,9 @@ export const POST = withAuth(
     try {
       const { id: engagementId } = await context.params;
 
-      let body: { evidenceRequestIds?: string[] };
+      let body: { evidenceRequestIds?: string[]; question?: string };
       try {
-        body = (await req.json()) as { evidenceRequestIds?: string[] };
+        body = (await req.json()) as { evidenceRequestIds?: string[]; question?: string };
       } catch {
         return NextResponse.json(
           { error: 'Invalid JSON body' },
@@ -182,10 +182,9 @@ export const POST = withAuth(
       const titles = evidenceRequests.map((er) => er.title).filter(Boolean);
       const descriptions = evidenceRequests.map((er) => er.description).filter(Boolean);
       const question =
-        'Review the submitted evidence for these audit evidence requests: ' +
-        (titles.length ? titles.join('; ') : 'evidence requests') +
-        (descriptions.length ? '. Descriptions: ' + descriptions.join(' | ') : '') +
-        '. Provide an AI assessment of completeness and compliance.';
+        typeof body.question === 'string' && body.question.trim()
+          ? body.question.trim()
+          : [titles.join('; '), descriptions.join(' | ')].filter(Boolean).join(' ') || 'Review evidence';
 
       console.log('[AI Review] Ingest completed, calling audit_query...');
 
@@ -209,13 +208,32 @@ export const POST = withAuth(
         );
       }
 
-      const queryData = (await queryRes.json()) as unknown;
+      const queryData = (await queryRes.json()) as Record<string, unknown>;
       const review = extractReviewFromQueryResponse(queryData);
+      const answer = (typeof queryData?.answer === 'string' ? queryData.answer : review) || '';
+      const apiStatus = (typeof queryData?.status === 'string' ? queryData.status : null) || '';
+
+      // Persist answer and status to each evidence request
+      if (answer || apiStatus) {
+        for (const er of evidenceRequests) {
+          await prisma.fieldworkEvidenceRequest.update({
+            where: { id: er.id },
+            data: {
+              aiReviewStatus: apiStatus || null,
+              aiReviewComment: answer || null,
+            },
+          });
+        }
+      }
 
       console.log('[AI Review] Success, returning review to client');
 
       return NextResponse.json({
         review,
+        answer,
+        status: apiStatus,
+        score: queryData?.score,
+        uuid: queryData?.uuid,
         reviewedCount: evidenceRequests.length,
         generatedAt: new Date().toISOString(),
       });
