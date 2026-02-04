@@ -304,6 +304,10 @@ model User {
   reportingManagerId  String?
   reportingManager    User?            @relation("ReportingManagerReports", fields: [reportingManagerId], references: [id])
   directReports       User[]           @relation("ReportingManagerReports")
+  // Creator - tracks who created this user (for DR/DC framework visibility)
+  createdById         String?
+  createdBy           User?            @relation("UserCreator", fields: [createdById], references: [id])
+  createdUsers        User[]           @relation("UserCreator")
   createdAt           DateTime    @default(now())
   updatedAt           DateTime    @updatedAt
   // Relations

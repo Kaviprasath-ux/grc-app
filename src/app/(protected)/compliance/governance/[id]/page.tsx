@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { usePermissions, useHasRole } from "@/hooks/usePermissions";
 import { PermissionGate } from "@/components/ui/permission-gate";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -69,6 +70,7 @@ import {
   Search,
   File,
   FileType,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -177,8 +179,17 @@ interface Control {
   id: string;
   controlCode: string;
   name: string;
+  description?: string;
   status: string;
-  domain?: { name: string } | null;
+  entities?: string;
+  functionalGrouping?: string;
+  domain?: { id: string; name: string } | null;
+  framework?: { id: string; name: string } | null;
+}
+
+interface ControlDomain {
+  id: string;
+  name: string;
 }
 
 interface VaultDocument {
@@ -309,7 +320,12 @@ export default function GovernanceDetailPage() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [availableControls, setAvailableControls] = useState<Control[]>([]);
-  const [selectedControlId, setSelectedControlId] = useState("");
+  const [controlDomains, setControlDomains] = useState<ControlDomain[]>([]);
+  const [selectedControlIds, setSelectedControlIds] = useState<string[]>([]);
+  const [controlSearchQuery, setControlSearchQuery] = useState("");
+  const [controlDomainFilter, setControlDomainFilter] = useState("all");
+  const [controlFunctionalGroupingFilter, setControlFunctionalGroupingFilter] = useState("all");
+  const [controlFrameworkFilter, setControlFrameworkFilter] = useState("all");
   const [availableExceptions, setAvailableExceptions] = useState<Array<{
     id: string;
     exceptionCode: string;
@@ -354,12 +370,13 @@ export default function GovernanceDetailPage() {
 
   const fetchReferenceData = useCallback(async () => {
     try {
-      const [frameworksRes, departmentsRes, usersRes, controlsRes, exceptionsRes] = await Promise.all([
+      const [frameworksRes, departmentsRes, usersRes, controlsRes, exceptionsRes, controlDomainsRes] = await Promise.all([
         fetch("/api/frameworks"),
         fetch("/api/departments"),
         fetch("/api/users"),
-        fetch("/api/controls"),
+        fetch("/api/controls?limit=1000"),
         fetch("/api/exceptions"),
+        fetch("/api/control-domains"),
       ]);
 
       if (frameworksRes.ok) {
@@ -379,6 +396,10 @@ export default function GovernanceDetailPage() {
       if (exceptionsRes.ok) {
         const data = await exceptionsRes.json();
         setAvailableExceptions(Array.isArray(data) ? data : data.data || []);
+      }
+      if (controlDomainsRes.ok) {
+        const data = await controlDomainsRes.json();
+        setControlDomains(Array.isArray(data) ? data : data.data || []);
       }
     } catch (error) {
       console.error("Error fetching reference data:", error);
@@ -507,23 +528,59 @@ export default function GovernanceDetailPage() {
   };
 
   const handleLinkControl = async () => {
-    if (!selectedControlId) return;
+    if (selectedControlIds.length === 0) return;
 
     try {
-      const response = await fetch(`/api/policies/${id}/controls`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ controlId: selectedControlId }),
-      });
-
-      if (response.ok) {
-        setLinkControlDialogOpen(false);
-        setSelectedControlId("");
-        fetchPolicy();
+      // Link controls one by one (API supports single control linking)
+      for (const controlId of selectedControlIds) {
+        await fetch(`/api/policies/${id}/controls`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ controlId }),
+        });
       }
+
+      setLinkControlDialogOpen(false);
+      setSelectedControlIds([]);
+      setControlSearchQuery("");
+      setControlDomainFilter("all");
+      setControlFunctionalGroupingFilter("all");
+      setControlFrameworkFilter("all");
+      fetchPolicy();
     } catch (error) {
       console.error("Error linking control:", error);
     }
+  };
+
+  // Functional grouping options for filter
+  const functionalGroupings = ["Govern", "Identify", "Protect", "Detect", "Respond", "Recover"];
+
+  // Filter controls for the link dialog
+  const getFilteredControlsForLinking = () => {
+    return availableControls
+      .filter((c) => !linkedControls.find((lc) => lc.control.id === c.id))
+      .filter((c) => {
+        // Search filter
+        if (controlSearchQuery.trim()) {
+          const query = controlSearchQuery.toLowerCase();
+          const matchesCode = c.controlCode?.toLowerCase().includes(query);
+          const matchesName = c.name?.toLowerCase().includes(query);
+          if (!matchesCode && !matchesName) return false;
+        }
+        // Domain filter
+        if (controlDomainFilter !== "all" && c.domain?.id !== controlDomainFilter) {
+          return false;
+        }
+        // Functional grouping filter
+        if (controlFunctionalGroupingFilter !== "all" && c.functionalGrouping !== controlFunctionalGroupingFilter) {
+          return false;
+        }
+        // Framework filter
+        if (controlFrameworkFilter !== "all" && c.framework?.id !== controlFrameworkFilter) {
+          return false;
+        }
+        return true;
+      });
   };
 
   const handleUnlinkControl = async (controlId: string) => {
@@ -2340,39 +2397,145 @@ export default function GovernanceDetailPage() {
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>{t("Linked Control")}</CardTitle>
             <PermissionGate resource="compliance.governance" action="edit">
-              <Dialog open={linkControlDialogOpen} onOpenChange={setLinkControlDialogOpen}>
+              <Dialog open={linkControlDialogOpen} onOpenChange={(open) => {
+                setLinkControlDialogOpen(open);
+                if (!open) {
+                  setSelectedControlIds([]);
+                  setControlSearchQuery("");
+                  setControlDomainFilter("all");
+                  setControlFunctionalGroupingFilter("all");
+                  setControlFrameworkFilter("all");
+                }
+              }}>
                 <DialogTrigger asChild>
                   <Button size="sm">
                     <Plus className="h-4 w-4 mr-2" />
                     {t("Link Control")}
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>{t("Link Control")}</DialogTitle>
+                <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0">
+                  <DialogHeader className="px-6 py-4 border-b border-slate-100 flex-shrink-0">
+                    <DialogTitle className="text-lg font-semibold text-primary-700">{t("Link Control")}</DialogTitle>
                   </DialogHeader>
-                  <div className="py-4">
-                    <Label>{t("Select Control")}</Label>
-                    <Select value={selectedControlId} onValueChange={setSelectedControlId}>
-                      <SelectTrigger className="mt-2">
-                        <SelectValue placeholder={t("Select a control")} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableControls
-                          .filter((c) => !linkedControls.find((lc) => lc.control.id === c.id))
-                          .map((control) => (
-                            <SelectItem key={control.id} value={control.id}>
-                              {control.controlCode} - {control.name}
-                            </SelectItem>
+                  <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+                    {/* Filters */}
+                    <div className="grid grid-cols-3 gap-3">
+                      <Select value={controlDomainFilter} onValueChange={setControlDomainFilter}>
+                        <SelectTrigger className="bg-white border-2 border-primary-200 rounded-full">
+                          <SelectValue placeholder={t("Domain")} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">{t("All Domains")}</SelectItem>
+                          {controlDomains.map((d) => (
+                            <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                           ))}
-                      </SelectContent>
-                    </Select>
+                        </SelectContent>
+                      </Select>
+                      <Select value={controlFunctionalGroupingFilter} onValueChange={setControlFunctionalGroupingFilter}>
+                        <SelectTrigger className="bg-white border-2 border-primary-200 rounded-full">
+                          <SelectValue placeholder={t("Functional Grouping")} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">{t("All Groupings")}</SelectItem>
+                          {functionalGroupings.map((g) => (
+                            <SelectItem key={g} value={g}>{t(g)}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Select value={controlFrameworkFilter} onValueChange={setControlFrameworkFilter}>
+                        <SelectTrigger className="bg-white border-2 border-primary-200 rounded-full">
+                          <SelectValue placeholder={t("Framework")} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">{t("All Frameworks")}</SelectItem>
+                          {frameworks.map((f) => (
+                            <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Search input */}
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <Input
+                        placeholder={t("Search By Control Code , Name")}
+                        value={controlSearchQuery}
+                        onChange={(e) => setControlSearchQuery(e.target.value)}
+                        className="pl-10 pr-10 bg-white border-2 border-primary-200 rounded-full"
+                      />
+                      {controlSearchQuery && (
+                        <button
+                          onClick={() => setControlSearchQuery("")}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Control cards list */}
+                    <div className="border-2 border-primary-200 rounded-xl max-h-[350px] overflow-y-auto">
+                      {getFilteredControlsForLinking().map((control) => (
+                        <div
+                          key={control.id}
+                          className={`flex items-start gap-3 p-4 border-b-2 border-primary-100 last:border-b-0 cursor-pointer hover:bg-primary-50 transition-colors ${
+                            selectedControlIds.includes(control.id) ? "bg-primary-50" : ""
+                          }`}
+                          onClick={() => {
+                            setSelectedControlIds((prev) =>
+                              prev.includes(control.id)
+                                ? prev.filter((id) => id !== control.id)
+                                : [...prev, control.id]
+                            );
+                          }}
+                        >
+                          <div onClick={(e) => e.stopPropagation()} className="pt-1">
+                            <Checkbox
+                              checked={selectedControlIds.includes(control.id)}
+                              onCheckedChange={() => {
+                                setSelectedControlIds((prev) =>
+                                  prev.includes(control.id)
+                                    ? prev.filter((id) => id !== control.id)
+                                    : [...prev, control.id]
+                                );
+                              }}
+                            />
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between">
+                              <span className="font-semibold text-primary-700">
+                                {control.controlCode} : {control.name}
+                              </span>
+                              <Badge className="bg-primary-600 text-white rounded-full px-3">
+                                {control.entities || "Organization Wide"}
+                              </Badge>
+                            </div>
+                            {control.description && (
+                              <p className="text-sm text-slate-500 mt-1 line-clamp-2">{control.description}</p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                      {getFilteredControlsForLinking().length === 0 && (
+                        <div className="p-8 text-center text-slate-400">
+                          {controlSearchQuery.trim() || controlDomainFilter !== "all" || controlFunctionalGroupingFilter !== "all" || controlFrameworkFilter !== "all"
+                            ? t("No controls found matching your filters")
+                            : t("No available controls to link")}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex justify-end gap-2">
-                    <Button variant="outline" onClick={() => setLinkControlDialogOpen(false)}>
-                      {t("Cancel")}
+
+                  {/* Footer */}
+                  <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white flex-shrink-0">
+                    <Button
+                      onClick={handleLinkControl}
+                      disabled={selectedControlIds.length === 0}
+                      className="rounded-lg"
+                    >
+                      {t("Link Control")}
                     </Button>
-                    <Button onClick={handleLinkControl}>{t("Link")}</Button>
                   </div>
                 </DialogContent>
               </Dialog>

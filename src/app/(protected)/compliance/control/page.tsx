@@ -159,6 +159,8 @@ function ControlListPageContent() {
   const [integratedFrameworkFilter, setIntegratedFrameworkFilter] = useState<string>(
     searchParams.get("frameworkId") || "all"
   );
+  const [departmentFilter, setDepartmentFilter] = useState<string>("all");
+  const [assigneeFilter, setAssigneeFilter] = useState<string>("all");
 
   // Column visibility
   const [visibleColumns, setVisibleColumns] = useState({
@@ -200,6 +202,11 @@ function ControlListPageContent() {
   // Delete all confirmation
   const [isDeleteAllDialogOpen, setIsDeleteAllDialogOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  // Create domain dialog
+  const [isCreateDomainDialogOpen, setIsCreateDomainDialogOpen] = useState(false);
+  const [newDomain, setNewDomain] = useState({ code: "", name: "" });
+  const [creatingDomain, setCreatingDomain] = useState(false);
 
   // Status counts for cards
   const [statusCounts, setStatusCounts] = useState({
@@ -334,6 +341,12 @@ function ControlListPageContent() {
       if (integratedFrameworkFilter && integratedFrameworkFilter !== "all") {
         params.set("frameworkId", integratedFrameworkFilter);
       }
+      if (departmentFilter && departmentFilter !== "all") {
+        params.set("departmentId", departmentFilter);
+      }
+      if (assigneeFilter && assigneeFilter !== "all") {
+        params.set("assigneeId", assigneeFilter);
+      }
       if (search) params.set("search", search);
       if (selectedStatus) params.set("status", selectedStatus);
 
@@ -348,7 +361,7 @@ function ControlListPageContent() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, integratedFrameworkFilter, search, selectedStatus]);
+  }, [currentPage, integratedFrameworkFilter, departmentFilter, assigneeFilter, search, selectedStatus]);
 
   useEffect(() => {
     fetchControls();
@@ -537,6 +550,58 @@ function ControlListPageContent() {
     }
   };
 
+  const handleCreateDomain = async () => {
+    if (!newDomain.name) {
+      toast({
+        title: t("Error"),
+        description: t("Domain name is required"),
+        variant: "destructive"
+      });
+      return;
+    }
+    setCreatingDomain(true);
+    try {
+      const response = await fetch("/api/control-domains", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newDomain),
+      });
+
+      if (response.ok) {
+        const createdDomain = await response.json();
+        toast({
+          title: t("Success"),
+          description: t("Domain created successfully"),
+        });
+        setIsCreateDomainDialogOpen(false);
+        setNewDomain({ code: "", name: "" });
+        // Refresh domains list and select the newly created domain
+        const domainRes = await fetch("/api/control-domains");
+        if (domainRes.ok) {
+          setDomains(await domainRes.json());
+        }
+        // Auto-select the newly created domain
+        setNewControl({ ...newControl, domainId: createdDomain.id });
+      } else {
+        const errorData = await response.json();
+        toast({
+          title: t("Error"),
+          description: errorData.error || t("Failed to create domain"),
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("Error creating domain:", error);
+      toast({
+        title: t("Error"),
+        description: t("Failed to create domain"),
+        variant: "destructive"
+      });
+    } finally {
+      setCreatingDomain(false);
+    }
+  };
+
   // The /api/users and /api/departments endpoints already apply tenant filtering,
   // so data is already scoped to the user's customerAccountId.
   const getCustomerScopedUsers = () => users;
@@ -677,13 +742,35 @@ function ControlListPageContent() {
                 className="w-[300px] bg-white"
               />
               <Select value={integratedFrameworkFilter} onValueChange={setIntegratedFrameworkFilter}>
-                <SelectTrigger className="w-[200px] bg-white">
+                <SelectTrigger className="w-[180px] bg-white">
                   <SelectValue placeholder={t("Integrated Framework")} />
                 </SelectTrigger>
                 <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
                   <SelectItem value="all">{t("All Frameworks")}</SelectItem>
                   {frameworks.map((f) => (
                     <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                <SelectTrigger className="w-[160px] bg-white">
+                  <SelectValue placeholder={t("Department")} />
+                </SelectTrigger>
+                <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                  <SelectItem value="all">{t("All Departments")}</SelectItem>
+                  {departments.map((d) => (
+                    <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
+                <SelectTrigger className="w-[160px] bg-white">
+                  <SelectValue placeholder={t("Assignee")} />
+                </SelectTrigger>
+                <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                  <SelectItem value="all">{t("All Assignees")}</SelectItem>
+                  {users.map((u) => (
+                    <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -1099,17 +1186,27 @@ function ControlListPageContent() {
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label className="text-sm font-medium text-slate-700">{t("Control Domain")}</Label>
-                      <Select value={newControl.domainId} onValueChange={(v) => setNewControl({ ...newControl, domainId: v })}>
-                        <SelectTrigger className="mt-1.5 bg-white w-full">
-                          <SelectValue placeholder={t("Select domain")} />
-                        </SelectTrigger>
-                        <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
-                          {domains.map((d) => (
-                            <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Label className="text-sm font-medium text-slate-700">{t("Control Domain")} <span className="text-red-500">*</span></Label>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <Select value={newControl.domainId} onValueChange={(v) => setNewControl({ ...newControl, domainId: v })}>
+                          <SelectTrigger className="bg-white flex-1">
+                            <SelectValue placeholder={t("Select domain")} />
+                          </SelectTrigger>
+                          <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                            {domains.map((d) => (
+                              <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          type="button"
+                          size="icon"
+                          onClick={() => setIsCreateDomainDialogOpen(true)}
+                          className="h-10 w-10 shrink-0"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                     <div>
                       <Label className="text-sm font-medium text-slate-700">{t("Functional Grouping")}</Label>
@@ -1173,45 +1270,32 @@ function ControlListPageContent() {
                       </Select>
                     </div>
                     <div>
-                      <Label className="text-sm font-medium text-slate-700">{t("Owner")}</Label>
-                      <Select value={newControl.ownerId} onValueChange={(v) => setNewControl({ ...newControl, ownerId: v })}>
+                      <Label className="text-sm font-medium text-slate-700">{t("Assignee")}</Label>
+                      <Select
+                        value={newControl.assigneeId}
+                        onValueChange={(v) => setNewControl({ ...newControl, assigneeId: v })}
+                        disabled={!newControl.departmentId}
+                      >
                         <SelectTrigger className="mt-1.5 bg-white w-full">
-                          <SelectValue placeholder={t("Select owner")} />
+                          <SelectValue placeholder={
+                            !newControl.departmentId
+                              ? t("Select department first")
+                              : t("Select assignee")
+                          } />
                         </SelectTrigger>
                         <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
-                          {getCustomerScopedUsers().map((u) => (
-                            <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
-                          ))}
+                          {getFilteredUsersForAssignee().length > 0 ? (
+                            getFilteredUsersForAssignee().map((u) => (
+                              <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
+                            ))
+                          ) : (
+                            <div className="py-2 px-2 text-sm text-slate-400 text-center">
+                              {t("No department reviewers found")}
+                            </div>
+                          )}
                         </SelectContent>
                       </Select>
                     </div>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Assignee")}</Label>
-                    <Select
-                      value={newControl.assigneeId}
-                      onValueChange={(v) => setNewControl({ ...newControl, assigneeId: v })}
-                      disabled={!newControl.departmentId}
-                    >
-                      <SelectTrigger className="mt-1.5 bg-white w-full">
-                        <SelectValue placeholder={
-                          !newControl.departmentId
-                            ? t("Select department first")
-                            : t("Select assignee")
-                        } />
-                      </SelectTrigger>
-                      <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
-                        {getFilteredUsersForAssignee().length > 0 ? (
-                          getFilteredUsersForAssignee().map((u) => (
-                            <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
-                          ))
-                        ) : (
-                          <div className="py-2 px-2 text-sm text-slate-400 text-center">
-                            {t("No department reviewers found")}
-                          </div>
-                        )}
-                      </SelectContent>
-                    </Select>
                   </div>
                 </div>
               )}
@@ -1244,10 +1328,6 @@ function ControlListPageContent() {
                     <div>
                       <span className="text-slate-400">{t("Department")}:</span>
                       <p className="font-medium">{getCustomerScopedDepartments().find(d => d.id === newControl.departmentId)?.name || "-"}</p>
-                    </div>
-                    <div>
-                      <span className="text-slate-400">{t("Owner")}:</span>
-                      <p className="font-medium">{getCustomerScopedUsers().find(u => u.id === newControl.ownerId)?.fullName || "-"}</p>
                     </div>
                     <div>
                       <span className="text-slate-400">{t("Assignee")}:</span>
@@ -1377,6 +1457,53 @@ function ControlListPageContent() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Create Domain Dialog */}
+      <Dialog open={isCreateDomainDialogOpen} onOpenChange={setIsCreateDomainDialogOpen}>
+        <DialogContent className="sm:max-w-[500px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="px-6 py-5 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800">{t("New Domain")}</DialogTitle>
+            </DialogHeader>
+          </div>
+
+          <div className="px-6 py-5 space-y-4">
+            <div>
+              <Label className="text-sm font-medium text-slate-700">{t("Domain Code")}</Label>
+              <Input
+                value={newDomain.code}
+                onChange={(e) => setNewDomain({ ...newDomain, code: e.target.value })}
+                placeholder={t("Enter domain code")}
+                className="mt-1.5 bg-white"
+              />
+            </div>
+            <div>
+              <Label className="text-sm font-medium text-slate-700">{t("Domain Name")} <span className="text-red-500">*</span></Label>
+              <Input
+                value={newDomain.name}
+                onChange={(e) => setNewDomain({ ...newDomain, name: e.target.value })}
+                placeholder={t("Enter domain name")}
+                className="mt-1.5 bg-white"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
+            <Button variant="outline" onClick={() => {
+              setIsCreateDomainDialogOpen(false);
+              setNewDomain({ code: "", name: "" });
+            }}>
+              {t("Cancel")}
+            </Button>
+            <Button
+              onClick={handleCreateDomain}
+              disabled={!newDomain.name || creatingDomain}
+            >
+              {creatingDomain ? t("Creating...") : t("Create")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

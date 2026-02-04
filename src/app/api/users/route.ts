@@ -108,6 +108,8 @@ export async function POST(request: NextRequest) {
 
     // Multi-tenant: Get customerAccountId from session (users created by CustomerAdmin belong to same account)
     const customerAccountId = session?.user?.customerAccountId || null;
+    // Track who created this user (for DR/DC framework visibility)
+    const createdById = session?.user?.id || null;
 
     // Hash password before storing
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -134,6 +136,10 @@ export async function POST(request: NextRequest) {
         }),
         ...(customerAccountId && {
           customerAccount: { connect: { id: customerAccountId } },
+        }),
+        // Track creator for DR/DC framework visibility
+        ...(createdById && {
+          createdBy: { connect: { id: createdById } },
         }),
         // Create UserRole entry if role exists in Role table
         ...(roleRecord && {

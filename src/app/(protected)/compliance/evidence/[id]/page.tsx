@@ -63,6 +63,7 @@ import {
   ChevronRight,
   Pencil,
   Save,
+  Search,
 } from "lucide-react";
 import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -175,6 +176,14 @@ interface Control {
   name: string;
   description: string | null;
   entities: string;
+  functionalGrouping?: string;
+  domain?: { id: string; name: string } | null;
+  framework?: { id: string; name: string } | null;
+}
+
+interface ControlDomain {
+  id: string;
+  name: string;
 }
 
 const statusColors: Record<string, string> = {
@@ -288,6 +297,10 @@ export default function EvidenceDetailPage() {
   // Control linking
   const [selectedControlIds, setSelectedControlIds] = useState<string[]>([]);
   const [controlSearchQuery, setControlSearchQuery] = useState("");
+  const [controlDomains, setControlDomains] = useState<ControlDomain[]>([]);
+  const [controlDomainFilter, setControlDomainFilter] = useState("all");
+  const [controlFunctionalGroupingFilter, setControlFunctionalGroupingFilter] = useState("all");
+  const [controlFrameworkFilter, setControlFrameworkFilter] = useState("all");
 
   // KPI form
   const [kpiForm, setKpiForm] = useState({
@@ -377,11 +390,12 @@ export default function EvidenceDetailPage() {
 
   const fetchReferenceData = useCallback(async () => {
     try {
-      const [deptRes, usersRes, fwRes, controlsRes] = await Promise.all([
+      const [deptRes, usersRes, fwRes, controlsRes, controlDomainsRes] = await Promise.all([
         fetch("/api/departments"),
         fetch("/api/users"),
         fetch("/api/frameworks"),
-        fetch("/api/controls?limit=500"),
+        fetch("/api/controls?limit=1000"),
+        fetch("/api/control-domains"),
       ]);
 
       if (deptRes.ok) {
@@ -399,6 +413,10 @@ export default function EvidenceDetailPage() {
       if (controlsRes.ok) {
         const data = await controlsRes.json();
         setControls(data.data || data || []);
+      }
+      if (controlDomainsRes.ok) {
+        const data = await controlDomainsRes.json();
+        setControlDomains(data.data || data || []);
       }
     } catch (error) {
       console.error("Error fetching reference data:", error);
@@ -1079,17 +1097,35 @@ export default function EvidenceDetailPage() {
   // Get linked control IDs for filtering
   const linkedControlIds = evidence?.evidenceControls?.map((ec) => ec.control.id) || [];
 
-  // Filter out already linked controls and apply search filter
+  // Functional grouping options for filter
+  const functionalGroupings = ["Govern", "Identify", "Protect", "Detect", "Respond", "Recover"];
+
+  // Filter out already linked controls and apply search/filter criteria
   const availableControls = controls.filter((c) => {
     // First, exclude already linked controls
     if (linkedControlIds.includes(c.id)) return false;
 
-    // Then apply search filter if there's a query
+    // Search filter
     if (controlSearchQuery.trim()) {
       const query = controlSearchQuery.toLowerCase().trim();
       const matchesCode = c.controlCode?.toLowerCase().includes(query);
       const matchesName = c.name?.toLowerCase().includes(query);
-      return matchesCode || matchesName;
+      if (!matchesCode && !matchesName) return false;
+    }
+
+    // Domain filter
+    if (controlDomainFilter !== "all" && c.domain?.id !== controlDomainFilter) {
+      return false;
+    }
+
+    // Functional grouping filter
+    if (controlFunctionalGroupingFilter !== "all" && c.functionalGrouping !== controlFunctionalGroupingFilter) {
+      return false;
+    }
+
+    // Framework filter
+    if (controlFrameworkFilter !== "all" && c.framework?.id !== controlFrameworkFilter) {
+      return false;
     }
 
     return true;
@@ -2031,39 +2067,85 @@ export default function EvidenceDetailPage() {
                 <CardTitle>{t("Controls")}</CardTitle>
                 <Dialog open={linkControlsOpen} onOpenChange={(open) => {
                       setLinkControlsOpen(open);
-                      if (!open) setControlSearchQuery(""); // Clear search when dialog closes
+                      if (!open) {
+                        setControlSearchQuery("");
+                        setSelectedControlIds([]);
+                        setControlDomainFilter("all");
+                        setControlFunctionalGroupingFilter("all");
+                        setControlFrameworkFilter("all");
+                      }
                     }}>
                   <DialogTrigger asChild>
                     <Button size="sm">{t("Link Controls")}</Button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle>{t("Link Controls")}</DialogTitle>
+                  <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0">
+                    <DialogHeader className="px-6 py-4 border-b border-slate-100 flex-shrink-0">
+                      <DialogTitle className="text-lg font-semibold text-primary-700">{t("Link Control")}</DialogTitle>
                     </DialogHeader>
-                    <div className="py-4 space-y-4">
-                      {/* Search input for filtering controls */}
+                    <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+                      {/* Filters */}
+                      <div className="grid grid-cols-3 gap-3">
+                        <Select value={controlDomainFilter} onValueChange={setControlDomainFilter}>
+                          <SelectTrigger className="bg-white border-2 border-primary-200 rounded-full">
+                            <SelectValue placeholder={t("Domain")} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">{t("All Domains")}</SelectItem>
+                            {controlDomains.map((d) => (
+                              <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Select value={controlFunctionalGroupingFilter} onValueChange={setControlFunctionalGroupingFilter}>
+                          <SelectTrigger className="bg-white border-2 border-primary-200 rounded-full">
+                            <SelectValue placeholder={t("Functional Grouping")} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">{t("All Groupings")}</SelectItem>
+                            {functionalGroupings.map((g) => (
+                              <SelectItem key={g} value={g}>{t(g)}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Select value={controlFrameworkFilter} onValueChange={setControlFrameworkFilter}>
+                          <SelectTrigger className="bg-white border-2 border-primary-200 rounded-full">
+                            <SelectValue placeholder={t("Framework")} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">{t("All Frameworks")}</SelectItem>
+                            {frameworks.map((f) => (
+                              <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Search input */}
                       <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                         <Input
-                          placeholder={t("Search by Control Code or Control Name...")}
+                          placeholder={t("Search By Control Code , Name")}
                           value={controlSearchQuery}
                           onChange={(e) => setControlSearchQuery(e.target.value)}
-                          className="w-full"
+                          className="pl-10 pr-10 bg-white border-2 border-primary-200 rounded-full"
                         />
                         {controlSearchQuery && (
                           <button
                             onClick={() => setControlSearchQuery("")}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                           >
                             <X className="h-4 w-4" />
                           </button>
                         )}
                       </div>
-                      <div className="border rounded-lg max-h-[400px] overflow-y-auto">
+
+                      {/* Control cards list */}
+                      <div className="border-2 border-primary-200 rounded-xl max-h-[350px] overflow-y-auto">
                         {availableControls.map((control) => (
                           <div
                             key={control.id}
-                            className={`flex items-start gap-3 p-3 border-b last:border-b-0 cursor-pointer hover:bg-gray-50 ${
-                              selectedControlIds.includes(control.id) ? "bg-blue-50" : ""
+                            className={`flex items-start gap-3 p-4 border-b-2 border-primary-100 last:border-b-0 cursor-pointer hover:bg-primary-50 transition-colors ${
+                              selectedControlIds.includes(control.id) ? "bg-primary-50" : ""
                             }`}
                             onClick={() => {
                               setSelectedControlIds((prev) =>
@@ -2073,7 +2155,7 @@ export default function EvidenceDetailPage() {
                               );
                             }}
                           >
-                            <div onClick={(e) => e.stopPropagation()}>
+                            <div onClick={(e) => e.stopPropagation()} className="pt-1">
                               <Checkbox
                                 checked={selectedControlIds.includes(control.id)}
                                 onCheckedChange={() => {
@@ -2086,41 +2168,39 @@ export default function EvidenceDetailPage() {
                               />
                             </div>
                             <div className="flex-1">
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium">{control.controlCode}</span>
-                                <span className="text-gray-600">: {control.name}</span>
+                              <div className="flex items-center justify-between">
+                                <span className="font-semibold text-primary-700">
+                                  {control.controlCode} : {control.name}
+                                </span>
+                                <Badge className="bg-primary-600 text-white rounded-full px-3">
+                                  {control.entities || "Organization Wide"}
+                                </Badge>
                               </div>
-                              <Badge variant="secondary" className="mt-1">
-                                {control.entities}
-                              </Badge>
                               {control.description && (
-                                <p className="text-sm text-gray-500 mt-1">{control.description}</p>
+                                <p className="text-sm text-slate-500 mt-1 line-clamp-2">{control.description}</p>
                               )}
                             </div>
                           </div>
                         ))}
                         {availableControls.length === 0 && (
-                          <div className="p-4 text-center text-gray-500">
-                            {controlSearchQuery.trim()
-                              ? t("No controls found matching your search")
+                          <div className="p-8 text-center text-slate-400">
+                            {controlSearchQuery.trim() || controlDomainFilter !== "all" || controlFunctionalGroupingFilter !== "all" || controlFrameworkFilter !== "all"
+                              ? t("No controls found matching your filters")
                               : t("No available controls to link")}
                           </div>
                         )}
                       </div>
-                      <p className="text-sm text-gray-600">
-                        {selectedControlIds.length} {t("control(s) selected")}
-                      </p>
-                      <div className="flex justify-end gap-2">
-                        <Button variant="outline" onClick={() => {
-                            setLinkControlsOpen(false);
-                            setControlSearchQuery("");
-                          }}>
-                          {t("Cancel")}
-                        </Button>
-                        <Button onClick={handleLinkControls} disabled={selectedControlIds.length === 0}>
-                          {t("Link Controls")}
-                        </Button>
-                      </div>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white flex-shrink-0">
+                      <Button
+                        onClick={handleLinkControls}
+                        disabled={selectedControlIds.length === 0}
+                        className="rounded-lg"
+                      >
+                        {t("Link Control")}
+                      </Button>
                     </div>
                   </DialogContent>
                 </Dialog>
