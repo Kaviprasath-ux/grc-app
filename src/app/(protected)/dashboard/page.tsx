@@ -66,9 +66,9 @@ export default function DashboardPage() {
     } else if (session?.user?.roles?.includes("AuditHead") || session?.user?.roles?.includes("AuditManager")) {
       router.replace("/internal-audit/dashboard");
     } else if (session?.user?.roles?.includes("Auditee") &&
-               !session?.user?.roles?.includes("AuditHead") &&
-               !session?.user?.roles?.includes("AuditManager") &&
-               !session?.user?.roles?.includes("Auditor")) {
+      !session?.user?.roles?.includes("AuditHead") &&
+      !session?.user?.roles?.includes("AuditManager") &&
+      !session?.user?.roles?.includes("Auditor")) {
       router.replace("/internal-audit/fieldwork");
     }
   }, [session, router]);

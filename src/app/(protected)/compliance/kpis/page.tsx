@@ -168,8 +168,8 @@ export default function KPIsPage() {
             <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
               <ClipboardList className="h-5 w-5" />
             </div>
-            <h3 className="text-base font-semibold text-slate-800">{t("Status")}</h3>
-            <span className="ml-auto text-2xl font-bold text-slate-800">{statusCounts.total}</span>
+            <h3 className="text-sm font-medium text-slate-500">{t("Status")}</h3>
+            <span className="ml-auto text-3xl font-bold text-slate-800">{statusCounts.total}</span>
           </div>
           {isCustomerAdmin ? (
             <div className="h-[200px]">
@@ -268,8 +268,8 @@ export default function KPIsPage() {
             <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 text-primary-600">
               <Building2 className="h-5 w-5" />
             </div>
-            <h3 className="text-base font-semibold text-slate-800">{t("Department")}</h3>
-            <span className="ml-auto text-2xl font-bold text-slate-800">{statusCounts.total}</span>
+            <h3 className="text-sm font-medium text-slate-500">{t("Department")}</h3>
+            <span className="ml-auto text-3xl font-bold text-slate-800">{statusCounts.total}</span>
           </div>
           {isCustomerAdmin ? (
             <div className="h-[200px]">
@@ -415,19 +415,19 @@ export default function KPIsPage() {
                     className="border-b border-slate-100 last:border-0 cursor-pointer hover:bg-slate-50"
                     onClick={() => router.push(`/compliance/kpis/${kpi.id}`)}
                   >
-                    <TableCell className="py-5 text-sm font-medium text-slate-800 pl-4">
+                    <TableCell className="py-4 pl-4 text-sm font-medium text-slate-900">
                       {displayCode}
                     </TableCell>
-                    <TableCell className="py-5 text-sm text-slate-700">
+                    <TableCell className="py-4 text-sm text-slate-700">
                       <span className="line-clamp-1">{kpi.objective || "-"}</span>
                     </TableCell>
-                    <TableCell className="py-5 text-sm text-slate-700">
+                    <TableCell className="py-4 text-sm text-slate-700">
                       <span className="line-clamp-1">{kpi.description || "-"}</span>
                     </TableCell>
-                    <TableCell className="py-5 text-sm text-slate-700">
+                    <TableCell className="py-4 text-sm text-slate-700">
                       {kpi.expectedScore ?? "-"}
                     </TableCell>
-                    <TableCell className="py-5 text-sm text-slate-700">
+                    <TableCell className="py-4 text-sm text-slate-700">
                       {displayReviewDate
                         ? new Date(displayReviewDate).toLocaleDateString("en-GB", {
                             day: "2-digit",
@@ -436,12 +436,12 @@ export default function KPIsPage() {
                           })
                         : "-"}
                     </TableCell>
-                    <TableCell className="py-5 text-sm">
+                    <TableCell className="py-4 text-sm">
                       <Badge className={statusColors[kpi.status] || "bg-slate-100 text-slate-600"}>
                         {t(kpi.status)}
                       </Badge>
                     </TableCell>
-                    <TableCell className="py-5 text-sm text-slate-700 pr-4">
+                    <TableCell className="py-4 text-sm text-slate-700 pr-4">
                       {displayDepartment}
                     </TableCell>
                   </TableRow>

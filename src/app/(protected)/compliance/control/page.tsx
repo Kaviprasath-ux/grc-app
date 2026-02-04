@@ -63,6 +63,10 @@ import {
   Download,
   ArrowLeft,
   Home,
+  Layers,
+  AlertTriangle,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
@@ -184,12 +188,22 @@ function ControlListPageContent() {
   const [isDeleteAllDialogOpen, setIsDeleteAllDialogOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  // Status counts for cards
+  const [statusCounts, setStatusCounts] = useState({
+    total: 0,
+    nonCompliant: 0,
+    compliant: 0,
+    notApplicable: 0,
+  });
+
   useEffect(() => {
     fetchFilterOptions();
+    fetchStatusCounts();
   }, [session?.user?.id]);
 
   useEffect(() => {
     fetchControls();
+    fetchStatusCounts();
   }, [currentPage, integratedFrameworkFilter]);
 
   const fetchFilterOptions = async () => {
@@ -220,6 +234,27 @@ function ControlListPageContent() {
       }
     } catch (error) {
       console.error("Error fetching filter options:", error);
+    }
+  };
+
+  const fetchStatusCounts = async () => {
+    try {
+      // Fetch all controls to get status counts (without pagination)
+      const response = await fetch("/api/controls?limit=10000");
+      if (response.ok) {
+        const data = await response.json();
+        const allControls = data.data || [];
+
+        const counts = {
+          total: allControls.length,
+          nonCompliant: allControls.filter((c: Control) => c.status === "Non Compliant").length,
+          compliant: allControls.filter((c: Control) => c.status === "Compliant").length,
+          notApplicable: allControls.filter((c: Control) => c.status === "Not Applicable").length,
+        };
+        setStatusCounts(counts);
+      }
+    } catch (error) {
+      console.error("Error fetching status counts:", error);
     }
   };
 
@@ -471,6 +506,46 @@ function ControlListPageContent() {
       {/* Page Header */}
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-bold text-slate-800">{t("Controls")}</h1>
+      </div>
+
+      {/* Status Cards */}
+      <div className="grid grid-cols-4 gap-4">
+        <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+          <div className="flex items-start justify-between mb-3">
+            <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
+              <Layers className="h-5 w-5" />
+            </div>
+          </div>
+          <div className="text-3xl font-bold text-slate-800 mb-1">{statusCounts.total}</div>
+          <div className="text-sm font-medium text-slate-500">{t("Total Controls")}</div>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+          <div className="flex items-start justify-between mb-3">
+            <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
+              <AlertTriangle className="h-5 w-5" />
+            </div>
+          </div>
+          <div className="text-3xl font-bold text-slate-800 mb-1">{statusCounts.nonCompliant}</div>
+          <div className="text-sm font-medium text-slate-500">{t("Non Compliant")}</div>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+          <div className="flex items-start justify-between mb-3">
+            <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
+              <CheckCircle2 className="h-5 w-5" />
+            </div>
+          </div>
+          <div className="text-3xl font-bold text-slate-800 mb-1">{statusCounts.compliant}</div>
+          <div className="text-sm font-medium text-slate-500">{t("Compliant")}</div>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+          <div className="flex items-start justify-between mb-3">
+            <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
+              <XCircle className="h-5 w-5" />
+            </div>
+          </div>
+          <div className="text-3xl font-bold text-slate-800 mb-1">{statusCounts.notApplicable}</div>
+          <div className="text-sm font-medium text-slate-500">{t("Not Applicable")}</div>
+        </div>
       </div>
 
       {/* Toolbar */}
