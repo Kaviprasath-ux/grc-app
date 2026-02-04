@@ -350,6 +350,8 @@ export default function FieldworkDetailsPage() {
     status: "",
     targetClosureDate: "",
   });
+  const [findingAttachments, setFindingAttachments] = useState<File[]>([]);
+  const findingAttachmentInputRef = useRef<HTMLInputElement>(null);
 
   const [newEvidence, setNewEvidence] = useState({
     title: "",
@@ -809,6 +811,21 @@ export default function FieldworkDetailsPage() {
       });
 
       if (response.ok) {
+        const newFinding = await response.json();
+
+        // Upload attachments if any
+        if (findingAttachments.length > 0) {
+          const formData = new FormData();
+          findingAttachments.forEach((file) => {
+            formData.append("files", file);
+          });
+
+          await fetch(`/api/internal-audit/findings/${newFinding.id}/attachments`, {
+            method: "POST",
+            body: formData,
+          });
+        }
+
         toast.success(t("Finding added successfully"));
         setAddFullFindingDialogOpen(false);
         setFullFinding({
@@ -823,6 +840,7 @@ export default function FieldworkDetailsPage() {
           status: "",
           targetClosureDate: "",
         });
+        setFindingAttachments([]);
         fetchFindings();
       } else {
         const error = await response.json();
@@ -2512,8 +2530,7 @@ export default function FieldworkDetailsPage() {
                       <TableCell>
                         <span className={`px-2 py-1 rounded text-xs font-medium ${
                           finding.status === 'Closed' ? 'bg-emerald-100 text-emerald-800' :
-                          finding.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
-                          finding.status === 'Overdue' ? 'bg-red-100 text-red-800' :
+                          finding.status === 'Under Review' ? 'bg-blue-100 text-blue-800' :
                           'bg-slate-100 text-slate-800'
                         }`}>
                           {finding.status}
@@ -2850,6 +2867,54 @@ export default function FieldworkDetailsPage() {
               />
             </div>
 
+            {/* Upload Attachment */}
+            <div className="grid grid-cols-[140px_1fr] items-start gap-4">
+              <Label className="text-end text-slate-500 pt-2">{t("Upload Attachment")}</Label>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => findingAttachmentInputRef.current?.click()}
+                  >
+                    <Upload className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                    {t("Choose Files")}
+                  </Button>
+                  <input
+                    type="file"
+                    ref={findingAttachmentInputRef}
+                    onChange={(e) => {
+                      if (e.target.files) {
+                        setFindingAttachments(prev => [...prev, ...Array.from(e.target.files!)]);
+                        e.target.value = "";
+                      }
+                    }}
+                    className="hidden"
+                    multiple
+                  />
+                </div>
+                {findingAttachments.length > 0 && (
+                  <div className="space-y-1">
+                    {findingAttachments.map((file, index) => (
+                      <div key={index} className="flex items-center justify-between p-2 bg-slate-50 rounded border text-sm">
+                        <span className="truncate flex-1">{file.name}</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={() => setFindingAttachments(prev => prev.filter((_, i) => i !== index))}
+                        >
+                          <X className="h-4 w-4 text-red-500" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* CAPA Section Header */}
             <div className="pt-2 border-t border-slate-100">
               <h3 className="text-sm font-semibold text-slate-800">{t("Corrective & Preventive Actions (CAPA)")}</h3>
@@ -2887,9 +2952,8 @@ export default function FieldworkDetailsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Open">{t("Open")}</SelectItem>
-                  <SelectItem value="In Progress">{t("In Progress")}</SelectItem>
+                  <SelectItem value="Under Review">{t("Under Review")}</SelectItem>
                   <SelectItem value="Closed">{t("Closed")}</SelectItem>
-                  <SelectItem value="Overdue">{t("Overdue")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
