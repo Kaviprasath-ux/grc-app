@@ -37,7 +37,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Pencil, Trash2, Upload, Plus, Calendar, Home, ChevronRight } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2, Upload, Plus, Calendar, Home, ChevronRight, Save } from "lucide-react";
 import Link from "next/link";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
@@ -207,6 +207,9 @@ export default function KPIDetailPage({
   });
   const [addingScore, setAddingScore] = useState(false);
 
+  // Inline actual score save state
+  const [savingInlineScore, setSavingInlineScore] = useState(false);
+
   const fetchKPI = useCallback(async () => {
     try {
       const response = await fetch(`/api/kpis/${id}`);
@@ -360,19 +363,88 @@ export default function KPIDetailPage({
           expectedScore: formData.expectedScore
             ? parseFloat(formData.expectedScore)
             : null,
-          actualScore: formData.actualScore
-            ? parseFloat(formData.actualScore)
-            : null,
         }),
       });
 
       if (response.ok) {
+        toast({
+          title: t("Success"),
+          description: t("KPI details saved successfully."),
+        });
         fetchKPI();
       }
     } catch (error) {
       console.error("Error saving KPI:", error);
+      toast({
+        title: t("Error"),
+        description: t("Failed to save KPI details."),
+        variant: "destructive",
+      });
     } finally {
       setSaving(false);
+    }
+  };
+
+  // Save actual score inline and create new review record
+  const handleSaveInlineActualScore = async () => {
+    if (!formData.actualScore) {
+      toast({
+        title: t("Error"),
+        description: t("Please enter an actual score."),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSavingInlineScore(true);
+    try {
+      const actualScoreValue = parseFloat(formData.actualScore);
+      const calculatedStatus = calculateStatus(actualScoreValue, expectedScore);
+
+      // Create new review record
+      const response = await fetch(`/api/kpis/${id}/reviews`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reviewDate: new Date().toISOString(),
+          actualScore: actualScoreValue,
+          status: calculatedStatus,
+        }),
+      });
+
+      if (response.ok) {
+        // Also update the KPI's actualScore
+        await fetch(`/api/kpis/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            actualScore: actualScoreValue,
+            status: calculatedStatus,
+          }),
+        });
+
+        toast({
+          title: t("Success"),
+          description: t("Actual score saved and added to review history."),
+        });
+        setFormData({ ...formData, actualScore: "" });
+        fetchKPI();
+      } else {
+        toast({
+          title: t("Error"),
+          description: t("Failed to save actual score."),
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error saving inline actual score:", error);
+      toast({
+        title: t("Error"),
+        description: t("An error occurred while saving."),
+        variant: "destructive",
+      });
+    } finally {
+      setSavingInlineScore(false);
     }
   };
 
@@ -717,14 +789,33 @@ export default function KPIDetailPage({
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-slate-500">{t("Actual Score")}</Label>
-            <Input
-              type="number"
-              placeholder="0"
-              value={formData.actualScore}
-              onChange={(e) => setFormData({ ...formData, actualScore: e.target.value })}
-              className="h-9 border-slate-200"
-            />
+            <Label className="text-xs font-medium text-slate-500">
+              {t("KPI Actual Score")} <span className="text-error">*</span>
+            </Label>
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                placeholder="0"
+                value={formData.actualScore}
+                onChange={(e) => setFormData({ ...formData, actualScore: e.target.value })}
+                className="h-9 border-slate-200"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={handleSaveInlineActualScore}
+                disabled={savingInlineScore || !formData.actualScore}
+                className="h-9 w-9 border-slate-200 hover:bg-primary-50 hover:border-primary-300"
+                title={t("Save Actual Score")}
+              >
+                {savingInlineScore ? (
+                  <div className="h-4 w-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4 text-primary-600" />
+                )}
+              </Button>
+            </div>
           </div>
         </div>
         <div className="mt-4 pt-4 border-t border-slate-100 flex justify-end">

@@ -923,15 +923,6 @@ export default function RiskRegisterPage() {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 text-slate-400 hover:text-slate-600"
-                        onClick={() => openViewRiskModal(risk)}
-                        title="View"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-slate-400 hover:text-slate-600"
                         onClick={() => openEditRiskModal(risk)}
                         title="Edit"
                       >
@@ -1903,6 +1894,73 @@ export default function RiskRegisterPage() {
                       />
                     </div>
                   </div>
+                </div>
+
+                {/* File Upload Section */}
+                <div className="mt-4">
+                  <Label className="text-sm font-medium text-slate-700">{t("Attachments")}</Label>
+                  <div
+                    className={`mt-1.5 border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer ${
+                      isDragOver ? "border-primary bg-primary-50" : "border-slate-200 hover:border-slate-300"
+                    }`}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {uploading ? (
+                      <div className="flex flex-col items-center">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary mb-3" />
+                        <p className="text-slate-500 text-sm">{t("Uploading...")}</p>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center">
+                        <Upload className="h-8 w-8 text-slate-400 mb-2" />
+                        <p className="text-slate-600 text-sm font-medium">{t("Drag and drop files here")}</p>
+                        <p className="text-slate-400 text-xs mt-1">{t("or click to browse")}</p>
+                      </div>
+                    )}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      className="hidden"
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.png,.jpg,.jpeg"
+                      onChange={handleAttachmentSelect}
+                      multiple
+                    />
+                  </div>
+
+                  {/* Uploaded Files List */}
+                  {uploadedFiles.length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      {uploadedFiles.map((file) => (
+                        <div
+                          key={file.id}
+                          className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200"
+                        >
+                          <div className="flex items-center gap-3">
+                            <FileText className="h-5 w-5 text-slate-500" />
+                            <div>
+                              <p className="text-sm font-medium text-slate-700">{file.name}</p>
+                              <p className="text-xs text-slate-500">{formatFileSize(file.size)}</p>
+                            </div>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeFile(file.id);
+                            }}
+                            className="h-8 w-8 p-0 text-slate-400 hover:text-semantic-error"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             )}

@@ -15,7 +15,11 @@ export const GET = withAuth(
       const limit = parseInt(searchParams.get("limit") || "50");
 
       const tenantFilter = getTenantFilter(session);
-      const where: Record<string, unknown> = { ...tenantFilter };
+      const where: Record<string, unknown> = {
+        ...tenantFilter,
+        // Only show KPIs that are linked to Evidence
+        evidenceId: { not: null },
+      };
       if (status) where.status = status;
       if (departmentId) where.departmentId = departmentId;
       if (evidenceId) where.evidenceId = evidenceId;

@@ -97,6 +97,7 @@ model CustomerAccount {
   auditLocations         AuditLocation[]
   processFrequencies     ProcessFrequency[]
   natureOfImplementations NatureOfImplementation[]
+  internalAuditProcesses InternalAuditProcess[]
 }
 
 // Subscription Plan for Customer Accounts
@@ -346,6 +347,7 @@ model User {
   ownedLocations          AuditLocation[]          @relation("AuditHeadLocations")
   ownedProcessFrequencies ProcessFrequency[]       @relation("AuditHeadProcessFrequencies")
   ownedNatureOfImplementations NatureOfImplementation[] @relation("AuditHeadNatureOfImplementations")
+  ownedInternalAuditProcesses InternalAuditProcess[] @relation("AuditHeadProcesses")
   // Process RACI relations
   responsibleProcesses Process[]          @relation("ProcessResponsible")
   accountableProcesses Process[]          @relation("ProcessAccountable")
@@ -2245,6 +2247,25 @@ model NatureOfImplementation {
   auditHeadId       String?
   auditHead         User?            @relation("AuditHeadNatureOfImplementations", fields: [auditHeadId], references: [id])
   name              String
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@unique([auditHeadId, name])
+  @@index([customerAccountId])
+  @@index([auditHeadId])
+}
+
+// Internal Audit Process (for audit head specific process settings)
+model InternalAuditProcess {
+  id                String           @id @default(cuid())
+  // Multi-tenant: Link to customer account
+  customerAccountId String?
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id])
+  // Audit Head isolation: each Audit Head has their own settings
+  auditHeadId       String?
+  auditHead         User?            @relation("AuditHeadProcesses", fields: [auditHeadId], references: [id])
+  name              String
+  description       String?
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
 

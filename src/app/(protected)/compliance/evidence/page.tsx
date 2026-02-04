@@ -210,7 +210,7 @@ export default function EvidencePage() {
   const [frameworkFilter, setFrameworkFilter] = useState<string>("all");
   const [departmentFilter, setDepartmentFilter] = useState<string>("all");
 
-  // Status counts
+  // Status counts (original - not affected by status filter)
   const [statusCounts, setStatusCounts] = useState<StatusCount[]>([
     { status: "Not Uploaded", count: 0 },
     { status: "Draft", count: 0 },
@@ -221,6 +221,46 @@ export default function EvidencePage() {
 
   // Selected status filter for tile cards
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+
+  // Fetch status counts separately (without status filter)
+  const fetchStatusCounts = useCallback(async () => {
+    try {
+      const params = new URLSearchParams();
+      if (frameworkFilter && frameworkFilter !== "all") params.append("frameworkId", frameworkFilter);
+      if (departmentFilter && departmentFilter !== "all") params.append("departmentId", departmentFilter);
+      if (searchTerm) params.append("search", searchTerm);
+      // Don't include status filter - we want total counts
+      params.append("limit", "1000"); // Get all to count
+
+      const response = await fetch(`/api/evidences?${params.toString()}`);
+      if (response.ok) {
+        const data = await response.json();
+        const allEvidences = data.data || [];
+        const counts: Record<string, number> = {
+          "Not Uploaded": 0,
+          "Draft": 0,
+          "Validated": 0,
+          "Published": 0,
+          "Need Attention": 0,
+        };
+        allEvidences.forEach((e: Evidence) => {
+          if (counts[e.status] !== undefined) {
+            counts[e.status]++;
+          }
+        });
+        const totalCount = allEvidences.length;
+        setStatusCounts([
+          { status: "Not Uploaded", count: counts["Not Uploaded"] },
+          { status: "Draft", count: counts["Draft"] },
+          { status: "Validated", count: counts["Validated"] },
+          { status: "Published", count: counts["Published"], total: totalCount },
+          { status: "Need Attention", count: counts["Need Attention"] },
+        ]);
+      }
+    } catch (error) {
+      console.error("Error fetching status counts:", error);
+    }
+  }, [frameworkFilter, departmentFilter, searchTerm]);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -270,28 +310,6 @@ export default function EvidencePage() {
         setEvidences(data.data || []);
         setTotal(data.pagination?.total || 0);
         setTotalPages(data.pagination?.totalPages || 1);
-
-        // Calculate status counts from the data
-        const allEvidences = data.data || [];
-        const counts: Record<string, number> = {
-          "Not Uploaded": 0,
-          "Draft": 0,
-          "Validated": 0,
-          "Published": 0,
-          "Need Attention": 0,
-        };
-        allEvidences.forEach((e: Evidence) => {
-          if (counts[e.status] !== undefined) {
-            counts[e.status]++;
-          }
-        });
-        setStatusCounts([
-          { status: "Not Uploaded", count: counts["Not Uploaded"] },
-          { status: "Draft", count: counts["Draft"] },
-          { status: "Validated", count: counts["Validated"] },
-          { status: "Published", count: counts["Published"], total: data.pagination?.total || 0 },
-          { status: "Need Attention", count: counts["Need Attention"] },
-        ]);
       }
     } catch (error) {
       console.error("Error fetching evidences:", error);
@@ -354,6 +372,11 @@ export default function EvidencePage() {
   useEffect(() => {
     fetchEvidences();
   }, [fetchEvidences]);
+
+  // Fetch status counts separately (only when non-status filters change)
+  useEffect(() => {
+    fetchStatusCounts();
+  }, [fetchStatusCounts]);
 
   // The /api/users and /api/departments endpoints already apply tenant filtering,
   // so data is already scoped to the user's customerAccountId.

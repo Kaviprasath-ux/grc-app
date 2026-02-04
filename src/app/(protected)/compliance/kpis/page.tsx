@@ -380,17 +380,17 @@ export default function KPIsPage() {
       </div>
 
       {/* KPI Table */}
-      <div className="bg-white rounded-xl border border-slate-200">
-        <Table>
+      <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto">
+        <Table className="min-w-[930px]">
           <TableHeader>
             <TableRow className="border-b border-slate-100 bg-slate-50/50">
-              <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4 w-[120px]">{t("Code")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("KPI Objective")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12">{t("KPI Description")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12 w-[100px]">{t("Expected")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 pl-4 w-[100px]">{t("Code")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 w-[180px]">{t("KPI Objective")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 w-[200px]">{t("KPI Description")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 w-[120px]">{t("Expected Score")}</TableHead>
               <TableHead className="text-xs font-semibold text-slate-600 h-12 w-[110px]">{t("Review Date")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12 w-[100px]">{t("Status")}</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[140px]">{t("Department")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 w-[90px]">{t("Status")}</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-600 h-12 pr-4 w-[130px]">{t("Department")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
