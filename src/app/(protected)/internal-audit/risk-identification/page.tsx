@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Check, Sparkles, Upload, X, Home, ChevronRight, Loader2 } from "lucide-react";
+import { Check, Sparkles, Upload, X, Home, ChevronRight, Loader2, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -38,6 +39,7 @@ interface RecentSearch {
   generatedRisks?: GeneratedRisk[];
   total_risks?: number;
   department?: string;
+  departmentId?: string; // Store department ID for adding risks
   specific_audit_focus?: string;
 }
 
@@ -47,6 +49,7 @@ const MAX_FILES = 10;
 
 export default function RiskIdentificationPage() {
   const router = useRouter();
+  const { data: session } = useSession();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { t } = useLanguage();
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -56,6 +59,16 @@ export default function RiskIdentificationPage() {
   const [loading, setLoading] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
   const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
+
+  // Track which risks have been added to register (key: "searchId-riskIndex")
+  const [addedRisks, setAddedRisks] = useState<Set<string>>(new Set());
+  // Track which risks are currently being added (loading state)
+  const [addingRisks, setAddingRisks] = useState<Set<string>>(new Set());
+
+  // Check if user is Audit Head (only Audit Head can add risks)
+  const isAuditHead = session?.user?.roles?.some(
+    (role) => role === "AuditHead"
+  ) ?? false;
 
   useEffect(() => {
     fetchDepartments();
@@ -160,6 +173,7 @@ export default function RiskIdentificationPage() {
         generatedRisks: generatedRisks.length ? generatedRisks : undefined,
         total_risks,
         department: data.department ?? deptName,
+        departmentId: selectedDepartment, // Store department ID for adding risks
         specific_audit_focus: data.specific_audit_focus || undefined,
       };
 
@@ -185,8 +199,37 @@ export default function RiskIdentificationPage() {
     }
   };
 
-  const handleAddToRegister = async (risk: GeneratedRisk, deptId: string) => {
+  const handleAddToRegister = async (
+    risk: GeneratedRisk,
+    searchId: string,
+    riskIndex: number,
+    departmentId: string | undefined
+  ) => {
+    // Create unique key for tracking
+    const riskKey = `${searchId}-${riskIndex}`;
+
+    // Check if already added or currently adding
+    if (addedRisks.has(riskKey) || addingRisks.has(riskKey)) {
+      return;
+    }
+
+    // Check permission
+    if (!isAuditHead) {
+      toast.error(t("Only Audit Head can add risks to register"));
+      return;
+    }
+
+    // Validate department
+    if (!departmentId) {
+      toast.error(t("Department information missing. Please regenerate risks."));
+      return;
+    }
+
+    // Set loading state
+    setAddingRisks((prev) => new Set(prev).add(riskKey));
+
     try {
+      // Map risk level to residual score for the API
       let riskLevel = "Low";
       let residualScore = 25;
       if (risk.level === "High") {
@@ -205,21 +248,33 @@ export default function RiskIdentificationPage() {
         body: JSON.stringify({
           riskName: risk.title.substring(0, 100),
           riskDescription: risk.description,
-          departmentId: deptId,
+          departmentId: departmentId,
           riskLevel,
           residualScore,
           status: "Open",
+          // Source tracking (stored in auditComment for now)
+          auditComment: "Source: AI Suggested Risk",
         }),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to add risk to register");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to add risk to register");
       }
 
+      // Mark as added
+      setAddedRisks((prev) => new Set(prev).add(riskKey));
       toast.success(t("Risk added to register successfully"));
     } catch (error) {
       console.error("Error adding risk:", error);
-      toast.error(t("Failed to add risk to register"));
+      toast.error(t("Failed to add risk. Please try again."));
+    } finally {
+      // Remove loading state
+      setAddingRisks((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(riskKey);
+        return newSet;
+      });
     }
   };
 
@@ -423,49 +478,74 @@ export default function RiskIdentificationPage() {
                     )}
                     {search.generatedRisks && search.generatedRisks.length > 0 && (
                       <div className="mt-3 space-y-2">
-                        {search.generatedRisks.map((r, idx) => (
-                          <div
-                            key={idx}
-                            className="text-sm border-l-2 border-primary-200 pl-3 py-2 bg-primary-50/50 rounded-r"
-                          >
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex-1">
-                                <p className="font-medium text-slate-800">{r.title}</p>
-                                {r.description && (
-                                  <p className="text-slate-600 mt-0.5 text-xs">{r.description}</p>
-                                )}
-                                <div className="flex flex-wrap gap-2 mt-1 text-xs text-slate-500">
-                                  <Badge
-                                    variant={
-                                      r.level === "High"
-                                        ? "destructive"
-                                        : r.level === "Medium"
-                                          ? "secondary"
-                                          : "outline"
-                                    }
-                                    className="text-xs"
-                                  >
-                                    {r.level}
-                                  </Badge>
-                                  {r.inherent_likelihood && (
-                                    <span>{t("Likelihood")}: {r.inherent_likelihood}</span>
+                        {search.generatedRisks.map((r, idx) => {
+                          const riskKey = `${search.id}-${idx}`;
+                          const isAdded = addedRisks.has(riskKey);
+                          const isAdding = addingRisks.has(riskKey);
+
+                          return (
+                            <div
+                              key={idx}
+                              className="text-sm border-l-2 border-primary-200 pl-3 py-2 bg-primary-50/50 rounded-r"
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1">
+                                  <p className="font-medium text-slate-800">{r.title}</p>
+                                  {r.description && (
+                                    <p className="text-slate-600 mt-0.5 text-xs">{r.description}</p>
                                   )}
-                                  {r.inherent_impact && (
-                                    <span>{t("Impact")}: {r.inherent_impact}</span>
-                                  )}
+                                  <div className="flex flex-wrap gap-2 mt-1 text-xs text-slate-500">
+                                    <Badge
+                                      variant={
+                                        r.level === "High"
+                                          ? "destructive"
+                                          : r.level === "Medium"
+                                            ? "secondary"
+                                            : "outline"
+                                      }
+                                      className="text-xs"
+                                    >
+                                      {r.level}
+                                    </Badge>
+                                    {r.inherent_likelihood && (
+                                      <span>{t("Likelihood")}: {r.inherent_likelihood}</span>
+                                    )}
+                                    {r.inherent_impact && (
+                                      <span>{t("Impact")}: {r.inherent_impact}</span>
+                                    )}
+                                  </div>
                                 </div>
+                                {/* Only show Add to Register for Audit Head and High/Medium risks */}
+                                {isAuditHead && (r.level === "High" || r.level === "Medium") && (
+                                  <div className="shrink-0">
+                                    {isAdded ? (
+                                      <div className="flex items-center gap-1.5 text-sm text-green-600 font-medium px-3 py-1.5 bg-green-50 rounded-md border border-green-200">
+                                        <CheckCircle2 className="h-4 w-4" />
+                                        <span>{t("Added to Register")}</span>
+                                      </div>
+                                    ) : (
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        disabled={isAdding}
+                                        onClick={() => handleAddToRegister(r, search.id, idx, search.departmentId)}
+                                      >
+                                        {isAdding ? (
+                                          <>
+                                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                            {t("Adding...")}
+                                          </>
+                                        ) : (
+                                          t("Add to Register")
+                                        )}
+                                      </Button>
+                                    )}
+                                  </div>
+                                )}
                               </div>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="shrink-0"
-                                onClick={() => handleAddToRegister(r, selectedDepartment)}
-                              >
-                                {t("Add to Register")}
-                              </Button>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </div>
