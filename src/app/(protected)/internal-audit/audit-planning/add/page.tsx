@@ -610,13 +610,13 @@ export default function AddEngagementPage() {
 
         {/* Process */}
         <div className="space-y-2">
-          <Label className="text-blue-800">Process</Label>
+          <Label className="text-blue-800">{t("Process")}</Label>
           <Select
             value={formData.processId}
             onValueChange={(value) => setFormData({ ...formData, processId: value })}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Select Process" />
+              <SelectValue placeholder={t("Select Process")} />
             </SelectTrigger>
             <SelectContent>
               {processes.length > 0 ? (
@@ -627,7 +627,7 @@ export default function AddEngagementPage() {
                 ))
               ) : (
                 <SelectItem value="none" disabled>
-                  No processes available
+                  {t("No processes available")}
                 </SelectItem>
               )}
             </SelectContent>

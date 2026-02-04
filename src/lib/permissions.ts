@@ -218,9 +218,9 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'organization.department', actions: ['view'], scope: 'all' },
   ],
 
-  // Audit User - Basic audit access (view-only, NO Settings/Risk Universe per UAT)
+  // Audit User - Basic audit access (view-only, NO Dashboard/Settings/Risk Universe per UAT)
   AuditUser: [
-    { resource: 'audit.dashboard', actions: ['view'], scope: 'all' },
+    // NO audit.dashboard - only AuditHead and AuditManager have dashboard access
     { resource: 'audit.auditables', actions: ['view'], scope: 'all' },
     { resource: 'audit.risk-identification', actions: ['view'], scope: 'all' },
     { resource: 'audit.risk-register', actions: ['view'], scope: 'all' },
@@ -232,9 +232,9 @@ export const ROLE_PERMISSIONS: Record<RoleName, RolePermissionDef[]> = {
     { resource: 'organization.dashboard', actions: ['view'], scope: 'all' },
   ],
 
-  // Auditor - Conducts audits (NO Settings/Risk Universe per UAT)
+  // Auditor - Conducts audits (NO Dashboard/Settings/Risk Universe per UAT)
   Auditor: [
-    { resource: 'audit.dashboard', actions: ['view'], scope: 'all' },
+    // NO audit.dashboard - only AuditHead and AuditManager have dashboard access
     { resource: 'audit.auditables', actions: ['view'], scope: 'all' },
     { resource: 'audit.risk-identification', actions: ['view'], scope: 'all' },
     { resource: 'audit.risk-register', actions: ['view'], scope: 'all' },
