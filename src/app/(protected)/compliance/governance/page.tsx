@@ -384,6 +384,11 @@ export default function GovernancePage() {
       setStatusFilter(status);
     }
     setCurrentPage(1);
+    // If on Dashboard tab, switch to Policy tab to show filtered results
+    if (activeTab === "Dashboard") {
+      setActiveTab("Policy");
+      setActiveDocType("Policy");
+    }
   };
 
   const handleCreatePolicy = async () => {
@@ -685,15 +690,24 @@ export default function GovernancePage() {
   const endItem = Math.min(currentPage * itemsPerPage, total);
 
   // Status card component - Simple white cards with blue icons (matching Evidence page)
-  const StatusCard = ({ icon: Icon, count, label, secondaryCount }: {
+  const StatusCard = ({ icon: Icon, count, label, status, secondaryCount, onClick, isSelected }: {
     icon: React.ElementType;
     count: number;
     label: string;
     status: string;
     secondaryCount?: number;
+    onClick?: () => void;
+    isSelected?: boolean;
   }) => {
     return (
-      <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+      <div
+        className={`bg-white rounded-xl p-4 shadow-sm cursor-pointer transition-all ${
+          isSelected
+            ? "border-2 border-primary-500"
+            : "border border-slate-200 hover:border-slate-300"
+        }`}
+        onClick={onClick}
+      >
         <div className="flex items-start justify-between mb-3">
           <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
             <Icon className="h-5 w-5" />
@@ -763,11 +777,11 @@ export default function GovernancePage() {
               </div>
             ) : (
               <div className="grid grid-cols-5 gap-4">
-                <StatusCard icon={User} count={statusCounts.notUploaded} label={t("Not Uploaded")} status="Not Uploaded" />
-                <StatusCard icon={FileText} count={statusCounts.draft} label={t("Draft")} status="Draft" />
-                <StatusCard icon={CheckSquare} count={statusCounts.approved} label={t("Approved")} status="Approved" />
-                <StatusCard icon={ArrowUpFromLine} count={statusCounts.published} label={t("Published")} status="Published" />
-                <StatusCard icon={Users} count={statusCounts.needsReview} label={t("Needs Review")} status="Needs Review" />
+                <StatusCard icon={User} count={statusCounts.notUploaded} label={t("Not Uploaded")} status="Not Uploaded" onClick={() => handleStatusCardClick("Not Uploaded")} isSelected={statusFilter === "Not Uploaded"} />
+                <StatusCard icon={FileText} count={statusCounts.draft} label={t("Draft")} status="Draft" onClick={() => handleStatusCardClick("Draft")} isSelected={statusFilter === "Draft"} />
+                <StatusCard icon={CheckSquare} count={statusCounts.approved} label={t("Approved")} status="Approved" onClick={() => handleStatusCardClick("Approved")} isSelected={statusFilter === "Approved"} />
+                <StatusCard icon={ArrowUpFromLine} count={statusCounts.published} label={t("Published")} status="Published" onClick={() => handleStatusCardClick("Published")} isSelected={statusFilter === "Published"} />
+                <StatusCard icon={Users} count={statusCounts.needsReview} label={t("Needs Review")} status="Needs Review" onClick={() => handleStatusCardClick("Needs Review")} isSelected={statusFilter === "Needs Review"} />
               </div>
             )}
           </TabsContent>
@@ -777,17 +791,19 @@ export default function GovernancePage() {
             <TabsContent key={docType} value={docType} className="mt-6 space-y-6">
               {/* Status Cards */}
               <div className="grid grid-cols-5 gap-4">
-                <StatusCard icon={User} count={statusCounts.notUploaded} label={t("Not Uploaded")} status="Not Uploaded" />
-                <StatusCard icon={FileText} count={statusCounts.draft} label={t("Draft")} status="Draft" />
-                <StatusCard icon={CheckSquare} count={statusCounts.approved} label={t("Approved")} status="Approved" />
+                <StatusCard icon={User} count={statusCounts.notUploaded} label={t("Not Uploaded")} status="Not Uploaded" onClick={() => handleStatusCardClick("Not Uploaded")} isSelected={statusFilter === "Not Uploaded"} />
+                <StatusCard icon={FileText} count={statusCounts.draft} label={t("Draft")} status="Draft" onClick={() => handleStatusCardClick("Draft")} isSelected={statusFilter === "Draft"} />
+                <StatusCard icon={CheckSquare} count={statusCounts.approved} label={t("Approved")} status="Approved" onClick={() => handleStatusCardClick("Approved")} isSelected={statusFilter === "Approved"} />
                 <StatusCard
                   icon={ArrowUpFromLine}
                   count={statusCounts.published}
                   secondaryCount={statusCounts.total}
                   label={t("Published")}
                   status="Published"
+                  onClick={() => handleStatusCardClick("Published")}
+                  isSelected={statusFilter === "Published"}
                 />
-                <StatusCard icon={Users} count={statusCounts.needsReview} label={t("Needs Review")} status="Needs Review" />
+                <StatusCard icon={Users} count={statusCounts.needsReview} label={t("Needs Review")} status="Needs Review" onClick={() => handleStatusCardClick("Needs Review")} isSelected={statusFilter === "Needs Review"} />
               </div>
 
               {/* Search, Filter, and Action Buttons Row */}

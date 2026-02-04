@@ -15,6 +15,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  ResponsiveContainer,
+  Legend,
+  Tooltip,
+} from "recharts";
 import {
   Dialog,
   DialogContent,
@@ -196,15 +209,25 @@ function ControlListPageContent() {
     notApplicable: 0,
   });
 
+  // Active tab state
+  const [activeTab, setActiveTab] = useState("all-controls");
+
+  // Selected status filter for tile cards
+  const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+
+  // Dashboard data
+  const [allControlsForDashboard, setAllControlsForDashboard] = useState<Control[]>([]);
+  const [functionalGroupingData, setFunctionalGroupingData] = useState<{ name: string; value: number; color: string }[]>([]);
+  const [frameworkChartData, setFrameworkChartData] = useState<{ name: string; compliant: number; nonCompliant: number; notApplicable: number }[]>([]);
+
   useEffect(() => {
     fetchFilterOptions();
     fetchStatusCounts();
   }, [session?.user?.id]);
 
   useEffect(() => {
-    fetchControls();
     fetchStatusCounts();
-  }, [currentPage, integratedFrameworkFilter]);
+  }, []);
 
   const fetchFilterOptions = async () => {
     try {
@@ -244,6 +267,7 @@ function ControlListPageContent() {
       if (response.ok) {
         const data = await response.json();
         const allControls = data.data || [];
+        setAllControlsForDashboard(allControls);
 
         const counts = {
           total: allControls.length,
@@ -252,6 +276,49 @@ function ControlListPageContent() {
           notApplicable: allControls.filter((c: Control) => c.status === "Not Applicable").length,
         };
         setStatusCounts(counts);
+
+        // Calculate Functional Grouping data for donut chart
+        const groupingColors: Record<string, string> = {
+          "Govern": "#3b82f6",
+          "Identify": "#f97316",
+          "Protect": "#22c55e",
+          "Detect": "#ef4444",
+          "Respond": "#a855f7",
+          "Recover": "#78350f",
+        };
+        const groupingCounts: Record<string, number> = {};
+        allControls.forEach((c: Control) => {
+          const group = c.functionalGrouping || "Unknown";
+          groupingCounts[group] = (groupingCounts[group] || 0) + 1;
+        });
+        const fgData = Object.entries(groupingCounts)
+          .filter(([name]) => FUNCTIONAL_GROUPINGS.includes(name))
+          .map(([name, value]) => ({
+            name,
+            value,
+            color: groupingColors[name] || "#64748b",
+          }));
+        setFunctionalGroupingData(fgData);
+
+        // Calculate By Framework data for bar chart
+        const frameworkStats: Record<string, { compliant: number; nonCompliant: number; notApplicable: number }> = {};
+        allControls.forEach((c: Control) => {
+          const fwName = c.framework?.name || "No Framework";
+          if (!frameworkStats[fwName]) {
+            frameworkStats[fwName] = { compliant: 0, nonCompliant: 0, notApplicable: 0 };
+          }
+          if (c.status === "Compliant") frameworkStats[fwName].compliant++;
+          else if (c.status === "Non Compliant") frameworkStats[fwName].nonCompliant++;
+          else if (c.status === "Not Applicable") frameworkStats[fwName].notApplicable++;
+        });
+        const fwData = Object.entries(frameworkStats).map(([name, stats]) => ({
+          name: name.length > 8 ? name.substring(0, 8) + ".." : name,
+          fullName: name,
+          compliant: stats.compliant,
+          nonCompliant: stats.nonCompliant,
+          notApplicable: stats.notApplicable,
+        }));
+        setFrameworkChartData(fwData);
       }
     } catch (error) {
       console.error("Error fetching status counts:", error);
@@ -268,6 +335,7 @@ function ControlListPageContent() {
         params.set("frameworkId", integratedFrameworkFilter);
       }
       if (search) params.set("search", search);
+      if (selectedStatus) params.set("status", selectedStatus);
 
       const response = await fetch(`/api/controls?${params.toString()}`);
       if (response.ok) {
@@ -280,11 +348,24 @@ function ControlListPageContent() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, integratedFrameworkFilter, search]);
+  }, [currentPage, integratedFrameworkFilter, search, selectedStatus]);
+
+  useEffect(() => {
+    fetchControls();
+  }, [fetchControls]);
 
   const handleSearch = () => {
     setCurrentPage(0);
     fetchControls();
+  };
+
+  const handleStatusCardClick = (status: string | null) => {
+    if (selectedStatus === status) {
+      setSelectedStatus(null);
+    } else {
+      setSelectedStatus(status);
+    }
+    setCurrentPage(0);
   };
 
   const handleSort = (field: string) => {
@@ -508,105 +589,142 @@ function ControlListPageContent() {
         <h1 className="text-2xl font-bold text-slate-800">{t("Controls")}</h1>
       </div>
 
-      {/* Status Cards */}
-      <div className="grid grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-          <div className="flex items-start justify-between mb-3">
-            <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
-              <Layers className="h-5 w-5" />
-            </div>
-          </div>
-          <div className="text-3xl font-bold text-slate-800 mb-1">{statusCounts.total}</div>
-          <div className="text-sm font-medium text-slate-500">{t("Total Controls")}</div>
-        </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-          <div className="flex items-start justify-between mb-3">
-            <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
-              <AlertTriangle className="h-5 w-5" />
-            </div>
-          </div>
-          <div className="text-3xl font-bold text-slate-800 mb-1">{statusCounts.nonCompliant}</div>
-          <div className="text-sm font-medium text-slate-500">{t("Non Compliant")}</div>
-        </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-          <div className="flex items-start justify-between mb-3">
-            <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
-              <CheckCircle2 className="h-5 w-5" />
-            </div>
-          </div>
-          <div className="text-3xl font-bold text-slate-800 mb-1">{statusCounts.compliant}</div>
-          <div className="text-sm font-medium text-slate-500">{t("Compliant")}</div>
-        </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-          <div className="flex items-start justify-between mb-3">
-            <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
-              <XCircle className="h-5 w-5" />
-            </div>
-          </div>
-          <div className="text-3xl font-bold text-slate-800 mb-1">{statusCounts.notApplicable}</div>
-          <div className="text-sm font-medium text-slate-500">{t("Not Applicable")}</div>
-        </div>
-      </div>
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="all-controls">{t("All Controls")}</TabsTrigger>
+          <TabsTrigger value="dashboard">{t("Dashboard")}</TabsTrigger>
+        </TabsList>
 
-      {/* Toolbar */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <Input
-            placeholder={t("Search by control code or name...")}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-            className="w-[300px] bg-white"
-          />
-          <Select value={integratedFrameworkFilter} onValueChange={setIntegratedFrameworkFilter}>
-            <SelectTrigger className="w-[200px] bg-white">
-              <SelectValue placeholder={t("Integrated Framework")} />
-            </SelectTrigger>
-            <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
-              <SelectItem value="all">{t("All Frameworks")}</SelectItem>
-              {frameworks.map((f) => (
-                <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex items-center gap-2">
-          <PermissionGate resource="compliance.controls" action="delete">
-            <Button
-              size="sm"
-              onClick={() => setIsDeleteAllDialogOpen(true)}
-              variant="outline"
-              className="text-semantic-error hover:text-semantic-error hover:bg-red-50"
+        {/* All Controls Tab */}
+        <TabsContent value="all-controls" className="mt-6 space-y-6">
+          {/* Status Cards */}
+          <div className="grid grid-cols-4 gap-4">
+            <div
+              className={`bg-white rounded-xl p-4 shadow-sm cursor-pointer transition-all ${
+                selectedStatus === null
+                  ? "border-2 border-primary-500"
+                  : "border border-slate-200 hover:border-slate-300"
+              }`}
+              onClick={() => handleStatusCardClick(null)}
             >
-              <Trash2 className="h-4 w-4 mr-2" />
-              {t("Delete All")}
-            </Button>
-          </PermissionGate>
-          <PermissionGate resource="compliance.controls" action="create">
-            <Button size="sm" onClick={handleImport} variant="outline">
-              <Upload className="h-4 w-4 mr-2" />
-              {t("Import")}
-            </Button>
-          </PermissionGate>
-          {/* Show New Control button for Customer Admin or users with create permission */}
-          {isCustomerAdmin ? (
-            <Button size="sm" onClick={() => setIsCreateDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              {t("New Control")}
-            </Button>
-          ) : (
-            <PermissionGate resource="compliance.controls" action="create">
-              <Button size="sm" onClick={() => setIsCreateDialogOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                {t("New Control")}
-              </Button>
-            </PermissionGate>
-          )}
-        </div>
-      </div>
+              <div className="flex items-start justify-between mb-3">
+                <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
+                  <Layers className="h-5 w-5" />
+                </div>
+              </div>
+              <div className="text-3xl font-bold text-slate-800 mb-1">{statusCounts.total}</div>
+              <div className="text-sm font-medium text-slate-500">{t("Total Controls")}</div>
+            </div>
+            <div
+              className={`bg-white rounded-xl p-4 shadow-sm cursor-pointer transition-all ${
+                selectedStatus === "Non Compliant"
+                  ? "border-2 border-primary-500"
+                  : "border border-slate-200 hover:border-slate-300"
+              }`}
+              onClick={() => handleStatusCardClick("Non Compliant")}
+            >
+              <div className="flex items-start justify-between mb-3">
+                <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
+                  <AlertTriangle className="h-5 w-5" />
+                </div>
+              </div>
+              <div className="text-3xl font-bold text-slate-800 mb-1">{statusCounts.nonCompliant}</div>
+              <div className="text-sm font-medium text-slate-500">{t("Non Compliant")}</div>
+            </div>
+            <div
+              className={`bg-white rounded-xl p-4 shadow-sm cursor-pointer transition-all ${
+                selectedStatus === "Compliant"
+                  ? "border-2 border-primary-500"
+                  : "border border-slate-200 hover:border-slate-300"
+              }`}
+              onClick={() => handleStatusCardClick("Compliant")}
+            >
+              <div className="flex items-start justify-between mb-3">
+                <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
+                  <CheckCircle2 className="h-5 w-5" />
+                </div>
+              </div>
+              <div className="text-3xl font-bold text-slate-800 mb-1">{statusCounts.compliant}</div>
+              <div className="text-sm font-medium text-slate-500">{t("Compliant")}</div>
+            </div>
+            <div
+              className={`bg-white rounded-xl p-4 shadow-sm cursor-pointer transition-all ${
+                selectedStatus === "Not Applicable"
+                  ? "border-2 border-primary-500"
+                  : "border border-slate-200 hover:border-slate-300"
+              }`}
+              onClick={() => handleStatusCardClick("Not Applicable")}
+            >
+              <div className="flex items-start justify-between mb-3">
+                <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
+                  <XCircle className="h-5 w-5" />
+                </div>
+              </div>
+              <div className="text-3xl font-bold text-slate-800 mb-1">{statusCounts.notApplicable}</div>
+              <div className="text-sm font-medium text-slate-500">{t("Not Applicable")}</div>
+            </div>
+          </div>
 
-      {/* Data Table */}
-      <div className="bg-white rounded-xl border border-slate-200">
+          {/* Toolbar */}
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <Input
+                placeholder={t("Search by control code or name...")}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                className="w-[300px] bg-white"
+              />
+              <Select value={integratedFrameworkFilter} onValueChange={setIntegratedFrameworkFilter}>
+                <SelectTrigger className="w-[200px] bg-white">
+                  <SelectValue placeholder={t("Integrated Framework")} />
+                </SelectTrigger>
+                <SelectContent position="popper" sideOffset={4} className="bg-white max-h-[200px] overflow-y-auto">
+                  <SelectItem value="all">{t("All Frameworks")}</SelectItem>
+                  {frameworks.map((f) => (
+                    <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2">
+              <PermissionGate resource="compliance.controls" action="delete">
+                <Button
+                  size="sm"
+                  onClick={() => setIsDeleteAllDialogOpen(true)}
+                  variant="outline"
+                  className="text-semantic-error hover:text-semantic-error hover:bg-red-50"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  {t("Delete All")}
+                </Button>
+              </PermissionGate>
+              <PermissionGate resource="compliance.controls" action="create">
+                <Button size="sm" onClick={handleImport} variant="outline">
+                  <Upload className="h-4 w-4 mr-2" />
+                  {t("Import")}
+                </Button>
+              </PermissionGate>
+              {/* Show New Control button for Customer Admin or users with create permission */}
+              {isCustomerAdmin ? (
+                <Button size="sm" onClick={() => setIsCreateDialogOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  {t("New Control")}
+                </Button>
+              ) : (
+                <PermissionGate resource="compliance.controls" action="create">
+                  <Button size="sm" onClick={() => setIsCreateDialogOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    {t("New Control")}
+                  </Button>
+                </PermissionGate>
+              )}
+            </div>
+          </div>
+
+          {/* Data Table */}
+          <div className="bg-white rounded-xl border border-slate-200">
         <Table>
           <TableHeader>
             <TableRow className="border-b border-slate-100 bg-slate-50/50">
@@ -823,9 +941,126 @@ function ControlListPageContent() {
             >
               <ChevronsRight className="h-4 w-4" />
             </Button>
+            </div>
           </div>
-        </div>
-      </div>
+          </div>
+        </TabsContent>
+
+        {/* Dashboard Tab */}
+        <TabsContent value="dashboard" className="mt-6 space-y-6">
+          <div className="grid grid-cols-2 gap-6">
+            {/* Functional Grouping Donut Chart */}
+            <div className="bg-white rounded-xl border border-slate-200 p-6">
+              <h3 className="text-lg font-bold text-slate-800 mb-4">{t("Functional Grouping")}</h3>
+              <div className="h-[300px]">
+                {functionalGroupingData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={functionalGroupingData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={70}
+                        outerRadius={100}
+                        paddingAngle={2}
+                        dataKey="value"
+                        label={false}
+                      >
+                        {functionalGroupingData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            const data = payload[0].payload;
+                            return (
+                              <div className="bg-white px-3 py-2 rounded-lg shadow-lg border border-slate-200">
+                                <p className="text-sm font-medium text-slate-800">{data.name}: {data.value}</p>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
+                      <Legend
+                        layout="horizontal"
+                        align="center"
+                        verticalAlign="bottom"
+                        iconType="square"
+                        iconSize={12}
+                        formatter={(value) => <span className="text-sm text-slate-600">{t(value)}</span>}
+                      />
+                      {/* Center text */}
+                      <text x="50%" y="45%" textAnchor="middle" className="fill-slate-500 text-sm">
+                        {t("Total")}
+                      </text>
+                      <text x="50%" y="55%" textAnchor="middle" className="fill-slate-800 text-2xl font-bold">
+                        {statusCounts.total}
+                      </text>
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-slate-400">
+                    {t("No data available")}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* By Framework Bar Chart */}
+            <div className="bg-white rounded-xl border border-slate-200 p-6">
+              <h3 className="text-lg font-bold text-slate-800 mb-4">{t("By Framework")}</h3>
+              <div className="h-[300px]">
+                {frameworkChartData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={frameworkChartData}
+                      layout="vertical"
+                      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
+                      <YAxis type="category" dataKey="name" width={60} tick={{ fontSize: 12 }} />
+                      <Tooltip
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            const data = payload[0].payload;
+                            const total = data.compliant + data.nonCompliant + data.notApplicable;
+                            return (
+                              <div className="bg-white px-3 py-2 rounded-lg shadow-lg border border-slate-200">
+                                <p className="text-sm font-semibold text-slate-800 mb-1">{data.fullName || data.name}</p>
+                                <p className="text-xs text-green-600">{t("Not-Applicable")}: {data.notApplicable} ({total > 0 ? Math.round((data.notApplicable / total) * 100) : 0}%)</p>
+                                <p className="text-xs text-orange-500">{t("Compliant")}: {data.compliant} ({total > 0 ? Math.round((data.compliant / total) * 100) : 0}%)</p>
+                                <p className="text-xs text-blue-600">{t("Non-Compliant")}: {data.nonCompliant} ({total > 0 ? Math.round((data.nonCompliant / total) * 100) : 0}%)</p>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
+                      <Legend
+                        layout="horizontal"
+                        align="center"
+                        verticalAlign="bottom"
+                        iconType="square"
+                        iconSize={12}
+                        formatter={(value) => <span className="text-sm text-slate-600">{t(value)}</span>}
+                      />
+                      <Bar dataKey="notApplicable" name="Not-Applicable" stackId="a" fill="#22c55e" />
+                      <Bar dataKey="compliant" name="Compliant" stackId="a" fill="#f97316" />
+                      <Bar dataKey="nonCompliant" name="Non-Compliant" stackId="a" fill="#3b82f6" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-slate-400">
+                    {t("No data available")}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </TabsContent>
+      </Tabs>
 
       {/* Create Control Dialog - 3 Step Wizard */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
