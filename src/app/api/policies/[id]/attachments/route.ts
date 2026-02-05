@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, validateTenantAccess, forbidden } from "@/lib/api-auth";
-import { writeFile, mkdir } from "fs/promises";
+import { writeFile, mkdir, unlink } from "fs/promises";
 import path from "path";
 
 interface RouteContext {
@@ -199,12 +199,34 @@ export const DELETE = withAuth(
         );
       }
 
-      // Delete attachment record
+      // Delete physical file from disk
+      if (attachment.filePath) {
+        try {
+          // Handle both /uploads/... and uploads/... paths
+          const relativePath = attachment.filePath.startsWith("/")
+            ? attachment.filePath.slice(1)
+            : attachment.filePath;
+          const absolutePath = path.join(process.cwd(), relativePath);
+          await unlink(absolutePath);
+          console.log(`[Policy Attachment] Deleted file: ${absolutePath}`);
+        } catch (fileError) {
+          // Log but don't fail if file doesn't exist
+          console.warn(
+            `[Policy Attachment] Could not delete file: ${attachment.filePath}`,
+            fileError
+          );
+        }
+      }
+
+      // Delete attachment record from database
       await prisma.policyAttachment.delete({
         where: { id: attachmentId },
       });
 
-      return NextResponse.json({ message: "Attachment deleted successfully" });
+      return NextResponse.json({
+        message: "Attachment deleted successfully",
+        fileName: attachment.fileName,
+      });
     } catch (error) {
       console.error("Error deleting policy attachment:", error);
       return NextResponse.json(

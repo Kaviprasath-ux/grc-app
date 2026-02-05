@@ -69,7 +69,6 @@ export async function calculateFrameworkCharts(
       },
     };
 
-    console.log(`✅ Charts calculated in ${totalTime}ms - Compliance: ${result.compliancePercentage.toFixed(1)}%, Policy: ${result.policyPercentage.toFixed(1)}%, Evidence: ${result.evidencePercentage.toFixed(1)}%`);
 
     return result;
   } catch (error) {
@@ -169,7 +168,7 @@ async function calculateComplianceChart(frameworkId: string) {
     // Calculate percentage
     const percentage = totalControls > 0 ? (compliantControls / totalControls) * 100 : 0;
 
-    console.log(`  ✅ Compliance: ${percentage.toFixed(1)}% (${compliantControls}/${totalControls})`);
+    
 
     return {
       percentage: Math.max(0, Math.min(100, percentage)), // Ensure 0-100 range
@@ -288,7 +287,7 @@ async function calculatePolicyChart(frameworkId: string) {
     // Calculate percentage
     const percentage = totalPolicies > 0 ? (publishedPolicies / totalPolicies) * 100 : 0;
 
-    console.log(`  ✅ Policy: ${percentage.toFixed(1)}% (${publishedPolicies}/${totalPolicies})`);
+    
 
     return {
       percentage: Math.max(0, Math.min(100, percentage)),
@@ -407,7 +406,7 @@ async function calculateEvidenceChart(frameworkId: string) {
     // Calculate percentage
     const percentage = totalEvidences > 0 ? (publishedEvidences / totalEvidences) * 100 : 0;
 
-    console.log(`  ✅ Evidence: ${percentage.toFixed(1)}% (${publishedEvidences}/${totalEvidences})`);
+    
 
     return {
       percentage: Math.max(0, Math.min(100, percentage)),

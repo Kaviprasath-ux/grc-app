@@ -3,10 +3,17 @@ import { auth } from "@/lib/auth";
 import aiApiClient from "@/lib/ai-api-client";
 import { aiAuditService } from "@/services/ai-audit-service";
 import { prisma } from "@/lib/prisma";
+import { AI_ENDPOINTS } from "@/lib/ai-endpoints";
+import {
+  unauthorizedResponse,
+  badRequestResponse,
+  notFoundResponse,
+  errorResponse,
+} from "@/lib/ai-route-helpers";
 
 /**
  * POST /api/ai/governance/ingest
- * 
+ *
  * Ingests a policy document into RunPod /api/grc_ingest.
  * Aligned with 100% OpenAPI contract.
  */
@@ -17,7 +24,7 @@ export async function POST(req: NextRequest) {
     try {
         const session = await auth();
         if (!session?.user) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+            return unauthorizedResponse();
         }
         userId = session.user.id;
 
@@ -26,7 +33,7 @@ export async function POST(req: NextRequest) {
         const file = formData.get("file") as File;
 
         if (!policyId || !file) {
-            return NextResponse.json({ error: "policyId and file are required" }, { status: 400 });
+            return badRequestResponse("policyId and file are required");
         }
 
         // Fetch policy details for file_code
@@ -35,7 +42,7 @@ export async function POST(req: NextRequest) {
         });
 
         if (!policy) {
-            return NextResponse.json({ error: "Policy not found" }, { status: 404 });
+            return notFoundResponse("Policy");
         }
 
         // Canonical OpenAPI Payload construction
@@ -48,7 +55,7 @@ export async function POST(req: NextRequest) {
 
         // Step 1: Log AIOperation (Request) using standard Atomic Audit pattern
         const operation = await aiAuditService.logOperation({
-            endpoint: "/api/grc_ingest",
+            endpoint: AI_ENDPOINTS.INGEST,
             method: "POST",
             requestBody: {
                 base_id: policyId,
@@ -62,15 +69,12 @@ export async function POST(req: NextRequest) {
         console.log(`[Governance Ingest] Ingesting policy ${policy.code} (RunPod Contract Sync)`);
 
         // Step 2: Call RunPod via aiApiClient
-        const response = await aiApiClient.post("/api/grc_ingest", runpodFormData, {
-            headers: {
-                "Content-Type": "multipart/form-data",
-            },
-        });
+        const response = await aiApiClient.post(AI_ENDPOINTS.INGEST, runpodFormData);
 
         // Backend may return job_id for async tracking or document_id for sync
-        const jobId = response.data.job_id;
-        const documentId = response.data.document_id;
+        const responseData = response.data as { job_id?: string; document_id?: string };
+        const jobId = responseData.job_id;
+        const documentId = responseData.document_id;
         const latencyMs = Date.now() - startTime;
 
         // Step 3: Log AIOperation (Success Response Update)
@@ -89,7 +93,7 @@ export async function POST(req: NextRequest) {
         if (jobId) {
             await aiAuditService.createJob({
                 providerJobId: jobId,
-                type: "/api/grc_ingest",
+                type: AI_ENDPOINTS.INGEST,
                 userId,
                 metadata: { policyId, documentId },
             });
@@ -111,23 +115,21 @@ export async function POST(req: NextRequest) {
             status: jobId ? "queued" : "completed"
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         const latencyMs = Date.now() - startTime;
-        console.error("[Governance Ingest] Error:", error);
+        const err = error as { message?: string; status?: number };
+        console.error("[Governance Ingest] Error:", err);
 
         // Standardized Audit Error Logging
         await aiAuditService.logOperation({
-            endpoint: "/api/grc_ingest",
+            endpoint: AI_ENDPOINTS.INGEST,
             method: "POST",
-            error: error.message || "Unknown error during ingestion",
-            statusCode: error.status || 500,
+            error: err.message || "Unknown error during ingestion",
+            statusCode: err.status || 500,
             latencyMs,
             userId,
         });
 
-        return NextResponse.json(
-            { error: error.message || "Failed to ingest policy" },
-            { status: error.status || 500 }
-        );
+        return errorResponse(err.message || "Failed to ingest policy", err.status || 500);
     }
 }

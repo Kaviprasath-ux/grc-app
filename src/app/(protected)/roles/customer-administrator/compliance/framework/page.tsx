@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -116,6 +116,11 @@ export default function CustomerAdminFrameworkPage() {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
+  // AI Create flow state (RunPod job + client-side polling)
+  const [isAISubmitting, setIsAISubmitting] = useState(false);
+  const [aiJobStatus, setAiJobStatus] = useState<string | null>(null);
+  const aiPollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   // Form state
   const [formData, setFormData] = useState<NewFramework>({
     code: "",
@@ -183,8 +188,20 @@ export default function CustomerAdminFrameworkPage() {
 
   const openAICreateDialog = () => {
     resetForm();
+    setAiJobStatus(null);
+    setIsAISubmitting(false);
+    if (aiPollIntervalRef.current) {
+      clearInterval(aiPollIntervalRef.current);
+      aiPollIntervalRef.current = null;
+    }
     setIsAICreateDialogOpen(true);
   };
+
+  useEffect(() => {
+    return () => {
+      if (aiPollIntervalRef.current) clearInterval(aiPollIntervalRef.current);
+    };
+  }, []);
 
   const openCreateDialog = () => {
     resetForm();
@@ -192,38 +209,110 @@ export default function CustomerAdminFrameworkPage() {
   };
 
   const handleAICreate = async () => {
+    if (isAISubmitting) return;
+
+    setIsAISubmitting(true);
+    setAiJobStatus("submitting");
+
     try {
-      const response = await fetch("/api/frameworks", {
+      const fd = new FormData();
+      fd.append("framework_name", formData.name.trim());
+      if (formData.description) fd.append("description", formData.description);
+      if (formData.type) fd.append("type", formData.type);
+      if (formData.country) fd.append("country", formData.country);
+      if (formData.industry) fd.append("industry", formData.industry);
+      if (formData.code) fd.append("code", formData.code);
+      if (uploadedFile) fd.append("attachment", uploadedFile);
+
+      const createRes = await fetch("/api/ai/generate-framework", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...formData,
-          isCustom: true,
-          status: "Subscribed",
-        }),
+        body: fd,
       });
 
-      if (response.ok) {
-        setIsAICreateDialogOpen(false);
-        resetForm();
-        fetchFrameworks();
-        toast({
-          title: t("Success"),
-          description: t("Framework created successfully"),
-        });
-      } else {
-        const error = await response.json();
-        toast({
-          title: t("Error"),
-          description: error.error || t("Failed to create framework"),
-          variant: "destructive",
-        });
+      if (!createRes.ok) {
+        const err = await createRes.json();
+        throw new Error(err.error || "Failed to start AI framework generation");
       }
+
+      const { job_id } = await createRes.json();
+      if (!job_id) throw new Error("No job ID returned");
+
+      setAiJobStatus("queued");
+
+      const poll = async () => {
+        try {
+          const statusRes = await fetch(`/api/ai/framework-status/${job_id}`);
+          if (!statusRes.ok) return;
+          const statusData = await statusRes.json();
+          const status = (statusData.status || "").toLowerCase();
+          setAiJobStatus(status);
+
+          const isTerminalFailure = status === "failed" || status === "error";
+          if (status === "completed" || isTerminalFailure) {
+            if (aiPollIntervalRef.current) {
+              clearInterval(aiPollIntervalRef.current);
+              aiPollIntervalRef.current = null;
+            }
+          }
+
+          if (status === "completed") {
+            const resultRes = await fetch(`/api/ai/framework-result/${job_id}`);
+            if (!resultRes.ok) throw new Error("Failed to fetch result");
+            const result = await resultRes.json();
+            console.log("[AI Framework] Result:", result);
+            const frameworkId = result.frameworkId;
+
+            setIsAICreateDialogOpen(false);
+            resetForm();
+            setAiJobStatus(null);
+            setIsAISubmitting(false);
+            fetchFrameworks();
+            toast({
+              title: t("Success"),
+              description: t("Framework created successfully"),
+            });
+            if (frameworkId) {
+              router.push(`/roles/customer-administrator/compliance/framework/${frameworkId}`);
+            }
+          } else if (isTerminalFailure) {
+            setIsAISubmitting(false);
+            setAiJobStatus(null);
+            const errorMsg =
+              statusData.error ||
+              statusData.message ||
+              statusData.error_message ||
+              statusData.detail ||
+              t("AI framework generation failed");
+            console.error("[AI Framework] Job failed:", statusData);
+            toast({
+              title: t("Error"),
+              description: typeof errorMsg === "string" ? errorMsg : JSON.stringify(errorMsg),
+              variant: "destructive",
+            });
+          }
+        } catch (e) {
+          if (aiPollIntervalRef.current) {
+            clearInterval(aiPollIntervalRef.current);
+            aiPollIntervalRef.current = null;
+          }
+          setIsAISubmitting(false);
+          setAiJobStatus(null);
+          toast({
+            title: t("Error"),
+            description: e instanceof Error ? e.message : t("Polling failed"),
+            variant: "destructive",
+          });
+        }
+      };
+
+      poll();
+      aiPollIntervalRef.current = setInterval(poll, 5000);
     } catch (error) {
-      console.error("Error creating framework:", error);
+      setIsAISubmitting(false);
+      setAiJobStatus(null);
       toast({
         title: t("Error"),
-        description: t("Failed to create framework"),
+        description: error instanceof Error ? error.message : t("Failed to create framework"),
         variant: "destructive",
       });
     }
@@ -1115,15 +1204,31 @@ export default function CustomerAdminFrameworkPage() {
           </div>
           {/* Sticky Footer */}
           <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg flex justify-end gap-2 flex-shrink-0">
-            <Button variant="outline" size="sm" onClick={() => setIsAICreateDialogOpen(false)}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsAICreateDialogOpen(false)}
+              disabled={isAISubmitting}
+            >
               {t("Cancel")}
             </Button>
             <Button
               size="sm"
               onClick={handleAICreate}
-              disabled={!formData.name || !formData.type || !formData.country || !formData.industry}
+              disabled={!formData.name || !formData.type || !formData.country || !formData.industry || isAISubmitting}
             >
-              {t("Save")}
+              {isAISubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" />
+                  {aiJobStatus === "submitting"
+                    ? t("Submitting...")
+                    : aiJobStatus === "queued" || aiJobStatus === "processing"
+                      ? t("Generating... (AI)")
+                      : t("Processing...")}
+                </>
+              ) : (
+                t("Save")
+              )}
             </Button>
           </div>
         </DialogContent>

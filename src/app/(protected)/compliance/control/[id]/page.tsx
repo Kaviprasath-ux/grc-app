@@ -59,6 +59,7 @@ interface Control {
   owner?: { id: string; fullName: string };
   assignee?: { id: string; fullName: string };
   evidences?: Evidence[];
+  evidenceControls?: EvidenceControl[];
   exceptions?: Exception[];
   requirements?: RequirementControl[];
   controlRisks?: ControlRisk[];
@@ -111,6 +112,19 @@ interface PolicyControl {
     name: string;
     status: string;
     documentType: string;
+  };
+}
+
+interface EvidenceControl {
+  id: string;
+  evidence: {
+    id: string;
+    evidenceCode: string;
+    name: string;
+    status: string;
+    dueDate?: string;
+    assignee?: { fullName: string };
+    attachments?: { id: string; fileName: string }[];
   };
 }
 
@@ -508,7 +522,7 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
             </TabsTrigger>
             <TabsTrigger value="evidence" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
               <ClipboardCheck className="h-4 w-4 mr-2" />
-              {t("Evidence")} ({control.evidences?.length || 0})
+              {t("Evidence")} ({(control.evidences?.length || 0) + (control.evidenceControls?.length || 0)})
             </TabsTrigger>
             <TabsTrigger value="exceptions" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
               <AlertTriangle className="h-4 w-4 mr-2" />
@@ -592,8 +606,9 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
                 </TableRow>
               </TableHeader>
               <TableBody>
+                {/* Direct evidence links */}
                 {control.evidences?.map((e) => (
-                  <TableRow key={e.id}>
+                  <TableRow key={e.id} className="cursor-pointer hover:bg-slate-50" onClick={() => router.push(`/compliance/evidence/${e.id}`)}>
                     <TableCell>{e.evidenceCode}</TableCell>
                     <TableCell>{e.name}</TableCell>
                     <TableCell>
@@ -603,7 +618,19 @@ export default function ControlDetailPage({ params }: { params: Promise<{ id: st
                     <TableCell>{e.dueDate ? new Date(e.dueDate).toLocaleDateString() : "-"}</TableCell>
                   </TableRow>
                 ))}
-                {(!control.evidences || control.evidences.length === 0) && (
+                {/* Evidence linked via junction table (EvidenceControl) */}
+                {control.evidenceControls?.map((ec) => (
+                  <TableRow key={ec.id} className="cursor-pointer hover:bg-slate-50" onClick={() => router.push(`/compliance/evidence/${ec.evidence.id}`)}>
+                    <TableCell>{ec.evidence.evidenceCode}</TableCell>
+                    <TableCell>{ec.evidence.name}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{ec.evidence.status}</Badge>
+                    </TableCell>
+                    <TableCell>{ec.evidence.assignee?.fullName || "-"}</TableCell>
+                    <TableCell>{ec.evidence.dueDate ? new Date(ec.evidence.dueDate).toLocaleDateString() : "-"}</TableCell>
+                  </TableRow>
+                ))}
+                {((!control.evidences || control.evidences.length === 0) && (!control.evidenceControls || control.evidenceControls.length === 0)) && (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center text-slate-400">
                       {t("No linked evidences")}

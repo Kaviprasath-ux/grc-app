@@ -27,6 +27,16 @@ export const GET = withAuth(
               attachments: true,
             },
           },
+          evidenceControls: {
+            include: {
+              evidence: {
+                include: {
+                  assignee: true,
+                  attachments: true,
+                },
+              },
+            },
+          },
           exceptions: true,
           requirements: {
             include: {

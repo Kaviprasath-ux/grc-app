@@ -35,26 +35,78 @@ async function handler(
         }
 
         const pollTime = new Date().toISOString();
-        console.log(`\n🟡 [${pollTime}] STEP 2/3: STATUS POLL | Job: ${id} | Calling: GET /api/framework_job_status/${id}`);
+        console.log(`
+╔════════════════════════════════════════════════════════════════╗
+║          🟡 STEP 2/3: POLLING FOR STATUS                        ║
+║          GET /api/ai/framework-status/{jobId}                  ║
+╚════════════════════════════════════════════════════════════════╝
+[${pollTime}]
+
+📋 POLL REQUEST:
+  Job ID            : ${id}
+  User ID           : ${session.id}
+  Endpoint Called   : GET /api/framework_job_status/${id}
+  
+⏳ Querying Python backend for status...
+`);
 
         // Call Python backend via centralized client
         const response = await aiApiClient.get(endpoint);
         const result = response.data;
         const latency = Date.now() - startTime;
 
-        // Concise status-specific logging
-        const statusUpper = (result.status || 'UNKNOWN').toUpperCase();
+        console.log(`
+✅ STATUS RECEIVED FROM PYTHON BACKEND
+[${new Date().toISOString()}]
 
-        if (statusUpper === 'COMPLETED') {
-            console.log(`   ✅ RESPONSE: Status=${statusUpper} | Latency=${latency}ms | READY FOR RESULT FETCH → GET /api/ai/framework-result/${id}`);
-        } else if (statusUpper === 'PROCESSING') {
-            console.log(`   ⏳ RESPONSE: Status=${statusUpper} | Progress=${result.progress || 'N/A'}% | Latency=${latency}ms | Next poll in 15s`);
-        } else if (statusUpper === 'QUEUED') {
-            console.log(`   ⏳ RESPONSE: Status=${statusUpper} | Queue Position=${result.queue_position || 'N/A'} | Latency=${latency}ms | Next poll in 15s`);
-        } else if (statusUpper === 'FAILED') {
-            console.log(`   ❌ RESPONSE: Status=${statusUpper} | Error=${result.error || 'Unknown'} | Latency=${latency}ms`);
-        } else {
-            console.log(`   📊 RESPONSE: Status=${statusUpper} | Latency=${latency}ms`);
+📊 POLL RESPONSE:
+  Job ID            : ${id}
+  Status            : ${(result.status || 'UNKNOWN').toUpperCase()}
+  Response Time     : ${latency}ms
+  Progress          : ${result.progress || 'N/A'}%
+  
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+`);
+
+        // Status-specific logging
+        if (result.status === 'completed' || result.status === 'COMPLETED') {
+            console.log(`
+✅ JOB COMPLETED!
+  Status            : READY FOR RETRIEVAL
+  Next Step         : GET /api/ai/framework-result/${id}
+  Action            : Will fetch results & persist to DB
+  
+  Test Command:
+  curl "http://localhost:3000/api/ai/framework-result/${id}" \\
+    -H "Authorization: Bearer YOUR_TOKEN"
+`);
+        } else if (result.status === 'processing' || result.status === 'PROCESSING') {
+            console.log(`
+⏳ JOB PROCESSING
+  Status            : IN PROGRESS
+  Progress          : ${result.progress || 'N/A'}%
+  Next Poll         : In 15 seconds
+  Keep polling...
+`);
+        } else if (result.status === 'queued' || result.status === 'QUEUED') {
+            console.log(`
+⏳ JOB QUEUED
+  Status            : WAITING TO START
+  Position          : ${result.queue_position || 'N/A'}
+  Next Poll         : In 15 seconds
+  Keep polling...
+`);
+        } else if (['failed', 'FAILED', 'error', 'ERROR'].includes(result.status)) {
+            console.log(`
+❌ JOB FAILED / ERROR
+  Status            : ${result.status}
+  Error             : ${result.error || 'Unknown error'}
+  Error Code        : ${result.error_code || 'N/A'}
+  Message           : ${result.error_message || result.message || 'No message'}
+  Detail            : ${JSON.stringify(result.detail || result)}
+  
+  Action Required   : Review error and retry. Check RunPod/Python backend logs.
+`);
         }
 
         // Sync with local DB
@@ -77,7 +129,23 @@ async function handler(
         return NextResponse.json(result);
     } catch (error: any) {
         const errorTime = new Date().toISOString();
-        console.error(`\n❌ [${errorTime}] STATUS POLL FAILED | Job: ${id} | Error: ${error.message || 'Unknown'} | Status: ${error.status || 'N/A'} | Latency: ${Date.now() - startTime}ms`);
+        console.error(`
+╔════════════════════════════════════════════════════════════════╗
+║          ❌ FRAMEWORK STATUS POLLING FAILED                     ║
+╚════════════════════════════════════════════════════════════════╝
+[${errorTime}]
+
+📊 ERROR DETAILS:
+  • Job ID: ${id}
+  • Message: ${error.message || 'Unknown error'}
+  • Status Code: ${error.status || 'N/A'}
+  • Processing Time: ${Date.now() - startTime}ms
+
+🔧 TROUBLESHOOTING:
+  • Verify job ID: ${id}
+  • Check backend connectivity
+  • Retry polling in a few seconds
+`);
 
         const statusCode = error.status || 500;
         const errorMsg = error.message || "Internal server error";

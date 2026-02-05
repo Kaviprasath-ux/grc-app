@@ -98,6 +98,49 @@ async function handler(req: NextRequest, _context: any, session: AuthenticatedRe
             );
         }
 
+        // ═══════════════════════════════════════════════════════════════
+        // BUILD LIBRARY: Fetch user's controls, evidences, policies
+        // API expects: { control_library, evidence_library, governance_library }
+        // ═══════════════════════════════════════════════════════════════
+        let libraryPayload = library;
+        if (session.customerAccountId) {
+            const [controls, evidences, policies] = await Promise.all([
+                prisma.control.findMany({
+                    where: { customerAccountId: session.customerAccountId },
+                    select: { name: true, controlCode: true },
+                    orderBy: { controlCode: "asc" },
+                }),
+                prisma.evidence.findMany({
+                    where: { customerAccountId: session.customerAccountId },
+                    select: { name: true, evidenceCode: true },
+                    orderBy: { evidenceCode: "asc" },
+                }),
+                prisma.policy.findMany({
+                    where: { customerAccountId: session.customerAccountId },
+                    select: { name: true, code: true },
+                    orderBy: { code: "asc" },
+                }),
+            ]);
+
+            const libraryObj = {
+                control_library: controls.map((c) => ({
+                    control_name: c.name,
+                    control_code: c.controlCode || c.name,
+                })),
+                evidence_library: evidences.map((e) => ({
+                    evidence_name: e.name,
+                    evidence_code: e.evidenceCode || e.name,
+                })),
+                governance_library: policies.map((p) => ({
+                    policy_procedure_name: p.name,
+                    policy_procedure_code: p.code || p.name,
+                })),
+            };
+            libraryPayload = JSON.stringify(libraryObj);
+            requestPayload.library_summary = { controlCount: controls.length, evidenceCount: evidences.length, policyCount: policies.length };
+            console.log(`📚 Library built: ${controls.length} controls, ${evidences.length} evidences, ${policies.length} policies`);
+        }
+
         // Prepare request to Python backend using aiApiClient
         const backendFormData = new FormData();
         backendFormData.append("framework_name", frameworkName);
@@ -106,9 +149,17 @@ async function handler(req: NextRequest, _context: any, session: AuthenticatedRe
             backendFormData.append("attachment", attachment);
         }
 
-        if (library) {
-            backendFormData.append("library", library);
+        if (libraryPayload) {
+            backendFormData.append("library", libraryPayload);
         }
+
+        // Log full payload for debugging
+        const payloadLog = {
+            framework_name: frameworkName,
+            attachment: attachment ? { name: attachment.name, size: attachment.size } : null,
+            library: libraryPayload ? JSON.parse(libraryPayload as string) : null,
+        };
+        console.log("[AI Framework] Payload being sent to RunPod:", JSON.stringify(payloadLog, null, 2));
 
         const createdAt = new Date().toISOString();
         console.log(`
@@ -125,7 +176,7 @@ async function handler(req: NextRequest, _context: any, session: AuthenticatedRe
   Country           : ${country || 'N/A'}
   Industry          : ${industry || 'N/A'}
   Description       : ${description ? 'YES' : 'NO'}
-  Library           : ${library || 'N/A'}
+  Library           : ${libraryPayload ? `YES (user data: controls/evidences/policies)` : 'N/A'}
   Attachment        : ${attachment ? 'YES (' + attachment.name + ')' : 'NO'}
   Customer ID       : ${session.customerAccountId || 'NOT SET'}
   User ID           : ${session.id}
@@ -135,14 +186,10 @@ async function handler(req: NextRequest, _context: any, session: AuthenticatedRe
   Backend URL       : https://a4t2jogsl4815o-9000.proxy.runpod.net/
 `);
 
-        // Call Python backend via centralized client
-        const response = await aiApiClient.post(endpoint, backendFormData, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            },
-        });
+        // Call Python backend via centralized client (no Content-Type for FormData - fetch sets boundary)
+        const response = await aiApiClient.post(endpoint, backendFormData);
 
-        const result = response.data;
+        const result = response.data as { job_id?: string; status?: string };
         jobId = result.job_id;
         const latency = Date.now() - startTime;
 

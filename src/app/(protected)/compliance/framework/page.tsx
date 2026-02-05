@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -54,6 +54,7 @@ import {
   X,
   Search,
   Home,
+  Loader2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -136,6 +137,11 @@ export default function FrameworkOverviewPage() {
   // File upload state for AI version
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+
+  // AI Create flow state (RunPod job + client-side polling)
+  const [isAISubmitting, setIsAISubmitting] = useState(false);
+  const [aiJobStatus, setAiJobStatus] = useState<string | null>(null);
+  const aiPollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Form state
   const [formData, setFormData] = useState<NewFramework>({
@@ -221,9 +227,21 @@ export default function FrameworkOverviewPage() {
 
   const openCreateDialog = (isAI: boolean) => {
     resetForm();
+    setAiJobStatus(null);
+    setIsAISubmitting(false);
+    if (aiPollIntervalRef.current) {
+      clearInterval(aiPollIntervalRef.current);
+      aiPollIntervalRef.current = null;
+    }
     setIsAICreate(isAI);
     setIsCreateDialogOpen(true);
   };
+
+  useEffect(() => {
+    return () => {
+      if (aiPollIntervalRef.current) clearInterval(aiPollIntervalRef.current);
+    };
+  }, []);
 
   const openEditDialog = (framework: Framework) => {
     setFormData({
@@ -261,8 +279,104 @@ export default function FrameworkOverviewPage() {
             description: t("Framework updated successfully"),
           });
         }
+      } else if (isAICreate) {
+        // AI Create: call RunPod APIs with polling
+        if (isAISubmitting) return;
+        setIsAISubmitting(true);
+        setAiJobStatus("submitting");
+
+        const fd = new FormData();
+        fd.append("framework_name", formData.name.trim());
+        if (formData.description) fd.append("description", formData.description);
+        if (formData.type) fd.append("type", formData.type);
+        if (formData.country) fd.append("country", formData.country);
+        if (formData.industry) fd.append("industry", formData.industry);
+        if (formData.code) fd.append("code", formData.code);
+        if (uploadedFile) fd.append("attachment", uploadedFile);
+
+        const createRes = await fetch("/api/ai/generate-framework", {
+          method: "POST",
+          body: fd,
+        });
+
+        if (!createRes.ok) {
+          const err = await createRes.json();
+          throw new Error(err.error || "Failed to start AI framework generation");
+        }
+
+        const { job_id } = await createRes.json();
+        if (!job_id) throw new Error("No job ID returned");
+
+        setAiJobStatus("queued");
+
+        const poll = async () => {
+          try {
+            const statusRes = await fetch(`/api/ai/framework-status/${job_id}`);
+            if (!statusRes.ok) return;
+            const statusData = await statusRes.json();
+            const status = (statusData.status || "").toLowerCase();
+            setAiJobStatus(status);
+
+            const isTerminalFailure = status === "failed" || status === "error";
+            if (status === "completed" || isTerminalFailure) {
+              if (aiPollIntervalRef.current) {
+                clearInterval(aiPollIntervalRef.current);
+                aiPollIntervalRef.current = null;
+              }
+            }
+
+            if (status === "completed") {
+              const resultRes = await fetch(`/api/ai/framework-result/${job_id}`);
+              if (!resultRes.ok) throw new Error("Failed to fetch result");
+              const result = await resultRes.json();
+              const frameworkId = result.frameworkId;
+
+              setIsCreateDialogOpen(false);
+              resetForm();
+              setAiJobStatus(null);
+              setIsAISubmitting(false);
+              fetchFrameworks();
+              toast({
+                title: t("Success"),
+                description: t("Framework created successfully"),
+              });
+              if (frameworkId) {
+                router.push(`/compliance/framework/${frameworkId}`);
+              }
+            } else if (isTerminalFailure) {
+              setIsAISubmitting(false);
+              setAiJobStatus(null);
+              const errorMsg =
+                statusData.error ||
+                statusData.message ||
+                statusData.error_message ||
+                statusData.detail ||
+                t("AI framework generation failed");
+              toast({
+                title: t("Error"),
+                description: typeof errorMsg === "string" ? errorMsg : JSON.stringify(errorMsg),
+                variant: "destructive",
+              });
+            }
+          } catch (e) {
+            if (aiPollIntervalRef.current) {
+              clearInterval(aiPollIntervalRef.current);
+              aiPollIntervalRef.current = null;
+            }
+            setIsAISubmitting(false);
+            setAiJobStatus(null);
+            toast({
+              title: t("Error"),
+              description: e instanceof Error ? e.message : t("Polling failed"),
+              variant: "destructive",
+            });
+          }
+        };
+
+        poll();
+        aiPollIntervalRef.current = setInterval(poll, 5000);
       } else {
-        // Create new framework
+        // Manual Create new framework
         const response = await fetch("/api/frameworks", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -279,7 +393,6 @@ export default function FrameworkOverviewPage() {
           resetForm();
           fetchFrameworks();
 
-          // Open the import dialog for the newly created framework
           setNewlyCreatedFrameworkId(newFramework.id);
           resetImportState();
           setIsImportDialogOpen(true);
@@ -294,9 +407,11 @@ export default function FrameworkOverviewPage() {
       }
     } catch (error) {
       console.error("Error saving framework:", error);
+      setIsAISubmitting(false);
+      setAiJobStatus(null);
       toast({
         title: t("Error"),
-        description: t("Failed to save framework"),
+        description: error instanceof Error ? error.message : t("Failed to save framework"),
         variant: "destructive",
       });
     }
@@ -851,11 +966,31 @@ export default function FrameworkOverviewPage() {
 
           {/* Fixed Footer */}
           <div className="flex-shrink-0 flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white rounded-b-lg">
-            <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsCreateDialogOpen(false)}
+              disabled={isAISubmitting}
+            >
               {t("Cancel")}
             </Button>
-            <Button onClick={handleCreateOrUpdate} disabled={!formData.name}>
-              {isEditMode ? t("Save") : t("Create")}
+            <Button
+              onClick={handleCreateOrUpdate}
+              disabled={!formData.name || isAISubmitting}
+            >
+              {isAISubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  {aiJobStatus === "submitting"
+                    ? t("Submitting...")
+                    : aiJobStatus === "queued" || aiJobStatus === "processing"
+                      ? t("Generating... (AI)")
+                      : t("Processing...")}
+                </>
+              ) : isEditMode ? (
+                t("Save")
+              ) : (
+                t("Create")
+              )}
             </Button>
           </div>
         </DialogContent>

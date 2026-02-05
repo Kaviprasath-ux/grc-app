@@ -175,6 +175,7 @@ CREATE TABLE "User" (
     "departmentId" TEXT,
     "auditHeadId" TEXT,
     "reportingManagerId" TEXT,
+    "createdById" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -664,6 +665,10 @@ CREATE TABLE "Evidence" (
     "kpiExpectedScore" DOUBLE PRECISION,
     "kpiDescription" TEXT,
     "kpiCalculationFormula" TEXT,
+    "aiIngestStatus" TEXT,
+    "aiIngestedAt" TIMESTAMP(3),
+    "aiReviewStatus" TEXT,
+    "aiReviewedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -1617,6 +1622,19 @@ CREATE TABLE "NatureOfImplementation" (
 );
 
 -- CreateTable
+CREATE TABLE "InternalAuditProcess" (
+    "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
+    "auditHeadId" TEXT,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "InternalAuditProcess_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "InternalAuditRisk" (
     "id" TEXT NOT NULL,
     "customerAccountId" TEXT NOT NULL,
@@ -1698,6 +1716,7 @@ CREATE TABLE "AuditEngagement" (
     "actualHours" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "initialObservation" TEXT,
     "relatedPolicies" TEXT,
+    "processId" TEXT,
     "status" TEXT NOT NULL DEFAULT 'Planned',
     "priority" TEXT NOT NULL DEFAULT 'Medium',
     "year" INTEGER NOT NULL DEFAULT 2026,
@@ -1927,13 +1946,14 @@ CREATE TABLE "DocumentSearch" (
 -- CreateTable
 CREATE TABLE "GovernanceTemplate" (
     "id" TEXT NOT NULL,
+    "customerAccountId" TEXT,
     "name" TEXT NOT NULL,
     "governanceType" TEXT NOT NULL DEFAULT 'Policy',
     "fileName" TEXT NOT NULL,
     "fileType" TEXT,
     "fileSize" INTEGER,
     "filePath" TEXT NOT NULL,
-    "uploadedBy" TEXT,
+    "uploadedById" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -1991,15 +2011,52 @@ CREATE TABLE "AIJob" (
 CREATE TABLE "EvidenceAIReview" (
     "id" TEXT NOT NULL,
     "evidenceId" TEXT NOT NULL,
+    "documentId" TEXT,
     "status" TEXT NOT NULL DEFAULT 'pending',
     "critique" TEXT,
+    "complianceSummary" TEXT,
+    "complianceScore" DOUBLE PRECISION,
+    "gaps" TEXT,
+    "suggestions" TEXT,
     "similarityScore" DOUBLE PRECISION,
     "recommendations" TEXT,
+    "rawResponse" TEXT,
     "aiOperationId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "EvidenceAIReview_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "EvidenceAIIngestJob" (
+    "id" TEXT NOT NULL,
+    "evidenceId" TEXT NOT NULL,
+    "attachmentId" TEXT,
+    "runpodJobId" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'queued',
+    "error" TEXT,
+    "result" TEXT,
+    "completedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "EvidenceAIIngestJob_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "EvidenceAIIngestResult" (
+    "id" TEXT NOT NULL,
+    "evidenceId" TEXT NOT NULL,
+    "jobId" TEXT NOT NULL,
+    "extractedText" TEXT,
+    "embeddings" TEXT,
+    "metadata" TEXT,
+    "indexingStatus" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "EvidenceAIIngestResult_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -2520,6 +2577,15 @@ CREATE INDEX "NatureOfImplementation_auditHeadId_idx" ON "NatureOfImplementation
 CREATE UNIQUE INDEX "NatureOfImplementation_auditHeadId_name_key" ON "NatureOfImplementation"("auditHeadId", "name");
 
 -- CreateIndex
+CREATE INDEX "InternalAuditProcess_customerAccountId_idx" ON "InternalAuditProcess"("customerAccountId");
+
+-- CreateIndex
+CREATE INDEX "InternalAuditProcess_auditHeadId_idx" ON "InternalAuditProcess"("auditHeadId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "InternalAuditProcess_auditHeadId_name_key" ON "InternalAuditProcess"("auditHeadId", "name");
+
+-- CreateIndex
 CREATE INDEX "InternalAuditRisk_customerAccountId_idx" ON "InternalAuditRisk"("customerAccountId");
 
 -- CreateIndex
@@ -2580,6 +2646,24 @@ CREATE INDEX "AIJob_userId_idx" ON "AIJob"("userId");
 CREATE INDEX "EvidenceAIReview_evidenceId_idx" ON "EvidenceAIReview"("evidenceId");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "EvidenceAIIngestJob_runpodJobId_key" ON "EvidenceAIIngestJob"("runpodJobId");
+
+-- CreateIndex
+CREATE INDEX "EvidenceAIIngestJob_evidenceId_idx" ON "EvidenceAIIngestJob"("evidenceId");
+
+-- CreateIndex
+CREATE INDEX "EvidenceAIIngestJob_runpodJobId_idx" ON "EvidenceAIIngestJob"("runpodJobId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "EvidenceAIIngestResult_jobId_key" ON "EvidenceAIIngestResult"("jobId");
+
+-- CreateIndex
+CREATE INDEX "EvidenceAIIngestResult_evidenceId_idx" ON "EvidenceAIIngestResult"("evidenceId");
+
+-- CreateIndex
+CREATE INDEX "EvidenceAIIngestResult_jobId_idx" ON "EvidenceAIIngestResult"("jobId");
+
+-- CreateIndex
 CREATE INDEX "PolicyAIReview_policyId_idx" ON "PolicyAIReview"("policyId");
 
 -- CreateIndex
@@ -2629,6 +2713,9 @@ ALTER TABLE "User" ADD CONSTRAINT "User_auditHeadId_fkey" FOREIGN KEY ("auditHea
 
 -- AddForeignKey
 ALTER TABLE "User" ADD CONSTRAINT "User_reportingManagerId_fkey" FOREIGN KEY ("reportingManagerId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "User" ADD CONSTRAINT "User_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Stakeholder" ADD CONSTRAINT "Stakeholder_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -3177,6 +3264,12 @@ ALTER TABLE "NatureOfImplementation" ADD CONSTRAINT "NatureOfImplementation_cust
 ALTER TABLE "NatureOfImplementation" ADD CONSTRAINT "NatureOfImplementation_auditHeadId_fkey" FOREIGN KEY ("auditHeadId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "InternalAuditProcess" ADD CONSTRAINT "InternalAuditProcess_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "InternalAuditProcess" ADD CONSTRAINT "InternalAuditProcess_auditHeadId_fkey" FOREIGN KEY ("auditHeadId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "InternalAuditRisk" ADD CONSTRAINT "InternalAuditRisk_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -3220,6 +3313,9 @@ ALTER TABLE "AuditEngagement" ADD CONSTRAINT "AuditEngagement_assignedAuditorId_
 
 -- AddForeignKey
 ALTER TABLE "AuditEngagement" ADD CONSTRAINT "AuditEngagement_auditeeId_fkey" FOREIGN KEY ("auditeeId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AuditEngagement" ADD CONSTRAINT "AuditEngagement_processId_fkey" FOREIGN KEY ("processId") REFERENCES "Process"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "AuditFieldwork" ADD CONSTRAINT "AuditFieldwork_engagementId_fkey" FOREIGN KEY ("engagementId") REFERENCES "AuditEngagement"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -3273,6 +3369,12 @@ ALTER TABLE "InternalAuditDocument" ADD CONSTRAINT "InternalAuditDocument_custom
 ALTER TABLE "InternalAuditDocument" ADD CONSTRAINT "InternalAuditDocument_auditHeadId_fkey" FOREIGN KEY ("auditHeadId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "GovernanceTemplate" ADD CONSTRAINT "GovernanceTemplate_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "GovernanceTemplate" ADD CONSTRAINT "GovernanceTemplate_uploadedById_fkey" FOREIGN KEY ("uploadedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "AIOperation" ADD CONSTRAINT "AIOperation_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -3283,6 +3385,12 @@ ALTER TABLE "EvidenceAIReview" ADD CONSTRAINT "EvidenceAIReview_evidenceId_fkey"
 
 -- AddForeignKey
 ALTER TABLE "EvidenceAIReview" ADD CONSTRAINT "EvidenceAIReview_aiOperationId_fkey" FOREIGN KEY ("aiOperationId") REFERENCES "AIOperation"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "EvidenceAIIngestJob" ADD CONSTRAINT "EvidenceAIIngestJob_evidenceId_fkey" FOREIGN KEY ("evidenceId") REFERENCES "Evidence"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "EvidenceAIIngestResult" ADD CONSTRAINT "EvidenceAIIngestResult_evidenceId_fkey" FOREIGN KEY ("evidenceId") REFERENCES "Evidence"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "PolicyAIReview" ADD CONSTRAINT "PolicyAIReview_policyId_fkey" FOREIGN KEY ("policyId") REFERENCES "Policy"("id") ON DELETE CASCADE ON UPDATE CASCADE;

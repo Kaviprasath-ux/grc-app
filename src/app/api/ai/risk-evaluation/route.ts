@@ -1,65 +1,60 @@
 import { NextRequest, NextResponse } from "next/server";
-import { withAuthOnly, AuthenticatedRequest, getCustomerAccountId } from "@/lib/api-auth";
+import { withAuthOnly, AuthenticatedRequest, getTenantFilter } from "@/lib/api-auth";
 import aiApiClient from "@/lib/ai-api-client";
 import { aiAuditService } from "@/services/ai-audit-service";
 import { prisma } from "@/lib/prisma";
-
-// Helper function to generate risk ID (format: RID001, RID002, etc.)
-async function generateRiskId(customerAccountId: string): Promise<string> {
-    const lastRisk = await prisma.risk.findFirst({
-        where: { customerAccountId },
-        orderBy: { createdAt: "desc" },
-        select: { riskId: true },
-    });
-
-    if (!lastRisk) return "RID001";
-
-    const match = lastRisk.riskId.match(/RID(\d+)/);
-    if (match) {
-        const nextNum = parseInt(match[1], 10) + 1;
-        return `RID${String(nextNum).padStart(3, "0")}`;
-    }
-
-    const count = await prisma.risk.count({ where: { customerAccountId } });
-    return `RID${String(count + 1).padStart(3, "0")}`;
-}
+import { AI_ENDPOINTS } from "@/lib/ai-endpoints";
+import {
+  missingFieldResponse,
+  notFoundResponse,
+  errorResponse,
+} from "@/lib/ai-route-helpers";
 
 /**
  * POST /api/ai/risk-evaluation
- * 
+ *
  * Generates and PERSISTS AI-powered risks for a Process.
  * Follows Synchronous v2 contract.
  */
 async function handler(
     req: NextRequest,
-    _context: any,
+    _context: unknown,
     session: AuthenticatedRequest["user"]
 ) {
     const startTime = Date.now();
-    const endpoint = "/api/generate_process_asset_risk_v2";
-    const customerAccountId = getCustomerAccountId(session);
-    let requestPayload: any = {};
+    let requestPayload: Record<string, unknown> = {};
 
     try {
         const body = await req.json();
         const { processId, regenerate = false } = body;
 
         if (!processId) {
-            return NextResponse.json({ error: "processId is required" }, { status: 400 });
+            return missingFieldResponse("processId");
         }
 
-        // 1. Fetch Process Details from DB
-        const process = await prisma.process.findUnique({
-            where: { id: processId, customerAccountId },
+        // 1. Fetch Process Details from DB (use tenant filter with globalAccess for GRCAdmin cross-tenant access)
+        const tenantFilter = getTenantFilter(session, { globalAccess: true });
+        console.log("[Risk Evaluation] Session roles:", session.roles);
+        console.log("[Risk Evaluation] Session customerAccountId:", session.customerAccountId);
+        console.log("[Risk Evaluation] Tenant filter:", tenantFilter);
+        console.log("[Risk Evaluation] Looking for processId:", processId);
+
+        const process = await prisma.process.findFirst({
+            where: { id: processId, ...tenantFilter },
             include: {
                 department: true,
                 impactedByRisks: { take: 1 }
             }
         });
 
+        console.log("[Risk Evaluation] Process found:", process ? process.id : "NOT FOUND");
+
         if (!process) {
-            return NextResponse.json({ error: "Process not found" }, { status: 404 });
+            return notFoundResponse("Process");
         }
+
+        // Use the process's customerAccountId for data isolation
+        const customerAccountId = process.customerAccountId;
 
         // 2. Duplicate Prevention / Persistence Recovery
         // Skip AI call if risks already exist and regenerate is false
@@ -82,18 +77,33 @@ async function handler(
                 Department: process.department?.name || "General"
             }
         };
+        console.log("AI Request Payload:", JSON.stringify(requestPayload));
 
         // Pre-flight Log
         const operation = await aiAuditService.logOperation({
-            endpoint,
+            endpoint: AI_ENDPOINTS.GENERATE_RISK,
             method: "POST",
             requestBody: requestPayload,
             userId: session.id,
         });
 
         // 4. Call AI Service (Synchronous)
-        const response = await aiApiClient.post(endpoint, requestPayload);
-        const result = response.data;
+        const response = await aiApiClient.post(AI_ENDPOINTS.GENERATE_RISK, requestPayload);
+        console.log("[Risk Evaluation] AI Response:", response);
+        const result = response.data as {
+            risks?: Array<{
+                Risk_name: string;
+                Risk_description: string;
+                Inherent_risk_rating?: string;
+                Threats?: Array<{
+                    threat_name: string;
+                    controls?: Array<{
+                        ControlName: string;
+                        control_functionalGrouping?: string;
+                    }>;
+                }>;
+            }>;
+        };
         const latencyMs = Date.now() - startTime;
 
         // Post-flight Log
@@ -198,24 +208,22 @@ async function handler(
 
         return NextResponse.json({ risks: createdRisks, status: "success", source: "AI" });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         const latencyMs = Date.now() - startTime;
-        console.error("Error in risk evaluation API:", error);
+        const err = error as { message?: string; status?: number };
+        console.error("[Risk Evaluation] Error:", err);
 
         await aiAuditService.logOperation({
-            endpoint,
+            endpoint: AI_ENDPOINTS.GENERATE_RISK,
             method: "POST",
             requestBody: requestPayload,
-            error: error.message || "Failed to generate risk evaluation",
-            statusCode: error.status || 500,
+            error: err.message || "Failed to generate risk evaluation",
+            statusCode: err.status || 500,
             latencyMs,
             userId: session.id
         });
 
-        return NextResponse.json(
-            { error: error.message || "Failed to generate risk evaluation" },
-            { status: error.status || 500 }
-        );
+        return errorResponse(err.message || "Failed to generate risk evaluation", err.status || 500);
     }
 }
 

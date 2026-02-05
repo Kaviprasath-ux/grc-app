@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { withAuthOnly, AuthenticatedRequest } from "@/lib/api-auth";
 import aiApiClient from "@/lib/ai-api-client";
 import { aiAuditService } from "@/services/ai-audit-service";
+import { AI_ENDPOINTS } from "@/lib/ai-endpoints";
+import {
+  missingFieldResponse,
+  errorResponse,
+} from "@/lib/ai-route-helpers";
 
 export const dynamic = 'force-dynamic';
 
@@ -20,21 +25,17 @@ async function handler(
 ) {
     const startTime = Date.now();
     const { jobId } = await context.params;
-    const endpoint = `/api/semanticMatch_process_asset_riskV2_status/${jobId}`;
 
     try {
         if (!jobId) {
-            return NextResponse.json(
-                { error: "Job ID is required" },
-                { status: 400 }
-            );
+            return missingFieldResponse("jobId");
         }
 
-        const response = await aiApiClient.get(endpoint);
-        const result = response.data;
+        const response = await aiApiClient.get(`${AI_ENDPOINTS.SEMANTIC_MATCH_STATUS}/${jobId}`);
+        const result = response.data as { status?: string; progress?: number; message?: string };
         const latency = Date.now() - startTime;
 
-        console.log(`[AI] GET  ${endpoint} → ${result.status || 'unknown'}`);
+        console.log(`[Risk Semantic Match Status] Job ${jobId}: ${result.status || 'unknown'}`);
 
         // Update job status in DB
         if (result.status) {
@@ -45,7 +46,7 @@ async function handler(
         // Log operation
         await aiAuditService.logOperation({
             jobId,
-            endpoint,
+            endpoint: AI_ENDPOINTS.SEMANTIC_MATCH_STATUS,
             method: 'GET',
             responseBody: result,
             statusCode: response.status,
@@ -59,24 +60,24 @@ async function handler(
             progress: result.progress,
             message: result.message,
         });
-    } catch (error: any) {
+    } catch (error: unknown) {
         const latency = Date.now() - startTime;
-        console.log(`[AI] GET  ${endpoint} → ${error.status || 500} (error)`);
+        const err = error as { message?: string; status?: number };
+        console.error(`[Risk Semantic Match Status] Error:`, err);
 
         await aiAuditService.logOperation({
             jobId,
-            endpoint,
+            endpoint: AI_ENDPOINTS.SEMANTIC_MATCH_STATUS,
             method: 'GET',
-            error: error.message,
-            statusCode: error.status || 500,
+            error: err.message,
+            statusCode: err.status || 500,
             latencyMs: latency,
             userId: session.id
         });
 
-        return NextResponse.json(
-            { error: "Failed to check job status", details: error.message },
-            { status: error.status || 500 }
-        );
+        return errorResponse("Failed to check job status", err.status || 500, {
+            details: err.message,
+        });
     }
 }
 

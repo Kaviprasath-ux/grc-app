@@ -10,20 +10,28 @@ import { prisma } from "@/lib/prisma";
  * Framework → RequirementCategories → Requirements → Controls → Evidence/Policy
  */
 
-interface AIResultData {
+export interface AIResultData {
   framework_name?: string;
   framework_code?: string;
   total_requirements?: number;
   requirements?: Array<{
-    code: string;
-    name: string;
+    code?: string;
+    requirement_code?: string;
+    name?: string;
+    requirement_name?: string;
     description?: string;
+    requirement_description?: string;
     category?: string;
+    requirement_category?: string;
     category_code?: string;
     controls?: Array<{
-      code: string;
-      name: string;
+      code?: string;
+      name?: string;
+      control_name?: string;
       description?: string;
+      control_description?: string;
+      policy_procedures?: Array<{ policy_procedure_name: string; policy_procedure_type: string }>;
+      evidences?: Array<{ evidence_name: string; evidence_description?: string; evidence_requirement?: string }>;
     }>;
   }>;
   [key: string]: any;
@@ -39,12 +47,37 @@ interface FrameworkMetadata {
   [key: string]: any;
 }
 
+/** Normalize RunPod API format to internal format */
+function normalizeRunPodResult(aiResult: AIResultData): AIResultData {
+  if (!aiResult.requirements) return aiResult;
+  return {
+    ...aiResult,
+    requirements: aiResult.requirements.map((req: any) => ({
+      code: req.requirement_code ?? req.code,
+      name: req.requirement_name ?? req.name,
+      description: req.requirement_description ?? req.description,
+      category: req.requirement_category ?? req.category,
+      category_code: req.category_code ?? generateCategoryCode(req.requirement_category ?? req.category),
+      controls: (req.controls || []).map((ctrl: any, idx: number) => ({
+        code: ctrl.code ?? `CTRL-${idx + 1}`,
+        name: ctrl.control_name ?? ctrl.name,
+        description: ctrl.control_description ?? ctrl.description,
+        policy_procedures: ctrl.policy_procedures || [],
+        evidences: ctrl.evidences || [],
+      })),
+    })),
+  };
+}
+
 export async function saveFrameworkFromAIResult(
   aiResult: AIResultData,
   metadata: FrameworkMetadata,
   customerAccountId: string
 ) {
   const persistenceStartTime = Date.now();
+
+  // Normalize RunPod format (requirement_code, control_name, etc.) to internal format
+  const normalized = normalizeRunPodResult(aiResult);
 
   try {
     console.log(`
@@ -54,9 +87,9 @@ export async function saveFrameworkFromAIResult(
 [${new Date().toISOString()}]
 
 📋 INPUT DATA:
-  • Framework Name: ${metadata.framework_name || aiResult.framework_name || 'Unknown'}
-  • Code: ${metadata.code || aiResult.framework_code || 'AUTO-GEN'}
-  • Total Requirements: ${aiResult.total_requirements || 0}
+  • Framework Name: ${metadata.framework_name || normalized.framework_name || 'Unknown'}
+  • Code: ${metadata.code || normalized.framework_code || 'AUTO-GEN'}
+  • Total Requirements: ${normalized.requirements?.length || 0}
   • Customer Account ID: ${customerAccountId || 'DEFAULT'}
 `);
 
@@ -79,8 +112,8 @@ export async function saveFrameworkFromAIResult(
     console.log(`
 🔍 STEP 1: Creating Framework Record...`);
 
-    const frameworkName = metadata.framework_name || aiResult.framework_name || "Generated Framework";
-    const frameworkCode = metadata.code || aiResult.framework_code || generateFrameworkCode(frameworkName);
+    const frameworkName = metadata.framework_name || normalized.framework_name || "Generated Framework";
+    const frameworkCode = metadata.code || normalized.framework_code || generateFrameworkCode(frameworkName);
 
     const framework = await tx.framework.create({
       data: {
@@ -111,8 +144,8 @@ export async function saveFrameworkFromAIResult(
 
     // Extract unique categories from requirements
     const categoriesMap = new Map<string, any>();
-    if (aiResult.requirements) {
-      aiResult.requirements.forEach((req: any) => {
+    if (normalized.requirements) {
+      normalized.requirements.forEach((req: any) => {
         const categoryCode = req.category_code || generateCategoryCode(req.category);
         if (!categoriesMap.has(categoryCode)) {
           categoriesMap.set(categoryCode, {
@@ -155,9 +188,9 @@ export async function saveFrameworkFromAIResult(
     let requirementCount = 0;
     const requirementMap = new Map<string, string>();
 
-    if (aiResult.requirements) {
+    if (normalized.requirements) {
       const requirements = await Promise.all(
-        aiResult.requirements.map((req: any, idx: number) =>
+        normalized.requirements.map((req: any, idx: number) =>
           tx.requirement.create({
             data: {
               customerAccountId,
@@ -185,48 +218,148 @@ export async function saveFrameworkFromAIResult(
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // STEP 4: Create Controls and Link to Requirements
+    // STEP 4: Create or Link Controls to Requirements
+    // If control already exists (by name), link to it; otherwise create new
     // ═══════════════════════════════════════════════════════════════
     console.log(`
-🔍 STEP 4: Creating Controls and Linking to Requirements...`);
+🔍 STEP 4: Creating/Linking Controls to Requirements...`);
 
     let controlCount = 0;
     let linkCount = 0;
+    let linkedExistingCount = 0;
 
-    if (aiResult.requirements) {
-      for (const req of aiResult.requirements) {
+    const controlIdMap = new Map<string, string>(); // key -> control DB id (for policy/evidence linking)
+    const requirementControlLinks = new Set<string>(); // "reqId|controlId" to avoid duplicates
+    const fwPrefix = `AI-${framework.id.slice(-8)}`;
+
+    // Fetch existing controls for this customer (match by name, case-insensitive)
+    const existingControls = await tx.control.findMany({
+      where: { customerAccountId },
+      select: { id: true, name: true },
+    });
+    const existingControlByName = new Map(
+      existingControls.map((c) => [c.name.trim().toLowerCase(), c.id])
+    );
+
+    const normalizeName = (s: string) => (s || "").trim().toLowerCase();
+
+    if (normalized.requirements) {
+      for (const req of normalized.requirements) {
         if (req.controls && req.controls.length > 0) {
           for (const ctrl of req.controls) {
-            // Create control
-            const control = await tx.control.create({
-              data: {
-                customerAccountId,
-                frameworkId: framework.id,
-                controlCode: ctrl.code || `CTRL-${controlCount + 1}`,
-                name: ctrl.name || `Control ${controlCount + 1}`,
-                description: ctrl.description,
-                status: "Non Compliant",
-                scope: "In-Scope",
-              },
-            });
+            const ctrlName = ctrl.name || `Control ${controlCount + 1}`;
+            const key = `${req.code}-${ctrlName}`;
 
-            controlCount++;
+            let controlId: string;
+            const existingId = existingControlByName.get(normalizeName(ctrlName));
 
-            // Link control to requirement
-            const requirementId = requirementMap.get(req.code);
-            if (requirementId) {
-              await tx.requirementControl.create({
+            if (existingId) {
+              controlId = existingId;
+              linkedExistingCount++;
+            } else {
+              controlCount++;
+              const uniqueControlCode = `${fwPrefix}-${String(controlCount).padStart(4, "0")}`;
+              const control = await tx.control.create({
                 data: {
-                  requirementId,
-                  controlId: control.id,
+                  customerAccountId,
+                  frameworkId: framework.id,
+                  controlCode: uniqueControlCode,
+                  name: ctrlName,
+                  description: ctrl.description,
+                  status: "Non Compliant",
+                  scope: "In-Scope",
                 },
               });
+              controlId = control.id;
+              existingControlByName.set(normalizeName(ctrlName), controlId);
+            }
 
-              linkCount++;
+            controlIdMap.set(key, controlId);
+
+            const requirementId = requirementMap.get(req.code!);
+            if (requirementId) {
+              const linkKey = `${requirementId}|${controlId}`;
+              if (!requirementControlLinks.has(linkKey)) {
+                requirementControlLinks.add(linkKey);
+                await tx.requirementControl.create({
+                  data: { requirementId, controlId },
+                });
+                linkCount++;
+              }
             }
           }
         }
       }
+    }
+
+    if (linkedExistingCount > 0) {
+      console.log(`  ✅ ${linkedExistingCount} controls linked to existing records`);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // STEP 4b: Create Policies and Evidences from AI result
+    // ═══════════════════════════════════════════════════════════════
+    let policyCount = 0;
+    let evidenceCount = 0;
+    const policyCodeUsed = new Set<string>();
+    const evidenceSeq = { n: 0 };
+
+    if (normalized.requirements) {
+      for (const req of normalized.requirements) {
+        if (!req.controls) continue;
+        for (const ctrl of req.controls) {
+          const controlDbId = controlIdMap.get(`${req.code}-${ctrl.name}`);
+          if (!controlDbId) continue;
+
+          for (const pp of ctrl.policy_procedures || []) {
+            const baseCode = generatePolicyCode(pp.policy_procedure_name);
+            let code = baseCode;
+            let suffix = 0;
+            while (policyCodeUsed.has(code)) {
+              code = `${baseCode}-${++suffix}`;
+            }
+            policyCodeUsed.add(code);
+            const policy = await tx.policy.create({
+              data: {
+                customerAccountId,
+                code,
+                name: pp.policy_procedure_name,
+                version: "1.0",
+                documentType: mapDocType(pp.policy_procedure_type),
+                status: "Not Uploaded",
+              },
+            });
+            await tx.policyControl.create({
+              data: { policyId: policy.id, controlId: controlDbId },
+            });
+            policyCount++;
+          }
+
+          for (const ev of ctrl.evidences || []) {
+            evidenceSeq.n++;
+            const code = `EVD-${framework.id.slice(-6)}-${String(evidenceSeq.n).padStart(4, "0")}`;
+            const evidence = await tx.evidence.create({
+              data: {
+                customerAccountId,
+                evidenceCode: code,
+                name: ev.evidence_name,
+                description: ev.evidence_description || ev.evidence_requirement || undefined,
+                frameworkId: framework.id,
+                status: "Not Uploaded",
+              },
+            });
+            await tx.evidenceControl.create({
+              data: { evidenceId: evidence.id, controlId: controlDbId },
+            });
+            evidenceCount++;
+          }
+        }
+      }
+    }
+
+    if (policyCount > 0 || evidenceCount > 0) {
+      console.log(`  ✅ ${policyCount} policies created`);
+      console.log(`  ✅ ${evidenceCount} evidences created`);
     }
 
     console.log(`  ✅ ${controlCount} controls created`);
@@ -239,7 +372,7 @@ export async function saveFrameworkFromAIResult(
 🔍 STEP 5: Calculating Initial Percentages...`);
 
     // Initially, all controls are "Non Compliant", so compliance = 0%
-    const updatedFramework = await prisma.framework.update({
+    const updatedFramework = await tx.framework.update({
       where: { id: framework.id },
       data: {
         compliancePercentage: 0, // 0 compliant / total = 0%
@@ -339,4 +472,16 @@ function generateCategoryCode(name: string): string {
     .toUpperCase()
     .substring(0, 3);
   return code || "GEN";
+}
+
+function generatePolicyCode(name: string): string {
+  const slug = name.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().substring(0, 15);
+  return `POL-${slug || "AI"}`;
+}
+
+function mapDocType(type: string): string {
+  const t = (type || "").toLowerCase();
+  if (t === "procedure") return "Procedure";
+  if (t === "standard") return "Standard";
+  return "Policy";
 }

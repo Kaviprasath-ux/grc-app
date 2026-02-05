@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, getTenantFilter, validateTenantAccess, forbidden } from "@/lib/api-auth";
+import { aiDeleteService } from "@/services/ai-delete-service";
+import { unlink } from "fs/promises";
+import path from "path";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -241,7 +244,8 @@ export const DELETE = withAuth(
       // First, verify the policy belongs to the user's customer account
       const existing = await prisma.policy.findUnique({
         where: { id },
-        select: { customerAccountId: true },
+        select: { customerAccountId: true, code: true },
+        include: { attachments: true },
       });
 
       if (!existing) {
@@ -255,10 +259,46 @@ export const DELETE = withAuth(
         return forbidden("Access denied to this policy");
       }
 
+      console.log(`[Policy Delete] Deleting policy: ${existing.code} (${id})`);
+
+      // Step 1: Clean up AI documents from RunPod
+      try {
+        const aiResults = await aiDeleteService.deleteAllForPolicy(
+          id,
+          session.user?.id
+        );
+        console.log(
+          `[Policy Delete] AI cleanup: ${aiResults.filter((r) => r.status === "deleted").length}/${aiResults.length} documents deleted`
+        );
+      } catch (aiError) {
+        console.warn("[Policy Delete] AI cleanup failed (continuing):", aiError);
+        // Continue with deletion even if AI cleanup fails
+      }
+
+      // Step 2: Delete physical attachment files
+      for (const attachment of existing.attachments) {
+        if (attachment.filePath) {
+          try {
+            const relativePath = attachment.filePath.startsWith("/")
+              ? attachment.filePath.slice(1)
+              : attachment.filePath;
+            const absolutePath = path.join(process.cwd(), relativePath);
+            await unlink(absolutePath);
+            console.log(`[Policy Delete] Deleted file: ${attachment.fileName}`);
+          } catch (fileError) {
+            console.warn(
+              `[Policy Delete] Could not delete file: ${attachment.filePath}`
+            );
+          }
+        }
+      }
+
+      // Step 3: Delete policy (cascade handles DB records)
       await prisma.policy.delete({
         where: { id },
       });
 
+      console.log(`[Policy Delete] Successfully deleted policy: ${existing.code}`);
       return NextResponse.json({ message: "Policy deleted successfully" });
     } catch (error: unknown) {
       console.error("Error deleting policy:", error);

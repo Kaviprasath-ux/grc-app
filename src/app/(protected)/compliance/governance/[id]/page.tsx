@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { usePermissions, useHasRole } from "@/hooks/usePermissions";
 import { PermissionGate } from "@/components/ui/permission-gate";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -69,8 +70,11 @@ import {
   Search,
   File,
   FileType,
+  X,
+  Eye,
 } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
 
 interface Policy {
   id: string;
@@ -177,8 +181,17 @@ interface Control {
   id: string;
   controlCode: string;
   name: string;
+  description?: string;
   status: string;
-  domain?: { name: string } | null;
+  entities?: string;
+  functionalGrouping?: string;
+  domain?: { id: string; name: string } | null;
+  framework?: { id: string; name: string } | null;
+}
+
+interface ControlDomain {
+  id: string;
+  name: string;
 }
 
 interface VaultDocument {
@@ -190,6 +203,56 @@ interface VaultDocument {
   uploadedAt: string;
   filePath: string;
   linkedGovernanceIds: string[];
+}
+
+// AI Review Control Result interface
+interface AIReviewControlResult {
+  control_code: string;
+  status: string;
+  answer: string;
+  score?: number | null;
+  question?: string;
+  status_code?: number;
+  uuid?: string;
+}
+
+// AI Review Evidence Result interface
+interface AIReviewEvidenceResult {
+  control_code: string;
+  status: string;
+  answer: string;
+  score?: number | null;
+  question?: string;
+  status_code?: number;
+  uuid?: string;
+}
+
+// AI Review Response interface
+interface AIReviewResponse {
+  success: boolean;
+  compliance_score: number;
+  compliance_summary: string;
+  total_controls: number;
+  compliant_controls: number;
+  gaps: Array<{
+    control_code: string;
+    status: string;
+    answer: string;
+    score?: number | null;
+  }>;
+  recommendations: Array<{
+    control_code: string;
+    recommendation: string;
+  }>;
+  raw_response?: {
+    controls_response: AIReviewControlResult[];
+    evidence_response?: AIReviewEvidenceResult[];
+    policy_compliant_data?: {
+      total_controls: number;
+      total_compliant_controls: number;
+      compliant_percent: number;
+    };
+  };
 }
 
 const statusColors: Record<string, string> = {
@@ -272,6 +335,27 @@ export default function GovernanceDetailPage() {
   const [storedSignature, setStoredSignature] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  // AI Generate Policy state
+  const [generatePolicyDialogOpen, setGeneratePolicyDialogOpen] = useState(false);
+  const [generatingPolicy, setGeneratingPolicy] = useState(false);
+  const [templates, setTemplates] = useState<Array<{
+    id: string;
+    name: string;
+    fileName: string;
+    fileType: string | null;
+    fileSize: number | null;
+    createdAt: string;
+    uploadedBy?: { fullName: string } | null;
+  }>>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
+  const [uploadingTemplate, setUploadingTemplate] = useState(false);
+  const [newTemplateFile, setNewTemplateFile] = useState<File | null>(null);
+  const [newTemplateName, setNewTemplateName] = useState("");
+
+  // AI Review Details Modal state
+  const [aiReviewDetailsOpen, setAiReviewDetailsOpen] = useState(false);
+  const [aiReviewResult, setAiReviewResult] = useState<AIReviewResponse | null>(null);
+
   // Vault document linking state
   const [linkFromVaultDialogOpen, setLinkFromVaultDialogOpen] = useState(false);
   const [vaultDocuments, setVaultDocuments] = useState<VaultDocument[]>([]);
@@ -309,7 +393,12 @@ export default function GovernanceDetailPage() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [availableControls, setAvailableControls] = useState<Control[]>([]);
-  const [selectedControlId, setSelectedControlId] = useState("");
+  const [controlDomains, setControlDomains] = useState<ControlDomain[]>([]);
+  const [selectedControlIds, setSelectedControlIds] = useState<string[]>([]);
+  const [controlSearchQuery, setControlSearchQuery] = useState("");
+  const [controlDomainFilter, setControlDomainFilter] = useState("all");
+  const [controlFunctionalGroupingFilter, setControlFunctionalGroupingFilter] = useState("all");
+  const [controlFrameworkFilter, setControlFrameworkFilter] = useState("all");
   const [availableExceptions, setAvailableExceptions] = useState<Array<{
     id: string;
     exceptionCode: string;
@@ -354,12 +443,13 @@ export default function GovernanceDetailPage() {
 
   const fetchReferenceData = useCallback(async () => {
     try {
-      const [frameworksRes, departmentsRes, usersRes, controlsRes, exceptionsRes] = await Promise.all([
+      const [frameworksRes, departmentsRes, usersRes, controlsRes, exceptionsRes, controlDomainsRes] = await Promise.all([
         fetch("/api/frameworks"),
         fetch("/api/departments"),
         fetch("/api/users"),
-        fetch("/api/controls"),
+        fetch("/api/controls?limit=1000"),
         fetch("/api/exceptions"),
+        fetch("/api/control-domains"),
       ]);
 
       if (frameworksRes.ok) {
@@ -379,6 +469,10 @@ export default function GovernanceDetailPage() {
       if (exceptionsRes.ok) {
         const data = await exceptionsRes.json();
         setAvailableExceptions(Array.isArray(data) ? data : data.data || []);
+      }
+      if (controlDomainsRes.ok) {
+        const data = await controlDomainsRes.json();
+        setControlDomains(Array.isArray(data) ? data : data.data || []);
       }
     } catch (error) {
       console.error("Error fetching reference data:", error);
@@ -507,23 +601,59 @@ export default function GovernanceDetailPage() {
   };
 
   const handleLinkControl = async () => {
-    if (!selectedControlId) return;
+    if (selectedControlIds.length === 0) return;
 
     try {
-      const response = await fetch(`/api/policies/${id}/controls`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ controlId: selectedControlId }),
-      });
-
-      if (response.ok) {
-        setLinkControlDialogOpen(false);
-        setSelectedControlId("");
-        fetchPolicy();
+      // Link controls one by one (API supports single control linking)
+      for (const controlId of selectedControlIds) {
+        await fetch(`/api/policies/${id}/controls`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ controlId }),
+        });
       }
+
+      setLinkControlDialogOpen(false);
+      setSelectedControlIds([]);
+      setControlSearchQuery("");
+      setControlDomainFilter("all");
+      setControlFunctionalGroupingFilter("all");
+      setControlFrameworkFilter("all");
+      fetchPolicy();
     } catch (error) {
       console.error("Error linking control:", error);
     }
+  };
+
+  // Functional grouping options for filter
+  const functionalGroupings = ["Govern", "Identify", "Protect", "Detect", "Respond", "Recover"];
+
+  // Filter controls for the link dialog
+  const getFilteredControlsForLinking = () => {
+    return availableControls
+      .filter((c) => !linkedControls.find((lc) => lc.control.id === c.id))
+      .filter((c) => {
+        // Search filter
+        if (controlSearchQuery.trim()) {
+          const query = controlSearchQuery.toLowerCase();
+          const matchesCode = c.controlCode?.toLowerCase().includes(query);
+          const matchesName = c.name?.toLowerCase().includes(query);
+          if (!matchesCode && !matchesName) return false;
+        }
+        // Domain filter
+        if (controlDomainFilter !== "all" && c.domain?.id !== controlDomainFilter) {
+          return false;
+        }
+        // Functional grouping filter
+        if (controlFunctionalGroupingFilter !== "all" && c.functionalGrouping !== controlFunctionalGroupingFilter) {
+          return false;
+        }
+        // Framework filter
+        if (controlFrameworkFilter !== "all" && c.framework?.id !== controlFrameworkFilter) {
+          return false;
+        }
+        return true;
+      });
   };
 
   const handleUnlinkControl = async (controlId: string) => {
@@ -576,53 +706,176 @@ export default function GovernanceDetailPage() {
 
   const handleTriggerAIReview = async () => {
     try {
-      const response = await fetch(`/api/policies/${id}`, {
-        method: "PUT",
+      // Set status to In Progress first
+      setPolicy(prev => prev ? { ...prev, aiReviewStatus: "In Progress" } : prev);
+
+      // Call real RunPod API for policy review
+      const response = await fetch("/api/ai/governance/review", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          aiReviewStatus: "In Progress",
-        }),
+        body: JSON.stringify({ policyId: id }),
       });
 
       if (response.ok) {
-        // Simulate AI review completion after delay
-        setTimeout(async () => {
-          await fetch(`/api/policies/${id}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              aiReviewStatus: "Completed",
-              aiReviewScore: Math.floor(Math.random() * 30) + 70,
-              aiReviewJustification:
-                "The document meets compliance requirements with minor recommendations for improvement in clarity and scope definition.",
-            }),
-          });
-          fetchPolicy();
-        }, 2000);
+        const result = await response.json();
+        // Store the AI review result for detailed view
+        setAiReviewResult(result);
+        // Refresh policy to get updated AI review results
+        fetchPolicy();
+      } else {
+        const error = await response.json();
+        console.error("AI Review failed:", error);
+        // Update status to Failed
+        await fetch(`/api/policies/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ aiReviewStatus: "Failed" }),
+        });
         fetchPolicy();
       }
     } catch (error) {
       console.error("Error triggering AI review:", error);
+      // Update status to Failed on error
+      await fetch(`/api/policies/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ aiReviewStatus: "Failed" }),
+      });
+      fetchPolicy();
     }
   };
 
   const handleClearAIReview = async () => {
     try {
-      const response = await fetch(`/api/policies/${id}`, {
-        method: "PUT",
+      // Call the cleanup route which deletes from RunPod and resets DB
+      const response = await fetch(`/api/ai/governance/cleanup`, {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          aiReviewStatus: null,
-          aiReviewScore: null,
-          aiReviewJustification: null,
-        }),
+        body: JSON.stringify({ policyId: id }),
       });
 
       if (response.ok) {
+        const data = await response.json();
+        console.log("[Clear AI Review] Cleanup completed:", data);
+        setAiReviewResult(null);
         fetchPolicy();
+        toast.success(t("AI review cleared successfully"));
+      } else {
+        const error = await response.json();
+        toast.error(error.error || t("Failed to clear AI review"));
       }
     } catch (error) {
       console.error("Error clearing AI review:", error);
+      toast.error(t("Failed to clear AI review"));
+    }
+  };
+
+  // Fetch governance templates
+  const fetchTemplates = async () => {
+    try {
+      const response = await fetch(`/api/governance-templates?governanceType=${policy?.documentType || "Policy"}`);
+      if (response.ok) {
+        const data = await response.json();
+        setTemplates(data);
+        // Auto-select first template if available
+        if (data.length > 0 && !selectedTemplateId) {
+          setSelectedTemplateId(data[0].id);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching templates:", error);
+    }
+  };
+
+  // Upload new template
+  const handleUploadTemplate = async () => {
+    if (!newTemplateFile) {
+      toast.error("Please select a .docx file");
+      return;
+    }
+
+    setUploadingTemplate(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", newTemplateFile);
+      formData.append("name", newTemplateName || newTemplateFile.name.replace(/\.[^/.]+$/, ""));
+      formData.append("governanceType", policy?.documentType || "Policy");
+
+      const response = await fetch("/api/governance-templates", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (response.ok) {
+        const newTemplate = await response.json();
+        toast.success("Template uploaded successfully!");
+        setTemplates(prev => [newTemplate, ...prev]);
+        setSelectedTemplateId(newTemplate.id);
+        setNewTemplateFile(null);
+        setNewTemplateName("");
+      } else {
+        const error = await response.json();
+        toast.error(error.error || "Failed to upload template");
+      }
+    } catch (error) {
+      console.error("Error uploading template:", error);
+      toast.error("An error occurred while uploading the template");
+    } finally {
+      setUploadingTemplate(false);
+    }
+  };
+
+  const handleGeneratePolicy = async () => {
+    // Validate linked controls
+    if (!policy?.policyControls || policy.policyControls.length === 0) {
+      toast.error("Please link controls to this policy first");
+      return;
+    }
+
+    // Validate template selection
+    if (!selectedTemplateId) {
+      toast.error("Please select a template");
+      return;
+    }
+
+    setGeneratingPolicy(true);
+    toast.info("Generating policy document using AI...", { duration: 30000 });
+
+    try {
+      console.log("[Generate Policy] Starting generation for policy:", id);
+      console.log("[Generate Policy] Policy Name:", policy?.name);
+      console.log("[Generate Policy] Linked Controls:", policy.policyControls.length);
+      console.log("[Generate Policy] Template ID:", selectedTemplateId);
+
+      const response = await fetch("/api/ai/governance/generate-policy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ policyId: id, templateId: selectedTemplateId }),
+      });
+
+      const result = await response.json();
+      console.log("[Generate Policy] Response status:", response.status);
+      console.log("[Generate Policy] Response result:", JSON.stringify(result, null, 2));
+
+      if (response.ok && result.success) {
+        toast.success(`Policy generated successfully! Used ${result.controlsUsed} controls.`);
+        console.log("[Generate Policy] Download URL:", result.downloadUrl);
+        console.log("[Generate Policy] Controls Used:", result.controlsUsed);
+        console.log("[Generate Policy] Frameworks Used:", result.frameworksUsed);
+        // Close dialog and refresh policy to show new attachment
+        setGeneratePolicyDialogOpen(false);
+        setSelectedTemplateId("");
+        fetchPolicy();
+      } else {
+        const errorMessage = result.error || result.message || "Failed to generate policy";
+        console.error("[Generate Policy] Error:", errorMessage);
+        toast.error(errorMessage);
+      }
+    } catch (error) {
+      console.error("[Generate Policy] Exception:", error);
+      toast.error("An error occurred while generating the policy");
+    } finally {
+      setGeneratingPolicy(false);
     }
   };
 
@@ -1548,7 +1801,7 @@ export default function GovernanceDetailPage() {
               <p>{t("AI Review has not been performed yet")}</p>
             </div>
           ) : policy.aiReviewStatus === "In Progress" ? (
-            <div className="flex items-center gap-4">
+            <div className="flex items-center justify-center gap-4 py-4">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
               <p>{t("AI Review in progress...")}</p>
             </div>
@@ -1584,10 +1837,97 @@ export default function GovernanceDetailPage() {
                   <p className="mt-1 p-3 bg-muted rounded-lg">{policy.aiReviewJustification}</p>
                 </div>
               )}
+              {/* View More Button */}
+              {aiReviewResult && aiReviewResult.raw_response?.controls_response && (
+                <div className="col-span-3 mt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setAiReviewDetailsOpen(true)}
+                  >
+                    <Eye className="h-4 w-4 ltr:mr-2 rtl:ml-2 text-blue-500" />
+                    {t("View More")}
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </CardContent>
       </Card>
+
+      {/* AI Review Details Modal */}
+      <Dialog open={aiReviewDetailsOpen} onOpenChange={setAiReviewDetailsOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5" />
+              {t("AI Review Details")}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            {aiReviewResult?.raw_response?.controls_response?.map((control, index) => (
+              <div
+                key={index}
+                className="bg-slate-50 dark:bg-slate-900 rounded-lg p-6 border border-slate-200 dark:border-slate-700"
+              >
+                <div className="grid grid-cols-2 gap-6">
+                  {/* Left Column */}
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                        {t("Control Code")}
+                      </p>
+                      <p className="text-slate-700 dark:text-slate-300">
+                        {control.control_code}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                        {t("Question")}
+                      </p>
+                      <p className="text-slate-700 dark:text-slate-300">
+                        {control.question || "-"}
+                      </p>
+                    </div>
+                  </div>
+                  {/* Right Column */}
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                        {t("Status")}
+                      </p>
+                      <Badge
+                        className={
+                          control.status?.toLowerCase() === "compliant"
+                            ? "bg-green-100 text-green-800"
+                            : control.status?.toLowerCase() === "non-compliant"
+                            ? "bg-red-100 text-red-800"
+                            : "bg-yellow-100 text-yellow-800"
+                        }
+                      >
+                        {control.status ? control.status.charAt(0).toUpperCase() + control.status.slice(1) : "-"}
+                      </Badge>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                        {t("Answer")}
+                      </p>
+                      <p className="text-slate-700 dark:text-slate-300">
+                        {control.answer || "-"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {(!aiReviewResult?.raw_response?.controls_response ||
+              aiReviewResult.raw_response.controls_response.length === 0) && (
+              <div className="text-center py-8 text-slate-400">
+                <p>{t("No detailed review data available")}</p>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Published Section - Only show when status is Published */}
       {policy.status === "Published" && (
@@ -1880,28 +2220,204 @@ export default function GovernanceDetailPage() {
                 {/* Option 2: Generate Policy Using AI */}
                 {(() => {
                   const hasDocument = attachments.length > 0 || linkedVaultDocuments.length > 0;
+                  const hasLinkedControls = policy?.policyControls && policy.policyControls.length > 0;
+                  const isDisabled = hasDocument || !hasLinkedControls;
                   return (
-                    <div
-                      className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-                        hasDocument
-                          ? "border-gray-100 bg-gray-50 cursor-not-allowed opacity-50"
-                          : "border-gray-200 cursor-pointer hover:border-primary hover:bg-primary/5"
-                      }`}
-                    >
-                      <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 ${
-                        hasDocument ? "bg-gray-100" : "bg-purple-100"
-                      }`}>
-                        <Sparkles className={`h-6 w-6 ${hasDocument ? "text-gray-400" : "text-purple-600"}`} />
-                      </div>
-                      <h3 className={`font-medium ${hasDocument ? "text-gray-400" : "text-gray-900"}`}>
-                        {t("Generate Policy Using AI")}
-                      </h3>
-                      <p className={`text-sm mt-1 ${hasDocument ? "text-gray-300" : "text-gray-500"}`}>
-                        {hasDocument
-                          ? t("Delete existing file to use AI")
-                          : t("Create document with AI assistance")}
-                      </p>
-                    </div>
+                    <Dialog open={generatePolicyDialogOpen} onOpenChange={(open) => {
+                      if (isDisabled) return;
+                      setGeneratePolicyDialogOpen(open);
+                      if (open) {
+                        fetchTemplates();
+                      }
+                    }}>
+                      <DialogTrigger asChild disabled={isDisabled}>
+                        <div
+                          className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                            isDisabled
+                              ? "border-gray-100 bg-gray-50 cursor-not-allowed opacity-50"
+                              : "border-gray-200 cursor-pointer hover:border-primary hover:bg-primary/5"
+                          }`}
+                        >
+                          <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 ${
+                            isDisabled ? "bg-gray-100" : "bg-purple-100"
+                          }`}>
+                            <Sparkles className={`h-6 w-6 ${isDisabled ? "text-gray-400" : "text-purple-600"}`} />
+                          </div>
+                          <h3 className={`font-medium ${isDisabled ? "text-gray-400" : "text-gray-900"}`}>
+                            {t("Generate Policy Using AI")}
+                          </h3>
+                          <p className={`text-sm mt-1 ${isDisabled ? "text-gray-300" : "text-gray-500"}`}>
+                            {hasDocument
+                              ? t("Delete existing file to use AI")
+                              : !hasLinkedControls
+                              ? t("Link controls first to generate")
+                              : t("Create document with AI assistance")}
+                          </p>
+                        </div>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                        <DialogHeader>
+                          <DialogTitle>{t("Generate Policy Using AI")}</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label>{t("Policy Name")}</Label>
+                              <Input value={policy?.name || ""} disabled className="bg-gray-50 mt-1" />
+                            </div>
+                            <div>
+                              <Label>{t("Document Type")}</Label>
+                              <Input value={policy?.documentType || "Policy"} disabled className="bg-gray-50 mt-1" />
+                            </div>
+                          </div>
+
+                          {/* Template Selection */}
+                          <div>
+                            <Label className="flex items-center gap-2">
+                              {t("Select Template")} <span className="text-red-500">*</span>
+                              <span className="text-xs text-gray-500">(.docx only)</span>
+                            </Label>
+                            <div className="mt-2 space-y-3">
+                              {templates.length > 0 ? (
+                                <div className="border rounded-lg max-h-40 overflow-y-auto">
+                                  {templates.map((template) => (
+                                    <div
+                                      key={template.id}
+                                      className={`p-3 cursor-pointer border-b last:border-b-0 hover:bg-gray-50 ${
+                                        selectedTemplateId === template.id ? "bg-purple-50 border-purple-200" : ""
+                                      }`}
+                                      onClick={() => setSelectedTemplateId(template.id)}
+                                    >
+                                      <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                          <input
+                                            type="radio"
+                                            checked={selectedTemplateId === template.id}
+                                            onChange={() => setSelectedTemplateId(template.id)}
+                                            className="text-purple-600"
+                                          />
+                                          <FileText className="h-4 w-4 text-blue-600" />
+                                          <span className="font-medium text-sm">{template.name}</span>
+                                        </div>
+                                        <span className="text-xs text-gray-500">
+                                          {template.fileSize ? `${(template.fileSize / 1024).toFixed(1)} KB` : ""}
+                                        </span>
+                                      </div>
+                                      {template.uploadedBy && (
+                                        <p className="text-xs text-gray-500 ml-6 mt-1">
+                                          {t("Uploaded by")}: {template.uploadedBy.fullName}
+                                        </p>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div className="border-2 border-dashed rounded-lg p-4 text-center text-gray-500">
+                                  <FileText className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                                  <p className="text-sm">{t("No templates available")}</p>
+                                  <p className="text-xs">{t("Upload a .docx template below")}</p>
+                                </div>
+                              )}
+
+                              {/* Upload New Template */}
+                              <div className="border rounded-lg p-3 bg-gray-50">
+                                <Label className="text-sm font-medium">{t("Or upload a new template")}</Label>
+                                <div className="mt-2 flex gap-2">
+                                  <Input
+                                    type="file"
+                                    accept=".docx"
+                                    onChange={(e) => setNewTemplateFile(e.target.files?.[0] || null)}
+                                    className="flex-1"
+                                  />
+                                </div>
+                                {newTemplateFile && (
+                                  <div className="mt-2 flex gap-2 items-end">
+                                    <div className="flex-1">
+                                      <Label className="text-xs">{t("Template Name")}</Label>
+                                      <Input
+                                        value={newTemplateName}
+                                        onChange={(e) => setNewTemplateName(e.target.value)}
+                                        placeholder={newTemplateFile.name.replace(/\.[^/.]+$/, "")}
+                                        className="mt-1"
+                                      />
+                                    </div>
+                                    <Button
+                                      size="sm"
+                                      onClick={handleUploadTemplate}
+                                      disabled={uploadingTemplate}
+                                    >
+                                      {uploadingTemplate ? (
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                                      ) : (
+                                        <Upload className="h-4 w-4" />
+                                      )}
+                                      <span className="ml-1">{t("Upload")}</span>
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Linked Controls */}
+                          <div>
+                            <Label>{t("Linked Controls")} ({policy?.policyControls?.length || 0})</Label>
+                            <div className="mt-2 border rounded-lg max-h-32 overflow-y-auto">
+                              {policy?.policyControls && policy.policyControls.length > 0 ? (
+                                <div className="divide-y">
+                                  {policy.policyControls.map((pc) => (
+                                    <div key={pc.control.id} className="p-2 hover:bg-gray-50">
+                                      <div className="flex items-center gap-2">
+                                        <Badge variant="outline" className="text-xs font-mono">
+                                          {pc.control.controlCode}
+                                        </Badge>
+                                        <span className="text-sm">{pc.control.name}</span>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div className="p-4 text-center text-gray-500">
+                                  {t("No controls linked to this policy")}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                            <p className="text-sm text-blue-800">
+                              <strong>{t("Note")}:</strong> {t("The AI will use the selected template and linked controls to generate a comprehensive policy document.")}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex justify-end gap-2">
+                          <Button variant="outline" onClick={() => {
+                            setGeneratePolicyDialogOpen(false);
+                            setSelectedTemplateId("");
+                            setNewTemplateFile(null);
+                            setNewTemplateName("");
+                          }}>
+                            {t("Cancel")}
+                          </Button>
+                          <Button
+                            onClick={handleGeneratePolicy}
+                            disabled={generatingPolicy || !hasLinkedControls || !selectedTemplateId}
+                          >
+                            {generatingPolicy ? (
+                              <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                                {t("Generating...")}
+                              </>
+                            ) : (
+                              <>
+                                <Sparkles className="h-4 w-4 mr-2" />
+                                {t("Generate Policy")}
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                   );
                 })()}
 
@@ -2340,39 +2856,145 @@ export default function GovernanceDetailPage() {
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>{t("Linked Control")}</CardTitle>
             <PermissionGate resource="compliance.governance" action="edit">
-              <Dialog open={linkControlDialogOpen} onOpenChange={setLinkControlDialogOpen}>
+              <Dialog open={linkControlDialogOpen} onOpenChange={(open) => {
+                setLinkControlDialogOpen(open);
+                if (!open) {
+                  setSelectedControlIds([]);
+                  setControlSearchQuery("");
+                  setControlDomainFilter("all");
+                  setControlFunctionalGroupingFilter("all");
+                  setControlFrameworkFilter("all");
+                }
+              }}>
                 <DialogTrigger asChild>
                   <Button size="sm">
                     <Plus className="h-4 w-4 mr-2" />
                     {t("Link Control")}
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>{t("Link Control")}</DialogTitle>
+                <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0">
+                  <DialogHeader className="px-6 py-4 border-b border-slate-100 flex-shrink-0">
+                    <DialogTitle className="text-lg font-semibold text-primary-700">{t("Link Control")}</DialogTitle>
                   </DialogHeader>
-                  <div className="py-4">
-                    <Label>{t("Select Control")}</Label>
-                    <Select value={selectedControlId} onValueChange={setSelectedControlId}>
-                      <SelectTrigger className="mt-2">
-                        <SelectValue placeholder={t("Select a control")} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableControls
-                          .filter((c) => !linkedControls.find((lc) => lc.control.id === c.id))
-                          .map((control) => (
-                            <SelectItem key={control.id} value={control.id}>
-                              {control.controlCode} - {control.name}
-                            </SelectItem>
+                  <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+                    {/* Filters */}
+                    <div className="grid grid-cols-3 gap-3">
+                      <Select value={controlDomainFilter} onValueChange={setControlDomainFilter}>
+                        <SelectTrigger className="bg-white border-2 border-primary-200 rounded-full">
+                          <SelectValue placeholder={t("Domain")} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">{t("All Domains")}</SelectItem>
+                          {controlDomains.map((d) => (
+                            <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                           ))}
-                      </SelectContent>
-                    </Select>
+                        </SelectContent>
+                      </Select>
+                      <Select value={controlFunctionalGroupingFilter} onValueChange={setControlFunctionalGroupingFilter}>
+                        <SelectTrigger className="bg-white border-2 border-primary-200 rounded-full">
+                          <SelectValue placeholder={t("Functional Grouping")} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">{t("All Groupings")}</SelectItem>
+                          {functionalGroupings.map((g) => (
+                            <SelectItem key={g} value={g}>{t(g)}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Select value={controlFrameworkFilter} onValueChange={setControlFrameworkFilter}>
+                        <SelectTrigger className="bg-white border-2 border-primary-200 rounded-full">
+                          <SelectValue placeholder={t("Framework")} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">{t("All Frameworks")}</SelectItem>
+                          {frameworks.map((f) => (
+                            <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Search input */}
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <Input
+                        placeholder={t("Search By Control Code , Name")}
+                        value={controlSearchQuery}
+                        onChange={(e) => setControlSearchQuery(e.target.value)}
+                        className="pl-10 pr-10 bg-white border-2 border-primary-200 rounded-full"
+                      />
+                      {controlSearchQuery && (
+                        <button
+                          onClick={() => setControlSearchQuery("")}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Control cards list */}
+                    <div className="border-2 border-primary-200 rounded-xl max-h-[350px] overflow-y-auto">
+                      {getFilteredControlsForLinking().map((control) => (
+                        <div
+                          key={control.id}
+                          className={`flex items-start gap-3 p-4 border-b-2 border-primary-100 last:border-b-0 cursor-pointer hover:bg-primary-50 transition-colors ${
+                            selectedControlIds.includes(control.id) ? "bg-primary-50" : ""
+                          }`}
+                          onClick={() => {
+                            setSelectedControlIds((prev) =>
+                              prev.includes(control.id)
+                                ? prev.filter((id) => id !== control.id)
+                                : [...prev, control.id]
+                            );
+                          }}
+                        >
+                          <div onClick={(e) => e.stopPropagation()} className="pt-1">
+                            <Checkbox
+                              checked={selectedControlIds.includes(control.id)}
+                              onCheckedChange={() => {
+                                setSelectedControlIds((prev) =>
+                                  prev.includes(control.id)
+                                    ? prev.filter((id) => id !== control.id)
+                                    : [...prev, control.id]
+                                );
+                              }}
+                            />
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between">
+                              <span className="font-semibold text-primary-700">
+                                {control.controlCode} : {control.name}
+                              </span>
+                              <Badge className="bg-primary-600 text-white rounded-full px-3">
+                                {control.entities || "Organization Wide"}
+                              </Badge>
+                            </div>
+                            {control.description && (
+                              <p className="text-sm text-slate-500 mt-1 line-clamp-2">{control.description}</p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                      {getFilteredControlsForLinking().length === 0 && (
+                        <div className="p-8 text-center text-slate-400">
+                          {controlSearchQuery.trim() || controlDomainFilter !== "all" || controlFunctionalGroupingFilter !== "all" || controlFrameworkFilter !== "all"
+                            ? t("No controls found matching your filters")
+                            : t("No available controls to link")}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex justify-end gap-2">
-                    <Button variant="outline" onClick={() => setLinkControlDialogOpen(false)}>
-                      {t("Cancel")}
+
+                  {/* Footer */}
+                  <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-white flex-shrink-0">
+                    <Button
+                      onClick={handleLinkControl}
+                      disabled={selectedControlIds.length === 0}
+                      className="rounded-lg"
+                    >
+                      {t("Link Control")}
                     </Button>
-                    <Button onClick={handleLinkControl}>{t("Link")}</Button>
                   </div>
                 </DialogContent>
               </Dialog>

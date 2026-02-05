@@ -3,14 +3,39 @@ import { auth } from "@/lib/auth";
 import aiApiClient from "@/lib/ai-api-client";
 import { aiAuditService } from "@/services/ai-audit-service";
 import { prisma } from "@/lib/prisma";
+import { AI_ENDPOINTS } from "@/lib/ai-endpoints";
+import {
+  unauthorizedResponse,
+  badRequestResponse,
+  notFoundResponse,
+  errorResponse,
+} from "@/lib/ai-route-helpers";
 import { writeFile, mkdir, readFile } from "fs/promises";
 import path from "path";
 
 /**
  * POST /api/ai/governance/generate-policy
- * 
- * Generates a policy PDF via RunPod /api/generate_policy/.
- * Fully aligned with Atomic Audit pattern and 0-dummy rule.
+ *
+ * Generates a policy document via RunPod /api/generate_policy/.
+ *
+ * Required body: { policyId: string, templateId: string }
+ *
+ * Uses:
+ * - Linked controls as mapped_controls (JSON array string)
+ * - Framework names from linked controls (JSON array string)
+ * - Selected GovernanceTemplate (.docx) as template file
+ *
+ * RunPod API expects:
+ * - document_type: string
+ * - document_name: string
+ * - framework_names: JSON array string (e.g., '["ISO 27001", "NIST"]')
+ * - mapped_controls: JSON array string (e.g., '["Control 1", "Control 2"]')
+ * - template: .docx file
+ *
+ * RunPod API returns:
+ * - message: string
+ * - document_name: string
+ * - base64_doc: base64 encoded document
  */
 export async function POST(req: NextRequest) {
     const startTime = Date.now();
@@ -19,123 +44,216 @@ export async function POST(req: NextRequest) {
     try {
         const session = await auth();
         if (!session?.user) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+            return unauthorizedResponse();
         }
         userId = session.user.id;
 
         const body = await req.json();
-        const { policyId, prompt, name } = body;
+        const { policyId, templateId } = body;
 
-        if (!policyId || !prompt) {
-            return NextResponse.json({ error: "policyId and prompt are required" }, { status: 400 });
+        if (!policyId) {
+            return badRequestResponse("policyId is required");
         }
 
-        // Fetch Policy with Attachments and Metadata
+        if (!templateId) {
+            return badRequestResponse("templateId is required - please select a template");
+        }
+
+        // Fetch Policy with Controls and their Frameworks
         const policy = await prisma.policy.findUnique({
             where: { id: policyId },
             include: {
-                attachments: { orderBy: { createdAt: 'desc' }, take: 1 }
+                policyControls: {
+                    include: {
+                        control: {
+                            include: {
+                                framework: { select: { name: true } }
+                            }
+                        }
+                    }
+                }
             }
         });
 
         if (!policy) {
-            return NextResponse.json({ error: "Policy not found" }, { status: 404 });
+            return notFoundResponse("Policy");
         }
 
-        // Step 1: Log AIOperation (Request) - Atomic Hook Pre-flight
+        // Validate: Policy must have linked controls
+        if (policy.policyControls.length === 0) {
+            return badRequestResponse("Policy must have at least one linked control to generate document");
+        }
+
+        // Fetch the selected GovernanceTemplate
+        const governanceTemplate = await prisma.governanceTemplate.findUnique({
+            where: { id: templateId }
+        });
+
+        if (!governanceTemplate) {
+            return notFoundResponse("Template");
+        }
+
+        // Validate template is .docx
+        if (governanceTemplate.fileType !== "docx") {
+            return badRequestResponse("Only .docx templates are supported for AI generation");
+        }
+
+        // Log AIOperation (Request)
         const operation = await aiAuditService.logOperation({
-            endpoint: "/api/generate_policy/",
+            endpoint: AI_ENDPOINTS.GENERATE_POLICY,
             method: "POST",
-            requestBody: { policyId, prompt, name },
+            requestBody: { policyId, templateId },
             userId,
         });
 
-        console.log(`[Governance Generate] Generating policy ${policy.code} (0-Dummy Sync)`);
+        console.log(`[Governance Generate] ══════════════════════════════════════════════`);
+        console.log(`[Governance Generate] Starting policy generation`);
+        console.log(`[Governance Generate] Policy ID: ${policyId}`);
+        console.log(`[Governance Generate] Policy Code: ${policy.code}`);
+        console.log(`[Governance Generate] Policy Name: ${policy.name}`);
+        console.log(`[Governance Generate] Document Type: ${policy.documentType}`);
+        console.log(`[Governance Generate] Linked Controls: ${policy.policyControls.length}`);
+        console.log(`[Governance Generate] Template: ${governanceTemplate.name} (${governanceTemplate.fileName})`);
+        console.log(`[Governance Generate] ──────────────────────────────────────────────`);
 
-        // Load actual template if it exists, otherwise use the prompt as a base
-        let templateBuffer: Buffer | null = null;
-        let templateFileName = "template.pdf";
-
-        if (policy.attachments.length > 0) {
-            const attachment = policy.attachments[0];
-            const absolutePath = path.join(process.cwd(), "public", attachment.filePath);
-            try {
-                templateBuffer = await readFile(absolutePath);
-                templateFileName = attachment.fileName;
-            } catch (e) {
-                console.warn(`[Governance Generate] Could not read attachment at ${absolutePath}, falling back to prompt.`);
+        // Build mapped_controls from linked controls
+        // Format: array of control descriptions for the AI to use
+        const mappedControlsArray: string[] = policy.policyControls.map(pc => {
+            const control = pc.control;
+            // Use control code and name, optionally with description
+            if (control.description) {
+                return `${control.controlCode}: ${control.name} - ${control.description.substring(0, 150)}`;
             }
-        }
-
-        // Step 2: Call RunPod via aiApiClient using multipart/form-data
-        const formData = new FormData();
-        formData.append("document_type", "Policy");
-        formData.append("document_name", name || policy.name || "Generated Policy");
-
-        // Use actual framework names from DB (JSON to Array)
-        // TODO: frameworkNames field doesn't exist on Policy model yet - needs schema migration
-        // const frameworkNames: string[] = policy.frameworkNames ? JSON.parse(policy.frameworkNames as string) : ["General"];
-        const frameworkNames: string[] = ["General"]; // Default until schema is updated
-        frameworkNames.forEach(f => formData.append("framework_names", f));
-
-        // Map requirements/controls
-        formData.append("mapped_controls", prompt);
-
-        // 0-Dummy: Use actual buffer if available, or a minimal valid PDF-ish blob if forced
-        const finalBlob = templateBuffer
-            ? new Blob([new Uint8Array(templateBuffer)], { type: "application/pdf" })
-            : new Blob(["%PDF-1.4\n%...Prompt: " + prompt], { type: "application/pdf" });
-
-        formData.append("template", finalBlob, templateFileName);
-
-        const response = await aiApiClient.post("/api/generate_policy/", formData, {
-            headers: {
-                "Content-Type": "multipart/form-data",
-            },
+            return `${control.controlCode}: ${control.name}`;
         });
 
-        const { file_content, file_name } = response.data;
-        const latencyMs = Date.now() - startTime;
+        // Extract unique framework names from linked controls
+        const frameworkNamesSet = new Set<string>();
+        policy.policyControls.forEach(pc => {
+            if (pc.control.framework?.name) {
+                frameworkNamesSet.add(pc.control.framework.name);
+            }
+        });
+        const frameworkNames: string[] = frameworkNamesSet.size > 0
+            ? Array.from(frameworkNamesSet)
+            : ["General"];
 
-        if (!file_content) {
-            throw new Error("AI service returned empty file content");
+        // Load template file
+        const absolutePath = path.join(process.cwd(), "public", governanceTemplate.filePath);
+        let templateBuffer: Buffer;
+        try {
+            templateBuffer = await readFile(absolutePath);
+            console.log(`[Governance Generate] Loaded template: ${governanceTemplate.fileName} (${templateBuffer.length} bytes)`);
+        } catch (e) {
+            console.error(`[Governance Generate] Could not read template at ${absolutePath}`);
+            return errorResponse(`Template file not found: ${governanceTemplate.fileName}`, 404);
         }
 
-        // Step 3: Decode and Save File
-        const buffer = Buffer.from(file_content, "base64");
+        // Build FormData for RunPod API
+        // IMPORTANT: RunPod expects arrays as JSON-encoded strings, not multiple form fields
+        const formData = new FormData();
+        formData.append("document_type", (policy.documentType || "Policy").toLowerCase());
+        formData.append("document_name", policy.name);
+
+        // Send as plain strings (RunPod expects plain strings, not JSON arrays)
+        formData.append("framework_names", frameworkNames.join(", "));
+        formData.append("mapped_controls", mappedControlsArray.join("\n"));
+
+        // Add template file (.docx)
+        // Use File instead of Blob for better Node.js fetch compatibility
+        const templateFile = new File(
+            [new Uint8Array(templateBuffer)],
+            governanceTemplate.fileName,
+            { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" }
+        );
+        formData.append("template", templateFile);
+
+        // Log FormData parameters
+        console.log(`[Governance Generate] ──────────────────────────────────────────────`);
+        console.log(`[Governance Generate] FormData Parameters:`);
+        console.log(`[Governance Generate]   document_type: ${(policy.documentType || "Policy").toLowerCase()}`);
+        console.log(`[Governance Generate]   document_name: ${policy.name}`);
+        console.log(`[Governance Generate]   framework_names: ${frameworkNames.join(", ")}`);
+        console.log(`[Governance Generate]   mapped_controls (${mappedControlsArray.length} items): ${mappedControlsArray.join(" | ").substring(0, 200)}...`);
+        console.log(`[Governance Generate]   template: ${governanceTemplate.fileName} (${templateFile.size} bytes)`);
+        console.log(`[Governance Generate] ──────────────────────────────────────────────`);
+        console.log(`[Governance Generate] Calling RunPod endpoint: ${AI_ENDPOINTS.GENERATE_POLICY}`);
+
+        // Call RunPod AI API
+        const response = await aiApiClient.post(AI_ENDPOINTS.GENERATE_POLICY, formData);
+
+        // RunPod response format: { message, document_name, base64_doc }
+        const responseData = response.data as {
+            message?: string;
+            document_name?: string;
+            base64_doc?: string;
+            error?: string;
+        };
+
+        // Check for error in response
+        if (responseData.error) {
+            throw new Error(responseData.error);
+        }
+
+        const { base64_doc, document_name } = responseData;
+        const latencyMs = Date.now() - startTime;
+
+        console.log(`[Governance Generate] ──────────────────────────────────────────────`);
+        console.log(`[Governance Generate] RunPod Response received`);
+        console.log(`[Governance Generate]   message: ${responseData.message}`);
+        console.log(`[Governance Generate]   document_name: ${document_name}`);
+        console.log(`[Governance Generate]   base64_doc length: ${base64_doc?.length || 0} chars`);
+
+        if (!base64_doc) {
+            throw new Error("AI service returned empty document content");
+        }
+
+        // Decode and save the generated file
+        const buffer = Buffer.from(base64_doc, "base64");
         const uploadsDir = path.join(process.cwd(), "public", "uploads", "policies");
         await mkdir(uploadsDir, { recursive: true });
 
         const timestamp = Date.now();
-        const finalFileName = `${name || "generated-policy"}-${timestamp}.pdf`;
+        const sanitizedName = policy.name.replace(/[^a-zA-Z0-9-_]/g, '-');
+        // Output is .docx as per RunPod API
+        const finalFileName = `${sanitizedName}-${timestamp}.docx`;
         const filePath = path.join(uploadsDir, finalFileName);
         const publicPath = `/uploads/policies/${finalFileName}`;
 
         await writeFile(filePath, buffer);
 
-        // Step 4: Log AIOperation (Success Update) - Atomic Hook Post-flight
+        console.log(`[Governance Generate] ══════════════════════════════════════════════`);
+        console.log(`[Governance Generate] SUCCESS - Policy Generated!`);
+        console.log(`[Governance Generate]   File Name: ${finalFileName}`);
+        console.log(`[Governance Generate]   File Size: ${buffer.length} bytes`);
+        console.log(`[Governance Generate]   Public Path: ${publicPath}`);
+        console.log(`[Governance Generate]   Latency: ${latencyMs}ms`);
+        console.log(`[Governance Generate] ══════════════════════════════════════════════`);
+
+        // Update AIOperation log
         if (operation) {
             await prisma.aIOperation.update({
                 where: { id: operation.id },
                 data: {
-                    responseBody: JSON.stringify({ file_name, status: "generated" }),
+                    responseBody: JSON.stringify({ document_name, status: "generated" }),
                     statusCode: 200,
                     latencyMs,
                 }
             });
         }
 
-        // Step 5: Update Persistence
+        // Create attachment record
         const attachment = await prisma.policyAttachment.create({
             data: {
                 policyId,
                 fileName: finalFileName,
-                fileType: "pdf",
+                fileType: "docx",
                 fileSize: buffer.length,
                 filePath: publicPath,
             }
         });
 
+        // Update policy status
         await prisma.policy.update({
             where: { id: policyId },
             data: { status: "Draft" }
@@ -144,25 +262,37 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({
             success: true,
             downloadUrl: publicPath,
-            attachmentId: attachment.id
+            attachmentId: attachment.id,
+            fileName: finalFileName,
+            fileSize: buffer.length,
+            controlsUsed: mappedControlsArray.length,
+            frameworksUsed: frameworkNames,
+            templateUsed: governanceTemplate.name,
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         const latencyMs = Date.now() - startTime;
-        console.error("[Governance Generate] Error:", error);
+        const err = error as { message?: string; status?: number; data?: unknown };
+
+        console.error(`[Governance Generate] ══════════════════════════════════════════════`);
+        console.error(`[Governance Generate] ERROR - Policy Generation Failed!`);
+        console.error(`[Governance Generate]   Message: ${err.message}`);
+        console.error(`[Governance Generate]   Status: ${err.status || 500}`);
+        console.error(`[Governance Generate]   Latency: ${latencyMs}ms`);
+        if (err.data) {
+            console.error(`[Governance Generate]   Data: ${JSON.stringify(err.data)}`);
+        }
+        console.error(`[Governance Generate] ══════════════════════════════════════════════`);
 
         await aiAuditService.logOperation({
-            endpoint: "/api/generate_policy/",
+            endpoint: AI_ENDPOINTS.GENERATE_POLICY,
             method: "POST",
-            error: error.message || "Unknown error",
-            statusCode: error.status || 500,
+            error: err.message || "Unknown error",
+            statusCode: err.status || 500,
             latencyMs,
             userId,
         });
 
-        return NextResponse.json(
-            { error: error.message || "Failed to generate policy" },
-            { status: error.status || 500 }
-        );
+        return errorResponse(err.message || "Failed to generate policy", err.status || 500);
     }
 }

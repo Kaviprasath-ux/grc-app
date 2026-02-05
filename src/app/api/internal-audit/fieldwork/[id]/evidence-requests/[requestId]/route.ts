@@ -103,6 +103,7 @@ export const PATCH = withAuth(
           auditeeName: auditeeName !== undefined ? auditeeName : undefined,
           sampleSize: body.numberOfSamples !== undefined ? (body.numberOfSamples ? String(body.numberOfSamples) : null) : undefined,
           aiReviewStatus: body.aiReviewStatus !== undefined ? body.aiReviewStatus : undefined,
+          aiReviewComment: body.aiReviewComment !== undefined ? body.aiReviewComment : undefined,
         },
       });
 

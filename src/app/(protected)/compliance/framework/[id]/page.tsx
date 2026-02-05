@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, use, useRef } from "react";
+import { useEffect, useState, use, useRef, useMemo, memo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -756,6 +756,89 @@ const flattenRequirements = (requirements: Requirement[]): Requirement[] => {
   return flat;
 };
 
+// Memoized SOA Row Component to prevent re-renders
+interface SOARowProps {
+  req: Requirement;
+  disabled: boolean;
+  onApplicabilityChange: (id: string, value: string) => void;
+  onJustificationChange: (id: string, value: string) => void;
+  onImplementationChange: (id: string, value: string) => void;
+  t: (key: string) => string;
+}
+
+const SOARow = memo(function SOARow({
+  req,
+  disabled,
+  onApplicabilityChange,
+  onJustificationChange,
+  onImplementationChange,
+  t,
+}: SOARowProps) {
+  return (
+    <TableRow className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+      <TableCell className="py-3 text-sm font-medium text-slate-800 w-16">{req.code}</TableCell>
+      <TableCell className="py-3 text-sm text-slate-700 w-64 truncate">
+        {req.name}
+      </TableCell>
+      <TableCell className="py-3 w-28">
+        <Select
+          defaultValue={req.applicability ?? undefined}
+          onValueChange={(value) => onApplicabilityChange(req.id, value)}
+          disabled={disabled}
+        >
+          <SelectTrigger className="w-24 bg-white">
+            <SelectValue placeholder="-" />
+          </SelectTrigger>
+          <SelectContent className="bg-white z-50">
+            <SelectItem value="Yes">{t("Yes")}</SelectItem>
+            <SelectItem value="No">{t("No")}</SelectItem>
+          </SelectContent>
+        </Select>
+      </TableCell>
+      <TableCell className="py-3 w-44">
+        <input
+          type="text"
+          className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-slate-50 disabled:cursor-not-allowed"
+          defaultValue={req.justification ?? ""}
+          onBlur={(e) => onJustificationChange(req.id, e.target.value)}
+          placeholder={t("Enter justification")}
+          disabled={disabled}
+        />
+      </TableCell>
+      <TableCell className="py-3 w-36">
+        <Select
+          defaultValue={req.implementationStatus ?? undefined}
+          onValueChange={(value) => onImplementationChange(req.id, value)}
+          disabled={disabled}
+        >
+          <SelectTrigger className="w-28 bg-white">
+            <SelectValue placeholder="-" />
+          </SelectTrigger>
+          <SelectContent className="bg-white z-50">
+            <SelectItem value="Yes">{t("Yes")}</SelectItem>
+            <SelectItem value="No">{t("No")}</SelectItem>
+            <SelectItem value="Ongoing">{t("Ongoing")}</SelectItem>
+            <SelectItem value="N/A">{t("N/A")}</SelectItem>
+          </SelectContent>
+        </Select>
+      </TableCell>
+      <TableCell className="py-3 w-32">
+        <span
+          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+            req.controlCompliance === "Compliant"
+              ? "bg-success-light text-semantic-success-dark"
+              : req.controlCompliance === "Partial Compliant"
+              ? "bg-warning-light text-warning-dark"
+              : "bg-error-light text-semantic-error"
+          }`}
+        >
+          {req.controlCompliance || t("Non Compliant")}
+        </span>
+      </TableCell>
+    </TableRow>
+  );
+});
+
 export default function FrameworkDetailPage({
   params,
 }: {
@@ -829,6 +912,10 @@ export default function FrameworkDetailPage({
   // SOA Pagination
   const [soaPage, setSoaPage] = useState(0);
   const SOA_PAGE_SIZE = 20;
+
+  // SOA Local Edits - track changes before saving
+  const [soaEdits, setSoaEdits] = useState<Record<string, { applicability?: string; justification?: string; implementationStatus?: string }>>({});
+  const [soaSaving, setSoaSaving] = useState(false);
 
   useEffect(() => {
     fetchFramework();
@@ -1215,22 +1302,128 @@ export default function FrameworkDetailPage({
     }
   };
 
-  const handleSOAUpdate = async (
-    requirementId: string,
-    field: string,
-    value: string
-  ) => {
+  // Track local SOA changes with useCallback to prevent re-renders
+  const handleApplicabilityChange = useCallback((requirementId: string, value: string) => {
+    setSoaEdits((prev) => ({
+      ...prev,
+      [requirementId]: {
+        ...prev[requirementId],
+        applicability: value,
+      },
+    }));
+  }, []);
+
+  const handleJustificationChange = useCallback((requirementId: string, value: string) => {
+    setSoaEdits((prev) => ({
+      ...prev,
+      [requirementId]: {
+        ...prev[requirementId],
+        justification: value,
+      },
+    }));
+  }, []);
+
+  const handleImplementationChange = useCallback((requirementId: string, value: string) => {
+    setSoaEdits((prev) => ({
+      ...prev,
+      [requirementId]: {
+        ...prev[requirementId],
+        implementationStatus: value,
+      },
+    }));
+  }, []);
+
+  // Save all SOA changes to the server
+  const handleSaveSOA = async () => {
+    if (Object.keys(soaEdits).length === 0) {
+      toast({ title: t("No changes"), description: t("No changes to save.") });
+      return;
+    }
+
+    setSoaSaving(true);
     try {
-      await fetch(`/api/requirements/${requirementId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ [field]: value }),
-      });
-      fetchFramework();
+      const updatePromises = Object.entries(soaEdits).map(([requirementId, changes]) =>
+        fetch(`/api/requirements/${requirementId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(changes),
+        })
+      );
+
+      const results = await Promise.all(updatePromises);
+      const allSuccess = results.every((res) => res.ok);
+
+      if (allSuccess) {
+        toast({ title: t("Success"), description: t("SOA changes saved successfully.") });
+        setSoaEdits({});
+        fetchFramework();
+      } else {
+        toast({ title: t("Error"), description: t("Some changes failed to save."), variant: "destructive" });
+      }
     } catch (error) {
-      console.error("Error updating SOA:", error);
+      console.error("Error saving SOA:", error);
+      toast({ title: t("Error"), description: t("Failed to save SOA changes."), variant: "destructive" });
+    } finally {
+      setSoaSaving(false);
     }
   };
+
+  // Download SOA Report as CSV
+  const handleDownloadSOAReport = () => {
+    if (!framework) return;
+
+    const requirements = framework.requirements && framework.requirements.length > 0
+      ? framework.requirements
+      : flattenRequirements(dummyRequirements);
+
+    // Create CSV content
+    const headers = [
+      "Code",
+      "Requirement",
+      "Applicability",
+      "Justification",
+      "Implementation Status",
+      "Control Compliance",
+    ];
+
+    const rows = requirements.map((req) => {
+      // Use edited values if available
+      const applicability = soaEdits[req.id]?.applicability ?? req.applicability ?? "";
+      const justification = soaEdits[req.id]?.justification ?? req.justification ?? "";
+      const implementationStatus = soaEdits[req.id]?.implementationStatus ?? req.implementationStatus ?? "";
+
+      return [
+        req.code,
+        req.name.replace(/"/g, '""'),
+        applicability,
+        justification.replace(/"/g, '""'),
+        implementationStatus,
+        req.controlCompliance || "Non Compliant",
+      ];
+    });
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(",")),
+    ].join("\n");
+
+    // Download the file
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute(
+      "download",
+      `${framework.name}-SOA-${new Date().toISOString().split("T")[0]}.csv`
+    );
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Check if there are unsaved SOA changes
+  const hasUnsavedSOAChanges = Object.keys(soaEdits).length > 0;
 
   // Filter controls for linking
   const filteredControls = controls.filter((control) => {
@@ -1256,6 +1449,38 @@ export default function FrameworkDetailPage({
     return true;
   });
 
+  // Use dummy data if no requirements from API - memoized for stable references
+  // MUST be called unconditionally (before any early return) to follow Rules of Hooks
+  const hasApiRequirements = useMemo(() => {
+    return framework?.requirements && framework.requirements.length > 0;
+  }, [framework?.requirements]);
+
+  const requirementsToUse = useMemo(() => {
+    return hasApiRequirements && framework ? framework.requirements : [];
+  }, [hasApiRequirements, framework?.requirements]);
+
+  const requirementHierarchy = useMemo(() => {
+    return hasApiRequirements && framework
+      ? buildHierarchy(requirementsToUse)
+      : dummyRequirements;
+  }, [hasApiRequirements, requirementsToUse, framework]);
+
+  const filteredHierarchy = filterRequirements(requirementHierarchy);
+
+  const flatRequirements = useMemo(() => {
+    return hasApiRequirements && framework
+      ? requirementsToUse
+      : flattenRequirements(dummyRequirements);
+  }, [hasApiRequirements, requirementsToUse, framework]);
+
+  const soaTotalPages = Math.ceil(flatRequirements.length / SOA_PAGE_SIZE);
+  const soaStartIndex = soaPage * SOA_PAGE_SIZE;
+  const soaEndIndex = Math.min(soaStartIndex + SOA_PAGE_SIZE, flatRequirements.length);
+
+  const soaRequirements = useMemo(() => {
+    return flatRequirements.slice(soaStartIndex, soaEndIndex);
+  }, [flatRequirements, soaStartIndex, soaEndIndex]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
@@ -1280,25 +1505,6 @@ export default function FrameworkDetailPage({
       </div>
     );
   }
-
-  // Use dummy data if no requirements from API
-  const hasApiRequirements = framework.requirements && framework.requirements.length > 0;
-  const requirementsToUse = hasApiRequirements ? framework.requirements : [];
-
-  // For display, use dummy data as hierarchy (already structured with children)
-  const requirementHierarchy = hasApiRequirements
-    ? buildHierarchy(requirementsToUse)
-    : dummyRequirements;
-  const filteredHierarchy = filterRequirements(requirementHierarchy);
-
-  // SOA data - use flattened dummy data if no API requirements
-  const flatRequirements = hasApiRequirements
-    ? requirementsToUse
-    : flattenRequirements(dummyRequirements);
-  const soaTotalPages = Math.ceil(flatRequirements.length / SOA_PAGE_SIZE);
-  const soaStartIndex = soaPage * SOA_PAGE_SIZE;
-  const soaEndIndex = Math.min(soaStartIndex + SOA_PAGE_SIZE, flatRequirements.length);
-  const soaRequirements = flatRequirements.slice(soaStartIndex, soaEndIndex);
 
   return (
     <div className="space-y-6">
@@ -1498,95 +1704,49 @@ export default function FrameworkDetailPage({
 
         {/* SOA Tab */}
         <TabsContent value="soa" className="mt-6">
-          {/* Header with actions */}
+          {/* Header */}
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-base font-semibold text-slate-800">{t("Statement of Applicability")}</h3>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm">
-                <Download className="h-4 w-4 mr-2" />
-                {t("Download Report")}
-              </Button>
-              <Button size="sm">{t("Save")}</Button>
-            </div>
+            {hasUnsavedSOAChanges && (
+              <span className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded">
+                {t("Unsaved changes")}
+              </span>
+            )}
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200">
-            <Table>
+          {/* Sample data notice */}
+          {!hasApiRequirements && (
+            <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-amber-600" />
+              <p className="text-sm text-amber-700">
+                {t("This framework has no requirements. Import requirements to enable SOA editing.")}
+              </p>
+            </div>
+          )}
+
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <Table className="table-fixed w-full">
               <TableHeader>
                 <TableRow className="border-b border-slate-100 bg-slate-50/50">
-                  <TableHead className="text-xs font-semibold text-slate-600 py-3">{t("Code")}</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600 py-3">{t("Requirement")}</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600 py-3">{t("Applicability")}</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600 py-3">{t("Justification")}</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600 py-3">{t("Implementation Status")}</TableHead>
-                  <TableHead className="text-xs font-semibold text-slate-600 py-3">{t("Control Compliance")}</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600 py-3 w-16">{t("Code")}</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600 py-3 w-64">{t("Requirement")}</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600 py-3 w-28">{t("Applicability")}</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600 py-3 w-44">{t("Justification")}</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600 py-3 w-36">{t("Implementation Status")}</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-600 py-3 w-32">{t("Control Compliance")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {soaRequirements.map((req) => (
-                  <TableRow key={req.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
-                    <TableCell className="py-3 text-sm font-medium text-slate-800">{req.code}</TableCell>
-                    <TableCell className="py-3 text-sm text-slate-700 max-w-xs truncate">
-                      {req.name}
-                    </TableCell>
-                    <TableCell className="py-3">
-                      <Select
-                        value={req.applicability || ""}
-                        onValueChange={(value) =>
-                          handleSOAUpdate(req.id, "applicability", value)
-                        }
-                      >
-                        <SelectTrigger className="w-24 bg-white">
-                          <SelectValue placeholder="-" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-white">
-                          <SelectItem value="Yes">{t("Yes")}</SelectItem>
-                          <SelectItem value="No">{t("No")}</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell className="py-3">
-                      <Input
-                        className="w-40 bg-white"
-                        value={req.justification || ""}
-                        onChange={(e) =>
-                          handleSOAUpdate(req.id, "justification", e.target.value)
-                        }
-                        placeholder={t("Enter justification")}
-                      />
-                    </TableCell>
-                    <TableCell className="py-3">
-                      <Select
-                        value={req.implementationStatus || ""}
-                        onValueChange={(value) =>
-                          handleSOAUpdate(req.id, "implementationStatus", value)
-                        }
-                      >
-                        <SelectTrigger className="w-28 bg-white">
-                          <SelectValue placeholder="-" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-white">
-                          <SelectItem value="Yes">{t("Yes")}</SelectItem>
-                          <SelectItem value="No">{t("No")}</SelectItem>
-                          <SelectItem value="Ongoing">{t("Ongoing")}</SelectItem>
-                          <SelectItem value="N/A">{t("N/A")}</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell className="py-3">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          req.controlCompliance === "Compliant"
-                            ? "bg-success-light text-semantic-success-dark"
-                            : req.controlCompliance === "Partial Compliant"
-                            ? "bg-warning-light text-warning-dark"
-                            : "bg-error-light text-semantic-error"
-                        }`}
-                      >
-                        {req.controlCompliance || t("Non Compliant")}
-                      </span>
-                    </TableCell>
-                  </TableRow>
+                  <SOARow
+                    key={req.id}
+                    req={req}
+                    disabled={!hasApiRequirements}
+                    onApplicabilityChange={handleApplicabilityChange}
+                    onJustificationChange={handleJustificationChange}
+                    onImplementationChange={handleImplementationChange}
+                    t={t}
+                  />
                 ))}
               </TableBody>
             </Table>
@@ -1637,6 +1797,23 @@ export default function FrameworkDetailPage({
                 </Button>
               </div>
             </div>
+          </div>
+
+          {/* Action buttons at bottom right */}
+          <div className="flex items-center justify-end gap-3 mt-4">
+            <Button
+              variant="outline"
+              onClick={handleDownloadSOAReport}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              {t("Download Report")}
+            </Button>
+            <Button
+              onClick={handleSaveSOA}
+              disabled={!hasApiRequirements || !hasUnsavedSOAChanges || soaSaving}
+            >
+              {soaSaving ? t("Saving...") : t("Save")}
+            </Button>
           </div>
         </TabsContent>
 
