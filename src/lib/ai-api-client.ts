@@ -107,6 +107,7 @@ class AIApiClient {
     // Build headers - DO NOT set Content-Type for FormData
     const headers: Record<string, string> = {
       'auth': API_SECRET || '',
+      'accept': 'application/json',
     };
 
     // Only set Content-Type for non-FormData requests
@@ -127,10 +128,17 @@ class AIApiClient {
     }
 
     try {
+      // Create AbortController for timeout (120 seconds for AI generation which can be slow)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 1200000);
+
       const response = await fetch(url, {
         ...options,
         headers,
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       const responseTime = Date.now() - startTime;
 
@@ -193,7 +201,7 @@ class AIApiClient {
       return { data, status: response.status, requestId, latencyMs: responseTime };
     } catch (error: unknown) {
       const responseTime = Date.now() - startTime;
-      const err = error as { requestId?: string; message?: string };
+      const err = error as { requestId?: string; message?: string; name?: string; cause?: unknown };
 
       if (err.requestId) {
         // Already logged error
@@ -203,8 +211,25 @@ class AIApiClient {
       console.log(`${'─'.repeat(80)}`);
       console.log(`[AI API ERROR] ${endpointName}`);
       console.log(`${'─'.repeat(80)}`);
+
+      // Check for timeout/abort
+      if (err.name === 'AbortError') {
+        console.error(`[${requestId}] ❌ TIMEOUT ERROR after ${responseTime}ms`);
+        console.error(`[${requestId}] Request timed out after 120 seconds`);
+        console.log(`${'═'.repeat(80)}\n`);
+        throw {
+          status: 504,
+          message: 'AI service request timed out. Please try again.',
+          requestId,
+        };
+      }
+
       console.error(`[${requestId}] ❌ CONNECTION ERROR after ${responseTime}ms`);
       console.error(`[${requestId}] Error: ${err.message || 'Unknown error'}`);
+      console.error(`[${requestId}] Error name: ${err.name || 'N/A'}`);
+      if (err.cause) {
+        console.error(`[${requestId}] Cause: ${JSON.stringify(err.cause)}`);
+      }
       console.log(`${'═'.repeat(80)}\n`);
 
       throw {

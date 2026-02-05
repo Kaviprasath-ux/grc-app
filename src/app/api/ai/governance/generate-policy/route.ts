@@ -160,11 +160,13 @@ export async function POST(req: NextRequest) {
         formData.append("mapped_controls", mappedControlsArray.join("\n"));
 
         // Add template file (.docx)
-        const templateBlob = new Blob(
+        // Use File instead of Blob for better Node.js fetch compatibility
+        const templateFile = new File(
             [new Uint8Array(templateBuffer)],
+            governanceTemplate.fileName,
             { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" }
         );
-        formData.append("template", templateBlob, governanceTemplate.fileName);
+        formData.append("template", templateFile);
 
         // Log FormData parameters
         console.log(`[Governance Generate] ──────────────────────────────────────────────`);
@@ -173,7 +175,7 @@ export async function POST(req: NextRequest) {
         console.log(`[Governance Generate]   document_name: ${policy.name}`);
         console.log(`[Governance Generate]   framework_names: ${frameworkNames.join(", ")}`);
         console.log(`[Governance Generate]   mapped_controls (${mappedControlsArray.length} items): ${mappedControlsArray.join(" | ").substring(0, 200)}...`);
-        console.log(`[Governance Generate]   template: ${governanceTemplate.fileName} (${templateBlob.size} bytes)`);
+        console.log(`[Governance Generate]   template: ${governanceTemplate.fileName} (${templateFile.size} bytes)`);
         console.log(`[Governance Generate] ──────────────────────────────────────────────`);
         console.log(`[Governance Generate] Calling RunPod endpoint: ${AI_ENDPOINTS.GENERATE_POLICY}`);
 
