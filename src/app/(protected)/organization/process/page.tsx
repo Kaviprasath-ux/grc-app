@@ -260,6 +260,7 @@ export default function ProcessPage() {
       consulted: "",
       informed: "",
     });
+    setPendingOnboardingFiles([]);
   };
 
   // Employee Onboarding file states (for Add dialog)
@@ -269,7 +270,7 @@ export default function ProcessPage() {
   // Employee Onboarding file states (for Edit dialog)
   const [editOnboardingFiles, setEditOnboardingFiles] = useState<File[]>([]);
   const editOnboardingFileInputRef = useRef<HTMLInputElement>(null);
-  const [editExistingOnboardingFiles, setEditExistingOnboardingFiles] = useState<{ id: string; fileName: string; fileSize?: number | null }[]>([]);
+  const [editExistingOnboardingFiles, setEditExistingOnboardingFiles] = useState<{ id: string; fileName: string; fileSize?: number | null; filePath?: string }[]>([]);
 
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return "0 Bytes";
@@ -603,11 +604,11 @@ export default function ProcessPage() {
     setEditExistingOnboardingFiles([]);
     fetch(`/api/processes/${process.id}/attachments`)
       .then((res) => res.ok ? res.json() : [])
-      .then((attachments: { id: string; fileName: string; fileSize?: number | null; category?: string }[]) => {
+      .then((attachments: { id: string; fileName: string; fileSize?: number | null; filePath?: string; category?: string }[]) => {
         setEditExistingOnboardingFiles(
           attachments
             .filter((a) => a.category === "employee_onboarding")
-            .map((a) => ({ id: a.id, fileName: a.fileName, fileSize: a.fileSize }))
+            .map((a) => ({ id: a.id, fileName: a.fileName, fileSize: a.fileSize, filePath: a.filePath }))
         );
       })
       .catch(() => {});
@@ -1450,7 +1451,7 @@ export default function ProcessPage() {
         setIsAddProcessOpen(open);
         if (!open) resetProcessForm();
       }}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onInteractOutside={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
@@ -1759,7 +1760,7 @@ export default function ProcessPage() {
         setIsEditProcessOpen(open);
         if (!open) setEditingProcess(null);
       }}>
-        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0">
+        <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col p-0 gap-0" onInteractOutside={(e) => e.preventDefault()}>
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100">
             <DialogHeader>
@@ -2002,43 +2003,6 @@ export default function ProcessPage() {
                   {t("Upload employee onboarding documents for this process.")}
                 </p>
 
-                {/* Existing onboarding files */}
-                {editExistingOnboardingFiles.length > 0 && (
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">{t("Existing Files")} ({editExistingOnboardingFiles.length})</Label>
-                    <div className="border rounded-lg divide-y">
-                      {editExistingOnboardingFiles.map((file) => (
-                        <div key={file.id} className="flex items-center justify-between p-3 hover:bg-gray-50">
-                          <div className="flex items-center gap-3">
-                            <FileText className="h-5 w-5 text-green-600" />
-                            <div>
-                              <p className="text-sm font-medium">{file.fileName}</p>
-                              {file.fileSize && <p className="text-xs text-muted-foreground">{formatFileSize(file.fileSize)}</p>}
-                            </div>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={async () => {
-                              try {
-                                const res = await fetch(`/api/processes/${editingProcess?.id}/attachments/${file.id}`, { method: "DELETE" });
-                                if (res.ok) {
-                                  setEditExistingOnboardingFiles((prev) => prev.filter((f) => f.id !== file.id));
-                                }
-                              } catch (err) {
-                                console.error("Error deleting file:", err);
-                              }
-                            }}
-                          >
-                            <X className="h-4 w-4 text-red-600" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
                 <div
                   className="border-2 border-dashed rounded-lg p-6 text-center transition-colors border-gray-300 hover:border-gray-400"
                   onDragOver={(e) => { e.preventDefault(); }}
@@ -2077,6 +2041,71 @@ export default function ProcessPage() {
                     />
                   </div>
                 </div>
+                {editExistingOnboardingFiles.length > 0 && (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">{t("Existing Files")} ({editExistingOnboardingFiles.length})</Label>
+                    <div className="border rounded-lg divide-y">
+                      {editExistingOnboardingFiles.map((file) => (
+                        <div key={file.id} className="flex items-center justify-between p-3 hover:bg-gray-50">
+                          <div className="flex items-center gap-3">
+                            <FileText className="h-5 w-5 text-green-600" />
+                            <div>
+                              <p className="text-sm font-medium">{file.fileName}</p>
+                              {file.fileSize && <p className="text-xs text-muted-foreground">{formatFileSize(file.fileSize)}</p>}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            {file.filePath && (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => window.open(file.filePath, "_blank")}
+                                  title={t("View")}
+                                >
+                                  <Eye className="h-4 w-4 text-blue-600" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => {
+                                    const link = document.createElement("a");
+                                    link.href = file.filePath!;
+                                    link.download = file.fileName;
+                                    link.click();
+                                  }}
+                                  title={t("Download")}
+                                >
+                                  <Download className="h-4 w-4 text-green-600" />
+                                </Button>
+                              </>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={async () => {
+                                try {
+                                  const res = await fetch(`/api/processes/${editingProcess?.id}/attachments/${file.id}`, { method: "DELETE" });
+                                  if (res.ok) {
+                                    setEditExistingOnboardingFiles((prev) => prev.filter((f) => f.id !== file.id));
+                                  }
+                                } catch (err) {
+                                  console.error("Error deleting file:", err);
+                                }
+                              }}
+                              title={t("Delete")}
+                            >
+                              <X className="h-4 w-4 text-red-600" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 {editOnboardingFiles.length > 0 && (
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">{t("New Files to Upload")} ({editOnboardingFiles.length})</Label>

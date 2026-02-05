@@ -14,19 +14,19 @@ export const GET = withAuth(
     try {
       const { id } = await context.params;
 
-      const process = await prisma.process.findUnique({
+      const processRecord = await prisma.process.findUnique({
         where: { id },
         select: { customerAccountId: true },
       });
 
-      if (!process) {
+      if (!processRecord) {
         return NextResponse.json(
           { error: "Process not found" },
           { status: 404 }
         );
       }
 
-      if (!validateTenantAccess(session, process.customerAccountId)) {
+      if (!validateTenantAccess(session, processRecord.customerAccountId)) {
         return NextResponse.json({ error: "Access denied" }, { status: 403 });
       }
 
@@ -63,19 +63,19 @@ export const POST = withAuth(
     try {
       const { id } = await context.params;
 
-      const process = await prisma.process.findUnique({
+      const processRecord = await prisma.process.findUnique({
         where: { id },
         select: { customerAccountId: true },
       });
 
-      if (!process) {
+      if (!processRecord) {
         return NextResponse.json(
           { error: "Process not found" },
           { status: 404 }
         );
       }
 
-      if (!validateTenantAccess(session, process.customerAccountId)) {
+      if (!validateTenantAccess(session, processRecord.customerAccountId)) {
         return NextResponse.json({ error: "Access denied" }, { status: 403 });
       }
 
