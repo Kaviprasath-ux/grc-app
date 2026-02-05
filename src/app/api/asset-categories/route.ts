@@ -78,12 +78,12 @@ export const POST = withAuth(
         );
       }
 
-      // Note: AssetCategory model doesn't have customerAccountId field yet
       const category = await prisma.assetCategory.create({
         data: {
           name: name.trim(),
           description: description?.trim() || null,
           status: status || "Active",
+          customerAccountId,
         },
         include: {
           subCategories: true,

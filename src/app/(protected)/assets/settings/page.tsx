@@ -197,7 +197,9 @@ export default function AssetSettingsPage() {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [ciaRatings, setCiaRatings] = useState<CIARating[]>([]);
   const [scoringCalculationType, setScoringCalculationType] = useState("high_of_all");
-  const [scoringConfigs, setScoringConfigs] = useState<ScoringConfig[]>([]);
+  const [highOfAllConfigs, setHighOfAllConfigs] = useState<ScoringConfig[]>([]);
+  const [additionOfAllConfigs, setAdditionOfAllConfigs] = useState<ScoringConfig[]>([]);
+  const [productOfAllConfigs, setProductOfAllConfigs] = useState<ScoringConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -217,7 +219,7 @@ export default function AssetSettingsPage() {
   // Form states
   const [categoryForm, setCategoryForm] = useState({ name: "", description: "", status: "Active" });
   const [subCategoryForm, setSubCategoryForm] = useState({ name: "", description: "", categoryId: "", status: "Active" });
-  const [groupForm, setGroupForm] = useState({ name: "", description: "", status: "Active" });
+  const [groupForm, setGroupForm] = useState({ name: "", description: "", status: "Active", subCategoryId: "" });
   const [lifecycleForm, setLifecycleForm] = useState({ name: "", description: "", order: 0 });
   const [sensitivityForm, setSensitivityForm] = useState({ name: "", description: "" });
   const [assetForm, setAssetForm] = useState({
@@ -409,7 +411,7 @@ export default function AssetSettingsPage() {
       if (res.ok) {
         const created = await res.json();
         setGroups([...groups, created]);
-        setGroupForm({ name: "", description: "", status: "Active" });
+        setGroupForm({ name: "", description: "", status: "Active", subCategoryId: "" });
         setIsAddOpen(false);
       } else {
         const error = await res.json();
@@ -660,6 +662,7 @@ export default function AssetSettingsPage() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          type: selectedCiaRating.type,
           label: ciaRatingForm.label,
           value: ciaRatingForm.value,
         }),
@@ -696,8 +699,68 @@ export default function AssetSettingsPage() {
   };
 
   // Scoring Configuration handlers
+  // Get current configs based on calculation type
+  const getCurrentConfigs = () => {
+    switch (scoringCalculationType) {
+      case "high_of_all": return highOfAllConfigs;
+      case "addition_of_all": return additionOfAllConfigs;
+      case "product_of_all": return productOfAllConfigs;
+      default: return highOfAllConfigs;
+    }
+  };
+
+  const setCurrentConfigs = (configs: ScoringConfig[]) => {
+    switch (scoringCalculationType) {
+      case "high_of_all": setHighOfAllConfigs(configs); break;
+      case "addition_of_all": setAdditionOfAllConfigs(configs); break;
+      case "product_of_all": setProductOfAllConfigs(configs); break;
+    }
+  };
+
   const handleAddScoringConfig = () => {
     if (!scoringConfigForm.level.trim()) return;
+
+    const currentConfigs = getCurrentConfigs();
+
+    // Check for duplicate rating name
+    const duplicateLevel = currentConfigs.find(
+      c => c.level.toLowerCase() === scoringConfigForm.level.trim().toLowerCase()
+    );
+    if (duplicateLevel) {
+      toast({ title: t("Error"), description: t("Rating already exists"), variant: "destructive" });
+      return;
+    }
+
+    // Check that low range and high range are not the same (for addition/product types)
+    if (scoringCalculationType !== "high_of_all" && scoringConfigForm.minScore === scoringConfigForm.maxScore) {
+      toast({ title: t("Error"), description: t("Low range and High range cannot be the same"), variant: "destructive" });
+      return;
+    }
+
+    // Check for overlapping ranges (for addition/product types)
+    if (scoringCalculationType !== "high_of_all") {
+      const newMin = scoringConfigForm.minScore;
+      const newMax = scoringConfigForm.maxScore;
+
+      const overlappingRange = currentConfigs.find(c => {
+        // Check if new range overlaps with existing range
+        // Overlap exists if: newMin <= existingMax AND newMax >= existingMin
+        return newMin <= c.maxScore && newMax >= c.minScore;
+      });
+
+      if (overlappingRange) {
+        toast({ title: t("Error"), description: t("Range overlaps with existing range"), variant: "destructive" });
+        return;
+      }
+    } else {
+      // For high_of_all, just check duplicate high value
+      const duplicateRange = currentConfigs.find(c => c.maxScore === scoringConfigForm.maxScore);
+      if (duplicateRange) {
+        toast({ title: t("Error"), description: t("Range value already exists"), variant: "destructive" });
+        return;
+      }
+    }
+
     const newConfig: ScoringConfig = {
       id: Date.now().toString(),
       level: scoringConfigForm.level,
@@ -705,14 +768,47 @@ export default function AssetSettingsPage() {
       maxScore: scoringConfigForm.maxScore,
       color: scoringConfigForm.color,
     };
-    setScoringConfigs([...scoringConfigs, newConfig]);
+    setCurrentConfigs([...currentConfigs, newConfig]);
     setScoringConfigForm({ level: "", minScore: 0, maxScore: 0, color: "#000000" });
     setIsScoringAddOpen(false);
   };
 
   const handleUpdateScoringConfig = () => {
     if (!selectedScoringConfig) return;
-    setScoringConfigs(scoringConfigs.map(c =>
+
+    // Check that low range and high range are not the same (for addition/product types)
+    if (scoringCalculationType !== "high_of_all" && scoringConfigForm.minScore === scoringConfigForm.maxScore) {
+      toast({ title: t("Error"), description: t("Low range and High range cannot be the same"), variant: "destructive" });
+      return;
+    }
+
+    const currentConfigs = getCurrentConfigs();
+
+    // Check for overlapping ranges (exclude the current item being edited)
+    if (scoringCalculationType !== "high_of_all") {
+      const newMin = scoringConfigForm.minScore;
+      const newMax = scoringConfigForm.maxScore;
+
+      const overlappingRange = currentConfigs.find(c => {
+        if (c.id === selectedScoringConfig.id) return false; // Skip current item
+        return newMin <= c.maxScore && newMax >= c.minScore;
+      });
+
+      if (overlappingRange) {
+        toast({ title: t("Error"), description: t("Range overlaps with existing range"), variant: "destructive" });
+        return;
+      }
+    } else {
+      const duplicateRange = currentConfigs.find(c =>
+        c.id !== selectedScoringConfig.id && c.maxScore === scoringConfigForm.maxScore
+      );
+      if (duplicateRange) {
+        toast({ title: t("Error"), description: t("Range value already exists"), variant: "destructive" });
+        return;
+      }
+    }
+
+    setCurrentConfigs(currentConfigs.map(c =>
       c.id === selectedScoringConfig.id
         ? { ...c, level: scoringConfigForm.level, minScore: scoringConfigForm.minScore, maxScore: scoringConfigForm.maxScore, color: scoringConfigForm.color }
         : c
@@ -723,7 +819,8 @@ export default function AssetSettingsPage() {
 
   const handleDeleteScoringConfig = () => {
     if (!selectedScoringConfig) return;
-    setScoringConfigs(scoringConfigs.filter(c => c.id !== selectedScoringConfig.id));
+    const currentConfigs = getCurrentConfigs();
+    setCurrentConfigs(currentConfigs.filter(c => c.id !== selectedScoringConfig.id));
     setIsScoringDeleteOpen(false);
     setSelectedScoringConfig(null);
   };
@@ -944,7 +1041,6 @@ export default function AssetSettingsPage() {
               setSelectedItem(row.original);
               setIsDeleteOpen(true);
             }}
-            disabled={(row.original._count?.subCategories || 0) > 0 || (row.original._count?.assets || 0) > 0}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -996,7 +1092,6 @@ export default function AssetSettingsPage() {
               setSelectedItem(row.original);
               setIsDeleteOpen(true);
             }}
-            disabled={(row.original._count?.assets || 0) > 0}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -1045,7 +1140,6 @@ export default function AssetSettingsPage() {
               setSelectedItem(row.original);
               setIsDeleteOpen(true);
             }}
-            disabled={(row.original._count?.assets || 0) > 0}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -1083,7 +1177,6 @@ export default function AssetSettingsPage() {
               setSelectedItem(row.original as any);
               setIsDeleteOpen(true);
             }}
-            disabled={(row.original._count?.assets || 0) > 0}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -1169,7 +1262,6 @@ export default function AssetSettingsPage() {
               setSelectedItem(row.original);
               setIsDeleteOpen(true);
             }}
-            disabled={(row.original._count?.assets || 0) > 0}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -1527,15 +1619,6 @@ export default function AssetSettingsPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>{t("Description")}</Label>
-                    <textarea
-                      value={categoryForm.description}
-                      onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
-                      placeholder={t("Enter description")}
-                      className="w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
-                    />
-                  </div>
-                  <div className="space-y-2">
                     <Label>{t("Status")}</Label>
                     <Select
                       value={categoryForm.status}
@@ -1612,29 +1695,61 @@ export default function AssetSettingsPage() {
                       className="w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
                     />
                   </div>
+                  <div className="space-y-2">
+                    <Label>{t("Status")} *</Label>
+                    <div className="flex items-center gap-6">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="groupStatus"
+                          checked={groupForm.status === "Active"}
+                          onChange={() => setGroupForm({ ...groupForm, status: "Active" })}
+                          className="w-4 h-4"
+                        />
+                        <span className="text-sm">{t("Active")}</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="groupStatus"
+                          checked={groupForm.status === "Inactive"}
+                          onChange={() => setGroupForm({ ...groupForm, status: "Inactive" })}
+                          className="w-4 h-4"
+                        />
+                        <span className="text-sm">{t("Inactive")}</span>
+                      </label>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{t("Asset Sub Category")} *</Label>
+                    <Select
+                      value={groupForm.subCategoryId}
+                      onValueChange={(value) => setGroupForm({ ...groupForm, subCategoryId: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={t("Select sub category")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {subCategories.map((subCat) => (
+                          <SelectItem key={subCat.id} value={subCat.id}>
+                            {subCat.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </>
               )}
 
               {entitySubTab === "sensitivity" && (
-                <>
-                  <div className="space-y-2">
-                    <Label>{t("Name")} *</Label>
-                    <Input
-                      value={sensitivityForm.name}
-                      onChange={(e) => setSensitivityForm({ ...sensitivityForm, name: e.target.value })}
-                      placeholder={t("e.g., High, Medium, Low")}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>{t("Description")}</Label>
-                    <textarea
-                      value={sensitivityForm.description}
-                      onChange={(e) => setSensitivityForm({ ...sensitivityForm, description: e.target.value })}
-                      placeholder={t("Enter description")}
-                      className="w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
-                    />
-                  </div>
-                </>
+                <div className="space-y-2">
+                  <Label>{t("Name")} *</Label>
+                  <Input
+                    value={sensitivityForm.name}
+                    onChange={(e) => setSensitivityForm({ ...sensitivityForm, name: e.target.value })}
+                    placeholder={t("e.g., High, Medium, Low")}
+                  />
+                </div>
               )}
             </div>
             <DialogFooter>
@@ -1689,15 +1804,6 @@ export default function AssetSettingsPage() {
                       onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
                       placeholder={t("e.g., Hardware, Software, Data")}
                       className="mt-1.5"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
-                    <textarea
-                      value={categoryForm.description}
-                      onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
-                      placeholder={t("Enter description")}
-                      className="mt-1.5 w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
                     />
                   </div>
                   <div>
@@ -1779,30 +1885,62 @@ export default function AssetSettingsPage() {
                       className="mt-1.5 w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
                     />
                   </div>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">{t("Status")} *</Label>
+                    <div className="flex items-center gap-6 mt-1.5">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="editGroupStatus"
+                          checked={groupForm.status === "Active"}
+                          onChange={() => setGroupForm({ ...groupForm, status: "Active" })}
+                          className="w-4 h-4"
+                        />
+                        <span className="text-sm">{t("Active")}</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="editGroupStatus"
+                          checked={groupForm.status === "Inactive"}
+                          onChange={() => setGroupForm({ ...groupForm, status: "Inactive" })}
+                          className="w-4 h-4"
+                        />
+                        <span className="text-sm">{t("Inactive")}</span>
+                      </label>
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700">{t("Asset Sub Category")} *</Label>
+                    <Select
+                      value={groupForm.subCategoryId}
+                      onValueChange={(value) => setGroupForm({ ...groupForm, subCategoryId: value })}
+                    >
+                      <SelectTrigger className="mt-1.5">
+                        <SelectValue placeholder={t("Select sub category")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {subCategories.map((subCat) => (
+                          <SelectItem key={subCat.id} value={subCat.id}>
+                            {subCat.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </>
               )}
 
               {entitySubTab === "sensitivity" && (
-                <>
-                  <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
-                    <Input
-                      value={sensitivityForm.name}
-                      onChange={(e) => setSensitivityForm({ ...sensitivityForm, name: e.target.value })}
-                      placeholder={t("e.g., High, Medium, Low")}
-                      className="mt-1.5"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
-                    <textarea
-                      value={sensitivityForm.description}
-                      onChange={(e) => setSensitivityForm({ ...sensitivityForm, description: e.target.value })}
-                      placeholder={t("Enter description")}
-                      className="mt-1.5 w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
-                    />
-                  </div>
-                </>
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
+                  <Input
+                    value={sensitivityForm.name}
+                    onChange={(e) => setSensitivityForm({ ...sensitivityForm, name: e.target.value })}
+                    placeholder={t("e.g., High, Medium, Low")}
+                    className="mt-1.5"
+                  />
+                </div>
               )}
             </div>
 
@@ -2007,7 +2145,7 @@ export default function AssetSettingsPage() {
 
         {/* Add Lifecycle Status Dialog */}
         <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-          <DialogContent className="sm:max-w-[700px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogContent className="sm:max-w-[400px] p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
             {/* Fixed Header */}
             <div className="px-6 py-5 border-b border-slate-100">
               <DialogHeader>
@@ -2019,31 +2157,13 @@ export default function AssetSettingsPage() {
             </div>
 
             {/* Content */}
-            <div className="px-6 py-6 space-y-5">
+            <div className="px-6 py-6">
               <div>
                 <Label className="text-sm font-medium text-slate-700">{t("Name")} *</Label>
                 <Input
                   value={lifecycleForm.name}
                   onChange={(e) => setLifecycleForm({ ...lifecycleForm, name: e.target.value })}
                   placeholder={t("e.g., Active, In Use, Retired")}
-                  className="mt-1.5"
-                />
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Description")}</Label>
-                <textarea
-                  value={lifecycleForm.description}
-                  onChange={(e) => setLifecycleForm({ ...lifecycleForm, description: e.target.value })}
-                  placeholder={t("Enter description")}
-                  className="mt-1.5 w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
-                />
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Order")}</Label>
-                <Input
-                  type="number"
-                  value={lifecycleForm.order}
-                  onChange={(e) => setLifecycleForm({ ...lifecycleForm, order: parseInt(e.target.value) || 0 })}
                   className="mt-1.5"
                 />
               </div>
@@ -2408,17 +2528,9 @@ export default function AssetSettingsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {scoringConfigs.map((config) => (
+                  {getCurrentConfigs().map((config) => (
                     <tr key={config.id} className="border-t">
-                      <td className="px-4 py-3 text-sm">
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="h-3 w-3 rounded-full"
-                            style={{ backgroundColor: config.color }}
-                          />
-                          <span className="font-medium">{config.level}</span>
-                        </div>
-                      </td>
+                      <td className="px-4 py-3 text-sm font-medium">{config.level}</td>
                       {scoringCalculationType === "high_of_all" ? (
                         <td className="px-4 py-3 text-sm">{config.maxScore}</td>
                       ) : (
@@ -2461,7 +2573,7 @@ export default function AssetSettingsPage() {
                       </td>
                     </tr>
                   ))}
-                  {scoringConfigs.length === 0 && (
+                  {getCurrentConfigs().length === 0 && (
                     <tr className="border-t">
                       <td colSpan={scoringCalculationType === "high_of_all" ? 3 : 4} className="px-4 py-8 text-center text-muted-foreground">
                         {t("No scoring configurations. Click \"New Scoring Configuration\" to add one.")}
@@ -2541,23 +2653,6 @@ export default function AssetSettingsPage() {
                   </div>
                 </div>
               )}
-              <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Color")}</Label>
-                <div className="flex items-center gap-2 mt-1.5">
-                  <input
-                    type="color"
-                    value={scoringConfigForm.color}
-                    onChange={(e) => setScoringConfigForm({ ...scoringConfigForm, color: e.target.value })}
-                    className="h-10 w-16 rounded border cursor-pointer"
-                  />
-                  <Input
-                    value={scoringConfigForm.color}
-                    onChange={(e) => setScoringConfigForm({ ...scoringConfigForm, color: e.target.value })}
-                    placeholder={t("#000000")}
-                    className="flex-1"
-                  />
-                </div>
-              </div>
             </div>
 
             {/* Fixed Footer */}
@@ -2626,23 +2721,6 @@ export default function AssetSettingsPage() {
                   </div>
                 </div>
               )}
-              <div>
-                <Label className="text-sm font-medium text-slate-700">{t("Color")}</Label>
-                <div className="flex items-center gap-2 mt-1.5">
-                  <input
-                    type="color"
-                    value={scoringConfigForm.color}
-                    onChange={(e) => setScoringConfigForm({ ...scoringConfigForm, color: e.target.value })}
-                    className="h-10 w-16 rounded border cursor-pointer"
-                  />
-                  <Input
-                    value={scoringConfigForm.color}
-                    onChange={(e) => setScoringConfigForm({ ...scoringConfigForm, color: e.target.value })}
-                    placeholder={t("#000000")}
-                    className="flex-1"
-                  />
-                </div>
-              </div>
             </div>
 
             {/* Fixed Footer */}
@@ -2881,15 +2959,6 @@ export default function AssetSettingsPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>{t("Description")}</Label>
-                  <textarea
-                    value={categoryForm.description}
-                    onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
-                    placeholder={t("Enter description")}
-                    className="w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
-                  />
-                </div>
-                <div className="space-y-2">
                   <Label>{t("Status")}</Label>
                   <Select
                     value={categoryForm.status}
@@ -2966,20 +3035,61 @@ export default function AssetSettingsPage() {
                     className="w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label>{t("Status")} *</Label>
+                  <div className="flex items-center gap-6">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="groupStatus3"
+                        checked={groupForm.status === "Active"}
+                        onChange={() => setGroupForm({ ...groupForm, status: "Active" })}
+                        className="w-4 h-4"
+                      />
+                      <span className="text-sm">{t("Active")}</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="groupStatus3"
+                        checked={groupForm.status === "Inactive"}
+                        onChange={() => setGroupForm({ ...groupForm, status: "Inactive" })}
+                        className="w-4 h-4"
+                      />
+                      <span className="text-sm">{t("Inactive")}</span>
+                    </label>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>{t("Asset Sub Category")} *</Label>
+                  <Select
+                    value={groupForm.subCategoryId}
+                    onValueChange={(value) => setGroupForm({ ...groupForm, subCategoryId: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={t("Select sub category")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {subCategories.map((subCat) => (
+                        <SelectItem key={subCat.id} value={subCat.id}>
+                          {subCat.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </>
             )}
 
             {entitySubTab === "sensitivity" && (
-              <>
-                <div className="space-y-2">
-                  <Label>{t("Name")} *</Label>
-                  <Input
-                    value={sensitivityForm.name}
-                    onChange={(e) => setSensitivityForm({ ...sensitivityForm, name: e.target.value })}
-                    placeholder={t("e.g., high, medium, low")}
-                  />
-                </div>
-              </>
+              <div className="space-y-2">
+                <Label>{t("Name")} *</Label>
+                <Input
+                  value={sensitivityForm.name}
+                  onChange={(e) => setSensitivityForm({ ...sensitivityForm, name: e.target.value })}
+                  placeholder={t("e.g., high, medium, low")}
+                />
+              </div>
             )}
 
             {activeCategory === "lifecycle" && (
@@ -3055,14 +3165,6 @@ export default function AssetSettingsPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>{t("Description")}</Label>
-                  <textarea
-                    value={categoryForm.description}
-                    onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
-                    className="w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
-                  />
-                </div>
-                <div className="space-y-2">
                   <Label>{t("Status")}</Label>
                   <Select
                     value={categoryForm.status}
@@ -3135,19 +3237,60 @@ export default function AssetSettingsPage() {
                     className="w-full min-h-[80px] px-3 py-2 text-sm border rounded-md"
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label>{t("Status")} *</Label>
+                  <div className="flex items-center gap-6">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="editGroupStatus4"
+                        checked={groupForm.status === "Active"}
+                        onChange={() => setGroupForm({ ...groupForm, status: "Active" })}
+                        className="w-4 h-4"
+                      />
+                      <span className="text-sm">{t("Active")}</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="editGroupStatus4"
+                        checked={groupForm.status === "Inactive"}
+                        onChange={() => setGroupForm({ ...groupForm, status: "Inactive" })}
+                        className="w-4 h-4"
+                      />
+                      <span className="text-sm">{t("Inactive")}</span>
+                    </label>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>{t("Asset Sub Category")} *</Label>
+                  <Select
+                    value={groupForm.subCategoryId}
+                    onValueChange={(value) => setGroupForm({ ...groupForm, subCategoryId: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={t("Select sub category")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {subCategories.map((subCat) => (
+                        <SelectItem key={subCat.id} value={subCat.id}>
+                          {subCat.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </>
             )}
 
             {entitySubTab === "sensitivity" && (
-              <>
-                <div className="space-y-2">
-                  <Label>{t("Name")} *</Label>
-                  <Input
-                    value={sensitivityForm.name}
-                    onChange={(e) => setSensitivityForm({ ...sensitivityForm, name: e.target.value })}
-                  />
-                </div>
-              </>
+              <div className="space-y-2">
+                <Label>{t("Name")} *</Label>
+                <Input
+                  value={sensitivityForm.name}
+                  onChange={(e) => setSensitivityForm({ ...sensitivityForm, name: e.target.value })}
+                />
+              </div>
             )}
 
             {activeCategory === "lifecycle" && (

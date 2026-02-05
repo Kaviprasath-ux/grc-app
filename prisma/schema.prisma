@@ -1295,6 +1295,7 @@ model AssetSubCategory {
   updatedAt               DateTime                 @updatedAt
   assets                  Asset[]
   assetCIAClassifications AssetCIAClassification[]
+  groups                  AssetGroup[]
 
   @@unique([customerAccountId, name, categoryId])
   @@index([customerAccountId])
@@ -1308,6 +1309,9 @@ model AssetGroup {
   customerAccount         CustomerAccount?         @relation(fields: [customerAccountId], references: [id])
   name                    String
   description             String?
+  status                  String                   @default("Active") // Active, Inactive
+  subCategoryId           String?
+  subCategory             AssetSubCategory?        @relation(fields: [subCategoryId], references: [id], onDelete: SetNull)
   createdAt               DateTime                 @default(now())
   updatedAt               DateTime                 @updatedAt
   assets                  Asset[]
@@ -1315,6 +1319,7 @@ model AssetGroup {
 
   @@unique([customerAccountId, name])
   @@index([customerAccountId])
+  @@index([subCategoryId])
 }
 
 // CIA Rating Levels (for Confidentiality, Integrity, Availability)
@@ -1418,11 +1423,11 @@ model Asset {
   description       String?
   // Category hierarchy
   categoryId        String?
-  category          AssetCategory?        @relation(fields: [categoryId], references: [id])
+  category          AssetCategory?        @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   subCategoryId     String?
-  subCategory       AssetSubCategory?     @relation(fields: [subCategoryId], references: [id])
+  subCategory       AssetSubCategory?     @relation(fields: [subCategoryId], references: [id], onDelete: SetNull)
   groupId           String?
-  group             AssetGroup?           @relation(fields: [groupId], references: [id])
+  group             AssetGroup?           @relation(fields: [groupId], references: [id], onDelete: SetNull)
   // Legacy asset type (keeping for backwards compatibility)
   assetType         String?               // Hardware, Software, Information, People, Services, Facility
   // Department and ownership

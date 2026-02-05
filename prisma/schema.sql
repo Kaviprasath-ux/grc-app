@@ -927,6 +927,8 @@ CREATE TABLE "AssetGroup" (
     "customerAccountId" TEXT,
     "name" TEXT NOT NULL,
     "description" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'Active',
+    "subCategoryId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -2277,6 +2279,9 @@ CREATE UNIQUE INDEX "AssetSubCategory_customerAccountId_name_categoryId_key" ON 
 CREATE INDEX "AssetGroup_customerAccountId_idx" ON "AssetGroup"("customerAccountId");
 
 -- CreateIndex
+CREATE INDEX "AssetGroup_subCategoryId_idx" ON "AssetGroup"("subCategoryId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "AssetGroup_customerAccountId_name_key" ON "AssetGroup"("customerAccountId", "name");
 
 -- CreateIndex
@@ -2995,6 +3000,9 @@ ALTER TABLE "AssetSubCategory" ADD CONSTRAINT "AssetSubCategory_categoryId_fkey"
 
 -- AddForeignKey
 ALTER TABLE "AssetGroup" ADD CONSTRAINT "AssetGroup_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AssetGroup" ADD CONSTRAINT "AssetGroup_subCategoryId_fkey" FOREIGN KEY ("subCategoryId") REFERENCES "AssetSubCategory"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "CIARating" ADD CONSTRAINT "CIARating_customerAccountId_fkey" FOREIGN KEY ("customerAccountId") REFERENCES "CustomerAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;

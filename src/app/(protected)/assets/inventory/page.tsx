@@ -66,6 +66,7 @@ interface AssetGroup {
   id: string;
   name: string;
   description: string | null;
+  subCategoryId: string | null;
 }
 
 interface AssetSensitivity {
@@ -228,6 +229,15 @@ export default function AssetInventoryPage() {
 
   const editFilteredSubCategories = subCategories.filter(
     (sc) => !editingAsset?.categoryId || sc.categoryId === editingAsset?.categoryId
+  );
+
+  // Filtered groups based on selected sub-category
+  const filteredGroups = groups.filter(
+    (g) => !newAsset.subCategoryId || g.subCategoryId === newAsset.subCategoryId
+  );
+
+  const editFilteredGroups = groups.filter(
+    (g) => !editingAsset?.subCategoryId || g.subCategoryId === editingAsset?.subCategoryId
   );
 
   useEffect(() => {
@@ -1039,7 +1049,7 @@ export default function AssetInventoryPage() {
                         <SelectValue placeholder={t("Select Asset Group")} />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4}>
-                        {groups.map((g) => (
+                        {filteredGroups.map((g) => (
                           <SelectItem key={g.id} value={g.id}>
                             {g.name}
                           </SelectItem>
@@ -1330,7 +1340,7 @@ export default function AssetInventoryPage() {
                           <SelectValue placeholder={t("Select Asset Group")} />
                         </SelectTrigger>
                         <SelectContent position="popper" sideOffset={4}>
-                          {groups.map((g) => (
+                          {editFilteredGroups.map((g) => (
                             <SelectItem key={g.id} value={g.id}>
                               {g.name}
                             </SelectItem>
