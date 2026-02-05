@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { withAuthOnly, AuthenticatedRequest, getCustomerAccountId } from "@/lib/api-auth";
+import { withAuthOnly, AuthenticatedRequest, getTenantFilter } from "@/lib/api-auth";
 import aiApiClient from "@/lib/ai-api-client";
 import { aiAuditService } from "@/services/ai-audit-service";
 import { prisma } from "@/lib/prisma";
@@ -22,7 +22,6 @@ async function handler(
     session: AuthenticatedRequest["user"]
 ) {
     const startTime = Date.now();
-    const customerAccountId = getCustomerAccountId(session);
     let requestPayload: Record<string, unknown> = {};
 
     try {
@@ -33,18 +32,29 @@ async function handler(
             return missingFieldResponse("processId");
         }
 
-        // 1. Fetch Process Details from DB
-        const process = await prisma.process.findUnique({
-            where: { id: processId, customerAccountId },
+        // 1. Fetch Process Details from DB (use tenant filter with globalAccess for GRCAdmin cross-tenant access)
+        const tenantFilter = getTenantFilter(session, { globalAccess: true });
+        console.log("[Risk Evaluation] Session roles:", session.roles);
+        console.log("[Risk Evaluation] Session customerAccountId:", session.customerAccountId);
+        console.log("[Risk Evaluation] Tenant filter:", tenantFilter);
+        console.log("[Risk Evaluation] Looking for processId:", processId);
+
+        const process = await prisma.process.findFirst({
+            where: { id: processId, ...tenantFilter },
             include: {
                 department: true,
                 impactedByRisks: { take: 1 }
             }
         });
 
+        console.log("[Risk Evaluation] Process found:", process ? process.id : "NOT FOUND");
+
         if (!process) {
             return notFoundResponse("Process");
         }
+
+        // Use the process's customerAccountId for data isolation
+        const customerAccountId = process.customerAccountId;
 
         // 2. Duplicate Prevention / Persistence Recovery
         // Skip AI call if risks already exist and regenerate is false
